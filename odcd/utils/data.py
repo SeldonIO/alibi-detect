@@ -38,7 +38,7 @@ def sample_df(df: pd.DataFrame,
 def create_outlier_batch(data: np.ndarray,
                          target: np.ndarray,
                          n_samples: int,
-                         perc_outlier: int) -> Union[Bunch, Tuple[list, list]]:
+                         perc_outlier: int) -> Union[Bunch, Tuple[np.ndarray, np.ndarray]]:
     """ Create a batch with a defined percentage of outliers. """
 
     # create df
