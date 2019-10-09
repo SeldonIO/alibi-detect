@@ -6,7 +6,7 @@ import pandas as pd
 def plot_outlier_scores(scores: np.ndarray,
                         target: np.ndarray,
                         labels: np.ndarray,
-                        threshold: float):
+                        threshold: float) -> None:
     """
     Scatter plot of a batch of outlier scores compared to the outlier threshold.
 

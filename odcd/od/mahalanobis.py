@@ -12,7 +12,7 @@ EPSILON = 1e-8
 class Mahalanobis:
 
     def __init__(self,
-                 threshold,
+                 threshold: float,
                  n_components: int = 3,
                  std_clip: int = 3,
                  start_clip: int = 100,
@@ -46,7 +46,7 @@ class Mahalanobis:
         self.C = 0
         self.n = 0
 
-    def score(self, X):
+    def score(self, X: np.ndarray) -> np.ndarray:
         """
         Compute outlier scores.
 
@@ -130,7 +130,7 @@ class Mahalanobis:
         scores = np.matmul(x_diff[:, None, :], np.matmul(all_C_inv, x_diff[:, :, None])).reshape(n_batch)
         return scores
 
-    def predict(self, X):
+    def predict(self, X: np.ndarray) -> np.ndarray:
         """
         Compute outlier scores and transform into outlier predictions.
 

@@ -1,20 +1,42 @@
 import numpy as np
 import pandas as pd
 from sklearn.datasets import fetch_kddcup99
+from typing import Tuple, Union
 from odcd.utils.data import Bunch
 
 pd.options.mode.chained_assignment = None  # default='warn'
 
 
-def fetch_kdd(target=['dos', 'r2l', 'u2r', 'probe'],
-              keep_cols=['srv_count', 'serror_rate', 'srv_serror_rate', 'rerror_rate', 'srv_rerror_rate',
-                         'same_srv_rate', 'diff_srv_rate', 'srv_diff_host_rate', 'dst_host_count',
-                         'dst_host_srv_count', 'dst_host_same_srv_rate', 'dst_host_diff_srv_rate',
-                         'dst_host_same_src_port_rate', 'dst_host_srv_diff_host_rate',
-                         'dst_host_serror_rate', 'dst_host_srv_serror_rate', 'dst_host_rerror_rate',
-                         'dst_host_srv_rerror_rate'],
-              percent10=True):
-    """ KDD Cup '99 dataset. Detect computer network intrusions. """
+def fetch_kdd(target: list = ['dos', 'r2l', 'u2r', 'probe'],
+              keep_cols: list = ['srv_count', 'serror_rate', 'srv_serror_rate',
+                                 'rerror_rate', 'srv_rerror_rate', 'same_srv_rate',
+                                 'diff_srv_rate', 'srv_diff_host_rate', 'dst_host_count',
+                                 'dst_host_srv_count', 'dst_host_same_srv_rate',
+                                 'dst_host_diff_srv_rate', 'dst_host_same_src_port_rate',
+                                 'dst_host_srv_diff_host_rate', 'dst_host_serror_rate',
+                                 'dst_host_srv_serror_rate', 'dst_host_rerror_rate',
+                                 'dst_host_srv_rerror_rate'],
+              percent10: bool = True,
+              return_X_y: bool = False) -> Union[Bunch, Tuple[np.ndarray, np.ndarray]]:
+    """
+    KDD Cup '99 dataset. Detect computer network intrusions.
+
+    Parameters
+    ----------
+    target
+        List with attack types to detect.
+    keep_cols
+        List with columns to keep. Defaults to continuous features.
+    percent10
+        Bool, whether to only return 10% of the data.
+
+    Returns
+    -------
+    Bunch
+        Dataset and outlier labels (0 means 'normal' and 1 means 'outlier').
+    (data, target)
+        Tuple if 'return_X_y' equals True.
+    """
 
     # fetch raw data
     data_raw = fetch_kddcup99(subset=None, data_home=None, percent10=percent10)
@@ -65,4 +87,7 @@ def fetch_kdd(target=['dos', 'r2l', 'u2r', 'probe'],
     if drop_cols != []:
         data.drop(columns=drop_cols, inplace=True)
 
-    return Bunch(data=data.values, target=is_outlier, target_names=['is_outlier'])
+    if return_X_y:
+        return data.values, is_outlier
+
+    return Bunch(data=data.values, target=is_outlier, target_names=['normal', 'outlier'])

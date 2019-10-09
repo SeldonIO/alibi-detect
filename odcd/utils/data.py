@@ -66,4 +66,4 @@ def create_outlier_batch(data: np.ndarray,
     is_outlier = batch['target'].values
     batch.drop(columns=['target'], inplace=True)
 
-    return Bunch(data=batch.values, target=is_outlier, target_names=['is_outlier'])
+    return Bunch(data=batch.values, target=is_outlier, target_names=['normal', 'outlier'])
