@@ -21,6 +21,6 @@ class OutlierDetector:
   def predict(self, X, *args, **kwargs):
     # Compute outlier scores and transform into outlier predictions.
     outlier_score = self.score(X, *args, **kwargs)
-    outlier_pred = outlier_score > self.threshold
+    outlier_pred = (outlier_score > self.threshold).astype(int)
     return outlier_pred
 ```
