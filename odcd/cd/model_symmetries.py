@@ -120,6 +120,111 @@ class VaeSymmetryFinder(object):
         return self.vae.predict(x)[2]
 
 
+class VaeSymmetryFinderConv(object):
+    """Variational Autoencoder designed to find model's symmetries
+    """
+    def __init__(self, predict_fn, input_shape=(28, 28), output_shape=(10, ),
+                 kernel_size=3, filters=32, intermediate_dim=16, latent_dim=2,
+                 intermediate_activation='relu', output_activation='sigmoid'):
+        self.predict_fn = predict_fn
+        self.input_shape = input_shape
+        self.output_shape = output_shape
+        self.intermediate_dim = intermediate_dim
+        self.kernel_size = kernel_size
+        self.filters = filters
+        self.intermediate_activation = intermediate_activation
+        self.output_activation = output_activation
+        self.latent_dim = latent_dim
+
+        # It works for keras models only for now
+        if isinstance(self.predict_fn, tf.keras.models.Model) or isinstance(self.predict_fn, keras.models.Model):
+            for layer in self.predict_fn.layers:
+                layer.trainable = False
+        else:
+            raise NotImplementedError
+
+        self.inputs = tf.keras.layers.Input(shape=self.input_shape, name='encoder_input')
+
+        #for i in range(2):
+        #    self.filters *= 2
+        self.x = tf.keras.layers.Conv2D(filters=self.filters, kernel_size=self.kernel_size,
+                                        activation='relu', strides=2, padding='same')(self.inputs)
+
+        # shape info needed to build decoder model
+        shape = K.int_shape(self.x)
+
+        # generate latent vector Q(z|X)
+        self.x = tf.keras.layers.Flatten()(self.x)
+        self.x = tf.keras.layers.Dense(self.intermediate_dim, activation=self.intermediate_activation)(self.x)
+        z_mean = tf.keras.layers.Dense(self.latent_dim, name='z_mean')(self.x)
+        z_log_var = tf.keras.layers.Dense(self.latent_dim, name='z_log_var')(self.x)
+
+        # use reparameterization trick to push the sampling out as input
+        # note that "output_shape" isn't necessary with the TensorFlow backend
+        self.z = tf.keras.layers.Lambda(sampling_gaussian,
+                                        output_shape=(self.latent_dim,),
+                                        name='z')([z_mean, z_log_var])
+
+        self.x = tf.keras.layers.Dense(shape[1] * shape[2] * shape[3], activation=self.intermediate_activation)(self.z)
+        self.x = tf.keras.layers.Reshape((shape[1], shape[2], shape[3]))(self.x)
+
+        #for i in range(2):
+        self.x = tf.keras.layers.Conv2DTranspose(filters=self.filters, kernel_size=self.kernel_size,
+                                                 activation='relu', strides=2, padding='same')(self.x)
+        #self.filters //= 2
+        print(self.filters)
+        self.vae_outputs = tf.keras.layers.Conv2DTranspose(filters=3,
+                                                           kernel_size=self.kernel_size,
+                                                           activation=self.output_activation,
+                                                           padding='same',
+                                                           name='decoder_output')(self.x)
+
+        # instantiate decoder model
+
+        self.model_output_trans = self.predict_fn(self.vae_outputs)
+        self.model_output_orig = self.predict_fn(self.inputs)
+
+        self.vae = tf.keras.models.Model(self.inputs, [self.vae_outputs, self.model_output_orig,
+                                                       self.model_output_trans], name='vae_mlp')
+
+        self.loss = tf.keras.losses.kullback_leibler_divergence(self.model_output_orig, self.model_output_trans)
+        self.vae_loss = K.mean(self.loss)
+        self.vae.add_loss(self.vae_loss)
+        self.optimizer = tf.keras.optimizers.Adam()
+        self.vae.compile(optimizer=self.optimizer)
+        print('Vae')
+        self.vae.summary()
+
+    def fit(self, X_train, x_test=None, epochs=2, batch_size=128):
+        if x_test is not None:
+            self.vae.fit(X_train,
+                         epochs=epochs,
+                         batch_size=batch_size,
+                         validation_data=(x_test, None))
+        else:
+            self.vae.fit(X_train,
+                         epochs=epochs,
+                         batch_size=batch_size)
+
+    def save(self, save_dir=''):
+        file_arch = os.path.join(save_dir, 'vae_arch.json')
+        file_weights = os.path.join(save_dir, 'vae_weights.h5')
+        json_model = self.vae.to_json()
+        with open(file_arch, 'w') as f:
+            f.write(json_model)
+            f.close()
+        self.vae.save_weights(file_weights)
+
+    def transform(self, x):
+        return self.vae.predict(x)[0]
+
+    def predict_original(self, x):
+        return self.vae.predict(x)[1]
+
+    def transform_predict(self, x):
+        return self.vae.predict(x)[2]
+
+
 class VaeSymmetryFinderNlp(object):
     """Autoencoder using tf1 for nlp.
     ================================
