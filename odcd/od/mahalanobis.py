@@ -91,8 +91,8 @@ class Mahalanobis:
         standardize_cat_vars
             Standardize numerical values of categorical variables if True.
         feature_range
-            Tuple with min and max ranges to allow for perturbed instances. Min and max are
-            numpy arrays with dimension (1 x nb of features) for feature-wise ranges.
+            Tuple with min and max ranges to allow for perturbed instances. Min and max ranges can be floats or
+            numpy arrays with dimension (1x nb of features) for feature-wise ranges.
         smooth
             Smoothing exponent between 0 and 1 for the distances. Lower values of l will smooth the difference in
             distance metric between different features.
@@ -101,6 +101,13 @@ class Mahalanobis:
             except for the feature with the highest raw max distance will be the lower bound of the
             feature range, but the upper bound will be below the max feature range.
         """
+        if self.cat_vars is None:
+            raise TypeError('No categorical variables specified in the "cat_vars" argument.')
+
+        if d_type not in ['abdm', 'mvdm', 'abdm-mvdm']:
+            raise ValueError('d_type needs to be "abdm", "mvdm" or "abdm-mvdm". '
+                             '{} is not supported.'.format(d_type))
+
         if self.ohe:
             X_ord, cat_vars_ord = ohe_to_ord(X, self.cat_vars)
         else:
@@ -117,10 +124,6 @@ class Mahalanobis:
         else:
             X_bin = X_ord
             cat_vars_bin = {}
-
-        if d_type not in ['abdm', 'mvdm', 'abdm-mvdm']:
-            raise ValueError('d_type needs to be "abdm", "mvdm" or "abdm-mvdm". '
-                             '{} is not supported.'.format(d_type))
 
         # pairwise distances for categorical variables
         if d_type == 'abdm':
@@ -163,7 +166,7 @@ class Mahalanobis:
                                           smooth=smooth, center=center,
                                           update_feature_range=False)[0]
 
-    def cat2num(self, X):
+    def cat2num(self, X: np.ndarray) -> np.ndarray:
         """
         Convert categorical variables to numerical values.
 
