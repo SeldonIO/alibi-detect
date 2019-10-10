@@ -186,6 +186,7 @@ class VaeSymmetryFinderConv(object):
                                                            padding='same',
                                                            name='decoder_output')(self.x)
 
+        print(K.int_shape(self.vae_outputs))
         # instantiate decoder model
 
         self.model_output_trans = self.predict_fn(self.vae_outputs)
