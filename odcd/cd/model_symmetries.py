@@ -146,18 +146,18 @@ class VaeSymmetryFinderConv(object):
 
         self.inputs = tf.keras.layers.Input(shape=self.input_shape, name='encoder_input')
 
-        #for i in range(2):
-        #    self.filters *= 2
-        self.x = tf.keras.layers.Conv2D(filters=self.filters, kernel_size=self.kernel_size,
-                                        activation='relu', strides=2, padding='same')(self.inputs)
-        self.x = tf.keras.layers.Dropout(0.25)(self.x)
+        for i in range(2):
+            self.filters *= 2
+            self.x = tf.keras.layers.Conv2D(filters=self.filters, kernel_size=self.kernel_size,
+                                            activation='relu', strides=2, padding='same')(self.inputs)
+            self.x = tf.keras.layers.Dropout(0.25)(self.x)
         # shape info needed to build decoder model
         shape = K.int_shape(self.x)
 
         # generate latent vector Q(z|X)
         self.x = tf.keras.layers.Flatten()(self.x)
         self.x = tf.keras.layers.Dense(self.intermediate_dim, activation=self.intermediate_activation)(self.x)
-        self.x = tf.keras.layers.Dropout(0.2)(self.x)
+        self.x = tf.keras.layers.Dropout(0.25)(self.x)
         z_mean = tf.keras.layers.Dense(self.latent_dim, name='z_mean')(self.x)
         z_log_var = tf.keras.layers.Dense(self.latent_dim, name='z_log_var')(self.x)
 
@@ -168,16 +168,16 @@ class VaeSymmetryFinderConv(object):
                                         name='z')([z_mean, z_log_var])
 
         self.x = tf.keras.layers.Dense(self.intermediate_dim, activation=self.intermediate_activation)(self.z)
-        self.x = tf.keras.layers.Dropout(0.2)(self.x)
+        self.x = tf.keras.layers.Dropout(0.25)(self.x)
         self.x = tf.keras.layers.Dense(shape[1] * shape[2] * shape[3], activation=self.intermediate_activation)(self.x)
-        self.x = tf.keras.layers.Dropout(0.2)(self.x)
+        self.x = tf.keras.layers.Dropout(0.25)(self.x)
         self.x = tf.keras.layers.Reshape((shape[1], shape[2], shape[3]))(self.x)
 
-        #for i in range(2):
-        self.x = tf.keras.layers.Conv2DTranspose(filters=self.filters, kernel_size=self.kernel_size,
+        for i in range(2):
+            self.x = tf.keras.layers.Conv2DTranspose(filters=self.filters, kernel_size=self.kernel_size,
                                                  activation='relu', strides=2, padding='same')(self.x)
-        #self.filters //= 2
-        self.x = tf.keras.layers.Dropout(0.25)(self.x)
+            self.x = tf.keras.layers.Dropout(0.25)(self.x)
+            self.filters //= 2
         self.vae_outputs = tf.keras.layers.Conv2DTranspose(filters=self.rgb_filters,
                                                            kernel_size=self.kernel_size,
                                                            activation=self.output_activation,
