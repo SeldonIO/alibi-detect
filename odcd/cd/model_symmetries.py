@@ -178,6 +178,7 @@ class VaeSymmetryFinderConv(object):
                                                  activation='relu', strides=2, padding='same')(self.x)
             self.x = tf.keras.layers.Dropout(0.25)(self.x)
             self.filters //= 2
+            print(self.filters)
         self.vae_outputs = tf.keras.layers.Conv2DTranspose(filters=self.rgb_filters,
                                                            kernel_size=self.kernel_size,
                                                            activation=self.output_activation,
