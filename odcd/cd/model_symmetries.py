@@ -150,7 +150,7 @@ class VaeSymmetryFinderConv(object):
         #    self.filters *= 2
         self.x = tf.keras.layers.Conv2D(filters=self.filters, kernel_size=self.kernel_size,
                                         activation='relu', strides=2, padding='same')(self.inputs)
-        self.x = tf.keras.layers.Dropout(0.2)(self.x)
+        self.x = tf.keras.layers.Dropout(0.25)(self.x)
         # shape info needed to build decoder model
         shape = K.int_shape(self.x)
 
@@ -177,7 +177,7 @@ class VaeSymmetryFinderConv(object):
         self.x = tf.keras.layers.Conv2DTranspose(filters=self.filters, kernel_size=self.kernel_size,
                                                  activation='relu', strides=2, padding='same')(self.x)
         #self.filters //= 2
-        self.x = tf.keras.layers.Dropout(0.2)(self.x)
+        self.x = tf.keras.layers.Dropout(0.25)(self.x)
         self.vae_outputs = tf.keras.layers.Conv2DTranspose(filters=self.rgb_filters,
                                                            kernel_size=self.kernel_size,
                                                            activation=self.output_activation,
