@@ -124,7 +124,7 @@ class VaeSymmetryFinderConv(object):
     """Variational Autoencoder designed to find model's symmetries
     """
     def __init__(self, predict_fn, input_shape=(28, 28), output_shape=(10, ), rgb_filters=3,
-                 kernel_size=3, filters=32, intermediate_dim=16, latent_dim=2,
+                 kernel_size=3, filters=32, intermediate_dim=16, latent_dim=2, strides=2,
                  intermediate_activation='relu', output_activation='sigmoid'):
         self.predict_fn = predict_fn
         self.input_shape = input_shape
@@ -133,6 +133,7 @@ class VaeSymmetryFinderConv(object):
         self.kernel_size = kernel_size
         self.filters = filters
         self.rgb_filters = rgb_filters
+        self.strides = strides
         self.intermediate_activation = intermediate_activation
         self.output_activation = output_activation
         self.latent_dim = latent_dim
@@ -149,11 +150,12 @@ class VaeSymmetryFinderConv(object):
         for i in range(2):
             self.filters *= 2
             self.x = tf.keras.layers.Conv2D(filters=self.filters, kernel_size=self.kernel_size,
-                                            activation='relu', strides=2, padding='same')(self.inputs)
+                                            activation='relu', strides=self.strides, padding='same')(self.inputs)
             self.x = tf.keras.layers.Dropout(0.25)(self.x)
+
         # shape info needed to build decoder model
         shape = K.int_shape(self.x)
-        print(shape)
+
         # generate latent vector Q(z|X)
         self.x = tf.keras.layers.Flatten()(self.x)
         self.x = tf.keras.layers.Dense(self.intermediate_dim, activation=self.intermediate_activation)(self.x)
@@ -172,21 +174,21 @@ class VaeSymmetryFinderConv(object):
         self.x = tf.keras.layers.Dense(shape[1] * shape[2] * shape[3], activation=self.intermediate_activation)(self.x)
         self.x = tf.keras.layers.Dropout(0.25)(self.x)
         self.x = tf.keras.layers.Reshape((shape[1], shape[2], shape[3]))(self.x)
-        self.filters //= 2
-        for i in range(2):
-            self.filters //= 2
-            self.x = tf.keras.layers.Conv2DTranspose(filters=self.filters, kernel_size=self.kernel_size,
-                                                     activation='relu', strides=2, padding='same')(self.x)
-            self.x = tf.keras.layers.Dropout(0.25)(self.x)
 
-            print(self.filters)
+        for i in range(2):
+            self.x = tf.keras.layers.Conv2DTranspose(filters=self.filters, kernel_size=self.kernel_size,
+                                                     activation='relu', strides=self.strides, padding='same')(self.x)
+            self.x = tf.keras.layers.Dropout(0.25)(self.x)
+            self.filters //= 2
+            self.strides //= 2
+
         self.vae_outputs = tf.keras.layers.Conv2DTranspose(filters=self.rgb_filters,
                                                            kernel_size=self.kernel_size,
                                                            activation=self.output_activation,
                                                            padding='same',
                                                            name='decoder_output')(self.x)
 
-        print(K.int_shape(self.vae_outputs))
+
         # instantiate decoder model
 
         self.model_output_trans = self.predict_fn(self.vae_outputs)
