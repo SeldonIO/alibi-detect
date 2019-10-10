@@ -172,11 +172,11 @@ class VaeSymmetryFinderConv(object):
         self.x = tf.keras.layers.Dense(shape[1] * shape[2] * shape[3], activation=self.intermediate_activation)(self.x)
         self.x = tf.keras.layers.Dropout(0.25)(self.x)
         self.x = tf.keras.layers.Reshape((shape[1], shape[2], shape[3]))(self.x)
-
+        self.filters //= 2
         for i in range(2):
             self.filters //= 2
             self.x = tf.keras.layers.Conv2DTranspose(filters=self.filters, kernel_size=self.kernel_size,
-                                                 activation='relu', strides=2, padding='same')(self.x)
+                                                     activation='relu', strides=2, padding='same')(self.x)
             self.x = tf.keras.layers.Dropout(0.25)(self.x)
 
             print(self.filters)
