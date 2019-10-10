@@ -200,7 +200,7 @@ class VaeSymmetryFinderConv(object):
         self.loss = tf.keras.losses.kullback_leibler_divergence(self.model_output_orig, self.model_output_trans)
         self.vae_loss = K.mean(self.loss)
         self.vae.add_loss(self.vae_loss)
-        self.optimizer = tf.keras.optimizers.Adam()
+        self.optimizer = tf.keras.optimizers.RMSprop()
         self.vae.compile(optimizer=self.optimizer)
         print('Vae')
         self.vae.summary()
