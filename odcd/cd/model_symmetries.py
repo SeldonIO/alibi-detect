@@ -123,7 +123,7 @@ class VaeSymmetryFinder(object):
 class VaeSymmetryFinderConv(object):
     """Variational Autoencoder designed to find model's symmetries
     """
-    def __init__(self, predict_fn, input_shape=(28, 28), output_shape=(10, ),
+    def __init__(self, predict_fn, input_shape=(28, 28), output_shape=(10, ), rgb_filters=3,
                  kernel_size=3, filters=32, intermediate_dim=16, latent_dim=2,
                  intermediate_activation='relu', output_activation='sigmoid'):
         self.predict_fn = predict_fn
@@ -132,6 +132,7 @@ class VaeSymmetryFinderConv(object):
         self.intermediate_dim = intermediate_dim
         self.kernel_size = kernel_size
         self.filters = filters
+        self.rgb_filters = rgb_filters
         self.intermediate_activation = intermediate_activation
         self.output_activation = output_activation
         self.latent_dim = latent_dim
@@ -164,8 +165,8 @@ class VaeSymmetryFinderConv(object):
         self.z = tf.keras.layers.Lambda(sampling_gaussian,
                                         output_shape=(self.latent_dim,),
                                         name='z')([z_mean, z_log_var])
-
-        self.x = tf.keras.layers.Dense(shape[1] * shape[2] * shape[3], activation=self.intermediate_activation)(self.z)
+        self.x = tf.keras.layers.Dense(self.intermediate_dim, activation=self.intermediate_activation)(self.z)
+        self.x = tf.keras.layers.Dense(shape[1] * shape[2] * shape[3], activation=self.intermediate_activation)(self.x)
         self.x = tf.keras.layers.Reshape((shape[1], shape[2], shape[3]))(self.x)
 
         #for i in range(2):
@@ -173,7 +174,7 @@ class VaeSymmetryFinderConv(object):
                                                  activation='relu', strides=2, padding='same')(self.x)
         #self.filters //= 2
         print(self.filters)
-        self.vae_outputs = tf.keras.layers.Conv2DTranspose(filters=3,
+        self.vae_outputs = tf.keras.layers.Conv2DTranspose(filters=self.rgb_filters,
                                                            kernel_size=self.kernel_size,
                                                            activation=self.output_activation,
                                                            padding='same',
