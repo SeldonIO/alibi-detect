@@ -38,7 +38,7 @@ class VaeSymmetryFinder(object):
     """
     def __init__(self, predict_fn, input_shape=(28, 28), output_shape=(10, ),
                  intermediate_dim=5, latent_dim=2, input_dtype="float32",
-                 intermediate_activation='relu', output_activation='relu'):
+                 intermediate_activation='relu', output_activation='relu', opt='Adam', lr=0.001):
         self.predict_fn = predict_fn
         self.input_shape = input_shape
         if len(self.input_shape) > 1:
@@ -51,6 +51,8 @@ class VaeSymmetryFinder(object):
         self.intermediate_activation = intermediate_activation
         self.output_activation = output_activation
         self.latent_dim = latent_dim
+        self.opt = opt
+        self.lr = lr
 
         # It works for keras models only for now
         if isinstance(self.predict_fn, tf.keras.models.Model) or isinstance(self.predict_fn, keras.models.Model):
@@ -85,7 +87,10 @@ class VaeSymmetryFinder(object):
         self.loss = tf.keras.losses.kullback_leibler_divergence(self.model_output_orig, self.model_output_trans)
         self.vae_loss = K.mean(self.loss)
         self.vae.add_loss(self.vae_loss)
-        self.optimizer = tf.keras.optimizers.Adam()
+        if self.opt == 'Adam':
+            self.optimizer = tf.keras.optimizers.Adam(self.lr)
+        elif self.opt == 'RMSprop':
+            self.optimizer = tf.keras.optimizers.RMSprop(self.lr)
         self.vae.compile(optimizer=self.optimizer)
         print('Vae')
         self.vae.summary()
