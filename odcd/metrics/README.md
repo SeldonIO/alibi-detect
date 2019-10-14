@@ -11,7 +11,8 @@ abstracted out and in the future other backends might be considered.
 Proposed format:
 
 ```python
-class OutlierDetector:
+class DataTracker:
+
   def __init__(self, n_features, cat_vars)
   # initialize tracker based on the number of features and categorical features
   
