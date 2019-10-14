@@ -124,7 +124,7 @@ class VaeSymmetryFinderConv(object):
     """Variational Autoencoder designed to find model's symmetries
     """
     def __init__(self, predict_fn, input_shape=(28, 28), output_shape=(10, ), rgb_filters=3,
-                 kernel_size=3, filters=32, intermediate_dim=16, latent_dim=2, strides=2,
+                 kernel_size=3, filters=32, intermediate_dim=16, latent_dim=2, strides=2, nb_conv_layers=2,
                  intermediate_activation='relu', output_activation='sigmoid'):
         self.predict_fn = predict_fn
         self.input_shape = input_shape
@@ -134,6 +134,7 @@ class VaeSymmetryFinderConv(object):
         self.filters = filters
         self.rgb_filters = rgb_filters
         self.strides = strides
+        self.nb_conv_layers = nb_conv_layers
         self.intermediate_activation = intermediate_activation
         self.output_activation = output_activation
         self.latent_dim = latent_dim
@@ -147,7 +148,7 @@ class VaeSymmetryFinderConv(object):
 
         self.inputs = tf.keras.layers.Input(shape=self.input_shape, name='encoder_input')
 
-        for i in range(2):
+        for i in range(self.nb_conv_layers):
             self.filters *= 2
             self.x = tf.keras.layers.Conv2D(filters=self.filters, kernel_size=self.kernel_size,
                                             activation='relu', strides=self.strides, padding='same')(self.inputs)
@@ -175,7 +176,7 @@ class VaeSymmetryFinderConv(object):
         self.x = tf.keras.layers.Dropout(0.25)(self.x)
         self.x = tf.keras.layers.Reshape((shape[1], shape[2], shape[3]))(self.x)
 
-        for i in range(2):
+        for i in range(self.nb_conv_layers):
             self.x = tf.keras.layers.Conv2DTranspose(filters=self.filters, kernel_size=self.kernel_size,
                                                      activation='relu', strides=self.strides, padding='same')(self.x)
             self.x = tf.keras.layers.Dropout(0.25)(self.x)
@@ -328,4 +329,5 @@ class VaeSymmetryFinderNlp(object):
     def transform_predict(self, x):
         #assert self._is_fit
         return self.sess.run(self.model_output_trans, feed_dict={self.inputs: x})
+
 
