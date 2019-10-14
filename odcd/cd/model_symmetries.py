@@ -125,7 +125,7 @@ class VaeSymmetryFinderConv(object):
     """
     def __init__(self, predict_fn, input_shape=(28, 28), output_shape=(10, ), rgb_filters=3,
                  kernel_size=3, filters=32, intermediate_dim=16, latent_dim=2, strides=2, nb_conv_layers=2,
-                 intermediate_activation='relu', output_activation='sigmoid'):
+                 intermediate_activation='relu', output_activation='sigmoid', opt='Adam'):
         self.predict_fn = predict_fn
         self.input_shape = input_shape
         self.output_shape = output_shape
@@ -135,6 +135,7 @@ class VaeSymmetryFinderConv(object):
         self.rgb_filters = rgb_filters
         self.strides = strides
         self.nb_conv_layers = nb_conv_layers
+        self.opt = opt
         self.intermediate_activation = intermediate_activation
         self.output_activation = output_activation
         self.latent_dim = latent_dim
@@ -201,7 +202,10 @@ class VaeSymmetryFinderConv(object):
         self.loss = tf.keras.losses.kullback_leibler_divergence(self.model_output_orig, self.model_output_trans)
         self.vae_loss = K.mean(self.loss)
         self.vae.add_loss(self.vae_loss)
-        self.optimizer = tf.keras.optimizers.RMSprop()
+        if self.opt == 'Adam':
+            self.optimizer = tf.keras.optimizers.Adam()
+        elif self.opt == 'RMSprop':
+            self.optimizer = tf.keras.optimizers.RMSprop()
         self.vae.compile(optimizer=self.optimizer)
         print('Vae')
         self.vae.summary()
