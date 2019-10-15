@@ -19,6 +19,7 @@ def sliding_window(vae, X_orig, y_orig,  X_cd, y_cd, window_size, cd_start, nb_s
     ys = []
     y_orig = np.argmax(y_orig, axis=1)
     y_cd = np.argmax(y_cd, axis=1)
+
     for i in range(nb_samples_tot):
         if i % 1000 == 0:
             print('Sample {} of {}'.format(i, nb_samples_tot))
@@ -52,6 +53,7 @@ def sliding_window(vae, X_orig, y_orig,  X_cd, y_cd, window_size, cd_start, nb_s
             kl_test = entropy(orig_preds_test.T, trans_preds_test.T)
             pred = np.argmax(orig_preds_test, axis=1)
             pred_prob = orig_preds_test[:, pred[0]]
+            print(pred.shape, ys.shape)
             r = accuracy_score(pred, ys)
 
             mu.append(kl_test.mean())
