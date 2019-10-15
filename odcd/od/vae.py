@@ -8,6 +8,9 @@ from odcd.models.losses import elbo
 
 logger = logging.getLogger(__name__)
 
+# TODO: for tabular data -> highlight anomalous features, for images -> patches and ts -> windows; mse and proba space
+# TODO: reconstruction proba; make sure to infer correct distribution
+
 
 class OutlierVAE:
 
@@ -23,11 +26,13 @@ class OutlierVAE:
                  batch_size: int = 64,
                  verbose: bool = True,
                  log_metric: Tuple[str, tf.keras.metrics] = None,
-                 callbacks: tf.keras.callbacks = None
+                 callbacks: tf.keras.callbacks = None,
+                 samples: int = 10
                  ) -> None:
 
         self.threshold = threshold  # allow for threshold of both proba and/or mse/cross-entropy
         self.score_type = score_type
+        self.samples = samples
         self.vae = VAE(encoder_net, decoder_net, latent_dim)  # define VAE model
         self.train_args = [self.vae, loss_fn]
         self.train_kwargs = {'optimizer': optimizer,
@@ -42,8 +47,23 @@ class OutlierVAE:
         trainer(*args, **self.train_kwargs)
 
     def score(self, X: np.ndarray) -> np.ndarray:
-        # check if latent proba ('proba') and/or reconstruction error ('mse') is used in score
-        pass
+
+        shape = X.shape
+        axes = tuple(np.arange(len(shape)))
+
+        # sample reconstructed instances
+        X_samples = np.repeat(X, self.samples, axis=0)
+        X_recon = self.vae(X_samples)
+
+        if self.score_type in ['mse', 'mse-proba']:
+            # calculate mean reconstruction errors
+            se = np.power(X_samples - X_recon, 2)
+            mse = np.mean(se, axis=axes[1:])
+            # convert into outlier score
+            outlier_score = mse.reshape(shape[0], -1).mean(axis=1)
+        else:
+            pass
+        return outlier_score
 
     def predict(self, X: np.ndarray) -> np.ndarray:
         outlier_score = self.score(X)  # compute outlier scores
