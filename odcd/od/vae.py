@@ -38,7 +38,7 @@ class OutlierVAE:
                              'callbacks': callbacks}
 
     def fit(self, X: np.ndarray) -> None:
-        args = self.train_args + X
+        args = self.train_args + [X]
         trainer(*args, **self.train_kwargs)
 
     def score(self, X: np.ndarray) -> np.ndarray:
