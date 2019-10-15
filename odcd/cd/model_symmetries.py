@@ -196,7 +196,6 @@ class VaeSymmetryFinderConv(object):
                                                            padding='same',
                                                            name='decoder_output')(self.x)
 
-
         # instantiate decoder model
 
         self.model_output_trans = self.predict_fn(self.vae_outputs)
@@ -339,5 +338,3 @@ class VaeSymmetryFinderNlp(object):
     def transform_predict(self, x):
         #assert self._is_fit
         return self.sess.run(self.model_output_trans, feed_dict={self.inputs: x})
-
-
