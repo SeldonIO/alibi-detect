@@ -17,6 +17,8 @@ def sliding_window(vae, X_orig, y_orig,  X_cd, y_cd, window_size, cd_start, nb_s
     ps_tmp = []
     xs = []
     ys = []
+    y_orig = np.argmax(y_orig, axis=1)
+    y_cd = np.argmax(y_cd, axis=1)
     for i in range(nb_samples_tot):
         if i % 1000 == 0:
             print('Sample {} of {}'.format(i, nb_samples_tot))
@@ -109,22 +111,19 @@ def rolling_stats(vae, X_orig, y_orig, X_cd, y_cd, cd_start, nb_samples_tot, sta
             idx = np.random.choice(range(len(X_orig)))
             x = X_orig[idx].reshape((1, ) + X_orig.shape[1:])
             y = y_orig[idx]
-            print(y.shape)
+
         else:
             idx = np.random.choice(range(len(X_cd)))
             x = X_cd[idx].reshape((1, ) + X_cd.shape[1:])
             y = y_cd[idx]
-            print(y.shape)
+
         vae_outs_test = vae.vae.predict(x)
         symm_samples_test = vae_outs_test[0]
         orig_preds_test = vae_outs_test[1]
         trans_preds_test = vae_outs_test[2]
 
-        print(orig_preds_test)
         kl_test = entropy(orig_preds_test.T, trans_preds_test.T)[0]
-        print(kl_test)
         pred = np.argmax(orig_preds_test, axis=1)
-        print()
         pred_prob = orig_preds_test[:, pred[0]]
         r = is_good(pred, y)
 
