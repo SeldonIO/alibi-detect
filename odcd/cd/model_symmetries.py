@@ -154,10 +154,8 @@ class VaeSymmetryFinderConv(object):
             raise NotImplementedError
 
         self.inputs = tf.keras.layers.Input(shape=self.input_shape, name='encoder_input')
-        self.x = tf.keras.layers.Conv2D(filters=self.filters, kernel_size=self.kernel_size,
-                                        activation='relu', strides=self.strides, padding='same')(self.inputs)
-        self.x = tf.keras.layers.Dropout(0.25)(self.x)
-        for i in range(self.nb_conv_layers - 1):
+        self.x = self.inputs
+        for i in range(self.nb_conv_layers):
             self.filters *= 2
             self.x = tf.keras.layers.Conv2D(filters=self.filters, kernel_size=self.kernel_size,
                                             activation='relu', strides=self.strides, padding='same')(self.x)
