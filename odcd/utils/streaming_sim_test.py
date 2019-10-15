@@ -153,6 +153,7 @@ def rolling_stats(vae, X_orig, y_orig, X_cd, y_cd, cd_start, nb_samples_tot, sta
 
 
 def is_good(y_pred, y_true):
+    print(y_pred == y_true)
     if y_pred == y_true:
         return 1
     else:
