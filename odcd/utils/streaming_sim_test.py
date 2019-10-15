@@ -18,6 +18,8 @@ def sliding_window(vae, X_orig, y_orig,  X_cd, y_cd, window_size, cd_start, nb_s
     xs = []
     ys = []
     for i in range(nb_samples_tot):
+        if i % 1000 == 0:
+            print('Sample {} of {}'.format(i, nb_samples_tot))
         if i < cd_start:
             p = 0
         else:
@@ -92,6 +94,8 @@ def rolling_stats(vae, X_orig, y_orig, X_cd, y_cd, cd_start, nb_samples_tot, sta
     ps = []
 
     for i in range(nb_samples_tot):
+        if i % 1000 == 0:
+            print('Sample {} of {}'.format(i, nb_samples_tot))
         if i < cd_start:
             p = 0
         else:
@@ -102,11 +106,11 @@ def rolling_stats(vae, X_orig, y_orig, X_cd, y_cd, cd_start, nb_samples_tot, sta
         pp = np.random.choice([0, 1], p=[p, 1 - p])
         if pp == 1:
             idx = np.random.choice(range(len(X_orig)))
-            x = X_orig[idx].reshape(1, -1)
+            x = X_orig[idx].reshape((1, ) + X_orig.shape[1:])
             y = y_orig[idx]
         else:
             idx = np.random.choice(range(len(X_cd)))
-            x = X_cd[idx].reshape(1, -1)
+            x = X_cd[idx].reshape((1, ) + X_orig.shape[1:])
             y = y_cd[idx]
 
         vae_outs_test = vae.vae.predict(x)
