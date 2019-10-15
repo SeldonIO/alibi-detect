@@ -53,7 +53,7 @@ def sliding_window(vae, X_orig, y_orig,  X_cd, y_cd, window_size, cd_start, nb_s
             kl_test = entropy(orig_preds_test.T, trans_preds_test.T)
             pred = np.argmax(orig_preds_test, axis=1)
             pred_prob = orig_preds_test[:, pred[0]]
-            print(pred.shape, ys.shape)
+
             r = accuracy_score(pred, ys)
 
             mu.append(kl_test.mean())
@@ -159,7 +159,6 @@ def rolling_stats(vae, X_orig, y_orig, X_cd, y_cd, cd_start, nb_samples_tot, sta
 
 
 def is_good(y_pred, y_true):
-    print(y_pred == y_true)
     if y_pred == y_true:
         return 1
     else:
