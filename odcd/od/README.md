@@ -8,7 +8,7 @@ class OutlierDetector:
     # Initialize outlier detector.
     self.threshold = threshold
   
-  def fit(self, *args, **kwargs):
+  def fit(self, X, *args, **kwargs):
     # Optional
   
   def score(self, X, *args, **kwargs):
