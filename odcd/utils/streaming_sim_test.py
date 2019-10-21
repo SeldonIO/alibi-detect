@@ -157,7 +157,7 @@ def rolling_stats(vae, X_orig, y_orig, X_cd, y_cd, cd_start, cd_full, nb_samples
         pred = np.argmax(orig_preds_test, axis=1)
         pred_prob = orig_preds_test[:, pred[0]]
         r = is_good(pred, y)
-
+        print(pred, y, r)
         a.update(r)
         m.update(kl_test)
         v.update(kl_test)
