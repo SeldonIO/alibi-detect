@@ -2,8 +2,6 @@ import numpy as np
 import tensorflow as tf
 from typing import Tuple
 
-# TODO: incorporate callbacks
-
 
 def trainer(model: tf.keras.Model,
             loss_fn: tf.keras.losses,
@@ -14,8 +12,8 @@ def trainer(model: tf.keras.Model,
             batch_size: int = 64,
             buffer_size: int = 1024,
             verbose: bool = True,
-            log_metric: Tuple[str, tf.keras.metrics] = None,
-            callbacks: tf.keras.callbacks = None):
+            log_metric=None,  # TODO: log_metric: Tuple[str, tf.keras.metrics] = None,
+            callbacks: tf.keras.callbacks = None):  # TODO: incorporate callbacks
 
     # create dataset
     if y_train is None:  # unsupervised model
