@@ -141,12 +141,12 @@ def rolling_stats(vae, X_orig, y_orig, X_cd, y_cd, cd_start, cd_full, nb_samples
         pp = np.random.choice([0, 1], p=[p, 1 - p])
         if pp == 1:
             idx = np.random.choice(range(len(X_orig)))
+            x = X_orig[idx].reshape((1,) + X_orig.shape[1:])
+            y = y_orig[idx]
         else:
             idx = np.random.choice(range(len(X_cd)))
-
-
-        x = X_cd[idx].reshape((1, ) + X_cd.shape[1:])
-        y = y_cd[idx]
+            x = X_cd[idx].reshape((1, ) + X_cd.shape[1:])
+            y = y_cd[idx]
 
         vae_outs_test = vae.vae.predict(x)
         symm_samples_test = vae_outs_test[0]
@@ -157,7 +157,7 @@ def rolling_stats(vae, X_orig, y_orig, X_cd, y_cd, cd_start, cd_full, nb_samples
         pred = np.argmax(orig_preds_test, axis=1)
         pred_prob = orig_preds_test[:, pred[0]]
         r = is_good(pred, y)
-
+        print(pred, y, r)
         a.update(r)
         m.update(kl_test)
         v.update(kl_test)
