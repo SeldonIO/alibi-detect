@@ -106,7 +106,7 @@ def rolling_stats(vae, X_orig, y_orig, X_cd, y_cd, cd_start, cd_full, nb_samples
         # kl_test = entropy(orig_preds_test.T, trans_preds_test.T)[0]
 
         orig_preds_test = vae.predict_original(x)
-        kl_test = vae.signal(x, amp=amp)
+        kl_test = vae.signal(x, amp=amp)[0]
         pred = np.argmax(orig_preds_test, axis=1)
         pred_prob = orig_preds_test[:, pred[0]]
         r = is_good(pred, y)
