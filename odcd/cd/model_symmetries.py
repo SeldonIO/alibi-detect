@@ -154,7 +154,7 @@ def load_vae(arch_path='vae_arch.json', weights_path='vae_weights.h5'):
 
     def add_signal(vae):
         def signal(vae, x):
-            return entropy(vae.predict(x)[0].T, x.T)
+            return entropy(vae.predict(x)[1].T, vae.predict(x)[2].T)
         vae.signal = types.MethodType(signal, vae)
 
     add_transform(vae)
