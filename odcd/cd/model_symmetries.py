@@ -108,14 +108,12 @@ class VaeSymmetryFinder(object):
                          epochs=epochs,
                          batch_size=batch_size)
 
-    def save(self, save_dir=''):
-        file_arch = os.path.join(save_dir, 'vae_arch.json')
-        file_weights = os.path.join(save_dir, 'vae_weights.h5')
+    def save(self, arch_path='vae_arch.json', weights_path='vae_weights.h5'):
         json_model = self.vae.to_json()
-        with open(file_arch, 'w') as f:
+        with open(arch_path, 'w') as f:
             f.write(json_model)
             f.close()
-        self.vae.save_weights(file_weights)
+        self.vae.save_weights(weights_path)
 
     def transform(self, x):
         return self.vae.predict(x)[0]
@@ -152,11 +150,6 @@ def load_vae(arch_path='vae_arch.json', weights_path='vae_weights.h5'):
     def signal(vae, x):
         return entropy(vae.predict(x)[1].T, vae.predict(x)[2].T)
     vae.signal = types.MethodType(signal, vae)
-
-    # add_transform(vae)
-    # add_predict_original(vae)
-    # add_transform_predict(vae)
-    # add_signal(vae)
 
     return vae
 
