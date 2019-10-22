@@ -96,7 +96,7 @@ class EncoderAE(Layer):
         super(EncoderAE, self).__init__(name=name)
         self.encoder_net = encoder_net
 
-    def call(self, x: tf.Tensor):
+    def call(self, x: tf.Tensor) -> tf.Tensor:
         return self.encoder_net(x)
 
 
