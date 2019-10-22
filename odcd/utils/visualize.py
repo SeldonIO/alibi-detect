@@ -62,7 +62,6 @@ def plot_feature_outlier_image(od_preds: Dict,
     figsize
         Tuple for the figure size.
     """
-    # TODO: add subplot titles
     scores = od_preds['data']['feature_score']
     if outliers_only:
         outlier_ids = list(np.where(od_preds['data']['is_outlier'])[0])
@@ -87,28 +86,38 @@ def plot_feature_outlier_image(od_preds: Dict,
         X_outlier = X[idx]
         plt.subplot(n_outliers, n_cols, n_subplot)
         plt.axis('off')
+        if i == 0:
+            plt.title('Original')
         plt.imshow(X_outlier)
         n_subplot += 1
 
         if X_recon is not None:
             plt.subplot(n_outliers, n_cols, n_subplot)
             plt.axis('off')
+            if i == 0:
+                plt.title('Reconstruction')
             plt.imshow(X_recon[idx])
             n_subplot += 1
 
         plt.subplot(n_outliers, n_cols, n_subplot)
         plt.axis('off')
+        if i == 0:
+            plt.title('Outlier Score Channel 0')
         plt.imshow(scores[idx][:, :, 0])
         n_subplot += 1
 
         if n_channels == 3:
             plt.subplot(n_outliers, n_cols, n_subplot)
             plt.axis('off')
+            if i == 0:
+                plt.title('Outlier Score Channel 1')
             plt.imshow(scores[idx][:, :, 1])
             n_subplot += 1
 
             plt.subplot(n_outliers, n_cols, n_subplot)
             plt.axis('off')
+            if i == 0:
+                plt.title('Outlier Score Channel 2')
             plt.imshow(scores[idx][:, :, 2])
             n_subplot += 1
 
