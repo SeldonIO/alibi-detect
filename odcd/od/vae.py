@@ -20,6 +20,7 @@ class OutlierVAE(BaseOutlierDetector, FitMixin, ThresholdMixin):
                  decoder_net: tf.keras.Sequential = None,
                  latent_dim: int = None,
                  samples: int = 10,
+                 beta: float = 1.,
                  data_type: str = None
                  ) -> None:
         """
@@ -42,6 +43,8 @@ class OutlierVAE(BaseOutlierDetector, FitMixin, ThresholdMixin):
             Dimensionality of the latent space.
         samples
             Number of samples sampled to evaluate each instance.
+        beta
+            Beta parameter for KL-divergence loss term.
         data_type
             Optionally specifiy the data type (tabular, image or time-series). Added to metadata.
         """
@@ -58,7 +61,7 @@ class OutlierVAE(BaseOutlierDetector, FitMixin, ThresholdMixin):
         if isinstance(vae, tf.keras.Model):
             self.vae = vae
         elif isinstance(encoder_net, tf.keras.Sequential) and isinstance(decoder_net, tf.keras.Sequential):
-            self.vae = VAE(encoder_net, decoder_net, latent_dim)  # define VAE model
+            self.vae = VAE(encoder_net, decoder_net, latent_dim, beta=beta)  # define VAE model
         else:
             raise TypeError('No valid format detected for `vae` (tf.keras.Model) '
                             'or `encoder_net` and `decoder_net` (tf.keras.Sequential).')

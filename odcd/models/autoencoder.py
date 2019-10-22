@@ -112,6 +112,7 @@ class VAE(tf.keras.Model):
         self.encoder = EncoderVAE(encoder_net, latent_dim)
         self.decoder = Decoder(decoder_net)
         self.beta = beta
+        self.latent_dim = latent_dim
 
     def call(self, x: tf.Tensor) -> tf.Tensor:
         z_mean, z_log_var, z = self.encoder(x)
