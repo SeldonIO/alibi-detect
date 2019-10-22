@@ -4,6 +4,8 @@ import os
 from functools import reduce
 import numpy as np
 import keras
+from scipy.stats import entropy
+import types
 
 
 def sampling_gaussian(args):
@@ -123,6 +125,44 @@ class VaeSymmetryFinder(object):
 
     def transform_predict(self, x):
         return self.vae.predict(x)[2]
+
+
+def load_vae(arch_path='vae_arch.json', weights_path='vae_weights.h5'):
+
+    with open(arch_path, 'r') as f:
+        loaded_model_json = f.read()
+        f.close()
+    vae = tf.keras.models.model_from_json(loaded_model_json)
+    # load weights into new model
+    vae.load_weights(weights_path)
+    print("Loaded model from disk")
+
+    def add_transform(vae):
+        def transform(vae, x):
+            return vae.predict(x)[0]
+        vae.transform = types.MethodType(transform, vae)
+
+    def add_predict_original(vae):
+        def predict_original(vae, x):
+            return vae.predict(x)[1]
+        vae.predict_original = types.MethodType(predict_original, vae)
+
+    def add_transform_predict(vae):
+        def transform_predict(vae, x):
+            return vae.predict(x)[2]
+        vae.transform_predict = types.MethodType(transform_predict, vae)
+
+    def add_signal(vae):
+        def signal(vae, x):
+            return entropy(vae.predict(x)[0].T, x.T)
+        vae.signal = types.MethodType(signal, vae)
+
+    add_transform(vae)
+    add_predict_original(vae)
+    add_transform_predict(vae)
+    add_signal(vae)
+
+    return vae
 
 
 class VaeSymmetryFinderConv(object):
