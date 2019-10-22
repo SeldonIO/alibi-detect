@@ -16,10 +16,20 @@ def make_data_stream(signal, agg='mean', window = 100, start=0):
     elif agg == 'mean':
         data_stream = np.zeros(len(signal) - start)
         mu = Mean()
-        var = Var()
         for i in range(len(data_stream)):
             mu.update(signal[i + start])
             data_stream[i] = mu.get()
+        df = pd.DataFrame()
+        df['stream_raw'] = signal[start:]
+        df['stream'] = data_stream
+        df.reset_index(inplace=True)
+
+    elif agg == 'var':
+        data_stream = np.zeros(len(signal) - start)
+        var = Var()
+        for i in range(len(data_stream)):
+            var.update(signal[i + start])
+            data_stream[i] = var.get()
         df = pd.DataFrame()
         df['stream_raw'] = signal[start:]
         df['stream'] = data_stream
