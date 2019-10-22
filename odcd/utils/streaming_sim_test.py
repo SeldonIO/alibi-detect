@@ -118,7 +118,6 @@ def rolling_stats(vae, X_orig, y_orig, X_cd, y_cd, cd_start, cd_full, nb_samples
 
         mu.append(mm)
         var.append(vv)
-        print(mu)
         if clf is not None and enc is not None and tsc is not None:
             score = get_trust_score(x, clf, enc, tsc)
             m_ts.update(score)
