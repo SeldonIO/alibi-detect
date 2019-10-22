@@ -17,6 +17,7 @@ def outlier_prediction_dict():
     return {"data": DEFAULT_DATA, "meta": DEFAULT_META}
 
 
+# TODO: add save and load fn
 class BaseOutlierDetector(ABC):
     """ Base class for outlier detection algorithms. """
 
@@ -32,7 +33,7 @@ class BaseOutlierDetector(ABC):
         return self._meta
 
     @meta.setter
-    def meta(self, value):
+    def meta(self, value: Dict):
         if not isinstance(value, dict):
             raise TypeError('meta must be a dictionary')
         self._meta = value

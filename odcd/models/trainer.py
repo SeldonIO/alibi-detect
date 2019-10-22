@@ -12,8 +12,36 @@ def trainer(model: tf.keras.Model,
             batch_size: int = 64,
             buffer_size: int = 1024,
             verbose: bool = True,
-            log_metric=None,  # TODO: log_metric: Tuple[str, tf.keras.metrics] = None,
-            callbacks: tf.keras.callbacks = None):  # TODO: incorporate callbacks
+            log_metric:  Tuple[str, "tf.keras.metrics"] = None,
+            callbacks: tf.keras.callbacks = None) -> None:  # TODO: incorporate callbacks
+    """
+    Train TensorFlow model.
+
+    Parameters
+    ----------
+    model
+        Model to train.
+    loss_fn
+        Loss function used for training.
+    X_train
+        Training batch.
+    y_train
+        Training labels.
+    optimizer
+        Optimizer used for training.
+    epochs
+        Number of training epochs.
+    batch_size
+        Batch size used for training.
+    buffer_size
+        Maximum number of elements that will be buffered when prefetching.
+    verbose
+        Whether to print training progress.
+    log_metric
+        Additional metrics whose progress will be displayed if verbose equals True.
+    callbacks
+        Callbacks used during training.
+    """
 
     # create dataset
     if y_train is None:  # unsupervised model
