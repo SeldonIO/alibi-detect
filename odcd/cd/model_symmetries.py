@@ -35,6 +35,35 @@ def sampling_nlp(args):
     return tf.random.categorical(tf.log(p), input_dim)
 
 
+def load_vae(arch_path='vae_arch.json', weights_path='vae_weights.h5'):
+
+    with open(arch_path, 'r') as f:
+        loaded_model_json = f.read()
+        f.close()
+    vae = tf.keras.models.model_from_json(loaded_model_json)
+    # load weights into new model
+    vae.load_weights(weights_path)
+    print("Loaded model from disk")
+
+    def transform(vae, x):
+        return vae.predict(x)[0]
+    vae.transform = types.MethodType(transform, vae)
+
+    def predict_original(vae, x):
+        return vae.predict(x)[1]
+    vae.predict_original = types.MethodType(predict_original, vae)
+
+    def transform_predict(vae, x):
+        return vae.predict(x)[2]
+    vae.transform_predict = types.MethodType(transform_predict, vae)
+
+    def signal(vae, x, amp=1):
+        return amp * entropy(vae.predict(x)[1].T, vae.predict(x)[2].T)
+    vae.signal = types.MethodType(signal, vae)
+
+    return vae
+
+
 class VaeSymmetryFinder(object):
     """Variational Autoencoder designed to find model's symmetries
     """
@@ -124,34 +153,8 @@ class VaeSymmetryFinder(object):
     def transform_predict(self, x):
         return self.vae.predict(x)[2]
 
-
-def load_vae(arch_path='vae_arch.json', weights_path='vae_weights.h5'):
-
-    with open(arch_path, 'r') as f:
-        loaded_model_json = f.read()
-        f.close()
-    vae = tf.keras.models.model_from_json(loaded_model_json)
-    # load weights into new model
-    vae.load_weights(weights_path)
-    print("Loaded model from disk")
-
-    def transform(vae, x):
-        return vae.predict(x)[0]
-    vae.transform = types.MethodType(transform, vae)
-
-    def predict_original(vae, x):
-        return vae.predict(x)[1]
-    vae.predict_original = types.MethodType(predict_original, vae)
-
-    def transform_predict(vae, x):
-        return vae.predict(x)[2]
-    vae.transform_predict = types.MethodType(transform_predict, vae)
-
-    def signal(vae, x):
-        return entropy(vae.predict(x)[1].T, vae.predict(x)[2].T)
-    vae.signal = types.MethodType(signal, vae)
-
-    return vae
+    def signal(self, x, amp=1):
+        return amp * entropy(self.vae.predict(x)[1].T, self.vae.predict(x)[2].T)
 
 
 class VaeSymmetryFinderConv(object):
@@ -270,6 +273,9 @@ class VaeSymmetryFinderConv(object):
 
     def transform_predict(self, x):
         return self.vae.predict(x)[2]
+
+    def signal(self, x, amp=1):
+        return amp * entropy(self.vae.predict(x)[1].T, self.vae.predict(x)[2].T)
 
 
 class VaeSymmetryFinderNlp(object):
