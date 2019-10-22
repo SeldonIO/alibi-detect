@@ -1,8 +1,42 @@
 import pandas as pd
-from sklearn.metrics import accuracy_score
 from scipy.stats import entropy
 from creme.stats import Mean, Var
 import numpy as np
+from sklearn.metrics import accuracy_score, confusion_matrix
+
+
+def make_data_stream(signal, agg='mean', window = 100, start=0):
+    if agg == 'window':
+        data_stream = []
+        for i in range(len(signal)):
+            data_stream.append(signal[i:i + window].mean())
+        data_stream = np.asarray(data_stream)
+        df = pd.Series(data_stream, name='stream').to_frame().reset_index()
+
+    elif agg == 'mean':
+        data_stream = np.zeros(len(signal) - start)
+        mu = Mean()
+        var = Var()
+        for i in range(len(data_stream)):
+            mu.update(signal[i + start])
+            data_stream[i] = mu.get()
+        df = pd.DataFrame()
+        df['stream_raw'] = signal[start:]
+        df['stream'] = data_stream
+        df.reset_index(inplace=True)
+
+    elif agg == 'raw':
+        data_stream = signal
+        df = pd.Series(data_stream, name='stream').to_frame().reset_index()
+    return df
+
+
+def evaluate(clf, X, y):
+    y_preds = clf.predict(X)
+    y_preds = np.argmax(y_preds, axis=1)
+    y = np.argmax(y, axis=1)
+    print('Accuracy:', accuracy_score(y_preds, y))
+    print('Confusion matrix:', confusion_matrix(y_preds, y))
 
 
 def get_trust_score(x, clf, enc, tsc):
