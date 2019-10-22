@@ -137,30 +137,26 @@ def load_vae(arch_path='vae_arch.json', weights_path='vae_weights.h5'):
     vae.load_weights(weights_path)
     print("Loaded model from disk")
 
-    def add_transform(vae):
-        def transform(vae, x):
-            return vae.predict(x)[0]
-        vae.transform = types.MethodType(transform, vae)
+    def transform(vae, x):
+        return vae.predict(x)[0]
+    vae.transform = types.MethodType(transform, vae)
 
-    def add_predict_original(vae):
-        def predict_original(vae, x):
-            return vae.predict(x)[1]
-        vae.predict_original = types.MethodType(predict_original, vae)
+    def predict_original(vae, x):
+        return vae.predict(x)[1]
+    vae.predict_original = types.MethodType(predict_original, vae)
 
-    def add_transform_predict(vae):
-        def transform_predict(vae, x):
-            return vae.predict(x)[2]
-        vae.transform_predict = types.MethodType(transform_predict, vae)
+    def transform_predict(vae, x):
+        return vae.predict(x)[2]
+    vae.transform_predict = types.MethodType(transform_predict, vae)
 
-    def add_signal(vae):
-        def signal(vae, x):
-            return entropy(vae.predict(x)[1].T, vae.predict(x)[2].T)
-        vae.signal = types.MethodType(signal, vae)
+    def signal(vae, x):
+        return entropy(vae.predict(x)[1].T, vae.predict(x)[2].T)
+    vae.signal = types.MethodType(signal, vae)
 
-    add_transform(vae)
-    add_predict_original(vae)
-    add_transform_predict(vae)
-    add_signal(vae)
+    # add_transform(vae)
+    # add_predict_original(vae)
+    # add_transform_predict(vae)
+    # add_signal(vae)
 
     return vae
 
