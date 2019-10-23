@@ -1,7 +1,9 @@
 import logging
 import os
 import pickle
+import tensorflow as tf
 from typing import Dict, Union
+from odcd.models.autoencoder import VAE
 from odcd.od.base import BaseOutlierDetector
 from odcd.od.vae import OutlierVAE
 
@@ -82,6 +84,104 @@ def save_tf_vae(od: OutlierVAE,
     if not os.path.isdir(model_dir):
         os.mkdir(model_dir)
     # save encoder, decoder and vae weights
-    od.vae.encoder.encoder_net.save(model_dir + 'encoder_net.h5')
-    od.vae.decoder.decoder_net.save(model_dir + 'decoder_net.h5')
-    od.vae.save_weights(model_dir + 'vae.ckpt')
+    if isinstance(od.vae.encoder.encoder_net, tf.keras.Sequential):
+        od.vae.encoder.encoder_net.save(model_dir + 'encoder_net.h5')
+    else:
+        logger.warning('No `tf.keras.Sequential` encoder detected. No encoder saved.')
+    if isinstance(od.vae.decoder.decoder_net, tf.keras.Sequential):
+        od.vae.decoder.decoder_net.save(model_dir + 'decoder_net.h5')
+    else:
+        logger.warning('No `tf.keras.Sequential` decoder detected. No decoder saved.')
+    if isinstance(od.vae, tf.keras.Model):
+        od.vae.save_weights(model_dir + 'vae.ckpt')
+    else:
+        logger.warning('No `tf.keras.Model` vae detected. No vae saved.')
+
+
+def load_od(filepath: str) -> Data:
+    """
+    Load outlier detector.
+
+    Parameters
+    ----------
+    filepath
+        Load directory.
+
+    Returns
+    -------
+    Loaded outlier detector object.
+    """
+    # check if path exists
+    if not os.path.isdir(filepath):
+        raise ValueError('{} does not exist.'.format(filepath))
+
+    # load metadata
+    meta_dict = pickle.load(open(filepath + 'meta.pickle', 'rb'))
+
+    od_name = meta_dict['name']
+    if od_name not in DEFAULT_OUTLIER_DETECTORS:
+        raise ValueError('{} is not supported by `load_od`.'.format(od_name))
+
+    # load outlier detector specific parameters
+    state_dict = pickle.load(open(filepath + od_name + '.pickle', 'rb'))
+
+    # load outlier detector specific TensorFlow models
+    if od_name == 'OutlierVAE':
+        vae = load_tf_vae(filepath, state_dict)  # TODO: check if anything there
+
+    # initialize outlier detector
+    if od_name == 'OutlierVAE':
+        od = init_od_vae(state_dict, vae)
+
+    od.meta = meta_dict
+    return od
+
+
+def load_tf_vae(filepath: str,
+                state_dict: Dict) -> tf.keras.Model:
+    """
+    Load VAE.
+
+    Parameters
+    ----------
+    filepath
+        Save directory.
+    state_dict
+        Dictionary containing the latent dimension and beta parameters.
+
+    Returns
+    -------
+    Loaded VAE.
+    """
+    model_dir = filepath + 'model/'
+    if not [f for f in os.listdir(model_dir) if not f.startswith('.')]:
+        logger.warning('No encoder, decoder or vae found in {}.'.format(model_dir))
+        return None
+    encoder_net = tf.keras.models.load_model(model_dir + 'encoder_net.h5')
+    decoder_net = tf.keras.models.load_model(model_dir + 'decoder_net.h5')
+    vae = VAE(encoder_net, decoder_net, state_dict['latent_dim'], beta=state_dict['beta'])
+    vae.load_weights(model_dir + 'vae.ckpt')
+    return vae
+
+
+def init_od_vae(state_dict: Dict,
+                vae: tf.keras.Model) -> OutlierVAE:
+    """
+    Initialize OutlierVAE.
+
+    Parameters
+    ----------
+    state_dict
+        Dictionary containing the latent dimension and beta parameters.
+    vae
+        Loaded VAE.
+
+    Returns
+    -------
+    Initialized OutlierVAE instance.
+    """
+    od = OutlierVAE(threshold=state_dict['threshold'],
+                    score_type=state_dict['score_type'],
+                    vae=vae,
+                    samples=state_dict['samples'])
+    return od
