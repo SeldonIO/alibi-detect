@@ -17,7 +17,6 @@ def outlier_prediction_dict():
     return {"data": DEFAULT_DATA, "meta": DEFAULT_META}
 
 
-# TODO: add save and load fn
 class BaseOutlierDetector(ABC):
     """ Base class for outlier detection algorithms. """
 
