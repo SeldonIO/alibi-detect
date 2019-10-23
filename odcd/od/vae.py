@@ -139,7 +139,7 @@ class OutlierVAE(BaseOutlierDetector, FitMixin, ThresholdMixin):
             pass
         return fscore
 
-    def instance_score(self, fscore: np.ndarray) -> np.ndarray:
+    def instance_score(self, fscore: np.ndarray, outlier_perc: float = 100.) -> np.ndarray:
         """
         Compute instance level outlier scores.
 
@@ -147,15 +147,21 @@ class OutlierVAE(BaseOutlierDetector, FitMixin, ThresholdMixin):
         ----------
         fscore
             Feature level outlier scores.
+        outlier_perc
+            Percentage of sorted feature level outlier scores used to predict instance level outlier.
 
         Returns
         -------
         Instance level outlier scores.
         """
-        axes = tuple(range(len(fscore.shape)))
-        return np.mean(fscore, axis=axes[1:])
+        fscore_flat = fscore.reshape(fscore.shape[0], -1).copy()
+        n_score_features = int(np.ceil(.01 * outlier_perc * fscore_flat.shape[1]))
+        sorted_fscore = np.sort(fscore_flat, axis=1)
+        sorted_fscore_perc = sorted_fscore[:, -n_score_features:]
+        iscore = np.mean(sorted_fscore_perc, axis=1)
+        return iscore
 
-    def score(self, X: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def score(self, X: np.ndarray, outlier_perc: float = 100.) -> Tuple[np.ndarray, np.ndarray]:
         """
         Compute feature and instance level outlier scores.
 
@@ -163,6 +169,8 @@ class OutlierVAE(BaseOutlierDetector, FitMixin, ThresholdMixin):
         ----------
         X
             Batch of instances.
+        outlier_perc
+            Percentage of sorted feature level outlier scores used to predict instance level outlier.
 
         Returns
         -------
@@ -174,13 +182,14 @@ class OutlierVAE(BaseOutlierDetector, FitMixin, ThresholdMixin):
 
         # compute feature and instance level scores
         fscore = self.feature_score(X_samples, X_recon)
-        iscore = self.instance_score(fscore)
+        iscore = self.instance_score(fscore, outlier_perc=outlier_perc)
 
         return fscore, iscore
 
     def predict(self,
                 X: np.ndarray,
                 outlier_type: str = 'instance',
+                outlier_perc: float = 100.,
                 return_feature_score: bool = True,
                 return_instance_score: bool = True) \
             -> Dict[Dict[str, str], Dict[np.ndarray, np.ndarray]]:
@@ -193,6 +202,8 @@ class OutlierVAE(BaseOutlierDetector, FitMixin, ThresholdMixin):
             Batch of instances.
         outlier_type
             Predict outliers at the 'feature' or 'instance' level.
+        outlier_perc
+            Percentage of sorted feature level outlier scores used to predict instance level outlier.
         return_feature_score
             Whether to return feature level outlier scores.
         return_instance_score
@@ -206,7 +217,7 @@ class OutlierVAE(BaseOutlierDetector, FitMixin, ThresholdMixin):
         """
 
         # compute outlier scores
-        fscore, iscore = self.score(X)
+        fscore, iscore = self.score(X, outlier_perc=outlier_perc)
         if outlier_type == 'feature':
             outlier_score = fscore
         elif outlier_type == 'instance':

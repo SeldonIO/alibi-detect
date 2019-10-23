@@ -127,7 +127,7 @@ def load_od(filepath: str) -> Data:
 
     # load outlier detector specific TensorFlow models
     if od_name == 'OutlierVAE':
-        vae = load_tf_vae(filepath, state_dict)  # TODO: check if anything there
+        vae = load_tf_vae(filepath, state_dict)
 
     # initialize outlier detector
     if od_name == 'OutlierVAE':

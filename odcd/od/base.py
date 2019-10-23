@@ -14,7 +14,7 @@ DEFAULT_META = {"name": None,
 
 
 def outlier_prediction_dict():
-    return {"data": DEFAULT_DATA, "meta": DEFAULT_META}
+    return copy.deepcopy({"data": DEFAULT_DATA, "meta": DEFAULT_META})
 
 
 class BaseOutlierDetector(ABC):

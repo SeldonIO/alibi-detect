@@ -13,7 +13,7 @@ def trainer(model: tf.keras.Model,
             buffer_size: int = 1024,
             verbose: bool = True,
             log_metric:  Tuple[str, "tf.keras.metrics"] = None,
-            callbacks: tf.keras.callbacks = None) -> None:  # TODO: incorporate callbacks
+            callbacks: tf.keras.callbacks = None) -> None:  # TODO: incorporate callbacks + LR schedulers
     """
     Train TensorFlow model.
 
