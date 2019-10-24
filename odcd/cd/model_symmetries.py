@@ -68,8 +68,9 @@ class VaeSymmetryFinder(object):
     """Variational Autoencoder designed to find model's symmetries
     """
     def __init__(self, predict_fn, input_shape=(28, 28), output_shape=(10, ),
-                 intermediate_dim=5, latent_dim=2, input_dtype="float32",
-                 intermediate_activation='relu', output_activation='relu', opt='Adam', lr=0.001):
+                 intermediate_dim=5, latent_dim=2, input_dtype="float32", variational=True,
+                 intermediate_activation='relu', output_activation='relu', opt='Adam', lr=0.001,
+                 symm_loss_w=1, latent_loss_w=0):
         self.predict_fn = predict_fn
         self.input_shape = input_shape
         if len(self.input_shape) > 1:
@@ -82,6 +83,9 @@ class VaeSymmetryFinder(object):
         self.intermediate_activation = intermediate_activation
         self.output_activation = output_activation
         self.latent_dim = latent_dim
+        self.variational = variational
+        self.symm_loss_w = symm_loss_w
+        self.latent_loss_w = latent_loss_w
         self.opt = opt
         self.lr = lr
 
@@ -102,9 +106,13 @@ class VaeSymmetryFinder(object):
         # use reparameterization trick to push the sampling out as input
         # note that "output_shape" isn't necessary with the TensorFlow backend
         self.z = tf.keras.layers.Lambda(sampling_gaussian, output_shape=(self.latent_dim,),
-        name='z')([self.z_mean, self.z_log_var])
+                                        name='z')([self.z_mean, self.z_log_var])
 
-        self.x = tf.keras.layers.Dense(self.intermediate_dim, activation=self.intermediate_activation)(self.z)
+        if self.variational:
+            self.x = tf.keras.layers.Dense(self.intermediate_dim, activation=self.intermediate_activation)(self.z)
+        else:
+            self.x = tf.keras.layers.Dense(self.intermediate_dim, activation=self.intermediate_activation)(self.z_mean)
+
         self.vae_outputs = tf.keras.layers.Dense(self.flatten_dim, activation=self.output_activation)(self.x)
         self.vae_outputs = tf.keras.layers.Reshape(target_shape=self.input_shape, dtype=input_dtype,
                                                    name='input_trans')(self.vae_outputs)
@@ -117,7 +125,11 @@ class VaeSymmetryFinder(object):
 
         self.loss = tf.keras.losses.kullback_leibler_divergence(self.model_output_orig, self.model_output_trans)
         self.vae_loss = K.mean(self.loss)
-        self.vae.add_loss(self.vae_loss)
+
+        self.latent_loss = -.5 * tf.reduce_mean(self.z_log_var - tf.square(self.z_mean) - tf.exp(self.z_log_var) + 1)
+
+        self.vae.add_loss(self.symm_loss_w * self.vae_loss + self.latent_loss_w * self.latent_loss)
+
         if self.opt == 'Adam':
             self.optimizer = tf.keras.optimizers.Adam(self.lr)
         elif self.opt == 'RMSprop':
@@ -162,7 +174,8 @@ class VaeSymmetryFinderConv(object):
     """
     def __init__(self, predict_fn, input_shape=(28, 28), output_shape=(10, ), rgb_filters=3,
                  kernel_size=3, filters=32, intermediate_dim=16, latent_dim=2, strides=2, nb_conv_layers=2,
-                 intermediate_activation='relu', output_activation='sigmoid', opt='Adam', lr=0.001):
+                 intermediate_activation='relu', output_activation='sigmoid', opt='Adam', lr=0.001,
+                 variational=True, symm_loss_w = 1, latent_loss_w = 0):
         self.predict_fn = predict_fn
         self.input_shape = input_shape
         self.output_shape = output_shape
@@ -174,6 +187,9 @@ class VaeSymmetryFinderConv(object):
         self.nb_conv_layers = nb_conv_layers
         self.opt = opt
         self.lr = lr
+        self.variational = variational
+        self.symm_loss_w = symm_loss_w
+        self.latent_loss_w = latent_loss_w
         self.intermediate_activation = intermediate_activation
         self.output_activation = output_activation
         self.latent_dim = latent_dim
@@ -200,16 +216,19 @@ class VaeSymmetryFinderConv(object):
         self.x = tf.keras.layers.Flatten()(self.x)
         self.x = tf.keras.layers.Dense(self.intermediate_dim, activation=self.intermediate_activation)(self.x)
         self.x = tf.keras.layers.Dropout(0.25)(self.x)
-        z_mean = tf.keras.layers.Dense(self.latent_dim, name='z_mean')(self.x)
-        z_log_var = tf.keras.layers.Dense(self.latent_dim, name='z_log_var')(self.x)
+        self.z_mean = tf.keras.layers.Dense(self.latent_dim, name='z_mean')(self.x)
+        self.z_log_var = tf.keras.layers.Dense(self.latent_dim, name='z_log_var')(self.x)
 
         # use reparameterization trick to push the sampling out as input
         # note that "output_shape" isn't necessary with the TensorFlow backend
         self.z = tf.keras.layers.Lambda(sampling_gaussian,
                                         output_shape=(self.latent_dim,),
-                                        name='z')([z_mean, z_log_var])
+                                        name='z')([self.z_mean, self.z_log_var])
+        if self.variational:
+            self.x = tf.keras.layers.Dense(self.intermediate_dim, activation=self.intermediate_activation)(self.z)
+        else:
+            self.x = tf.keras.layers.Dense(self.intermediate_dim, activation=self.intermediate_activation)(self.z_mean)
 
-        self.x = tf.keras.layers.Dense(self.intermediate_dim, activation=self.intermediate_activation)(self.z)
         self.x = tf.keras.layers.Dropout(0.25)(self.x)
         self.x = tf.keras.layers.Dense(shape[1] * shape[2] * shape[3], activation=self.intermediate_activation)(self.x)
         self.x = tf.keras.layers.Dropout(0.25)(self.x)
@@ -238,7 +257,11 @@ class VaeSymmetryFinderConv(object):
 
         self.loss = tf.keras.losses.kullback_leibler_divergence(self.model_output_orig, self.model_output_trans)
         self.vae_loss = K.mean(self.loss)
-        self.vae.add_loss(self.vae_loss)
+
+        self.latent_loss = -.5 * tf.reduce_mean(self.z_log_var - tf.square(self.z_mean) - tf.exp(self.z_log_var) + 1)
+
+        self.vae.add_loss(self.symm_loss_w * self.vae_loss + self.latent_loss_w * self.latent_loss)
+
         if self.opt == 'Adam':
             self.optimizer = tf.keras.optimizers.Adam(lr=self.lr)
         elif self.opt == 'RMSprop':
