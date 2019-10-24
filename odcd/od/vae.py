@@ -131,9 +131,38 @@ class OutlierVAE(BaseOutlierDetector, FitMixin, ThresholdMixin):
         # train
         trainer(*args, **kwargs)
 
-    def infer_threshold(self, X: np.ndarray, *args, **kwargs) -> None:
-        # TODO infer threshold level from e.g. percentile
-        pass
+    def infer_threshold(self,
+                        X: np.ndarray,
+                        outlier_type: str = 'instance',
+                        outlier_perc: float = 100.,
+                        threshold_perc: float = 95.
+                        ) -> None:
+        """
+        Update threshold by a value inferred from the percentage of instances considered to be
+        outliers in a sample of the dataset.
+
+        Parameters
+        ----------
+        X
+            Batch of instances.
+        outlier_type
+            Predict outliers at the 'feature' or 'instance' level.
+        outlier_perc
+            Percentage of sorted feature level outlier scores used to predict instance level outlier.
+        threshold_perc
+            Percentage of X considered to be normal based on the outlier score.
+        """
+        # compute outlier scores
+        fscore, iscore = self.score(X, outlier_perc=outlier_perc)
+        if outlier_type == 'feature':
+            outlier_score = fscore
+        elif outlier_type == 'instance':
+            outlier_score = iscore
+        else:
+            raise ValueError('`outlier_score` needs to be either `feature` or `instance`.')
+
+        # update threshold
+        self.threshold = np.percentile(outlier_score, threshold_perc)
 
     def feature_score(self, X_orig: np.ndarray, X_recon: np.ndarray) -> np.ndarray:
         """
@@ -234,7 +263,6 @@ class OutlierVAE(BaseOutlierDetector, FitMixin, ThresholdMixin):
         'meta' has the model's metadata.
         'data' contains the outlier predictions and both feature and instance level outlier scores.
         """
-
         # compute outlier scores
         fscore, iscore = self.score(X, outlier_perc=outlier_perc)
         if outlier_type == 'feature':
