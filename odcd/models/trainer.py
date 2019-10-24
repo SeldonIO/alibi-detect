@@ -8,6 +8,7 @@ def trainer(model: tf.keras.Model,
             X_train: np.ndarray,
             y_train: np.ndarray = None,
             optimizer: tf.keras.optimizers = tf.keras.optimizers.Adam(learning_rate=1e-4),
+            loss_fn_kwargs: dict = None,
             epochs: int = 20,
             batch_size: int = 64,
             buffer_size: int = 1024,
@@ -29,6 +30,8 @@ def trainer(model: tf.keras.Model,
         Training labels.
     optimizer
         Optimizer used for training.
+    loss_fn_kwargs
+        Kwargs for loss function.
     epochs
         Number of training epochs.
     batch_size
@@ -73,7 +76,11 @@ def trainer(model: tf.keras.Model,
                 else:
                     ground_truth = y_train_batch
 
-                loss = loss_fn(ground_truth, preds)  # compute loss
+                # compute loss
+                if loss_fn_kwargs:
+                    loss = loss_fn(ground_truth, preds, **loss_fn_kwargs)
+                else:
+                    loss = loss_fn(ground_truth, preds)
 
                 if model.losses:  # additional model losses
                     loss += sum(model.losses)

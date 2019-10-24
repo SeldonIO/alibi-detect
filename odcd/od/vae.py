@@ -1,6 +1,7 @@
 import logging
 import numpy as np
 import tensorflow as tf
+import tensorflow_probability as tfp
 from typing import Dict, Tuple
 from odcd.models.autoencoder import VAE
 from odcd.models.trainer import trainer
@@ -74,6 +75,7 @@ class OutlierVAE(BaseOutlierDetector, FitMixin, ThresholdMixin):
             X: np.ndarray,
             loss_fn: tf.keras.losses = elbo,
             optimizer: tf.keras.optimizers = tf.keras.optimizers.Adam(learning_rate=1e-3),
+            cov_elbo: dict = dict(sim=.05),
             epochs: int = 20,
             batch_size: int = 64,
             verbose: bool = True,
@@ -91,6 +93,11 @@ class OutlierVAE(BaseOutlierDetector, FitMixin, ThresholdMixin):
             Loss function used for training.
         optimizer
             Optimizer used for training.
+        cov_elbo
+            Dictionary with covariance matrix options in case the elbo loss function is used.
+            Either use the full covariance matrix inferred from X (dict(cov_full=None)),
+            only the variance (dict(cov_diag=None)) or a float representing the same standard deviation
+            for each feature (e.g. dict(sim=.05)).
         epochs
             Number of training epochs.
         batch_size
@@ -110,6 +117,18 @@ class OutlierVAE(BaseOutlierDetector, FitMixin, ThresholdMixin):
                   'verbose': verbose,
                   'log_metric': log_metric,
                   'callbacks': callbacks}
+
+        # initialize covariance matrix if elbo loss fn is used
+        use_elbo = loss_fn.__name__ == 'elbo'
+        cov_elbo_type, cov = [*cov_elbo][0], [*cov_elbo.values()][0]
+        if use_elbo and cov_elbo_type in ['cov_full', 'cov_diag']:
+            cov = tfp.stats.covariance(X.reshape(X.shape[0], -1))
+            if cov_elbo_type == 'cov_diag':  # infer standard deviation from covariance matrix
+                cov = tf.math.sqrt(tf.linalg.diag_part(cov))
+        if use_elbo:
+            kwargs['loss_fn_kwargs'] = {cov_elbo_type: cov}
+
+        # train
         trainer(*args, **kwargs)
 
     def infer_threshold(self, X: np.ndarray, *args, **kwargs) -> None:
