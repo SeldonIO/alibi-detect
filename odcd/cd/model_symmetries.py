@@ -175,7 +175,7 @@ class VaeSymmetryFinderConv(object):
     def __init__(self, predict_fn, input_shape=(28, 28), output_shape=(10, ), rgb_filters=3,
                  kernel_size=3, filters=32, intermediate_dim=16, latent_dim=2, strides=2, nb_conv_layers=2,
                  intermediate_activation='relu', output_activation='sigmoid', opt='Adam', lr=0.001,
-                 variational=True, symm_loss_w = 1, latent_loss_w = 0):
+                 variational=True, symm_loss_w=1, latent_loss_w=0):
         self.predict_fn = predict_fn
         self.input_shape = input_shape
         self.output_shape = output_shape
