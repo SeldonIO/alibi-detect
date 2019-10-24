@@ -5,7 +5,7 @@ import numpy as np
 from sklearn.metrics import accuracy_score, confusion_matrix
 
 
-def make_data_stream(signal, agg='mean', window = 100, start=0):
+def make_data_stream(signal, agg='mean', window=100, start=0):
     if agg == 'window':
         data_stream = []
         for i in range(len(signal)):
