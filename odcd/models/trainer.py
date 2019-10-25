@@ -7,7 +7,7 @@ def trainer(model: tf.keras.Model,
             loss_fn: tf.keras.losses,
             X_train: np.ndarray,
             y_train: np.ndarray = None,
-            optimizer: tf.keras.optimizers = tf.keras.optimizers.Adam(learning_rate=1e-4),
+            optimizer: tf.keras.optimizers = tf.keras.optimizers.Adam(learning_rate=1e-3),
             loss_fn_kwargs: dict = None,
             epochs: int = 20,
             batch_size: int = 64,
@@ -89,7 +89,11 @@ def trainer(model: tf.keras.Model,
             optimizer.apply_gradients(zip(grads, model.trainable_weights))
 
             if verbose:
-                pbar_values = [('loss', loss.numpy())]
+                loss_val = loss.numpy()
+                if loss_val.shape != (batch_size,) and loss_val.shape:
+                    add_mean = np.ones((batch_size - loss_val.shape[0],)) * loss_val.mean()
+                    loss_val = np.r_[loss_val, add_mean]
+                pbar_values = [('loss', loss_val)]
                 if log_metric is not None:
                     log_metric[1](ground_truth, preds)
                     pbar_values.append((log_metric[0], log_metric[1].result().numpy()))
