@@ -126,7 +126,7 @@ class OutlierVAE(BaseOutlierDetector, FitMixin, ThresholdMixin):
             if cov_elbo_type == 'cov_diag':  # infer standard deviation from covariance matrix
                 cov = tf.math.sqrt(tf.linalg.diag_part(cov))
         if use_elbo:
-            kwargs['loss_fn_kwargs'] = {cov_elbo_type: cov}
+            kwargs['loss_fn_kwargs'] = {cov_elbo_type: tf.dtypes.cast(cov, tf.float32)}
 
         # train
         trainer(*args, **kwargs)
