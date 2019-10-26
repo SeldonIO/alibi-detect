@@ -207,7 +207,7 @@ def plot_feature_outlier_tabular(od_preds: Dict,
         else:
             plt.bar(ticks, X_idx, width=width, color='b', align='center')
         if feature_names is not None:
-            plt.xticks(ticks=ticks, labels=feature_names, rotation=45)
+            plt.xticks(ticks=ticks, labels=list(np.array(feature_names)[keep_cols]), rotation=45)
         plt.title('Feature Values')
         plt.xlabel('Features')
         plt.ylabel('Feature Values')
@@ -219,7 +219,7 @@ def plot_feature_outlier_tabular(od_preds: Dict,
         if threshold is not None:
             plt.plot(np.ones(len(ticks)) * threshold, 'r')
         if feature_names is not None:
-            plt.xticks(ticks=ticks, labels=feature_names, rotation=45)
+            plt.xticks(ticks=ticks, labels=list(np.array(feature_names)[keep_cols]), rotation=45)
         plt.title('Feature Level Outlier Score')
         plt.xlabel('Features')
         plt.ylabel('Outlier Score')
