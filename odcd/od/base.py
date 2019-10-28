@@ -49,7 +49,7 @@ class BaseOutlierDetector(ABC):
 
 class FitMixin(ABC):
     @abstractmethod
-    def fit(self, X: np.ndarray, *args, **kwargs) -> None:
+    def fit(self, X: np.ndarray) -> None:
         pass
 
 
