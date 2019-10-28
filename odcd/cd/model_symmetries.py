@@ -175,7 +175,7 @@ class VaeSymmetryFinderConv(object):
     def __init__(self, predict_fn, input_shape=(28, 28), output_shape=(10, ), rgb_filters=3,
                  kernel_size=3, filters=32, intermediate_dim=16, latent_dim=2, strides=2, nb_conv_layers=2,
                  intermediate_activation='relu', output_activation='sigmoid', opt='Adam', lr=0.001,
-                 variational=True, symm_loss_w=1, latent_loss_w=0):
+                 variational=True, loss_type='symm'):
         self.predict_fn = predict_fn
         self.input_shape = input_shape
         self.output_shape = output_shape
@@ -188,8 +188,7 @@ class VaeSymmetryFinderConv(object):
         self.opt = opt
         self.lr = lr
         self.variational = variational
-        self.symm_loss_w = symm_loss_w
-        self.latent_loss_w = latent_loss_w
+        self.loss_type = loss_type
         self.intermediate_activation = intermediate_activation
         self.output_activation = output_activation
         self.latent_dim = latent_dim
@@ -255,12 +254,23 @@ class VaeSymmetryFinderConv(object):
         self.vae = tf.keras.models.Model(self.inputs, [self.vae_outputs, self.model_output_orig,
                                                        self.model_output_trans], name='vae_mlp')
 
-        self.loss = tf.keras.losses.kullback_leibler_divergence(self.model_output_orig, self.model_output_trans)
-        self.vae_loss = K.mean(self.loss)
+        if self.loss_type == 'symm':
+            self.loss = tf.keras.losses.kullback_leibler_divergence(self.model_output_orig, self.model_output_trans)
+            self.vae_loss = K.mean(self.loss)
+            self.vae.add_loss(self.vae_loss)
+        else:
+            if self.loss_type == 'mse':
+                self.reconstruction_loss = tf.keras.losses.mse(K.flatten(self.inputs), K.flatten(self.vae_outputs))
+            elif self.loss_type == 'xent':
+                self.reconstruction_loss = tf.keras.losses.binary_crossentropy(K.flatten(self.inputs),
+                                                                               K.flatten(self.vae_outputs))
 
-        self.latent_loss = -.5 * tf.reduce_mean(self.z_log_var - tf.square(self.z_mean) - tf.exp(self.z_log_var) + 1)
-
-        self.vae.add_loss(self.symm_loss_w * self.vae_loss + self.latent_loss_w * self.latent_loss)
+            self.reconstruction_loss *= input_shape[0] * input_shape[1]
+            self.latent_loss = 1 + self.z_log_var - K.square(self.z_mean) - K.exp(self.z_log_var)
+            self.latent_loss = K.sum(self.latent_loss, axis=-1)
+            self.latent_loss *= -0.5
+            self.vae_loss = K.mean(self.reconstruction_loss + self.latent_loss)
+            self.vae.add_loss(self.vae_loss)
 
         if self.opt == 'Adam':
             self.optimizer = tf.keras.optimizers.Adam(lr=self.lr)
