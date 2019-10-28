@@ -6,12 +6,13 @@ from typing import Dict, Union
 from odcd.models.autoencoder import VAE
 from odcd.od.base import BaseOutlierDetector
 from odcd.od.vae import OutlierVAE
+from odcd.od.mahalanobis import Mahalanobis
 
 logger = logging.getLogger(__name__)
 
-Data = Union[BaseOutlierDetector, OutlierVAE]
+Data = Union[BaseOutlierDetector, OutlierVAE, Mahalanobis]
 
-DEFAULT_OUTLIER_DETECTORS = ['OutlierVAE']
+DEFAULT_OUTLIER_DETECTORS = ['OutlierVAE', 'Mahalanobis']
 
 
 def save_od(od: Data,
@@ -41,6 +42,8 @@ def save_od(od: Data,
     # save outlier detector specific parameters
     if od_name == 'OutlierVAE':
         state_dict = state_vae(od)
+    elif od_name == 'Mahalanobis':
+        state_dict = state_mahalanobis(od)
 
     with open(filepath + od_name + '.pickle', 'wb') as f:
         pickle.dump(state_dict, f)
@@ -48,6 +51,30 @@ def save_od(od: Data,
     # save outlier detector specific TensorFlow models
     if od_name == 'OutlierVAE':
         save_tf_vae(od, filepath)
+
+
+def state_mahalanobis(od: Mahalanobis) -> Dict:
+    """
+    Mahalanobis parameters to save.
+
+    Parameters
+    ----------
+    od
+        Outlier detector object.
+    """
+    state_dict = {'threshold': od.threshold,
+                  'n_components': od.n_components,
+                  'std_clip': od.std_clip,
+                  'start_clip': od.start_clip,
+                  'max_n': od.max_n,
+                  'cat_vars': od.cat_vars,
+                  'ohe': od.ohe,
+                  'd_abs': od.d_abs,
+                  'clip': od.clip,
+                  'mean': od.mean,
+                  'C': od.C,
+                  'n': od.n}
+    return state_dict
 
 
 def state_vae(od: OutlierVAE) -> Dict:
@@ -132,6 +159,8 @@ def load_od(filepath: str) -> Data:
     # initialize outlier detector
     if od_name == 'OutlierVAE':
         od = init_od_vae(state_dict, vae)
+    elif od_name == 'Mahalanobis':
+        od = init_od_mahalanobis(state_dict)
 
     od.meta = meta_dict
     return od
@@ -172,7 +201,7 @@ def init_od_vae(state_dict: Dict,
     Parameters
     ----------
     state_dict
-        Dictionary containing the latent dimension and beta parameters.
+        Dictionary containing the parameter values.
     vae
         Loaded VAE.
 
@@ -184,4 +213,32 @@ def init_od_vae(state_dict: Dict,
                     score_type=state_dict['score_type'],
                     vae=vae,
                     samples=state_dict['samples'])
+    return od
+
+
+def init_od_mahalanobis(state_dict: Dict) -> Mahalanobis:
+    """
+    Initialize Mahalanobis.
+
+    Parameters
+    ----------
+    state_dict
+        Dictionary containing the parameter values.
+
+    Returns
+    -------
+    Initialized Mahalanobis instance.
+    """
+    od = Mahalanobis(threshold=state_dict['threshold'],
+                     n_components=state_dict['n_components'],
+                     std_clip=state_dict['std_clip'],
+                     start_clip=state_dict['start_clip'],
+                     max_n=state_dict['max_n'],
+                     cat_vars=state_dict['cat_vars'],
+                     ohe=state_dict['ohe'])
+    od.d_abs = state_dict['d_abs']
+    od.clip = state_dict['clip']
+    od.mean = state_dict['mean']
+    od.C = state_dict['C']
+    od.n = state_dict['n']
     return od

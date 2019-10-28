@@ -7,7 +7,8 @@ from typing import Dict
 def plot_instance_outlier(od_preds: Dict,
                           target: np.ndarray,
                           labels: np.ndarray,
-                          threshold: float) -> None:
+                          threshold: float,
+                          ylim: tuple = (None, None)) -> None:
     """
     Scatter plot of a batch of outlier scores compared to the outlier threshold.
 
@@ -21,6 +22,8 @@ def plot_instance_outlier(od_preds: Dict,
         List with names of classification labels.
     threshold
         Threshold used to classify outliers.
+    ylim
+        Min and max y-axis values.
     """
     scores = od_preds['data']['instance_score']
     df = pd.DataFrame(dict(idx=np.arange(len(scores)), score=scores, label=target))
@@ -29,6 +32,7 @@ def plot_instance_outlier(od_preds: Dict,
     for name, group in groups:
         ax.plot(group.idx, group.score, marker='o', linestyle='', ms=6, label=labels[name])
     plt.plot(np.arange(len(scores)), np.ones(len(scores)) * threshold, color='g', label='Threshold')
+    plt.ylim(ylim)
     plt.xlabel('Number of Instances')
     plt.ylabel('Instance Level Outlier Score')
     ax.legend()

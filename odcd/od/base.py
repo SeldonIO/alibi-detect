@@ -42,7 +42,7 @@ class BaseOutlierDetector(ABC):
         pass
 
     @abstractmethod
-    def predict(self, X: np.ndarray, *args, **kwargs) \
+    def predict(self, X: np.ndarray) \
             -> Dict[Dict[str, str], Dict[np.ndarray, np.ndarray]]:
         pass
 
@@ -55,5 +55,5 @@ class FitMixin(ABC):
 
 class ThresholdMixin(ABC):
     @abstractmethod
-    def infer_threshold(self, X: np.ndarray, *args, **kwargs) -> None:
+    def infer_threshold(self, X: np.ndarray) -> None:
         pass
