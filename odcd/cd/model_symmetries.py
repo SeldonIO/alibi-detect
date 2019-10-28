@@ -175,7 +175,7 @@ class VaeSymmetryFinderConv(object):
     def __init__(self, predict_fn, input_shape=(28, 28), output_shape=(10, ), rgb_filters=3,
                  kernel_size=3, filters=32, intermediate_dim=16, latent_dim=2, strides=2, nb_conv_layers=2,
                  intermediate_activation='relu', output_activation='sigmoid', opt='Adam', lr=0.001,
-                 variational=True, loss_type='symm'):
+                 variational=True, loss_type='symm', add_latent_loss=False):
         self.predict_fn = predict_fn
         self.input_shape = input_shape
         self.output_shape = output_shape
@@ -192,6 +192,7 @@ class VaeSymmetryFinderConv(object):
         self.intermediate_activation = intermediate_activation
         self.output_activation = output_activation
         self.latent_dim = latent_dim
+        self.add_latent_loss = add_latent_loss
 
         # It works for keras models only for now
         if isinstance(self.predict_fn, tf.keras.models.Model) or isinstance(self.predict_fn, keras.models.Model):
@@ -238,7 +239,6 @@ class VaeSymmetryFinderConv(object):
                                                      activation='relu', strides=self.strides, padding='same')(self.x)
             self.x = tf.keras.layers.Dropout(0.25)(self.x)
             self.filters //= 2
-            # self.strides //= 2
 
         self.vae_outputs = tf.keras.layers.Conv2DTranspose(filters=self.rgb_filters,
                                                            kernel_size=self.kernel_size,
@@ -246,38 +246,41 @@ class VaeSymmetryFinderConv(object):
                                                            padding='same',
                                                            name='decoder_output')(self.x)
 
-        # instantiate decoder model
-
         self.model_output_trans = self.predict_fn(self.vae_outputs)
         self.model_output_orig = self.predict_fn(self.inputs)
 
         self.vae = tf.keras.models.Model(self.inputs, [self.vae_outputs, self.model_output_orig,
                                                        self.model_output_trans], name='vae_mlp')
 
+        # Define loss
         if self.loss_type == 'symm':
             self.loss = tf.keras.losses.kullback_leibler_divergence(self.model_output_orig, self.model_output_trans)
-            self.vae_loss = K.mean(self.loss)
-            self.vae.add_loss(self.vae_loss)
-        else:
-            if self.loss_type == 'mse':
-                self.reconstruction_loss = tf.keras.losses.mse(K.flatten(self.inputs), K.flatten(self.vae_outputs))
-            elif self.loss_type == 'xent':
-                self.reconstruction_loss = tf.keras.losses.binary_crossentropy(K.flatten(self.inputs),
+        elif self.loss_type == 'mse':
+            self.loss = tf.keras.losses.mse(K.flatten(self.inputs), K.flatten(self.vae_outputs))
+            self.loss *= input_shape[0] * input_shape[1]
+        elif self.loss_type == 'xent':
+            self.loss = tf.keras.losses.binary_crossentropy(K.flatten(self.inputs),
                                                                                K.flatten(self.vae_outputs))
+            self.loss *= input_shape[0] * input_shape[1]
 
-            self.reconstruction_loss *= input_shape[0] * input_shape[1]
+        if self.add_latent_loss:
             self.latent_loss = 1 + self.z_log_var - K.square(self.z_mean) - K.exp(self.z_log_var)
             self.latent_loss = K.sum(self.latent_loss, axis=-1)
             self.latent_loss *= -0.5
-            self.vae_loss = K.mean(self.reconstruction_loss + self.latent_loss)
-            self.vae.add_loss(self.vae_loss)
+            self.vae_loss = K.mean(self.loss + self.latent_loss)
+        else:
+            self.vae_loss = K.mean(self.loss)
 
+        self.vae.add_loss(self.vae_loss)
+
+        # Define optimizer
         if self.opt == 'Adam':
             self.optimizer = tf.keras.optimizers.Adam(lr=self.lr)
         elif self.opt == 'RMSprop':
             self.optimizer = tf.keras.optimizers.RMSprop(lr=self.lr)
+
+        # Compile
         self.vae.compile(optimizer=self.optimizer)
-        print('Vae')
         self.vae.summary()
 
     def fit(self, X_train, x_test=None, epochs=2, batch_size=128):
