@@ -24,7 +24,7 @@ class IsolationForest(BaseOutlierDetector, FitMixin, ThresholdMixin):
         Parameters
         ----------
         threshold
-            Mahalanobis distance threshold used to classify outliers.
+            Threshold used for outlier score to determine outliers.
         n_estimators
             Number of base estimators in the ensemble.
         max_samples
