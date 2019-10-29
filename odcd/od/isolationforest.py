@@ -7,10 +7,10 @@ from odcd.od.base import BaseOutlierDetector, FitMixin, ThresholdMixin, outlier_
 logger = logging.getLogger(__name__)
 
 
-class IsolationForest(BaseOutlierDetector, FitMixin, ThresholdMixin):
+class IForest(BaseOutlierDetector, FitMixin, ThresholdMixin):
 
     def __init__(self,
-                 threshold: float,
+                 threshold: float = None,
                  n_estimators: int = 100,
                  max_samples: Union[str, int, float] = 'auto',
                  max_features: Union[int, float] = 1.,

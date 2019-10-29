@@ -7,12 +7,13 @@ from odcd.models.autoencoder import VAE
 from odcd.od.base import BaseOutlierDetector
 from odcd.od.vae import OutlierVAE
 from odcd.od.mahalanobis import Mahalanobis
+from odcd.od.isolationforest import IForest
 
 logger = logging.getLogger(__name__)
 
-Data = Union[BaseOutlierDetector, OutlierVAE, Mahalanobis]
+Data = Union[BaseOutlierDetector, OutlierVAE, Mahalanobis, IForest]
 
-DEFAULT_OUTLIER_DETECTORS = ['OutlierVAE', 'Mahalanobis']
+DEFAULT_OUTLIER_DETECTORS = ['OutlierVAE', 'Mahalanobis', 'IForest']
 
 
 def save_od(od: Data,
@@ -44,6 +45,8 @@ def save_od(od: Data,
         state_dict = state_vae(od)
     elif od_name == 'Mahalanobis':
         state_dict = state_mahalanobis(od)
+    elif od_name == 'IForest':
+        state_dict = state_iforest(od)
 
     with open(filepath + od_name + '.pickle', 'wb') as f:
         pickle.dump(state_dict, f)
@@ -51,6 +54,20 @@ def save_od(od: Data,
     # save outlier detector specific TensorFlow models
     if od_name == 'OutlierVAE':
         save_tf_vae(od, filepath)
+
+
+def state_iforest(od: IForest) -> Dict:
+    """
+    Isolation forest parameters to save.
+
+    Parameters
+    ----------
+    od
+        Outlier detector object.
+    """
+    state_dict = {'threshold': od.threshold,
+                  'isolationforest': od.isolationforest}
+    return state_dict
 
 
 def state_mahalanobis(od: Mahalanobis) -> Dict:
@@ -152,15 +169,14 @@ def load_od(filepath: str) -> Data:
     # load outlier detector specific parameters
     state_dict = pickle.load(open(filepath + od_name + '.pickle', 'rb'))
 
-    # load outlier detector specific TensorFlow models
-    if od_name == 'OutlierVAE':
-        vae = load_tf_vae(filepath, state_dict)
-
     # initialize outlier detector
     if od_name == 'OutlierVAE':
+        vae = load_tf_vae(filepath, state_dict)
         od = init_od_vae(state_dict, vae)
     elif od_name == 'Mahalanobis':
         od = init_od_mahalanobis(state_dict)
+    elif od_name == 'IForest':
+        od = init_od_iforest(state_dict)
 
     od.meta = meta_dict
     return od
@@ -241,4 +257,22 @@ def init_od_mahalanobis(state_dict: Dict) -> Mahalanobis:
     od.mean = state_dict['mean']
     od.C = state_dict['C']
     od.n = state_dict['n']
+    return od
+
+
+def init_od_iforest(state_dict: Dict) -> IForest:
+    """
+    Initialize isolation forest.
+
+    Parameters
+    ----------
+    state_dict
+        Dictionary containing the parameter values.
+
+    Returns
+    -------
+    Initialized IForest instance.
+    """
+    od = IForest(threshold=state_dict['threshold'])
+    od.isolationforest = state_dict['isolationforest']
     return od
