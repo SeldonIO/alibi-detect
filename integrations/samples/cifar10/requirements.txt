@@ -1,0 +1,4 @@
+tensorflow>=2.0.0
+tensorflow_probability
+matplotlib
+pandas
