@@ -8,10 +8,33 @@ EVENT_TYPE = "seldon.outlier"
 
 
 class Cifar10ODCDModel(odcdserver.ODCDModel):  # pylint:disable=c-extension-no-member
-    def __init__(self, name: str, model_dir: str):
-        super().__init__(name, model_dir)
+    def __init__(self, name: str, storage_uri: str):
+        """
+        CIFAR10 Outlier Model
+
+        Parameters
+        ----------
+        name
+             Name of the model
+        storage_uri
+             Storage location
+        """
+        super().__init__(name, storage_uri)
 
     def transform(self, inputs: List) -> List:
+        """
+        Transform the request to that expected by the model.
+
+        Parameters
+        ----------
+        inputs
+             Raw inputs
+
+        Returns
+        -------
+             Transformed inputs
+
+        """
         X = np.array(inputs)
         X = X / 2.0 + 0.5
         X = np.transpose(X, (0, 2, 3, 1))

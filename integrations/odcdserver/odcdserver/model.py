@@ -15,19 +15,48 @@ HEADER_RETURN_INSTANCE_SCORE = "odcd-return-instance-score"
 HEADER_OUTLIER_TYPE = "odcd-outlier-type"
 
 class ODCDModel(ceserver.CEModel):  # pylint:disable=c-extension-no-member
-    def __init__(self, name: str, model_dir: str):
+    def __init__(self, name: str, storage_uri: str):
+        """
+        Outlier Detection / Concept Drift Model
+
+        Parameters
+        ----------
+        name
+             The name of the model
+        storage_uri
+             The URI location of the model
+        """
         super().__init__(name)
         self.name = name
-        self.model_dir = model_dir
+        self.storage_uri = storage_uri
         self.ready = False
         self.odcd = None
 
     def load(self):
-        model_folder = kfserving.Storage.download(self.model_dir)
+        """
+        Load the model from storage
+
+        """
+        model_folder = kfserving.Storage.download(self.storage_uri)
         self.odcd = load_od(model_folder)
         self.ready = True
 
     def process_event(self, inputs: List, headers: Dict) -> Dict:
+        """
+        Process the event and return ODCD score
+
+        Parameters
+        ----------
+        inputs
+             Input data
+        headers
+             Header options
+
+        Returns
+        -------
+             ODCD response
+
+        """
         try:
             X = np.array(inputs)
         except Exception as e:

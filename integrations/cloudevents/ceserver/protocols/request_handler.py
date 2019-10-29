@@ -7,7 +7,18 @@ class RequestHandler(object):
         self.request = request
 
     def validate(self):
+        """
+        Validate the request
+
+        """
         raise NotImplementedError
 
     def extract_request(self) -> List:
+        """
+        Extract the request
+
+        Returns
+        -------
+             A list
+        """
         raise NotImplementedError

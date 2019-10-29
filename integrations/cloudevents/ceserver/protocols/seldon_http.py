@@ -78,10 +78,10 @@ class SeldonRequestHandler(RequestHandler):
                 reason="Expected key \"data\" in request body"
             )
         ty = _get_request_ty(self.request)
-        if not (ty == SeldonPayload.TENSOR or ty == SeldonPayload.NDARRAY):
+        if not (ty == SeldonPayload.TENSOR or ty == SeldonPayload.NDARRAY or ty == SeldonPayload.TFTENSOR):
             raise tornado.web.HTTPError(
                 status_code=HTTPStatus.BAD_REQUEST,
-                reason="\"data\" key should contain either \"tensor\",\"ndarray\""
+                reason="\"data\" key should contain either \"tensor\",\"ndarray\", or \"tftensor\""
             )
 
     def extract_request(self) -> List:

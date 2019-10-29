@@ -10,7 +10,7 @@ setup(
     version='0.1.0',
     author_email='cc@seldon.io',
     license='https://github.com/seldonio/odcd/LICENSE',
-    url='https://github.com/seldonio/odcd/integrations/samples/cifar10',
+    url='https://github.com/seldonio/odcd/integrations/samples/kfserving/cifar10',
     description='Cifar10 ODCD Server for use inside kfserving ',
     python_requires='>3.4',
     packages=find_packages("cifar10od"),

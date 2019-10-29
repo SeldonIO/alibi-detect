@@ -22,6 +22,7 @@ from cloudevents.sdk.event import v02
 DEFAULT_HTTP_PORT = 8080
 ODCD_REQUEST_HEADER_PREFIX = "odcd-"
 
+
 class Protocol(Enum):
     tensorflow_http = "tensorflow.http"
     seldon_http = "seldon.http"
@@ -46,6 +47,18 @@ logging.basicConfig(level=CESERVER_LOGLEVEL)
 class CEServer(object):
     def __init__(self, protocol: Protocol = args.protocol, http_port: int = args.http_port,
                  reply_url: str = args.reply_url):
+        """
+        CloudEvents server
+
+        Parameters
+        ----------
+        protocol
+             wire protocol
+        http_port
+             http port to listen on
+        reply_url
+             reply url to send response event
+        """
         self.registered_model: CEModel = None
         self.http_port = http_port
         self.protocol = protocol
@@ -64,6 +77,15 @@ class CEServer(object):
         ])
 
     def start(self, model: CEModel):
+        """
+        Start the server
+
+        Parameters
+        ----------
+        model
+             The model to load
+
+        """
         self.register_model(model)
 
         self._http_server = tornado.httpserver.HTTPServer(self.create_application())
@@ -81,14 +103,38 @@ class CEServer(object):
 
 
 def get_request_handler(protocol, request: Dict) -> RequestHandler:
+    """
+    Create a request handler for the data
+
+    Parameters
+    ----------
+    protocol
+         Protocol to use
+    request
+         The incoming request
+    Returns
+    -------
+         A Request Handler for the desired protocol
+
+    """
     if protocol == Protocol.tensorflow_http:
         return TensorflowRequestHandler(request)
     else:
         return SeldonRequestHandler(request)
 
 
-# Send Cloudevent to URL
 def sendCloudEvent(event: v02.Event, url: str):
+    """
+    Send CloudEvent
+
+    Parameters
+    ----------
+    event
+         CloudEvent to send
+    url
+         Url to send event
+
+    """
     http_marshaller = marshaller.NewDefaultHTTPMarshaller()
     binary_headers, binary_data = http_marshaller.ToRequest(
         event, converters.TypeBinary, json.dumps)
@@ -107,11 +153,28 @@ def sendCloudEvent(event: v02.Event, url: str):
 class EventHandler(tornado.web.RequestHandler):
 
     def initialize(self, protocol: str, model: CEModel, reply_url: str):
+        """
+        Event Handler
+
+        Parameters
+        ----------
+        protocol
+             The protocol to expect
+        model
+             The model to use
+        reply_url
+             The reply url to send model responses
+
+        """
         self.protocol = protocol
         self.model = model
         self.reply_url = reply_url
 
-    def post(self, name: str = ""):
+    def post(self):
+        """
+        Handle post request. Extract data. Call event handler and optionally send a reply event.
+
+        """
         if not self.model.ready:
             self.model.load()
 
