@@ -6,6 +6,10 @@ import numpy as np
 import keras
 from scipy.stats import entropy
 import types
+from keras.models import Model
+from keras.losses import kullback_leibler_divergence, mse, binary_crossentropy
+from keras.optimizers import Adam, RMSprop
+from keras.layers import Input, Conv2D, Flatten, Lambda, Dense, Dropout, Reshape, Conv2DTranspose
 
 
 def sampling_gaussian(args):
@@ -314,6 +318,153 @@ class VaeSymmetryFinderConv(object):
 
     def signal(self, x, amp=1):
         return amp * entropy(self.vae.predict(x)[1].T, self.vae.predict(x)[2].T)
+
+
+class VaeSymmetryFinderConvKeras(object):
+    """Variational Autoencoder designed to find model's symmetries
+    """
+    def __init__(self, predict_fn, input_shape=(28, 28), output_shape=(10, ), rgb_filters=3,
+                 kernel_size=3, filters=32, intermediate_dim=16, latent_dim=2, strides=2, nb_conv_layers=2,
+                 intermediate_activation='relu', output_activation='sigmoid', opt='Adam', lr=0.001,
+                 variational=True, loss_type='symm', add_latent_loss=False):
+        self.predict_fn = predict_fn
+        self.input_shape = input_shape
+        self.output_shape = output_shape
+        self.intermediate_dim = intermediate_dim
+        self.kernel_size = kernel_size
+        self.filters = filters
+        self.rgb_filters = rgb_filters
+        self.strides = strides
+        self.nb_conv_layers = nb_conv_layers
+        self.opt = opt
+        self.lr = lr
+        self.variational = variational
+        self.loss_type = loss_type
+        self.intermediate_activation = intermediate_activation
+        self.output_activation = output_activation
+        self.latent_dim = latent_dim
+        self.add_latent_loss = add_latent_loss
+
+        # It works for keras models only for now
+        if isinstance(self.predict_fn, tf.keras.models.Model) or isinstance(self.predict_fn, keras.models.Model):
+            for layer in self.predict_fn.layers:
+                layer.trainable = False
+        else:
+            print('predict_fn type:', type(self.predict_fn))
+            pass
+            #raise NotImplementedError
+
+        self.inputs = Input(shape=self.input_shape, name='encoder_input')
+        self.x = self.inputs
+        for i in range(self.nb_conv_layers):
+            self.filters *= 2
+            self.x = Conv2D(filters=self.filters, kernel_size=self.kernel_size,
+                                            activation='relu', strides=self.strides, padding='same')(self.x)
+            self.x = Dropout(0.25)(self.x)
+
+        # shape info needed to build decoder model
+        shape = K.int_shape(self.x)
+
+        # generate latent vector Q(z|X)
+        self.x = Flatten()(self.x)
+        self.x = Dense(self.intermediate_dim, activation=self.intermediate_activation)(self.x)
+        self.x = Dropout(0.25)(self.x)
+        self.z_mean = Dense(self.latent_dim, name='z_mean')(self.x)
+        self.z_log_var = Dense(self.latent_dim, name='z_log_var')(self.x)
+
+        # use reparameterization trick to push the sampling out as input
+        # note that "output_shape" isn't necessary with the TensorFlow backend
+        self.z = Lambda(sampling_gaussian,
+                        output_shape=(self.latent_dim,),
+                        name='z')([self.z_mean, self.z_log_var])
+        if self.variational:
+            self.x = Dense(self.intermediate_dim, activation=self.intermediate_activation)(self.z)
+        else:
+            self.x = Dense(self.intermediate_dim, activation=self.intermediate_activation)(self.z_mean)
+
+        self.x = Dropout(0.25)(self.x)
+        self.x = Dense(shape[1] * shape[2] * shape[3], activation=self.intermediate_activation)(self.x)
+        self.x = Dropout(0.25)(self.x)
+        self.x = Reshape((shape[1], shape[2], shape[3]))(self.x)
+
+        for i in range(self.nb_conv_layers):
+            self.x = Conv2DTranspose(filters=self.filters, kernel_size=self.kernel_size,
+                                     activation='relu', strides=self.strides, padding='same')(self.x)
+            self.x = Dropout(0.25)(self.x)
+            self.filters //= 2
+
+        self.vae_outputs = Conv2DTranspose(filters=self.rgb_filters,
+                                           kernel_size=self.kernel_size,
+                                           activation=self.output_activation,
+                                           padding='same',
+                                           name='decoder_output')(self.x)
+
+        self.model_output_trans = self.predict_fn(self.vae_outputs)
+        self.model_output_orig = self.predict_fn(self.inputs)
+
+        self.vae = Model(self.inputs, [self.vae_outputs, self.model_output_orig,
+                                       self.model_output_trans], name='vae_mlp')
+
+        # Define loss
+        if self.loss_type == 'symm':
+            self.loss = kullback_leibler_divergence(self.model_output_orig, self.model_output_trans)
+        elif self.loss_type == 'mse':
+            self.loss = mse(K.flatten(self.inputs), K.flatten(self.vae_outputs))
+            self.loss *= input_shape[0] * input_shape[1]
+        elif self.loss_type == 'xent':
+            self.loss = binary_crossentropy(K.flatten(self.inputs), K.flatten(self.vae_outputs))
+            self.loss *= input_shape[0] * input_shape[1]
+
+        if self.add_latent_loss:
+            self.latent_loss = 1 + self.z_log_var - K.square(self.z_mean) - K.exp(self.z_log_var)
+            self.latent_loss = K.sum(self.latent_loss, axis=-1)
+            self.latent_loss *= -0.5
+            self.vae_loss = K.mean(self.loss + self.latent_loss)
+        else:
+            self.vae_loss = K.mean(self.loss)
+
+        self.vae.add_loss(self.vae_loss)
+
+        # Define optimizer
+        if self.opt == 'Adam':
+            self.optimizer = Adam(lr=self.lr)
+        elif self.opt == 'RMSprop':
+            self.optimizer = RMSprop(lr=self.lr)
+
+        # Compile
+        self.vae.compile(optimizer=self.optimizer)
+        self.vae.summary()
+
+    def fit(self, X_train, x_test=None, epochs=2, batch_size=128):
+        if x_test is not None:
+            self.vae.fit(X_train,
+                         epochs=epochs,
+                         batch_size=batch_size,
+                         validation_data=(x_test, None))
+        else:
+            self.vae.fit(X_train,
+                         epochs=epochs,
+                         batch_size=batch_size)
+
+    def save(self, arch_path='vae_arch.json', weights_path='vae_weights.h5'):
+        json_model = self.vae.to_json()
+        with open(arch_path, 'w') as f:
+            f.write(json_model)
+            f.close()
+        self.vae.save_weights(weights_path)
+
+    def transform(self, x):
+        return self.vae.predict(x)[0]
+
+    def predict_original(self, x):
+        return self.vae.predict(x)[1]
+
+    def transform_predict(self, x):
+        return self.vae.predict(x)[2]
+
+    def signal(self, x, amp=1):
+        return amp * entropy(self.vae.predict(x)[1].T, self.vae.predict(x)[2].T)
+
 
 
 class VaeSymmetryFinderNlp(object):
