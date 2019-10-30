@@ -7,7 +7,7 @@ import keras
 from scipy.stats import entropy
 import types
 from keras.models import Model
-from keras.losses import kullback_leibler_divergence, mse, binary_crossentropy
+from keras.losses import kullback_leibler_divergence, mse, binary_crossentropy, categorical_crossentropy
 from keras.optimizers import Adam, RMSprop
 from keras.layers import Input, Conv2D, Flatten, Lambda, Dense, Dropout, Reshape, Conv2DTranspose
 
@@ -408,6 +408,8 @@ class VaeSymmetryFinderConvKeras(object):
         # Define loss
         if self.loss_type == 'symm':
             self.loss = kullback_leibler_divergence(self.model_output_orig, self.model_output_trans)
+        if self.loss_type == 'crossentr':
+            self.loss = categorical_crossentropy(self.model_output_orig, self.model_output_trans)
         elif self.loss_type == 'mse':
             self.loss = mse(K.flatten(self.inputs), K.flatten(self.vae_outputs))
             self.loss *= input_shape[0] * input_shape[1]
