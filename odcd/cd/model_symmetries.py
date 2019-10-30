@@ -408,7 +408,7 @@ class VaeSymmetryFinderConvKeras(object):
         # Define loss
         if self.loss_type == 'symm':
             self.loss = kullback_leibler_divergence(self.model_output_orig, self.model_output_trans)
-        if self.loss_type == 'crossentr':
+        elif self.loss_type == 'crossentr':
             self.loss = categorical_crossentropy(self.model_output_orig, self.model_output_trans)
         elif self.loss_type == 'mse':
             self.loss = mse(K.flatten(self.inputs), K.flatten(self.vae_outputs))
