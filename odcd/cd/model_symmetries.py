@@ -199,7 +199,9 @@ class VaeSymmetryFinderConv(object):
             for layer in self.predict_fn.layers:
                 layer.trainable = False
         else:
-            raise NotImplementedError
+            print('predict_fn type:', type(self.predict_fn))
+            pass
+            #raise NotImplementedError
 
         self.inputs = tf.keras.layers.Input(shape=self.input_shape, name='encoder_input')
         self.x = self.inputs
