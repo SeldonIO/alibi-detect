@@ -466,7 +466,8 @@ class VaeSymmetryFinderConvKeras(object):
         return self.vae.predict(x)[2]
 
     def signal(self, x, amp=1):
-        return amp * entropy(self.vae.predict(x)[1].T, self.vae.predict(x)[2].T)
+        return amp * 0.5 * (entropy(self.vae.predict(x)[1].T, self.vae.predict(x)[2].T) +
+                            entropy(self.vae.predict(x)[2].T, self.vae.predict(x)[1].T))
 
 
 
