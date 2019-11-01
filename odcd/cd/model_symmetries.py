@@ -396,7 +396,7 @@ class VaeSymmetryFinderConvKeras(object):
                                      activation='relu', strides=self.strides, padding='same')(self.x)
             self.x = Dropout(self.dropout)(self.x)
             #self.x = Conv2DTranspose(filters=self.filters, kernel_size=self.kernel_size,
-                                     activation='relu', strides=self.strides, padding='same')(self.x)
+            #                         activation='relu', strides=self.strides, padding='same')(self.x)
             #self.x = Dropout(self.dropout)(self.x)
             self.filters //= 2
 
