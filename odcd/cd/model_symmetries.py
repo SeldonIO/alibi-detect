@@ -8,7 +8,7 @@ from scipy.stats import entropy
 import types
 from keras.models import Model
 from keras.losses import kullback_leibler_divergence, mse, binary_crossentropy, categorical_crossentropy
-from keras.optimizers import Adam, RMSprop
+from keras.optimizers import Adam, RMSprop, Adagrad
 from keras.layers import Input, Conv2D, Flatten, Lambda, Dense, Dropout, Reshape, Conv2DTranspose
 
 
@@ -440,6 +440,8 @@ class VaeSymmetryFinderConvKeras(object):
             self.optimizer = Adam(lr=self.lr)
         elif self.opt == 'RMSprop':
             self.optimizer = RMSprop(lr=self.lr)
+        elif self.opt == 'Adagrad':
+            self.optimizer = Adagrad(lr=self.lr)
 
         # Compile
         self.vae.compile(optimizer=self.optimizer)
