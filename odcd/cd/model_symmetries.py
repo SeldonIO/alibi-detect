@@ -362,9 +362,9 @@ class VaeSymmetryFinderConvKeras(object):
             self.x = Conv2D(filters=self.filters, kernel_size=self.kernel_size,
                                             activation='relu', strides=self.strides, padding='same')(self.x)
             self.x = Dropout(self.dropout)(self.x)
-            self.x = Conv2D(filters=self.filters, kernel_size=self.kernel_size,
-                                            activation='relu', strides=self.strides, padding='same')(self.x)
-            self.x = Dropout(self.dropout)(self.x)
+            #self.x = Conv2D(filters=self.filters, kernel_size=self.kernel_size,
+            #                                activation='relu', strides=self.strides, padding='same')(self.x)
+            #self.x = Dropout(self.dropout)(self.x)
 
         # shape info needed to build decoder model
         shape = K.int_shape(self.x)
@@ -395,9 +395,9 @@ class VaeSymmetryFinderConvKeras(object):
             self.x = Conv2DTranspose(filters=self.filters, kernel_size=self.kernel_size,
                                      activation='relu', strides=self.strides, padding='same')(self.x)
             self.x = Dropout(self.dropout)(self.x)
-            self.x = Conv2DTranspose(filters=self.filters, kernel_size=self.kernel_size,
+            #self.x = Conv2DTranspose(filters=self.filters, kernel_size=self.kernel_size,
                                      activation='relu', strides=self.strides, padding='same')(self.x)
-            self.x = Dropout(self.dropout)(self.x)
+            #self.x = Dropout(self.dropout)(self.x)
             self.filters //= 2
 
         self.vae_outputs = Conv2DTranspose(filters=self.rgb_filters,
