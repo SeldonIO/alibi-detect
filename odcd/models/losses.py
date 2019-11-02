@@ -43,7 +43,7 @@ def elbo(y_true: tf.Tensor,
     return loss
 
 
-def loss_dagmm(x_true: tf.Tensor,
+def loss_aegmm(x_true: tf.Tensor,
                x_pred: tf.Tensor,
                z: tf.Tensor,
                gamma: tf.Tensor,
