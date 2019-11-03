@@ -20,7 +20,7 @@ Data = Union[BaseOutlierDetector,
 
 DEFAULT_OUTLIER_DETECTORS = ['IForest',
                              'Mahalanobis',
-                             'OutlierAEGMM'
+                             'OutlierAEGMM',
                              'OutlierVAE']
 
 

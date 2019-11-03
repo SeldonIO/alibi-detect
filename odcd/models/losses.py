@@ -49,7 +49,29 @@ def loss_aegmm(x_true: tf.Tensor,
                gamma: tf.Tensor,
                w_energy: float = .1,
                w_cov_diag: float = .005) -> tf.Tensor:
-    recon_error = tf.reduce_mean((x_true - x_pred) ** 2)  # TODO: adjust for VAE version
+    """
+    Loss function used for OutlierAEGMM.
+
+    Parameters
+    ----------
+    x_true,
+        Batch of instances.
+    x_pred
+        Batch of reconstructed instances by the autoencoder.
+    z
+        Latent space values.
+    gamma
+        Membership prediction for mixture model components.
+    w_energy
+        Weight on sample energy loss term.
+    w_cov_diag
+        Weight on covariance regularizing loss term.
+
+    Returns
+    -------
+    Loss value.
+    """
+    recon_error = tf.reduce_mean((x_true - x_pred) ** 2)
     phi, mu, cov, L, log_det_cov = gmm_params(z, gamma)
     sample_energy, cov_diag = gmm_energy(z, phi, mu, cov, L, log_det_cov)
     loss = recon_error + w_energy * sample_energy + w_cov_diag * cov_diag

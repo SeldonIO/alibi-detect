@@ -174,9 +174,6 @@ class AE(tf.keras.Model):
         return x_recon
 
 
-# TODO: make sure also works for higher dim enc eg for images -> rel_eucl_dist, call (eg conv in est net)
-# TODO: don't just flatten for images b/c lose locality info and does not allow to have conv layers in estimation net
-
 def eucl_cosim_features(x: tf.Tensor,
                         y: tf.Tensor,
                         max_eucl: float = 1e2) -> tf.Tensor:

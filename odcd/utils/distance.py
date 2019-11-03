@@ -254,7 +254,7 @@ def relative_euclidean_distance(x: tf.Tensor,
     Parameters
     ----------
     x
-        Tensor used in distance computation. Also used for relative scaling.
+        Tensor used in distance computation.
     y
         Tensor used in distance computation.
     axis
@@ -264,5 +264,7 @@ def relative_euclidean_distance(x: tf.Tensor,
     -------
     Tensor with relative Euclidean distance across specified axis.
     """
-    dist = tf.norm(x - y, ord=2, axis=axis) / tf.norm(x, axis=axis)
+    denom = tf.concat([tf.reshape(tf.norm(x, ord=2, axis=axis), (-1, 1)),
+                       tf.reshape(tf.norm(y, ord=2, axis=axis), (-1, 1))], axis=1)
+    dist = tf.norm(x - y, ord=2, axis=axis) / tf.reduce_min(denom, axis=axis)
     return dist
