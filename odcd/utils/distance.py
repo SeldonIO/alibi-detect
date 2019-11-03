@@ -1,6 +1,7 @@
 import numpy as np
 from sklearn.manifold import MDS
-from typing import Dict, Tuple
+import tensorflow as tf
+from typing import Any, Dict, Tuple
 
 
 def cityblock_batch(X: np.ndarray,
@@ -34,7 +35,7 @@ def cityblock_batch(X: np.ndarray,
 def mvdm(X: np.ndarray,
          y: np.ndarray,
          cat_vars: dict,
-         alpha: int = 1) -> np.ndarray:
+         alpha: int = 1) -> Dict[Any, np.ndarray]:
     """
     Calculate the pair-wise distances between categories of a categorical variable using
     the Modified Value Difference Measure based on Cost et al (1993).
@@ -87,7 +88,7 @@ def mvdm(X: np.ndarray,
 
 def abdm(X: np.ndarray,
          cat_vars: dict,
-         cat_vars_bin: dict = dict()) -> np.ndarray:
+         cat_vars_bin: dict = dict()) -> dict:
     """
     Calculate the pair-wise distances between categories of a categorical variable using
     the Association-Based Distance Metric based on Le et al (2005).
@@ -242,3 +243,28 @@ def multidim_scaling(d_pair: dict,
         feature_range = new_feature_range
 
     return d_abs_scaled, feature_range
+
+
+def relative_euclidean_distance(x: tf.Tensor,
+                                y: tf.Tensor,
+                                axis: int = -1) -> tf.Tensor:
+    """
+    Relative Euclidean distance in TensorFlow.
+
+    Parameters
+    ----------
+    x
+        Tensor used in distance computation.
+    y
+        Tensor used in distance computation.
+    axis
+        Axis used to compute distance.
+
+    Returns
+    -------
+    Tensor with relative Euclidean distance across specified axis.
+    """
+    denom = tf.concat([tf.reshape(tf.norm(x, ord=2, axis=axis), (-1, 1)),
+                       tf.reshape(tf.norm(y, ord=2, axis=axis), (-1, 1))], axis=1)
+    dist = tf.norm(x - y, ord=2, axis=axis) / tf.reduce_min(denom, axis=axis)
+    return dist

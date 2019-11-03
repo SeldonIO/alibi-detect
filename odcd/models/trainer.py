@@ -77,10 +77,15 @@ def trainer(model: tf.keras.Model,
                     ground_truth = y_train_batch
 
                 # compute loss
-                if loss_fn_kwargs:
-                    loss = loss_fn(ground_truth, preds, **loss_fn_kwargs)
+                if tf.is_tensor(preds):
+                    args = [ground_truth, preds]
                 else:
-                    loss = loss_fn(ground_truth, preds)
+                    args = [ground_truth] + list(preds)
+
+                if loss_fn_kwargs:
+                    loss = loss_fn(*args, **loss_fn_kwargs)
+                else:
+                    loss = loss_fn(*args)
 
                 if model.losses:  # additional model losses
                     loss += sum(model.losses)
