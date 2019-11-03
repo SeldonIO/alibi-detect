@@ -3,17 +3,25 @@ import os
 import pickle
 import tensorflow as tf
 from typing import Dict, Union
-from odcd.models.autoencoder import VAE
+from odcd.models.autoencoder import AEGMM, VAE
+from odcd.od.aegmm import OutlierAEGMM
 from odcd.od.base import BaseOutlierDetector
-from odcd.od.vae import OutlierVAE
-from odcd.od.mahalanobis import Mahalanobis
 from odcd.od.isolationforest import IForest
+from odcd.od.mahalanobis import Mahalanobis
+from odcd.od.vae import OutlierVAE
 
 logger = logging.getLogger(__name__)
 
-Data = Union[BaseOutlierDetector, OutlierVAE, Mahalanobis, IForest]
+Data = Union[BaseOutlierDetector,
+             IForest,
+             Mahalanobis,
+             OutlierAEGMM,
+             OutlierVAE]
 
-DEFAULT_OUTLIER_DETECTORS = ['OutlierVAE', 'Mahalanobis', 'IForest']
+DEFAULT_OUTLIER_DETECTORS = ['IForest',
+                             'Mahalanobis',
+                             'OutlierAEGMM'
+                             'OutlierVAE']
 
 
 def save_od(od: Data,
@@ -47,6 +55,8 @@ def save_od(od: Data,
         state_dict = state_mahalanobis(od)
     elif od_name == 'IForest':
         state_dict = state_iforest(od)
+    elif od_name == 'OutlierAEGMM':
+        state_dict = state_aegmm(od)
 
     with open(filepath + od_name + '.pickle', 'wb') as f:
         pickle.dump(state_dict, f)
@@ -54,6 +64,8 @@ def save_od(od: Data,
     # save outlier detector specific TensorFlow models
     if od_name == 'OutlierVAE':
         save_tf_vae(od, filepath)
+    elif od_name == 'OutlierAEGMM':
+        save_tf_aegmm(od, filepath)
 
 
 def state_iforest(od: IForest) -> Dict:
@@ -111,6 +123,26 @@ def state_vae(od: OutlierVAE) -> Dict:
     return state_dict
 
 
+def state_aegmm(od: OutlierAEGMM) -> Dict:
+    """
+    OutlierVAE parameters to save.
+
+    Parameters
+    ----------
+    od
+        Outlier detector object.
+    """
+    state_dict = {'threshold': od.threshold,
+                  'n_gmm': od.aegmm.n_gmm,
+                  'recon_features': od.aegmm.recon_features,
+                  'phi': od.phi,
+                  'mu': od.mu,
+                  'cov': od.cov,
+                  'L': od.L,
+                  'log_det_cov': od.log_det_cov}
+    return state_dict
+
+
 def save_tf_vae(od: OutlierVAE,
                 filepath: str) -> None:
     """
@@ -140,6 +172,41 @@ def save_tf_vae(od: OutlierVAE,
         od.vae.save_weights(model_dir + 'vae.ckpt')
     else:
         logger.warning('No `tf.keras.Model` vae detected. No vae saved.')
+
+
+def save_tf_aegmm(od: OutlierAEGMM,
+                  filepath: str) -> None:
+    """
+    Save TensorFlow components of OutlierAEGMM.
+
+    Parameters
+    ----------
+    od
+        Outlier detector object.
+    filepath
+        Save directory.
+    """
+    # create folder for model weights
+    model_dir = filepath + 'model/'
+    if not os.path.isdir(model_dir):
+        os.mkdir(model_dir)
+    # save encoder, decoder, gmm density model and aegmm weights
+    if isinstance(od.aegmm.encoder, tf.keras.Sequential):
+        od.aegmm.encoder.save(model_dir + 'encoder_net.h5')
+    else:
+        logger.warning('No `tf.keras.Sequential` encoder detected. No encoder saved.')
+    if isinstance(od.aegmm.decoder, tf.keras.Sequential):
+        od.aegmm.decoder.save(model_dir + 'decoder_net.h5')
+    else:
+        logger.warning('No `tf.keras.Sequential` decoder detected. No decoder saved.')
+    if isinstance(od.aegmm.gmm_density, tf.keras.Sequential):
+        od.aegmm.gmm_density.save(model_dir + 'gmm_density_net.h5')
+    else:
+        logger.warning('No `tf.keras.Sequential` GMM density net detected. No GMM density net saved.')
+    if isinstance(od.aegmm, tf.keras.Model):
+        od.aegmm.save_weights(model_dir + 'aegmm.ckpt')
+    else:
+        logger.warning('No `tf.keras.Model` AEGMM detected. No AEGMM saved.')
 
 
 def load_od(filepath: str) -> Data:
@@ -177,6 +244,9 @@ def load_od(filepath: str) -> Data:
         od = init_od_mahalanobis(state_dict)
     elif od_name == 'IForest':
         od = init_od_iforest(state_dict)
+    elif od_name == 'OutlierAEGMM':
+        aegmm = load_tf_aegmm(filepath, state_dict)
+        od = init_od_aegmm(state_dict, aegmm)
 
     od.meta = meta_dict
     return od
@@ -209,6 +279,34 @@ def load_tf_vae(filepath: str,
     return vae
 
 
+def load_tf_aegmm(filepath: str,
+                  state_dict: Dict) -> tf.keras.Model:
+    """
+    Load AEGMM.
+
+    Parameters
+    ----------
+    filepath
+        Save directory.
+    state_dict
+        Dictionary containing the `n_gmm` and `recon_features` parameters.
+
+    Returns
+    -------
+    Loaded AEGMM.
+    """
+    model_dir = filepath + 'model/'
+    if not [f for f in os.listdir(model_dir) if not f.startswith('.')]:
+        logger.warning('No encoder, decoder, gmm density net or aegmm found in {}.'.format(model_dir))
+        return None
+    encoder_net = tf.keras.models.load_model(model_dir + 'encoder_net.h5')
+    decoder_net = tf.keras.models.load_model(model_dir + 'decoder_net.h5')
+    gmm_density_net = tf.keras.models.load_model(model_dir + 'gmm_density_net.h5')
+    aegmm = AEGMM(encoder_net, decoder_net, gmm_density_net, state_dict['n_gmm'], state_dict['recon_features'])
+    aegmm.load_weights(model_dir + 'aegmm.ckpt')
+    return aegmm
+
+
 def init_od_vae(state_dict: Dict,
                 vae: tf.keras.Model) -> OutlierVAE:
     """
@@ -229,6 +327,32 @@ def init_od_vae(state_dict: Dict,
                     score_type=state_dict['score_type'],
                     vae=vae,
                     samples=state_dict['samples'])
+    return od
+
+
+def init_od_aegmm(state_dict: Dict,
+                  aegmm: tf.keras.Model) -> OutlierAEGMM:
+    """
+    Initialize OutlierVAE.
+
+    Parameters
+    ----------
+    state_dict
+        Dictionary containing the parameter values.
+    aegmm
+        Loaded AEGMM.
+
+    Returns
+    -------
+    Initialized OutlierAEGMM instance.
+    """
+    od = OutlierAEGMM(threshold=state_dict['threshold'],
+                      aegmm=aegmm)
+    od.phi = state_dict['phi']
+    od.mu = state_dict['mu']
+    od.cov = state_dict['cov']
+    od.L = state_dict['L']
+    od.log_det_cov = state_dict['log_det_cov']
     return od
 
 

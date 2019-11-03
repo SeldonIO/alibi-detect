@@ -40,12 +40,10 @@ def gmm_params(z: tf.Tensor,
     cov = (tf.reduce_sum(tf.expand_dims(tf.expand_dims(gamma, -1), -1) * z_mu_outer, 0)
            / tf.expand_dims(tf.expand_dims(sum_gamma, -1), -1))  # K x D x D
 
-    # cholesky decomposition of covariance
+    # cholesky decomposition of covariance and determinant derivation
     D = tf.shape(cov)[1]
     eps = 1e-6
     L = tf.linalg.cholesky(cov + tf.eye(D) * eps)  # K x D x D
-
-    # log(det(cov)) = 2 * sum[log(diag(L))]
     log_det_cov = 2. * tf.reduce_sum(tf.math.log(tf.linalg.diag_part(L)), 1)  # K
 
     return phi, mu, cov, L, log_det_cov
