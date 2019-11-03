@@ -229,9 +229,9 @@ class AEGMM(tf.keras.Model):
         gmm_density_net
             Layers for the GMM network wrapped in a tf.keras.Sequential class.
         n_gmm
-            Number of Gaussians to predict.
+            Number of components in GMM.
         recon_features
-            Features extracted from the reconstructed instance by the decoder.
+            Function to extract features from the reconstructed instance by the decoder.
         name
             Name of te AEGMM model.
         """
