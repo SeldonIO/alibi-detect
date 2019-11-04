@@ -346,7 +346,7 @@ class VaeSymmetryFinderConv(object):
 class VaeSymmetryFinderConvKeras(object):
     """Variational Autoencoder designed to find model's symmetries
     """
-    def __init__(self, predict_fn, input_shape=(28, 28), output_shape=(10, ), rgb_filters=3, dropout=0.2,
+    def __init__(self, predict_fn, input_shape=(28, 28), output_shape=(10, ), rgb_filters=3, dropout=None,
                  kernel_size=3, filters=32, intermediate_dim=16, latent_dim=2, strides=2, nb_conv_layers=2,
                  intermediate_activation='relu', output_activation='sigmoid', opt='Adam', lr=0.001,
                  variational=True, loss_type='symm', add_latent_loss=False):
@@ -384,7 +384,8 @@ class VaeSymmetryFinderConvKeras(object):
             self.filters *= 2
             self.x = Conv2D(filters=self.filters, kernel_size=self.kernel_size,
                             activation='relu', strides=self.strides, padding='same')(self.x)
-            self.x = Dropout(self.dropout)(self.x)
+            if self.dropout is not None:
+                self.x = Dropout(self.dropout)(self.x)
 
         # shape info needed to build decoder model
         shape = K.int_shape(self.x)
@@ -410,7 +411,8 @@ class VaeSymmetryFinderConvKeras(object):
         for i in range(self.nb_conv_layers):
             self.x = Conv2DTranspose(filters=self.filters, kernel_size=self.kernel_size,
                                      activation='relu', strides=self.strides, padding='same')(self.x)
-            self.x = Dropout(self.dropout)(self.x)
+            if self.dropout is not None:
+                self.x = Dropout(self.dropout)(self.x)
             self.filters //= 2
 
         self.vae_outputs = Conv2DTranspose(filters=self.rgb_filters,
