@@ -406,7 +406,7 @@ class VaeSymmetryFinderConvKeras(object):
 
         self.x = Dense(shape[1] * shape[2] * shape[3], activation=self.intermediate_activation)(self.x)
 
-        self.x = Reshape((shape[1] * shape[2] * shape[3]))(self.x)
+        self.x = Reshape((shape[1], shape[2], shape[3]))(self.x)
 
         for i in range(self.nb_conv_layers):
             self.x = Conv2DTranspose(filters=self.filters, kernel_size=self.kernel_size,
