@@ -173,8 +173,15 @@ class OutlierVAEGMM(BaseOutlierDetector, FitMixin, ThresholdMixin):
         -------
         Array with outlier scores for each instance in the batch.
         """
-        # need to sample
-        pass
+        # draw samples from latent space
+        X_samples = np.repeat(X, self.samples, axis=0)
+        _, z, _ = self.vaegmm(X_samples)
+
+        # compute average energy for samples
+        energy, _ = gmm_energy(z, self.phi, self.mu, self.cov, self.L, self.log_det_cov, return_mean=False)
+        energy_samples = energy.numpy().reshape((-1, self.samples))
+        iscore = np.mean(energy_samples, axis=-1)
+        return iscore
 
     def predict(self,
                 X: np.ndarray,
