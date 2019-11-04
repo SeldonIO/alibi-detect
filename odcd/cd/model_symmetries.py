@@ -6,10 +6,10 @@ import numpy as np
 import keras
 from scipy.stats import entropy
 import types
-from keras.models import Model
+from keras.models import Model, model_from_json
 from keras.losses import kullback_leibler_divergence, mse, binary_crossentropy, categorical_crossentropy
 from keras.optimizers import Adam, RMSprop, Adagrad
-from keras.layers import Input, Conv2D, Flatten, Lambda, Dense, Dropout, Reshape, Conv2DTranspose
+from keras.layers import Input, Conv2D, Flatten, Lambda, Dense, Dropout, Reshape, Conv2DTranspose, BatchNormalization
 
 
 def sampling_gaussian(args):
@@ -39,12 +39,18 @@ def sampling_nlp(args):
     return tf.random.categorical(tf.log(p), input_dim)
 
 
-def load_vae(arch_path='vae_arch.json', weights_path='vae_weights.h5'):
+def load_vae(arch_path='vae_arch.json', weights_path='vae_weights.h5', model_type='keras'):
 
     with open(arch_path, 'r') as f:
         loaded_model_json = f.read()
         f.close()
-    vae = tf.keras.models.model_from_json(loaded_model_json)
+    if model_type == 'keras':
+        vae = tf.keras.models.model_from_json(loaded_model_json)
+    elif model_type == 'tf.keras':
+        vae = model_from_json(loaded_model_json)
+    else:
+        raise NotImplementedError
+
     # load weights into new model
     vae.load_weights(weights_path)
     print("Loaded model from disk")
@@ -62,7 +68,9 @@ def load_vae(arch_path='vae_arch.json', weights_path='vae_weights.h5'):
     vae.transform_predict = types.MethodType(transform_predict, vae)
 
     def signal(vae, x, amp=1):
-        return amp * entropy(vae.predict(x)[1].T, vae.predict(x)[2].T)
+        s = amp * 0.5 * (entropy(vae.predict(x)[1].T, vae.predict(x)[2].T) +
+                         entropy(vae.predict(x)[1].T, vae.predict(x)[2].T))
+        return s
     vae.signal = types.MethodType(signal, vae)
 
     return vae
@@ -170,7 +178,8 @@ class VaeSymmetryFinder(object):
         return self.vae.predict(x)[2]
 
     def signal(self, x, amp=1):
-        return amp * entropy(self.vae.predict(x)[1].T, self.vae.predict(x)[2].T)
+        return amp * 0.5 * (entropy(self.vae.predict(x)[1].T, self.vae.predict(x)[2].T) +
+                            entropy(self.vae.predict(x)[2].T, self.vae.predict(x)[1].T))
 
 
 class VaeSymmetryFinderConv(object):
@@ -317,7 +326,8 @@ class VaeSymmetryFinderConv(object):
         return self.vae.predict(x)[2]
 
     def signal(self, x, amp=1):
-        return amp * entropy(self.vae.predict(x)[1].T, self.vae.predict(x)[2].T)
+        return amp * 0.5 * (entropy(self.vae.predict(x)[1].T, self.vae.predict(x)[2].T) +
+                            entropy(self.vae.predict(x)[2].T, self.vae.predict(x)[1].T))
 
 
 class VaeSymmetryFinderConvKeras(object):
@@ -413,7 +423,9 @@ class VaeSymmetryFinderConvKeras(object):
                                        self.model_output_trans], name='vae_mlp')
 
         # Define loss
-        if self.loss_type == 'symm':
+        if self.loss_type == 'kl':
+            self.loss = (kullback_leibler_divergence(self.model_output_orig, self.model_output_trans))
+        elif self.loss_type == 'symm_kl':
             self.loss = 0.5 * (kullback_leibler_divergence(self.model_output_orig, self.model_output_trans) +
                                kullback_leibler_divergence(self.model_output_trans, self.model_output_orig))
         elif self.loss_type == 'crossentr':
@@ -477,7 +489,6 @@ class VaeSymmetryFinderConvKeras(object):
     def signal(self, x, amp=1):
         return amp * 0.5 * (entropy(self.vae.predict(x)[1].T, self.vae.predict(x)[2].T) +
                             entropy(self.vae.predict(x)[2].T, self.vae.predict(x)[1].T))
-
 
 
 class VaeSymmetryFinderNlp(object):
