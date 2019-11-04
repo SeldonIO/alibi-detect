@@ -413,7 +413,7 @@ class VaeSymmetryFinderConvKeras(object):
         #    self.x = Dense(self.intermediate_dim, activation=self.intermediate_activation)(self.z_mean)
 
         #self.x = Dropout(self.dropout)(self.x)
-        self.x = Dense(shape[1] * shape[2] * shape[3], activation=self.intermediate_activation)(self.x)
+        self.x = Dense(shape[1] * shape[2] * shape[3], activation=self.intermediate_activation)(self.z)
         #self.x = Dropout(self.dropout)(self.x)
         self.x = Reshape((shape[1], shape[2], shape[3]))(self.x)
 
