@@ -1,16 +1,18 @@
 import logging
 import numpy as np
 from scipy.linalg import eigh
-from alibi.utils.discretizer import Discretizer
-from alibi.utils.distance import abdm, mvdm, multidim_scaling
-from alibi.utils.mapping import ohe_to_ord, ord_to_num
+from typing import Dict
+from odcd.utils.discretizer import Discretizer
+from odcd.utils.distance import abdm, mvdm, multidim_scaling
+from odcd.utils.mapping import ohe2ord, ord2num
+from odcd.od.base import BaseOutlierDetector, FitMixin, ThresholdMixin, outlier_prediction_dict
 
 logger = logging.getLogger(__name__)
 
 EPSILON = 1e-8
 
 
-class Mahalanobis:
+class Mahalanobis(BaseOutlierDetector, FitMixin, ThresholdMixin):
 
     def __init__(self,
                  threshold: float,
@@ -19,7 +21,8 @@ class Mahalanobis:
                  start_clip: int = 100,
                  max_n: int = None,
                  cat_vars: dict = None,
-                 ohe: bool = False
+                 ohe: bool = False,
+                 data_type: str = 'tabular'
                  ) -> None:
         """
         Outlier detector for tabular data using the Mahalanobis distance.
@@ -42,7 +45,13 @@ class Mahalanobis:
         ohe
             Whether the categorical variables are one-hot encoded (OHE) or not. If not OHE, they are
             assumed to have ordinal encodings.
+        data_type
+            Optionally specifiy the data type (tabular, image or time-series). Added to metadata.
         """
+        super().__init__()
+
+        if threshold is None:
+            logger.warning('No threshold level set. Need to infer threshold using `infer_threshold`.')
 
         self.threshold = threshold
         self.n_components = n_components
@@ -62,10 +71,21 @@ class Mahalanobis:
         self.C = 0
         self.n = 0
 
-    def fit(self, X: np.ndarray, y: np.ndarray = None,
-            d_type: str = 'abdm', w: float = None, disc_perc: list = [25, 50, 75],
-            standardize_cat_vars: bool = True, feature_range: tuple = (-1e10, 1e10),
-            smooth: float = 1., center: bool = True) -> None:
+        # set metadata
+        self.meta['detector_type'] = 'online'
+        self.meta['data_type'] = data_type
+
+    def fit(self,
+            X: np.ndarray,
+            y: np.ndarray = None,
+            d_type: str = 'abdm',
+            w: float = None,
+            disc_perc: list = [25, 50, 75],
+            standardize_cat_vars: bool = True,
+            feature_range: tuple = (-1e10, 1e10),
+            smooth: float = 1.,
+            center: bool = True
+            ) -> None:
         """
         If categorical variables are present, then transform those to numerical values.
         This step is not necessary in the absence of categorical variables.
@@ -109,7 +129,7 @@ class Mahalanobis:
                              '{} is not supported.'.format(d_type))
 
         if self.ohe:
-            X_ord, cat_vars_ord = ohe_to_ord(X, self.cat_vars)
+            X_ord, cat_vars_ord = ohe2ord(X, self.cat_vars)
         else:
             X_ord, cat_vars_ord = X, self.cat_vars
 
@@ -166,6 +186,30 @@ class Mahalanobis:
                                           smooth=smooth, center=center,
                                           update_feature_range=False)[0]
 
+    def infer_threshold(self,
+                        X: np.ndarray,
+                        threshold_perc: float = 95.
+                        ) -> None:
+        """
+        Update threshold by a value inferred from the percentage of instances considered to be
+        outliers in a sample of the dataset.
+
+        Parameters
+        ----------
+        X
+            Batch of instances.
+        threshold_perc
+            Percentage of X considered to be normal based on the outlier score.
+        """
+        # convert categorical variables to numerical values
+        X = self.cat2num(X)
+
+        # compute outlier scores
+        iscore = self.score(X)
+
+        # update threshold
+        self.threshold = np.percentile(iscore, threshold_perc)
+
     def cat2num(self, X: np.ndarray) -> np.ndarray:
         """
         Convert categorical variables to numerical values.
@@ -181,8 +225,8 @@ class Mahalanobis:
         """
         if self.cat_vars is not None:  # convert categorical variables
             if self.ohe:
-                X = ohe_to_ord(X, self.cat_vars)[0]
-            X = ord_to_num(X, self.d_abs)
+                X = ohe2ord(X, self.cat_vars)[0]
+            X = ord2num(X, self.d_abs)
         return X
 
     def score(self, X: np.ndarray) -> np.ndarray:
@@ -269,20 +313,39 @@ class Mahalanobis:
         outlier_score = np.matmul(x_diff[:, None, :], np.matmul(all_C_inv, x_diff[:, :, None])).reshape(n_batch)
         return outlier_score
 
-    def predict(self, X: np.ndarray) -> np.ndarray:
+    def predict(self,
+                X: np.ndarray,
+                return_instance_score: bool = True) \
+            -> Dict[Dict[str, str], Dict[np.ndarray, np.ndarray]]:
         """
         Compute outlier scores and transform into outlier predictions.
 
         Parameters
         ----------
         X
-            Batch of instances to analyze.
+            Batch of instances.
+        return_instance_score
+            Whether to return instance level outlier scores.
 
         Returns
         -------
-        Array indicating which instances in the batch are outliers.
+        Dictionary containing 'meta' and 'data' dictionaries.
+        'meta' has the model's metadata.
+        'data' contains the outlier predictions and both feature and instance level outlier scores.
         """
-        X = self.cat2num(X)  # convert categorical variables to numerical values
-        outlier_score = self.score(X)  # compute outlier scores
-        outlier_pred = (outlier_score > self.threshold).astype(int)  # convert outlier scores into predictions
-        return outlier_pred
+        # convert categorical variables to numerical values
+        X = self.cat2num(X)
+
+        # compute outlier scores
+        iscore = self.score(X)
+
+        # values above threshold are outliers
+        outlier_pred = (iscore > self.threshold).astype(int)
+
+        # populate output dict
+        od = outlier_prediction_dict()
+        od['meta'] = self.meta
+        od['data']['is_outlier'] = outlier_pred
+        if return_instance_score:
+            od['data']['instance_score'] = iscore
+        return od
