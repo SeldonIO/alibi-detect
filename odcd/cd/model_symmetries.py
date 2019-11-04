@@ -431,9 +431,10 @@ class VaeSymmetryFinderConvKeras(object):
         #    self.filters //= 2
 
         self.vae_outputs = Conv2DTranspose(filters=self.rgb_filters,
-                                           kernel_size=self.kernel_size,
+                                           kernel_size=4,
                                            activation=self.output_activation,
                                            padding='same',
+                                           strides=2,
                                            name='decoder_output')(self.x)
 
         self.model_output_trans = self.predict_fn(self.vae_outputs)
