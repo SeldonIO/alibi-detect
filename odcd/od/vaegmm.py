@@ -2,44 +2,53 @@ import logging
 import numpy as np
 import tensorflow as tf
 from typing import Callable, Dict, Tuple
-from odcd.models.autoencoder import AEGMM, eucl_cosim_features
+from odcd.models.autoencoder import VAEGMM, eucl_cosim_features
 from odcd.models.gmm import gmm_energy, gmm_params
-from odcd.models.losses import loss_aegmm
+from odcd.models.losses import elbo, loss_vaegmm
 from odcd.models.trainer import trainer
 from odcd.od.base import BaseOutlierDetector, FitMixin, ThresholdMixin, outlier_prediction_dict
 
 logger = logging.getLogger(__name__)
 
 
-class OutlierAEGMM(BaseOutlierDetector, FitMixin, ThresholdMixin):
+class OutlierVAEGMM(BaseOutlierDetector, FitMixin, ThresholdMixin):
 
     def __init__(self,
                  threshold: float = None,
-                 aegmm: tf.keras.Model = None,
+                 vaegmm: tf.keras.Model = None,
                  encoder_net: tf.keras.Sequential = None,
                  decoder_net: tf.keras.Sequential = None,
                  gmm_density_net: tf.keras.Sequential = None,
                  n_gmm: int = None,
+                 latent_dim: int = None,
+                 samples: int = 10,
+                 beta: float = 1.,
                  recon_features: Callable = eucl_cosim_features,
                  data_type: str = None
                  ) -> None:
         """
-        AEGMM-based outlier detector.
+        VAEGMM-based outlier detector.
 
         Parameters
         ----------
         threshold
             Threshold used for outlier score to determine outliers.
-        aegmm
+        vaegmm
             A trained tf.keras model if available.
         encoder_net
-            Layers for the encoder wrapped in a tf.keras.Sequential class if no 'aegmm' is specified.
+            Layers for the encoder wrapped in a tf.keras.Sequential class if no 'vaegmm' is specified.
         decoder_net
-            Layers for the decoder wrapped in a tf.keras.Sequential class if no 'aegmm' is specified.
+            Layers for the decoder wrapped in a tf.keras.Sequential class if no 'vaegmm' is specified.
         gmm_density_net
             Layers for the GMM network wrapped in a tf.keras.Sequential class.
         n_gmm
             Number of components in GMM.
+        latent_dim
+            Dimensionality of the latent space.
+        samples
+            Number of samples sampled to evaluate each instance.
+        beta
+            Beta parameter for KL-divergence loss term.
         recon_features
             Function to extract features from the reconstructed instance by the decoder.
         data_type
@@ -51,16 +60,18 @@ class OutlierAEGMM(BaseOutlierDetector, FitMixin, ThresholdMixin):
             logger.warning('No threshold level set. Need to infer threshold using `infer_threshold`.')
 
         self.threshold = threshold
+        self.samples = samples
 
         # check if model can be loaded, otherwise initialize AEGMM model
-        if isinstance(aegmm, tf.keras.Model):
-            self.aegmm = aegmm
+        if isinstance(vaegmm, tf.keras.Model):
+            self.vaegmm = vaegmm
         elif (isinstance(encoder_net, tf.keras.Sequential) and
               isinstance(decoder_net, tf.keras.Sequential) and
               isinstance(gmm_density_net, tf.keras.Sequential)):
-            self.aegmm = AEGMM(encoder_net, decoder_net, gmm_density_net, n_gmm, recon_features)
+            self.vaegmm = VAEGMM(encoder_net, decoder_net, gmm_density_net, n_gmm,
+                                 latent_dim, recon_features=recon_features, beta=beta)
         else:
-            raise TypeError('No valid format detected for `aegmm` (tf.keras.Model) '
+            raise TypeError('No valid format detected for `vaegmm` (tf.keras.Model) '
                             'or `encoder_net`, `decoder_net` and `gmm_density_net` (tf.keras.Sequential).')
 
         # set metadata
@@ -69,7 +80,8 @@ class OutlierAEGMM(BaseOutlierDetector, FitMixin, ThresholdMixin):
 
     def fit(self,
             X: np.ndarray,
-            loss_fn: tf.keras.losses = loss_aegmm,
+            loss_fn: tf.keras.losses = loss_vaegmm,
+            w_recon: float = 1e-7,
             w_energy: float = .1,
             w_cov_diag: float = .005,
             optimizer: tf.keras.optimizers = tf.keras.optimizers.Adam(learning_rate=1e-4),
@@ -80,7 +92,7 @@ class OutlierAEGMM(BaseOutlierDetector, FitMixin, ThresholdMixin):
             callbacks: tf.keras.callbacks = None,
             ) -> None:
         """
-        Train AEGMM model.
+        Train VAEGMM model.
 
         Parameters
         ----------
@@ -88,10 +100,12 @@ class OutlierAEGMM(BaseOutlierDetector, FitMixin, ThresholdMixin):
             Training batch.
         loss_fn
             Loss function used for training.
+        w_recon
+            Weight on elbo loss term if default `loss_vaegmm`.
         w_energy
-            Weight on sample energy loss term if default `loss_aegmm` loss fn is used.
+            Weight on sample energy loss term if default `loss_vaegmm` loss fn is used.
         w_cov_diag
-            Weight on covariance regularizing loss term if default `loss_aegmm` loss fn is used.
+            Weight on covariance regularizing loss term if default `loss_vaegmm` loss fn is used.
         optimizer
             Optimizer used for training.
         epochs
@@ -106,14 +120,15 @@ class OutlierAEGMM(BaseOutlierDetector, FitMixin, ThresholdMixin):
             Callbacks used during training.
         """
         # train arguments
-        args = [self.aegmm, loss_fn, X]
+        args = [self.vaegmm, loss_fn, X]
         kwargs = {'optimizer': optimizer,
                   'epochs': epochs,
                   'batch_size': batch_size,
                   'verbose': verbose,
                   'log_metric': log_metric,
                   'callbacks': callbacks,
-                  'loss_fn_kwargs': {'w_energy': w_energy,
+                  'loss_fn_kwargs': {'w_recon': w_recon,
+                                     'w_energy': w_energy,
                                      'w_cov_diag': w_cov_diag}
                   }
 
@@ -158,9 +173,8 @@ class OutlierAEGMM(BaseOutlierDetector, FitMixin, ThresholdMixin):
         -------
         Array with outlier scores for each instance in the batch.
         """
-        _, z, _ = self.aegmm(X)
-        energy, _ = gmm_energy(z, self.phi, self.mu, self.cov, self.L, self.log_det_cov, return_mean=False)
-        return energy.numpy()
+        # need to sample
+        pass
 
     def predict(self,
                 X: np.ndarray,
