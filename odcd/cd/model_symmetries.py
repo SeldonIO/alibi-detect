@@ -417,7 +417,7 @@ class VaeSymmetryFinderConvKeras(object):
                                            kernel_size=self.kernel_size,
                                            activation=self.output_activation,
                                            padding='same',
-                                           strides=2,
+                                           strides=self.strides,
                                            name='decoder_output')(self.x)
 
         self.model_output_trans = self.predict_fn(self.vae_outputs)
