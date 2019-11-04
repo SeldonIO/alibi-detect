@@ -417,7 +417,7 @@ class VaeSymmetryFinderConvKeras(object):
         #self.x = Dropout(self.dropout)(self.x)
         self.x = Reshape((shape[1], shape[2], shape[3]))(self.x)
 
-        self.x = Conv2DTranspose(filters=264, kernel_size=4, strides=2, activation='relu')(self.x)
+        self.x = Conv2DTranspose(filters=256, kernel_size=4, strides=2, activation='relu')(self.x)
         self.x = Conv2DTranspose(filters=64, kernel_size=4, strides=2, activation='relu')(self.x)
 
         #for i in range(self.nb_conv_layers):
