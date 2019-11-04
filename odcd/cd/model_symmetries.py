@@ -308,23 +308,26 @@ class VaeSymmetryFinderConv(object):
         self.vae.compile(optimizer=self.optimizer)
         self.vae.summary()
 
-    def fit(self, X_train, x_test=None, epochs=2, batch_size=128):
+    def fit(self, X_train, x_test=None, epochs=2, batch_size=128, callbacks=None):
         if x_test is not None:
             self.vae.fit(X_train,
                          epochs=epochs,
                          batch_size=batch_size,
-                         validation_data=(x_test, None))
+                         validation_data=(x_test, None),
+                         callbacks=callbacks)
         else:
             self.vae.fit(X_train,
                          epochs=epochs,
-                         batch_size=batch_size)
+                         batch_size=batch_size,
+                         callbacks=callbacks)
 
-    def save(self, arch_path='vae_arch.json', weights_path='vae_weights.h5'):
+    def save(self, arch_path='vae_arch.json', weights_path='vae_weights.h5', save_model_only=True):
         json_model = self.vae.to_json()
         with open(arch_path, 'w') as f:
             f.write(json_model)
             f.close()
-        self.vae.save_weights(weights_path)
+        if not save_model_only:
+            self.vae.save_weights(weights_path)
 
     def transform(self, x):
         return self.vae.predict(x)[0]
