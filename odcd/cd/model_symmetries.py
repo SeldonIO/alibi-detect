@@ -413,9 +413,10 @@ class VaeSymmetryFinderConvKeras(object):
         #    self.x = Dense(self.intermediate_dim, activation=self.intermediate_activation)(self.z_mean)
 
         #self.x = Dropout(self.dropout)(self.x)
-        self.x = Dense(shape[1] * shape[2] * shape[3], activation=self.intermediate_activation)(self.z)
+        self.x = Dense(4 * 4 * 128, activation=self.intermediate_activation)(self.z)
+        #self.x = Dense(shape[1] * shape[2] * shape[3], activation=self.intermediate_activation)(self.x)
         #self.x = Dropout(self.dropout)(self.x)
-        self.x = Reshape((shape[1], shape[2], shape[3]))(self.x)
+        self.x = Reshape((4, 4, 128))(self.x)
 
         self.x = Conv2DTranspose(filters=256, kernel_size=4, strides=2, activation='relu')(self.x)
         self.x = Conv2DTranspose(filters=64, kernel_size=4, strides=2, activation='relu')(self.x)
