@@ -418,8 +418,9 @@ class VaeSymmetryFinderConvKeras(object):
         #self.x = Dropout(self.dropout)(self.x)
         self.x = Reshape((4, 4, 128))(self.x)
 
-        self.x = Conv2DTranspose(filters=256, kernel_size=4, strides=2, activation='relu')(self.x)
-        self.x = Conv2DTranspose(filters=64, kernel_size=4, strides=2, activation='relu')(self.x)
+        self.x = Conv2DTranspose(256, 4, strides=2, padding='same', activation='relu')(self.x)
+        self.x = Conv2DTranspose(64, 4, strides=2, padding='same', activation='relu')(self.x)
+        self.vae_outputs = Conv2DTranspose(3, 4, strides=2, padding='same', activation='sigmoid')(self.x)
 
         #for i in range(self.nb_conv_layers):
         #    self.x = Conv2DTranspose(filters=self.filters, kernel_size=self.kernel_size,
@@ -430,12 +431,12 @@ class VaeSymmetryFinderConvKeras(object):
         #    self.x = Dropout(self.dropout)(self.x)
         #    self.filters //= 2
 
-        self.vae_outputs = Conv2DTranspose(filters=self.rgb_filters,
-                                           kernel_size=4,
-                                           activation=self.output_activation,
-                                           padding='same',
-                                           strides=2,
-                                           name='decoder_output')(self.x)
+        #self.vae_outputs = Conv2DTranspose(filters=self.rgb_filters,
+        #                                   kernel_size=4,
+        #                                   activation=self.output_activation,
+        #                                   padding='same',
+        #                                   strides=2,
+        #                                   name='decoder_output')(self.x)
 
         self.model_output_trans = self.predict_fn(self.vae_outputs)
         self.model_output_orig = self.predict_fn(self.inputs)
