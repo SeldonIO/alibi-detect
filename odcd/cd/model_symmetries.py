@@ -44,9 +44,9 @@ def load_vae(arch_path='vae_arch.json', weights_path='vae_weights.h5', model_typ
     with open(arch_path, 'r') as f:
         loaded_model_json = f.read()
         f.close()
-    if model_type == 'keras':
+    if model_type == 'tf.keras':
         vae = tf.keras.models.model_from_json(loaded_model_json)
-    elif model_type == 'tf.keras':
+    elif model_type == 'keras':
         vae = model_from_json(loaded_model_json)
     else:
         raise NotImplementedError
