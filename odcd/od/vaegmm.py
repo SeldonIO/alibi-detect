@@ -1,6 +1,7 @@
 import logging
 import numpy as np
 import tensorflow as tf
+import tensorflow_probability as tfp
 from typing import Callable, Dict, Tuple
 from odcd.models.autoencoder import VAEGMM, eucl_cosim_features
 from odcd.models.gmm import gmm_energy, gmm_params
@@ -85,6 +86,7 @@ class OutlierVAEGMM(BaseOutlierDetector, FitMixin, ThresholdMixin):
             w_energy: float = .1,
             w_cov_diag: float = .005,
             optimizer: tf.keras.optimizers = tf.keras.optimizers.Adam(learning_rate=1e-4),
+            cov_elbo: dict = dict(sim=.05),
             epochs: int = 20,
             batch_size: int = 64,
             verbose: bool = True,
@@ -108,6 +110,11 @@ class OutlierVAEGMM(BaseOutlierDetector, FitMixin, ThresholdMixin):
             Weight on covariance regularizing loss term if default `loss_vaegmm` loss fn is used.
         optimizer
             Optimizer used for training.
+        cov_elbo
+            Dictionary with covariance matrix options in case the elbo loss function is used.
+            Either use the full covariance matrix inferred from X (dict(cov_full=None)),
+            only the variance (dict(cov_diag=None)) or a float representing the same standard deviation
+            for each feature (e.g. dict(sim=.05)).
         epochs
             Number of training epochs.
         batch_size
@@ -132,11 +139,21 @@ class OutlierVAEGMM(BaseOutlierDetector, FitMixin, ThresholdMixin):
                                      'w_cov_diag': w_cov_diag}
                   }
 
+        # initialize covariance matrix if default vaegmm loss fn is used
+        use_elbo = loss_fn.__name__ == 'loss_vaegmm'
+        cov_elbo_type, cov = [*cov_elbo][0], [*cov_elbo.values()][0]
+        if use_elbo and cov_elbo_type in ['cov_full', 'cov_diag']:
+            cov = tfp.stats.covariance(X.reshape(X.shape[0], -1))
+            if cov_elbo_type == 'cov_diag':  # infer standard deviation from covariance matrix
+                cov = tf.math.sqrt(tf.linalg.diag_part(cov))
+        if use_elbo:
+            kwargs['loss_fn_kwargs'][cov_elbo_type] = tf.dtypes.cast(cov, tf.float32)
+
         # train
         trainer(*args, **kwargs)
 
         # set GMM parameters
-        x_recon, z, gamma = self.aegmm(X)
+        x_recon, z, gamma = self.vaegmm(X)
         self.phi, self.mu, self.cov, self.L, self.log_det_cov = gmm_params(z, gamma)
 
     def infer_threshold(self,

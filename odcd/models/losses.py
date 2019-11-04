@@ -8,7 +8,8 @@ def elbo(y_true: tf.Tensor,
          y_pred: tf.Tensor,
          cov_full: tf.Tensor = None,
          cov_diag: tf.Tensor = None,
-         sim: float = .05) -> tf.Tensor:
+         sim: float = .05
+         ) -> tf.Tensor:
     """
     Compute ELBO loss.
 
@@ -48,7 +49,8 @@ def loss_aegmm(x_true: tf.Tensor,
                z: tf.Tensor,
                gamma: tf.Tensor,
                w_energy: float = .1,
-               w_cov_diag: float = .005) -> tf.Tensor:
+               w_cov_diag: float = .005
+               ) -> tf.Tensor:
     """
     Loss function used for OutlierAEGMM.
 
@@ -84,7 +86,11 @@ def loss_vaegmm(x_true: tf.Tensor,
                 gamma: tf.Tensor,
                 w_recon: float = 1e-7,
                 w_energy: float = .1,
-                w_cov_diag: float = .005) -> tf.Tensor:
+                w_cov_diag: float = .005,
+                cov_full: tf.Tensor = None,
+                cov_diag: tf.Tensor = None,
+                sim: float = .05
+                ) -> tf.Tensor:
     """
     Loss function used for OutlierVAEGMM.
 
@@ -104,12 +110,18 @@ def loss_vaegmm(x_true: tf.Tensor,
         Weight on sample energy loss term.
     w_cov_diag
         Weight on covariance regularizing loss term.
+    cov_full
+        Full covariance matrix.
+    cov_diag
+        Diagonal (variance) of covariance matrix.
+    sim
+        Scale identity multiplier.
 
     Returns
     -------
     Loss value.
     """
-    recon_error = elbo(x_true, x_pred)
+    recon_error = elbo(x_true, x_pred, cov_full=cov_full, cov_diag=cov_diag, sim=sim)
     phi, mu, cov, L, log_det_cov = gmm_params(z, gamma)
     sample_energy, cov_diag = gmm_energy(z, phi, mu, cov, L, log_det_cov)
     loss = w_recon * recon_error + w_energy * sample_energy + w_cov_diag * cov_diag

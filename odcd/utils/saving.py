@@ -163,6 +163,7 @@ def state_vaegmm(od: OutlierVAEGMM) -> Dict:
                   'samples': od.samples,
                   'n_gmm': od.vaegmm.n_gmm,
                   'latent_dim': od.vaegmm.latent_dim,
+                  'beta': od.vaegmm.beta,
                   'recon_features': od.vaegmm.recon_features,
                   'phi': od.phi,
                   'mu': od.mu,
@@ -255,8 +256,8 @@ def save_tf_vaegmm(od: OutlierVAEGMM,
     if not os.path.isdir(model_dir):
         os.mkdir(model_dir)
     # save encoder, decoder, gmm density model and vaegmm weights
-    if isinstance(od.vaegmm.encoder, tf.keras.Sequential):
-        od.vaegmm.encoder.save(model_dir + 'encoder_net.h5')
+    if isinstance(od.vaegmm.encoder.encoder_net, tf.keras.Sequential):
+        od.vaegmm.encoder.encoder_net.save(model_dir + 'encoder_net.h5')
     else:
         logger.warning('No `tf.keras.Sequential` encoder detected. No encoder saved.')
     if isinstance(od.vaegmm.decoder, tf.keras.Sequential):
