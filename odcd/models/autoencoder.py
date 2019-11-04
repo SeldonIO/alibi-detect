@@ -246,3 +246,57 @@ class AEGMM(tf.keras.Model):
         z = tf.concat([enc, recon_features], -1)
         gamma = self.gmm_density(z)
         return x_recon, z, gamma
+
+
+class VAEGMM(tf.keras.Model):
+
+    def __init__(self,
+                 encoder_net: tf.keras.Sequential,
+                 decoder_net: tf.keras.Sequential,
+                 gmm_density_net: tf.keras.Sequential,
+                 n_gmm: int,
+                 latent_dim: int,
+                 recon_features: Callable = eucl_cosim_features,
+                 beta: float = 1.,
+                 name: str = 'vaegmm') -> None:
+        """
+        Variational Autoencoding Gaussian Mixture Model.
+
+        Parameters
+        ----------
+        encoder_net
+            Layers for the encoder wrapped in a tf.keras.Sequential class.
+        decoder_net
+            Layers for the decoder wrapped in a tf.keras.Sequential class.
+        gmm_density_net
+            Layers for the GMM network wrapped in a tf.keras.Sequential class.
+        n_gmm
+            Number of components in GMM.
+        latent_dim
+            Dimensionality of the latent space.
+        recon_features
+            Function to extract features from the reconstructed instance by the decoder.
+        beta
+            Beta parameter for KL-divergence loss term.
+        name
+            Name of te AEGMM model.
+        """
+        super(VAEGMM, self).__init__(name=name)
+        self.encoder = EncoderVAE(encoder_net, latent_dim)
+        self.decoder = decoder_net
+        self.gmm_density = gmm_density_net
+        self.n_gmm = n_gmm
+        self.latent_dim = latent_dim
+        self.recon_features = recon_features
+        self.beta = beta
+
+    def call(self, x: tf.Tensor) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
+        enc_mean, enc_log_var, enc = self.encoder(x)
+        x_recon = self.decoder(enc)
+        recon_features = self.recon_features(x, x_recon)
+        z = tf.concat([enc, recon_features], -1)
+        gamma = self.gmm_density(z)
+        # add KL divergence loss term
+        kl_loss = -.5 * tf.reduce_mean(enc_log_var - tf.square(enc_mean) - tf.exp(enc_log_var) + 1)
+        self.add_loss(self.beta * kl_loss)
+        return x_recon, z, gamma

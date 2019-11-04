@@ -3,12 +3,13 @@ import os
 import pickle
 import tensorflow as tf
 from typing import Dict, Union
-from odcd.models.autoencoder import AEGMM, VAE
+from odcd.models.autoencoder import AEGMM, VAE, VAEGMM
 from odcd.od.aegmm import OutlierAEGMM
 from odcd.od.base import BaseOutlierDetector
 from odcd.od.isolationforest import IForest
 from odcd.od.mahalanobis import Mahalanobis
 from odcd.od.vae import OutlierVAE
+from odcd.od.vaegmm import OutlierVAEGMM
 
 logger = logging.getLogger(__name__)
 
@@ -16,12 +17,14 @@ Data = Union[BaseOutlierDetector,
              IForest,
              Mahalanobis,
              OutlierAEGMM,
-             OutlierVAE]
+             OutlierVAE,
+             OutlierVAEGMM]
 
 DEFAULT_OUTLIER_DETECTORS = ['IForest',
                              'Mahalanobis',
                              'OutlierAEGMM',
-                             'OutlierVAE']
+                             'OutlierVAE',
+                             'OutlierVAEGMM']
 
 
 def save_od(od: Data,
@@ -57,6 +60,8 @@ def save_od(od: Data,
         state_dict = state_iforest(od)
     elif od_name == 'OutlierAEGMM':
         state_dict = state_aegmm(od)
+    elif od_name == 'OutlierVAEGMM':
+        state_dict = state_vaegmm(od)
 
     with open(filepath + od_name + '.pickle', 'wb') as f:
         pickle.dump(state_dict, f)
@@ -66,6 +71,8 @@ def save_od(od: Data,
         save_tf_vae(od, filepath)
     elif od_name == 'OutlierAEGMM':
         save_tf_aegmm(od, filepath)
+    elif od_name == 'OutlierVAEGMM':
+        save_tf_vaegmm(od, filepath)
 
 
 def state_iforest(od: IForest) -> Dict:
@@ -125,7 +132,7 @@ def state_vae(od: OutlierVAE) -> Dict:
 
 def state_aegmm(od: OutlierAEGMM) -> Dict:
     """
-    OutlierVAE parameters to save.
+    OutlierAEGMM parameters to save.
 
     Parameters
     ----------
@@ -135,6 +142,29 @@ def state_aegmm(od: OutlierAEGMM) -> Dict:
     state_dict = {'threshold': od.threshold,
                   'n_gmm': od.aegmm.n_gmm,
                   'recon_features': od.aegmm.recon_features,
+                  'phi': od.phi,
+                  'mu': od.mu,
+                  'cov': od.cov,
+                  'L': od.L,
+                  'log_det_cov': od.log_det_cov}
+    return state_dict
+
+
+def state_vaegmm(od: OutlierVAEGMM) -> Dict:
+    """
+    OutlierVAEGMM parameters to save.
+
+    Parameters
+    ----------
+    od
+        Outlier detector object.
+    """
+    state_dict = {'threshold': od.threshold,
+                  'samples': od.samples,
+                  'n_gmm': od.vaegmm.n_gmm,
+                  'latent_dim': od.vaegmm.latent_dim,
+                  'beta': od.vaegmm.beta,
+                  'recon_features': od.vaegmm.recon_features,
                   'phi': od.phi,
                   'mu': od.mu,
                   'cov': od.cov,
@@ -209,6 +239,41 @@ def save_tf_aegmm(od: OutlierAEGMM,
         logger.warning('No `tf.keras.Model` AEGMM detected. No AEGMM saved.')
 
 
+def save_tf_vaegmm(od: OutlierVAEGMM,
+                   filepath: str) -> None:
+    """
+    Save TensorFlow components of OutlierVAEGMM.
+
+    Parameters
+    ----------
+    od
+        Outlier detector object.
+    filepath
+        Save directory.
+    """
+    # create folder for model weights
+    model_dir = filepath + 'model/'
+    if not os.path.isdir(model_dir):
+        os.mkdir(model_dir)
+    # save encoder, decoder, gmm density model and vaegmm weights
+    if isinstance(od.vaegmm.encoder.encoder_net, tf.keras.Sequential):
+        od.vaegmm.encoder.encoder_net.save(model_dir + 'encoder_net.h5')
+    else:
+        logger.warning('No `tf.keras.Sequential` encoder detected. No encoder saved.')
+    if isinstance(od.vaegmm.decoder, tf.keras.Sequential):
+        od.vaegmm.decoder.save(model_dir + 'decoder_net.h5')
+    else:
+        logger.warning('No `tf.keras.Sequential` decoder detected. No decoder saved.')
+    if isinstance(od.vaegmm.gmm_density, tf.keras.Sequential):
+        od.vaegmm.gmm_density.save(model_dir + 'gmm_density_net.h5')
+    else:
+        logger.warning('No `tf.keras.Sequential` GMM density net detected. No GMM density net saved.')
+    if isinstance(od.vaegmm, tf.keras.Model):
+        od.vaegmm.save_weights(model_dir + 'vaegmm.ckpt')
+    else:
+        logger.warning('No `tf.keras.Model` VAEGMM detected. No VAEGMM saved.')
+
+
 def load_od(filepath: str) -> Data:
     """
     Load outlier detector.
@@ -247,6 +312,9 @@ def load_od(filepath: str) -> Data:
     elif od_name == 'OutlierAEGMM':
         aegmm = load_tf_aegmm(filepath, state_dict)
         od = init_od_aegmm(state_dict, aegmm)
+    elif od_name == 'OutlierVAEGMM':
+        vaegmm = load_tf_vaegmm(filepath, state_dict)
+        od = init_od_vaegmm(state_dict, vaegmm)
 
     od.meta = meta_dict
     return od
@@ -307,6 +375,35 @@ def load_tf_aegmm(filepath: str,
     return aegmm
 
 
+def load_tf_vaegmm(filepath: str,
+                   state_dict: Dict) -> tf.keras.Model:
+    """
+    Load VAEGMM.
+
+    Parameters
+    ----------
+    filepath
+        Save directory.
+    state_dict
+        Dictionary containing the `n_gmm`, `latent_dim` and `recon_features` parameters.
+
+    Returns
+    -------
+    Loaded VAEGMM.
+    """
+    model_dir = filepath + 'model/'
+    if not [f for f in os.listdir(model_dir) if not f.startswith('.')]:
+        logger.warning('No encoder, decoder, gmm density net or vaegmm found in {}.'.format(model_dir))
+        return None
+    encoder_net = tf.keras.models.load_model(model_dir + 'encoder_net.h5')
+    decoder_net = tf.keras.models.load_model(model_dir + 'decoder_net.h5')
+    gmm_density_net = tf.keras.models.load_model(model_dir + 'gmm_density_net.h5')
+    vaegmm = VAEGMM(encoder_net, decoder_net, gmm_density_net, state_dict['n_gmm'],
+                    state_dict['latent_dim'], state_dict['recon_features'], state_dict['beta'])
+    vaegmm.load_weights(model_dir + 'vaegmm.ckpt')
+    return vaegmm
+
+
 def init_od_vae(state_dict: Dict,
                 vae: tf.keras.Model) -> OutlierVAE:
     """
@@ -333,7 +430,7 @@ def init_od_vae(state_dict: Dict,
 def init_od_aegmm(state_dict: Dict,
                   aegmm: tf.keras.Model) -> OutlierAEGMM:
     """
-    Initialize OutlierVAE.
+    Initialize OutlierAEGMM.
 
     Parameters
     ----------
@@ -348,6 +445,33 @@ def init_od_aegmm(state_dict: Dict,
     """
     od = OutlierAEGMM(threshold=state_dict['threshold'],
                       aegmm=aegmm)
+    od.phi = state_dict['phi']
+    od.mu = state_dict['mu']
+    od.cov = state_dict['cov']
+    od.L = state_dict['L']
+    od.log_det_cov = state_dict['log_det_cov']
+    return od
+
+
+def init_od_vaegmm(state_dict: Dict,
+                   vaegmm: tf.keras.Model) -> OutlierVAEGMM:
+    """
+    Initialize OutlierVAEGMM.
+
+    Parameters
+    ----------
+    state_dict
+        Dictionary containing the parameter values.
+    vaegmm
+        Loaded VAEGMM.
+
+    Returns
+    -------
+    Initialized OutlierVAEGMM instance.
+    """
+    od = OutlierVAEGMM(threshold=state_dict['threshold'],
+                       vaegmm=vaegmm,
+                       samples=state_dict['samples'])
     od.phi = state_dict['phi']
     od.mu = state_dict['mu']
     od.cov = state_dict['cov']
