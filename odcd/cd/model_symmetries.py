@@ -425,7 +425,7 @@ class VaeSymmetryFinderConvKeras(object):
         self.x = Dropout(self.dropout)(self.x)
         self.x = Conv2DTranspose(64, 4, strides=2, padding='same', activation='relu')(self.x)
         self.x = Dropout(self.dropout)(self.x)
-        self.vae_outputs = Conv2DTranspose(3, 4, strides=2, padding='same', activation='sigmoid')(self.x)
+        self.vae_outputs = Conv2DTranspose(self.rgb_filters, 4, strides=2, padding='same', activation='sigmoid')(self.x)
 
         #for i in range(self.nb_conv_layers):
         #    self.x = Conv2DTranspose(filters=self.filters, kernel_size=self.kernel_size,
