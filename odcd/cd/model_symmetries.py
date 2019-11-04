@@ -380,22 +380,25 @@ class VaeSymmetryFinderConvKeras(object):
 
         self.inputs = Input(shape=self.input_shape, name='encoder_input')
         self.x = self.inputs
-        for i in range(self.nb_conv_layers):
-            self.filters *= 2
-            self.x = Conv2D(filters=self.filters, kernel_size=self.kernel_size,
-                            activation='relu', strides=self.strides, padding='same')(self.x)
-            self.x = Dropout(self.dropout)(self.x)
-            self.x = Conv2D(filters=self.filters, kernel_size=self.kernel_size,
-                                            activation='relu', strides=self.strides, padding='same')(self.x)
-            self.x = Dropout(self.dropout)(self.x)
+        self.x = Conv2D(filters=64, kernel_size=4, strides=2, activation='relu')(self.inputs)
+        self.x = Conv2D(filters=128, kernel_size=4, strides=2, activation='relu')(self.x)
+        self.x = Conv2D(filters=512, kernel_size=4, strides=2, activation='relu')(self.x)
+        #for i in range(self.nb_conv_layers):
+        #    self.filters *= 2
+        #    self.x = Conv2D(filters=self.filters, kernel_size=self.kernel_size,
+        #                    activation='relu', strides=self.strides, padding='same')(self.x)
+        #    self.x = Dropout(self.dropout)(self.x)
+        #    self.x = Conv2D(filters=self.filters, kernel_size=self.kernel_size,
+        #                                    activation='relu', strides=self.strides, padding='same')(self.x)
+        #    self.x = Dropout(self.dropout)(self.x)
 
         # shape info needed to build decoder model
         shape = K.int_shape(self.x)
 
         # generate latent vector Q(z|X)
         self.x = Flatten()(self.x)
-        self.x = Dense(self.intermediate_dim, activation=self.intermediate_activation)(self.x)
-        self.x = Dropout(self.dropout)(self.x)
+        #self.x = Dense(self.intermediate_dim, activation=self.intermediate_activation)(self.x)
+        #self.x = Dropout(self.dropout)(self.x)
         self.z_mean = Dense(self.latent_dim, name='z_mean')(self.x)
         self.z_log_var = Dense(self.latent_dim, name='z_log_var')(self.x)
 
@@ -404,24 +407,27 @@ class VaeSymmetryFinderConvKeras(object):
         self.z = Lambda(sampling_gaussian,
                         output_shape=(self.latent_dim,),
                         name='z')([self.z_mean, self.z_log_var])
-        if self.variational:
-            self.x = Dense(self.intermediate_dim, activation=self.intermediate_activation)(self.z)
-        else:
-            self.x = Dense(self.intermediate_dim, activation=self.intermediate_activation)(self.z_mean)
+        #if self.variational:
+        #    self.x = Dense(self.intermediate_dim, activation=self.intermediate_activation)(self.z)
+        #else:
+        #    self.x = Dense(self.intermediate_dim, activation=self.intermediate_activation)(self.z_mean)
 
-        self.x = Dropout(self.dropout)(self.x)
+        #self.x = Dropout(self.dropout)(self.x)
         self.x = Dense(shape[1] * shape[2] * shape[3], activation=self.intermediate_activation)(self.x)
-        self.x = Dropout(self.dropout)(self.x)
+        #self.x = Dropout(self.dropout)(self.x)
         self.x = Reshape((shape[1], shape[2], shape[3]))(self.x)
 
-        for i in range(self.nb_conv_layers):
-            self.x = Conv2DTranspose(filters=self.filters, kernel_size=self.kernel_size,
-                                     activation='relu', strides=self.strides, padding='same')(self.x)
-            self.x = Dropout(self.dropout)(self.x)
-            self.x = Conv2DTranspose(filters=self.filters, kernel_size=self.kernel_size,
-                                     activation='relu', strides=self.strides, padding='same')(self.x)
-            self.x = Dropout(self.dropout)(self.x)
-            self.filters //= 2
+        self.x = Conv2DTranspose(filters=264, kernel_size=4, strides=2, activation='relu')(self.x)
+        self.x = Conv2DTranspose(filters=64, kernel_size=4, strides=2, activation='relu')(self.x)
+
+        #for i in range(self.nb_conv_layers):
+        #    self.x = Conv2DTranspose(filters=self.filters, kernel_size=self.kernel_size,
+        #                             activation='relu', strides=self.strides, padding='same')(self.x)
+        #    self.x = Dropout(self.dropout)(self.x)
+        #    self.x = Conv2DTranspose(filters=self.filters, kernel_size=self.kernel_size,
+        #                             activation='relu', strides=self.strides, padding='same')(self.x)
+        #    self.x = Dropout(self.dropout)(self.x)
+        #    self.filters //= 2
 
         self.vae_outputs = Conv2DTranspose(filters=self.rgb_filters,
                                            kernel_size=self.kernel_size,
