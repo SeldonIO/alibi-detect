@@ -90,4 +90,7 @@ def fetch_kdd(target: list = ['dos', 'r2l', 'u2r', 'probe'],
     if return_X_y:
         return data.values, is_outlier
 
-    return Bunch(data=data.values, target=is_outlier, target_names=['normal', 'outlier'])
+    return Bunch(data=data.values,
+                 target=is_outlier,
+                 target_names=['normal', 'outlier'],
+                 feature_names=keep_cols)
