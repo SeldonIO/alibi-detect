@@ -381,8 +381,11 @@ class VaeSymmetryFinderConvKeras(object):
         self.inputs = Input(shape=self.input_shape, name='encoder_input')
         self.x = self.inputs
         self.x = Conv2D(filters=64, kernel_size=4, strides=2, activation='relu')(self.inputs)
+        self.x = Dropout(self.dropout)(self.x)
         self.x = Conv2D(filters=128, kernel_size=4, strides=2, activation='relu')(self.x)
+        self.x = Dropout(self.dropout)(self.x)
         self.x = Conv2D(filters=512, kernel_size=4, strides=2, activation='relu')(self.x)
+        self.x = Dropout(self.dropout)(self.x)
         #for i in range(self.nb_conv_layers):
         #    self.filters *= 2
         #    self.x = Conv2D(filters=self.filters, kernel_size=self.kernel_size,
@@ -419,7 +422,9 @@ class VaeSymmetryFinderConvKeras(object):
         self.x = Reshape((4, 4, 128))(self.x)
 
         self.x = Conv2DTranspose(256, 4, strides=2, padding='same', activation='relu')(self.x)
+        self.x = Dropout(self.dropout)(self.x)
         self.x = Conv2DTranspose(64, 4, strides=2, padding='same', activation='relu')(self.x)
+        self.x = Dropout(self.dropout)(self.x)
         self.vae_outputs = Conv2DTranspose(3, 4, strides=2, padding='same', activation='sigmoid')(self.x)
 
         #for i in range(self.nb_conv_layers):
