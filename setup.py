@@ -9,7 +9,7 @@ def readme():
 # read version file
 exec(open("odcd/version.py").read())
 
-extras_require = {"examples": ["seaborn", "Keras", "xgboost"]}
+extras_require = {"examples": ["seaborn", "tqdm"]}
 
 setup(
     name="odcd",
