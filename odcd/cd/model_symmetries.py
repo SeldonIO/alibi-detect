@@ -349,7 +349,7 @@ class VaeSymmetryFinderConvKeras(object):
     def __init__(self, predict_fn, input_shape=(28, 28), output_shape=(10, ), rgb_filters=3, dropout=None,
                  kernel_size=3, filters=32, intermediate_dim=16, latent_dim=2, strides=2, nb_conv_layers=2,
                  intermediate_activation='relu', output_activation='sigmoid', opt='Adam', lr=0.001,
-                 variational=True, loss_type='symm', add_latent_loss=False):
+                 variational=True, loss_type='kl_2', add_latent_loss=False):
         self.predict_fn = predict_fn
         self.input_shape = input_shape
         self.output_shape = output_shape
@@ -429,8 +429,10 @@ class VaeSymmetryFinderConvKeras(object):
                                        self.model_output_trans], name='vae_mlp')
 
         # Define loss
-        if self.loss_type == 'kl':
+        if self.loss_type == 'kl_1':
             self.loss = (kullback_leibler_divergence(self.model_output_orig, self.model_output_trans))
+        if self.loss_type == 'kl_2':
+            self.loss = (kullback_leibler_divergence(self.model_output_trans, self.model_output_orig))
         elif self.loss_type == 'symm_kl':
             self.loss = 0.5 * (kullback_leibler_divergence(self.model_output_orig, self.model_output_trans) +
                                kullback_leibler_divergence(self.model_output_trans, self.model_output_orig))
