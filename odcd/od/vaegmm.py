@@ -5,14 +5,14 @@ import tensorflow_probability as tfp
 from typing import Callable, Dict, Tuple
 from odcd.models.autoencoder import VAEGMM, eucl_cosim_features
 from odcd.models.gmm import gmm_energy, gmm_params
-from odcd.models.losses import elbo, loss_vaegmm
+from odcd.models.losses import loss_vaegmm
 from odcd.models.trainer import trainer
-from odcd.od.base import BaseOutlierDetector, FitMixin, ThresholdMixin, outlier_prediction_dict
+from odcd.base import BaseDetector, FitMixin, ThresholdMixin, outlier_prediction_dict
 
 logger = logging.getLogger(__name__)
 
 
-class OutlierVAEGMM(BaseOutlierDetector, FitMixin, ThresholdMixin):
+class OutlierVAEGMM(BaseDetector, FitMixin, ThresholdMixin):
 
     def __init__(self,
                  threshold: float = None,

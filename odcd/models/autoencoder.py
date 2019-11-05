@@ -1,5 +1,6 @@
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, Flatten, Layer
+from tensorflow.keras.losses import kld
 from typing import Callable, Tuple
 from odcd.utils.distance import relative_euclidean_distance
 
@@ -107,7 +108,7 @@ class VAE(tf.keras.Model):
         beta
             Beta parameter for KL-divergence loss term.
         name
-            Name of encoder.
+            Name of VAE model.
         """
         super(VAE, self).__init__(name=name)
         self.encoder = EncoderVAE(encoder_net, latent_dim)
@@ -230,7 +231,7 @@ class AEGMM(tf.keras.Model):
         recon_features
             Function to extract features from the reconstructed instance by the decoder.
         name
-            Name of te AEGMM model.
+            Name of the AEGMM model.
         """
         super(AEGMM, self).__init__(name=name)
         self.encoder = encoder_net
@@ -279,7 +280,7 @@ class VAEGMM(tf.keras.Model):
         beta
             Beta parameter for KL-divergence loss term.
         name
-            Name of te AEGMM model.
+            Name of the VAEGMM model.
         """
         super(VAEGMM, self).__init__(name=name)
         self.encoder = EncoderVAE(encoder_net, latent_dim)
@@ -300,3 +301,61 @@ class VAEGMM(tf.keras.Model):
         kl_loss = -.5 * tf.reduce_mean(enc_log_var - tf.square(enc_mean) - tf.exp(enc_log_var) + 1)
         self.add_loss(self.beta * kl_loss)
         return x_recon, z, gamma
+
+
+class AdvVAE(tf.keras.Model):
+
+    def __init__(self,
+                 model: tf.keras.Model,
+                 encoder_net: tf.keras.Sequential,
+                 decoder_net: tf.keras.Sequential,
+                 latent_dim: int,
+                 beta: float = 1.,
+                 w_model_loss: float = 1.,
+                 w_latent_loss: float = 0.,
+                 name: str = 'advvae') -> None:
+        """
+        Combine encoder and decoder in AdvVAE.
+
+        Parameters
+        ----------
+        model
+            A trained tf.keras model.
+        encoder_net
+            Layers for the encoder wrapped in a tf.keras.Sequential class.
+        decoder_net
+            Layers for the decoder wrapped in a tf.keras.Sequential class.
+        latent_dim
+            Dimensionality of the latent space.
+        beta
+            Beta parameter for KL-divergence loss term.
+        w_model_loss
+            Weight on KL loss term for model predictions.
+        w_latent_loss
+            Weight on KL loss term for latent space.
+        name
+            Name of AdvVAE model.
+        """
+        super(AdvVAE, self).__init__(name=name)
+        # predictive model not trainable
+        for layer in model.layers:
+            layer.trainable = False
+        self.model = model
+        self.encoder = EncoderVAE(encoder_net, latent_dim)
+        self.decoder = Decoder(decoder_net)
+        self.beta = beta
+        self.latent_dim = latent_dim
+        self.w_model_loss = w_model_loss
+        self.w_latent_loss = w_latent_loss
+
+    def call(self, x: tf.Tensor) -> tf.Tensor:
+        z_mean, z_log_var, z = self.encoder(x)
+        x_recon = self.decoder(z)
+        y_x = self.model(x)
+        y_x_recon = self.model(x_recon)
+        # add KL divergence loss terms
+        model_loss = tf.reduce_mean(kld(y_x, y_x_recon))
+        latent_loss = -.5 * tf.reduce_mean(z_log_var - tf.square(z_mean) - tf.exp(z_log_var) + 1)
+        loss = self.w_latent_loss * self.beta * latent_loss + self.w_model_loss * model_loss
+        self.add_loss(loss)
+        return x_recon

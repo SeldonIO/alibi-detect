@@ -6,12 +6,12 @@ from odcd.models.autoencoder import AEGMM, eucl_cosim_features
 from odcd.models.gmm import gmm_energy, gmm_params
 from odcd.models.losses import loss_aegmm
 from odcd.models.trainer import trainer
-from odcd.od.base import BaseOutlierDetector, FitMixin, ThresholdMixin, outlier_prediction_dict
+from odcd.base import BaseDetector, FitMixin, ThresholdMixin, outlier_prediction_dict
 
 logger = logging.getLogger(__name__)
 
 
-class OutlierAEGMM(BaseOutlierDetector, FitMixin, ThresholdMixin):
+class OutlierAEGMM(BaseDetector, FitMixin, ThresholdMixin):
 
     def __init__(self,
                  threshold: float = None,
