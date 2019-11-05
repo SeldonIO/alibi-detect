@@ -39,7 +39,7 @@ def sampling_nlp(args):
     return tf.random.categorical(tf.log(p), input_dim)
 
 
-def load_vae(arch_path='vae_arch.json', weights_path='vae_weights.h5', model_type='keras', signal_type='kl'):
+def load_vae(arch_path='vae_arch.json', weights_path='vae_weights.h5', model_type='keras', signal_type='kl_2'):
 
     with open(arch_path, 'r') as f:
         loaded_model_json = f.read()
@@ -72,9 +72,13 @@ def load_vae(arch_path='vae_arch.json', weights_path='vae_weights.h5', model_typ
             s = amp * 0.5 * (entropy(vae.predict(x)[1].T, vae.predict(x)[2].T) +
                              entropy(vae.predict(x)[1].T, vae.predict(x)[2].T))
             return s
-    elif signal_type == 'kl':
+    elif signal_type == 'kl_1':
         def signal(vae, x, amp=1):
             s = amp * entropy(vae.predict(x)[1].T, vae.predict(x)[2].T)
+            return s
+    elif signal_type == 'kl_2':
+        def signal(vae, x, amp=1):
+            s = amp * entropy(vae.predict(x)[2].T, vae.predict(x)[1].T)
             return s
     else:
         raise NotImplementedError
@@ -501,8 +505,10 @@ class VaeSymmetryFinderConvKeras(object):
         if self.loss_type == 'symm_kl':
             return amp * 0.5 * (entropy(self.vae.predict(x)[1].T, self.vae.predict(x)[2].T) +
                                 entropy(self.vae.predict(x)[2].T, self.vae.predict(x)[1].T))
-        else:
+        elif self.loss_type == 'kl_1':
             return amp * entropy(self.vae.predict(x)[1].T, self.vae.predict(x)[2].T)
+        elif self.loss_type == 'kl_2':
+            return amp * entropy(self.vae.predict(x)[2].T, self.vae.predict(x)[1].T)
 
 
 class VaeSymmetryFinderNlp(object):
