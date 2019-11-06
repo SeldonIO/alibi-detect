@@ -4,24 +4,24 @@ import pandas as pd
 from typing import Dict
 
 
-def plot_instance_outlier(od_preds: Dict,
-                          target: np.ndarray,
-                          labels: np.ndarray,
-                          threshold: float,
-                          ylim: tuple = (None, None)) -> None:
+def plot_instance_score(od_preds: Dict,
+                        target: np.ndarray,
+                        labels: np.ndarray,
+                        threshold: float,
+                        ylim: tuple = (None, None)) -> None:
     """
-    Scatter plot of a batch of outlier scores compared to the outlier threshold.
+    Scatter plot of a batch of outlier or adversarial scores compared to the threshold.
 
     Parameters
     ----------
     scores
-        Outlier scores.
+        Outlier or adversarial scores.
     target
         Ground truth.
     labels
         List with names of classification labels.
     threshold
-        Threshold used to classify outliers.
+        Threshold used to classify outliers or adversarial instances.
     ylim
         Min and max y-axis values.
     """
@@ -34,7 +34,7 @@ def plot_instance_outlier(od_preds: Dict,
     plt.plot(np.arange(len(scores)), np.ones(len(scores)) * threshold, color='g', label='Threshold')
     plt.ylim(ylim)
     plt.xlabel('Number of Instances')
-    plt.ylabel('Instance Level Outlier Score')
+    plt.ylabel('Instance Level Score')
     ax.legend()
     plt.show()
 
