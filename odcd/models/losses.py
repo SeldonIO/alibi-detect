@@ -164,11 +164,9 @@ def loss_adv_vae(x_true: tf.Tensor,
     -------
     Loss value.
     """
-    if w_recon > 0.:
-        recon_loss = elbo(x_true, x_pred, cov_full=cov_full, cov_diag=cov_diag, sim=sim)
-    else:
-        recon_loss = 0.
     y_true = model(x_true)
     y_pred = model(x_pred)
-    loss = w_model * tf.reduce_mean(kld(y_true, y_pred)) + w_recon * recon_loss
+    loss = w_model * tf.reduce_mean(kld(y_true, y_pred))
+    if w_recon > 0.:
+        loss += w_recon * elbo(x_true, x_pred, cov_full=cov_full, cov_diag=cov_diag, sim=sim)
     return loss

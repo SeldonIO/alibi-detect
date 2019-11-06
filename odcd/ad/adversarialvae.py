@@ -125,7 +125,7 @@ class AdversarialVAE(BaseDetector, FitMixin, ThresholdMixin):
                   'verbose': verbose,
                   'log_metric': log_metric,
                   'callbacks': callbacks,
-                  'loss_fn_kwargs': {'w_model': w_recon,
+                  'loss_fn_kwargs': {'w_model': w_model,
                                      'w_recon': w_recon,
                                      'model': self.model}
                   }
