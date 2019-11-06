@@ -9,4 +9,4 @@ spec:
         storageUri: "gs://kfserving-samples/models/pytorch/cifar10/"
         modelClassName: "Net"
       logger:
-        logType: request
+        mode: request
