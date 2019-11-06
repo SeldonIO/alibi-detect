@@ -1,6 +1,5 @@
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, Flatten, Layer
-from tensorflow.keras.losses import kld
 from typing import Callable, Tuple
 from odcd.utils.distance import relative_euclidean_distance
 

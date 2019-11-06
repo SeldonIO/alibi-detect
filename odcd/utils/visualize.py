@@ -4,7 +4,7 @@ import pandas as pd
 from typing import Dict
 
 
-def plot_instance_score(od_preds: Dict,
+def plot_instance_score(preds: Dict,
                         target: np.ndarray,
                         labels: np.ndarray,
                         threshold: float,
@@ -14,8 +14,8 @@ def plot_instance_score(od_preds: Dict,
 
     Parameters
     ----------
-    scores
-        Outlier or adversarial scores.
+    preds
+        Dictionary returned by predictions of an outlier or adversarial detector.
     target
         Ground truth.
     labels
@@ -25,7 +25,7 @@ def plot_instance_score(od_preds: Dict,
     ylim
         Min and max y-axis values.
     """
-    scores = od_preds['data']['instance_score']
+    scores = preds['data']['instance_score']
     df = pd.DataFrame(dict(idx=np.arange(len(scores)), score=scores, label=target))
     groups = df.groupby('label')
     fig, ax = plt.subplots()
