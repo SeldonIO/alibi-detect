@@ -79,7 +79,8 @@ def save_detector(detector: Data,
     elif detector_name == 'OutlierVAEGMM':
         save_tf_vaegmm(detector, filepath)
     elif detector_name == 'AdversarialVAE':
-        save_tf_adv_vae(detector, filepath)
+        save_tf_vae(detector, filepath)
+        save_tf_model(detector.model, filepath)
 
 
 def state_iforest(od: IForest) -> Dict:
@@ -196,35 +197,65 @@ def state_adv_vae(ad: AdversarialVAE) -> Dict:
     return state_dict
 
 
-def save_tf_vae(od: OutlierVAE,
+def save_tf_vae(detector: Union[OutlierVAE, AdversarialVAE],
                 filepath: str) -> None:
     """
-    Save TensorFlow components of OutlierVAE.
+    Save TensorFlow components of OutlierVAE or AdversarialVAE.
 
     Parameters
     ----------
-    od
-        Outlier detector object.
+    detector
+        Outlier or adversarial detector object.
     filepath
         Save directory.
     """
     # create folder for model weights
+    if not os.path.isdir(filepath):
+        logger.warning('Directory {} does not exist and is now created.'.format(filepath))
+        os.mkdir(filepath)
     model_dir = filepath + 'model/'
     if not os.path.isdir(model_dir):
         os.mkdir(model_dir)
     # save encoder, decoder and vae weights
-    if isinstance(od.vae.encoder.encoder_net, tf.keras.Sequential):
-        od.vae.encoder.encoder_net.save(model_dir + 'encoder_net.h5')
+    if isinstance(detector.vae.encoder.encoder_net, tf.keras.Sequential):
+        detector.vae.encoder.encoder_net.save(model_dir + 'encoder_net.h5')
     else:
         logger.warning('No `tf.keras.Sequential` encoder detected. No encoder saved.')
-    if isinstance(od.vae.decoder.decoder_net, tf.keras.Sequential):
-        od.vae.decoder.decoder_net.save(model_dir + 'decoder_net.h5')
+    if isinstance(detector.vae.decoder.decoder_net, tf.keras.Sequential):
+        detector.vae.decoder.decoder_net.save(model_dir + 'decoder_net.h5')
     else:
         logger.warning('No `tf.keras.Sequential` decoder detected. No decoder saved.')
-    if isinstance(od.vae, tf.keras.Model):
-        od.vae.save_weights(model_dir + 'vae.ckpt')
+    if isinstance(detector.vae, tf.keras.Model):
+        detector.vae.save_weights(model_dir + 'vae.ckpt')
     else:
         logger.warning('No `tf.keras.Model` vae detected. No vae saved.')
+
+
+def save_tf_model(model: tf.keras.Model,
+                  filepath: str) -> None:
+    """
+    Save TensorFlow model.
+
+    Parameters
+    ----------
+    model
+        A tf.keras Model.
+    filepath
+        Save directory.
+    """
+    # create folder for model weights
+    if not os.path.isdir(filepath):
+        logger.warning('Directory {} does not exist and is now created.'.format(filepath))
+        os.mkdir(filepath)
+    model_dir = filepath + 'model/'
+    if not os.path.isdir(model_dir):
+        os.mkdir(model_dir)
+
+    # save classification model
+    if isinstance(model, tf.keras.Model):  # TODO: not flexible enough!
+        model.save(model_dir + 'model.h5')
+    else:
+        logger.warning('No `tf.keras.Model` vae detected. No classification model saved.')
 
 
 def save_tf_aegmm(od: OutlierAEGMM,
@@ -240,6 +271,9 @@ def save_tf_aegmm(od: OutlierAEGMM,
         Save directory.
     """
     # create folder for model weights
+    if not os.path.isdir(filepath):
+        logger.warning('Directory {} does not exist and is now created.'.format(filepath))
+        os.mkdir(filepath)
     model_dir = filepath + 'model/'
     if not os.path.isdir(model_dir):
         os.mkdir(model_dir)
@@ -275,6 +309,9 @@ def save_tf_vaegmm(od: OutlierVAEGMM,
         Save directory.
     """
     # create folder for model weights
+    if not os.path.isdir(filepath):
+        logger.warning('Directory {} does not exist and is now created.'.format(filepath))
+        os.mkdir(filepath)
     model_dir = filepath + 'model/'
     if not os.path.isdir(model_dir):
         os.mkdir(model_dir)
@@ -295,43 +332,6 @@ def save_tf_vaegmm(od: OutlierVAEGMM,
         od.vaegmm.save_weights(model_dir + 'vaegmm.ckpt')
     else:
         logger.warning('No `tf.keras.Model` VAEGMM detected. No VAEGMM saved.')
-
-
-def save_tf_adv_vae(ad: AdversarialVAE,
-                    filepath: str) -> None:
-    """
-    Save TensorFlow components of AdversarialVAE.
-
-    Parameters
-    ----------
-    ad
-        Adversarial detector object.
-    filepath
-        Save directory.
-    """
-    # create folder for model weights
-    model_dir = filepath + 'model/'
-    if not os.path.isdir(model_dir):
-        os.mkdir(model_dir)
-    # save encoder, decoder and vae weights
-    if isinstance(ad.vae.encoder.encoder_net, tf.keras.Sequential):
-        ad.vae.encoder.encoder_net.save(model_dir + 'encoder_net.h5')
-    else:
-        logger.warning('No `tf.keras.Sequential` encoder detected. No encoder saved.')
-    if isinstance(ad.vae.decoder.decoder_net, tf.keras.Sequential):
-        ad.vae.decoder.decoder_net.save(model_dir + 'decoder_net.h5')
-    else:
-        logger.warning('No `tf.keras.Sequential` decoder detected. No decoder saved.')
-    if isinstance(ad.vae, tf.keras.Model):
-        ad.vae.save_weights(model_dir + 'vae.ckpt')
-    else:
-        logger.warning('No `tf.keras.Model` vae detected. No vae saved.')
-
-    # save classification model
-    if isinstance(ad.model, tf.keras.Model):  # TODO: not flexible enough!
-        ad.model.save(model_dir + 'model.h5')
-    else:
-        logger.warning('No `tf.keras.Model` vae detected. No classification model saved.')
 
 
 def load_detector(filepath: str) -> Data:
