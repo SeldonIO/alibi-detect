@@ -396,8 +396,8 @@ class VaeSymmetryFinderConvKeras(object):
 
         # generate latent vector Q(z|X)
         self.x = Flatten()(self.x)
-        self.z_mean = Dense(self.latent_dim, name='z_mean')(self.x)
-        self.z_log_var = Dense(self.latent_dim, name='z_log_var')(self.x)
+        self.z_mean = Dense(self.latent_dim, activation=self.intermediate_activation, name='z_mean')(self.x)
+        self.z_log_var = Dense(self.latent_dim, activation=self.intermediate_activation, name='z_log_var')(self.x)
 
         # use reparameterization trick to push the sampling out as input
         # note that "output_shape" isn't necessary with the TensorFlow backend
