@@ -1,6 +1,7 @@
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, Flatten, Layer
-from typing import Tuple
+from typing import Callable, Tuple
+from odcd.utils.distance import relative_euclidean_distance
 
 # TODO: add difference between train and inference mode for dropout
 
@@ -106,7 +107,7 @@ class VAE(tf.keras.Model):
         beta
             Beta parameter for KL-divergence loss term.
         name
-            Name of encoder.
+            Name of VAE model.
         """
         super(VAE, self).__init__(name=name)
         self.encoder = EncoderVAE(encoder_net, latent_dim)
@@ -161,7 +162,7 @@ class AE(tf.keras.Model):
         decoder_net
             Layers for the decoder wrapped in a tf.keras.Sequential class.
         name
-            Name of encoder.
+            Name of autoencoder model.
         """
         super(AE, self).__init__(name=name)
         self.encoder = EncoderAE(encoder_net)
@@ -171,3 +172,131 @@ class AE(tf.keras.Model):
         z = self.encoder(x)
         x_recon = self.decoder(z)
         return x_recon
+
+
+def eucl_cosim_features(x: tf.Tensor,
+                        y: tf.Tensor,
+                        max_eucl: float = 1e2) -> tf.Tensor:
+    """
+    Compute features extracted from the reconstructed instance using the
+    relative Euclidean distance and cosine similarity between 2 tensors.
+
+    Parameters
+    ----------
+    x
+        Tensor used in feature computation.
+    y
+        Tensor used in feature computation.
+    max_eucl
+        Maximum value to clip relative Euclidean distance by.
+
+    Returns
+    -------
+    Tensor concatenating the relative Euclidean distance and
+    cosine similarity features.
+    """
+    if len(x.shape) > 2 or len(y.shape) > 2:
+        x = Flatten()(x)
+        y = Flatten()(y)
+    rec_cos = tf.reshape(tf.keras.losses.cosine_similarity(y, x, -1), (-1, 1))
+    rec_euc = tf.reshape(relative_euclidean_distance(y, x, -1), (-1, 1))
+    # rec_euc could become very large so should be clipped
+    rec_euc = tf.clip_by_value(rec_euc, 0, max_eucl)
+    return tf.concat([rec_cos, rec_euc], -1)
+
+
+class AEGMM(tf.keras.Model):
+
+    def __init__(self,
+                 encoder_net: tf.keras.Sequential,
+                 decoder_net: tf.keras.Sequential,
+                 gmm_density_net: tf.keras.Sequential,
+                 n_gmm: int,
+                 recon_features: Callable = eucl_cosim_features,
+                 name: str = 'aegmm') -> None:
+        """
+        Deep Autoencoding Gaussian Mixture Model.
+
+        Parameters
+        ----------
+        encoder_net
+            Layers for the encoder wrapped in a tf.keras.Sequential class.
+        decoder_net
+            Layers for the decoder wrapped in a tf.keras.Sequential class.
+        gmm_density_net
+            Layers for the GMM network wrapped in a tf.keras.Sequential class.
+        n_gmm
+            Number of components in GMM.
+        recon_features
+            Function to extract features from the reconstructed instance by the decoder.
+        name
+            Name of the AEGMM model.
+        """
+        super(AEGMM, self).__init__(name=name)
+        self.encoder = encoder_net
+        self.decoder = decoder_net
+        self.gmm_density = gmm_density_net
+        self.n_gmm = n_gmm
+        self.recon_features = recon_features
+
+    def call(self, x: tf.Tensor) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
+        enc = self.encoder(x)
+        x_recon = self.decoder(enc)
+        recon_features = self.recon_features(x, x_recon)
+        z = tf.concat([enc, recon_features], -1)
+        gamma = self.gmm_density(z)
+        return x_recon, z, gamma
+
+
+class VAEGMM(tf.keras.Model):
+
+    def __init__(self,
+                 encoder_net: tf.keras.Sequential,
+                 decoder_net: tf.keras.Sequential,
+                 gmm_density_net: tf.keras.Sequential,
+                 n_gmm: int,
+                 latent_dim: int,
+                 recon_features: Callable = eucl_cosim_features,
+                 beta: float = 1.,
+                 name: str = 'vaegmm') -> None:
+        """
+        Variational Autoencoding Gaussian Mixture Model.
+
+        Parameters
+        ----------
+        encoder_net
+            Layers for the encoder wrapped in a tf.keras.Sequential class.
+        decoder_net
+            Layers for the decoder wrapped in a tf.keras.Sequential class.
+        gmm_density_net
+            Layers for the GMM network wrapped in a tf.keras.Sequential class.
+        n_gmm
+            Number of components in GMM.
+        latent_dim
+            Dimensionality of the latent space.
+        recon_features
+            Function to extract features from the reconstructed instance by the decoder.
+        beta
+            Beta parameter for KL-divergence loss term.
+        name
+            Name of the VAEGMM model.
+        """
+        super(VAEGMM, self).__init__(name=name)
+        self.encoder = EncoderVAE(encoder_net, latent_dim)
+        self.decoder = decoder_net
+        self.gmm_density = gmm_density_net
+        self.n_gmm = n_gmm
+        self.latent_dim = latent_dim
+        self.recon_features = recon_features
+        self.beta = beta
+
+    def call(self, x: tf.Tensor) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
+        enc_mean, enc_log_var, enc = self.encoder(x)
+        x_recon = self.decoder(enc)
+        recon_features = self.recon_features(x, x_recon)
+        z = tf.concat([enc, recon_features], -1)
+        gamma = self.gmm_density(z)
+        # add KL divergence loss term
+        kl_loss = -.5 * tf.reduce_mean(enc_log_var - tf.square(enc_mean) - tf.exp(enc_log_var) + 1)
+        self.add_loss(self.beta * kl_loss)
+        return x_recon, z, gamma

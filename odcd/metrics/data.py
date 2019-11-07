@@ -6,7 +6,7 @@ from copy import deepcopy
 import logging
 import json
 
-import odcd.metrics.utils as utils
+from odcd.metrics.utils import map_nested_dicts, get_creme_value, NumpyEncoder
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +58,7 @@ class DataTracker:
                     metric.update(x[index])
 
     def get(self, serialize=True) -> Union[dict, str]:
-        result = utils.map_nested_dicts(self.metrics, utils.get_creme_value)
+        result = map_nested_dicts(self.metrics, get_creme_value)
         if serialize:
-            return json.dumps(result, cls=utils.NumpyEncoder)
+            return json.dumps(result, cls=NumpyEncoder)
         return result
