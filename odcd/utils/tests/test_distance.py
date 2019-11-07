@@ -97,6 +97,10 @@ def test_multidim_scaling(cats_and_labels, rng, update_rng, center):
             assert (v.max() + v.min()) - (rng[1][0, k] + rng[0][0, k]) < 1e-5
 
 
-@pytest.mark.parametrize
 def test_relative_euclidean_distance():
-    pass
+    x = np.random.rand(5, 3)
+    y = np.random.rand(5, 3)
+
+    assert (relative_euclidean_distance(x, y).numpy() == relative_euclidean_distance(y, x).numpy()).all()
+    assert (relative_euclidean_distance(x, x).numpy() == relative_euclidean_distance(y, y).numpy()).all()
+    assert (relative_euclidean_distance(x, y).numpy() >= 0.).all()
