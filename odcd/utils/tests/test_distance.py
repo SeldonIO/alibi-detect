@@ -95,3 +95,8 @@ def test_multidim_scaling(cats_and_labels, rng, update_rng, center):
         assert v.shape[0] == d_pair[k].shape[0]
         if center:
             assert (v.max() + v.min()) - (rng[1][0, k] + rng[0][0, k]) < 1e-5
+
+
+@pytest.mark.parametrize
+def test_relative_euclidean_distance():
+    pass
