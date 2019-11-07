@@ -107,7 +107,7 @@ class VAE(tf.keras.Model):
         beta
             Beta parameter for KL-divergence loss term.
         name
-            Name of encoder.
+            Name of VAE model.
         """
         super(VAE, self).__init__(name=name)
         self.encoder = EncoderVAE(encoder_net, latent_dim)
@@ -230,7 +230,7 @@ class AEGMM(tf.keras.Model):
         recon_features
             Function to extract features from the reconstructed instance by the decoder.
         name
-            Name of te AEGMM model.
+            Name of the AEGMM model.
         """
         super(AEGMM, self).__init__(name=name)
         self.encoder = encoder_net
@@ -279,7 +279,7 @@ class VAEGMM(tf.keras.Model):
         beta
             Beta parameter for KL-divergence loss term.
         name
-            Name of te AEGMM model.
+            Name of the VAEGMM model.
         """
         super(VAEGMM, self).__init__(name=name)
         self.encoder = EncoderVAE(encoder_net, latent_dim)
