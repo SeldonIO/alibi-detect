@@ -1,5 +1,6 @@
 import tensorflow as tf
 from tensorflow.keras.layers import Flatten
+from tensorflow.keras.losses import kld
 import tensorflow_probability as tfp
 from odcd.models.gmm import gmm_params, gmm_energy
 
@@ -56,7 +57,7 @@ def loss_aegmm(x_true: tf.Tensor,
 
     Parameters
     ----------
-    x_true,
+    x_true
         Batch of instances.
     x_pred
         Batch of reconstructed instances by the autoencoder.
@@ -73,10 +74,10 @@ def loss_aegmm(x_true: tf.Tensor,
     -------
     Loss value.
     """
-    recon_error = tf.reduce_mean((x_true - x_pred) ** 2)
+    recon_loss = tf.reduce_mean((x_true - x_pred) ** 2)
     phi, mu, cov, L, log_det_cov = gmm_params(z, gamma)
     sample_energy, cov_diag = gmm_energy(z, phi, mu, cov, L, log_det_cov)
-    loss = recon_error + w_energy * sample_energy + w_cov_diag * cov_diag
+    loss = recon_loss + w_energy * sample_energy + w_cov_diag * cov_diag
     return loss
 
 
@@ -96,7 +97,7 @@ def loss_vaegmm(x_true: tf.Tensor,
 
     Parameters
     ----------
-    x_true,
+    x_true
         Batch of instances.
     x_pred
         Batch of reconstructed instances by the variational autoencoder.
@@ -121,8 +122,51 @@ def loss_vaegmm(x_true: tf.Tensor,
     -------
     Loss value.
     """
-    recon_error = elbo(x_true, x_pred, cov_full=cov_full, cov_diag=cov_diag, sim=sim)
+    recon_loss = elbo(x_true, x_pred, cov_full=cov_full, cov_diag=cov_diag, sim=sim)
     phi, mu, cov, L, log_det_cov = gmm_params(z, gamma)
     sample_energy, cov_diag = gmm_energy(z, phi, mu, cov, L, log_det_cov)
-    loss = w_recon * recon_error + w_energy * sample_energy + w_cov_diag * cov_diag
+    loss = w_recon * recon_loss + w_energy * sample_energy + w_cov_diag * cov_diag
+    return loss
+
+
+def loss_adv_vae(x_true: tf.Tensor,
+                 x_pred: tf.Tensor,
+                 model: tf.keras.Model = None,
+                 w_model: float = 1.,
+                 w_recon: float = 0.,
+                 cov_full: tf.Tensor = None,
+                 cov_diag: tf.Tensor = None,
+                 sim: float = .05
+                 ) -> tf.Tensor:
+    """
+    Loss function used for AdversarialVAE.
+
+    Parameters
+    ----------
+    x_true
+        Batch of instances.
+    x_pred
+        Batch of reconstructed instances by the variational autoencoder.
+    model
+        A trained tf.keras model with frozen layers (layers.trainable = False).
+    w_model
+        Weight on model prediction loss term.
+    w_recon
+        Weight on elbo loss term.
+    cov_full
+        Full covariance matrix.
+    cov_diag
+        Diagonal (variance) of covariance matrix.
+    sim
+        Scale identity multiplier.
+
+    Returns
+    -------
+    Loss value.
+    """
+    y_true = model(x_true)
+    y_pred = model(x_pred)
+    loss = w_model * tf.reduce_mean(kld(y_true, y_pred))
+    if w_recon > 0.:
+        loss += w_recon * elbo(x_true, x_pred, cov_full=cov_full, cov_diag=cov_diag, sim=sim)
     return loss

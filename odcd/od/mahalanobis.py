@@ -5,14 +5,14 @@ from typing import Dict
 from odcd.utils.discretizer import Discretizer
 from odcd.utils.distance import abdm, mvdm, multidim_scaling
 from odcd.utils.mapping import ohe2ord, ord2num
-from odcd.od.base import BaseOutlierDetector, FitMixin, ThresholdMixin, outlier_prediction_dict
+from odcd.base import BaseDetector, FitMixin, ThresholdMixin, outlier_prediction_dict
 
 logger = logging.getLogger(__name__)
 
 EPSILON = 1e-8
 
 
-class Mahalanobis(BaseOutlierDetector, FitMixin, ThresholdMixin):
+class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
 
     def __init__(self,
                  threshold: float,

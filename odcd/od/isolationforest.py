@@ -2,12 +2,12 @@ import logging
 import numpy as np
 from sklearn.ensemble import IsolationForest
 from typing import Dict, Union
-from odcd.od.base import BaseOutlierDetector, FitMixin, ThresholdMixin, outlier_prediction_dict
+from odcd.base import BaseDetector, FitMixin, ThresholdMixin, outlier_prediction_dict
 
 logger = logging.getLogger(__name__)
 
 
-class IForest(BaseOutlierDetector, FitMixin, ThresholdMixin):
+class IForest(BaseDetector, FitMixin, ThresholdMixin):
 
     def __init__(self,
                  threshold: float = None,

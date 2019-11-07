@@ -6,12 +6,12 @@ from typing import Dict, Tuple
 from odcd.models.autoencoder import VAE
 from odcd.models.trainer import trainer
 from odcd.models.losses import elbo
-from odcd.od.base import BaseOutlierDetector, FitMixin, ThresholdMixin, outlier_prediction_dict
+from odcd.base import BaseDetector, FitMixin, ThresholdMixin, outlier_prediction_dict
 
 logger = logging.getLogger(__name__)
 
 
-class OutlierVAE(BaseOutlierDetector, FitMixin, ThresholdMixin):
+class OutlierVAE(BaseDetector, FitMixin, ThresholdMixin):
 
     def __init__(self,
                  threshold: float = None,
