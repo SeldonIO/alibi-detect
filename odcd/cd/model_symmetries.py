@@ -10,7 +10,7 @@ from keras.models import Model, model_from_json
 from keras.losses import kullback_leibler_divergence, mse, binary_crossentropy, categorical_crossentropy
 from keras.optimizers import Adam, RMSprop, Adagrad
 from keras.layers import Input, Conv2D, Flatten, Lambda, Dense, Dropout, Reshape, Conv2DTranspose, BatchNormalization
-
+from keras.layers import MaxPooling2D
 
 def sampling_gaussian(args):
     """Reparameterization trick by sampling from an isotropic unit Gaussian.
@@ -353,7 +353,7 @@ class VaeSymmetryFinderConvKeras(object):
     def __init__(self, predict_fn, input_shape=(28, 28), output_shape=(10, ), rgb_filters=3, dropout=None,
                  kernel_size=3, filters=32, intermediate_dim=16, latent_dim=2, strides=2, nb_conv_layers=2,
                  intermediate_activation='relu', output_activation='sigmoid', opt='Adam', lr=0.001,
-                 variational=True, loss_type='kl_2', add_latent_loss=False):
+                 variational=True, loss_type='kl_2', add_latent_loss=False, pooling=False, padding='same'):
         self.predict_fn = predict_fn
         self.input_shape = input_shape
         self.output_shape = output_shape
@@ -372,6 +372,8 @@ class VaeSymmetryFinderConvKeras(object):
         self.output_activation = output_activation
         self.latent_dim = latent_dim
         self.add_latent_loss = add_latent_loss
+        self.pooling = pooling
+        self.padding = padding
 
         # It works for keras models only for now
         if isinstance(self.predict_fn, tf.keras.models.Model) or isinstance(self.predict_fn, keras.models.Model):
@@ -387,7 +389,9 @@ class VaeSymmetryFinderConvKeras(object):
         for i in range(self.nb_conv_layers):
             self.filters *= 2
             self.x = Conv2D(filters=self.filters, kernel_size=self.kernel_size,
-                            activation='relu', strides=self.strides, padding='same')(self.x)
+                            activation='relu', strides=self.strides, padding=self.padding)(self.x)
+            if self.pooling:
+                self.x = MaxPooling2D((2, 2), padding=self.padding)(self.x)
             if self.dropout is not None:
                 self.x = Dropout(self.dropout)(self.x)
 
@@ -414,7 +418,9 @@ class VaeSymmetryFinderConvKeras(object):
 
         for i in range(self.nb_conv_layers):
             self.x = Conv2DTranspose(filters=self.filters, kernel_size=self.kernel_size,
-                                     activation='relu', strides=self.strides, padding='same')(self.x)
+                                     activation='relu', strides=self.strides, padding=self.padding)(self.x)
+            if self.pooling:
+                self.x = MaxPooling2D((2, 2), padding=self.padding)(self.x)
             if self.dropout is not None:
                 self.x = Dropout(self.dropout)(self.x)
             self.filters //= 2
