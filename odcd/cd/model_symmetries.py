@@ -399,7 +399,8 @@ class VaeSymmetryFinderConvKeras(object):
         shape = K.int_shape(self.x)
 
         # generate latent vector Q(z|X)
-        self.x = Flatten()(self.x)
+        if not self.pooling:
+            self.x = Flatten()(self.x)
         self.z_mean = Dense(self.latent_dim, activation=self.intermediate_activation, name='z_mean')(self.x)
         self.z_log_var = Dense(self.latent_dim, activation=self.intermediate_activation, name='z_log_var')(self.x)
 
