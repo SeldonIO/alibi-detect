@@ -387,40 +387,14 @@ class VaeSymmetryFinderConvKeras(object):
         self.inputs = Input(shape=self.input_shape, name='encoder_input')
         self.x = self.inputs
 
-        self.x = Conv2D(filters=self.filters * 2, kernel_size=self.kernel_size,
-                        activation='relu', strides=2, padding=self.padding)(self.x)
-        if self.pooling:
-            self.x = MaxPooling2D((2, 2), padding=self.padding)(self.x)
-        if self.dropout is not None:
-            self.x = Dropout(self.dropout)(self.x)
-
-        #self.x = Conv2D(filters=self.filters * 3, kernel_size=self.kernel_size,
-        #                activation='relu', strides=1, padding=self.padding)(self.x)
-        #if self.pooling:
-        #    self.x = MaxPooling2D((2, 2), padding=self.padding)(self.x)
-        #if self.dropout is not None:
-        #    self.x = Dropout(self.dropout)(self.x)
-
-        self.x = Conv2D(filters=self.filters * 4, kernel_size=self.kernel_size,
-                        activation='relu', strides=2, padding=self.padding)(self.x)
-        if self.pooling:
-            self.x = MaxPooling2D((2, 2), padding=self.padding)(self.x)
-        if self.dropout is not None:
-            self.x = Dropout(self.dropout)(self.x)
-
-        #self.x = Conv2D(filters=self.filters * 5, kernel_size=self.kernel_size,
-        #                activation='relu', strides=1, padding=self.padding)(self.x)
-        #if self.dropout is not None:
-        #    self.x = Dropout(self.dropout)(self.x)
-
-        #for i in range(self.nb_conv_layers):
-        #    self.filters *= 2
-        #    self.x = Conv2D(filters=self.filters, kernel_size=self.kernel_size,
-        #                    activation='relu', strides=self.strides, padding=self.padding)(self.x)
-        #    if self.pooling:
-        #        self.x = MaxPooling2D((2, 2), padding=self.padding)(self.x)
-        #    if self.dropout is not None:
-        #        self.x = Dropout(self.dropout)(self.x)
+        for i in range(self.nb_conv_layers):
+            self.filters *= 2
+            self.x = Conv2D(filters=self.filters, kernel_size=self.kernel_size,
+                            activation='relu', strides=self.strides, padding=self.padding)(self.x)
+            if self.pooling:
+                self.x = MaxPooling2D((2, 2), padding=self.padding)(self.x)
+            if self.dropout is not None:
+                self.x = Dropout(self.dropout)(self.x)
 
         # shape info needed to build decoder model
         shape = K.int_shape(self.x)
@@ -444,42 +418,14 @@ class VaeSymmetryFinderConvKeras(object):
         self.x = Dense(shape[1] * shape[2] * shape[3], activation=self.intermediate_activation)(self.x)
         self.x = Reshape((shape[1], shape[2], shape[3]))(self.x)
 
-        #self.x = Conv2DTranspose(filters=self.filters * 5, kernel_size=self.kernel_size,
-        #                         activation='relu', strides=1, padding=self.padding)(self.x)
-        #if self.pooling:
-        #    self.x = MaxPooling2D((2, 2), padding=self.padding)(self.x)
-        #if self.dropout is not None:
-        #    self.x = Dropout(self.dropout)(self.x)
-
-        self.x = Conv2DTranspose(filters=self.filters * 4, kernel_size=self.kernel_size,
-                                 activation='relu', strides=2, padding=self.padding)(self.x)
-        if self.pooling:
-            self.x = MaxPooling2D((2, 2), padding=self.padding)(self.x)
-        if self.dropout is not None:
-            self.x = Dropout(self.dropout)(self.x)
-
-        #self.x = Conv2DTranspose(filters=self.filters * 3, kernel_size=self.kernel_size,
-        #                         activation='relu', strides=1, padding=self.padding)(self.x)
-        #if self.pooling:
-        #    self.x = MaxPooling2D((2, 2), padding=self.padding)(self.x)
-        #if self.dropout is not None:
-        #    self.x = Dropout(self.dropout)(self.x)
-
-        self.x = Conv2DTranspose(filters=self.filters * 2, kernel_size=self.kernel_size,
-                                 activation='relu', strides=2, padding=self.padding)(self.x)
-        if self.pooling:
-            self.x = MaxPooling2D((2, 2), padding=self.padding)(self.x)
-        if self.dropout is not None:
-            self.x = Dropout(self.dropout)(self.x)
-
-        #for i in range(self.nb_conv_layers):
-        #    self.x = Conv2DTranspose(filters=self.filters, kernel_size=self.kernel_size,
-        #                             activation='relu', strides=self.strides, padding=self.padding)(self.x)
-        #    if self.pooling:
-        #        self.x = MaxPooling2D((2, 2), padding=self.padding)(self.x)
-        #    if self.dropout is not None:
-        #        self.x = Dropout(self.dropout)(self.x)
-        #    self.filters //= 2
+        for i in range(self.nb_conv_layers):
+            self.x = Conv2DTranspose(filters=self.filters, kernel_size=self.kernel_size,
+                                     activation='relu', strides=self.strides, padding=self.padding)(self.x)
+            if self.pooling:
+                self.x = MaxPooling2D((2, 2), padding=self.padding)(self.x)
+            if self.dropout is not None:
+                self.x = Dropout(self.dropout)(self.x)
+            self.filters //= 2
 
         self.vae_outputs = Conv2DTranspose(filters=self.rgb_filters,
                                            kernel_size=self.kernel_size,
