@@ -389,16 +389,22 @@ class VaeSymmetryFinderConvKeras(object):
 
         self.x = Conv2D(filters=self.filters * 2, kernel_size=self.kernel_size,
                         activation='relu', strides=2, padding=self.padding)(self.x)
+        if self.pooling:
+            self.x = MaxPooling2D((2, 2), padding=self.padding)(self.x)
         if self.dropout is not None:
             self.x = Dropout(self.dropout)(self.x)
 
         self.x = Conv2D(filters=self.filters * 3, kernel_size=self.kernel_size,
                         activation='relu', strides=1, padding=self.padding)(self.x)
+        if self.pooling:
+            self.x = MaxPooling2D((2, 2), padding=self.padding)(self.x)
         if self.dropout is not None:
             self.x = Dropout(self.dropout)(self.x)
 
         self.x = Conv2D(filters=self.filters * 4, kernel_size=self.kernel_size,
                         activation='relu', strides=2, padding=self.padding)(self.x)
+        if self.pooling:
+            self.x = MaxPooling2D((2, 2), padding=self.padding)(self.x)
         if self.dropout is not None:
             self.x = Dropout(self.dropout)(self.x)
 
@@ -420,8 +426,8 @@ class VaeSymmetryFinderConvKeras(object):
         shape = K.int_shape(self.x)
 
         # generate latent vector Q(z|X)
-        if not self.pooling:
-            self.x = Flatten()(self.x)
+
+        self.x = Flatten()(self.x)
         self.z_mean = Dense(self.latent_dim, activation=self.intermediate_activation, name='z_mean')(self.x)
         self.z_log_var = Dense(self.latent_dim, activation=self.intermediate_activation, name='z_log_var')(self.x)
 
@@ -440,21 +446,29 @@ class VaeSymmetryFinderConvKeras(object):
 
         self.x = Conv2DTranspose(filters=self.filters * 5, kernel_size=self.kernel_size,
                                  activation='relu', strides=2, padding=self.padding)(self.x)
+        if self.pooling:
+            self.x = MaxPooling2D((2, 2), padding=self.padding)(self.x)
         if self.dropout is not None:
             self.x = Dropout(self.dropout)(self.x)
 
         self.x = Conv2DTranspose(filters=self.filters * 4, kernel_size=self.kernel_size,
                                  activation='relu', strides=1, padding=self.padding)(self.x)
+        if self.pooling:
+            self.x = MaxPooling2D((2, 2), padding=self.padding)(self.x)
         if self.dropout is not None:
             self.x = Dropout(self.dropout)(self.x)
 
         self.x = Conv2DTranspose(filters=self.filters * 3, kernel_size=self.kernel_size,
                                  activation='relu', strides=2, padding=self.padding)(self.x)
+        if self.pooling:
+            self.x = MaxPooling2D((2, 2), padding=self.padding)(self.x)
         if self.dropout is not None:
             self.x = Dropout(self.dropout)(self.x)
 
         self.x = Conv2DTranspose(filters=self.filters * 2, kernel_size=self.kernel_size,
                                  activation='relu', strides=1, padding=self.padding)(self.x)
+        if self.pooling:
+            self.x = MaxPooling2D((2, 2), padding=self.padding)(self.x)
         if self.dropout is not None:
             self.x = Dropout(self.dropout)(self.x)
 
