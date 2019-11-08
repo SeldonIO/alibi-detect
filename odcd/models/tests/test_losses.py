@@ -1,11 +1,10 @@
-from itertools import product
 import numpy as np
-import pytest
 import tensorflow as tf
 from odcd.models.losses import elbo, loss_adv_vae, loss_aegmm, loss_vaegmm
 
-x = np.random.rand(10, 3).astype(np.float32)
-y = np.random.rand(10, 3).astype(np.float32)
+N, K, D, F = 10, 5, 1, 3
+x = np.random.rand(N, F).astype(np.float32)
+y = np.random.rand(N, F).astype(np.float32)
 sim = 1.
 cov_diag = tf.ones(x.shape[1])
 cov_full = tf.eye(x.shape[1])
@@ -17,8 +16,8 @@ def test_elbo():
     assert elbo(x, x, sim=.05).numpy() < 0
 
 
-z = np.random.rand(10, 1).astype(np.float32)
-gamma = np.random.rand(5).astype(np.float32)
+z = np.random.rand(N, D).astype(np.float32)
+gamma = np.random.rand(N, K).astype(np.float32)
 
 
 def test_loss_aegmm():
