@@ -4,8 +4,8 @@ from typing import List, Dict
 import ceserver
 import kfserving
 import numpy as np
-from kfserving.protocols.util import NumpyEncoder
-from odcd.utils.saving import load_od
+from .numpy_encoder import NumpyEncoder
+from odcd.utils.saving import load_detector
 
 EVENT_SOURCE_PREFIX = "seldon.ceserver.odcdserver"
 EVENT_TYPE = "seldon.outlier"
@@ -38,7 +38,7 @@ class ODCDModel(ceserver.CEModel):  # pylint:disable=c-extension-no-member
 
         """
         model_folder = kfserving.Storage.download(self.storage_uri)
-        self.odcd = load_od(model_folder)
+        self.odcd = load_detector(model_folder)
         self.ready = True
 
     def process_event(self, inputs: List, headers: Dict) -> Dict:
@@ -62,22 +62,30 @@ class ODCDModel(ceserver.CEModel):  # pylint:disable=c-extension-no-member
         except Exception as e:
             raise Exception(
                 "Failed to initialize NumPy array from inputs: %s, %s" % (e, inputs))
-        outlier_type = 'instance'
 
-        if HEADER_OUTLIER_TYPE in headers and headers[HEADER_OUTLIER_TYPE]:
-            outlier_type = headers[HEADER_OUTLIER_TYPE]
-        ret_feature_score = False
-        if HEADER_RETURN_FEATURE_SCORE in headers and headers[HEADER_RETURN_FEATURE_SCORE] == "true":
-            ret_feature_score = True
         ret_instance_score = False
-        if HEADER_RETURN_INSTANCE_SCORE in headers and headers[HEADER_RETURN_INSTANCE_SCORE] == "true":
+        if HEADER_RETURN_INSTANCE_SCORE in headers and headers[
+            HEADER_RETURN_INSTANCE_SCORE] == "true":
             ret_instance_score = True
 
-        od_preds = self.odcd.predict(X,
-                                     outlier_type=outlier_type,  # use 'feature' or 'instance' level
-                                     return_feature_score=ret_feature_score,
-                                     # scores used to determine outliers
-                                     return_instance_score=ret_instance_score)
+        # Check if there are VAE outlier headers
+        print(headers)
+        if HEADER_OUTLIER_TYPE in headers or HEADER_RETURN_FEATURE_SCORE in headers:
+            outlier_type = 'instance'
+            if HEADER_OUTLIER_TYPE in headers and headers[HEADER_OUTLIER_TYPE]:
+                outlier_type = headers[HEADER_OUTLIER_TYPE]
+            ret_feature_score = False
+            if HEADER_RETURN_FEATURE_SCORE in headers and headers[HEADER_RETURN_FEATURE_SCORE] == "true":
+                ret_feature_score = True
+            od_preds = self.odcd.predict(X,
+                                         outlier_type=outlier_type,
+                                         # use 'feature' or 'instance' level
+                                         return_feature_score=ret_feature_score,
+                                         # scores used to determine outliers
+                                         return_instance_score=ret_instance_score)
+        else: # generic method
+            od_preds = self.odcd.predict(X,return_instance_score=ret_instance_score)
+
         print(od_preds)
         return json.loads(json.dumps(od_preds, cls=NumpyEncoder))
 

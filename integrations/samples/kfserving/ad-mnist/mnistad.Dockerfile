@@ -1,9 +1,4 @@
-FROM python:3.7-slim
-
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends git \
-    && apt-get purge -y --auto-remove \
-    && rm -rf /var/lib/apt/lists/*
+FROM python:3.6-slim
 
 WORKDIR /workspace
 
@@ -32,10 +27,7 @@ RUN cd tmp/odcd && \
 RUN cd tmp/odcdserver && \
     pip install -e .
 
-COPY cifar10od cifar10od
+COPY ad_vae_mnist ad_vae_mnist
 
-RUN cd cifar10od && pip install -e .
+ENTRYPOINT ["python", "-m", "odcdserver"]
 
-COPY vae_outlier_detector vae_outlier_detector
-
-ENTRYPOINT ["python", "-m", "cifar10od"]

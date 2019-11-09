@@ -1,7 +1,8 @@
-from typing import List
+from typing import List, Dict
 
 import numpy as np
 import odcdserver
+from odcdserver.model import HEADER_RETURN_FEATURE_SCORE
 
 EVENT_SOURCE_PREFIX = "seldon.ceserver.odcdserver.cifar10."
 EVENT_TYPE = "seldon.outlier"
@@ -39,6 +40,26 @@ class Cifar10ODCDModel(odcdserver.ODCDModel):  # pylint:disable=c-extension-no-m
         X = X / 2.0 + 0.5
         X = np.transpose(X, (0, 2, 3, 1))
         return X.tolist()
+
+    def process_event(self, inputs: List, headers: Dict) -> Dict:
+        """
+        Process the event and return ODCD score
+
+        Parameters
+        ----------
+        inputs
+             Input data
+        headers
+             Header options
+
+        Returns
+        -------
+             ODCD response
+
+        """
+        if not HEADER_RETURN_FEATURE_SCORE in headers:
+            headers[HEADER_RETURN_FEATURE_SCORE] = "false"
+        return super().process_event(inputs, headers)
 
     def event_source(self) -> str:
         return EVENT_SOURCE_PREFIX + self.name

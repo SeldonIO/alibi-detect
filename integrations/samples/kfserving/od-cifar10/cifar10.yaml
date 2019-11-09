@@ -5,6 +5,7 @@ metadata:
 spec:
   default:
     predictor:
+      minReplicas: 1
       pytorch:
         storageUri: "gs://kfserving-samples/models/pytorch/cifar10/"
         modelClassName: "Net"
