@@ -41,7 +41,7 @@ class IForest(BaseDetector, FitMixin, ThresholdMixin):
         n_jobs
             Number of jobs to run in parallel for 'fit' and 'predict'.
         data_type
-            Optionally specifiy the data type (tabular, image or time-series). Added to metadata.
+            Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
         super().__init__()
 
