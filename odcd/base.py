@@ -3,8 +3,7 @@ import copy
 import numpy as np
 from typing import Dict, Tuple
 
-DEFAULT_DATA = {"is_outlier": None,
-                "feature_score": None,
+DEFAULT_DATA = {"feature_score": None,
                 "instance_score": None
                 }  # type: Dict
 DEFAULT_META = {"name": None,
@@ -14,10 +13,18 @@ DEFAULT_META = {"name": None,
 
 
 def outlier_prediction_dict():
-    return copy.deepcopy({"data": DEFAULT_DATA, "meta": DEFAULT_META})
+    data = DEFAULT_DATA
+    data['is_outlier'] = None
+    return copy.deepcopy({"data": data, "meta": DEFAULT_META})
 
 
-class BaseOutlierDetector(ABC):
+def adversarial_prediction_dict():
+    data = DEFAULT_DATA
+    data['is_adversarial'] = None
+    return copy.deepcopy({"data": data, "meta": DEFAULT_META})
+
+
+class BaseDetector(ABC):
     """ Base class for outlier detection algorithms. """
 
     def __init__(self):

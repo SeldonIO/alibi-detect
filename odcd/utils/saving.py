@@ -3,42 +3,48 @@ import os
 import pickle
 import tensorflow as tf
 from typing import Dict, Union
-from odcd.models.autoencoder import AEGMM, VAE
+from odcd.ad.adversarialvae import AdversarialVAE
+from odcd.models.autoencoder import AEGMM, VAE, VAEGMM
 from odcd.od.aegmm import OutlierAEGMM
-from odcd.od.base import BaseOutlierDetector
+from odcd.base import BaseDetector
 from odcd.od.isolationforest import IForest
 from odcd.od.mahalanobis import Mahalanobis
 from odcd.od.vae import OutlierVAE
+from odcd.od.vaegmm import OutlierVAEGMM
 
 logger = logging.getLogger(__name__)
 
-Data = Union[BaseOutlierDetector,
+Data = Union[BaseDetector,
+             AdversarialVAE,
              IForest,
              Mahalanobis,
              OutlierAEGMM,
-             OutlierVAE]
+             OutlierVAE,
+             OutlierVAEGMM]
 
-DEFAULT_OUTLIER_DETECTORS = ['IForest',
-                             'Mahalanobis',
-                             'OutlierAEGMM',
-                             'OutlierVAE']
+DEFAULT_DETECTORS = ['AdversarialVAE',
+                     'IForest',
+                     'Mahalanobis',
+                     'OutlierAEGMM',
+                     'OutlierVAE',
+                     'OutlierVAEGMM']
 
 
-def save_od(od: Data,
-            filepath: str) -> None:
+def save_detector(detector: Data,
+                  filepath: str) -> None:
     """
-    Save outlier detector.
+    Save outlier or adversarial detector.
 
     Parameters
     ----------
-    od
-        Outlier detector object.
+    detector
+        Detector object.
     filepath
         Save directory.
     """
-    od_name = od.meta['name']
-    if od_name not in DEFAULT_OUTLIER_DETECTORS:
-        raise ValueError('{} is not supported by `save_od`.'.format(od_name))
+    detector_name = detector.meta['name']
+    if detector_name not in DEFAULT_DETECTORS:
+        raise ValueError('{} is not supported by `save_detector`.'.format(detector_name))
 
     if not os.path.isdir(filepath):
         logger.warning('Directory {} does not exist and is now created.'.format(filepath))
@@ -46,26 +52,35 @@ def save_od(od: Data,
 
     # save metadata
     with open(filepath + 'meta.pickle', 'wb') as f:
-        pickle.dump(od.meta, f)
+        pickle.dump(detector.meta, f)
 
     # save outlier detector specific parameters
-    if od_name == 'OutlierVAE':
-        state_dict = state_vae(od)
-    elif od_name == 'Mahalanobis':
-        state_dict = state_mahalanobis(od)
-    elif od_name == 'IForest':
-        state_dict = state_iforest(od)
-    elif od_name == 'OutlierAEGMM':
-        state_dict = state_aegmm(od)
+    if detector_name == 'OutlierVAE':
+        state_dict = state_vae(detector)
+    elif detector_name == 'Mahalanobis':
+        state_dict = state_mahalanobis(detector)
+    elif detector_name == 'IForest':
+        state_dict = state_iforest(detector)
+    elif detector_name == 'OutlierAEGMM':
+        state_dict = state_aegmm(detector)
+    elif detector_name == 'OutlierVAEGMM':
+        state_dict = state_vaegmm(detector)
+    elif detector_name == 'AdversarialVAE':
+        state_dict = state_adv_vae(detector)
 
-    with open(filepath + od_name + '.pickle', 'wb') as f:
+    with open(filepath + detector_name + '.pickle', 'wb') as f:
         pickle.dump(state_dict, f)
 
     # save outlier detector specific TensorFlow models
-    if od_name == 'OutlierVAE':
-        save_tf_vae(od, filepath)
-    elif od_name == 'OutlierAEGMM':
-        save_tf_aegmm(od, filepath)
+    if detector_name == 'OutlierVAE':
+        save_tf_vae(detector, filepath)
+    elif detector_name == 'OutlierAEGMM':
+        save_tf_aegmm(detector, filepath)
+    elif detector_name == 'OutlierVAEGMM':
+        save_tf_vaegmm(detector, filepath)
+    elif detector_name == 'AdversarialVAE':
+        save_tf_vae(detector, filepath)
+        save_tf_model(detector.model, filepath)
 
 
 def state_iforest(od: IForest) -> Dict:
@@ -125,7 +140,7 @@ def state_vae(od: OutlierVAE) -> Dict:
 
 def state_aegmm(od: OutlierAEGMM) -> Dict:
     """
-    OutlierVAE parameters to save.
+    OutlierAEGMM parameters to save.
 
     Parameters
     ----------
@@ -143,35 +158,104 @@ def state_aegmm(od: OutlierAEGMM) -> Dict:
     return state_dict
 
 
-def save_tf_vae(od: OutlierVAE,
-                filepath: str) -> None:
+def state_vaegmm(od: OutlierVAEGMM) -> Dict:
     """
-    Save TensorFlow components of OutlierVAE.
+    OutlierVAEGMM parameters to save.
 
     Parameters
     ----------
     od
         Outlier detector object.
+    """
+    state_dict = {'threshold': od.threshold,
+                  'samples': od.samples,
+                  'n_gmm': od.vaegmm.n_gmm,
+                  'latent_dim': od.vaegmm.latent_dim,
+                  'beta': od.vaegmm.beta,
+                  'recon_features': od.vaegmm.recon_features,
+                  'phi': od.phi,
+                  'mu': od.mu,
+                  'cov': od.cov,
+                  'L': od.L,
+                  'log_det_cov': od.log_det_cov}
+    return state_dict
+
+
+def state_adv_vae(ad: AdversarialVAE) -> Dict:
+    """
+    AdversarialVAE parameters to save.
+
+    Parameters
+    ----------
+    ad
+        Adversarial detector object.
+    """
+    state_dict = {'threshold': ad.threshold,
+                  'samples': ad.samples,
+                  'latent_dim': ad.vae.latent_dim,
+                  'beta': ad.vae.beta}
+    return state_dict
+
+
+def save_tf_vae(detector: Union[OutlierVAE, AdversarialVAE],
+                filepath: str) -> None:
+    """
+    Save TensorFlow components of OutlierVAE or AdversarialVAE.
+
+    Parameters
+    ----------
+    detector
+        Outlier or adversarial detector object.
     filepath
         Save directory.
     """
     # create folder for model weights
+    if not os.path.isdir(filepath):
+        logger.warning('Directory {} does not exist and is now created.'.format(filepath))
+        os.mkdir(filepath)
     model_dir = filepath + 'model/'
     if not os.path.isdir(model_dir):
         os.mkdir(model_dir)
     # save encoder, decoder and vae weights
-    if isinstance(od.vae.encoder.encoder_net, tf.keras.Sequential):
-        od.vae.encoder.encoder_net.save(model_dir + 'encoder_net.h5')
+    if isinstance(detector.vae.encoder.encoder_net, tf.keras.Sequential):
+        detector.vae.encoder.encoder_net.save(model_dir + 'encoder_net.h5')
     else:
         logger.warning('No `tf.keras.Sequential` encoder detected. No encoder saved.')
-    if isinstance(od.vae.decoder.decoder_net, tf.keras.Sequential):
-        od.vae.decoder.decoder_net.save(model_dir + 'decoder_net.h5')
+    if isinstance(detector.vae.decoder.decoder_net, tf.keras.Sequential):
+        detector.vae.decoder.decoder_net.save(model_dir + 'decoder_net.h5')
     else:
         logger.warning('No `tf.keras.Sequential` decoder detected. No decoder saved.')
-    if isinstance(od.vae, tf.keras.Model):
-        od.vae.save_weights(model_dir + 'vae.ckpt')
+    if isinstance(detector.vae, tf.keras.Model):
+        detector.vae.save_weights(model_dir + 'vae.ckpt')
     else:
         logger.warning('No `tf.keras.Model` vae detected. No vae saved.')
+
+
+def save_tf_model(model: tf.keras.Model,
+                  filepath: str) -> None:
+    """
+    Save TensorFlow model.
+
+    Parameters
+    ----------
+    model
+        A tf.keras Model.
+    filepath
+        Save directory.
+    """
+    # create folder for model weights
+    if not os.path.isdir(filepath):
+        logger.warning('Directory {} does not exist and is now created.'.format(filepath))
+        os.mkdir(filepath)
+    model_dir = filepath + 'model/'
+    if not os.path.isdir(model_dir):
+        os.mkdir(model_dir)
+
+    # save classification model
+    if isinstance(model, tf.keras.Model):  # TODO: not flexible enough!
+        model.save(model_dir + 'model.h5')
+    else:
+        logger.warning('No `tf.keras.Model` vae detected. No classification model saved.')
 
 
 def save_tf_aegmm(od: OutlierAEGMM,
@@ -187,6 +271,9 @@ def save_tf_aegmm(od: OutlierAEGMM,
         Save directory.
     """
     # create folder for model weights
+    if not os.path.isdir(filepath):
+        logger.warning('Directory {} does not exist and is now created.'.format(filepath))
+        os.mkdir(filepath)
     model_dir = filepath + 'model/'
     if not os.path.isdir(model_dir):
         os.mkdir(model_dir)
@@ -209,9 +296,47 @@ def save_tf_aegmm(od: OutlierAEGMM,
         logger.warning('No `tf.keras.Model` AEGMM detected. No AEGMM saved.')
 
 
-def load_od(filepath: str) -> Data:
+def save_tf_vaegmm(od: OutlierVAEGMM,
+                   filepath: str) -> None:
     """
-    Load outlier detector.
+    Save TensorFlow components of OutlierVAEGMM.
+
+    Parameters
+    ----------
+    od
+        Outlier detector object.
+    filepath
+        Save directory.
+    """
+    # create folder for model weights
+    if not os.path.isdir(filepath):
+        logger.warning('Directory {} does not exist and is now created.'.format(filepath))
+        os.mkdir(filepath)
+    model_dir = filepath + 'model/'
+    if not os.path.isdir(model_dir):
+        os.mkdir(model_dir)
+    # save encoder, decoder, gmm density model and vaegmm weights
+    if isinstance(od.vaegmm.encoder.encoder_net, tf.keras.Sequential):
+        od.vaegmm.encoder.encoder_net.save(model_dir + 'encoder_net.h5')
+    else:
+        logger.warning('No `tf.keras.Sequential` encoder detected. No encoder saved.')
+    if isinstance(od.vaegmm.decoder, tf.keras.Sequential):
+        od.vaegmm.decoder.save(model_dir + 'decoder_net.h5')
+    else:
+        logger.warning('No `tf.keras.Sequential` decoder detected. No decoder saved.')
+    if isinstance(od.vaegmm.gmm_density, tf.keras.Sequential):
+        od.vaegmm.gmm_density.save(model_dir + 'gmm_density_net.h5')
+    else:
+        logger.warning('No `tf.keras.Sequential` GMM density net detected. No GMM density net saved.')
+    if isinstance(od.vaegmm, tf.keras.Model):
+        od.vaegmm.save_weights(model_dir + 'vaegmm.ckpt')
+    else:
+        logger.warning('No `tf.keras.Model` VAEGMM detected. No VAEGMM saved.')
+
+
+def load_detector(filepath: str) -> Data:
+    """
+    Load outlier or adversarial detector.
 
     Parameters
     ----------
@@ -220,7 +345,7 @@ def load_od(filepath: str) -> Data:
 
     Returns
     -------
-    Loaded outlier detector object.
+    Loaded outlier or adversarial detector object.
     """
     # check if path exists
     if not os.path.isdir(filepath):
@@ -229,27 +354,43 @@ def load_od(filepath: str) -> Data:
     # load metadata
     meta_dict = pickle.load(open(filepath + 'meta.pickle', 'rb'))
 
-    od_name = meta_dict['name']
-    if od_name not in DEFAULT_OUTLIER_DETECTORS:
-        raise ValueError('{} is not supported by `load_od`.'.format(od_name))
+    detector_name = meta_dict['name']
+    if detector_name not in DEFAULT_DETECTORS:
+        raise ValueError('{} is not supported by `load_detector`.'.format(detector_name))
 
     # load outlier detector specific parameters
-    state_dict = pickle.load(open(filepath + od_name + '.pickle', 'rb'))
+    state_dict = pickle.load(open(filepath + detector_name + '.pickle', 'rb'))
 
     # initialize outlier detector
-    if od_name == 'OutlierVAE':
+    if detector_name == 'OutlierVAE':
         vae = load_tf_vae(filepath, state_dict)
-        od = init_od_vae(state_dict, vae)
-    elif od_name == 'Mahalanobis':
-        od = init_od_mahalanobis(state_dict)
-    elif od_name == 'IForest':
-        od = init_od_iforest(state_dict)
-    elif od_name == 'OutlierAEGMM':
+        detector = init_od_vae(state_dict, vae)
+    elif detector_name == 'Mahalanobis':
+        detector = init_od_mahalanobis(state_dict)
+    elif detector_name == 'IForest':
+        detector = init_od_iforest(state_dict)
+    elif detector_name == 'OutlierAEGMM':
         aegmm = load_tf_aegmm(filepath, state_dict)
-        od = init_od_aegmm(state_dict, aegmm)
+        detector = init_od_aegmm(state_dict, aegmm)
+    elif detector_name == 'OutlierVAEGMM':
+        vaegmm = load_tf_vaegmm(filepath, state_dict)
+        detector = init_od_vaegmm(state_dict, vaegmm)
+    elif detector_name == 'AdversarialVAE':
+        vae = load_tf_vae(filepath, state_dict)
+        model = load_tf_model(filepath)
+        detector = init_ad_vae(state_dict, vae, model)
 
-    od.meta = meta_dict
-    return od
+    detector.meta = meta_dict
+    return detector
+
+
+def load_tf_model(filepath: str) -> tf.keras.Model:  # TODO: not flexible enough!
+    model_dir = filepath + 'model/'
+    if not 'model.h5' in [f for f in os.listdir(model_dir) if not f.startswith('.')]:
+        logger.warning('No model found in {}.'.format(model_dir))
+        return None
+    model = tf.keras.models.load_model(model_dir + 'model.h5')
+    return model
 
 
 def load_tf_vae(filepath: str,
@@ -307,6 +448,35 @@ def load_tf_aegmm(filepath: str,
     return aegmm
 
 
+def load_tf_vaegmm(filepath: str,
+                   state_dict: Dict) -> tf.keras.Model:
+    """
+    Load VAEGMM.
+
+    Parameters
+    ----------
+    filepath
+        Save directory.
+    state_dict
+        Dictionary containing the `n_gmm`, `latent_dim` and `recon_features` parameters.
+
+    Returns
+    -------
+    Loaded VAEGMM.
+    """
+    model_dir = filepath + 'model/'
+    if not [f for f in os.listdir(model_dir) if not f.startswith('.')]:
+        logger.warning('No encoder, decoder, gmm density net or vaegmm found in {}.'.format(model_dir))
+        return None
+    encoder_net = tf.keras.models.load_model(model_dir + 'encoder_net.h5')
+    decoder_net = tf.keras.models.load_model(model_dir + 'decoder_net.h5')
+    gmm_density_net = tf.keras.models.load_model(model_dir + 'gmm_density_net.h5')
+    vaegmm = VAEGMM(encoder_net, decoder_net, gmm_density_net, state_dict['n_gmm'],
+                    state_dict['latent_dim'], state_dict['recon_features'], state_dict['beta'])
+    vaegmm.load_weights(model_dir + 'vaegmm.ckpt')
+    return vaegmm
+
+
 def init_od_vae(state_dict: Dict,
                 vae: tf.keras.Model) -> OutlierVAE:
     """
@@ -330,10 +500,36 @@ def init_od_vae(state_dict: Dict,
     return od
 
 
+def init_ad_vae(state_dict: Dict,
+                vae: tf.keras.Model,
+                model: tf.keras.Model) -> AdversarialVAE:
+    """
+    Initialize AdversarialVAE.
+
+    Parameters
+    ----------
+    state_dict
+        Dictionary containing the parameter values.
+    vae
+        Loaded VAE.
+    model
+        Loaded classification model.
+
+    Returns
+    -------
+    Initialized AdversarialVAE instance.
+    """
+    ad = AdversarialVAE(threshold=state_dict['threshold'],
+                        vae=vae,
+                        model=model,
+                        samples=state_dict['samples'])
+    return ad
+
+
 def init_od_aegmm(state_dict: Dict,
                   aegmm: tf.keras.Model) -> OutlierAEGMM:
     """
-    Initialize OutlierVAE.
+    Initialize OutlierAEGMM.
 
     Parameters
     ----------
@@ -348,6 +544,33 @@ def init_od_aegmm(state_dict: Dict,
     """
     od = OutlierAEGMM(threshold=state_dict['threshold'],
                       aegmm=aegmm)
+    od.phi = state_dict['phi']
+    od.mu = state_dict['mu']
+    od.cov = state_dict['cov']
+    od.L = state_dict['L']
+    od.log_det_cov = state_dict['log_det_cov']
+    return od
+
+
+def init_od_vaegmm(state_dict: Dict,
+                   vaegmm: tf.keras.Model) -> OutlierVAEGMM:
+    """
+    Initialize OutlierVAEGMM.
+
+    Parameters
+    ----------
+    state_dict
+        Dictionary containing the parameter values.
+    vaegmm
+        Loaded VAEGMM.
+
+    Returns
+    -------
+    Initialized OutlierVAEGMM instance.
+    """
+    od = OutlierVAEGMM(threshold=state_dict['threshold'],
+                       vaegmm=vaegmm,
+                       samples=state_dict['samples'])
     od.phi = state_dict['phi']
     od.mu = state_dict['mu']
     od.cov = state_dict['cov']
