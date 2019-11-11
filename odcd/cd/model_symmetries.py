@@ -70,18 +70,19 @@ def load_vae(arch_path='vae_arch.json', weights_path='vae_weights.h5', model_typ
     if signal_type == 'symm_kl':
         def signal(vae, x, nb_samples=100, amp=1):
             x = np.repeat(x, nb_samples, axis=0)
-            s = amp * 0.5 * (entropy(vae.predict(x)[1].T, vae.predict(x)[2].T) +
-                             entropy(vae.predict(x)[1].T, vae.predict(x)[2].T))
+            entr_1 = entropy(vae.predict(x)[1].T, vae.predict(x)[2].T).reshape(-1, nb_samples).mean(axis=1)
+            entr_2 = entropy(vae.predict(x)[2].T, vae.predict(x)[1].T).reshape(-1, nb_samples).mean(axis=1)
+            s = amp * 0.5 * (entr_1 + entr_2)
             return s
     elif signal_type == 'kl_1':
         def signal(vae, x, nb_samples=100, amp=1):
             x = np.repeat(x, nb_samples, axis=0)
-            s = amp * entropy(vae.predict(x)[1].T, vae.predict(x)[2].T)
+            s = amp * entropy(vae.predict(x)[1].T, vae.predict(x)[2].T).reshape(-1, nb_samples).mean(axis=1)
             return s
     elif signal_type == 'kl_2':
         def signal(vae, x, nb_samples=100, amp=1):
             x = np.repeat(x, nb_samples, axis=0)
-            s = amp * entropy(vae.predict(x)[2].T, vae.predict(x)[1].T)
+            s = amp * entropy(vae.predict(x)[2].T, vae.predict(x)[1].T).reshape(-1, nb_samples).mean(axis=1)
             return s
     else:
         raise NotImplementedError
@@ -515,12 +516,16 @@ class VaeSymmetryFinderConvKeras(object):
     def signal(self, x, nb_samples=100, amp=1):
         x = np.repeat(x, nb_samples, axis=0)
         if self.loss_type == 'symm_kl':
-            return amp * 0.5 * (entropy(self.vae.predict(x)[1].T, self.vae.predict(x)[2].T) +
-                                entropy(self.vae.predict(x)[2].T, self.vae.predict(x)[1].T))
+            entr_1 = entropy(self.vae.predict(x)[1].T, self.vae.predict(x)[2].T).reshape(-1, nb_samples).mean(axis=1)
+            entr_2 = entropy(self.vae.predict(x)[2].T, self.vae.predict(x)[1].T).reshape(-1, nb_samples).mean(axis=1)
+            s = amp * 0.5 * (entr_1 + entr_2)
+
         elif self.loss_type == 'kl_1':
-            return amp * entropy(self.vae.predict(x)[1].T, self.vae.predict(x)[2].T)
+            s = amp * entropy(self.vae.predict(x)[1].T, self.vae.predict(x)[2].T).reshape(-1, nb_samples).mean(axis=1)
         elif self.loss_type == 'kl_2':
-            return amp * entropy(self.vae.predict(x)[2].T, self.vae.predict(x)[1].T)
+            s = amp * entropy(self.vae.predict(x)[2].T, self.vae.predict(x)[1].T).reshape(-1, nb_samples).mean(axis=1)
+
+        return s
 
 
 class VaeSymmetryFinderNlp(object):
