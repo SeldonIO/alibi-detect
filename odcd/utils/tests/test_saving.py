@@ -1,6 +1,4 @@
 import pytest
-import shutil
-import tempfile
 from tempfile import TemporaryDirectory
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, InputLayer
