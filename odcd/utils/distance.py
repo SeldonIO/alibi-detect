@@ -247,6 +247,7 @@ def multidim_scaling(d_pair: dict,
 
 def relative_euclidean_distance(x: tf.Tensor,
                                 y: tf.Tensor,
+                                eps: float = 1e-12,
                                 axis: int = -1) -> tf.Tensor:
     """
     Relative Euclidean distance in TensorFlow.
@@ -257,6 +258,8 @@ def relative_euclidean_distance(x: tf.Tensor,
         Tensor used in distance computation.
     y
         Tensor used in distance computation.
+    eps
+        Epsilon added to denominator for numerical stability.
     axis
         Axis used to compute distance.
 
@@ -266,5 +269,5 @@ def relative_euclidean_distance(x: tf.Tensor,
     """
     denom = tf.concat([tf.reshape(tf.norm(x, ord=2, axis=axis), (-1, 1)),
                        tf.reshape(tf.norm(y, ord=2, axis=axis), (-1, 1))], axis=1)
-    dist = tf.norm(x - y, ord=2, axis=axis) / tf.reduce_min(denom, axis=axis)
+    dist = tf.norm(x - y, ord=2, axis=axis) / (tf.reduce_min(denom, axis=axis) + eps)
     return dist
