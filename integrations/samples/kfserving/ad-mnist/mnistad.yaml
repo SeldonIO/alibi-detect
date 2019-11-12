@@ -4,6 +4,9 @@ metadata:
   name: ad-mnist
 spec:
   template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: "1"
     spec:
       containers:
       - image: seldonio/mnistad:0.0.1
