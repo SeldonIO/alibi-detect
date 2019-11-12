@@ -3,6 +3,9 @@ MNIST_TAG=0.0.1
 MNISTAD_IMAGE=mnistad
 MNISTAD_TAG=0.0.1
 
+model_mnist:
+	gsutil cp -r gs://seldon-models/odcd/model_mnist .
+
 ad_vae_mnist:
 	gsutil cp -r gs://seldon-models/odcd/ad_vae_mnist .
 
