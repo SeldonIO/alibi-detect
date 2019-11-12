@@ -21,7 +21,11 @@ tests = list(product(threshold, score_type, samples, loss_fn, threshold_perc,
                      return_instance_score, return_feature_score, outlier_perc, outlier_type))
 n_tests = len(tests)
 
-input_dim = 4
+# load iris data
+X, y = load_iris(return_X_y=True)
+X = X.astype(np.float32)
+
+input_dim = X.shape[1]
 latent_dim = 2
 
 
@@ -35,10 +39,6 @@ def test_vae(vae_params):
     # OutlierVAE parameters
     threshold, score_type, samples, loss_fn, threshold_perc, return_instance_score, \
     return_feature_score, outlier_perc, outlier_type = vae_params
-
-    # load iris data
-    X, y = load_iris(return_X_y=True)
-    X = X.astype(np.float32)
 
     # define encoder and decoder
     encoder_net = tf.keras.Sequential(
