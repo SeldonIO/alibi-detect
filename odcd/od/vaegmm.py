@@ -79,6 +79,8 @@ class OutlierVAEGMM(BaseDetector, FitMixin, ThresholdMixin):
         self.meta['detector_type'] = 'offline'
         self.meta['data_type'] = data_type
 
+        self.phi, self.mu, self.cov, self.L, self.log_det_cov = None, None, None, None, None
+
     def fit(self,
             X: np.ndarray,
             loss_fn: tf.keras.losses = loss_vaegmm,
