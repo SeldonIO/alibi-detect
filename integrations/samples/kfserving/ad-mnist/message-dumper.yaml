@@ -4,6 +4,9 @@ metadata:
   name: message-dumper
 spec:
   template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: "1"
     spec:
       containers:
       - image: gcr.io/knative-releases/github.com/knative/eventing-sources/cmd/event_display
