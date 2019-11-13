@@ -63,7 +63,7 @@ class OutlierVAEGMM(BaseDetector, FitMixin, ThresholdMixin):
         self.threshold = threshold
         self.samples = samples
 
-        # check if model can be loaded, otherwise initialize AEGMM model
+        # check if model can be loaded, otherwise initialize VAEGMM model
         if isinstance(vaegmm, tf.keras.Model):
             self.vaegmm = vaegmm
         elif (isinstance(encoder_net, tf.keras.Sequential) and
@@ -78,6 +78,8 @@ class OutlierVAEGMM(BaseDetector, FitMixin, ThresholdMixin):
         # set metadata
         self.meta['detector_type'] = 'offline'
         self.meta['data_type'] = data_type
+
+        self.phi, self.mu, self.cov, self.L, self.log_det_cov = None, None, None, None, None
 
     def fit(self,
             X: np.ndarray,

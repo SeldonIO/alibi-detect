@@ -76,7 +76,7 @@ def loss_aegmm(x_true: tf.Tensor,
     """
     recon_loss = tf.reduce_mean((x_true - x_pred) ** 2)
     phi, mu, cov, L, log_det_cov = gmm_params(z, gamma)
-    sample_energy, cov_diag = gmm_energy(z, phi, mu, cov, L, log_det_cov)
+    sample_energy, cov_diag = gmm_energy(z, phi, mu, cov, L, log_det_cov, return_mean=True)
     loss = recon_loss + w_energy * sample_energy + w_cov_diag * cov_diag
     return loss
 
