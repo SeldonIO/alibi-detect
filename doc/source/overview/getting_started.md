@@ -10,7 +10,7 @@ pip install odcd
 
 ## Features
 
-odcd is a Python package focused on outlier, adversarial and concept drift detection. The package aims to cover both online and offline detectors for tabular data, images and time series. The outlier detection methods should allow the user to identify global, contextual and collective outliers.
+odcd is a Python package focused on outlier, adversarial and concept drift detection. The package aims to cover both online and offline detectors for tabular data, text, images and time series. The outlier detection methods should allow the user to identify global, contextual and collective outliers.
 
 To get a list of respectively the latest outlier and adversarial detection algorithms, you can type:
 
