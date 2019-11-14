@@ -5,7 +5,7 @@ import ceserver
 import kfserving
 import numpy as np
 from .numpy_encoder import NumpyEncoder
-from odcd.utils.saving import load_detector
+from alibi_detect.utils.saving import load_detector
 
 EVENT_SOURCE_PREFIX = "seldon.ceserver.odcdserver"
 EVENT_TYPE = "seldon.outlier"

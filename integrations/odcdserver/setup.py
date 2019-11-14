@@ -15,7 +15,7 @@ setup(
     python_requires='>3.4',
     packages=find_packages("odcdserver"),
     install_requires=[
-        "odcd",
+        "alibi-detect",
         "kfserving>=0.2.0",
         "argparse >= 1.4.0",
         "numpy >= 1.8.2",
