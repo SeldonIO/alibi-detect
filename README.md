@@ -49,6 +49,8 @@ This will install `odcd` with all its dependencies:
    - Examples:
      [Network Intrusion](https://docs.seldon.io/projects/odcd/en/stable/examples/od_aegmm_kddcup.html)
      
+Please check the documentation 
+
 The following table shows the advised use cases for each algorithm. The column *Feature Level* indicates whether the outlier scoring and detection can be done and returned at the feature level, e.g. per pixel for an image:
 
 |Detector|Tabular|Image|Time Series|Text|Categorical Features|Online|Feature Level|
@@ -67,6 +69,10 @@ The following table shows the advised use cases for each algorithm. The column *
      [MNIST](https://docs.seldon.io/projects/odcd/en/stable/examples/ad_advvae_mnist.html)
 
 Advised use cases:
+
+| Detector | Tabular | Image |
+| :---         |     :---:      |          ---: |
+| Adversarial VAE   | ✔     | ✔    |
 
 |Detector|Tabular|Image|Time Series|Text|Categorical Features|Online|Feature Level|
 |---|---|---|---|---|
