@@ -37,8 +37,7 @@ This will install `odcd` with all its dependencies:
  - Variational Auto-Encoder ([Kingma et al., 2013](https://arxiv.org/abs/1312.6114))
    - [Documentation](https://docs.seldon.io/projects/odcd/en/stable/methods/vae.html)
    - Examples:
-     [Network Intrusion](https://docs.seldon.io/projects/odcd/en/stable/examples/od_vae_kddcup.html)
-     [CIFAR10](https://docs.seldon.io/projects/odcd/en/stable/examples/od_vae_cifar10.html)
+     [Network Intrusion](https://docs.seldon.io/projects/odcd/en/stable/examples/od_vae_kddcup.html), [CIFAR10](https://docs.seldon.io/projects/odcd/en/stable/examples/od_vae_cifar10.html)
      
  - Auto-Encoding Gaussian Mixture Model ([Zong et al., 2018](https://openreview.net/forum?id=BJJLHbb0-))
    - [Documentation](https://docs.seldon.io/projects/odcd/en/stable/methods/aegmm.html)
