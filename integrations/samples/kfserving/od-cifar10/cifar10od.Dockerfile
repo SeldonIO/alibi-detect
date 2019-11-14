@@ -15,7 +15,7 @@ RUN git clone https://github.com/kubeflow/kfserving.git && \
     cd kfserving/python && \
     pip install -e ./kfserving
 
-#RUN git clone https://github.com/seldonio/odcd.git && \
+#RUN git clone https://github.com/seldonio/alibi-detect.git && \
 #    cd odcd && \
 #    pip install -e .
 
@@ -26,7 +26,7 @@ RUN git clone https://github.com/seldonio/seldon-models.git && \
 
 COPY tmp tmp
 
-RUN cd tmp/odcd && \
+RUN cd tmp/alibi_detect && \
     pip install -e .
 
 RUN cd tmp/odcdserver && \

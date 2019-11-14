@@ -1,16 +1,16 @@
 CIFAR10OD_IMAGE=cifar10od
-CIFAR10OD_TAG=0.0.1
+CIFAR10OD_TAG=0.0.2
 
 vae_outlier_detector:
 	gsutil cp -r gs://seldon-models/odcd/vae_outlier_detector .
 
 
 # REMOVE this when public and update Makefile
-tmp/odcd:
-	mkdir -p tmp/odcd
-	cp ../../../../setup.py tmp/odcd
-	cp ../../../../README.md tmp/odcd
-	cp -r ../../../../odcd tmp/odcd/
+tmp/alibi_detect:
+	mkdir -p tmp/alibi_detect
+	cp ../../../../setup.py tmp/alibi_detect
+	cp ../../../../README.md tmp/alibi_detect
+	cp -r ../../../../alibi_detect tmp/alibi_detect/
 
 tmp/odcdserver:
 	mkdir -p tmp/
@@ -20,7 +20,7 @@ tmp/odcdserver:
 # CIFAR10 Outlier Detector
 #
 
-docker-build-cifar10od: clean_tmp tmp/odcd tmp/odcdserver vae_outlier_detector 
+docker-build-cifar10od: clean_tmp tmp/alibi_detect tmp/odcdserver vae_outlier_detector 
 	docker build -f cifar10od.Dockerfile -t seldonio/${CIFAR10OD_IMAGE}:${CIFAR10OD_TAG} .
 
 docker-push-cifar10od:

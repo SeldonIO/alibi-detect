@@ -5,7 +5,7 @@ import tensorflow as tf
 
 tf.keras.backend.clear_session()
 
-from cifar10od import Cifar10ODCDModel
+from .model import Cifar10ODCDModel
 
 DEFAULT_MODEL_NAME = "model"
 
