@@ -34,17 +34,17 @@ This will install `odcd` with all its dependencies:
    - Examples:
      [Network Intrusion](https://docs.seldon.io/projects/odcd/en/stable/examples/od_mahalanobis_kddcup.html)
 
- - Variational Auto-Encoder ([Kingma et al., 2013](https://arxiv.org/abs/1312.6114))
+ - Variational Auto-Encoder (VAE) ([Kingma et al., 2013](https://arxiv.org/abs/1312.6114))
    - [Documentation](https://docs.seldon.io/projects/odcd/en/stable/methods/vae.html)
    - Examples:
      [Network Intrusion](https://docs.seldon.io/projects/odcd/en/stable/examples/od_vae_kddcup.html), [CIFAR10](https://docs.seldon.io/projects/odcd/en/stable/examples/od_vae_cifar10.html)
      
- - Auto-Encoding Gaussian Mixture Model ([Zong et al., 2018](https://openreview.net/forum?id=BJJLHbb0-))
+ - Auto-Encoding Gaussian Mixture Model (AEGMM) ([Zong et al., 2018](https://openreview.net/forum?id=BJJLHbb0-))
    - [Documentation](https://docs.seldon.io/projects/odcd/en/stable/methods/aegmm.html)
    - Examples:
      [Network Intrusion](https://docs.seldon.io/projects/odcd/en/stable/examples/od_aegmm_kddcup.html)
 
- - Variational Auto-Encoding Gaussian Mixture Model
+ - Variational Auto-Encoding Gaussian Mixture Model (VAEGMM)
    - [Documentation](https://docs.seldon.io/projects/odcd/en/stable/methods/vaegmm.html)
    - Examples:
      [Network Intrusion](https://docs.seldon.io/projects/odcd/en/stable/examples/od_aegmm_kddcup.html)
@@ -53,13 +53,14 @@ Please check the documentation
 
 The following table shows the advised use cases for each algorithm. The column *Feature Level* indicates whether the outlier scoring and detection can be done and returned at the feature level, e.g. per pixel for an image:
 
-|Detector|Tabular|Image|Time Series|Text|Categorical Features|Online|Feature Level|
-|---|---|---|---|---|
-|Isolation Forest|✔|✘|✘|✘|✔|✘|✘|
-|Mahalanobis Distance|✔|✘|✘|✘|✔|✔|✘|
-|VAE|✔|✔|✘|✘|✘|✘|✔|
-|AEGMM|✔|✔|✘|✘|✘|✘|✘|
-|VAEGMM|✔|✔|✘|✘|✘|✘|✘|
+| Detector              | Tabular | Image | Time Series | Text  | Categorical Features | Online | Feature Level |
+| :---                  |  :---:  | :---: |   :---:     | :---: |   :---:              | :---:  | :---:         |
+| Isolation Forest      | ✔       | ✘     |  ✘          |  ✘    |  ✔                   |  ✘     |  ✘            |
+| Mahalanobis Distance  | ✔       | ✘     |  ✘          |  ✘    |  ✔                   |  ✔     |  ✘            |
+| VAE                   | ✔       | ✔     |  ✘          |  ✘    |  ✘                   |  ✘     |  ✔            |
+| AEGMM                 | ✔       | ✔     |  ✘          |  ✘    |  ✘                   |  ✘     |  ✘            |
+| VAEGMM                | ✔       | ✔     |  ✘          |  ✘    |  ✘                   |  ✘     |  ✘            |
+
 
 ### Adversarial Detection
 
@@ -73,7 +74,3 @@ Advised use cases:
 | Detector          | Tabular | Image | Time Series | Text  | Categorical Features | Online | Feature Level |
 | :---              |  :---:  | :---: |   :---:     | :---: |   :---:              | :---:  | :---:         |
 | Adversarial VAE   | ✔       | ✔     |  ✘          |  ✘    |  ✘                   |  ✘     |  ✘            |
-
-|Detector|Tabular|Image|Time Series|Text|Categorical Features|Online|Feature Level|
-|---|---|---|---|---|
-|Adversarial VAE|✔|✔|✘|✘|✘|✘|✘|
