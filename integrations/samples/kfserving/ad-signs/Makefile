@@ -1,7 +1,7 @@
 SIGNS_IMAGE=signs
-SIGNS_TAG=0.0.1
+SIGNS_TAG=0.0.2
 SIGNSAD_IMAGE=signsad
-SIGNSAD_TAG=0.0.1
+SIGNSAD_TAG=0.0.2
 
 model_signs:
 	gsutil cp -r gs://seldon-models/odcd/model_signs .
@@ -17,11 +17,11 @@ traffic_data: gtsrb-german-traffic-sign.zip
 	cd traffic_data && unzip ../gtsrb-german-traffic-sign.zip
 
 # REMOVE this when public and update Makefile
-tmp/odcd:
-	mkdir -p tmp/odcd
-	cp ../../../../setup.py tmp/odcd
-	cp ../../../../README.md tmp/odcd
-	cp -r ../../../../odcd tmp/odcd/
+tmp/alibi_detect:
+	mkdir -p tmp/alibi_detect
+	cp ../../../../setup.py tmp/alibi_detect
+	cp ../../../../README.md tmp/alibi_detect
+	cp -r ../../../../alibi_detect tmp/alibi_detect/
 
 
 tmp/odcdserver:
@@ -33,7 +33,7 @@ tmp/odcdserver:
 # SIGNS Model
 #
 
-docker-build-signs: tmp/odcd model_signs
+docker-build-signs: tmp/alibi_detect model_signs
 	docker build -f signs.Dockerfile -t seldonio/${SIGNS_IMAGE}:${SIGNS_TAG} .
 
 docker-run-signs:
@@ -49,7 +49,7 @@ curl-signs-local:
 # SIGNS Adversarial Detector
 #
 
-docker-build-signsad: tmp/odcd tmp/odcdserver ad_vae_signs
+docker-build-signsad: tmp/alibi_detect tmp/odcdserver ad_vae_signs
 	docker build -f signsad.Dockerfile -t seldonio/${SIGNSAD_IMAGE}:${SIGNSAD_TAG} .
 
 docker-run-signsad:
@@ -74,6 +74,6 @@ clean: clean_tmp
 	rm -rf ad_vae_signs
 	rm -rf model_signs
 	rm -rf traffic_data
-	rm gtsrb-german-traffic-sign.zip
+	rm -f gtsrb-german-traffic-sign.zip
 
 

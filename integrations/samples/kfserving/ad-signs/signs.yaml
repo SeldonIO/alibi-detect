@@ -8,7 +8,7 @@ spec:
       minReplicas: 1
       custom:
         container:
-          image: seldonio/signs:0.0.1
+          image: seldonio/signs:0.0.2
           args:
             - --model_name
             - signs
