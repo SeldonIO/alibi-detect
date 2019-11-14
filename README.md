@@ -70,9 +70,9 @@ The following table shows the advised use cases for each algorithm. The column *
 
 Advised use cases:
 
-| Detector | Tabular | Image |
-| :---         |     :---:      |          ---: |
-| Adversarial VAE   | ✔     | ✔    |
+| Detector          | Tabular | Image | Time Series | Text  | Categorical Features | Online | Feature Level |
+| :---              |  :---:  | :---: |   :---:     | :---: |   :---:              | :---:  | :---:         |
+| Adversarial VAE   | ✔       | ✔     |  ✘          |  ✘    |  ✘                   |  ✘     |  ✘            |
 
 |Detector|Tabular|Image|Time Series|Text|Categorical Features|Online|Feature Level|
 |---|---|---|---|---|
