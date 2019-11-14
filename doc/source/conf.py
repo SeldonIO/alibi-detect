@@ -19,13 +19,13 @@ sys.path.insert(0, os.path.abspath("../.."))
 
 # -- Project information -----------------------------------------------------
 
-project = "odcd"
+project = "alibi-detect"
 copyright = "2019, Seldon Technologies Ltd"
 author = "Seldon Technologies Ltd"
 
 # The short X.Y version
-# import odcd
-exec(open("../../odcd/version.py").read())
+# import alibi_detect
+exec(open("../../alibi_detect/version.py").read())
 
 version = __version__
 # The full version, including alpha/beta/rc tags
@@ -61,7 +61,7 @@ extensions = [
 nbsphinx_execute = "auto"
 
 # apidoc settings
-apidoc_module_dir = "../../odcd"
+apidoc_module_dir = "../../alibi_detect"
 apidoc_output_dir = "api"
 apidoc_excluded_paths = ["**/*test*"]
 apidoc_module_first = True
@@ -164,7 +164,7 @@ html_context = {"css_files": ["_static/theme_overrides.css"]}  # override wide t
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = "odcddoc"
+htmlhelp_basename = "alibi-detectdoc"
 
 # -- Options for LaTeX output ------------------------------------------------
 
@@ -186,13 +186,13 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
-latex_documents = [(master_doc, "odcd.tex", "odcd Documentation", "Seldon Technologies Ltd", "manual")]
+latex_documents = [(master_doc, "alibi-detect.tex", "alibi-detect Documentation", "Seldon Technologies Ltd", "manual")]
 
 # -- Options for manual page output ------------------------------------------
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [(master_doc, "odcd", "odcd Documentation", [author], 1)]
+man_pages = [(master_doc, "alibi-detect", "alibi-detect Documentation", [author], 1)]
 
 # -- Options for Texinfo output ----------------------------------------------
 
@@ -200,7 +200,7 @@ man_pages = [(master_doc, "odcd", "odcd Documentation", [author], 1)]
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, "odcd", "odcd Documentation", author, "odcd", "One line description of project.", "Miscellaneous")
+    (master_doc, "alibi-detect", "alibi-detect Documentation", author, "alibi-detect", "One line description of project.", "Miscellaneous")
 ]
 
 # -- Options for Epub output -------------------------------------------------
@@ -271,7 +271,7 @@ nbsphinx_prolog = (
     .. nbinfo::
         This page was generated from `{{ docpath }}`__.
     
-    __ https://github.com/SeldonIO/odcd/blob/
+    __ https://github.com/SeldonIO/alibi-detect/blob/
         """
     + git_rev
     + r"{{ docpath }}"

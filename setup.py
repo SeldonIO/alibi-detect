@@ -7,19 +7,19 @@ def readme():
 
 
 # read version file
-exec(open("odcd/version.py").read())
+exec(open("alibi_detect/version.py").read())
 
 extras_require = {"examples": ["seaborn", "tqdm"]}
 
 setup(
-    name="odcd",
+    name="alibi-detect",
     author="Seldon Technologies Ltd.",
     author_email="hello@seldon.io",
     version=__version__,  # type: ignore # noqa F821
     description="Algorithms for outlier detection, concept drift and metrics.",
     long_description=readme(),
     long_description_content_type="text/markdown",
-    url="https://github.com/SeldonIO/odcd",
+    url="https://github.com/SeldonIO/alibi-detect",
     license="Apache 2.0",
     packages=find_packages(),
     include_package_data=True,
