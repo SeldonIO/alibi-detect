@@ -5,7 +5,7 @@ import tensorflow as tf
 
 tf.keras.backend.clear_session()
 
-from cifar10od import Cifar10ODCDModel
+from .model import MnistAdModel
 
 DEFAULT_MODEL_NAME = "model"
 
@@ -17,5 +17,5 @@ parser.add_argument('--storage_uri', required=True,
 args, _ = parser.parse_known_args()
 
 if __name__ == "__main__":
-    model = Cifar10ODCDModel(args.model_name, args.storage_uri)
+    model = MnistAdModel(args.model_name, args.storage_uri)
     ceserver.CEServer().start(model)

@@ -1,7 +1,7 @@
 import kfserving
 from typing import List, Dict
 import numpy as np
-from odcd.utils.saving import load_tf_model
+from alibi_detect.utils.saving import load_tf_model
 import argparse
 
 class MnistModel(kfserving.KFModel):

@@ -4,7 +4,7 @@ EVENT_SOURCE_PREFIX = "seldon.ceserver.odcdserver.mnist."
 EVENT_TYPE = "seldon.adversarial"
 
 
-class MnistARCDModel(odcdserver.ODCDModel):  # pylint:disable=c-extension-no-member
+class MnistAdModel(odcdserver.ODCDModel):  # pylint:disable=c-extension-no-member
     def __init__(self, name: str, storage_uri: str):
         """
         CIFAR10 Outlier Model
