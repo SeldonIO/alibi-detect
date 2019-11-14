@@ -1,14 +1,14 @@
-[odcd](https://github.com/SeldonIO/odcd) is an open source Python library focused on outlier, adversarial and concept drift detection. The package aims to cover both online and offline detectors for tabular data, images and time series. The outlier detection methods should allow the user to identify global, contextual and collective outliers.
+[alibi-detect](https://github.com/SeldonIO/alibi-detect) is an open source Python library focused on outlier, adversarial and concept drift detection. The package aims to cover both online and offline detectors for tabular data, images and time series. The outlier detection methods should allow the user to identify global, contextual and collective outliers.
 
-*  [Documentation](https://docs.seldon.io/projects/odcd)
+*  [Documentation](https://docs.seldon.io/projects/alibi-detect)
 
 ## Installation
 
-odcd can be installed from [PyPI](https://pypi.org/project/odcd):
+alibi-detect can be installed from [PyPI](https://pypi.org/project/alibi-detect):
 ```bash
-pip install odcd
+pip install alibi-detect
 ```
-This will install `odcd` with all its dependencies:
+This will install `alibi-detect` with all its dependencies:
 ```bash
   creme
   matplotlib
@@ -25,29 +25,29 @@ This will install `odcd` with all its dependencies:
 ### Outlier Detection
 
  - Isolation Forest ([FT Liu et al., 2008](https://cs.nju.edu.cn/zhouzh/zhouzh.files/publication/icdm08b.pdf))
-   - [Documentation](https://docs.seldon.io/projects/odcd/en/stable/methods/iforest.html)
+   - [Documentation](https://docs.seldon.io/projects/alibi-detect/en/stable/methods/iforest.html)
    - Examples:
-     [Network Intrusion](https://docs.seldon.io/projects/odcd/en/stable/examples/od_if_kddcup.html)
-     
+     [Network Intrusion](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/od_if_kddcup.html)
+
  - Mahalanobis Distance ([Mahalanobis, 1936](https://insa.nic.in/writereaddata/UpLoadedFiles/PINSA/Vol02_1936_1_Art05.pdf))
-   - [Documentation](https://docs.seldon.io/projects/odcd/en/stable/methods/mahalanobis.html)
+   - [Documentation](https://docs.seldon.io/projects/alibi-detect/en/stable/methods/mahalanobis.html)
    - Examples:
-     [Network Intrusion](https://docs.seldon.io/projects/odcd/en/stable/examples/od_mahalanobis_kddcup.html)
+     [Network Intrusion](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/od_mahalanobis_kddcup.html)
 
  - Variational Auto-Encoder (VAE) ([Kingma et al., 2013](https://arxiv.org/abs/1312.6114))
-   - [Documentation](https://docs.seldon.io/projects/odcd/en/stable/methods/vae.html)
+   - [Documentation](https://docs.seldon.io/projects/alibi-detect/en/stable/methods/vae.html)
    - Examples:
-     [Network Intrusion](https://docs.seldon.io/projects/odcd/en/stable/examples/od_vae_kddcup.html), [CIFAR10](https://docs.seldon.io/projects/odcd/en/stable/examples/od_vae_cifar10.html)
-     
+     [Network Intrusion](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/od_vae_kddcup.html), [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/od_vae_cifar10.html)
+
  - Auto-Encoding Gaussian Mixture Model (AEGMM) ([Zong et al., 2018](https://openreview.net/forum?id=BJJLHbb0-))
-   - [Documentation](https://docs.seldon.io/projects/odcd/en/stable/methods/aegmm.html)
+   - [Documentation](https://docs.seldon.io/projects/alibi-detect/en/stable/methods/aegmm.html)
    - Examples:
-     [Network Intrusion](https://docs.seldon.io/projects/odcd/en/stable/examples/od_aegmm_kddcup.html)
+     [Network Intrusion](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/od_aegmm_kddcup.html)
 
  - Variational Auto-Encoding Gaussian Mixture Model (VAEGMM)
-   - [Documentation](https://docs.seldon.io/projects/odcd/en/stable/methods/vaegmm.html)
+   - [Documentation](https://docs.seldon.io/projects/alibi-detect/en/stable/methods/vaegmm.html)
    - Examples:
-     [Network Intrusion](https://docs.seldon.io/projects/odcd/en/stable/examples/od_aegmm_kddcup.html)
+     [Network Intrusion](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/od_aegmm_kddcup.html)
 
 The following table shows the advised use cases for each algorithm. The column *Feature Level* indicates whether the outlier scoring and detection can be done and returned at the feature level, e.g. per pixel for an image:
 
@@ -63,9 +63,9 @@ The following table shows the advised use cases for each algorithm. The column *
 ### Adversarial Detection
 
  - Adversarial Variational Auto-Encoder
-   - [Documentation](https://docs.seldon.io/projects/odcd/en/stable/methods/adversarialvae.html)
+   - [Documentation](https://docs.seldon.io/projects/alibi-detect/en/stable/methods/adversarialvae.html)
    - Examples:
-     [MNIST](https://docs.seldon.io/projects/odcd/en/stable/examples/ad_advvae_mnist.html)
+     [MNIST](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/ad_advvae_mnist.html)
 
 Advised use cases:
 
