@@ -1,4 +1,4 @@
 # CIFAR10 Outlier Detector for Kfserving
 
-A CIFAR10 VAE Outlier Detector. Run the [notebook demo](outlier_demo.ipynb) to test.
+A CIFAR10 VAE Outlier Detector. Run the [notebook demo](cifar10_outlier.ipynb) to test.
 
