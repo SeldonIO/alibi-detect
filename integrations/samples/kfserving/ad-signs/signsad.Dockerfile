@@ -32,7 +32,7 @@ RUN cd tmp/odcd && \
 RUN cd tmp/odcdserver && \
     pip install -e .
 
-COPY ad_vae_mnist ad_vae_mnist
+COPY ad_vae_signs ad_vae_signs
 
 ENTRYPOINT ["python", "-m", "odcdserver"]
 

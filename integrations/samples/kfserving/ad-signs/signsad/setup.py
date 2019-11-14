@@ -6,14 +6,14 @@ tests_require = [
     'mypy'
 ]
 setup(
-    name='mnistar',
+    name='signsad',
     version='0.1.0',
     author_email='cc@seldon.io',
     license='https://github.com/seldonio/odcd/LICENSE',
-    url='https://github.com/seldonio/odcd/integrations/samples/kfserving/ad-mnist',
-    description='MNIST Adversarial Detection Server for use inside kfserving ',
+    url='https://github.com/seldonio/odcd/integrations/samples/kfserving/ad-signs',
+    description='Traffic Signs Adversarial Detection Server for use inside kfserving ',
     python_requires='>3.4',
-    packages=find_packages("mnistar"),
+    packages=find_packages("signsad"),
     install_requires=[
         "odcd",
         "kfserving>=0.2.0",
