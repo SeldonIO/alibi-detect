@@ -11,7 +11,7 @@ RUN git clone https://github.com/kubeflow/kfserving.git && \
     pip install -e ./kfserving
 
 #RUN git clone https://github.com/seldonio/alibi-detect.git && \
-#    cd odcd && \
+#    cd alibi-detect && \
 #    pip install -e .
 
 COPY tmp tmp
