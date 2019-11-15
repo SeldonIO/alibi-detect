@@ -60,10 +60,11 @@ class OutlierProphet(BaseDetector, FitMixin, ThresholdMixin):
             holidays_prior_scale: float = 10.,  # higher = more flexible trend so more overfitting
             changepoint_range: float = .8,  # higher = more changepoints so more overfitting
             changepoint_prior_scale: float = .05,  # higher = more flexible trend so more overfitting
+            seasonality_mode: str = 'additive',  # additive or multiplicative
             daily_seasonality: Union[str, int] = 'auto',
             weekly_seasonality: Union[str, int] = 'auto',
             yearly_seasonality: Union[str, int] = 'auto',
-            add_seasonality: List[Dict[str, float, int, float]] = None,  # name, period, fourier_order, prior_scale
+            add_seasonality: List[Dict[str, float, int, float, str]] = None,  # name, period, fourier_order, prior_scale, mode
             seasonality_prior_scale: float = 10.,  # higher = more flexible trend so more overfitting
             uncertainty_samples: int = 1000,
             country_holidays: str = None,  # e.g. 'US' to add US holidays; https://github.com/dr-prodigy/python-holidays
