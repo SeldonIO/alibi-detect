@@ -72,3 +72,8 @@ Advised use cases:
 | Detector          | Tabular | Image | Time Series | Text  | Categorical Features | Online | Feature Level |
 | :---              |  :---:  | :---: |   :---:     | :---: |   :---:              | :---:  | :---:         |
 | Adversarial VAE   | ✔       | ✔     |  ✘          |  ✘    |  ✘                   |  ✘     |  ✘            |
+
+
+## Integrations
+
+The integrations folder contains various wrapper tools to allow the alibi-detect algorithms to be used in production machine learning systems with [examples](https://github.com/SeldonIO/alibi-detect/tree/master/integrations/samples/kfserving) on how to deploy outlier and adversarial detectors with [KFServing](https://www.kubeflow.org/docs/components/serving/kfserving/).
