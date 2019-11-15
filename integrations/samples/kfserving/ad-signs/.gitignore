@@ -1,0 +1,5 @@
+traffic_data/
+ad_vae_signs/
+model_signs/
+tmp/
+gtsrb-german-traffic-sign.zip

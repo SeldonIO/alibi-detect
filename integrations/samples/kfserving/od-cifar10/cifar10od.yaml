@@ -1,0 +1,19 @@
+apiVersion: serving.knative.dev/v1alpha1
+kind: Service
+metadata:
+  name: vae-outlier
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: "1"
+    spec:
+      containers:
+      - image: seldonio/cifar10od:0.0.2
+        args:
+        - --model_name
+        - vaeod
+        - --storage_uri
+        - ./vae_outlier_detector/
+        - --reply_url
+        - http://message-dumper.default

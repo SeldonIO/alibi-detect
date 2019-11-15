@@ -1,7 +1,13 @@
+# emacs tmp files
+*~
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
+
+# pycharm
+.idea/
 
 # C extensions
 *.so
@@ -24,6 +30,9 @@ wheels/
 .installed.cfg
 *.egg
 MANIFEST
+
+# Jupyter Notebook
+.ipynb_checkpoints
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -102,3 +111,4 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
