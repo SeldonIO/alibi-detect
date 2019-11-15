@@ -7,14 +7,14 @@ import numpy as np
 from .numpy_encoder import NumpyEncoder
 from alibi_detect.utils.saving import load_detector
 
-EVENT_SOURCE_PREFIX = "seldon.ceserver.odcdserver"
+EVENT_SOURCE_PREFIX = "seldon.ceserver.adserver"
 EVENT_TYPE = "seldon.outlier"
 
-HEADER_RETURN_FEATURE_SCORE = "odcd-return-feature-score"
-HEADER_RETURN_INSTANCE_SCORE = "odcd-return-instance-score"
-HEADER_OUTLIER_TYPE = "odcd-outlier-type"
+HEADER_RETURN_FEATURE_SCORE = "alibi-detect-return-feature-score"
+HEADER_RETURN_INSTANCE_SCORE = "alibi-detect-return-instance-score"
+HEADER_OUTLIER_TYPE = "alibi-detect-outlier-type"
 
-class ODCDModel(ceserver.CEModel):  # pylint:disable=c-extension-no-member
+class AlibiDetectModel(ceserver.CEModel):  # pylint:disable=c-extension-no-member
     def __init__(self, name: str, storage_uri: str):
         """
         Outlier Detection / Concept Drift Model
@@ -30,7 +30,7 @@ class ODCDModel(ceserver.CEModel):  # pylint:disable=c-extension-no-member
         self.name = name
         self.storage_uri = storage_uri
         self.ready = False
-        self.odcd = None
+        self.model = None
 
     def load(self):
         """
@@ -38,12 +38,12 @@ class ODCDModel(ceserver.CEModel):  # pylint:disable=c-extension-no-member
 
         """
         model_folder = kfserving.Storage.download(self.storage_uri)
-        self.odcd = load_detector(model_folder)
+        self.model = load_detector(model_folder)
         self.ready = True
 
     def process_event(self, inputs: List, headers: Dict) -> Dict:
         """
-        Process the event and return ODCD score
+        Process the event and return Alibi Detect score
 
         Parameters
         ----------
@@ -54,7 +54,7 @@ class ODCDModel(ceserver.CEModel):  # pylint:disable=c-extension-no-member
 
         Returns
         -------
-             ODCD response
+             Alibi Detect response
 
         """
         try:
@@ -77,14 +77,14 @@ class ODCDModel(ceserver.CEModel):  # pylint:disable=c-extension-no-member
             ret_feature_score = False
             if HEADER_RETURN_FEATURE_SCORE in headers and headers[HEADER_RETURN_FEATURE_SCORE] == "true":
                 ret_feature_score = True
-            od_preds = self.odcd.predict(X,
-                                         outlier_type=outlier_type,
-                                         # use 'feature' or 'instance' level
-                                         return_feature_score=ret_feature_score,
-                                         # scores used to determine outliers
-                                         return_instance_score=ret_instance_score)
+            od_preds = self.model.predict(X,
+                                          outlier_type=outlier_type,
+                                          # use 'feature' or 'instance' level
+                                          return_feature_score=ret_feature_score,
+                                          # scores used to determine outliers
+                                          return_instance_score=ret_instance_score)
         else: # generic method
-            od_preds = self.odcd.predict(X,return_instance_score=ret_instance_score)
+            od_preds = self.model.predict(X, return_instance_score=ret_instance_score)
 
         print(od_preds)
         return json.loads(json.dumps(od_preds, cls=NumpyEncoder))

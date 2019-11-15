@@ -1,7 +1,7 @@
 MNIST_IMAGE=mnist
-MNIST_TAG=0.0.2
+MNIST_TAG=0.0.3
 MNISTAD_IMAGE=mnistad
-MNISTAD_TAG=0.0.2
+MNISTAD_TAG=0.0.3
 
 model_mnist:
 	gsutil cp -r gs://seldon-models/odcd/model_mnist .
@@ -17,9 +17,9 @@ tmp/alibi_detect:
 	cp -r ../../../../alibi_detect tmp/alibi_detect/
 
 
-tmp/odcdserver:
+tmp/adserver:
 	mkdir -p tmp/
-	cp -r ../../../odcdserver tmp
+	cp -r ../../../adserver tmp
 
 
 #
@@ -42,7 +42,7 @@ curl-mnist-local:
 # MNIST Adversarial Detector
 #
 
-docker-build-mnistad: tmp/alibi_detect tmp/odcdserver ad_vae_mnist
+docker-build-mnistad: tmp/alibi_detect tmp/adserver ad_vae_mnist
 	docker build -f mnistad.Dockerfile -t seldonio/${MNISTAD_IMAGE}:${MNISTAD_TAG} .
 
 docker-run-mnistad:

@@ -29,7 +29,7 @@ COPY tmp tmp
 RUN cd tmp/alibi_detect && \
     pip install -e .
 
-RUN cd tmp/odcdserver && \
+RUN cd tmp/adserver && \
     pip install -e .
 
 COPY cifar10od cifar10od

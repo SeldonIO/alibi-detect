@@ -9,7 +9,7 @@ spec:
         autoscaling.knative.dev/minScale: "1"
     spec:
       containers:
-      - image: seldonio/mnistad:0.0.2
+      - image: seldonio/mnistad:0.0.3
         args:
         - --model_name
         - mnistad

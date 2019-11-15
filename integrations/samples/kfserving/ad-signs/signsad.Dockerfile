@@ -29,10 +29,10 @@ COPY tmp tmp
 RUN cd tmp/alibi_detect && \
     pip install -e .
 
-RUN cd tmp/odcdserver && \
+RUN cd tmp/adserver && \
     pip install -e .
 
 COPY ad_vae_signs ad_vae_signs
 
-ENTRYPOINT ["python", "-m", "odcdserver"]
+ENTRYPOINT ["python", "-m", "adserver"]
 

@@ -5,7 +5,7 @@ import tensorflow as tf
 
 tf.keras.backend.clear_session()
 
-from signsad import SignsODCDModel
+from signsad import SignsAdversarialModel
 
 DEFAULT_MODEL_NAME = "model"
 
@@ -17,5 +17,5 @@ parser.add_argument('--storage_uri', required=True,
 args, _ = parser.parse_known_args()
 
 if __name__ == "__main__":
-    model = SignsODCDModel(args.model_name, args.storage_uri)
+    model = SignsAdversarialModel(args.model_name, args.storage_uri)
     ceserver.CEServer().start(model)

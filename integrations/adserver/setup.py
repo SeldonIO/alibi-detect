@@ -6,14 +6,14 @@ tests_require = [
     'mypy'
 ]
 setup(
-    name='odcdserver',
+    name='adserver',
     version='0.1.0',
     author_email='cc@seldon.io',
-    license='https://github.com/seldonio/odcd/LICENSE',
-    url='https://github.com/seldonio/odcd/integrations/ocdcserver',
-    description='ODCD Server for use with cloud events',
+    license='https://github.com/seldonio/alibi-detect/LICENSE',
+    url='https://github.com/seldonio/alibi-detect/integrations/adserver',
+    description='Alibi Detect Server for use with cloud events',
     python_requires='>3.4',
-    packages=find_packages("odcdserver"),
+    packages=find_packages("adserver"),
     install_requires=[
         "alibi-detect",
         "kfserving>=0.2.0",
