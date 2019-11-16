@@ -7,7 +7,7 @@ EVENT_TYPE = "seldon.adversarial"
 class MnistAdModel(adserver.AlibiDetectModel):  # pylint:disable=c-extension-no-member
     def __init__(self, name: str, storage_uri: str):
         """
-        CIFAR10 Outlier Model
+        MNIST Adversarial Detection Model
 
         Parameters
         ----------

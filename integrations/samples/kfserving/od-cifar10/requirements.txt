@@ -1,4 +1,4 @@
 tensorflow>=2.0.0
-tensorflow_probability
-matplotlib
-pandas
+tensorflow_probability>=0.8
+matplotlib>=3.1.1
+pandas>=0.25.3

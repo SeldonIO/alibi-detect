@@ -69,7 +69,6 @@ class AlibiDetectModel(ceserver.CEModel):  # pylint:disable=c-extension-no-membe
             ret_instance_score = True
 
         # Check if there are VAE outlier headers
-        print(headers)
         if HEADER_OUTLIER_TYPE in headers or HEADER_RETURN_FEATURE_SCORE in headers:
             outlier_type = 'instance'
             if HEADER_OUTLIER_TYPE in headers and headers[HEADER_OUTLIER_TYPE]:
@@ -86,7 +85,6 @@ class AlibiDetectModel(ceserver.CEModel):  # pylint:disable=c-extension-no-membe
         else: # generic method
             od_preds = self.model.predict(X, return_instance_score=ret_instance_score)
 
-        print(od_preds)
         return json.loads(json.dumps(od_preds, cls=NumpyEncoder))
 
     def event_source(self) -> str:
