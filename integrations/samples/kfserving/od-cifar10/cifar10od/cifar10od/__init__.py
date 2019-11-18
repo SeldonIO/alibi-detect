@@ -1,1 +1,1 @@
-from .model import Cifar10ODCDModel
+from .model import Cifar10OutlierModel

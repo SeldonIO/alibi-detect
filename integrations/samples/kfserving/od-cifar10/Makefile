@@ -1,5 +1,5 @@
 CIFAR10OD_IMAGE=cifar10od
-CIFAR10OD_TAG=0.0.2
+CIFAR10OD_TAG=0.0.3
 
 vae_outlier_detector:
 	gsutil cp -r gs://seldon-models/odcd/vae_outlier_detector .
@@ -12,15 +12,15 @@ tmp/alibi_detect:
 	cp ../../../../README.md tmp/alibi_detect
 	cp -r ../../../../alibi_detect tmp/alibi_detect/
 
-tmp/odcdserver:
+tmp/adserver:
 	mkdir -p tmp/
-	cp -r ../../../odcdserver tmp
+	cp -r ../../../adserver tmp
 
 #
 # CIFAR10 Outlier Detector
 #
 
-docker-build-cifar10od: clean_tmp tmp/alibi_detect tmp/odcdserver vae_outlier_detector 
+docker-build-cifar10od: clean_tmp tmp/alibi_detect tmp/adserver vae_outlier_detector 
 	docker build -f cifar10od.Dockerfile -t seldonio/${CIFAR10OD_IMAGE}:${CIFAR10OD_TAG} .
 
 docker-push-cifar10od:
@@ -32,6 +32,9 @@ docker-run-cifar10od:
 
 curl-cifar10od-local:
 	curl -v localhost:8080/ -d @./input.json 
+
+curl-cifar10od-local-scores:
+	curl -v localhost:8080/ -d @./input.json -H "alibi-detect-return-feature-score: true" -H "alibi-detect-return-instance-score: true"
 
 #
 # Misc

@@ -1,13 +1,13 @@
-import odcdserver
+import adserver
 
-EVENT_SOURCE_PREFIX = "seldon.ceserver.odcdserver.signs."
+EVENT_SOURCE_PREFIX = "seldon.ceserver.adserver.signs."
 EVENT_TYPE = "seldon.adversarial"
 
 
-class SignsODCDModel(odcdserver.ODCDModel):  # pylint:disable=c-extension-no-member
+class SignsAdversarialModel(adserver.AlibiDetectModel):  # pylint:disable=c-extension-no-member
     def __init__(self, name: str, storage_uri: str):
         """
-        CIFAR10 Outlier Model
+        traffic Signs Adversarial Detection Model
 
         Parameters
         ----------

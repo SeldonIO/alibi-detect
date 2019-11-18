@@ -1,7 +1,7 @@
 SIGNS_IMAGE=signs
-SIGNS_TAG=0.0.2
+SIGNS_TAG=0.0.3
 SIGNSAD_IMAGE=signsad
-SIGNSAD_TAG=0.0.2
+SIGNSAD_TAG=0.0.3
 
 model_signs:
 	gsutil cp -r gs://seldon-models/odcd/model_signs .
@@ -24,9 +24,9 @@ tmp/alibi_detect:
 	cp -r ../../../../alibi_detect tmp/alibi_detect/
 
 
-tmp/odcdserver:
+tmp/adserver:
 	mkdir -p tmp/
-	cp -r ../../../odcdserver tmp
+	cp -r ../../../adserver tmp
 
 
 #
@@ -49,7 +49,7 @@ curl-signs-local:
 # SIGNS Adversarial Detector
 #
 
-docker-build-signsad: tmp/alibi_detect tmp/odcdserver ad_vae_signs
+docker-build-signsad: tmp/alibi_detect tmp/adserver ad_vae_signs
 	docker build -f signsad.Dockerfile -t seldonio/${SIGNSAD_IMAGE}:${SIGNSAD_TAG} .
 
 docker-run-signsad:

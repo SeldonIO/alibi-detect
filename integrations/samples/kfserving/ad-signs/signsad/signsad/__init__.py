@@ -1,1 +1,1 @@
-from .model import SignsODCDModel
+from .model import SignsAdversarialModel

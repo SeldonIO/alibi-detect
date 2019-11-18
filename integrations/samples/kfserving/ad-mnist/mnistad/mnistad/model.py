@@ -1,13 +1,13 @@
-import odcdserver
+import adserver
 
-EVENT_SOURCE_PREFIX = "seldon.ceserver.odcdserver.mnist."
+EVENT_SOURCE_PREFIX = "seldon.ceserver.adserver.mnist."
 EVENT_TYPE = "seldon.adversarial"
 
 
-class MnistAdModel(odcdserver.ODCDModel):  # pylint:disable=c-extension-no-member
+class MnistAdModel(adserver.AlibiDetectModel):  # pylint:disable=c-extension-no-member
     def __init__(self, name: str, storage_uri: str):
         """
-        CIFAR10 Outlier Model
+        MNIST Adversarial Detection Model
 
         Parameters
         ----------

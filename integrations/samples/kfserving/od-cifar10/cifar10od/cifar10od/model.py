@@ -1,14 +1,14 @@
 from typing import List, Dict
 
 import numpy as np
-import odcdserver
-from odcdserver.model import HEADER_RETURN_FEATURE_SCORE
+import adserver
+from adserver.model import HEADER_RETURN_FEATURE_SCORE
 
-EVENT_SOURCE_PREFIX = "seldon.ceserver.odcdserver.cifar10."
+EVENT_SOURCE_PREFIX = "seldon.ceserver.adserver.cifar10."
 EVENT_TYPE = "seldon.outlier"
 
 
-class Cifar10ODCDModel(odcdserver.ODCDModel):  # pylint:disable=c-extension-no-member
+class Cifar10OutlierModel(adserver.AlibiDetectModel):  # pylint:disable=c-extension-no-member
     def __init__(self, name: str, storage_uri: str):
         """
         CIFAR10 Outlier Model
@@ -43,7 +43,7 @@ class Cifar10ODCDModel(odcdserver.ODCDModel):  # pylint:disable=c-extension-no-m
 
     def process_event(self, inputs: List, headers: Dict) -> Dict:
         """
-        Process the event and return ODCD score
+        Process the event and return Alibi Detect score
 
         Parameters
         ----------
@@ -54,7 +54,7 @@ class Cifar10ODCDModel(odcdserver.ODCDModel):  # pylint:disable=c-extension-no-m
 
         Returns
         -------
-             ODCD response
+             Alibi Detect response
 
         """
         if not HEADER_RETURN_FEATURE_SCORE in headers:
