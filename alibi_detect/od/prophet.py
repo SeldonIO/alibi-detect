@@ -1,93 +1,188 @@
 from fbprophet import Prophet
-
-# incl. saturating growth/min
-# tune nb of changepoints + `changepoint_range` (default=80% of dataset) + `changepoint_prior_scale`
-# higher `changepoint_prior_scale`? -> more predicted uncertainty b/c more room for overfitting
-# add custom + country holiday fn
-# allow for nb fourier series to model seasonality to change (default=10)
-# default = weekly / yearly -> allow custom! E.g. monthly / quarterly / hourly
-# conditional seasonalities!
-# add holiday / seasonality regularization via `holidays_prior_scale` / `seasonality_prior_scale`
-# allow for multiplicative seasonality via `seasonality_mode`=`multiplicative`
-# use uncertainty observations combined/separately: uncertainty in trend / seasonality / observation noise
-# make sure the width of the uncertainty intervals (default=80%) is set OK via `interval_width`
-# for uncertainty in seasonality -> `mcmc_samples`>0! But very costly! (minutes vs. seconds)
-# important that there are no outliers in the data to fit -> can even set them to NA
-# make sure timestamp format is correct
-# add plotting fn
-
-# threshold in nb stdev or something similar?
-
-# general things for time series:
-# - predict a window ahead -> if the predictions over that window are above a threshold: outlier!
-
-from fbprophet import Prophet
 import logging
-import numpy as np
 import pandas as pd
 from typing import Dict, List, Union
-from alibi_detect.base import BaseDetector, FitMixin, ThresholdMixin, outlier_prediction_dict
+from alibi_detect.base import BaseDetector, FitMixin, outlier_prediction_dict
 
 logger = logging.getLogger(__name__)
 
 
-class OutlierProphet(BaseDetector, FitMixin, ThresholdMixin):
+class OutlierProphet(BaseDetector, FitMixin):
 
     def __init__(self,
-                 threshold: float = None,
-                 window: int = 1,
+                 threshold: float = .8,
+                 growth: str = 'linear',
+                 holidays: pd.DataFrame = None,
+                 holidays_prior_scale: float = 10.,
+                 country_holidays: str = None,
+                 changepoint_prior_scale: float = .05,
+                 changepoint_range: float = .8,
+                 seasonality_mode: str = 'additive',
+                 daily_seasonality: Union[str, bool, int] = 'auto',
+                 weekly_seasonality: Union[str, bool, int] = 'auto',
+                 yearly_seasonality: Union[str, bool, int] = 'auto',
+                 add_seasonality: List[Dict[str, float, int, float, str]] = None,
+                 seasonality_prior_scale: float = 10.,
+                 uncertainty_samples: int = 1000,
+                 mcmc_samples: int = 0
                  ) -> None:
         """
         Outlier detector for time series data using fbprophet.
+        See https://facebook.github.io/prophet/ for more details.
 
         Parameters
         ----------
         threshold
-            Threshold used for outlier score to determine outliers.
+            Width of the uncertainty intervals of the forecast, used as outlier threshold.
+            Equivalent to `interval_width`. If the instance lies outside of the uncertainty intervals,
+            it is flagged as an outlier. If `mcmc_samples` equals 0, it is the uncertainty in the trend
+            using the MAP estimate of the extrapolated model. If `mcmc_samples` >0, then uncertainty
+            over all parameters is used.
+        growth
+            'linear' or 'logistic' to specify a linear or logistic trend.
+        holidays
+            pandas DataFrame with columns `holiday` (string) and `ds` (dates) and optionally
+            columns `lower_window` and `upper_window` which specify a range of days around
+            the date to be included as holidays.
+        holidays_prior_scale
+            Parameter controlling the strength of the holiday components model.
+            Higher values imply a more flexible trend, more prone to more overfitting.
+        country_holidays
+            Inculde country-specific holidays via country abbreviations.
+            The holidays for each country are provided by the holidays package in Python.
+            A list of available countries and the country name to use is available on:
+            https://github.com/dr-prodigy/python-holidays. Additionally, Prophet includes holidays for :
+            Brazil (BR), Indonesia (ID), India (IN), Malaysia (MY), Vietnam (VN), Thailand (TH),
+            Philippines (PH), Turkey (TU), Pakistan (PK), Bangladesh (BD), Egypt (EG), China (CN) and Russian (RU).
+        changepoint_prior_scale
+            Parameter controlling the flexibility of the automatic changepoint selection.
+            Large values will allow many changepoints, potentially leading to overfitting.
+        changepoint_range
+            Proportion of history in which trend changepoints will be estimated.
+            Higher values means more changepoints, potentially leading to overfitting.
+        seasonality_mode
+            Either 'additive' or 'multiplicative'.
+        daily_seasonality
+            Can be 'auto', True, False, or a number of Fourier terms to generate.
+        weekly_seasonality
+            Can be 'auto', True, False, or a number of Fourier terms to generate.
+        yearly_seasonality
+            Can be 'auto', True, False, or a number of Fourier terms to generate.
+        add_seasonality
+            Manually add one or more seasonality components. Pass a list of dicts containing the keys
+            `name`, `period`, `fourier_order` (obligatory), `prior_scale` and `mode` (optional).
+        seasonality_prior_scale
+            Parameter controlling the strength of the seasonality model. Larger values allow the model to
+            fit larger seasonal fluctuations, potentially leading to overfitting.
+        uncertainty_samples
+            Number of simulated draws used to estimate uncertainty intervals.
+        mcmc_samples
+            If >0, will do full Bayesian inference with the specified number of MCMC samples.
+            If 0, will do MAP estimation.
         """
         super().__init__()
 
         if threshold is None:
             logger.warning('No threshold level set. Need to infer threshold using `infer_threshold`.')
 
-        self.threshold = threshold
-        self.window = window
-
-    def fit(self,
-            df: pd.DataFrame = None,
-            growth: str = 'linear',
-            holidays: pd.DataFrame = None,
-            holidays_prior_scale: float = 10.,  # higher = more flexible trend so more overfitting
-            changepoint_range: float = .8,  # higher = more changepoints so more overfitting
-            changepoint_prior_scale: float = .05,  # higher = more flexible trend so more overfitting
-            seasonality_mode: str = 'additive',  # additive or multiplicative
-            daily_seasonality: Union[str, int] = 'auto',
-            weekly_seasonality: Union[str, int] = 'auto',
-            yearly_seasonality: Union[str, int] = 'auto',
-            add_seasonality: List[Dict[str, float, int, float, str]] = None,  # name, period, fourier_order, prior_scale, mode
-            seasonality_prior_scale: float = 10.,  # higher = more flexible trend so more overfitting
-            uncertainty_samples: int = 1000,
-            country_holidays: str = None,  # e.g. 'US' to add US holidays; https://github.com/dr-prodigy/python-holidays
-            ) -> None:
+        # initialize Prophet model
         # TODO: add conditional seasonalities
-        kwargs = {  # TODO: add remaining kwargs
+        kwargs = {
             'growth': growth,
+            'interval_width': threshold,
             'holidays': holidays,
+            'holidays_prior_scale': holidays_prior_scale,
+            'changepoint_prior_scale': changepoint_prior_scale,
             'changepoint_range': changepoint_range,
-            'changepoint_prior_scale': changepoint_prior_scale
+            'seasonality_mode': seasonality_mode,
+            'daily_seasonality': daily_seasonality,
+            'weekly_seasonality': weekly_seasonality,
+            'yearly_seasonality': yearly_seasonality,
+            'seasonality_prior_scale': seasonality_prior_scale,
+            'uncertainty_samples': uncertainty_samples,
+            'mcmc_samples': mcmc_samples
         }
         self.model = Prophet(**kwargs)
         if country_holidays:
             self.model.add_country_holidays(country_name=country_holidays)
         for s in add_seasonality:
             self.model.add_seasonality(**s)
+
+        # set metadata
+        self.meta['detector_type'] = 'offline'
+        self.meta['data_type'] = 'time-series'
+
+    def fit(self, df: pd.DataFrame) -> None:
+        """
+        Fit Prophet model on normal (inlier) data.
+
+        Parameters
+        ----------
+        df
+            Dataframe with columns `ds` with timestamps and `y` with target values.
+        """
         self.model.fit(df)
 
-    def infer_threshold(self, X: np.ndarray) -> None:
-        pass
+    def score(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Compute outlier scores.
 
-    def score(self, X: np.ndarray) -> np.ndarray:
-        pass
+        Parameters
+        ----------
+        df
+            DataFrame with columns `ds` with timestamps and `y` with values which
+            need to be flagged as outlier or not.
 
-    def predict(self, X: np.ndarray) -> Dict[Dict[str, str], Dict[np.ndarray, np.ndarray]]:
-        pass
+        Returns
+        -------
+        Array with outlier scores for each instance in the batch.
+        """
+        forecast = self.model.predict(df['ds'])
+        forecast['y'] = df['y']
+        forecast['score'] = (
+                (forecast['y'] - forecast['yhat_upper']) * (forecast['y'] >= forecast['yhat']) +
+                (forecast['yhat_lower'] - forecast['y']) * (forecast['y'] < forecast['yhat'])
+        )
+        return forecast
+
+    def predict(self,
+                df: pd.DataFrame,
+                return_instance_score: bool = True
+                ) -> Dict[Dict[str, str], Dict[pd.DataFrame, pd.DataFrame]]:
+        """
+        Compute outlier scores and transform into outlier predictions.
+
+        Parameters
+        ----------
+        df
+            DataFrame with columns `ds` with timestamps and `y` with values which
+            need to be flagged as outlier or not.
+        return_instance_score
+            Whether to return instance level outlier scores.
+
+        Returns
+        -------
+        Dictionary containing 'meta' and 'data' dictionaries.
+        'meta' has the model's metadata.
+        'data' contains the outlier predictions and instance level outlier scores.
+        """
+        # compute outlier scores
+        forecast = self.score(df)
+        iscore = pd.DataFrame(data={
+            'ds': df['ds'],
+            'instance_score': forecast['score']
+        })
+
+        # values above threshold are outliers
+        outlier_pred = pd.DataFrame(data={
+            'ds': df['ds'],
+            'is_outlier': (forecast['score'] > 0.).astype(int)
+        })
+
+        # populate output dict
+        od = outlier_prediction_dict()
+        od['meta'] = self.meta
+        od['data']['is_outlier'] = outlier_pred
+        if return_instance_score:
+            od['data']['instance_score'] = iscore
+        return od
