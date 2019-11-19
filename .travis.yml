@@ -1,0 +1,18 @@
+dist: xenial
+language: python
+python:
+  - "3.5"
+  - "3.6"
+  - "3.7"
+before_install:
+  - sudo apt-get install pandoc
+install:
+  - pip install -r requirements/requirements_all.txt
+script:
+  - flake8 alibi_detect
+  - mypy alibi_detect
+  - travis_wait pytest
+  - make build_pypi
+  - make build_docs
+after_success:
+  - codecov
