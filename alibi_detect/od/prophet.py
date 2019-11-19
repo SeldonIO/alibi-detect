@@ -12,6 +12,7 @@ class OutlierProphet(BaseDetector, FitMixin):
     def __init__(self,
                  threshold: float = .8,
                  growth: str = 'linear',
+                 cap: float = None,
                  holidays: pd.DataFrame = None,
                  holidays_prior_scale: float = 10.,
                  country_holidays: str = None,
@@ -21,7 +22,7 @@ class OutlierProphet(BaseDetector, FitMixin):
                  daily_seasonality: Union[str, bool, int] = 'auto',
                  weekly_seasonality: Union[str, bool, int] = 'auto',
                  yearly_seasonality: Union[str, bool, int] = 'auto',
-                 add_seasonality: List[Dict[str, float, int, float, str]] = None,
+                 add_seasonality: List = None,
                  seasonality_prior_scale: float = 10.,
                  uncertainty_samples: int = 1000,
                  mcmc_samples: int = 0
@@ -40,6 +41,8 @@ class OutlierProphet(BaseDetector, FitMixin):
             over all parameters is used.
         growth
             'linear' or 'logistic' to specify a linear or logistic trend.
+        cap
+            Growth cap in case growth equals 'logistic'.
         holidays
             pandas DataFrame with columns `holiday` (string) and `ds` (dates) and optionally
             columns `lower_window` and `upper_window` which specify a range of days around
@@ -105,8 +108,10 @@ class OutlierProphet(BaseDetector, FitMixin):
         self.model = Prophet(**kwargs)
         if country_holidays:
             self.model.add_country_holidays(country_name=country_holidays)
-        for s in add_seasonality:
-            self.model.add_seasonality(**s)
+        if add_seasonality:
+            for s in add_seasonality:
+                self.model.add_seasonality(**s)
+        self.cap = cap
 
         # set metadata
         self.meta['detector_type'] = 'offline'
@@ -121,6 +126,8 @@ class OutlierProphet(BaseDetector, FitMixin):
         df
             Dataframe with columns `ds` with timestamps and `y` with target values.
         """
+        if self.cap:
+            df['cap'] = self.cap
         self.model.fit(df)
 
     def score(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -137,7 +144,9 @@ class OutlierProphet(BaseDetector, FitMixin):
         -------
         Array with outlier scores for each instance in the batch.
         """
-        forecast = self.model.predict(df['ds'])
+        if self.cap:
+            df['cap'] = self.cap
+        forecast = self.model.predict(df['ds'])  # TODO: fix key error
         forecast['y'] = df['y']
         forecast['score'] = (
                 (forecast['y'] - forecast['yhat_upper']) * (forecast['y'] >= forecast['yhat']) +
