@@ -9,6 +9,7 @@ before_install:
 install:
   - pip install -r requirements/requirements.txt
   - pip install -r requirements/requirements_ci.txt
+  - pip install -e .
 script:
   - flake8 alibi_detect
   - mypy alibi_detect
