@@ -11,6 +11,7 @@ pip install alibi-detect
 This will install `alibi-detect` with all its dependencies:
 ```bash
   creme
+  fbprophet
   matplotlib
   numpy
   pandas

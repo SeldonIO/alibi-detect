@@ -27,6 +27,7 @@ setup(
     setup_requires=["pytest-runner"],
     install_requires=[
         "creme",
+        "fbprophet",
         "matplotlib",
         "numpy",
         "pandas",
