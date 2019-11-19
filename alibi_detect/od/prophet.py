@@ -85,9 +85,6 @@ class OutlierProphet(BaseDetector, FitMixin):
         """
         super().__init__()
 
-        if threshold is None:
-            logger.warning('No threshold level set. Need to infer threshold using `infer_threshold`.')
-
         # initialize Prophet model
         # TODO: add conditional seasonalities
         kwargs = {
@@ -147,7 +144,7 @@ class OutlierProphet(BaseDetector, FitMixin):
         if self.cap:
             df['cap'] = self.cap
         forecast = self.model.predict(df)
-        forecast['y'] = df['y']
+        forecast['y'] = df['y'].values
         forecast['score'] = (
                 (forecast['y'] - forecast['yhat_upper']) * (forecast['y'] >= forecast['yhat']) +
                 (forecast['yhat_lower'] - forecast['y']) * (forecast['y'] < forecast['yhat'])
@@ -156,7 +153,8 @@ class OutlierProphet(BaseDetector, FitMixin):
 
     def predict(self,
                 df: pd.DataFrame,
-                return_instance_score: bool = True
+                return_instance_score: bool = True,
+                return_forecast: bool = True
                 ) -> Dict[Dict[str, str], Dict[pd.DataFrame, pd.DataFrame]]:
         """
         Compute outlier scores and transform into outlier predictions.
@@ -168,23 +166,25 @@ class OutlierProphet(BaseDetector, FitMixin):
             need to be flagged as outlier or not.
         return_instance_score
             Whether to return instance level outlier scores.
+        return_forecast
+            Whether to return the model forecast.
 
         Returns
         -------
         Dictionary containing 'meta' and 'data' dictionaries.
         'meta' has the model's metadata.
-        'data' contains the outlier predictions and instance level outlier scores.
+        'data' contains the outlier predictions, instance level outlier scores and the model forecast.
         """
         # compute outlier scores
         forecast = self.score(df)
         iscore = pd.DataFrame(data={
-            'ds': df['ds'],
+            'ds': df['ds'].values,
             'instance_score': forecast['score']
         })
 
         # values above threshold are outliers
         outlier_pred = pd.DataFrame(data={
-            'ds': df['ds'],
+            'ds': df['ds'].values,
             'is_outlier': (forecast['score'] > 0.).astype(int)
         })
 
@@ -194,4 +194,6 @@ class OutlierProphet(BaseDetector, FitMixin):
         od['data']['is_outlier'] = outlier_pred
         if return_instance_score:
             od['data']['instance_score'] = iscore
+        if return_forecast:
+            od['data']['forecast'] = forecast
         return od
