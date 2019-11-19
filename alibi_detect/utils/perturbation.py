@@ -72,10 +72,12 @@ def apply_mask(X: np.ndarray,
             update_val = noise[_]
 
         for c in channels:
-            mask[_,
-            x_start[_]:x_start[_] + mask_size[0],
-            y_start[_]:y_start[_] + mask_size[1],
-            c] = update_val
+            mask[
+                _,
+                x_start[_]:x_start[_] + mask_size[0],
+                y_start[_]:y_start[_] + mask_size[1],
+                c
+            ] = update_val
 
     # apply masks to instances
     X_mask = []

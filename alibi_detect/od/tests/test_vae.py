@@ -38,7 +38,7 @@ def vae_params(request):
 def test_vae(vae_params):
     # OutlierVAE parameters
     threshold, score_type, samples, loss_fn, threshold_perc, return_instance_score, \
-    return_feature_score, outlier_perc, outlier_type = vae_params
+        return_feature_score, outlier_perc, outlier_type = vae_params
 
     # define encoder and decoder
     encoder_net = tf.keras.Sequential(
@@ -94,8 +94,8 @@ def test_vae(vae_params):
     elif outlier_type == 'feature':
         assert od_preds['data']['is_outlier'].shape == X.shape
         if return_feature_score:
-              assert od_preds['data']['is_outlier'].sum() == (od_preds['data']['feature_score']
-                                                              > vae.threshold).astype(int).sum()
+            assert od_preds['data']['is_outlier'].sum() == (od_preds['data']['feature_score']
+                                                            > vae.threshold).astype(int).sum()
 
     if return_feature_score:
         assert od_preds['data']['feature_score'].shape == X.shape
