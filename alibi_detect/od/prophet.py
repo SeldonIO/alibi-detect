@@ -146,7 +146,7 @@ class OutlierProphet(BaseDetector, FitMixin):
         """
         if self.cap:
             df['cap'] = self.cap
-        forecast = self.model.predict(df['ds'])  # TODO: fix key error
+        forecast = self.model.predict(df)
         forecast['y'] = df['y']
         forecast['score'] = (
                 (forecast['y'] - forecast['yhat_upper']) * (forecast['y'] >= forecast['yhat']) +
