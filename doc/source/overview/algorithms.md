@@ -11,6 +11,7 @@ The following tables summarize the advised use cases for the current algorithms.
 |[VAE](../methods/vae.ipynb)|✔|✔|✘|✘|✘|✘|✔|
 |[AEGMM](../methods/aegmm.ipynb)|✔|✔|✘|✘|✘|✘|✘|
 |[VAEGMM](../methods/vaegmm.ipynb)|✔|✔|✘|✘|✘|✘|✘|
+|[Prophet](../methods/prophet.ipynb)|✘|✘|✔|✘|✘|✘|✘|
 
 ## Adversarial Detection
 

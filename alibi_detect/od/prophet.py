@@ -51,10 +51,10 @@ class OutlierProphet(BaseDetector, FitMixin):
             Parameter controlling the strength of the holiday components model.
             Higher values imply a more flexible trend, more prone to more overfitting.
         country_holidays
-            Inculde country-specific holidays via country abbreviations.
+            Include country-specific holidays via country abbreviations.
             The holidays for each country are provided by the holidays package in Python.
             A list of available countries and the country name to use is available on:
-            https://github.com/dr-prodigy/python-holidays. Additionally, Prophet includes holidays for :
+            https://github.com/dr-prodigy/python-holidays. Additionally, Prophet includes holidays for:
             Brazil (BR), Indonesia (ID), India (IN), Malaysia (MY), Vietnam (VN), Thailand (TH),
             Philippines (PH), Turkey (TU), Pakistan (PK), Bangladesh (BD), Egypt (EG), China (CN) and Russian (RU).
         changepoint_prior_scale
