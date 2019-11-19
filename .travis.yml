@@ -1,11 +1,11 @@
 dist: xenial
 language: python
 python:
-  - "3.5"
   - "3.6"
   - "3.7"
 before_install:
   - sudo apt-get install pandoc
+  - sudo apt-get install build-essential
 install:
   - pip install -r requirements/requirements.txt
   - pip install -r requirements/requirements_ci.txt
