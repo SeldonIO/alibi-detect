@@ -6,6 +6,7 @@ python:
   - "3.7"
 before_install:
   - sudo apt-get install pandoc
+  - sudo apt-get build-essential
 install:
   - pip install -r requirements/requirements_all.txt
 script:
