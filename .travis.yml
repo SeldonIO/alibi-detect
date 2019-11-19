@@ -7,7 +7,8 @@ python:
 before_install:
   - sudo apt-get install pandoc
 install:
-  - pip install -r requirements/requirements_all.txt
+  - pip install -r requirements/requirements.txt
+  - pip install -r requirements/requirements_ci.txt
 script:
   - flake8 alibi_detect
   - mypy alibi_detect
