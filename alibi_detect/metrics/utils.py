@@ -1,9 +1,10 @@
 import json
 import numpy as np
 from creme.utils.histogram import Histogram
+from typing import Callable
 
 
-def map_nested_dicts(ob: dict, func: callable) -> dict:
+def map_nested_dicts(ob: dict, func: Callable) -> dict:
     if isinstance(ob, dict):
         return {k: map_nested_dicts(v, func) for k, v in ob.items()}
     else:

@@ -1,7 +1,7 @@
 import logging
 import numpy as np
 from scipy.linalg import eigh
-from typing import Dict
+from typing import Dict, Union
 from alibi_detect.utils.discretizer import Discretizer
 from alibi_detect.utils.distance import abdm, mvdm, multidim_scaling
 from alibi_detect.utils.mapping import ohe2ord, ord2num
@@ -66,7 +66,7 @@ class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
         self.d_abs = {}  # type: Dict
 
         # initial parameter values
-        self.clip = None
+        self.clip = None  # type: Union[None, list]
         self.mean = 0
         self.C = 0
         self.n = 0
@@ -151,7 +151,7 @@ class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
         elif d_type == 'mvdm':
             d_pair = mvdm(X_ord, y, cat_vars_ord, alpha=1)
 
-        if (type(feature_range[0]) == type(feature_range[1]) and
+        if (type(feature_range[0]) == type(feature_range[1]) and  # noqa
                 type(feature_range[0]) in [int, float]):
             feature_range = (np.ones((1, n_ord)) * feature_range[0],
                              np.ones((1, n_ord)) * feature_range[1])

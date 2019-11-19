@@ -39,4 +39,4 @@ def test_apply_mask(apply_mask_params):
     else:
         assert clip_rng[0] <= X_mask.min() and clip_rng[1] >= X_mask.max()
         assert (X_mask == np.clip(x + mask, clip_rng[0], clip_rng[1])).astype(int).sum() \
-               == reduce(mul, list(x.shape)) * n_masks
+            == reduce(mul, list(x.shape)) * n_masks

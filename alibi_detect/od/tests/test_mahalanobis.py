@@ -35,7 +35,6 @@ def test_mahalanobis(mahalanobis_params):
     assert mh.meta == {'name': 'Mahalanobis', 'detector_type': 'online', 'data_type': 'tabular'}
     mh.infer_threshold(X, threshold_perc=threshold_perc)
     assert mh.n == X.shape[0]
-    iscore = mh.score(X)
     assert mh.n == 2 * X.shape[0]
     assert mh.mean.shape[0] == X.shape[1]
     assert mh.C.shape == (X.shape[1], X.shape[1])

@@ -18,7 +18,7 @@ UNIVARIATE_STATS = {
 
 BIVARIATE_STATS = {
     # 'covariance': stats.Covariance # needs two inputs to update
-}
+}  # type: dict
 
 HISTOGRAM = {
     'histogram': Histogram

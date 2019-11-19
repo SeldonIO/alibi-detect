@@ -1,3 +1,6 @@
+# type: ignore
+# TODO: need to rewrite utilities using isinstance or @singledispatch for type checking to work properly
+
 import logging
 import os
 import pickle
@@ -392,7 +395,7 @@ def load_detector(filepath: str) -> Data:
 
 def load_tf_model(filepath: str) -> tf.keras.Model:
     model_dir = filepath + 'model/'
-    if not 'model.h5' in [f for f in os.listdir(model_dir) if not f.startswith('.')]:
+    if 'model.h5' not in [f for f in os.listdir(model_dir) if not f.startswith('.')]:
         logger.warning('No model found in {}.'.format(model_dir))
         return None
     model = tf.keras.models.load_model(model_dir + 'model.h5')
