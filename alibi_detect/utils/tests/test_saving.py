@@ -3,7 +3,7 @@ from tempfile import TemporaryDirectory
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, InputLayer
 from alibi_detect.ad import AdversarialVAE
-from alibi_detect.od import IForest, Mahalanobis, OutlierAEGMM, OutlierVAE, OutlierVAEGMM
+from alibi_detect.od import IForest, Mahalanobis, OutlierAEGMM, OutlierVAE, OutlierVAEGMM, OutlierProphet
 from alibi_detect.utils.saving import save_detector, load_detector
 
 input_dim = 4
@@ -66,7 +66,9 @@ detector = [
                   n_gmm=n_gmm,
                   latent_dim=latent_dim,
                   samples=samples,
-                  **kwargs)
+                  **kwargs),
+    OutlierProphet(threshold=.7,
+                   growth='logistic')
 ]
 n_tests = len(detector)
 
@@ -87,7 +89,9 @@ def test_save_load(select_detector):
         det_load = load_detector(temp_dir)
         det_load_name = det_load.meta['name']
         assert det_load_name == det_name
-        assert det_load.threshold == det.threshold == threshold
+
+        if not type(det_load) == OutlierProphet:
+            assert det_load.threshold == det.threshold == threshold
 
         if type(det_load) in [AdversarialVAE, OutlierVAE, OutlierVAEGMM]:
             assert det_load.samples == det.samples == samples
@@ -118,3 +122,7 @@ def test_save_load(select_detector):
             assert det_load.clip is None
             assert det_load.mean == det_load.C == det_load.n == 0
             assert det_load.meta['detector_type'] == 'online'
+        elif type(det_load) == OutlierProphet:
+            assert det_load.model.interval_width == .7
+            assert det_load.model.growth == 'logistic'
+            assert det_load.meta['data_type'] == 'time-series'
