@@ -24,7 +24,8 @@ alibi_detect.od.__all__
  'Mahalanobis',
  'OutlierAEGMM',
  'OutlierVAE',
- 'OutlierVAEGMM']
+ 'OutlierVAEGMM',
+ 'OutlierProphet']
 ```
 
 ```python
@@ -48,6 +49,8 @@ For detailed information on the methods:
     * [Auto-Encoding Gaussian Mixture Model (AEGMM) Outlier Detector](../methods/aegmm.ipynb)
 
     * [Variational Auto-Encoding Gaussian Mixture Model (VAEGMM) Outlier Detector](../methods/vaegmm.ipynb)
+    
+    * [Prophet Outlier Detector](../methods/prophet.ipynb)
 
     * [Adversarial VAE Detector](../methods/adversarialvae.ipynb)
 
