@@ -12,7 +12,6 @@ max_n = [None, 50]
 threshold_perc = [75., 95.]
 return_instance_score = [True, False]
 
-
 tests = list(product(threshold, n_components, std_clip, start_clip,
                      max_n, threshold_perc, return_instance_score))
 n_tests = len(tests)
@@ -25,7 +24,7 @@ def mahalanobis_params(request):
 
 @pytest.mark.parametrize('mahalanobis_params', list(range(n_tests)), indirect=True)
 def test_mahalanobis(mahalanobis_params):
-    threshold, n_components, std_clip, start_clip, max_n,\
+    threshold, n_components, std_clip, start_clip, max_n, \
         threshold_perc, return_instance_score = mahalanobis_params
     X, y = load_iris(return_X_y=True)
     mh = Mahalanobis(threshold, n_components=n_components, std_clip=std_clip,
@@ -35,6 +34,7 @@ def test_mahalanobis(mahalanobis_params):
     assert mh.meta == {'name': 'Mahalanobis', 'detector_type': 'online', 'data_type': 'tabular'}
     mh.infer_threshold(X, threshold_perc=threshold_perc)
     assert mh.n == X.shape[0]
+    iscore = mh.score(X)  # noqa
     assert mh.n == 2 * X.shape[0]
     assert mh.mean.shape[0] == X.shape[1]
     assert mh.C.shape == (X.shape[1], X.shape[1])
