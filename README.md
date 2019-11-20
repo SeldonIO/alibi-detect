@@ -49,6 +49,11 @@ This will install `alibi-detect` with all its dependencies:
    - [Documentation](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/vaegmm.html)
    - Examples:
      [Network Intrusion](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/od_aegmm_kddcup.html)
+     
+ - Prophet Time Series Outlier Detector ([Taylor et al., 2018](https://peerj.com/preprints/3190/))
+   - [Documentation](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/prophet.html)
+   - Examples:
+     [Weather Forecast](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/od_prophet_weather.html)
 
 The following table shows the advised use cases for each algorithm. The column *Feature Level* indicates whether the outlier scoring and detection can be done and returned at the feature level, e.g. per pixel for an image:
 
@@ -59,6 +64,7 @@ The following table shows the advised use cases for each algorithm. The column *
 | VAE                   | ✔       | ✔     |  ✘          |  ✘    |  ✘                   |  ✘     |  ✔            |
 | AEGMM                 | ✔       | ✔     |  ✘          |  ✘    |  ✘                   |  ✘     |  ✘            |
 | VAEGMM                | ✔       | ✔     |  ✘          |  ✘    |  ✘                   |  ✘     |  ✘            |
+| Prophet               | ✘       | ✘     |  ✔          |  ✘    |  ✘                   |  ✘     |  ✘            |
 
 
 ### Adversarial Detection

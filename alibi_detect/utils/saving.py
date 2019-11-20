@@ -12,25 +12,32 @@ from alibi_detect.od.aegmm import OutlierAEGMM
 from alibi_detect.base import BaseDetector
 from alibi_detect.od.isolationforest import IForest
 from alibi_detect.od.mahalanobis import Mahalanobis
+from alibi_detect.od.prophet import OutlierProphet
 from alibi_detect.od.vae import OutlierVAE
 from alibi_detect.od.vaegmm import OutlierVAEGMM
 
 logger = logging.getLogger(__name__)
 
-Data = Union[BaseDetector,
-             AdversarialVAE,
-             IForest,
-             Mahalanobis,
-             OutlierAEGMM,
-             OutlierVAE,
-             OutlierVAEGMM]
+Data = Union[
+    BaseDetector,
+    AdversarialVAE,
+    IForest,
+    Mahalanobis,
+    OutlierAEGMM,
+    OutlierProphet,
+    OutlierVAE,
+    OutlierVAEGMM
+]
 
-DEFAULT_DETECTORS = ['AdversarialVAE',
-                     'IForest',
-                     'Mahalanobis',
-                     'OutlierAEGMM',
-                     'OutlierVAE',
-                     'OutlierVAEGMM']
+DEFAULT_DETECTORS = [
+    'AdversarialVAE',
+    'IForest',
+    'Mahalanobis',
+    'OutlierAEGMM',
+    'OutlierProphet',
+    'OutlierVAE',
+    'OutlierVAEGMM'
+]
 
 
 def save_detector(detector: Data,
@@ -70,6 +77,8 @@ def save_detector(detector: Data,
         state_dict = state_vaegmm(detector)
     elif detector_name == 'AdversarialVAE':
         state_dict = state_adv_vae(detector)
+    elif detector_name == 'OutlierProphet':
+        state_dict = state_prophet(detector)
 
     with open(filepath + detector_name + '.pickle', 'wb') as f:
         pickle.dump(state_dict, f)
@@ -203,6 +212,20 @@ def state_adv_vae(ad: AdversarialVAE) -> Dict:
                   'samples': ad.samples,
                   'latent_dim': ad.vae.latent_dim,
                   'beta': ad.vae.beta}
+    return state_dict
+
+
+def state_prophet(od: OutlierProphet) -> Dict:
+    """
+    OutlierProphet parameters to save.
+
+    Parameters
+    ----------
+    od
+        Outlier detector object.
+    """
+    state_dict = {'model': od.model,
+                  'cap': od.cap}
     return state_dict
 
 
@@ -388,6 +411,8 @@ def load_detector(filepath: str) -> Data:
         vae = load_tf_vae(filepath, state_dict)
         model = load_tf_model(filepath)
         detector = init_ad_vae(state_dict, vae, model)
+    elif detector_name == 'OutlierProphet':
+        detector = init_od_prophet(state_dict)
 
     detector.meta = meta_dict
     return detector
@@ -639,4 +664,22 @@ def init_od_iforest(state_dict: Dict) -> IForest:
     """
     od = IForest(threshold=state_dict['threshold'])
     od.isolationforest = state_dict['isolationforest']
+    return od
+
+
+def init_od_prophet(state_dict: Dict) -> OutlierProphet:
+    """
+    Initialize OutlierProphet.
+
+    Parameters
+    ----------
+    state_dict
+        Dictionary containing the parameter values.
+
+    Returns
+    -------
+    Initialized OutlierProphet instance.
+    """
+    od = OutlierProphet(cap=state_dict['cap'])
+    od.model = state_dict['model']
     return od

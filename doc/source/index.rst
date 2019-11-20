@@ -22,6 +22,7 @@
    methods/vae.ipynb
    methods/vaegmm.ipynb
    methods/aegmm.ipynb
+   methods/prophet.ipynb
    methods/adversarialvae.ipynb
 
 .. toctree::
@@ -33,6 +34,7 @@
    examples/od_vae_kddcup
    examples/od_vae_cifar10
    examples/od_aegmm_kddcup
+   examples/od_prophet_weather
    examples/ad_advvae_mnist
 
 .. toctree::
