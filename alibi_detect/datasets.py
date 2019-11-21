@@ -106,7 +106,7 @@ def fetch_nab(ts: str,
               return_X_y: bool = False
               ) -> Union[Bunch, Tuple[pd.DataFrame, pd.DataFrame]]:
     """
-    Get time series in a DataFrame from the Numenta Anomaly Benchmark: https://github.com/numenta/NAB
+    Get time series in a DataFrame from the Numenta Anomaly Benchmark: https://github.com/numenta/NAB.
 
     Parameters
     ----------
@@ -143,3 +143,18 @@ def fetch_nab(ts: str,
     return Bunch(data=df,
                  target=df_labels,
                  target_names=['normal', 'outlier'])
+
+
+def get_list_nab() -> list:
+    """
+    Get list of possible time series to retrieve from the Numenta Anomaly Benchmark: https://github.com/numenta/NAB.
+
+    Returns
+    -------
+    List with time series names.
+    """
+    url_labels = 'https://raw.githubusercontent.com/numenta/NAB/master/labels/combined_labels.json'
+    r = requests.get(url_labels)
+    labels_json = r.json()
+    files = [k[:-4] for k, v in labels_json.items()]
+    return files
