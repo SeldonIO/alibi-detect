@@ -3,7 +3,8 @@ from itertools import product
 from operator import mul
 import numpy as np
 import pytest
-from alibi_detect.utils.perturbation import apply_mask
+from alibi_detect.utils.data import Bunch
+from alibi_detect.utils.perturbation import apply_mask, inject_outlier_ts
 
 x = np.random.rand(20 * 20 * 3).reshape(1, 20, 20, 3)
 mask_size = [(2, 2), (8, 8)]
@@ -40,3 +41,36 @@ def test_apply_mask(apply_mask_params):
         assert clip_rng[0] <= X_mask.min() and clip_rng[1] >= X_mask.max()
         assert (X_mask == np.clip(x + mask, clip_rng[0], clip_rng[1])).astype(int).sum() \
             == reduce(mul, list(x.shape)) * n_masks
+
+N = 1000
+x_ts = [np.random.rand(N).reshape(-1, 1), np.random.rand(3 * N).reshape(-1, 3)]
+perc_outlier = [0, 10, 20]
+min_std = [0, 1]
+
+tests_ts = list(product(x_ts, perc_outlier, min_std))
+n_tests_ts = len(tests_ts)
+
+
+@pytest.fixture
+def inject_outlier_ts_params(request):
+    return tests_ts[request.param]
+
+
+@pytest.mark.parametrize('inject_outlier_ts_params', list(range(n_tests_ts)), indirect=True)
+def test_inject_outlier_ts(inject_outlier_ts_params):
+    X, perc_outlier, min_std = inject_outlier_ts_params
+    print(perc_outlier, min_std, X.shape)
+    data = inject_outlier_ts(X, perc_outlier, perc_window=10, n_std=2., min_std=min_std)
+    assert isinstance(data, Bunch)
+    X_outlier, is_outlier = data.data, data.target
+    assert X_outlier.shape[0] == N == is_outlier.shape[0]
+    assert perc_outlier - 5 < is_outlier.mean() * 100 < perc_outlier + 5
+    X_diff = (X_outlier != X).astype(int).sum(axis=1)
+    idx_diff = np.where(X_diff != 0)[0]
+    idx_outlier = np.where(is_outlier != 0)[0]
+    print(idx_diff.shape)
+    print(idx_outlier.shape)
+    if perc_outlier > 0:
+        assert (idx_diff == idx_outlier).all()
+    else:
+        assert not idx_diff and not idx_outlier

@@ -129,6 +129,8 @@ def inject_outlier_ts(X: np.ndarray,
     window = int(perc_window * n_samples * .5 / 100)
     # distribute outliers evenly over different time series
     n_outlier = int(n_samples * perc_outlier * .01 / n_ts)
+    if n_outlier == 0:
+        return Bunch(data=X_outlier, target=is_outlier, target_names=['normal', 'outlier'])
     for s in range(n_ts):
         outlier_idx = np.sort(random.sample(range(n_samples), n_outlier))
         window_idx = [
