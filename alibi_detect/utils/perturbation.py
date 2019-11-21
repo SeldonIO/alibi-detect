@@ -1,5 +1,7 @@
 import numpy as np
+import random
 from typing import Tuple
+from alibi_detect.utils.data import Bunch
 
 
 def apply_mask(X: np.ndarray,
@@ -90,3 +92,51 @@ def apply_mask(X: np.ndarray,
     X_mask = np.concatenate(X_mask, axis=0)
 
     return X_mask, mask
+
+
+def inject_outlier_ts(X: np.ndarray,
+                      perc_outlier: int,
+                      perc_window: int = 10,
+                      n_std: float = 2.,
+                      min_std: float = 1.
+                      ) -> Bunch:
+    """
+    Inject outliers in both univariate and multivariate time series data.
+
+    Parameters
+    ----------
+    X
+        Time series data to perturb (inject outliers).
+    perc_outlier
+        Percentage of observations which are perturbed to outliers. For multivariate data,
+        the percentage is evenly split across the individual time series.
+    perc_window
+        Percentage of the observations used to compute the standard deviation used in the perturbation.
+    n_std
+        Number of standard deviations in the window used to perturb the original data.
+    min_std
+        Minimum number of standard deviations away from the current observation. This is included because
+        of the stochastic nature of the perturbation which could lead to minimal perturbations without a floor.
+
+    Returns
+    -------
+    Bunch object with the perturbed time series and the outlier labels.
+    """
+    n_samples, n_ts = X.shape
+    X_outlier = X.copy()
+    is_outlier = np.zeros(n_samples)
+    # one sided window used to compute mean and stdev from
+    window = int(perc_window * n_samples * .5 / 100)
+    # distribute outliers evenly over different time series
+    n_outlier = int(n_samples * perc_outlier * .01 / n_ts)
+    for s in range(n_ts):
+        outlier_idx = np.sort(random.sample(range(n_samples), n_outlier))
+        window_idx = [
+            np.maximum(outlier_idx - window, 0),
+            np.minimum(outlier_idx + window, n_samples)
+        ]
+        stdev = np.array([X_outlier[window_idx[0][i]:window_idx[1][i], s].std() for i in range(len(outlier_idx))])
+        rnd = np.random.normal(size=n_outlier)
+        X_outlier[outlier_idx, s] += np.sign(rnd) * np.maximum(np.abs(rnd * n_std), min_std) * stdev
+        is_outlier[outlier_idx] = 1
+    return Bunch(data=X_outlier, target=is_outlier, target_names=['normal', 'outlier'])
