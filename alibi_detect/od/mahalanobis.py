@@ -15,7 +15,7 @@ EPSILON = 1e-8
 class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
 
     def __init__(self,
-                 threshold: float,
+                 threshold: float = None,
                  n_components: int = 3,
                  std_clip: int = 3,
                  start_clip: int = 100,

@@ -1,10 +1,14 @@
+import logging
 import numpy as np
 import pandas as pd
+import requests
 from sklearn.datasets import fetch_kddcup99
 from typing import Tuple, Union
 from alibi_detect.utils.data import Bunch
 
 pd.options.mode.chained_assignment = None  # default='warn'
+
+logger = logging.getLogger(__name__)
 
 
 def fetch_kdd(target: list = ['dos', 'r2l', 'u2r', 'probe'],
@@ -29,6 +33,8 @@ def fetch_kdd(target: list = ['dos', 'r2l', 'u2r', 'probe'],
         List with columns to keep. Defaults to continuous features.
     percent10
         Bool, whether to only return 10% of the data.
+    return_X_y
+        Bool, whether to only return the data and target values or a Bunch object.
 
     Returns
     -------
@@ -94,3 +100,46 @@ def fetch_kdd(target: list = ['dos', 'r2l', 'u2r', 'probe'],
                  target=is_outlier,
                  target_names=['normal', 'outlier'],
                  feature_names=keep_cols)
+
+
+def fetch_nab(ts: str,
+              return_X_y: bool = False
+              ) -> Union[Bunch, Tuple[pd.DataFrame, pd.DataFrame]]:
+    """
+    Get time series in a DataFrame from the Numenta Anomaly Benchmark: https://github.com/numenta/NAB
+
+    Parameters
+    ----------
+    ts
+
+    return_X_y
+        Bool, whether to only return the data and target values or a Bunch object.
+
+    Returns
+    -------
+    Bunch
+        Dataset and outlier labels (0 means 'normal' and 1 means 'outlier') in DataFrames with timestamps.
+    (data, target)
+        Tuple if 'return_X_y' equals True.
+    """
+    url_labels = 'https://raw.githubusercontent.com/numenta/NAB/master/labels/combined_labels.json'
+    r = requests.get(url_labels)
+    labels_json = r.json()
+    outliers = labels_json[ts + '.csv']
+    if not outliers:
+        logger.warning('The dataset does not contain any outliers.')
+    url = 'https://raw.githubusercontent.com/numenta/NAB/master/data/' + ts + '.csv'
+    df = pd.read_csv(url, header=0, index_col=0)
+    labels = np.zeros(df.shape[0])
+    for outlier in outliers:
+        outlier_id = np.where(df.index == outlier)[0][0]
+        labels[outlier_id] = 1
+    df.index = pd.to_datetime(df.index)
+    df_labels = pd.DataFrame(data={'is_outlier': labels}, index=df.index)
+
+    if return_X_y:
+        return df, df_labels
+
+    return Bunch(data=df,
+                 target=df_labels,
+                 target_names=['normal', 'outlier'])
