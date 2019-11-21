@@ -69,7 +69,7 @@ The following table shows the advised use cases for each algorithm. The column *
 
 ### Adversarial Detection
 
- - Adversarial Variational Auto-Encoder
+ - Adversarial Variational Auto-Encoder (paper coming soon)
    - [Documentation](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/adversarialvae.html)
    - Examples:
      [MNIST](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/ad_advvae_mnist.html)
