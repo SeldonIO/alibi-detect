@@ -42,6 +42,7 @@ def test_apply_mask(apply_mask_params):
         assert (X_mask == np.clip(x + mask, clip_rng[0], clip_rng[1])).astype(int).sum() \
             == reduce(mul, list(x.shape)) * n_masks
 
+
 N = 1000
 x_ts = [np.random.rand(N).reshape(-1, 1), np.random.rand(3 * N).reshape(-1, 3)]
 perc_outlier = [0, 10, 20]
