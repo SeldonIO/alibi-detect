@@ -15,6 +15,7 @@ from alibi_detect.od.mahalanobis import Mahalanobis
 from alibi_detect.od.prophet import OutlierProphet
 from alibi_detect.od.vae import OutlierVAE
 from alibi_detect.od.vaegmm import OutlierVAEGMM
+from alibi_detect.od.sr import SpectralResidual
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +27,8 @@ Data = Union[
     OutlierAEGMM,
     OutlierProphet,
     OutlierVAE,
-    OutlierVAEGMM
+    OutlierVAEGMM,
+    SpectralResidual
 ]
 
 DEFAULT_DETECTORS = [
@@ -36,7 +38,8 @@ DEFAULT_DETECTORS = [
     'OutlierAEGMM',
     'OutlierProphet',
     'OutlierVAE',
-    'OutlierVAEGMM'
+    'OutlierVAEGMM',
+    'SpectralResidual'
 ]
 
 
@@ -79,6 +82,8 @@ def save_detector(detector: Data,
         state_dict = state_adv_vae(detector)
     elif detector_name == 'OutlierProphet':
         state_dict = state_prophet(detector)
+    elif detector_name == 'SpectralResidual':
+        state_dict = state_sr(detector)
 
     with open(filepath + detector_name + '.pickle', 'wb') as f:
         pickle.dump(state_dict, f)
@@ -226,6 +231,23 @@ def state_prophet(od: OutlierProphet) -> Dict:
     """
     state_dict = {'model': od.model,
                   'cap': od.cap}
+    return state_dict
+
+
+def state_sr(od: SpectralResidual) -> Dict:
+    """
+    Spectral residual parameters to save.
+
+    Parameters
+    ----------
+    od
+        Outlier detector object.
+    """
+    state_dict = {'threshold': od.threshold,
+                  'conv_amp': od.conv_amp,
+                  'conv_local': od.conv_local,
+                  'n_est_points': od.n_est_points,
+                  'n_grad_points': od.n_grad_points}
     return state_dict
 
 
@@ -413,6 +435,8 @@ def load_detector(filepath: str) -> Data:
         detector = init_ad_vae(state_dict, vae, model)
     elif detector_name == 'OutlierProphet':
         detector = init_od_prophet(state_dict)
+    elif detector_name == 'SpectralResidual':
+        detector = init_od_sr(state_dict)
 
     detector.meta = meta_dict
     return detector
@@ -682,4 +706,25 @@ def init_od_prophet(state_dict: Dict) -> OutlierProphet:
     """
     od = OutlierProphet(cap=state_dict['cap'])
     od.model = state_dict['model']
+    return od
+
+
+def init_od_sr(state_dict: Dict) -> SpectralResidual:
+    """
+    Initialize spectral residual detector.
+
+    Parameters
+    ----------
+    state_dict
+        Dictionary containing the parameter values.
+
+    Returns
+    -------
+    Initialized SpectralResidual instance.
+    """
+    od = SpectralResidual(threshold=state_dict['threshold'],
+                          n_est_points=state_dict['n_est_points'],
+                          n_grad_points=state_dict['n_grad_points'])
+    od.conv_amp = state_dict['conv_amp']
+    od.conv_local = state_dict['conv_local']
     return od
