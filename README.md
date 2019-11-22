@@ -1,3 +1,11 @@
+[![Build Status](https://travis-ci.com/SeldonIO/alibi-detect.svg?branch=master)](https://travis-ci.com/SeldonIO/alibi-detect)
+[![Documentation Status](https://readthedocs.org/projects/alibi-detect/badge/?version=latest)](https://docs.seldon.io/projects/alibi-detect/en/latest/?badge=latest)
+![Python version](https://img.shields.io/badge/python-3.6%20%7C%203.7-blue.svg)
+[![PyPI version](https://badge.fury.io/py/alibi-detect.svg)](https://badge.fury.io/py/alibi-detect)
+![GitHub Licence](https://img.shields.io/github/license/seldonio/alibi-detect.svg)
+[![Slack channel](https://img.shields.io/badge/chat-on%20slack-e51670.svg)](http://seldondev.slack.com/messages/alibi)
+---
+
 [alibi-detect](https://github.com/SeldonIO/alibi-detect) is an open source Python library focused on outlier, adversarial and concept drift detection. The package aims to cover both online and offline detectors for tabular data, images and time series. The outlier detection methods should allow the user to identify global, contextual and collective outliers.
 
 *  [Documentation](https://docs.seldon.io/projects/alibi-detect)
