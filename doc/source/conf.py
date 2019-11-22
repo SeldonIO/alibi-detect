@@ -85,7 +85,8 @@ autodoc_mock_imports = [
     "tensorflow_probability",
     "scipy",
     "matplotlib",
-    "creme"
+    "creme",
+    "fbprophet"
 ]
 
 # Napoleon settings
