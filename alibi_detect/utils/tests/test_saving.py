@@ -3,7 +3,8 @@ from tempfile import TemporaryDirectory
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, InputLayer
 from alibi_detect.ad import AdversarialVAE
-from alibi_detect.od import IForest, Mahalanobis, OutlierAEGMM, OutlierVAE, OutlierVAEGMM, OutlierProphet
+from alibi_detect.od import (IForest, Mahalanobis, OutlierAEGMM, OutlierVAE, OutlierVAEGMM,
+                             OutlierProphet, SpectralResidual)
 from alibi_detect.utils.saving import save_detector, load_detector
 
 input_dim = 4
@@ -68,7 +69,10 @@ detector = [
                   samples=samples,
                   **kwargs),
     OutlierProphet(threshold=.7,
-                   growth='logistic')
+                   growth='logistic'),
+    SpectralResidual(threshold=threshold,
+                     window_amp=10,
+                     window_local=10)
 ]
 n_tests = len(detector)
 
@@ -126,3 +130,6 @@ def test_save_load(select_detector):
             assert det_load.model.interval_width == .7
             assert det_load.model.growth == 'logistic'
             assert det_load.meta['data_type'] == 'time-series'
+        elif type(det_load) == SpectralResidual:
+            assert det_load.window_amp == 10
+            assert det_load.window_local == 10
