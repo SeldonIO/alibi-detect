@@ -122,6 +122,9 @@ def inject_outlier_ts(X: np.ndarray,
     -------
     Bunch object with the perturbed time series and the outlier labels.
     """
+    n_dim = len(X.shape)
+    if n_dim == 1:
+        X = X.reshape(-1, 1)
     n_samples, n_ts = X.shape
     X_outlier = X.copy()
     is_outlier = np.zeros(n_samples)
@@ -141,4 +144,6 @@ def inject_outlier_ts(X: np.ndarray,
         rnd = np.random.normal(size=n_outlier)
         X_outlier[outlier_idx, s] += np.sign(rnd) * np.maximum(np.abs(rnd * n_std), min_std) * stdev
         is_outlier[outlier_idx] = 1
+    if n_dim == 1:
+        X_outlier = X_outlier.reshape(n_samples,)
     return Bunch(data=X_outlier, target=is_outlier, target_names=['normal', 'outlier'])

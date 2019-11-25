@@ -234,5 +234,92 @@ def plot_feature_outlier_tabular(od_preds: Dict,
     plt.show()
 
 
-def plot_feature_outlier_ts():
-    pass
+def plot_feature_outlier_ts(od_preds: Dict,
+                            X: np.ndarray,
+                            threshold: float,
+                            window: tuple = None,
+                            t: np.ndarray = None,
+                            X_orig: np.ndarray = None,
+                            width: float = .2,
+                            figsize: tuple = (20, 8),
+                            ylim: tuple = (None, None)
+                            ) -> None:
+    """
+    Plot feature wise outlier scores for time series data.
+
+    Parameters
+    ----------
+    od_preds
+        Output of an outlier detector's prediction.
+    X
+        Time series to apply outlier detection to.
+    threshold
+        Threshold used to classify outliers or adversarial instances.
+    window
+        Start and end timestep to plot.
+    t
+        Timesteps.
+    X_orig
+        Optional original time series without outliers.
+    width
+        Column width for bar charts.
+    figsize
+        Tuple for the figure size.
+    ylim
+        Min and max y-axis values for the outlier scores.
+    """
+    if window is not None:
+        t_start, t_end = window
+    else:
+        t_start, t_end = 0, X.shape[0]
+
+    if len(X.shape) == 1:
+        n_features = 1
+    else:
+        n_features = X.shape[1]
+
+    if t is None:
+        t = np.arange(X.shape[0])
+    ticks = t[t_start:t_end]
+
+    # check if feature level scores available
+    if od_preds['data']['feature_score']:
+        scores = od_preds['data']['feature_score']
+    else:
+        scores = od_preds['data']['instance_score'].reshape(-1, 1)
+
+    n_cols = 2
+
+    fig, axes = plt.subplots(nrows=n_features, ncols=n_cols, figsize=figsize)
+
+    n_subplot = 1
+    for i in range(n_features):
+        plt.subplot(n_features, n_cols, n_subplot)
+        if i == 0 and X_orig is not None:
+            plt.title('Original vs. perturbed data')
+        elif i == 0:
+            plt.title('Data')
+
+        plt.plot(ticks, X[t_start:t_end, i], marker='*', markersize=4, label='Data with Outliers')
+        if X_orig is not None:
+            plt.plot(ticks, X_orig[t_start:t_end, i], marker='o', markersize=4, label='Data without Outliers')
+        plt.xlabel('Time')
+        plt.ylabel('Observation')
+        plt.legend()
+
+        n_subplot += 1
+
+        plt.subplot(n_features, n_cols, n_subplot)
+        if i == 0:
+            plt.title('Outlier Score per Timestep')
+
+        plt.bar(ticks, scores[t_start:t_end, i], width=width, color='g', align='center', label='Outlier Score')
+        plt.plot(ticks, np.ones(len(ticks)) * threshold, 'r', label='Threshold')
+        plt.xlabel('Time')
+        plt.ylabel('Outlier Score')
+        plt.legend()
+        plt.ylim(ylim)
+
+        n_subplot += 1
+
+    plt.show()

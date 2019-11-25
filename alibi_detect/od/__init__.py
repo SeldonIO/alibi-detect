@@ -4,6 +4,7 @@ from .mahalanobis import Mahalanobis
 from .vae import OutlierVAE
 from .vaegmm import OutlierVAEGMM
 from .prophet import OutlierProphet
+from .sr import SpectralResidual
 
 __all__ = [
     "OutlierAEGMM",
@@ -11,5 +12,6 @@ __all__ = [
     "Mahalanobis",
     "OutlierVAE",
     "OutlierVAEGMM",
-    "OutlierProphet"
+    "OutlierProphet",
+    "SpectralResidual"
 ]

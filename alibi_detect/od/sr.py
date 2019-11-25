@@ -10,6 +10,7 @@ EPSILON = 1e-8
 # TODO: implement version with timestamps instead of steps
 # TODO: confirm that eq.9 in the paper mistakenly multiplies by m again
 # TODO: unhappy with extrapolation method; ignores e.g. seasonality, allow to ignore extrapolation
+# TODO: make stateful with incremental updates
 
 
 class SpectralResidual(BaseDetector, ThresholdMixin):
@@ -159,9 +160,15 @@ class SpectralResidual(BaseDetector, ThresholdMixin):
         -------
         Array with outlier scores for each instance in the batch.
         """
+        if len(X.shape) == 2:
+            n_samples, n_dim = X.shape
+            X = X.reshape(-1,)
+            if X.shape[0] != n_samples:
+                raise ValueError('Only univariate time series allowed for SR method. Number of features '
+                                 'of time series equals {}.'.format(n_dim))
         X_pad = self.add_est_points(X, t)  # add padding
         sr = self.saliency_map(X_pad)  # compute saliency map
-        sr = sr[:-self.n_est_points-1]  # remove padding again
+        sr = sr[:-self.n_est_points]  # remove padding again
         ma_sr = np.convolve(sr, self.conv_local, 'same')
         iscore = (sr - ma_sr) / (ma_sr + EPSILON)
         return iscore
