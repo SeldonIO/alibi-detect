@@ -244,8 +244,8 @@ def state_sr(od: SpectralResidual) -> Dict:
         Outlier detector object.
     """
     state_dict = {'threshold': od.threshold,
-                  'conv_amp': od.conv_amp,
-                  'conv_local': od.conv_local,
+                  'window_amp': od.window_amp,
+                  'window_local': od.window_local,
                   'n_est_points': od.n_est_points,
                   'n_grad_points': od.n_grad_points}
     return state_dict
@@ -723,8 +723,8 @@ def init_od_sr(state_dict: Dict) -> SpectralResidual:
     Initialized SpectralResidual instance.
     """
     od = SpectralResidual(threshold=state_dict['threshold'],
+                          window_amp=state_dict['window_amp'],
+                          window_local=state_dict['window_local'],
                           n_est_points=state_dict['n_est_points'],
                           n_grad_points=state_dict['n_grad_points'])
-    od.conv_amp = state_dict['conv_amp']
-    od.conv_local = state_dict['conv_local']
     return od

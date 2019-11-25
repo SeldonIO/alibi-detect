@@ -7,11 +7,6 @@ logger = logging.getLogger(__name__)
 
 EPSILON = 1e-8
 
-# TODO: implement version with timestamps instead of steps
-# TODO: confirm that eq.9 in the paper mistakenly multiplies by m again
-# TODO: unhappy with extrapolation method; ignores e.g. seasonality, allow to ignore extrapolation
-# TODO: make stateful with incremental updates
-
 
 class SpectralResidual(BaseDetector, ThresholdMixin):
 
@@ -47,6 +42,8 @@ class SpectralResidual(BaseDetector, ThresholdMixin):
             logger.warning('No threshold level set. Need to infer threshold using `infer_threshold`.')
 
         self.threshold = threshold
+        self.window_amp = window_amp
+        self.window_local = window_local
         self.conv_amp = np.ones((1, window_amp)).reshape(-1,) / window_amp
         self.conv_local = np.ones((1, window_local)).reshape(-1,) / window_local
         self.n_est_points = n_est_points
@@ -145,7 +142,7 @@ class SpectralResidual(BaseDetector, ThresholdMixin):
         X_pad = np.concatenate([X, np.tile(X_add, self.n_est_points)])
         return X_pad
 
-    def score(self, X: np.ndarray, t: np.ndarray) -> np.ndarray:
+    def score(self, X: np.ndarray, t: np.ndarray = None) -> np.ndarray:
         """
         Compute outlier scores.
 
@@ -160,12 +157,16 @@ class SpectralResidual(BaseDetector, ThresholdMixin):
         -------
         Array with outlier scores for each instance in the batch.
         """
+        if t is None:
+            t = np.arange(X.shape[0])
+
         if len(X.shape) == 2:
             n_samples, n_dim = X.shape
             X = X.reshape(-1,)
             if X.shape[0] != n_samples:
                 raise ValueError('Only univariate time series allowed for SR method. Number of features '
                                  'of time series equals {}.'.format(n_dim))
+
         X_pad = self.add_est_points(X, t)  # add padding
         sr = self.saliency_map(X_pad)  # compute saliency map
         sr = sr[:-self.n_est_points]  # remove padding again
