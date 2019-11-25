@@ -33,6 +33,19 @@ This will install `alibi-detect` with all its dependencies:
 
 ### Outlier Detection
 
+The following table shows the advised use cases for each algorithm. The column *Feature Level* indicates whether the outlier scoring and detection can be done and returned at the feature level, e.g. per pixel for an image:
+
+| Detector              | Tabular | Image | Time Series | Text  | Categorical Features | Online | Feature Level |
+| :---                  |  :---:  | :---: |   :---:     | :---: |   :---:              | :---:  | :---:         |
+| Isolation Forest      | ✔       | ✘     |  ✘          |  ✘    |  ✔                   |  ✘     |  ✘            |
+| Mahalanobis Distance  | ✔       | ✘     |  ✘          |  ✘    |  ✔                   |  ✔     |  ✘            |
+| VAE                   | ✔       | ✔     |  ✘          |  ✘    |  ✘                   |  ✘     |  ✔            |
+| AEGMM                 | ✔       | ✔     |  ✘          |  ✘    |  ✘                   |  ✘     |  ✘            |
+| VAEGMM                | ✔       | ✔     |  ✘          |  ✘    |  ✘                   |  ✘     |  ✘            |
+| Prophet               | ✘       | ✘     |  ✔          |  ✘    |  ✘                   |  ✘     |  ✘            |
+| Spectral Residual     | ✘       | ✘     |  ✔          |  ✘    |  ✘                   |  ✔     |  ✘            |
+
+
  - Isolation Forest ([FT Liu et al., 2008](https://cs.nju.edu.cn/zhouzh/zhouzh.files/publication/icdm08b.pdf))
    - [Documentation](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/iforest.html)
    - Examples:
@@ -62,31 +75,26 @@ This will install `alibi-detect` with all its dependencies:
    - [Documentation](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/prophet.html)
    - Examples:
      [Weather Forecast](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/od_prophet_weather.html)
-
-The following table shows the advised use cases for each algorithm. The column *Feature Level* indicates whether the outlier scoring and detection can be done and returned at the feature level, e.g. per pixel for an image:
-
-| Detector              | Tabular | Image | Time Series | Text  | Categorical Features | Online | Feature Level |
-| :---                  |  :---:  | :---: |   :---:     | :---: |   :---:              | :---:  | :---:         |
-| Isolation Forest      | ✔       | ✘     |  ✘          |  ✘    |  ✔                   |  ✘     |  ✘            |
-| Mahalanobis Distance  | ✔       | ✘     |  ✘          |  ✘    |  ✔                   |  ✔     |  ✘            |
-| VAE                   | ✔       | ✔     |  ✘          |  ✘    |  ✘                   |  ✘     |  ✔            |
-| AEGMM                 | ✔       | ✔     |  ✘          |  ✘    |  ✘                   |  ✘     |  ✘            |
-| VAEGMM                | ✔       | ✔     |  ✘          |  ✘    |  ✘                   |  ✘     |  ✘            |
-| Prophet               | ✘       | ✘     |  ✔          |  ✘    |  ✘                   |  ✘     |  ✘            |
+  
+ - Spectral Residual Time Series Outlier Detector ([Ren et al., 2019](https://arxiv.org/abs/1906.03821))
+   - [Documentation](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/sr.html)
+   - Examples:
+     [Synthetic Dataset](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/od_sr_synth.html)
 
 
 ### Adversarial Detection
-
- - Adversarial Variational Auto-Encoder (paper coming soon)
-   - [Documentation](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/adversarialvae.html)
-   - Examples:
-     [MNIST](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/ad_advvae_mnist.html)
 
 Advised use cases:
 
 | Detector          | Tabular | Image | Time Series | Text  | Categorical Features | Online | Feature Level |
 | :---              |  :---:  | :---: |   :---:     | :---: |   :---:              | :---:  | :---:         |
 | Adversarial VAE   | ✔       | ✔     |  ✘          |  ✘    |  ✘                   |  ✘     |  ✘            |
+
+
+ - Adversarial Variational Auto-Encoder (paper coming soon)
+   - [Documentation](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/adversarialvae.html)
+   - Examples:
+     [MNIST](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/ad_advvae_mnist.html)
 
 
 ## Integrations

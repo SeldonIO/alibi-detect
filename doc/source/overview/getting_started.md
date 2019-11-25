@@ -25,7 +25,8 @@ alibi_detect.od.__all__
  'OutlierAEGMM',
  'OutlierVAE',
  'OutlierVAEGMM',
- 'OutlierProphet']
+ 'OutlierProphet',
+ 'SpectralResidual']
 ```
 
 ```python
@@ -51,6 +52,8 @@ For detailed information on the methods:
     * [Variational Auto-Encoding Gaussian Mixture Model (VAEGMM) Outlier Detector](../methods/vaegmm.ipynb)
     
     * [Prophet Outlier Detector](../methods/prophet.ipynb)
+    
+    * [Spectral Residual Outlier Detector](../methods/sr.ipynb)
 
     * [Adversarial VAE Detector](../methods/adversarialvae.ipynb)
 

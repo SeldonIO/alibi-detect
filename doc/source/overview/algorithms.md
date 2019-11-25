@@ -12,6 +12,7 @@ The following tables summarize the advised use cases for the current algorithms.
 |[AEGMM](../methods/aegmm.ipynb)|✔|✔|✘|✘|✘|✘|✘|
 |[VAEGMM](../methods/vaegmm.ipynb)|✔|✔|✘|✘|✘|✘|✘|
 |[Prophet](../methods/prophet.ipynb)|✘|✘|✔|✘|✘|✘|✘|
+|[Spectral Residual](../methods/sr.ipynb)|✘|✘|✔|✘|✘|✔|✘|
 
 ## Adversarial Detection
 
