@@ -14,4 +14,4 @@ The algorithms will cover the following data types:
 
 It will also be possible to combine different algorithms in ensemble detectors.
 
-The library currently covers both online and offline outlier detection algorithms for tabular data, images and time series as well as an offline adversarial detector for tabular data and images. The near term focus will be on concept drift detectors, extending outlier detectors for mixed data types, generative models for anomaly detection and leveraging labels in a semi-supervised setting.
+The library currently covers both online and offline outlier detection algorithms for tabular data, images and time series as well as an offline adversarial detector for tabular data and images. The near term focus will be on concept drift detectors (initially for tabular data), extending outlier detectors for mixed data types, generative models for anomaly detection and leveraging labels in a semi-supervised setting.
