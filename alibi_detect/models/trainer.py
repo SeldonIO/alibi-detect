@@ -46,7 +46,7 @@ def trainer(model: tf.keras.Model,
         Callbacks used during training.
     """
     # create dataset
-    if y_train is None:  # unsupervised model
+    if y_train is None:  # unsupervised model without teacher forcing
         train_data = X_train
     else:
         train_data = (X_train, y_train)
