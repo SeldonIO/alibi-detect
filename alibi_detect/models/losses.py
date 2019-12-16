@@ -5,6 +5,27 @@ import tensorflow_probability as tfp
 from alibi_detect.models.gmm import gmm_params, gmm_energy
 
 
+def recon_loss(x_true: tf.Tensor,
+               x_pred: tf.Tensor,
+                ) -> tf.Tensor:
+    """
+    Loss function used for OutlierAE.
+
+    Parameters
+    ----------
+    x_true
+        Batch of instances.
+    x_pred
+        Batch of reconstructed instances by the autoencoder.
+
+    Returns
+    -------
+    Loss value.
+    """
+    recon_loss = tf.reduce_mean((x_true - x_pred) ** 2)
+    return recon_loss
+
+
 def elbo(y_true: tf.Tensor,
          y_pred: tf.Tensor,
          cov_full: tf.Tensor = None,

@@ -13,6 +13,7 @@ from alibi_detect.base import BaseDetector
 from alibi_detect.od.isolationforest import IForest
 from alibi_detect.od.mahalanobis import Mahalanobis
 from alibi_detect.od.prophet import OutlierProphet
+from alibi_detect.od.ae import OutlierAE
 from alibi_detect.od.vae import OutlierVAE
 from alibi_detect.od.vaegmm import OutlierVAEGMM
 from alibi_detect.od.sr import SpectralResidual
@@ -26,6 +27,7 @@ Data = Union[
     Mahalanobis,
     OutlierAEGMM,
     OutlierProphet,
+    OutlierAE,
     OutlierVAE,
     OutlierVAEGMM,
     SpectralResidual
@@ -37,6 +39,7 @@ DEFAULT_DETECTORS = [
     'Mahalanobis',
     'OutlierAEGMM',
     'OutlierProphet',
+    'OutlierAE',
     'OutlierVAE',
     'OutlierVAEGMM',
     'SpectralResidual'
@@ -68,7 +71,9 @@ def save_detector(detector: Data,
         pickle.dump(detector.meta, f)
 
     # save outlier detector specific parameters
-    if detector_name == 'OutlierVAE':
+    if detector_name == 'OutlierAE':
+        state_dict = state_ae(detector)
+    elif detector_name == 'OutlierVAE':
         state_dict = state_vae(detector)
     elif detector_name == 'Mahalanobis':
         state_dict = state_mahalanobis(detector)
@@ -89,7 +94,9 @@ def save_detector(detector: Data,
         pickle.dump(state_dict, f)
 
     # save outlier detector specific TensorFlow models
-    if detector_name == 'OutlierVAE':
+    if detector_name == 'OutlierAE':
+        save_tf_ae(detector, filepath)
+    elif detector_name == 'OutlierVAE':
         save_tf_vae(detector, filepath)
     elif detector_name == 'OutlierAEGMM':
         save_tf_aegmm(detector, filepath)
@@ -135,6 +142,19 @@ def state_mahalanobis(od: Mahalanobis) -> Dict:
                   'mean': od.mean,
                   'C': od.C,
                   'n': od.n}
+    return state_dict
+
+
+def state_ae(od: OutlierAE) -> Dict:
+    """
+    OutlierAE parameters to save.
+
+    Parameters
+    ----------
+    od
+        Outlier detector object.
+    """
+    state_dict = {'threshold': od.threshold}
     return state_dict
 
 
@@ -249,6 +269,41 @@ def state_sr(od: SpectralResidual) -> Dict:
                   'n_est_points': od.n_est_points,
                   'n_grad_points': od.n_grad_points}
     return state_dict
+
+
+def save_tf_ae(detector: OutlierAE,
+                filepath: str) -> None:
+    """
+    Save TensorFlow components of OutlierAE
+
+    Parameters
+    ----------
+    detector
+        Outlier or adversarial detector object.
+    filepath
+        Save directory.
+    """
+    # create folder for model weights
+    if not os.path.isdir(filepath):
+        logger.warning('Directory {} does not exist and is now created.'.format(filepath))
+        os.mkdir(filepath)
+    model_dir = filepath + 'model/'
+    if not os.path.isdir(model_dir):
+        os.mkdir(model_dir)
+    # save encoder, decoder and vae weights
+    if isinstance(detector.ae.encoder.encoder_net, tf.keras.Sequential):
+        detector.ae.encoder.encoder_net.save(model_dir + 'encoder_net.h5')
+    else:
+        logger.warning('No `tf.keras.Sequential` encoder detected. No encoder saved.')
+    if isinstance(detector.ae.decoder.decoder_net, tf.keras.Sequential):
+        detector.ae.decoder.decoder_net.save(model_dir + 'decoder_net.h5')
+    else:
+        logger.warning('No `tf.keras.Sequential` decoder detected. No decoder saved.')
+    if isinstance(detector.ae, tf.keras.Model):
+        detector.ae.save_weights(model_dir + 'ae.ckpt')
+    else:
+        logger.warning('No `tf.keras.Model` vae detected. No ae saved.')
+
 
 
 def save_tf_vae(detector: Union[OutlierVAE, AdversarialVAE],
