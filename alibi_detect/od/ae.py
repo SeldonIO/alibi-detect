@@ -147,12 +147,7 @@ class OutlierAE(BaseDetector, FitMixin, ThresholdMixin):
         -------
         Feature level outlier scores.
         """
-        if self.score_type == 'mse':
-            fscore = np.power(X_orig - X_recon, 2)
-            fscore = fscore.reshape((-1, self.samples) + X_orig.shape[1:])
-            fscore = np.mean(fscore, axis=1)
-        elif self.score_type == 'proba':
-            pass
+        fscore = np.power(X_orig - X_recon, 2)
         return fscore
 
     def instance_score(self, fscore: np.ndarray, outlier_perc: float = 100.) -> np.ndarray:
