@@ -64,7 +64,7 @@ def save_detector(detector: Data,
         os.mkdir(filepath)
 
     # save metadata
-    with open(filepath + 'meta.pickle', 'wb') as f:
+    with open(os.path.join(filepath, 'meta.pickle'), 'wb') as f:
         pickle.dump(detector.meta, f)
 
     # save outlier detector specific parameters
@@ -85,7 +85,7 @@ def save_detector(detector: Data,
     elif detector_name == 'SpectralResidual':
         state_dict = state_sr(detector)
 
-    with open(filepath + detector_name + '.pickle', 'wb') as f:
+    with open(os.path.join(filepath, detector_name + '.pickle'), 'wb') as f:
         pickle.dump(state_dict, f)
 
     # save outlier detector specific TensorFlow models
@@ -267,20 +267,20 @@ def save_tf_vae(detector: Union[OutlierVAE, AdversarialVAE],
     if not os.path.isdir(filepath):
         logger.warning('Directory {} does not exist and is now created.'.format(filepath))
         os.mkdir(filepath)
-    model_dir = filepath + 'model/'
+    model_dir = os.path.join(filepath, 'model')
     if not os.path.isdir(model_dir):
         os.mkdir(model_dir)
     # save encoder, decoder and vae weights
     if isinstance(detector.vae.encoder.encoder_net, tf.keras.Sequential):
-        detector.vae.encoder.encoder_net.save(model_dir + 'encoder_net.h5')
+        detector.vae.encoder.encoder_net.save(os.path.join(model_dir, 'encoder_net.h5'))
     else:
         logger.warning('No `tf.keras.Sequential` encoder detected. No encoder saved.')
     if isinstance(detector.vae.decoder.decoder_net, tf.keras.Sequential):
-        detector.vae.decoder.decoder_net.save(model_dir + 'decoder_net.h5')
+        detector.vae.decoder.decoder_net.save(os.path.join(model_dir, 'decoder_net.h5'))
     else:
         logger.warning('No `tf.keras.Sequential` decoder detected. No decoder saved.')
     if isinstance(detector.vae, tf.keras.Model):
-        detector.vae.save_weights(model_dir + 'vae.ckpt')
+        detector.vae.save_weights(os.path.join(model_dir, 'vae.ckpt'))
     else:
         logger.warning('No `tf.keras.Model` vae detected. No vae saved.')
 
@@ -301,13 +301,13 @@ def save_tf_model(model: tf.keras.Model,
     if not os.path.isdir(filepath):
         logger.warning('Directory {} does not exist and is now created.'.format(filepath))
         os.mkdir(filepath)
-    model_dir = filepath + 'model/'
+    model_dir = os.path.join(filepath, 'model')
     if not os.path.isdir(model_dir):
         os.mkdir(model_dir)
 
     # save classification model
     if isinstance(model, tf.keras.Model):  # TODO: not flexible enough!
-        model.save(model_dir + 'model.h5')
+        model.save(os.path.join(model_dir, 'model.h5'))
     else:
         logger.warning('No `tf.keras.Model` vae detected. No classification model saved.')
 
@@ -328,24 +328,24 @@ def save_tf_aegmm(od: OutlierAEGMM,
     if not os.path.isdir(filepath):
         logger.warning('Directory {} does not exist and is now created.'.format(filepath))
         os.mkdir(filepath)
-    model_dir = filepath + 'model/'
+    model_dir = os.path.join(filepath, 'model')
     if not os.path.isdir(model_dir):
         os.mkdir(model_dir)
     # save encoder, decoder, gmm density model and aegmm weights
     if isinstance(od.aegmm.encoder, tf.keras.Sequential):
-        od.aegmm.encoder.save(model_dir + 'encoder_net.h5')
+        od.aegmm.encoder.save(os.path.join(model_dir, 'encoder_net.h5'))
     else:
         logger.warning('No `tf.keras.Sequential` encoder detected. No encoder saved.')
     if isinstance(od.aegmm.decoder, tf.keras.Sequential):
-        od.aegmm.decoder.save(model_dir + 'decoder_net.h5')
+        od.aegmm.decoder.save(os.path.join(model_dir, 'decoder_net.h5'))
     else:
         logger.warning('No `tf.keras.Sequential` decoder detected. No decoder saved.')
     if isinstance(od.aegmm.gmm_density, tf.keras.Sequential):
-        od.aegmm.gmm_density.save(model_dir + 'gmm_density_net.h5')
+        od.aegmm.gmm_density.save(os.path.join(model_dir, 'gmm_density_net.h5'))
     else:
         logger.warning('No `tf.keras.Sequential` GMM density net detected. No GMM density net saved.')
     if isinstance(od.aegmm, tf.keras.Model):
-        od.aegmm.save_weights(model_dir + 'aegmm.ckpt')
+        od.aegmm.save_weights(os.path.join(model_dir, 'aegmm.ckpt'))
     else:
         logger.warning('No `tf.keras.Model` AEGMM detected. No AEGMM saved.')
 
@@ -366,24 +366,24 @@ def save_tf_vaegmm(od: OutlierVAEGMM,
     if not os.path.isdir(filepath):
         logger.warning('Directory {} does not exist and is now created.'.format(filepath))
         os.mkdir(filepath)
-    model_dir = filepath + 'model/'
+    model_dir = os.path.join(filepath, 'model')
     if not os.path.isdir(model_dir):
         os.mkdir(model_dir)
     # save encoder, decoder, gmm density model and vaegmm weights
     if isinstance(od.vaegmm.encoder.encoder_net, tf.keras.Sequential):
-        od.vaegmm.encoder.encoder_net.save(model_dir + 'encoder_net.h5')
+        od.vaegmm.encoder.encoder_net.save(os.path.join(model_dir, 'encoder_net.h5'))
     else:
         logger.warning('No `tf.keras.Sequential` encoder detected. No encoder saved.')
     if isinstance(od.vaegmm.decoder, tf.keras.Sequential):
-        od.vaegmm.decoder.save(model_dir + 'decoder_net.h5')
+        od.vaegmm.decoder.save(os.path.join(model_dir, 'decoder_net.h5'))
     else:
         logger.warning('No `tf.keras.Sequential` decoder detected. No decoder saved.')
     if isinstance(od.vaegmm.gmm_density, tf.keras.Sequential):
-        od.vaegmm.gmm_density.save(model_dir + 'gmm_density_net.h5')
+        od.vaegmm.gmm_density.save(os.path.join(model_dir, 'gmm_density_net.h5'))
     else:
         logger.warning('No `tf.keras.Sequential` GMM density net detected. No GMM density net saved.')
     if isinstance(od.vaegmm, tf.keras.Model):
-        od.vaegmm.save_weights(model_dir + 'vaegmm.ckpt')
+        od.vaegmm.save_weights(os.path.join(model_dir, 'vaegmm.ckpt'))
     else:
         logger.warning('No `tf.keras.Model` VAEGMM detected. No VAEGMM saved.')
 
@@ -406,14 +406,14 @@ def load_detector(filepath: str) -> Data:
         raise ValueError('{} does not exist.'.format(filepath))
 
     # load metadata
-    meta_dict = pickle.load(open(filepath + 'meta.pickle', 'rb'))
+    meta_dict = pickle.load(open(os.path.join(filepath, 'meta.pickle'), 'rb'))
 
     detector_name = meta_dict['name']
     if detector_name not in DEFAULT_DETECTORS:
         raise ValueError('{} is not supported by `load_detector`.'.format(detector_name))
 
     # load outlier detector specific parameters
-    state_dict = pickle.load(open(filepath + detector_name + '.pickle', 'rb'))
+    state_dict = pickle.load(open(os.path.join(filepath, detector_name + '.pickle'), 'rb'))
 
     # initialize outlier detector
     if detector_name == 'OutlierVAE':
@@ -443,11 +443,11 @@ def load_detector(filepath: str) -> Data:
 
 
 def load_tf_model(filepath: str) -> tf.keras.Model:
-    model_dir = filepath + 'model/'
+    model_dir = os.path.join(filepath, 'model')
     if 'model.h5' not in [f for f in os.listdir(model_dir) if not f.startswith('.')]:
         logger.warning('No model found in {}.'.format(model_dir))
         return None
-    model = tf.keras.models.load_model(model_dir + 'model.h5')
+    model = tf.keras.models.load_model(os.path.join(model_dir, 'model.h5'))
     return model
 
 
@@ -467,14 +467,14 @@ def load_tf_vae(filepath: str,
     -------
     Loaded VAE.
     """
-    model_dir = filepath + 'model/'
+    model_dir = os.path.join(filepath, 'model')
     if not [f for f in os.listdir(model_dir) if not f.startswith('.')]:
         logger.warning('No encoder, decoder or vae found in {}.'.format(model_dir))
         return None
-    encoder_net = tf.keras.models.load_model(model_dir + 'encoder_net.h5')
-    decoder_net = tf.keras.models.load_model(model_dir + 'decoder_net.h5')
+    encoder_net = tf.keras.models.load_model(os.path.join(model_dir, 'encoder_net.h5'))
+    decoder_net = tf.keras.models.load_model(os.path.join(model_dir, 'decoder_net.h5'))
     vae = VAE(encoder_net, decoder_net, state_dict['latent_dim'], beta=state_dict['beta'])
-    vae.load_weights(model_dir + 'vae.ckpt')
+    vae.load_weights(os.path.join(model_dir, 'vae.ckpt'))
     return vae
 
 
@@ -494,15 +494,15 @@ def load_tf_aegmm(filepath: str,
     -------
     Loaded AEGMM.
     """
-    model_dir = filepath + 'model/'
+    model_dir = os.path.join(filepath, 'model')
     if not [f for f in os.listdir(model_dir) if not f.startswith('.')]:
         logger.warning('No encoder, decoder, gmm density net or aegmm found in {}.'.format(model_dir))
         return None
-    encoder_net = tf.keras.models.load_model(model_dir + 'encoder_net.h5')
-    decoder_net = tf.keras.models.load_model(model_dir + 'decoder_net.h5')
-    gmm_density_net = tf.keras.models.load_model(model_dir + 'gmm_density_net.h5')
+    encoder_net = tf.keras.models.load_model(os.path.join(model_dir, 'encoder_net.h5'))
+    decoder_net = tf.keras.models.load_model(os.path.join(model_dir, 'decoder_net.h5'))
+    gmm_density_net = tf.keras.models.load_model(os.path.join(model_dir, 'gmm_density_net.h5'))
     aegmm = AEGMM(encoder_net, decoder_net, gmm_density_net, state_dict['n_gmm'], state_dict['recon_features'])
-    aegmm.load_weights(model_dir + 'aegmm.ckpt')
+    aegmm.load_weights(os.path.join(model_dir, 'aegmm.ckpt'))
     return aegmm
 
 
@@ -522,16 +522,16 @@ def load_tf_vaegmm(filepath: str,
     -------
     Loaded VAEGMM.
     """
-    model_dir = filepath + 'model/'
+    model_dir = os.path.join(filepath, 'model')
     if not [f for f in os.listdir(model_dir) if not f.startswith('.')]:
         logger.warning('No encoder, decoder, gmm density net or vaegmm found in {}.'.format(model_dir))
         return None
-    encoder_net = tf.keras.models.load_model(model_dir + 'encoder_net.h5')
-    decoder_net = tf.keras.models.load_model(model_dir + 'decoder_net.h5')
-    gmm_density_net = tf.keras.models.load_model(model_dir + 'gmm_density_net.h5')
+    encoder_net = tf.keras.models.load_model(os.path.join(model_dir, 'encoder_net.h5'))
+    decoder_net = tf.keras.models.load_model(os.path.join(model_dir, 'decoder_net.h5'))
+    gmm_density_net = tf.keras.models.load_model(os.path.join(model_dir, 'gmm_density_net.h5'))
     vaegmm = VAEGMM(encoder_net, decoder_net, gmm_density_net, state_dict['n_gmm'],
                     state_dict['latent_dim'], state_dict['recon_features'], state_dict['beta'])
-    vaegmm.load_weights(model_dir + 'vaegmm.ckpt')
+    vaegmm.load_weights(os.path.join(model_dir, 'vaegmm.ckpt'))
     return vaegmm
 
 
