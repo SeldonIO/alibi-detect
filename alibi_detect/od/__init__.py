@@ -4,6 +4,7 @@ from .mahalanobis import Mahalanobis
 from .vae import OutlierVAE
 from .vaegmm import OutlierVAEGMM
 from .prophet import OutlierProphet
+from .seq2seq import OutlierSeq2Seq
 from .sr import SpectralResidual
 
 __all__ = [
@@ -13,5 +14,6 @@ __all__ = [
     "OutlierVAE",
     "OutlierVAEGMM",
     "OutlierProphet",
+    "OutlierSeq2Seq",
     "SpectralResidual"
 ]
