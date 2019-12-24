@@ -54,8 +54,10 @@ class OutlierSeq2Seq(BaseDetector, FitMixin, ThresholdMixin):
 
         self.threshold = threshold
         self.shape = (-1, seq_len, n_features)
+        self.latent_dim = latent_dim
+        self.output_activation = output_activation
 
-        if threshold_net is None:  # default threshold network
+        if threshold_net is None and seq2seq is None:  # default threshold network
             threshold_net = tf.keras.Sequential(
                 [
                     InputLayer(input_shape=(seq_len, latent_dim)),
