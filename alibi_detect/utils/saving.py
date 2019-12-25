@@ -287,23 +287,22 @@ def save_tf_ae(detector: OutlierAE,
     if not os.path.isdir(filepath):
         logger.warning('Directory {} does not exist and is now created.'.format(filepath))
         os.mkdir(filepath)
-    model_dir = filepath + 'model/'
+    model_dir = os.path.join(filepath, 'model')
     if not os.path.isdir(model_dir):
         os.mkdir(model_dir)
     # save encoder, decoder and vae weights
     if isinstance(detector.ae.encoder.encoder_net, tf.keras.Sequential):
-        detector.ae.encoder.encoder_net.save(model_dir + 'encoder_net.h5')
+        detector.ae.encoder.encoder_net.save(os.path.join(model_dir, 'encoder_net.h5'))
     else:
         logger.warning('No `tf.keras.Sequential` encoder detected. No encoder saved.')
     if isinstance(detector.ae.decoder.decoder_net, tf.keras.Sequential):
-        detector.ae.decoder.decoder_net.save(model_dir + 'decoder_net.h5')
+        detector.ae.decoder.decoder_net.save(os.path.join(model_dir, 'decoder_net.h5'))
     else:
         logger.warning('No `tf.keras.Sequential` decoder detected. No decoder saved.')
     if isinstance(detector.ae, tf.keras.Model):
-        detector.ae.save_weights(model_dir + 'ae.ckpt')
+        detector.ae.save_weights(os.path.join(model_dir, 'ae.ckpt'))
     else:
-        logger.warning('No `tf.keras.Model` vae detected. No ae saved.')
-
+        logger.warning('No `tf.keras.Model` ae detected. No ae saved.')
 
 
 def save_tf_vae(detector: Union[OutlierVAE, AdversarialVAE],
@@ -524,15 +523,15 @@ def load_tf_ae(filepath: str) -> tf.keras.Model:
     -------
     Loaded AE.
     """
-    model_dir = filepath + 'model/'
+    model_dir = os.path.join(filepath, 'model')
     if not [f for f in os.listdir(model_dir) if not f.startswith('.')]:
         logger.warning('No encoder, decoder or vae found in {}.'.format(model_dir))
         return None
-    encoder_net = tf.keras.models.load_model(model_dir + 'encoder_net.h5')
-    decoder_net = tf.keras.models.load_model(model_dir + 'decoder_net.h5')
-    va = AE(encoder_net, decoder_net)
-    va.load_weights(model_dir + 'ae.ckpt')
-    return va
+    encoder_net = tf.keras.models.load_model(os.path.join(model_dir, 'encoder_net.h5'))
+    decoder_net = tf.keras.models.load_model(os.path.join(model_dir, 'decoder_net.h5'))
+    ae = AE(encoder_net, decoder_net)
+    ae.load_weights(os.path.join(model_dir, 'ae.ckpt'))
+    return ae
 
 
 def load_tf_vae(filepath: str,
