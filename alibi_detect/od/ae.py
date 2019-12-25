@@ -4,7 +4,6 @@ import tensorflow as tf
 from typing import Dict, Tuple
 from alibi_detect.models.autoencoder import AE
 from alibi_detect.models.trainer import trainer
-from alibi_detect.models.losses import recon_loss
 from alibi_detect.base import BaseDetector, FitMixin, ThresholdMixin, outlier_prediction_dict
 
 logger = logging.getLogger(__name__)
@@ -57,7 +56,7 @@ class OutlierAE(BaseDetector, FitMixin, ThresholdMixin):
 
     def fit(self,
             X: np.ndarray,
-            loss_fn: tf.keras.losses = recon_loss,
+            loss_fn: tf.keras.losses = tf.keras.losses.MeanSquaredError(),
             optimizer: tf.keras.optimizers = tf.keras.optimizers.Adam(learning_rate=1e-3),
             epochs: int = 20,
             batch_size: int = 64,
