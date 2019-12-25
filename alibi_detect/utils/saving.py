@@ -272,7 +272,7 @@ def state_sr(od: SpectralResidual) -> Dict:
 
 
 def save_tf_ae(detector: OutlierAE,
-                filepath: str) -> None:
+               filepath: str) -> None:
     """
     Save TensorFlow components of OutlierAE
 
