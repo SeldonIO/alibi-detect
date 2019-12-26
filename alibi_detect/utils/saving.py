@@ -164,7 +164,7 @@ def state_aegmm(od: OutlierAEGMM) -> Dict:
     od
         Outlier detector object.
     """
-    if None in [od.phi, od.mu, od.cov, od.L, od.log_det_cov]:
+    if not all(tf.is_tensor(_) for _ in [od.phi, od.mu, od.cov, od.L, od.log_det_cov]):
         logger.warning('Saving AEGMM detector that has not been fit.')
 
     state_dict = {'threshold': od.threshold,
@@ -187,7 +187,7 @@ def state_vaegmm(od: OutlierVAEGMM) -> Dict:
     od
         Outlier detector object.
     """
-    if None in [od.phi, od.mu, od.cov, od.L, od.log_det_cov]:
+    if not all(tf.is_tensor(_) for _ in [od.phi, od.mu, od.cov, od.L, od.log_det_cov]):
         logger.warning('Saving VAEGMM detector that has not been fit.')
 
     state_dict = {'threshold': od.threshold,
@@ -608,7 +608,7 @@ def init_od_aegmm(state_dict: Dict,
     od.L = state_dict['L']
     od.log_det_cov = state_dict['log_det_cov']
 
-    if None in [od.phi, od.mu, od.cov, od.L, od.log_det_cov]:
+    if not all(tf.is_tensor(_) for _ in [od.phi, od.mu, od.cov, od.L, od.log_det_cov]):
         logger.warning('Loaded AEGMM detector has not been fit.')
 
     return od
@@ -639,7 +639,7 @@ def init_od_vaegmm(state_dict: Dict,
     od.L = state_dict['L']
     od.log_det_cov = state_dict['log_det_cov']
 
-    if None in [od.phi, od.mu, od.cov, od.L, od.log_det_cov]:
+    if not all(tf.is_tensor(_) for _ in [od.phi, od.mu, od.cov, od.L, od.log_det_cov]):
         logger.warning('Loaded VAEGMM detector has not been fit.')
 
     return od
