@@ -48,9 +48,12 @@ class OutlierSeq2Seq(BaseDetector, FitMixin, ThresholdMixin):
         super().__init__()
 
         if threshold is None:
+            self.threshold_set = False
             threshold = 0.
             logger.warning('No explicit threshold level set. Threshold defaults to 0. '
                            'A threshold can be inferred using `infer_threshold`.')
+        else:
+            self.threshold_set = True
 
         self.threshold = threshold
         self.shape = (-1, seq_len, n_features)
@@ -135,8 +138,8 @@ class OutlierSeq2Seq(BaseDetector, FitMixin, ThresholdMixin):
 
     def infer_threshold(self,
                         X: np.ndarray,
-                        outlier_perc: float = 100.,
-                        threshold_perc: Union[float, np.ndarray] = 95.
+                        outlier_perc: Union[int, float] = 100.,
+                        threshold_perc: Union[float, np.ndarray, list] = 95.
                         ) -> None:
         """
         Update the outlier threshold by using a sequence of instances from the dataset
@@ -151,19 +154,21 @@ class OutlierSeq2Seq(BaseDetector, FitMixin, ThresholdMixin):
             Percentage of sorted feature level outlier scores used to predict instance level outlier.
         threshold_perc
             Percentage of X considered to be normal based on the outlier score.
-            Overall (float) or feature-wise (array).
+            Overall (float) or feature-wise (array or list).
         """
         # compute outlier scores
         fscore = self.score(X, outlier_perc=outlier_perc)[0].reshape((-1, self.shape[-1]))
 
         # update threshold
-        if isinstance(self.threshold, float) and isinstance(threshold_perc, float):
-            self.threshold += np.percentile(fscore, threshold_perc)
-        elif isinstance(self.threshold, np.ndarray) and isinstance(threshold_perc, np.ndarray):
+        if (not self.threshold_set or isinstance(self.threshold, np.ndarray)
+                and isinstance(threshold_perc, (list, np.ndarray))):
             self.threshold += np.diag(np.percentile(fscore, threshold_perc, axis=0))
+        elif isinstance(self.threshold, (int, float)) and isinstance(threshold_perc, (int, float)):
+            self.threshold += np.percentile(fscore, threshold_perc)
         else:
-            raise TypeError('Both `threshold` and `threshold_perc` need to be either '
-                            'of type float or numpy arrays.')
+            raise TypeError('Incorrect type for `threshold` and/or `threshold_perc`.')
+
+        self.threshold_set = True
 
     def feature_score(self,
                       X_orig: np.ndarray,
@@ -187,7 +192,8 @@ class OutlierSeq2Seq(BaseDetector, FitMixin, ThresholdMixin):
         Feature level outlier scores. Scores above 0 are outliers.
         """
         fscore = (X_orig - X_recon) ** 2  # MSE
-        fscore_adj = fscore - threshold_est - self.threshold  # TODO: check casting for arrays!
+        # TODO: check casting if nb of features equals time dimension
+        fscore_adj = fscore - threshold_est - self.threshold
         return fscore_adj
 
     def instance_score(self, fscore: np.ndarray, outlier_perc: float = 100.) -> np.ndarray:

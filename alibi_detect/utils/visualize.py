@@ -283,7 +283,7 @@ def plot_feature_outlier_ts(od_preds: Dict,
     ticks = t[t_start:t_end]
 
     # check if feature level scores available
-    if od_preds['data']['feature_score']:
+    if isinstance(od_preds['data']['feature_score'], np.ndarray):
         scores = od_preds['data']['feature_score']
     else:
         scores = od_preds['data']['instance_score'].reshape(-1, 1)

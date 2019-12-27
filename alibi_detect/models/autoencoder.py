@@ -248,7 +248,9 @@ class Seq2Seq(tf.keras.Model):
         Parameters
         ----------
         encoder_net
+            Encoder network.
         decoder_net
+            Decoder network.
         threshold_net
             Regression network used to estimate threshold.
         n_features
@@ -290,7 +292,7 @@ class Seq2Seq(tf.keras.Model):
         return x_recon
 
     def decode_seq(self, x: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-        """ Sequence decoding used for inference. """
+        """ Sequence decoding and threshold estimation used for inference. """
         seq_len = np.shape(x)[1]
 
         # use encoder to get state vectors
