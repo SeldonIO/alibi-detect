@@ -43,7 +43,8 @@ The following table shows the advised use cases for each algorithm. The column *
 | AEGMM                 | ✔       | ✔     |  ✘          |  ✘    |  ✘                   |  ✘     |  ✘            |
 | VAEGMM                | ✔       | ✔     |  ✘          |  ✘    |  ✘                   |  ✘     |  ✘            |
 | Prophet               | ✘       | ✘     |  ✔          |  ✘    |  ✘                   |  ✘     |  ✘            |
-| Spectral Residual     | ✘       | ✘     |  ✔          |  ✘    |  ✘                   |  ✔     |  ✘            |
+| Spectral Residual     | ✘       | ✘     |  ✔          |  ✘    |  ✘                   |  ✔     |  ✔            |
+| Seq2Seq               | ✘       | ✘     |  ✔          |  ✘    |  ✘                   |  ✘     |  ✔            |
 
 
  - Isolation Forest ([FT Liu et al., 2008](https://cs.nju.edu.cn/zhouzh/zhouzh.files/publication/icdm08b.pdf))
@@ -80,6 +81,11 @@ The following table shows the advised use cases for each algorithm. The column *
    - [Documentation](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/sr.html)
    - Examples:
      [Synthetic Dataset](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/od_sr_synth.html)
+
+ - Sequence-to-Sequence (Seq2Seq) Outlier Detector ([Sutskever et al., 2014](https://papers.nips.cc/paper/5346-sequence-to-sequence-learning-with-neural-networks.pdf); [Park et al., 2017](https://arxiv.org/pdf/1711.00614.pdf))
+   - [Documentation](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/seq2seq.html)
+   - Examples:
+     [Synthetic Dataset](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/od_seq2seq_synth.html)
 
 
 ### Adversarial Detection
