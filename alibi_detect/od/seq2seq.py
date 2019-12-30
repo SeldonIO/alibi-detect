@@ -238,10 +238,7 @@ class OutlierSeq2Seq(BaseDetector, FitMixin, ThresholdMixin):
         orig_shape = X.shape
         if len(orig_shape) == 2:
             X = X.reshape(self.shape)
-        X_recon, threshold_est = np.zeros_like(X), np.zeros_like(X)
-        n_preds = X.shape[0]
-        for i in range(n_preds):  # TODO: implement batched version
-            X_recon[i], threshold_est[i] = self.seq2seq.decode_seq(X[i].reshape((1,) + self.shape[1:]))
+        X_recon, threshold_est = self.seq2seq.decode_seq(X)
 
         if len(orig_shape) == 2:  # reshape back to original shape
             X = X.reshape(orig_shape)

@@ -291,35 +291,36 @@ class Seq2Seq(tf.keras.Model):
         self.add_loss(self.beta * threshold_loss)
         return x_recon
 
-    def decode_seq(self, x: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def decode_seq(self, x: np.ndarray):
         """ Sequence decoding and threshold estimation used for inference. """
         seq_len = np.shape(x)[1]
+        n_batch = x.shape[0]
 
         # use encoder to get state vectors
         init_state = self.encoder(x)[1]
 
         # generate start of target sequence
-        decoder_input = np.reshape(x[0, 0, :], (1, 1, -1))
+        decoder_input = np.reshape(x[:, 0, :], (n_batch, 1, -1))
 
         # initialize hidden states used to compute outlier thresholds
-        z = np.zeros((1, seq_len, init_state[0].numpy().shape[1])).astype(np.float32)
+        z = np.zeros((n_batch, seq_len, init_state[0].numpy().shape[1])).astype(np.float32)
 
         # sequential prediction of time series
         decoded_seq = np.zeros_like(x)
-        decoded_seq[0, 0, :] = x[0, 0, :]
+        decoded_seq[:, 0, :] = x[:, 0, :]
         i = 1
         while i < seq_len:
             # decode step in sequence
             decoder_output = self.decoder(decoder_input, init_state=init_state)
-            decoded_seq[0, i, :] = decoder_output[0].numpy()
+            decoded_seq[:, i:i+1, :] = decoder_output[0].numpy()
             init_state = decoder_output[2]
 
             # update hidden state decoder used for outlier threshold
-            z[0, i, :] = decoder_output[1].numpy()
+            z[:, i:i+1, :] = decoder_output[1].numpy()
 
             # update next decoder input
             decoder_input = np.zeros_like(decoder_input)
-            decoder_input[0, 0, :] = decoder_output[0].numpy()
+            decoder_input[:, :1, :] = decoder_output[0].numpy()
 
             i += 1
 
