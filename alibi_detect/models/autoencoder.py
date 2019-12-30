@@ -240,7 +240,6 @@ class Seq2Seq(tf.keras.Model):
                  n_features: int,
                  score_fn: callable = tf.math.squared_difference,
                  beta: float = 1.,
-                 threshold: Union[float, np.ndarray] = 0.,
                  name: str = 'seq2seq') -> None:
         """
         Sequence-to-sequence model.
@@ -259,8 +258,6 @@ class Seq2Seq(tf.keras.Model):
             Function used for outlier score.
         beta
             Weight on the threshold estimation loss term.
-        threshold
-            Threshold used for outlier detection. Can be a float or feature-wise array.
         name
             Name of the seq2seq model.
         """
@@ -271,7 +268,6 @@ class Seq2Seq(tf.keras.Model):
         self.threshold_est = Dense(n_features, activation=None)
         self.score_fn = score_fn
         self.beta = beta
-        self.threshold = threshold
 
     def call(self, x: tf.Tensor) -> tf.Tensor:
         """ Forward pass used for teacher-forcing training. """
@@ -326,9 +322,9 @@ class Seq2Seq(tf.keras.Model):
 
         # compute outlier thresholds
         z = self.threshold_net(z)
-        threshold_est = self.threshold_est(z) + self.threshold
+        threshold_est = self.threshold_est(z).numpy()
 
-        return decoded_seq, threshold_est.numpy()
+        return decoded_seq, threshold_est
 
 
 def eucl_cosim_features(x: tf.Tensor,

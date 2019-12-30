@@ -74,7 +74,7 @@ class OutlierSeq2Seq(BaseDetector, FitMixin, ThresholdMixin):
         elif isinstance(latent_dim, int) and isinstance(threshold_net, tf.keras.Sequential):
             encoder_net = EncoderLSTM(latent_dim)
             decoder_net = DecoderLSTM(latent_dim, n_features, output_activation)
-            self.seq2seq = Seq2Seq(encoder_net, decoder_net, threshold_net, n_features, beta=beta, threshold=threshold)
+            self.seq2seq = Seq2Seq(encoder_net, decoder_net, threshold_net, n_features, beta=beta)
         else:
             raise TypeError('No valid format detected for `seq2seq` (tf.keras.Model), '
                             '`latent_dim` (int) or `threshold_net` (tf.keras.Sequential)')

@@ -426,14 +426,14 @@ def save_tf_s2s(od: OutlierSeq2Seq,
     if not os.path.isdir(model_dir):
         os.mkdir(model_dir)
     # save seq2seq model weights and threshold estimation network
-    if isinstance(od.seq2seq, tf.keras.Model):
-        od.seq2seq.save_weights(os.path.join(model_dir, 'seq2seq.ckpt'))
-    else:
-        logger.warning('No `tf.keras.Model` Seq2Seq detected. No Seq2Seq model saved.')
     if isinstance(od.seq2seq.threshold_net, tf.keras.Sequential):
         od.seq2seq.threshold_net.save(os.path.join(model_dir, 'threshold_net.h5'))
     else:
         logger.warning('No `tf.keras.Sequential` threshold estimation net detected. No threshold net saved.')
+    if isinstance(od.seq2seq, tf.keras.Model):
+        od.seq2seq.save_weights(os.path.join(model_dir, 'seq2seq.ckpt'))
+    else:
+        logger.warning('No `tf.keras.Model` Seq2Seq detected. No Seq2Seq model saved.')
 
 
 def load_detector(filepath: str) -> Data:
@@ -593,13 +593,12 @@ def load_tf_s2s(filepath: str,
         logger.warning('No seq2seq or threshold estimation net found in {}.'.format(model_dir))
         return None
     # load threshold estimator net, initialize encoder and decoder and load seq2seq weights
-    threshold_net = tf.keras.models.load_model(os.path.join(model_dir, 'threshold_net.h5'))
+    threshold_net = tf.keras.models.load_model(os.path.join(model_dir, 'threshold_net.h5'), compile=False)
     latent_dim = state_dict['latent_dim']
     n_features = state_dict['shape'][-1]
     encoder_net = EncoderLSTM(latent_dim)
     decoder_net = DecoderLSTM(latent_dim, n_features, state_dict['output_activation'])
-    seq2seq = Seq2Seq(encoder_net, decoder_net, threshold_net, n_features,
-                      beta=state_dict['beta'], threshold=state_dict['threshold'])
+    seq2seq = Seq2Seq(encoder_net, decoder_net, threshold_net, n_features, beta=state_dict['beta'])
     seq2seq.load_weights(os.path.join(model_dir, 'seq2seq.ckpt'))
     return seq2seq
 
