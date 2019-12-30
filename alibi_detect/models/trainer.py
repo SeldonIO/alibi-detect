@@ -1,6 +1,6 @@
 import numpy as np
 import tensorflow as tf
-from typing import Any, Tuple
+from typing import Tuple
 
 
 def trainer(model: tf.keras.Model,
@@ -99,7 +99,7 @@ def trainer(model: tf.keras.Model,
                         if len(loss_val.shape) == 1:
                             shape = (batch_size - loss_val.shape[0], )
                         elif len(loss_val.shape) == 2:
-                            shape = (batch_size - loss_val.shape[0], loss_val.shape[1])
+                            shape = (batch_size - loss_val.shape[0], loss_val.shape[1])  # type: ignore
                         add_mean = np.ones(shape) * loss_val.mean()
                         loss_val = np.r_[loss_val, add_mean]
                 pbar_values = [('loss', loss_val)]
