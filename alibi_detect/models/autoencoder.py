@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.layers import Bidirectional, Concatenate, Dense, Flatten, Layer, LSTM
-from typing import Callable, List, Tuple, Union
+from typing import Callable, List, Tuple
 from alibi_detect.utils.distance import relative_euclidean_distance
 
 # TODO: add difference between train and inference mode for dropout
@@ -238,7 +238,7 @@ class Seq2Seq(tf.keras.Model):
                  decoder_net: DecoderLSTM,
                  threshold_net: tf.keras.Sequential,
                  n_features: int,
-                 score_fn: callable = tf.math.squared_difference,
+                 score_fn: Callable = tf.math.squared_difference,
                  beta: float = 1.,
                  name: str = 'seq2seq') -> None:
         """
