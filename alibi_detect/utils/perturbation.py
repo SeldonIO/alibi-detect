@@ -1,6 +1,6 @@
 import numpy as np
 import random
-from typing import Tuple
+from typing import List, Tuple
 from alibi_detect.utils.data import Bunch
 
 
@@ -146,4 +146,57 @@ def inject_outlier_ts(X: np.ndarray,
         is_outlier[outlier_idx] = 1
     if n_dim == 1:
         X_outlier = X_outlier.reshape(n_samples,)
+    return Bunch(data=X_outlier, target=is_outlier, target_names=['normal', 'outlier'])
+
+
+def inject_outlier_tabular(X: np.ndarray,
+                           cols: List[int],
+                           perc_outlier: int,
+                           n_std: float = 2.,
+                           min_std: float = 1.
+                           ) -> Bunch:
+    """
+    Inject outliers in numerical tabular data.
+
+    Parameters
+    ----------
+    X
+        Tabular data to perturb (inject outliers).
+    cols
+        Columns of X that are numerical and can be perturbed.
+    perc_outlier
+        Percentage of observations which are perturbed to outliers. For multiple numerical features,
+        the percentage is evenly split across the features.
+    n_std
+        Number of feature-wise standard deviations used to perturb the original data.
+    min_std
+        Minimum number of standard deviations away from the current observation. This is included because
+        of the stochastic nature of the perturbation which could lead to minimal perturbations without a floor.
+
+    Returns
+    -------
+    Bunch object with the perturbed tabular data and the outlier labels.
+    """
+    n_dim = len(X.shape)
+    if n_dim == 1:
+        X = X.reshape(-1, 1)
+    n_samples, n_features = X.shape
+    X_outlier = X.astype(np.float32).copy()
+    is_outlier = np.zeros(n_samples)
+    n_cols = len(cols)
+
+    # distribute outliers evenly over different columns
+    n_outlier = int(n_samples * perc_outlier * .01 / n_cols)
+    if n_outlier == 0:
+        return Bunch(data=X_outlier, target=is_outlier, target_names=['normal', 'outlier'])
+
+    # add perturbations
+    stdev = X_outlier.std(axis=0)
+    for col in cols:
+        outlier_idx = np.sort(random.sample(range(n_samples), n_outlier))
+        rnd = np.random.normal(size=n_outlier)
+        X_outlier[outlier_idx, col] += np.sign(rnd) * np.maximum(np.abs(rnd * n_std), min_std) * stdev[col]
+        is_outlier[outlier_idx] = 1
+    if n_dim == 1:
+        X_outlier = X_outlier.reshape(n_samples, )
     return Bunch(data=X_outlier, target=is_outlier, target_names=['normal', 'outlier'])
