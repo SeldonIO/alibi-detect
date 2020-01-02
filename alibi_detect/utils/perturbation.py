@@ -4,7 +4,7 @@ from typing import List, Tuple
 from alibi_detect.utils.data import Bunch
 from alibi_detect.utils.discretizer import Discretizer
 from alibi_detect.utils.distance import abdm, multidim_scaling
-from alibi_detect.utils.mapping import ohe2ord, ord2ohe
+from alibi_detect.utils.mapping import ohe2ord
 
 
 def apply_mask(X: np.ndarray,
