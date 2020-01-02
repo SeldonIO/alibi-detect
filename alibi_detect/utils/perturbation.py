@@ -248,7 +248,7 @@ def inject_outlier_categorical(X: np.ndarray,
         # find number of categories for each categorical variable
         cat_vars = {k: None for k in cols}
         for k in cols:
-            cat_vars[k] = len(np.unique(X_fit[:, k]))
+            cat_vars[k] = len(np.unique(X_fit[:, k]))  # type: ignore
 
         # TODO: extend method for OHE
         ohe = False
@@ -286,6 +286,8 @@ def inject_outlier_categorical(X: np.ndarray,
         for k, v in d_abs.items():
             for i in range(len(v)):
                 cat_perturb[k][i] = np.argmax(np.abs(v[i] - v))
+    else:
+        d_abs = None
 
     n_dim = len(X.shape)
     if n_dim == 1:
@@ -308,4 +310,5 @@ def inject_outlier_categorical(X: np.ndarray,
     return Bunch(data=X_outlier,
                  target=is_outlier,
                  cat_perturb=cat_perturb,
+                 d_abs=d_abs,
                  target_names=['normal', 'outlier'])
