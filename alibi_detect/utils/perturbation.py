@@ -155,6 +155,7 @@ def inject_outlier_ts(X: np.ndarray,
 def inject_outlier_tabular(X: np.ndarray,
                            cols: List[int],
                            perc_outlier: int,
+                           y: np.ndarray = None,
                            n_std: float = 2.,
                            min_std: float = 1.
                            ) -> Bunch:
@@ -170,6 +171,8 @@ def inject_outlier_tabular(X: np.ndarray,
     perc_outlier
         Percentage of observations which are perturbed to outliers. For multiple numerical features,
         the percentage is evenly split across the features.
+    y
+        Outlier labels.
     n_std
         Number of feature-wise standard deviations used to perturb the original data.
     min_std
@@ -185,7 +188,10 @@ def inject_outlier_tabular(X: np.ndarray,
         X = X.reshape(-1, 1)
     n_samples, n_features = X.shape
     X_outlier = X.astype(np.float32).copy()
-    is_outlier = np.zeros(n_samples)
+    if y is None:
+        is_outlier = np.zeros(n_samples)
+    else:
+        is_outlier = y
     n_cols = len(cols)
 
     # distribute outliers evenly over different columns
@@ -208,6 +214,7 @@ def inject_outlier_tabular(X: np.ndarray,
 def inject_outlier_categorical(X: np.ndarray,
                                cols: List[int],
                                perc_outlier: int,
+                               y: np.ndarray = None,
                                cat_perturb: dict = None,
                                X_fit: np.ndarray = None,
                                disc_perc: list = [25, 50, 75],
@@ -225,6 +232,8 @@ def inject_outlier_categorical(X: np.ndarray,
     perc_outlier
         Percentage of observations which are perturbed to outliers. For multiple numerical features,
         the percentage is evenly split across the features.
+    y
+        Outlier labels.
     cat_perturb
         Dictionary mapping each category in the categorical variables to their furthest neighbour.
     X_fit
@@ -294,7 +303,10 @@ def inject_outlier_categorical(X: np.ndarray,
         X = X.reshape(-1, 1)
     n_samples, n_features = X.shape
     X_outlier = X.astype(np.float32).copy()
-    is_outlier = np.zeros(n_samples)
+    if y is None:
+        is_outlier = np.zeros(n_samples)
+    else:
+        is_outlier = y
     n_cols = len(cols)
 
     # distribute outliers evenly over different columns
