@@ -3,8 +3,9 @@ from tempfile import TemporaryDirectory
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, InputLayer
 from alibi_detect.ad import AdversarialVAE
+from alibi_detect.models.autoencoder import DecoderLSTM, EncoderLSTM
 from alibi_detect.od import (IForest, Mahalanobis, OutlierAEGMM, OutlierVAE, OutlierVAEGMM,
-                             OutlierProphet, SpectralResidual)
+                             OutlierProphet, SpectralResidual, OutlierSeq2Seq)
 from alibi_detect.utils.saving import save_detector, load_detector
 
 input_dim = 4
@@ -12,6 +13,7 @@ latent_dim = 2
 n_gmm = 2
 threshold = 10.
 samples = 5
+seq_len = 10
 
 # define encoder and decoder
 encoder_net = tf.keras.Sequential(
@@ -38,6 +40,13 @@ gmm_density_net = tf.keras.Sequential(
         InputLayer(input_shape=(latent_dim + 2,)),
         Dense(10, activation=tf.nn.relu),
         Dense(n_gmm, activation=tf.nn.softmax)
+    ]
+)
+
+threshold_net = tf.keras.Sequential(
+    [
+        InputLayer(input_shape=(seq_len, latent_dim)),
+        Dense(5, activation=tf.nn.relu)
     ]
 )
 
@@ -72,7 +81,12 @@ detector = [
                    growth='logistic'),
     SpectralResidual(threshold=threshold,
                      window_amp=10,
-                     window_local=10)
+                     window_local=10),
+    OutlierSeq2Seq(input_dim,
+                   seq_len,
+                   threshold=threshold,
+                   threshold_net=threshold_net,
+                   latent_dim=latent_dim)
 ]
 n_tests = len(detector)
 
@@ -133,3 +147,11 @@ def test_save_load(select_detector):
         elif type(det_load) == SpectralResidual:
             assert det_load.window_amp == 10
             assert det_load.window_local == 10
+        elif type(det_load) == OutlierSeq2Seq:
+            assert isinstance(det_load.seq2seq, tf.keras.Model)
+            assert isinstance(det_load.seq2seq.threshold_net, tf.keras.Sequential)
+            assert isinstance(det_load.seq2seq.encoder, EncoderLSTM)
+            assert isinstance(det_load.seq2seq.decoder, DecoderLSTM)
+            assert det_load.latent_dim == latent_dim
+            assert det_load.threshold == threshold
+            assert det_load.shape == (-1, seq_len, input_dim)
