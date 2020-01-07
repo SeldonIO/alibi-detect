@@ -156,13 +156,15 @@ class OutlierSeq2Seq(BaseDetector, FitMixin, ThresholdMixin):
             Percentage of X considered to be normal based on the outlier score.
             Overall (float) or feature-wise (array or list).
         """
+        orig_shape = X.shape
+
         # compute outlier scores
         fscore = self.score(X, outlier_perc=outlier_perc)[0].reshape((-1, self.shape[-1]))
 
         # update threshold
         if (not self.threshold_set or isinstance(self.threshold, np.ndarray)
                 and isinstance(threshold_perc, (list, np.ndarray))):
-            self.threshold += np.diag(np.percentile(fscore, threshold_perc, axis=0))
+            self.threshold += np.percentile(fscore, threshold_perc, axis=0).reshape((1,) + orig_shape[1:])
         elif isinstance(self.threshold, (int, float)) and isinstance(threshold_perc, (int, float)):
             self.threshold += np.percentile(fscore, threshold_perc)
         else:
