@@ -94,9 +94,9 @@ def test_aegmm_vaegmm(tf_v_aegmm_mnist):
 
 
 seq_len = 10
-tests = [(DecoderLSTM(latent_dim, 1, None), 1),
-         (DecoderLSTM(latent_dim, 2, None), 2)]
-n_tests = len(tests)
+tests_seq2seq = [(DecoderLSTM(latent_dim, 1, None), 1),
+                 (DecoderLSTM(latent_dim, 2, None), 2)]
+n_tests = len(tests_seq2seq)
 
 
 @pytest.fixture
@@ -105,7 +105,7 @@ def tf_seq2seq_sine(request):
     X = np.sin(np.linspace(-50, 50, 10000)).astype(np.float32)
 
     # init model
-    decoder_net, n_features = tests[request.param]
+    decoder_net_, n_features = tests_seq2seq[request.param]
     encoder_net = EncoderLSTM(latent_dim)
     threshold_net = tf.keras.Sequential(
         [
@@ -113,7 +113,7 @@ def tf_seq2seq_sine(request):
             Dense(10, activation=tf.nn.relu)
         ]
     )
-    model = Seq2Seq(encoder_net, decoder_net, threshold_net, n_features)
+    model = Seq2Seq(encoder_net, decoder_net_, threshold_net, n_features)
 
     # reshape data
     shape = (-1, seq_len, n_features)
