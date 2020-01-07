@@ -1,7 +1,10 @@
 import numpy as np
 import random
-from typing import Tuple
+from typing import List, Tuple
 from alibi_detect.utils.data import Bunch
+from alibi_detect.utils.discretizer import Discretizer
+from alibi_detect.utils.distance import abdm, multidim_scaling
+from alibi_detect.utils.mapping import ohe2ord
 
 
 def apply_mask(X: np.ndarray,
@@ -147,3 +150,177 @@ def inject_outlier_ts(X: np.ndarray,
     if n_dim == 1:
         X_outlier = X_outlier.reshape(n_samples,)
     return Bunch(data=X_outlier, target=is_outlier, target_names=['normal', 'outlier'])
+
+
+def inject_outlier_tabular(X: np.ndarray,
+                           cols: List[int],
+                           perc_outlier: int,
+                           y: np.ndarray = None,
+                           n_std: float = 2.,
+                           min_std: float = 1.
+                           ) -> Bunch:
+    """
+    Inject outliers in numerical tabular data.
+
+    Parameters
+    ----------
+    X
+        Tabular data to perturb (inject outliers).
+    cols
+        Columns of X that are numerical and can be perturbed.
+    perc_outlier
+        Percentage of observations which are perturbed to outliers. For multiple numerical features,
+        the percentage is evenly split across the features.
+    y
+        Outlier labels.
+    n_std
+        Number of feature-wise standard deviations used to perturb the original data.
+    min_std
+        Minimum number of standard deviations away from the current observation. This is included because
+        of the stochastic nature of the perturbation which could lead to minimal perturbations without a floor.
+
+    Returns
+    -------
+    Bunch object with the perturbed tabular data and the outlier labels.
+    """
+    n_dim = len(X.shape)
+    if n_dim == 1:
+        X = X.reshape(-1, 1)
+    n_samples, n_features = X.shape
+    X_outlier = X.astype(np.float32).copy()
+    if y is None:
+        is_outlier = np.zeros(n_samples)
+    else:
+        is_outlier = y
+    n_cols = len(cols)
+
+    # distribute outliers evenly over different columns
+    n_outlier = int(n_samples * perc_outlier * .01 / n_cols)
+    if n_outlier == 0:
+        return Bunch(data=X_outlier, target=is_outlier, target_names=['normal', 'outlier'])
+
+    # add perturbations
+    stdev = X_outlier.std(axis=0)
+    for col in cols:
+        outlier_idx = np.sort(random.sample(range(n_samples), n_outlier))
+        rnd = np.random.normal(size=n_outlier)
+        X_outlier[outlier_idx, col] += np.sign(rnd) * np.maximum(np.abs(rnd * n_std), min_std) * stdev[col]
+        is_outlier[outlier_idx] = 1
+    if n_dim == 1:
+        X_outlier = X_outlier.reshape(n_samples, )
+    return Bunch(data=X_outlier, target=is_outlier, target_names=['normal', 'outlier'])
+
+
+def inject_outlier_categorical(X: np.ndarray,
+                               cols: List[int],
+                               perc_outlier: int,
+                               y: np.ndarray = None,
+                               cat_perturb: dict = None,
+                               X_fit: np.ndarray = None,
+                               disc_perc: list = [25, 50, 75],
+                               smooth: float = 1.
+                               ) -> Bunch:
+    """
+    Inject outliers in categorical variables of tabular data.
+
+    Parameters
+    ----------
+    X
+        Tabular data with categorical variables to perturb (inject outliers).
+    cols
+        Columns of X that are categorical and can be perturbed.
+    perc_outlier
+        Percentage of observations which are perturbed to outliers. For multiple numerical features,
+        the percentage is evenly split across the features.
+    y
+        Outlier labels.
+    cat_perturb
+        Dictionary mapping each category in the categorical variables to their furthest neighbour.
+    X_fit
+        Optional data used to infer pairwise distances from.
+    disc_perc
+        List with percentiles used in binning of numerical features used for the 'abdm' pairwise distance measure.
+    smooth
+        Smoothing exponent between 0 and 1 for the distances.
+        Lower values will smooth the difference in distance metric between different features.
+
+    Returns
+    -------
+    Bunch object with the perturbed tabular data, outlier labels and
+    a dictionary used to map categories to their furthest neighbour.
+    """
+    if cat_perturb is None:
+        # transform the categorical variables into numerical ones via
+        # pairwise distances computed with abdm and multidim scaling
+        X_fit = X.copy() if X_fit is None else X_fit
+
+        # find number of categories for each categorical variable
+        cat_vars = {k: None for k in cols}
+        for k in cols:
+            cat_vars[k] = len(np.unique(X_fit[:, k]))  # type: ignore
+
+        # TODO: extend method for OHE
+        ohe = False
+        if ohe:
+            X_ord, cat_vars_ord = ohe2ord(X, cat_vars)
+        else:
+            X_ord, cat_vars_ord = X, cat_vars
+
+        # bin numerical features to compute the pairwise distance matrices
+        n_ord = X_ord.shape[1]
+        if len(cols) != n_ord:
+            fnames = [str(_) for _ in range(n_ord)]
+            disc = Discretizer(X_ord, cols, fnames, percentiles=disc_perc)
+            X_bin = disc.discretize(X_ord)
+            cat_vars_bin = {k: len(disc.names[k]) for k in range(n_ord) if k not in cols}
+        else:
+            X_bin = X_ord
+            cat_vars_bin = {}
+
+        # pairwise distances for categorical variables
+        d_pair = abdm(X_bin, cat_vars_ord, cat_vars_bin)
+
+        # multidim scaling
+        feature_range = (np.ones((1, n_ord)) * -1e10, np.ones((1, n_ord)) * 1e10)
+        d_abs = multidim_scaling(d_pair,
+                                 n_components=2,
+                                 use_metric=True,
+                                 standardize_cat_vars=True,
+                                 smooth=smooth,
+                                 feature_range=feature_range,
+                                 update_feature_range=False)[0]
+
+        # find furthest category away for each category in the categorical variables
+        cat_perturb = {k: np.zeros(len(v)) for k, v in d_abs.items()}
+        for k, v in d_abs.items():
+            for i in range(len(v)):
+                cat_perturb[k][i] = np.argmax(np.abs(v[i] - v))
+    else:
+        d_abs = None
+
+    n_dim = len(X.shape)
+    if n_dim == 1:
+        X = X.reshape(-1, 1)
+    n_samples, n_features = X.shape
+    X_outlier = X.astype(np.float32).copy()
+    if y is None:
+        is_outlier = np.zeros(n_samples)
+    else:
+        is_outlier = y
+    n_cols = len(cols)
+
+    # distribute outliers evenly over different columns
+    n_outlier = int(n_samples * perc_outlier * .01 / n_cols)
+    for col in cols:
+        outlier_idx = np.sort(random.sample(range(n_samples), n_outlier))
+        col_cat = X_outlier[outlier_idx, col].astype(int)
+        col_map = np.tile(cat_perturb[col], (n_outlier, 1))
+        X_outlier[outlier_idx, col] = np.diag(col_map.T[col_cat])
+        is_outlier[outlier_idx] = 1
+    if n_dim == 1:
+        X_outlier = X_outlier.reshape(n_samples, )
+    return Bunch(data=X_outlier,
+                 target=is_outlier,
+                 cat_perturb=cat_perturb,
+                 d_abs=d_abs,
+                 target_names=['normal', 'outlier'])
