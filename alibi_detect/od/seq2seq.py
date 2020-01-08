@@ -157,6 +157,9 @@ class OutlierSeq2Seq(BaseDetector, FitMixin, ThresholdMixin):
             Overall (float) or feature-wise (array or list).
         """
         orig_shape = X.shape
+        threshold_shape = (1, orig_shape[-1])
+        if len(orig_shape) == 3:  # (batch_size, seq_len, n_features)
+            threshold_shape = (1,) + threshold_shape
 
         # compute outlier scores
         fscore = self.score(X, outlier_perc=outlier_perc)[0].reshape((-1, self.shape[-1]))
@@ -164,7 +167,7 @@ class OutlierSeq2Seq(BaseDetector, FitMixin, ThresholdMixin):
         # update threshold
         if (not self.threshold_set or isinstance(self.threshold, np.ndarray)
                 and isinstance(threshold_perc, (list, np.ndarray))):
-            self.threshold += np.percentile(fscore, threshold_perc, axis=0).reshape((1,) + orig_shape[1:])
+            self.threshold += np.diag(np.percentile(fscore, threshold_perc, axis=0)).reshape(threshold_shape)
         elif isinstance(self.threshold, (int, float)) and isinstance(threshold_perc, (int, float)):
             self.threshold += np.percentile(fscore, threshold_perc)
         else:
