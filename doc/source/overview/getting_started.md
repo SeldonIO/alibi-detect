@@ -20,12 +20,13 @@ alibi_detect.od.__all__
 ```
 
 ```
-['IForest',
+['OutlierAEGMM',
+ 'IForest',
  'Mahalanobis',
- 'OutlierAEGMM',
  'OutlierVAE',
  'OutlierVAEGMM',
  'OutlierProphet',
+ 'OutlierSeq2Seq',
  'SpectralResidual']
 ```
 
@@ -54,6 +55,8 @@ For detailed information on the methods:
     * [Prophet Outlier Detector](../methods/prophet.ipynb)
     
     * [Spectral Residual Outlier Detector](../methods/sr.ipynb)
+    
+    * [Sequence-to-Sequence (Seq2Seq) Outlier Detector](../methods/seq2seq.ipynb)
 
     * [Adversarial VAE Detector](../methods/adversarialvae.ipynb)
 

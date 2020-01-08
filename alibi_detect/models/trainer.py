@@ -46,7 +46,7 @@ def trainer(model: tf.keras.Model,
         Callbacks used during training.
     """
     # create dataset
-    if y_train is None:  # unsupervised model
+    if y_train is None:  # unsupervised model without teacher forcing
         train_data = X_train
     else:
         train_data = (X_train, y_train)
@@ -94,9 +94,14 @@ def trainer(model: tf.keras.Model,
 
             if verbose:
                 loss_val = loss.numpy()
-                if loss_val.shape != (batch_size,) and loss_val.shape:
-                    add_mean = np.ones((batch_size - loss_val.shape[0],)) * loss_val.mean()
-                    loss_val = np.r_[loss_val, add_mean]
+                if loss_val.shape:
+                    if loss_val.shape[0] != batch_size:
+                        if len(loss_val.shape) == 1:
+                            shape = (batch_size - loss_val.shape[0], )
+                        elif len(loss_val.shape) == 2:
+                            shape = (batch_size - loss_val.shape[0], loss_val.shape[1])  # type: ignore
+                        add_mean = np.ones(shape) * loss_val.mean()
+                        loss_val = np.r_[loss_val, add_mean]
                 pbar_values = [('loss', loss_val)]
                 if log_metric is not None:
                     log_metric[1](ground_truth, preds)

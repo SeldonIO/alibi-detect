@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from typing import Dict
+from typing import Dict, Union
 
 
 def plot_instance_score(preds: Dict,
@@ -236,7 +236,7 @@ def plot_feature_outlier_tabular(od_preds: Dict,
 
 def plot_feature_outlier_ts(od_preds: Dict,
                             X: np.ndarray,
-                            threshold: float,
+                            threshold: Union[float, int, list, np.ndarray],
                             window: tuple = None,
                             t: np.ndarray = None,
                             X_orig: np.ndarray = None,
@@ -283,7 +283,7 @@ def plot_feature_outlier_ts(od_preds: Dict,
     ticks = t[t_start:t_end]
 
     # check if feature level scores available
-    if od_preds['data']['feature_score']:
+    if isinstance(od_preds['data']['feature_score'], np.ndarray):
         scores = od_preds['data']['feature_score']
     else:
         scores = od_preds['data']['instance_score'].reshape(-1, 1)
@@ -314,7 +314,11 @@ def plot_feature_outlier_ts(od_preds: Dict,
             plt.title('Outlier Score per Timestep')
 
         plt.bar(ticks, scores[t_start:t_end, i], width=width, color='g', align='center', label='Outlier Score')
-        plt.plot(ticks, np.ones(len(ticks)) * threshold, 'r', label='Threshold')
+        if isinstance(threshold, (float, int)):
+            thr = threshold
+        else:
+            thr = threshold[i]
+        plt.plot(ticks, np.ones(len(ticks)) * thr, 'r', label='Threshold')
         plt.xlabel('Time')
         plt.ylabel('Outlier Score')
         plt.legend()

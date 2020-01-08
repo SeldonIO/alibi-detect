@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, InputLayer
-from alibi_detect.models.autoencoder import AE, AEGMM, VAE, VAEGMM
+from alibi_detect.models.autoencoder import AE, AEGMM, VAE, VAEGMM, Seq2Seq, EncoderLSTM, DecoderLSTM
 from alibi_detect.models.losses import loss_aegmm, loss_vaegmm
 from alibi_detect.models.trainer import trainer
 
@@ -90,4 +90,46 @@ def tf_v_aegmm_mnist(request):
 
 @pytest.mark.parametrize('tf_v_aegmm_mnist', list(range(n_tests)), indirect=True)
 def test_aegmm_vaegmm(tf_v_aegmm_mnist):
+    pass
+
+
+seq_len = 10
+tests_seq2seq = [(DecoderLSTM(latent_dim, 1, None), 1),
+                 (DecoderLSTM(latent_dim, 2, None), 2)]
+n_tests = len(tests_seq2seq)
+
+
+@pytest.fixture
+def tf_seq2seq_sine(request):
+    # create artificial sine time series
+    X = np.sin(np.linspace(-50, 50, 10000)).astype(np.float32)
+
+    # init model
+    decoder_net_, n_features = tests_seq2seq[request.param]
+    encoder_net = EncoderLSTM(latent_dim)
+    threshold_net = tf.keras.Sequential(
+        [
+            InputLayer(input_shape=(seq_len, latent_dim)),
+            Dense(10, activation=tf.nn.relu)
+        ]
+    )
+    model = Seq2Seq(encoder_net, decoder_net_, threshold_net, n_features)
+
+    # reshape data
+    shape = (-1, seq_len, n_features)
+    y = np.roll(X, -1, axis=0).reshape(shape)
+    X = X.reshape(shape)
+
+    # predict with untrained model, train and predict with trained model
+    X_recon_untrained = model(X)
+    assert X_recon_untrained.shape == X.shape
+    model_weights = model.weights[1].numpy().copy()
+    trainer(model, tf.keras.losses.mse, X, y_train=y, epochs=2, verbose=False, batch_size=64)
+    X_recon = model(X).numpy()
+    assert (model_weights != model.weights[1].numpy()).any()
+    assert np.sum((X - X_recon_untrained)**2) > np.sum((X - X_recon)**2)
+
+
+@pytest.mark.parametrize('tf_seq2seq_sine', list(range(n_tests)), indirect=True)
+def test_seq2seq(tf_seq2seq_sine):
     pass
