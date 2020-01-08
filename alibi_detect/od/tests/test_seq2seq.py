@@ -29,7 +29,7 @@ def seq2seq_params(request):
 def test_seq2seq(seq2seq_params):
     # OutlierSeq2Seq parameters
     n_features, seq_len, threshold, threshold_perc, return_instance_score, \
-    return_feature_score, outlier_perc, outlier_type = seq2seq_params
+        return_feature_score, outlier_perc, outlier_type = seq2seq_params
 
     # create artificial sine time series
     X = np.sin(np.linspace(-50, 50, 10000)).astype(np.float32).reshape((-1, n_features))
@@ -37,9 +37,6 @@ def test_seq2seq(seq2seq_params):
     # create outliers for threshold and detection
     X_threshold = inject_outlier_ts(X, perc_outlier=100-threshold_perc, perc_window=10, n_std=10., min_std=9.).data
     X_outlier = inject_outlier_ts(X, perc_outlier=100-threshold_perc, perc_window=10, n_std=10., min_std=9.).data
-
-    print('data shapes:')
-    print(X.shape, X_threshold.shape, X_outlier.shape)
 
     # define architecture
     od = OutlierSeq2Seq(n_features, seq_len, threshold=threshold, latent_dim=latent_dim)
