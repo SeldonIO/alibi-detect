@@ -39,6 +39,7 @@
    examples/od_prophet_weather
    examples/od_sr_synth
    examples/od_seq2seq_synth
+   examples/od_seq2seq_ecg
    examples/ad_advvae_mnist
 
 .. toctree::

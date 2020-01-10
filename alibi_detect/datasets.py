@@ -1,9 +1,12 @@
+import io
 import logging
 import numpy as np
 import pandas as pd
 import requests
+from scipy.io import arff
 from sklearn.datasets import fetch_kddcup99
 from typing import Tuple, Union
+import urllib.request
 from alibi_detect.utils.data import Bunch
 
 pd.options.mode.chained_assignment = None  # default='warn'
@@ -100,6 +103,56 @@ def fetch_kdd(target: list = ['dos', 'r2l', 'u2r', 'probe'],
                  target=is_outlier,
                  target_names=['normal', 'outlier'],
                  feature_names=keep_cols)
+
+
+def load_url_arff(url: str, dtype: Union[str, np.dtype] = np.float32) -> np.ndarray:
+    """
+    Load arff files from url.
+
+    Parameters
+    ----------
+    url
+        Address of arff file.
+
+    Returns
+    -------
+    Arrays with data and labels.
+    """
+    url_open = urllib.request.urlopen(url)
+    data = arff.loadarff(io.StringIO(url_open.read().decode('utf-8')))[0]
+    return np.array(data.tolist(), dtype=dtype)
+
+
+def fetch_ecg(return_X_y: bool = False) \
+        -> Union[Bunch, Tuple[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray]]]:
+    """
+    Fetch ECG5000 data. The dataset contains 5000 ECG's, originally obtained from
+    Physionet (https://archive.physionet.org/cgi-bin/atm/ATM) under the name
+    "BIDMC Congestive Heart Failure Database(chfdb)", record "chf07".
+
+    Parameters
+    ----------
+    return_X_y
+        Bool, whether to only return the data and target values or a Bunch object.
+
+    Returns
+    -------
+    Bunch
+        Train and test datasets with labels.
+    (train data, train target), (test data, test target)
+        Tuple of tuples if 'return_X_y' equals True.
+    """
+    Xy_train = load_url_arff('https://storage.googleapis.com/seldon-datasets/ecg/ECG5000_TRAIN.arff')
+    X_train, y_train = Xy_train[:, :-1], Xy_train[:, -1]
+    Xy_test = load_url_arff('https://storage.googleapis.com/seldon-datasets/ecg/ECG5000_TEST.arff')
+    X_test, y_test = Xy_test[:, :-1], Xy_test[:, -1]
+    if return_X_y:
+        return (X_train, y_train), (X_test, y_test)
+    else:
+        return Bunch(data_train=X_train,
+                     data_test=X_test,
+                     target_train=y_train,
+                     target_test=y_test)
 
 
 def fetch_nab(ts: str,

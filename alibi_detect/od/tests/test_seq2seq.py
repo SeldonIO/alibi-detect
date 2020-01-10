@@ -52,7 +52,6 @@ def test_seq2seq(seq2seq_params):
 
     # create some outliers and infer threshold
     od.infer_threshold(X_threshold, threshold_perc=threshold_perc)
-    assert od.threshold_set
 
     # compute scores and check ranges
     fscore, iscore = od.score(X_threshold, outlier_perc=outlier_perc)
