@@ -85,6 +85,7 @@ The following table shows the advised use cases for each algorithm. The column *
  - Sequence-to-Sequence (Seq2Seq) Outlier Detector ([Sutskever et al., 2014](https://papers.nips.cc/paper/5346-sequence-to-sequence-learning-with-neural-networks.pdf); [Park et al., 2017](https://arxiv.org/pdf/1711.00614.pdf))
    - [Documentation](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/seq2seq.html)
    - Examples:
+     [ECG](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/od_seq2seq_ecg.html)
      [Synthetic Dataset](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/od_seq2seq_synth.html)
 
 

@@ -48,12 +48,9 @@ class OutlierSeq2Seq(BaseDetector, FitMixin, ThresholdMixin):
         super().__init__()
 
         if threshold is None:
-            self.threshold_set = False
             threshold = 0.
             logger.warning('No explicit threshold level set. Threshold defaults to 0. '
                            'A threshold can be inferred using `infer_threshold`.')
-        else:
-            self.threshold_set = True
 
         self.threshold = threshold
         self.shape = (-1, seq_len, n_features)
@@ -139,7 +136,7 @@ class OutlierSeq2Seq(BaseDetector, FitMixin, ThresholdMixin):
     def infer_threshold(self,
                         X: np.ndarray,
                         outlier_perc: Union[int, float] = 100.,
-                        threshold_perc: Union[float, np.ndarray, list] = 95.
+                        threshold_perc: Union[int, float, np.ndarray, list] = 95.
                         ) -> None:
         """
         Update the outlier threshold by using a sequence of instances from the dataset
@@ -162,23 +159,32 @@ class OutlierSeq2Seq(BaseDetector, FitMixin, ThresholdMixin):
             threshold_shape = (1,) + threshold_shape  # type: ignore
 
         # compute outlier scores
-        fscore = self.score(X, outlier_perc=outlier_perc)[0].reshape((-1, self.shape[-1]))
+        fscore, iscore = self.score(X, outlier_perc=outlier_perc)
+        if outlier_perc == 100.:
+            fscore = fscore.reshape((-1, self.shape[-1]))
 
         # update threshold
-        if isinstance(threshold_perc, (int, float)):
+        if isinstance(threshold_perc, (int, float)) and outlier_perc == 100.:
             self.threshold += np.percentile(fscore, threshold_perc)
-        elif isinstance(threshold_perc, (list, np.ndarray)):
+        elif isinstance(threshold_perc, (int, float)) and outlier_perc < 100.:
+            self.threshold += np.percentile(iscore, threshold_perc)
+        elif isinstance(threshold_perc, (list, np.ndarray)) and outlier_perc == 100.:
             self.threshold += np.diag(np.percentile(fscore, threshold_perc, axis=0)).reshape(threshold_shape)
+        elif isinstance(threshold_perc, (list, np.ndarray)) and outlier_perc < 100.:
+            # number feature scores used for outlier score
+            n_score = int(np.ceil(.01 * outlier_perc * fscore.shape[1]))
+            # compute threshold level by feature
+            sorted_fscore = np.sort(fscore, axis=1)
+            if len(orig_shape) == 3:  # (batch_size, seq_len, n_features)
+                sorted_fscore_perc = sorted_fscore[:, -n_score:, :]  # (batch_size, n_score, n_features)
+                self.threshold += np.mean(sorted_fscore_perc, axis=(0, 1)).reshape(threshold_shape)  # (1,1,n_features)
+            else:  # (batch_size, n_features)
+                sorted_fscore_perc = sorted_fscore[:, -n_score:]  # (batch_size, n_score)
+                self.threshold += np.mean(sorted_fscore_perc, axis=0)  # float
         else:
             raise TypeError('Incorrect type for `threshold` and/or `threshold_perc`.')
 
-        self.threshold_set = True
-
-    def feature_score(self,
-                      X_orig: np.ndarray,
-                      X_recon: np.ndarray,
-                      threshold_est: np.ndarray
-                      ) -> np.ndarray:
+    def feature_score(self, X_orig: np.ndarray, X_recon: np.ndarray, threshold_est: np.ndarray) -> np.ndarray:
         """
         Compute feature level outlier scores.
 
