@@ -8,6 +8,7 @@ The following tables summarize the advised use cases for the current algorithms.
 |---|---|---|---|---|
 |[Isolation Forest](../methods/iforest.ipynb)|✔|✘|✘|✘|✔|✘|✘|
 |[Mahalanobis Distance](../methods/mahalanobis.ipynb)|✔|✘|✘|✘|✔|✔|✘|
+|[AE](../methods/ae.ipynb)|✔|✔|✘|✘|✘|✘|✔|
 |[VAE](../methods/vae.ipynb)|✔|✔|✘|✘|✘|✘|✔|
 |[AEGMM](../methods/aegmm.ipynb)|✔|✔|✘|✘|✘|✘|✘|
 |[VAEGMM](../methods/vaegmm.ipynb)|✔|✔|✘|✘|✘|✘|✘|
