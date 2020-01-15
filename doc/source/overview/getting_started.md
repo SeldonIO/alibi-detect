@@ -23,6 +23,7 @@ alibi_detect.od.__all__
 ['OutlierAEGMM',
  'IForest',
  'Mahalanobis',
+ 'OutlierAE',
  'OutlierVAE',
  'OutlierVAEGMM',
  'OutlierProphet',
@@ -45,6 +46,8 @@ For detailed information on the methods:
     * [Isolation Forest Outlier Detector](../methods/iforest.ipynb)
 
     * [Mahalanobis Distance Outlier Detector](../methods/mahalanobis.ipynb)
+    
+    * [Auto-Encoder (AE) Outlier Detector](../methods/ae.ipynb)
 
     * [Variational Auto-Encoder (VAE) Outlier Detector](../methods/vae.ipynb)
 
