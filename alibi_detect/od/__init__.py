@@ -1,6 +1,7 @@
 from .aegmm import OutlierAEGMM
 from .isolationforest import IForest
 from .mahalanobis import Mahalanobis
+from .ae import OutlierAE
 from .vae import OutlierVAE
 from .vaegmm import OutlierVAEGMM
 from .prophet import OutlierProphet
@@ -11,6 +12,7 @@ __all__ = [
     "OutlierAEGMM",
     "IForest",
     "Mahalanobis",
+    "OutlierAE",
     "OutlierVAE",
     "OutlierVAEGMM",
     "OutlierProphet",

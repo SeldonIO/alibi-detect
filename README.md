@@ -39,6 +39,7 @@ The following table shows the advised use cases for each algorithm. The column *
 | :---                  |  :---:  | :---: |   :---:     | :---: |   :---:              | :---:  | :---:         |
 | Isolation Forest      | ✔       | ✘     |  ✘          |  ✘    |  ✔                   |  ✘     |  ✘            |
 | Mahalanobis Distance  | ✔       | ✘     |  ✘          |  ✘    |  ✔                   |  ✔     |  ✘            |
+| AE                    | ✔       | ✔     |  ✘          |  ✘    |  ✘                   |  ✘     |  ✔            |
 | VAE                   | ✔       | ✔     |  ✘          |  ✘    |  ✘                   |  ✘     |  ✔            |
 | AEGMM                 | ✔       | ✔     |  ✘          |  ✘    |  ✘                   |  ✘     |  ✘            |
 | VAEGMM                | ✔       | ✔     |  ✘          |  ✘    |  ✘                   |  ✘     |  ✘            |
@@ -56,6 +57,11 @@ The following table shows the advised use cases for each algorithm. The column *
    - [Documentation](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/mahalanobis.html)
    - Examples:
      [Network Intrusion](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/od_mahalanobis_kddcup.html)
+
+- Auto-Encoder (AE)
+   - [Documentation](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/ae.html)
+   - Examples:
+     [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/od_ae_cifar10.html)
 
  - Variational Auto-Encoder (VAE) ([Kingma et al., 2013](https://arxiv.org/abs/1312.6114))
    - [Documentation](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/vae.html)
