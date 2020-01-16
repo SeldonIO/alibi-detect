@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="doc/source/_static/Alibi_Detect_Logo.png" alt="Alibi Detect Logo" width="50%">
+</p>
+
 [![Build Status](https://travis-ci.com/SeldonIO/alibi-detect.svg?branch=master)](https://travis-ci.com/SeldonIO/alibi-detect)
 [![Documentation Status](https://readthedocs.org/projects/alibi-detect/badge/?version=latest)](https://docs.seldon.io/projects/alibi-detect/en/latest/?badge=latest)
 ![Python version](https://img.shields.io/badge/python-3.6%20%7C%203.7-blue.svg)
