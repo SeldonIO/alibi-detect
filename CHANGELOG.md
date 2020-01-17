@@ -1,5 +1,13 @@
 # Change Log
 
+## [v0.3.0](https://github.com/SeldonIO/alibi-detect/tree/v0.3.0) (2020-01-17)
+[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.2.0...v0.3.0)
+### Added
+- Multivariate time series outlier detection method OutlierSeq2Seq (offline method, `alibi_detect.od.seq2seq.OutlierSeq2Seq`)
+- ECG and synthetic data  examples for OutlierSeq2Seq detector
+- Auto-Encoder outlier detector (offline method, `alibi_detect.od.ae.OutlierAE`)
+- Including tabular and categorical perturbation functions (`alibi_detect.utils.perturbation`)
+
 ## [v0.2.0](https://github.com/SeldonIO/alibi-detect/tree/v0.2.0) (2019-12-06)
 [Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.1.0...v0.2.0)
 ### Added
