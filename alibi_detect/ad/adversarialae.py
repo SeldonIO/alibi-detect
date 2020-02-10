@@ -4,10 +4,10 @@ import tensorflow as tf
 from tensorflow.keras.layers import Dense, Flatten
 from tensorflow.keras.losses import kld
 from tensorflow.keras.models import Model
-from typing import Dict, Tuple
+from typing import Callable, Dict, Tuple
 from alibi_detect.models.autoencoder import AE
 from alibi_detect.models.trainer import trainer
-from alibi_detect.models.losses import loss_adv_vae
+from alibi_detect.models.losses import loss_adv_ae
 from alibi_detect.base import BaseDetector, FitMixin, ThresholdMixin, adversarial_prediction_dict
 
 logger = logging.getLogger(__name__)
@@ -109,19 +109,17 @@ class AdversarialAE(BaseDetector, FitMixin, ThresholdMixin):
 
     def fit(self,
             X: np.ndarray,
-            loss_fn: tf.keras.losses = loss_adv_vae,
+            loss_fn: tf.keras.losses = loss_adv_ae,
             w_model: float = 1.,
             w_recon: float = 0.,
-            w_hidden_model: list = None,
+            w_model_hl: list = None,
             optimizer: tf.keras.optimizers = tf.keras.optimizers.Adam(learning_rate=1e-3),
             epochs: int = 20,
             batch_size: int = 128,
             verbose: bool = True,
             log_metric: Tuple[str, "tf.keras.metrics"] = None,
             callbacks: tf.keras.callbacks = None,
-            save_every: int = 1,
-            save_path: str = None,
-            preprocess: bool = False,
+            preprocess_fn: Callable = False,
             temperature: float = 1.
             ) -> None:
         """
@@ -136,7 +134,9 @@ class AdversarialAE(BaseDetector, FitMixin, ThresholdMixin):
         w_model
             Weight on model prediction loss term.
         w_recon
-            Weight on elbo loss term.
+            Weight on MSE reconstruction error loss term.
+        w_model_hl
+            Weights assigned to the loss of each model in model_hl.
         optimizer
             Optimizer used for training.
         epochs
@@ -149,6 +149,11 @@ class AdversarialAE(BaseDetector, FitMixin, ThresholdMixin):
             Additional metrics whose progress will be displayed if verbose equals True.
         callbacks
             Callbacks used during training.
+        preprocess_fn
+            Preprocessing function applied to each training batch.
+        temperature
+            Temperature used for model prediction scaling.
+            Temperature <1 sharpens the prediction probability distribution.
         """
         # train arguments
         args = [self.ae, loss_fn, X]
@@ -159,27 +164,21 @@ class AdversarialAE(BaseDetector, FitMixin, ThresholdMixin):
             'verbose': verbose,
             'log_metric': log_metric,
             'callbacks': callbacks,
-            'save_every': save_every,
-            'save_path': save_path,
-            'preprocess': preprocess,
+            'preprocess_fn': preprocess_fn,
             'loss_fn_kwargs': {
                 'model': self.model,
                 'model_hl': self.model_hl,
                 'w_model': w_model,
                 'w_recon': w_recon,
-                'w_model_hl': w_hidden_model,
+                'w_model_hl': w_model_hl,
                 'temperature': temperature
-            },
-            'hidden_model': self.model_hl
+            }
         }
 
         # train
         trainer(*args, **kwargs)
 
-    def infer_threshold(self,
-                        X: np.ndarray,
-                        threshold_perc: float = 95.
-                        ) -> None:
+    def infer_threshold(self, X: np.ndarray, threshold_perc: float = 99., margin: float = 0.) -> None:
         """
         Update threshold by a value inferred from the percentage of instances considered to be
         adversarial in a sample of the dataset.
@@ -190,12 +189,15 @@ class AdversarialAE(BaseDetector, FitMixin, ThresholdMixin):
             Batch of instances.
         threshold_perc
             Percentage of X considered to be normal based on the adversarial score.
+        margin
+            Add margin to threshold. Useful if adversarial instances have significantly higher scores and there
+            is no adversarial instance in X.
         """
         # compute adversarial scores
         adv_score = self.score(X)
 
         # update threshold
-        self.threshold = np.percentile(adv_score, threshold_perc)
+        self.threshold = np.percentile(adv_score, threshold_perc) + margin
 
     def score(self, X: np.ndarray, T: float = 1., scale_recon: bool = False,
               w_hidden_model: list = None) -> np.ndarray:
