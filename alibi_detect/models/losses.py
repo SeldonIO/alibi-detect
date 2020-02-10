@@ -179,7 +179,7 @@ def loss_adv_ae(x_true: tf.Tensor,
     loss = tf.reduce_mean(loss_kld)
 
     # add loss from optional K-L divergences extracted from hidden layers
-    if model_hl is not None:
+    if isinstance(model_hl, list):
         if w_model_hl is None:
             w_model_hl = list(tf.ones(len(model_hl)))
         for m, w in zip(model_hl, w_model_hl):

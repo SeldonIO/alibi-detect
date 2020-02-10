@@ -53,6 +53,8 @@ class AdversarialAE(BaseDetector, FitMixin, ThresholdMixin):
                  encoder_net: tf.keras.Sequential = None,
                  decoder_net: tf.keras.Sequential = None,
                  hidden_layer_kld: dict = None,
+                 w_model_hl: list = None,
+                 temperature: float = 1.,
                  data_type: str = None
                  ) -> None:
         """
@@ -73,6 +75,11 @@ class AdversarialAE(BaseDetector, FitMixin, ThresholdMixin):
         hidden_layer_kld
             Dictionary with as keys the hidden layer(s) of the model which are extracted and used
             during training of the AE.
+        w_model_hl
+            Weights assigned to the loss of each model in model_hl.
+        temperature
+            Temperature used for model prediction scaling.
+            Temperature <1 sharpens the prediction probability distribution.
         data_type
             Optionally specifiy the data type (tabular, image or time-series). Added to metadata.
         """
@@ -95,13 +102,18 @@ class AdversarialAE(BaseDetector, FitMixin, ThresholdMixin):
             raise TypeError('No valid format detected for `ae` (tf.keras.Model) '
                             'or `encoder_net` and `decoder_net` (tf.keras.Sequential).')
 
-        # intermediate feature map outputs for KLD
+        # intermediate feature map outputs for KLD and loss weights
         if isinstance(hidden_layer_kld, dict):
             self.model_hl = []
             for hidden_layer, output_dim in hidden_layer_kld.items():
                 self.model_hl.append(DenseHidden(self.model, hidden_layer, output_dim))
         else:
             self.model_hl = None
+        self.w_model_hl = w_model_hl
+        if self.w_model_hl is None and isinstance(self.model_hl, list):
+            self.w_model_hl = list(np.ones(len(self.model_hl)))
+
+        self.temperature = temperature
 
         # set metadata
         self.meta['detector_type'] = 'offline'
@@ -112,15 +124,13 @@ class AdversarialAE(BaseDetector, FitMixin, ThresholdMixin):
             loss_fn: tf.keras.losses = loss_adv_ae,
             w_model: float = 1.,
             w_recon: float = 0.,
-            w_model_hl: list = None,
             optimizer: tf.keras.optimizers = tf.keras.optimizers.Adam(learning_rate=1e-3),
             epochs: int = 20,
             batch_size: int = 128,
             verbose: bool = True,
             log_metric: Tuple[str, "tf.keras.metrics"] = None,
             callbacks: tf.keras.callbacks = None,
-            preprocess_fn: Callable = False,
-            temperature: float = 1.
+            preprocess_fn: Callable = False
             ) -> None:
         """
         Train Adversarial AE model.
@@ -135,8 +145,6 @@ class AdversarialAE(BaseDetector, FitMixin, ThresholdMixin):
             Weight on model prediction loss term.
         w_recon
             Weight on MSE reconstruction error loss term.
-        w_model_hl
-            Weights assigned to the loss of each model in model_hl.
         optimizer
             Optimizer used for training.
         epochs
@@ -151,9 +159,6 @@ class AdversarialAE(BaseDetector, FitMixin, ThresholdMixin):
             Callbacks used during training.
         preprocess_fn
             Preprocessing function applied to each training batch.
-        temperature
-            Temperature used for model prediction scaling.
-            Temperature <1 sharpens the prediction probability distribution.
         """
         # train arguments
         args = [self.ae, loss_fn, X]
@@ -170,8 +175,8 @@ class AdversarialAE(BaseDetector, FitMixin, ThresholdMixin):
                 'model_hl': self.model_hl,
                 'w_model': w_model,
                 'w_recon': w_recon,
-                'w_model_hl': w_model_hl,
-                'temperature': temperature
+                'w_model_hl': self.w_model_hl,
+                'temperature': self.temperature
             }
         }
 
@@ -199,8 +204,7 @@ class AdversarialAE(BaseDetector, FitMixin, ThresholdMixin):
         # update threshold
         self.threshold = np.percentile(adv_score, threshold_perc) + margin
 
-    def score(self, X: np.ndarray, T: float = 1., scale_recon: bool = False,
-              w_hidden_model: list = None) -> np.ndarray:
+    def score(self, X: np.ndarray) -> np.ndarray:
         """
         Compute adversarial scores.
 
@@ -208,8 +212,6 @@ class AdversarialAE(BaseDetector, FitMixin, ThresholdMixin):
         ----------
         X
             Batch of instances to analyze.
-        T
-            Temperature used for prediction probability scaling.
 
         Returns
         -------
@@ -223,30 +225,22 @@ class AdversarialAE(BaseDetector, FitMixin, ThresholdMixin):
         y_recon = self.model(X_recon)
 
         # scale predictions
-        if T != 1.:
-            y = y ** (1/T)
+        if self.temperature != 1.:
+            y = y ** (1 / self.temperature)
             y = y / tf.reshape(tf.reduce_sum(y, axis=-1), (-1, 1))
-
-        if scale_recon:
-            y_recon = y_recon ** (1/T)
-            y_recon = y_recon / tf.reduce_sum(y_recon)
 
         adv_score = kld(y, y_recon).numpy()
 
         # hidden layer predictions
-        if self.model_hl is not None:
-            if w_hidden_model is None:
-                w_hidden_model = list(np.ones(len(self.model_hl)))
-            for hidden_m, w in zip(self.model_hl, w_hidden_model):
-                h = hidden_m(X)
-                h_recon = hidden_m(X_recon)
+        if isinstance(self.model_hl, list):
+            for m, w in zip(self.model_hl, self.w_model_hl):
+                h = m(X)
+                h_recon = m(X_recon)
                 adv_score += w * kld(h, h_recon).numpy()
 
         return adv_score
 
-    def predict(self,
-                X: np.ndarray,
-                return_instance_score: bool = True) \
+    def predict(self, X: np.ndarray, return_instance_score: bool = True) \
             -> Dict[Dict[str, str], Dict[np.ndarray, np.ndarray]]:
         """
         Predict whether instances are adversarial instances or not.
