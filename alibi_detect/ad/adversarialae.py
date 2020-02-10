@@ -152,24 +152,26 @@ class AdversarialAE(BaseDetector, FitMixin, ThresholdMixin):
         """
         # train arguments
         args = [self.ae, loss_fn, X]
-        kwargs = {'optimizer': optimizer,
-                  'epochs': epochs,
-                  'batch_size': batch_size,
-                  'verbose': verbose,
-                  'log_metric': log_metric,
-                  'callbacks': callbacks,
-                  'save_every': save_every,
-                  'save_path': save_path,
-                  'preprocess': preprocess,
-                  'loss_fn_kwargs': {'w_model': w_model,
-                                     'w_recon': w_recon,
-                                     'model': self.model,
-                                     'hidden_model': self.model_hl,
-                                     'w_hidden_model': w_hidden_model,
-                                     'temperature': temperature,
-                                     'loss_recon_type': 'mse'},
-                  'hidden_model': self.model_hl
-                  }
+        kwargs = {
+            'optimizer': optimizer,
+            'epochs': epochs,
+            'batch_size': batch_size,
+            'verbose': verbose,
+            'log_metric': log_metric,
+            'callbacks': callbacks,
+            'save_every': save_every,
+            'save_path': save_path,
+            'preprocess': preprocess,
+            'loss_fn_kwargs': {
+                'model': self.model,
+                'model_hl': self.model_hl,
+                'w_model': w_model,
+                'w_recon': w_recon,
+                'w_model_hl': w_hidden_model,
+                'temperature': temperature
+            },
+            'hidden_model': self.model_hl
+        }
 
         # train
         trainer(*args, **kwargs)
