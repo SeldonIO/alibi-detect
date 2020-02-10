@@ -5,8 +5,8 @@ import logging
 import os
 import pickle
 import tensorflow as tf
-from typing import Dict, Union
-from alibi_detect.ad import AdversarialVAE
+from typing import Dict, List, Union
+from alibi_detect.ad import AdversarialAE
 from alibi_detect.base import BaseDetector
 from alibi_detect.models.autoencoder import AE, AEGMM, DecoderLSTM, EncoderLSTM, Seq2Seq, VAE, VAEGMM
 from alibi_detect.od import (IForest, Mahalanobis, OutlierAE, OutlierAEGMM, OutlierProphet,
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 Data = Union[
     BaseDetector,
-    AdversarialVAE,
+    AdversarialAE,
     IForest,
     Mahalanobis,
     OutlierAEGMM,
@@ -29,7 +29,7 @@ Data = Union[
 ]
 
 DEFAULT_DETECTORS = [
-    'AdversarialVAE',
+    'AdversarialAE',
     'IForest',
     'Mahalanobis',
     'OutlierAE',
@@ -79,8 +79,8 @@ def save_detector(detector: Data,
         state_dict = state_aegmm(detector)
     elif detector_name == 'OutlierVAEGMM':
         state_dict = state_vaegmm(detector)
-    elif detector_name == 'AdversarialVAE':
-        state_dict = state_adv_vae(detector)
+    elif detector_name == 'AdversarialAE':
+        state_dict = state_adv_ae(detector)
     elif detector_name == 'OutlierProphet':
         state_dict = state_prophet(detector)
     elif detector_name == 'SpectralResidual':
@@ -100,9 +100,10 @@ def save_detector(detector: Data,
         save_tf_aegmm(detector, filepath)
     elif detector_name == 'OutlierVAEGMM':
         save_tf_vaegmm(detector, filepath)
-    elif detector_name == 'AdversarialVAE':
-        save_tf_vae(detector, filepath)
+    elif detector_name == 'AdversarialAE':
+        save_tf_ae(detector, filepath)
         save_tf_model(detector.model, filepath)
+        save_tf_hl(detector, filepath)
     elif detector_name == 'OutlierSeq2Seq':
         save_tf_s2s(detector, filepath)
 
@@ -224,7 +225,7 @@ def state_vaegmm(od: OutlierVAEGMM) -> Dict:
     return state_dict
 
 
-def state_adv_vae(ad: AdversarialVAE) -> Dict:
+def state_adv_ae(ad: AdversarialAE) -> Dict:
     """
     AdversarialVAE parameters to save.
 
@@ -234,9 +235,8 @@ def state_adv_vae(ad: AdversarialVAE) -> Dict:
         Adversarial detector object.
     """
     state_dict = {'threshold': ad.threshold,
-                  'samples': ad.samples,
-                  'latent_dim': ad.vae.latent_dim,
-                  'beta': ad.vae.beta}
+                  'w_model_hl': ad.w_model_hl,
+                  'temperature': ad.temperature}
     return state_dict
 
 
@@ -322,7 +322,7 @@ def save_tf_ae(detector: OutlierAE,
         logger.warning('No `tf.keras.Model` ae detected. No ae saved.')
 
 
-def save_tf_vae(detector: Union[OutlierVAE, AdversarialVAE],
+def save_tf_vae(detector: OutlierVAE,
                 filepath: str) -> None:
     """
     Save TensorFlow components of OutlierVAE or AdversarialVAE.
@@ -380,7 +380,34 @@ def save_tf_model(model: tf.keras.Model,
     if isinstance(model, tf.keras.Model):  # TODO: not flexible enough!
         model.save(os.path.join(model_dir, 'model.h5'))
     else:
-        logger.warning('No `tf.keras.Model` vae detected. No classification model saved.')
+        logger.warning('No `tf.keras.Model` detected. No classification model saved.')
+
+
+def save_tf_hl(ad: AdversarialAE,
+               filepath: str) -> None:
+    """
+    Save TensorFlow model weights.
+
+    Parameters
+    ----------
+    ad
+        Adversarial detector object.
+    filepath
+        Save directory.
+    """
+    if isinstance(ad.model_hl, list):
+
+        # create folder for model weights
+        if not os.path.isdir(filepath):
+            logger.warning('Directory {} does not exist and is now created.'.format(filepath))
+            os.mkdir(filepath)
+        model_dir = os.path.join(filepath, 'model')
+        if not os.path.isdir(model_dir):
+            os.mkdir(model_dir)
+
+        for i, m in enumerate(ad.model_hl):
+            weights_path = os.path.join(model_dir, 'model_hl_' + str(i) + '.ckpt')
+            m.save_weights(weights_path)
 
 
 def save_tf_aegmm(od: OutlierAEGMM,
@@ -533,10 +560,11 @@ def load_detector(filepath: str) -> Data:
     elif detector_name == 'OutlierVAEGMM':
         vaegmm = load_tf_vaegmm(filepath, state_dict)
         detector = init_od_vaegmm(state_dict, vaegmm)
-    elif detector_name == 'AdversarialVAE':
-        vae = load_tf_vae(filepath, state_dict)
+    elif detector_name == 'AdversarialAE':
+        ae = load_tf_ae(filepath, state_dict)
         model = load_tf_model(filepath)
-        detector = init_ad_vae(state_dict, vae, model)
+        model_hl = load_tf_hl(filepath)  # TODO
+        detector = init_ad_ae(state_dict, ae, model, model_hl)
     elif detector_name == 'OutlierProphet':
         detector = init_od_prophet(state_dict)
     elif detector_name == 'SpectralResidual':
@@ -582,6 +610,10 @@ def load_tf_ae(filepath: str) -> tf.keras.Model:
     ae = AE(encoder_net, decoder_net)
     ae.load_weights(os.path.join(model_dir, 'ae.ckpt'))
     return ae
+
+
+def load_tf_hl(filepath: str) -> List[tf.keras.Model]:
+    pass
 
 
 def load_tf_vae(filepath: str,
@@ -728,9 +760,10 @@ def init_od_vae(state_dict: Dict,
     return od
 
 
-def init_ad_vae(state_dict: Dict,
-                vae: tf.keras.Model,
-                model: tf.keras.Model) -> AdversarialVAE:
+def init_ad_ae(state_dict: Dict,
+               ae: tf.keras.Model,
+               model: tf.keras.Model,
+               model_hl: List[tf.keras.Model]) -> AdversarialAE:
     """
     Initialize AdversarialVAE.
 
@@ -747,10 +780,12 @@ def init_ad_vae(state_dict: Dict,
     -------
     Initialized AdversarialVAE instance.
     """
-    ad = AdversarialVAE(threshold=state_dict['threshold'],
-                        vae=vae,
-                        model=model,
-                        samples=state_dict['samples'])
+    ad = AdversarialAE(threshold=state_dict['threshold'],
+                       ae=ae,
+                       model=model,
+                       model_hl=model_hl,
+                       w_model_hl=state_dict['w_model_hl'],
+                       temperature=state_dict['temperature'])
     return ad
 
 

@@ -4,7 +4,7 @@ import tensorflow as tf
 from tensorflow.keras.layers import Dense, Flatten
 from tensorflow.keras.losses import kld
 from tensorflow.keras.models import Model
-from typing import Callable, Dict, Tuple
+from typing import Callable, Dict, List, Tuple
 from alibi_detect.models.autoencoder import AE
 from alibi_detect.models.trainer import trainer
 from alibi_detect.models.losses import loss_adv_ae
@@ -23,9 +23,13 @@ class DenseHidden(tf.keras.Model):
         Parameters
         ----------
         model
+            tf.keras classification model.
         hidden_layer
+            Hidden layer from model where feature map is extracted from.
         output_dim
+            Output dimension for softmax layer.
         hidden_dim
+            Dimension of optional additional dense layer.
         """
         super(DenseHidden, self).__init__()
         self.partial_model = Model(inputs=model.inputs, outputs=model.layers[hidden_layer].output)
@@ -52,6 +56,7 @@ class AdversarialAE(BaseDetector, FitMixin, ThresholdMixin):
                  model: tf.keras.Model = None,
                  encoder_net: tf.keras.Sequential = None,
                  decoder_net: tf.keras.Sequential = None,
+                 model_hl: List[tf.keras.Model] = None,
                  hidden_layer_kld: dict = None,
                  w_model_hl: list = None,
                  temperature: float = 1.,
@@ -72,6 +77,8 @@ class AdversarialAE(BaseDetector, FitMixin, ThresholdMixin):
             Layers for the encoder wrapped in a tf.keras.Sequential class if no 'ae' is specified.
         decoder_net
             Layers for the decoder wrapped in a tf.keras.Sequential class if no 'ae' is specified.
+        model_hl
+            List with tf.keras models for the hidden layer K-L divergence computation.
         hidden_layer_kld
             Dictionary with as keys the hidden layer(s) of the model which are extracted and used
             during training of the AE.
@@ -103,7 +110,10 @@ class AdversarialAE(BaseDetector, FitMixin, ThresholdMixin):
                             'or `encoder_net` and `decoder_net` (tf.keras.Sequential).')
 
         # intermediate feature map outputs for KLD and loss weights
-        if isinstance(hidden_layer_kld, dict):
+        self.hidden_layer_kld = hidden_layer_kld
+        if isinstance(model_hl, list):
+            self.model_hl = model_hl
+        elif isinstance(hidden_layer_kld, dict):
             self.model_hl = []
             for hidden_layer, output_dim in hidden_layer_kld.items():
                 self.model_hl.append(DenseHidden(self.model, hidden_layer, output_dim))
