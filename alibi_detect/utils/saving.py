@@ -103,7 +103,7 @@ def save_detector(detector: Data,
     elif detector_name == 'AdversarialAE':
         save_tf_ae(detector, filepath)
         save_tf_model(detector.model, filepath)
-        save_tf_hl(detector, filepath)
+        save_tf_hl(detector.model_hl, filepath)
     elif detector_name == 'OutlierSeq2Seq':
         save_tf_s2s(detector, filepath)
 
@@ -288,7 +288,7 @@ def state_s2s(od: OutlierSeq2Seq) -> Dict:
     return state_dict
 
 
-def save_tf_ae(detector: OutlierAE,
+def save_tf_ae(detector: Union[OutlierAE, AdversarialAE],
                filepath: str) -> None:
     """
     Save TensorFlow components of OutlierAE
@@ -383,19 +383,19 @@ def save_tf_model(model: tf.keras.Model,
         logger.warning('No `tf.keras.Model` detected. No classification model saved.')
 
 
-def save_tf_hl(ad: AdversarialAE,
+def save_tf_hl(models: List[tf.keras.Model],
                filepath: str) -> None:
     """
     Save TensorFlow model weights.
 
     Parameters
     ----------
-    ad
-        Adversarial detector object.
+    models
+        tf.keras models.
     filepath
         Save directory.
     """
-    if isinstance(ad.model_hl, list):
+    if isinstance(models, list):
 
         # create folder for model weights
         if not os.path.isdir(filepath):
@@ -405,9 +405,9 @@ def save_tf_hl(ad: AdversarialAE,
         if not os.path.isdir(model_dir):
             os.mkdir(model_dir)
 
-        for i, m in enumerate(ad.model_hl):
-            weights_path = os.path.join(model_dir, 'model_hl_' + str(i) + '.ckpt')
-            m.save_weights(weights_path)
+        for i, m in enumerate(models):
+            model_path = os.path.join(model_dir, 'model_hl_' + str(i) + '.h5')
+            m.save(model_path)
 
 
 def save_tf_aegmm(od: OutlierAEGMM,
@@ -561,9 +561,9 @@ def load_detector(filepath: str) -> Data:
         vaegmm = load_tf_vaegmm(filepath, state_dict)
         detector = init_od_vaegmm(state_dict, vaegmm)
     elif detector_name == 'AdversarialAE':
-        ae = load_tf_ae(filepath, state_dict)
+        ae = load_tf_ae(filepath)
         model = load_tf_model(filepath)
-        model_hl = load_tf_hl(filepath)  # TODO
+        model_hl = load_tf_hl(filepath)
         detector = init_ad_ae(state_dict, ae, model, model_hl)
     elif detector_name == 'OutlierProphet':
         detector = init_od_prophet(state_dict)
@@ -578,12 +578,36 @@ def load_detector(filepath: str) -> Data:
 
 
 def load_tf_model(filepath: str) -> tf.keras.Model:
+    """
+    Load TensorFlow model.
+
+    Parameters
+    ----------
+    filepath
+        Save directory.
+
+    Returns
+    -------
+    Loaded model.
+    """
     model_dir = os.path.join(filepath, 'model')
     if 'model.h5' not in [f for f in os.listdir(model_dir) if not f.startswith('.')]:
         logger.warning('No model found in {}.'.format(model_dir))
         return None
     model = tf.keras.models.load_model(os.path.join(model_dir, 'model.h5'))
     return model
+
+
+def load_tf_hl(filepath: str) -> List[tf.keras.Model]:
+    model_dir = os.path.join(filepath, 'model')
+    models = [m for m in os.listdir(model_dir) if m.startswith('model_hl_')]
+    if not models:
+        return None
+    model_hl = []
+    for m in models:
+        model = tf.keras.models.load_model(os.path.join(model_dir, m))
+        model_hl.append(model)
+    return model_hl
 
 
 def load_tf_ae(filepath: str) -> tf.keras.Model:
@@ -594,8 +618,6 @@ def load_tf_ae(filepath: str) -> tf.keras.Model:
     ----------
     filepath
         Save directory.
-    state_dict
-        Dictionary containing the outlier threshold.
 
     Returns
     -------
@@ -610,10 +632,6 @@ def load_tf_ae(filepath: str) -> tf.keras.Model:
     ae = AE(encoder_net, decoder_net)
     ae.load_weights(os.path.join(model_dir, 'ae.ckpt'))
     return ae
-
-
-def load_tf_hl(filepath: str) -> List[tf.keras.Model]:
-    pass
 
 
 def load_tf_vae(filepath: str,
@@ -771,10 +789,12 @@ def init_ad_ae(state_dict: Dict,
     ----------
     state_dict
         Dictionary containing the parameter values.
-    vae
+    ae
         Loaded VAE.
     model
         Loaded classification model.
+    model_hl
+        List of tf.keras models.
 
     Returns
     -------
