@@ -158,7 +158,8 @@ def fetch_ecg(return_X_y: bool = False) \
                      target_test=y_test)
 
 
-def fetch_cifar10c(corruption: Union[str, List[str]], severity: int, return_X_y: bool = False):
+def fetch_cifar10c(corruption: Union[str, List[str]], severity: int, return_X_y: bool = False) \
+        -> Union[Bunch, Tuple[np.ndarray, np.ndarray]]:
     """
     Fetch CIFAR-10-C data. Originally obtained from https://zenodo.org/record/2535967#.XkKh2XX7Qts and
     introduced in "Hendrycks, D and Dietterich, T.G. Benchmarking Neural Network Robustness to Common Corruptions
