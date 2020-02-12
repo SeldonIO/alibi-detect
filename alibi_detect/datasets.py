@@ -1,3 +1,4 @@
+import cloudpickle as cp
 import io
 from io import BytesIO
 import logging
@@ -9,6 +10,7 @@ from scipy.io import arff
 from sklearn.datasets import fetch_kddcup99
 from typing import Callable, List, Tuple, Union
 import urllib.request
+from urllib.request import urlopen
 from xml.etree import ElementTree
 from alibi_detect.utils.data import Bunch
 
@@ -180,7 +182,7 @@ def fetch_cifar10c(corruption: Union[str, List[str]], severity: int, return_X_y:
     Bunch
         Corrupted dataset with labels.
     (corrupted data, target)
-        Tuple of if 'return_X_y' equals True.
+        Tuple if 'return_X_y' equals True.
     """
     url = 'https://storage.googleapis.com/seldon-datasets/cifar10c/'
     n = 10000  # instances per corrupted test set
@@ -217,7 +219,7 @@ def fetch_cifar10c(corruption: Union[str, List[str]], severity: int, return_X_y:
         return Bunch(data=X, target=y)
 
 
-def google_bucket_list(url: str, folder: str, filetype: str) -> List[str]:
+def google_bucket_list(url: str, folder: str, filetype: str = None, full_path: bool = False) -> List[str]:
     """
     Retrieve list with items in google bucket folder.
 
@@ -240,9 +242,14 @@ def google_bucket_list(url: str, folder: str, filetype: str) -> List[str]:
     for r in root:
         if list(r):
             filepath = r[0].text
-            if filepath.startswith(folder) and filepath.endswith(filetype):
-                istart, istop = filepath.find('/') + 1, filepath.find('.')
-                bucket_list.append(filepath[istart:istop])
+            if filetype is not None:
+                if filepath.startswith(folder) and filepath.endswith(filetype):
+                    istart, istop = filepath.find('/') + 1, filepath.find('.')
+                    bucket_list.append(filepath[istart:istop])
+            else:
+                if filepath.startswith(folder):
+                    istart, istop = filepath.find('/') + 1, filepath.find('.')
+                    bucket_list.append(filepath[istart:istop])
     return bucket_list
 
 
@@ -260,6 +267,52 @@ def corruption_types_cifar10c() -> List[str]:
     corruption_types = google_bucket_list(url, folder, filetype)
     corruption_types.remove('labels')
     return corruption_types
+
+
+def fetch_attack(dataset: str, model: str, attack: str, return_X_y: bool = False) \
+        -> Union[Bunch, Tuple[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray]]]:
+    """
+    Load adversarial instances for a given dataset, model and attack type.
+
+    Parameters
+    ----------
+    dataset
+        Dataset under attack.
+    model
+        Model under attack.
+    attack
+        Attack name.
+    return_X_y
+        Bool, whether to only return the data and target values or a Bunch object.
+
+    Returns
+    -------
+    Bunch
+        Adversarial instances with original labels.
+    (train data, train target), (test data, test target)
+        Tuple of tuples if 'return_X_y' equals True.
+    """
+    # define paths
+    url = 'https://storage.googleapis.com/seldon-datasets/'
+    path_attack = os.path.join(url, dataset, 'attacks', model, attack)
+    path_data = path_attack + '.npz'
+    path_meta = path_attack + '_meta.pickle'
+    # get adversarial instances and labels
+    resp = requests.get(path_data)
+    data = np.load(BytesIO(resp.content))
+    X_train, X_test = data['X_train_adv'], data['X_test_adv']
+    y_train, y_test = data['y_train'], data['y_test']
+
+    if return_X_y:
+        return (X_train, y_train), (X_test, y_test)
+
+    # get metadata
+    meta = cp.load(urlopen(path_meta))
+    return Bunch(data_train=X_train,
+                 data_test=X_test,
+                 target_train=y_train,
+                 target_test=y_test,
+                 meta=meta)
 
 
 def fetch_nab(ts: str,
