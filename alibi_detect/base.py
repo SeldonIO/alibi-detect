@@ -3,9 +3,7 @@ import copy
 import numpy as np
 from typing import Dict, Tuple
 
-DEFAULT_DATA = {"feature_score": None,
-                "instance_score": None
-                }  # type: Dict
+DEFAULT_DATA = {"instance_score": None}  # type: Dict
 DEFAULT_META = {"name": None,
                 "detector_type": None,  # online or offline
                 "data_type": None  # tabular, image or time-series
@@ -14,6 +12,7 @@ DEFAULT_META = {"name": None,
 
 def outlier_prediction_dict():
     data = DEFAULT_DATA
+    data['feature_score'] = None
     data['is_outlier'] = None
     return copy.deepcopy({"data": data, "meta": DEFAULT_META})
 
@@ -21,6 +20,15 @@ def outlier_prediction_dict():
 def adversarial_prediction_dict():
     data = DEFAULT_DATA
     data['is_adversarial'] = None
+    return copy.deepcopy({"data": data, "meta": DEFAULT_META})
+
+
+def adversarial_correction_dict():
+    data = DEFAULT_DATA
+    data['is_adversarial'] = None
+    data['corrected'] = None
+    data['no_defense'] = None
+    data['defense'] = None
     return copy.deepcopy({"data": data, "meta": DEFAULT_META})
 
 

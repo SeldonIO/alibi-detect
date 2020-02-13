@@ -4,11 +4,12 @@ import tensorflow as tf
 from tensorflow.keras.layers import Dense, Flatten
 from tensorflow.keras.losses import kld
 from tensorflow.keras.models import Model
-from typing import Callable, Dict, List, Tuple
+from typing import Callable, Dict, List, Tuple, Union
 from alibi_detect.models.autoencoder import AE
 from alibi_detect.models.trainer import trainer
 from alibi_detect.models.losses import loss_adv_ae
-from alibi_detect.base import BaseDetector, FitMixin, ThresholdMixin, adversarial_prediction_dict
+from alibi_detect.base import (BaseDetector, FitMixin, ThresholdMixin,
+                               adversarial_prediction_dict, adversarial_correction_dict)
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +82,7 @@ class AdversarialAE(BaseDetector, FitMixin, ThresholdMixin):
             List with tf.keras models for the hidden layer K-L divergence computation.
         hidden_layer_kld
             Dictionary with as keys the hidden layer(s) of the model which are extracted and used
-            during training of the AE.
+            during training of the AE, and as values the output dimension for the hidden layer.
         w_model_hl
             Weights assigned to the loss of each model in model_hl.
         temperature
@@ -214,7 +215,8 @@ class AdversarialAE(BaseDetector, FitMixin, ThresholdMixin):
         # update threshold
         self.threshold = np.percentile(adv_score, threshold_perc) + margin
 
-    def score(self, X: np.ndarray) -> np.ndarray:
+    def score(self, X: np.ndarray, return_predictions: bool = False) \
+            -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray, np.ndarray]]:
         """
         Compute adversarial scores.
 
@@ -222,6 +224,8 @@ class AdversarialAE(BaseDetector, FitMixin, ThresholdMixin):
         ----------
         X
             Batch of instances to analyze.
+        return_predictions
+            Whether to return the predictions of the classifier on the original and reconstructed instances.
 
         Returns
         -------
@@ -248,7 +252,10 @@ class AdversarialAE(BaseDetector, FitMixin, ThresholdMixin):
                 h_recon = m(X_recon)
                 adv_score += w * kld(h, h_recon).numpy()
 
-        return adv_score
+        if return_predictions:
+            return adv_score, y.numpy(), y_recon.numpy()
+        else:
+            return adv_score
 
     def predict(self, X: np.ndarray, return_instance_score: bool = True) \
             -> Dict[Dict[str, str], Dict[np.ndarray, np.ndarray]]:
@@ -270,7 +277,7 @@ class AdversarialAE(BaseDetector, FitMixin, ThresholdMixin):
         """
         adv_score = self.score(X)
 
-        # values above threshold are outliers
+        # values above threshold are adversarial
         adv_pred = (adv_score > self.threshold).astype(int)
 
         # populate output dict
@@ -279,4 +286,46 @@ class AdversarialAE(BaseDetector, FitMixin, ThresholdMixin):
         ad['data']['is_adversarial'] = adv_pred
         if return_instance_score:
             ad['data']['instance_score'] = adv_score
+        return ad
+
+    def correct(self, X: np.ndarray, return_instance_score: bool = True, return_all_predictions: bool = True) \
+            -> Dict[Dict[str, str], Dict[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]]:
+        """
+        Correct adversarial instances if the adversarial score is above the threshold.
+
+        Parameters
+        ----------
+        X
+            Batch of instances.
+        return_instance_score
+            Whether to return instance level adversarial scores.
+        return_all_predictions
+            Whether to return the predictions on the original and the reconstructed data.
+
+        Returns
+        -------
+        Dict with corrected predictions and information whether an instance is adversarial or not.
+        """
+        adv_score, y, y_recon = self.score(X, return_predictions=True)
+
+        # values above threshold are adversarial
+        adv_pred = (adv_score > self.threshold).astype(int)
+        idx_adv = np.where(adv_pred == 1)[0]
+
+        # correct predictions on adversarial instances
+        y = y.argmax(axis=-1)
+        y_recon = y_recon.argmax(axis=-1)
+        y_correct = y.copy()
+        y_correct[idx_adv] = y_recon[idx_adv]
+
+        # populate output dict
+        ad = adversarial_correction_dict()
+        ad['meta'] = self.meta
+        ad['data']['is_adversarial'] = adv_pred
+        if return_instance_score:
+            ad['data']['instance_score'] = adv_score
+        ad['data']['corrected'] = y_correct
+        if return_all_predictions:
+            ad['data']['no_defense'] = y
+            ad['data']['defense'] = y_recon
         return ad

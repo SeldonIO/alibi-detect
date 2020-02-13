@@ -7,6 +7,7 @@ import pickle
 import tensorflow as tf
 from typing import Dict, List, Union
 from alibi_detect.ad import AdversarialAE
+from alibi_detect.ad.adversarialae import DenseHidden
 from alibi_detect.base import BaseDetector
 from alibi_detect.models.autoencoder import AE, AEGMM, DecoderLSTM, EncoderLSTM, Seq2Seq, VAE, VAEGMM
 from alibi_detect.od import (IForest, Mahalanobis, OutlierAE, OutlierAEGMM, OutlierProphet,
@@ -236,7 +237,8 @@ def state_adv_ae(ad: AdversarialAE) -> Dict:
     """
     state_dict = {'threshold': ad.threshold,
                   'w_model_hl': ad.w_model_hl,
-                  'temperature': ad.temperature}
+                  'temperature': ad.temperature,
+                  'hidden_layer_kld': ad.hidden_layer_kld}
     return state_dict
 
 
@@ -357,7 +359,8 @@ def save_tf_vae(detector: OutlierVAE,
 
 
 def save_tf_model(model: tf.keras.Model,
-                  filepath: str) -> None:
+                  filepath: str,
+                  save_dir: str = None) -> None:
     """
     Save TensorFlow model.
 
@@ -367,12 +370,17 @@ def save_tf_model(model: tf.keras.Model,
         A tf.keras Model.
     filepath
         Save directory.
+    save_dir
+        Save folder.
     """
     # create folder for model weights
     if not os.path.isdir(filepath):
         logger.warning('Directory {} does not exist and is now created.'.format(filepath))
         os.mkdir(filepath)
-    model_dir = os.path.join(filepath, 'model')
+    if not save_dir:
+        model_dir = os.path.join(filepath, 'model')
+    else:
+        model_dir = os.path.join(filepath, save_dir)
     if not os.path.isdir(model_dir):
         os.mkdir(model_dir)
 
@@ -391,7 +399,7 @@ def save_tf_hl(models: List[tf.keras.Model],
     Parameters
     ----------
     models
-        tf.keras models.
+        List with tf.keras models.
     filepath
         Save directory.
     """
@@ -406,8 +414,8 @@ def save_tf_hl(models: List[tf.keras.Model],
             os.mkdir(model_dir)
 
         for i, m in enumerate(models):
-            model_path = os.path.join(model_dir, 'model_hl_' + str(i) + '.h5')
-            m.save(model_path)
+            model_path = os.path.join(model_dir, 'model_hl_' + str(i) + '.ckpt')
+            m.save_weights(model_path)
 
 
 def save_tf_aegmm(od: OutlierAEGMM,
@@ -563,7 +571,7 @@ def load_detector(filepath: str) -> Data:
     elif detector_name == 'AdversarialAE':
         ae = load_tf_ae(filepath)
         model = load_tf_model(filepath)
-        model_hl = load_tf_hl(filepath)
+        model_hl = load_tf_hl(filepath, model, state_dict)
         detector = init_ad_ae(state_dict, ae, model, model_hl)
     elif detector_name == 'OutlierProphet':
         detector = init_od_prophet(state_dict)
@@ -577,20 +585,25 @@ def load_detector(filepath: str) -> Data:
     return detector
 
 
-def load_tf_model(filepath: str) -> tf.keras.Model:
+def load_tf_model(filepath: str, load_dir: str = None) -> tf.keras.Model:
     """
     Load TensorFlow model.
 
     Parameters
     ----------
     filepath
-        Save directory.
+        Saved model directory.
+    load_dir
+        Saved model folder.
 
     Returns
     -------
     Loaded model.
     """
-    model_dir = os.path.join(filepath, 'model')
+    if not load_dir:
+        model_dir = os.path.join(filepath, 'model')
+    else:
+        model_dir = os.path.join(filepath, load_dir)
     if 'model.h5' not in [f for f in os.listdir(model_dir) if not f.startswith('.')]:
         logger.warning('No model found in {}.'.format(model_dir))
         return None
@@ -598,15 +611,32 @@ def load_tf_model(filepath: str) -> tf.keras.Model:
     return model
 
 
-def load_tf_hl(filepath: str) -> List[tf.keras.Model]:
+def load_tf_hl(filepath: str, model: tf.keras.Model, state_dict: dict) -> List[tf.keras.Model]:
+    """
+    Load hidden layer models for AdversarialAE.
+
+    Parameters
+    ----------
+    filepath
+        Saved model directory.
+    model
+        tf.keras classification model.
+    state_dict
+        Dictionary containing the detector's parameters.
+
+    Returns
+    -------
+    List with loaded tf.keras models.
+    """
     model_dir = os.path.join(filepath, 'model')
-    models = [m for m in os.listdir(model_dir) if m.startswith('model_hl_')]
-    if not models:
+    hidden_layer_kld = state_dict['hidden_layer_kld']
+    if not hidden_layer_kld:
         return None
     model_hl = []
-    for m in models:
-        model = tf.keras.models.load_model(os.path.join(model_dir, m))
-        model_hl.append(model)
+    for i, (hidden_layer, output_dim) in enumerate(hidden_layer_kld.items()):
+        m = DenseHidden(model, hidden_layer, output_dim)
+        m.load_weights(os.path.join(model_dir, 'model_hl_' + str(i) + '.ckpt'))
+        model_hl.append(m)
     return model_hl
 
 
