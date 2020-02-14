@@ -258,7 +258,7 @@ class AdversarialAE(BaseDetector, FitMixin, ThresholdMixin):
             return adv_score
 
     def predict(self, X: np.ndarray, return_instance_score: bool = True) \
-            -> Dict[Dict[str, str], Dict[np.ndarray, np.ndarray]]:
+            -> Dict[Dict[str, str], Dict[str, np.ndarray]]:
         """
         Predict whether instances are adversarial instances or not.
 
@@ -289,7 +289,7 @@ class AdversarialAE(BaseDetector, FitMixin, ThresholdMixin):
         return ad
 
     def correct(self, X: np.ndarray, return_instance_score: bool = True, return_all_predictions: bool = True) \
-            -> Dict[Dict[str, str], Dict[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]]:
+            -> Dict[Dict[str, str], Dict[str, np.ndarray]]:
         """
         Correct adversarial instances if the adversarial score is above the threshold.
 

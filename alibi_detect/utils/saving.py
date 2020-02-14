@@ -1,11 +1,15 @@
 # type: ignore
 # TODO: need to rewrite utilities using isinstance or @singledispatch for type checking to work properly
 
+import cloudpickle as cp
 import logging
 import os
 import pickle
 import tensorflow as tf
+from tensorflow.python.keras import backend
 from typing import Dict, List, Union
+import urllib.request
+from urllib.request import urlopen
 from alibi_detect.ad import AdversarialAE
 from alibi_detect.ad.adversarialae import DenseHidden
 from alibi_detect.base import BaseDetector
@@ -1010,3 +1014,90 @@ def init_od_sr(state_dict: Dict) -> SpectralResidual:
                           n_est_points=state_dict['n_est_points'],
                           n_grad_points=state_dict['n_grad_points'])
     return od
+
+
+def fetch_tf_model(dataset: str, model: str):
+    """
+    Fetch pretrained tensorflow models from the google cloud bucket.
+
+    Parameters
+    ----------
+    dataset
+        Dataset trained on.
+    model
+        Model name.
+
+    Returns
+    -------
+    Pretrained tensorflow model.
+    """
+    url = 'https://storage.googleapis.com/seldon-models/alibi-detect/classifier/'
+    path_model = os.path.join(url, dataset, model, 'model.h5')
+    save_path = tf.keras.utils.get_file(model, path_model)
+    if dataset == 'cifar10' and model == 'resnet56':
+        custom_objects = {'backend': backend}
+    else:
+        custom_objects = None
+    clf = tf.keras.models.load_model(save_path, custom_objects=custom_objects)
+    return clf
+
+
+def fetch_detector(detector_type: str, dataset: str, detector_name: str, model=None):
+    url = 'https://storage.googleapis.com/seldon-models/alibi-detect/'
+    if detector_type == 'adversarial':
+        url = os.path.join(url, 'ad', dataset, model, detector_name)
+    elif detector_type == 'outlier':
+        url = os.path.join(url, 'od', dataset, detector_name)
+    # load metadata
+    path_meta = os.path.join(url, 'meta.pickle')
+    meta = cp.load(urlopen(path_meta))
+    # load state dict
+    path_state = os.path.join(url, meta['name'] + '.pickle')
+    state_dict = cp.load(urlopen(path_state))
+    # load detector
+    url_models = os.path.join(url, 'model')
+    if meta['name'] == 'AdversarialAE':
+        # encoder and decoder
+        enc_path = tf.keras.utils.get_file('enc', os.path.join(url_models, 'encoder_net.h5'))
+        dec_path = tf.keras.utils.get_file('dec', os.path.join(url_models, 'decoder_net.h5'))
+        encoder_net = tf.keras.models.load_model(enc_path)
+        decoder_net = tf.keras.models.load_model(dec_path)
+        # classifier
+        if dataset == 'cifar10' and model == 'resnet56':
+            custom_objects = {'backend': backend}
+        else:
+            custom_objects = None
+        clf_path = tf.keras.utils.get_file('model', os.path.join(url_models, 'model.h5'))
+        clf = tf.keras.models.load_model(clf_path, custom_objects=custom_objects)
+        # autoencoder
+        ae = AE(encoder_net, decoder_net)
+        # hidden layers
+        hidden_layer_kld = state_dict['hidden_layer_kld']
+        if isinstance(hidden_layer_kld, dict):
+            model_hl = []
+            for i, (hidden_layer, output_dim) in enumerate(hidden_layer_kld.items()):
+                ckpt_tmp = 'model_hl_' + str(i) + '.ckpt.index'
+                data_0_tmp = 'model_hl_' + str(i) + '.ckpt.data-00000-of-00002'
+                data_1_tmp = 'model_hl_' + str(i) + '.ckpt.data-00001-of-00002'
+                ckpt = tf.keras.utils.get_file(
+                    ckpt_tmp,
+                    os.path.join(url_models, ckpt_tmp)
+                )
+                data_0 = tf.keras.utils.get_file(
+                    data_0_tmp,
+                    os.path.join(url_models, data_0_tmp)
+                )
+                data_1 = tf.keras.utils.get_file(
+                    data_1_tmp,
+                    os.path.join(url_models, data_1_tmp)
+                )
+                m = DenseHidden(clf, hidden_layer, output_dim)
+                m.load_weights(ckpt[:-6])
+                model_hl.append(m)
+        else:
+            model_hl = None
+        # adversarial detector
+        detector = init_ad_ae(state_dict, ae, clf, model_hl)
+    else:
+        raise NotImplementedError
+    return detector
