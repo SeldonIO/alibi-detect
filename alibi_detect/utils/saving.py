@@ -1042,24 +1042,42 @@ def fetch_tf_model(dataset: str, model: str):
     return clf
 
 
-def fetch_detector(detector_type: str, dataset: str, detector_name: str, model=None):
+def fetch_detector(filepath: str, detector_type: str, dataset: str,
+                   detector_name: str, model=None):
+    filepath = os.path.join(filepath, detector_name)
+    if not os.path.isdir(filepath):
+        logger.warning('Directory {} does not exist and is now created.'.format(filepath))
+        os.mkdir(filepath)
     url = 'https://storage.googleapis.com/seldon-models/alibi-detect/'
     if detector_type == 'adversarial':
         url = os.path.join(url, 'ad', dataset, model, detector_name)
     elif detector_type == 'outlier':
         url = os.path.join(url, 'od', dataset, detector_name)
-    # load metadata
+    # fetch and save metadata
     path_meta = os.path.join(url, 'meta.pickle')
     meta = cp.load(urlopen(path_meta))
-    # load state dict
+    with open(os.path.join(filepath, 'meta.pickle'), 'wb') as f:
+        pickle.dump(meta, f)
+    # fetch and save state dict
     path_state = os.path.join(url, meta['name'] + '.pickle')
     state_dict = cp.load(urlopen(path_state))
+    with open(os.path.join(filepath, meta['name'] + '.pickle'), 'wb') as f:
+        pickle.dump(state_dict, f)
     # load detector
     url_models = os.path.join(url, 'model')
+    model_path = os.path.join(filepath, 'model')
+    if not os.path.isdir(model_path):
+        os.mkdir(model_path)
     if meta['name'] == 'AdversarialAE':
         # encoder and decoder
-        enc_path = tf.keras.utils.get_file('enc', os.path.join(url_models, 'encoder_net.h5'))
-        dec_path = tf.keras.utils.get_file('dec', os.path.join(url_models, 'decoder_net.h5'))
+        enc_path = tf.keras.utils.get_file(
+            os.path.join(model_path, 'encoder_net.h5'),
+            os.path.join(url_models, 'encoder_net.h5')
+        )
+        dec_path = tf.keras.utils.get_file(
+            os.path.join(model_path, 'decoder_net.h5'),
+            os.path.join(url_models, 'decoder_net.h5')
+        )
         encoder_net = tf.keras.models.load_model(enc_path)
         decoder_net = tf.keras.models.load_model(dec_path)
         # classifier
@@ -1067,7 +1085,10 @@ def fetch_detector(detector_type: str, dataset: str, detector_name: str, model=N
             custom_objects = {'backend': backend}
         else:
             custom_objects = None
-        clf_path = tf.keras.utils.get_file('model', os.path.join(url_models, 'model.h5'))
+        clf_path = tf.keras.utils.get_file(
+            os.path.join(model_path, 'model.h5'),
+            os.path.join(url_models, 'model.h5')
+        )
         clf = tf.keras.models.load_model(clf_path, custom_objects=custom_objects)
         # autoencoder
         ae = AE(encoder_net, decoder_net)
@@ -1080,15 +1101,15 @@ def fetch_detector(detector_type: str, dataset: str, detector_name: str, model=N
                 data_0_tmp = 'model_hl_' + str(i) + '.ckpt.data-00000-of-00002'
                 data_1_tmp = 'model_hl_' + str(i) + '.ckpt.data-00001-of-00002'
                 ckpt = tf.keras.utils.get_file(
-                    ckpt_tmp,
+                    os.path.join(model_path, ckpt_tmp),
                     os.path.join(url_models, ckpt_tmp)
                 )
                 data_0 = tf.keras.utils.get_file(
-                    data_0_tmp,
+                    os.path.join(model_path, data_0_tmp),
                     os.path.join(url_models, data_0_tmp)
                 )
                 data_1 = tf.keras.utils.get_file(
-                    data_1_tmp,
+                    os.path.join(model_path, data_1_tmp),
                     os.path.join(url_models, data_1_tmp)
                 )
                 m = DenseHidden(clf, hidden_layer, output_dim)
