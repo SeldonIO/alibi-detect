@@ -142,7 +142,7 @@ class AdversarialAE(BaseDetector, FitMixin, ThresholdMixin):
             verbose: bool = True,
             log_metric: Tuple[str, "tf.keras.metrics"] = None,
             callbacks: tf.keras.callbacks = None,
-            preprocess_fn: Callable = False
+            preprocess_fn: Callable = None
             ) -> None:
         """
         Train Adversarial AE model.
@@ -290,7 +290,7 @@ class AdversarialAE(BaseDetector, FitMixin, ThresholdMixin):
         adv_score = self.score(X, batch_size=batch_size)
 
         # values above threshold are adversarial
-        adv_pred = (adv_score > self.threshold).astype(int)
+        adv_pred = (adv_score > self.threshold).astype(int)  # type: ignore
 
         # populate output dict
         ad = adversarial_prediction_dict()

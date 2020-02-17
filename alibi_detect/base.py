@@ -53,12 +53,11 @@ class BaseDetector(ABC):
         self._meta = value
 
     @abstractmethod
-    def score(self, X: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def score(self, X: np.ndarray):
         pass
 
     @abstractmethod
-    def predict(self, X: np.ndarray) \
-            -> Dict[Dict[str, str], Dict[np.ndarray, np.ndarray]]:
+    def predict(self, X: np.ndarray):
         pass
 
 

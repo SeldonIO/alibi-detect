@@ -70,7 +70,7 @@ def trainer(model: tf.keras.Model,
             else:
                 X_train_batch, y_train_batch = train_batch
 
-            if isinstance(preprocess_fn, Callable):
+            if isinstance(preprocess_fn, Callable):  # type: ignore
                 X_train_batch = preprocess_fn(X_train_batch)
 
             with tf.GradientTape() as tape:

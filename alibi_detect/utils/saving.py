@@ -8,7 +8,6 @@ import pickle
 import tensorflow as tf
 from tensorflow.python.keras import backend
 from typing import Dict, List, Union
-import urllib.request
 from urllib.request import urlopen
 from alibi_detect.ad import AdversarialAE
 from alibi_detect.ad.adversarialae import DenseHidden
@@ -1104,11 +1103,11 @@ def fetch_detector(filepath: str, detector_type: str, dataset: str,
                     os.path.join(model_path, ckpt_tmp),
                     os.path.join(url_models, ckpt_tmp)
                 )
-                data_0 = tf.keras.utils.get_file(
+                data_0 = tf.keras.utils.get_file(  # noqa
                     os.path.join(model_path, data_0_tmp),
                     os.path.join(url_models, data_0_tmp)
                 )
-                data_1 = tf.keras.utils.get_file(
+                data_1 = tf.keras.utils.get_file(  # noqa
                     os.path.join(model_path, data_1_tmp),
                     os.path.join(url_models, data_1_tmp)
                 )

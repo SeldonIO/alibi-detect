@@ -2,10 +2,10 @@ import pytest
 from tempfile import TemporaryDirectory
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, InputLayer
-from alibi_detect.ad import AdversarialVAE
+from alibi_detect.ad import AdversarialAE
 from alibi_detect.models.autoencoder import DecoderLSTM, EncoderLSTM
 from alibi_detect.od import (IForest, Mahalanobis, OutlierAEGMM, OutlierVAE, OutlierVAEGMM,
-                             OutlierProphet, SpectralResidual, OutlierSeq2Seq)
+                             OutlierProphet, SpectralResidual, OutlierSeq2Seq, OutlierAE)
 from alibi_detect.utils.saving import save_detector, load_detector
 
 input_dim = 4
@@ -56,11 +56,9 @@ outputs = tf.keras.layers.Dense(2, activation=tf.nn.softmax)(inputs)
 model = tf.keras.Model(inputs=inputs, outputs=outputs)
 
 detector = [
-    AdversarialVAE(threshold=threshold,
-                   model=model,
-                   latent_dim=latent_dim,
-                   samples=samples,
-                   **kwargs),
+    AdversarialAE(threshold=threshold,
+                  model=model,
+                  **kwargs),
     IForest(threshold=threshold),
     Mahalanobis(threshold=threshold),
     OutlierAEGMM(threshold=threshold,
@@ -71,6 +69,8 @@ detector = [
                latent_dim=latent_dim,
                samples=samples,
                **kwargs),
+    OutlierAE(threshold=threshold,
+              **kwargs),
     OutlierVAEGMM(threshold=threshold,
                   gmm_density_net=gmm_density_net,
                   n_gmm=n_gmm,
@@ -111,10 +111,10 @@ def test_save_load(select_detector):
         if not type(det_load) == OutlierProphet:
             assert det_load.threshold == det.threshold == threshold
 
-        if type(det_load) in [AdversarialVAE, OutlierVAE, OutlierVAEGMM]:
+        if type(det_load) in [OutlierVAE, OutlierVAEGMM]:
             assert det_load.samples == det.samples == samples
 
-        if type(det_load) == AdversarialVAE:
+        if type(det_load) == AdversarialAE:
             for layer in det_load.model.layers:
                 assert not layer.trainable
 
@@ -131,7 +131,11 @@ def test_save_load(select_detector):
             assert isinstance(det_load.vaegmm, tf.keras.Model)
             assert det_load.vaegmm.latent_dim == latent_dim
             assert det_load.vaegmm.n_gmm == n_gmm
-        elif type(det_load) in [AdversarialVAE, OutlierVAE]:
+        elif type(det_load) in [AdversarialAE, OutlierAE]:
+            assert isinstance(det_load.ae.encoder.encoder_net, tf.keras.Sequential)
+            assert isinstance(det_load.ae.decoder.decoder_net, tf.keras.Sequential)
+            assert isinstance(det_load.ae, tf.keras.Model)
+        elif type(det_load) == OutlierVAE:
             assert isinstance(det_load.vae.encoder.encoder_net, tf.keras.Sequential)
             assert isinstance(det_load.vae.decoder.decoder_net, tf.keras.Sequential)
             assert isinstance(det_load.vae, tf.keras.Model)

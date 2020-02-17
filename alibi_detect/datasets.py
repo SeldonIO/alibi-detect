@@ -8,7 +8,7 @@ import pandas as pd
 import requests
 from scipy.io import arff
 from sklearn.datasets import fetch_kddcup99
-from typing import Callable, List, Tuple, Union
+from typing import List, Tuple, Union
 import urllib.request
 from urllib.request import urlopen
 from xml.etree import ElementTree
