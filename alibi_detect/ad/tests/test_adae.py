@@ -37,8 +37,8 @@ def adv_ae_params(request):
     return tests[request.param]
 
 
-@pytest.mark.parametrize('adv_vae_params', list(range(n_tests)), indirect=True)
-def test_adv_vae(adv_vae_params):
+@pytest.mark.parametrize('adv_ae_params', list(range(n_tests)), indirect=True)
+def test_adv_vae(adv_ae_params):
     # AdversarialAE parameters
     threshold, w_model, w_recon, threshold_perc, return_instance_score = adv_ae_params
 
