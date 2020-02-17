@@ -232,7 +232,7 @@ def state_vaegmm(od: OutlierVAEGMM) -> Dict:
 
 def state_adv_ae(ad: AdversarialAE) -> Dict:
     """
-    AdversarialVAE parameters to save.
+    AdversarialAE parameters to save.
 
     Parameters
     ----------
@@ -331,12 +331,12 @@ def save_tf_ae(detector: Union[OutlierAE, AdversarialAE],
 def save_tf_vae(detector: OutlierVAE,
                 filepath: str) -> None:
     """
-    Save TensorFlow components of OutlierVAE or AdversarialVAE.
+    Save TensorFlow components of OutlierVAE.
 
     Parameters
     ----------
     detector
-        Outlier or adversarial detector object.
+        Outlier detector object.
     filepath
         Save directory.
     """
@@ -817,7 +817,7 @@ def init_ad_ae(state_dict: Dict,
                model: tf.keras.Model,
                model_hl: List[tf.keras.Model]) -> AdversarialAE:
     """
-    Initialize AdversarialVAE.
+    Initialize AdversarialAE.
 
     Parameters
     ----------
@@ -832,7 +832,7 @@ def init_ad_ae(state_dict: Dict,
 
     Returns
     -------
-    Initialized AdversarialVAE instance.
+    Initialized AdversarialAE instance.
     """
     ad = AdversarialAE(threshold=state_dict['threshold'],
                        ae=ae,

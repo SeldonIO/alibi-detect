@@ -36,7 +36,7 @@ alibi_detect.ad.__all__
 ```
 
 ```
-['AdversarialVAE']
+['AdversarialAE']
 ```
 
 For detailed information on the methods:
@@ -61,7 +61,7 @@ For detailed information on the methods:
     
     * [Sequence-to-Sequence (Seq2Seq) Outlier Detector](../methods/seq2seq.ipynb)
 
-    * [Adversarial VAE Detector](../methods/adversarialvae.ipynb)
+    * [Adversarial AE Detector](../methods/adversarialae.ipynb)
 
 ## Basic Usage
 

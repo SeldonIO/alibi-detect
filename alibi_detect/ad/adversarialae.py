@@ -8,6 +8,7 @@ from typing import Callable, Dict, List, Tuple, Union
 from alibi_detect.models.autoencoder import AE
 from alibi_detect.models.trainer import trainer
 from alibi_detect.models.losses import loss_adv_ae
+from alibi_detect.utils.prediction import predict_batch
 from alibi_detect.base import (BaseDetector, FitMixin, ThresholdMixin,
                                adversarial_prediction_dict, adversarial_correction_dict)
 
@@ -194,7 +195,12 @@ class AdversarialAE(BaseDetector, FitMixin, ThresholdMixin):
         # train
         trainer(*args, **kwargs)
 
-    def infer_threshold(self, X: np.ndarray, threshold_perc: float = 99., margin: float = 0.) -> None:
+    def infer_threshold(self,
+                        X: np.ndarray,
+                        threshold_perc: float = 99.,
+                        margin: float = 0.,
+                        batch_size: int = 64
+                        ) -> None:
         """
         Update threshold by a value inferred from the percentage of instances considered to be
         adversarial in a sample of the dataset.
@@ -208,14 +214,16 @@ class AdversarialAE(BaseDetector, FitMixin, ThresholdMixin):
         margin
             Add margin to threshold. Useful if adversarial instances have significantly higher scores and there
             is no adversarial instance in X.
+        batch_size
+            Batch size used when computing scores.
         """
         # compute adversarial scores
-        adv_score = self.score(X)
+        adv_score = self.score(X, batch_size=batch_size)
 
         # update threshold
         self.threshold = np.percentile(adv_score, threshold_perc) + margin
 
-    def score(self, X: np.ndarray, return_predictions: bool = False) \
+    def score(self, X: np.ndarray, batch_size: int = 64, return_predictions: bool = False) \
             -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray, np.ndarray]]:
         """
         Compute adversarial scores.
@@ -224,6 +232,8 @@ class AdversarialAE(BaseDetector, FitMixin, ThresholdMixin):
         ----------
         X
             Batch of instances to analyze.
+        batch_size
+            Batch size used when computing scores.
         return_predictions
             Whether to return the predictions of the classifier on the original and reconstructed instances.
 
@@ -232,11 +242,11 @@ class AdversarialAE(BaseDetector, FitMixin, ThresholdMixin):
         Array with adversarial scores for each instance in the batch.
         """
         # reconstructed instances
-        X_recon = self.ae(X)
+        X_recon = predict_batch(self.ae, X, batch_size=batch_size)
 
         # model predictions
-        y = self.model(X)
-        y_recon = self.model(X_recon)
+        y = predict_batch(self.model, X, batch_size=batch_size, proba=True)
+        y_recon = predict_batch(self.model, X_recon, batch_size=batch_size, proba=True)
 
         # scale predictions
         if self.temperature != 1.:
@@ -248,16 +258,16 @@ class AdversarialAE(BaseDetector, FitMixin, ThresholdMixin):
         # hidden layer predictions
         if isinstance(self.model_hl, list):
             for m, w in zip(self.model_hl, self.w_model_hl):
-                h = m(X)
-                h_recon = m(X_recon)
+                h = predict_batch(m, X, batch_size=batch_size, proba=True)
+                h_recon = predict_batch(m, X_recon, batch_size=batch_size, proba=True)
                 adv_score += w * kld(h, h_recon).numpy()
 
         if return_predictions:
-            return adv_score, y.numpy(), y_recon.numpy()
+            return adv_score, y, y_recon
         else:
             return adv_score
 
-    def predict(self, X: np.ndarray, return_instance_score: bool = True) \
+    def predict(self, X: np.ndarray, batch_size: int = 64, return_instance_score: bool = True) \
             -> Dict[Dict[str, str], Dict[str, np.ndarray]]:
         """
         Predict whether instances are adversarial instances or not.
@@ -266,6 +276,8 @@ class AdversarialAE(BaseDetector, FitMixin, ThresholdMixin):
         ----------
         X
             Batch of instances.
+        batch_size
+            Batch size used when computing scores.
         return_instance_score
             Whether to return instance level adversarial scores.
 
@@ -275,7 +287,7 @@ class AdversarialAE(BaseDetector, FitMixin, ThresholdMixin):
         'meta' has the model's metadata.
         'data' contains the adversarial predictions and instance level adversarial scores.
         """
-        adv_score = self.score(X)
+        adv_score = self.score(X, batch_size=batch_size)
 
         # values above threshold are adversarial
         adv_pred = (adv_score > self.threshold).astype(int)
@@ -288,7 +300,8 @@ class AdversarialAE(BaseDetector, FitMixin, ThresholdMixin):
             ad['data']['instance_score'] = adv_score
         return ad
 
-    def correct(self, X: np.ndarray, return_instance_score: bool = True, return_all_predictions: bool = True) \
+    def correct(self, X: np.ndarray, batch_size: int = 64,
+                return_instance_score: bool = True, return_all_predictions: bool = True) \
             -> Dict[Dict[str, str], Dict[str, np.ndarray]]:
         """
         Correct adversarial instances if the adversarial score is above the threshold.
@@ -297,6 +310,8 @@ class AdversarialAE(BaseDetector, FitMixin, ThresholdMixin):
         ----------
         X
             Batch of instances.
+        batch_size
+            Batch size used when computing scores.
         return_instance_score
             Whether to return instance level adversarial scores.
         return_all_predictions
@@ -306,7 +321,7 @@ class AdversarialAE(BaseDetector, FitMixin, ThresholdMixin):
         -------
         Dict with corrected predictions and information whether an instance is adversarial or not.
         """
-        adv_score, y, y_recon = self.score(X, return_predictions=True)
+        adv_score, y, y_recon = self.score(X, batch_size=batch_size, return_predictions=True)
 
         # values above threshold are adversarial
         adv_pred = (adv_score > self.threshold).astype(int)

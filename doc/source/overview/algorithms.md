@@ -20,4 +20,4 @@ The following tables summarize the advised use cases for the current algorithms.
 
 |Detector|Tabular|Image|Time Series|Text|Categorical Features|Online|Feature Level|
 |---|---|---|---|---|
-|[Adversarial VAE](../methods/adversarialvae.ipynb)|✔|✔|✘|✘|✘|✘|✘|
+|[Adversarial AE](../methods/adversarialae.ipynb)|✔|✔|✘|✘|✘|✘|✘|

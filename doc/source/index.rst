@@ -26,7 +26,7 @@
    methods/prophet.ipynb
    methods/sr.ipynb
    methods/seq2seq.ipynb
-   methods/adversarialvae.ipynb
+   methods/adversarialae.ipynb
 
 .. toctree::
    :maxdepth: 1
@@ -42,7 +42,7 @@
    examples/od_sr_synth
    examples/od_seq2seq_synth
    examples/od_seq2seq_ecg
-   examples/ad_advvae_mnist
+   examples/ad_ae_cifar10
 
 .. toctree::
    :maxdepth: 1
