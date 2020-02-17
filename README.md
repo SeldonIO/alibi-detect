@@ -104,13 +104,13 @@ Advised use cases:
 
 | Detector          | Tabular | Image | Time Series | Text  | Categorical Features | Online | Feature Level |
 | :---              |  :---:  | :---: |   :---:     | :---: |   :---:              | :---:  | :---:         |
-| Adversarial VAE   | ✔       | ✔     |  ✘          |  ✘    |  ✘                   |  ✘     |  ✘            |
+| Adversarial AE    | ✔       | ✔     |  ✘          |  ✘    |  ✘                   |  ✘     |  ✘            |
 
 
- - Adversarial Variational Auto-Encoder (paper coming soon)
-   - [Documentation](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/adversarialvae.html)
+ - Adversarial Auto-Encoder (paper coming soon)
+   - [Documentation](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/adversarialae.html)
    - Examples:
-     [MNIST](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/ad_advvae_mnist.html)
+     [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/ad_ae_cifar10.html)
 
 
 ## Integrations

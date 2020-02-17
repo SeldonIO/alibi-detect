@@ -1,12 +1,16 @@
 # type: ignore
 # TODO: need to rewrite utilities using isinstance or @singledispatch for type checking to work properly
 
+import cloudpickle as cp
 import logging
 import os
 import pickle
 import tensorflow as tf
-from typing import Dict, Union
-from alibi_detect.ad import AdversarialVAE
+from tensorflow.python.keras import backend
+from typing import Dict, List, Union
+from urllib.request import urlopen
+from alibi_detect.ad import AdversarialAE
+from alibi_detect.ad.adversarialae import DenseHidden
 from alibi_detect.base import BaseDetector
 from alibi_detect.models.autoencoder import AE, AEGMM, DecoderLSTM, EncoderLSTM, Seq2Seq, VAE, VAEGMM
 from alibi_detect.od import (IForest, Mahalanobis, OutlierAE, OutlierAEGMM, OutlierProphet,
@@ -16,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 Data = Union[
     BaseDetector,
-    AdversarialVAE,
+    AdversarialAE,
     IForest,
     Mahalanobis,
     OutlierAEGMM,
@@ -29,7 +33,7 @@ Data = Union[
 ]
 
 DEFAULT_DETECTORS = [
-    'AdversarialVAE',
+    'AdversarialAE',
     'IForest',
     'Mahalanobis',
     'OutlierAE',
@@ -79,8 +83,8 @@ def save_detector(detector: Data,
         state_dict = state_aegmm(detector)
     elif detector_name == 'OutlierVAEGMM':
         state_dict = state_vaegmm(detector)
-    elif detector_name == 'AdversarialVAE':
-        state_dict = state_adv_vae(detector)
+    elif detector_name == 'AdversarialAE':
+        state_dict = state_adv_ae(detector)
     elif detector_name == 'OutlierProphet':
         state_dict = state_prophet(detector)
     elif detector_name == 'SpectralResidual':
@@ -100,9 +104,10 @@ def save_detector(detector: Data,
         save_tf_aegmm(detector, filepath)
     elif detector_name == 'OutlierVAEGMM':
         save_tf_vaegmm(detector, filepath)
-    elif detector_name == 'AdversarialVAE':
-        save_tf_vae(detector, filepath)
+    elif detector_name == 'AdversarialAE':
+        save_tf_ae(detector, filepath)
         save_tf_model(detector.model, filepath)
+        save_tf_hl(detector.model_hl, filepath)
     elif detector_name == 'OutlierSeq2Seq':
         save_tf_s2s(detector, filepath)
 
@@ -224,9 +229,9 @@ def state_vaegmm(od: OutlierVAEGMM) -> Dict:
     return state_dict
 
 
-def state_adv_vae(ad: AdversarialVAE) -> Dict:
+def state_adv_ae(ad: AdversarialAE) -> Dict:
     """
-    AdversarialVAE parameters to save.
+    AdversarialAE parameters to save.
 
     Parameters
     ----------
@@ -234,9 +239,9 @@ def state_adv_vae(ad: AdversarialVAE) -> Dict:
         Adversarial detector object.
     """
     state_dict = {'threshold': ad.threshold,
-                  'samples': ad.samples,
-                  'latent_dim': ad.vae.latent_dim,
-                  'beta': ad.vae.beta}
+                  'w_model_hl': ad.w_model_hl,
+                  'temperature': ad.temperature,
+                  'hidden_layer_kld': ad.hidden_layer_kld}
     return state_dict
 
 
@@ -288,7 +293,7 @@ def state_s2s(od: OutlierSeq2Seq) -> Dict:
     return state_dict
 
 
-def save_tf_ae(detector: OutlierAE,
+def save_tf_ae(detector: Union[OutlierAE, AdversarialAE],
                filepath: str) -> None:
     """
     Save TensorFlow components of OutlierAE
@@ -322,15 +327,15 @@ def save_tf_ae(detector: OutlierAE,
         logger.warning('No `tf.keras.Model` ae detected. No ae saved.')
 
 
-def save_tf_vae(detector: Union[OutlierVAE, AdversarialVAE],
+def save_tf_vae(detector: OutlierVAE,
                 filepath: str) -> None:
     """
-    Save TensorFlow components of OutlierVAE or AdversarialVAE.
+    Save TensorFlow components of OutlierVAE.
 
     Parameters
     ----------
     detector
-        Outlier or adversarial detector object.
+        Outlier detector object.
     filepath
         Save directory.
     """
@@ -357,7 +362,8 @@ def save_tf_vae(detector: Union[OutlierVAE, AdversarialVAE],
 
 
 def save_tf_model(model: tf.keras.Model,
-                  filepath: str) -> None:
+                  filepath: str,
+                  save_dir: str = None) -> None:
     """
     Save TensorFlow model.
 
@@ -367,12 +373,17 @@ def save_tf_model(model: tf.keras.Model,
         A tf.keras Model.
     filepath
         Save directory.
+    save_dir
+        Save folder.
     """
     # create folder for model weights
     if not os.path.isdir(filepath):
         logger.warning('Directory {} does not exist and is now created.'.format(filepath))
         os.mkdir(filepath)
-    model_dir = os.path.join(filepath, 'model')
+    if not save_dir:
+        model_dir = os.path.join(filepath, 'model')
+    else:
+        model_dir = os.path.join(filepath, save_dir)
     if not os.path.isdir(model_dir):
         os.mkdir(model_dir)
 
@@ -380,7 +391,34 @@ def save_tf_model(model: tf.keras.Model,
     if isinstance(model, tf.keras.Model):  # TODO: not flexible enough!
         model.save(os.path.join(model_dir, 'model.h5'))
     else:
-        logger.warning('No `tf.keras.Model` vae detected. No classification model saved.')
+        logger.warning('No `tf.keras.Model` detected. No classification model saved.')
+
+
+def save_tf_hl(models: List[tf.keras.Model],
+               filepath: str) -> None:
+    """
+    Save TensorFlow model weights.
+
+    Parameters
+    ----------
+    models
+        List with tf.keras models.
+    filepath
+        Save directory.
+    """
+    if isinstance(models, list):
+
+        # create folder for model weights
+        if not os.path.isdir(filepath):
+            logger.warning('Directory {} does not exist and is now created.'.format(filepath))
+            os.mkdir(filepath)
+        model_dir = os.path.join(filepath, 'model')
+        if not os.path.isdir(model_dir):
+            os.mkdir(model_dir)
+
+        for i, m in enumerate(models):
+            model_path = os.path.join(model_dir, 'model_hl_' + str(i) + '.ckpt')
+            m.save_weights(model_path)
 
 
 def save_tf_aegmm(od: OutlierAEGMM,
@@ -533,10 +571,11 @@ def load_detector(filepath: str) -> Data:
     elif detector_name == 'OutlierVAEGMM':
         vaegmm = load_tf_vaegmm(filepath, state_dict)
         detector = init_od_vaegmm(state_dict, vaegmm)
-    elif detector_name == 'AdversarialVAE':
-        vae = load_tf_vae(filepath, state_dict)
+    elif detector_name == 'AdversarialAE':
+        ae = load_tf_ae(filepath)
         model = load_tf_model(filepath)
-        detector = init_ad_vae(state_dict, vae, model)
+        model_hl = load_tf_hl(filepath, model, state_dict)
+        detector = init_ad_ae(state_dict, ae, model, model_hl)
     elif detector_name == 'OutlierProphet':
         detector = init_od_prophet(state_dict)
     elif detector_name == 'SpectralResidual':
@@ -549,13 +588,59 @@ def load_detector(filepath: str) -> Data:
     return detector
 
 
-def load_tf_model(filepath: str) -> tf.keras.Model:
-    model_dir = os.path.join(filepath, 'model')
+def load_tf_model(filepath: str, load_dir: str = None) -> tf.keras.Model:
+    """
+    Load TensorFlow model.
+
+    Parameters
+    ----------
+    filepath
+        Saved model directory.
+    load_dir
+        Saved model folder.
+
+    Returns
+    -------
+    Loaded model.
+    """
+    if not load_dir:
+        model_dir = os.path.join(filepath, 'model')
+    else:
+        model_dir = os.path.join(filepath, load_dir)
     if 'model.h5' not in [f for f in os.listdir(model_dir) if not f.startswith('.')]:
         logger.warning('No model found in {}.'.format(model_dir))
         return None
     model = tf.keras.models.load_model(os.path.join(model_dir, 'model.h5'))
     return model
+
+
+def load_tf_hl(filepath: str, model: tf.keras.Model, state_dict: dict) -> List[tf.keras.Model]:
+    """
+    Load hidden layer models for AdversarialAE.
+
+    Parameters
+    ----------
+    filepath
+        Saved model directory.
+    model
+        tf.keras classification model.
+    state_dict
+        Dictionary containing the detector's parameters.
+
+    Returns
+    -------
+    List with loaded tf.keras models.
+    """
+    model_dir = os.path.join(filepath, 'model')
+    hidden_layer_kld = state_dict['hidden_layer_kld']
+    if not hidden_layer_kld:
+        return None
+    model_hl = []
+    for i, (hidden_layer, output_dim) in enumerate(hidden_layer_kld.items()):
+        m = DenseHidden(model, hidden_layer, output_dim)
+        m.load_weights(os.path.join(model_dir, 'model_hl_' + str(i) + '.ckpt'))
+        model_hl.append(m)
+    return model_hl
 
 
 def load_tf_ae(filepath: str) -> tf.keras.Model:
@@ -566,8 +651,6 @@ def load_tf_ae(filepath: str) -> tf.keras.Model:
     ----------
     filepath
         Save directory.
-    state_dict
-        Dictionary containing the outlier threshold.
 
     Returns
     -------
@@ -728,29 +811,34 @@ def init_od_vae(state_dict: Dict,
     return od
 
 
-def init_ad_vae(state_dict: Dict,
-                vae: tf.keras.Model,
-                model: tf.keras.Model) -> AdversarialVAE:
+def init_ad_ae(state_dict: Dict,
+               ae: tf.keras.Model,
+               model: tf.keras.Model,
+               model_hl: List[tf.keras.Model]) -> AdversarialAE:
     """
-    Initialize AdversarialVAE.
+    Initialize AdversarialAE.
 
     Parameters
     ----------
     state_dict
         Dictionary containing the parameter values.
-    vae
+    ae
         Loaded VAE.
     model
         Loaded classification model.
+    model_hl
+        List of tf.keras models.
 
     Returns
     -------
-    Initialized AdversarialVAE instance.
+    Initialized AdversarialAE instance.
     """
-    ad = AdversarialVAE(threshold=state_dict['threshold'],
-                        vae=vae,
-                        model=model,
-                        samples=state_dict['samples'])
+    ad = AdversarialAE(threshold=state_dict['threshold'],
+                       ae=ae,
+                       model=model,
+                       model_hl=model_hl,
+                       w_model_hl=state_dict['w_model_hl'],
+                       temperature=state_dict['temperature'])
     return ad
 
 
@@ -925,3 +1013,111 @@ def init_od_sr(state_dict: Dict) -> SpectralResidual:
                           n_est_points=state_dict['n_est_points'],
                           n_grad_points=state_dict['n_grad_points'])
     return od
+
+
+def fetch_tf_model(dataset: str, model: str):
+    """
+    Fetch pretrained tensorflow models from the google cloud bucket.
+
+    Parameters
+    ----------
+    dataset
+        Dataset trained on.
+    model
+        Model name.
+
+    Returns
+    -------
+    Pretrained tensorflow model.
+    """
+    url = 'https://storage.googleapis.com/seldon-models/alibi-detect/classifier/'
+    path_model = os.path.join(url, dataset, model, 'model.h5')
+    save_path = tf.keras.utils.get_file(model, path_model)
+    if dataset == 'cifar10' and model == 'resnet56':
+        custom_objects = {'backend': backend}
+    else:
+        custom_objects = None
+    clf = tf.keras.models.load_model(save_path, custom_objects=custom_objects)
+    return clf
+
+
+def fetch_detector(filepath: str, detector_type: str, dataset: str,
+                   detector_name: str, model=None):
+    filepath = os.path.join(filepath, detector_name)
+    if not os.path.isdir(filepath):
+        logger.warning('Directory {} does not exist and is now created.'.format(filepath))
+        os.mkdir(filepath)
+    url = 'https://storage.googleapis.com/seldon-models/alibi-detect/'
+    if detector_type == 'adversarial':
+        url = os.path.join(url, 'ad', dataset, model, detector_name)
+    elif detector_type == 'outlier':
+        url = os.path.join(url, 'od', dataset, detector_name)
+    # fetch and save metadata
+    path_meta = os.path.join(url, 'meta.pickle')
+    meta = cp.load(urlopen(path_meta))
+    with open(os.path.join(filepath, 'meta.pickle'), 'wb') as f:
+        pickle.dump(meta, f)
+    # fetch and save state dict
+    path_state = os.path.join(url, meta['name'] + '.pickle')
+    state_dict = cp.load(urlopen(path_state))
+    with open(os.path.join(filepath, meta['name'] + '.pickle'), 'wb') as f:
+        pickle.dump(state_dict, f)
+    # load detector
+    url_models = os.path.join(url, 'model')
+    model_path = os.path.join(filepath, 'model')
+    if not os.path.isdir(model_path):
+        os.mkdir(model_path)
+    if meta['name'] == 'AdversarialAE':
+        # encoder and decoder
+        enc_path = tf.keras.utils.get_file(
+            os.path.join(model_path, 'encoder_net.h5'),
+            os.path.join(url_models, 'encoder_net.h5')
+        )
+        dec_path = tf.keras.utils.get_file(
+            os.path.join(model_path, 'decoder_net.h5'),
+            os.path.join(url_models, 'decoder_net.h5')
+        )
+        encoder_net = tf.keras.models.load_model(enc_path)
+        decoder_net = tf.keras.models.load_model(dec_path)
+        # classifier
+        if dataset == 'cifar10' and model == 'resnet56':
+            custom_objects = {'backend': backend}
+        else:
+            custom_objects = None
+        clf_path = tf.keras.utils.get_file(
+            os.path.join(model_path, 'model.h5'),
+            os.path.join(url_models, 'model.h5')
+        )
+        clf = tf.keras.models.load_model(clf_path, custom_objects=custom_objects)
+        # autoencoder
+        ae = AE(encoder_net, decoder_net)
+        # hidden layers
+        hidden_layer_kld = state_dict['hidden_layer_kld']
+        if isinstance(hidden_layer_kld, dict):
+            model_hl = []
+            for i, (hidden_layer, output_dim) in enumerate(hidden_layer_kld.items()):
+                ckpt_tmp = 'model_hl_' + str(i) + '.ckpt.index'
+                data_0_tmp = 'model_hl_' + str(i) + '.ckpt.data-00000-of-00002'
+                data_1_tmp = 'model_hl_' + str(i) + '.ckpt.data-00001-of-00002'
+                ckpt = tf.keras.utils.get_file(
+                    os.path.join(model_path, ckpt_tmp),
+                    os.path.join(url_models, ckpt_tmp)
+                )
+                data_0 = tf.keras.utils.get_file(  # noqa
+                    os.path.join(model_path, data_0_tmp),
+                    os.path.join(url_models, data_0_tmp)
+                )
+                data_1 = tf.keras.utils.get_file(  # noqa
+                    os.path.join(model_path, data_1_tmp),
+                    os.path.join(url_models, data_1_tmp)
+                )
+                m = DenseHidden(clf, hidden_layer, output_dim)
+                m.load_weights(ckpt[:-6])
+                model_hl.append(m)
+        else:
+            model_hl = None
+        # adversarial detector
+        detector = init_ad_ae(state_dict, ae, clf, model_hl)
+    else:
+        raise NotImplementedError
+    return detector

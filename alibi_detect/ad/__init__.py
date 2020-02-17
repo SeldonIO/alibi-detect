@@ -1,3 +1,3 @@
-from .adversarialvae import AdversarialVAE
+from .adversarialae import AdversarialAE
 
-__all__ = ["AdversarialVAE"]
+__all__ = ["AdversarialAE"]

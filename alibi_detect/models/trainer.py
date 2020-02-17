@@ -1,6 +1,6 @@
 import numpy as np
 import tensorflow as tf
-from typing import Tuple
+from typing import Callable, Tuple
 
 
 def trainer(model: tf.keras.Model,
@@ -9,6 +9,7 @@ def trainer(model: tf.keras.Model,
             y_train: np.ndarray = None,
             optimizer: tf.keras.optimizers = tf.keras.optimizers.Adam(learning_rate=1e-3),
             loss_fn_kwargs: dict = None,
+            preprocess_fn: Callable = None,
             epochs: int = 20,
             batch_size: int = 64,
             buffer_size: int = 1024,
@@ -32,6 +33,8 @@ def trainer(model: tf.keras.Model,
         Optimizer used for training.
     loss_fn_kwargs
         Kwargs for loss function.
+    preprocess_fn
+        Preprocessing function applied to each training batch.
     epochs
         Number of training epochs.
     batch_size
@@ -66,6 +69,9 @@ def trainer(model: tf.keras.Model,
                 X_train_batch = train_batch
             else:
                 X_train_batch, y_train_batch = train_batch
+
+            if isinstance(preprocess_fn, Callable):  # type: ignore
+                X_train_batch = preprocess_fn(X_train_batch)
 
             with tf.GradientTape() as tape:
                 preds = model(X_train_batch)

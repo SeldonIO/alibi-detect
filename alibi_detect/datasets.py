@@ -1,12 +1,17 @@
+import cloudpickle as cp
 import io
+from io import BytesIO
 import logging
 import numpy as np
+import os
 import pandas as pd
 import requests
 from scipy.io import arff
 from sklearn.datasets import fetch_kddcup99
-from typing import Tuple, Union
+from typing import List, Tuple, Union
 import urllib.request
+from urllib.request import urlopen
+from xml.etree import ElementTree
 from alibi_detect.utils.data import Bunch
 
 pd.options.mode.chained_assignment = None  # default='warn'
@@ -118,8 +123,8 @@ def load_url_arff(url: str, dtype: Union[str, np.dtype] = np.float32) -> np.ndar
     -------
     Arrays with data and labels.
     """
-    url_open = urllib.request.urlopen(url)
-    data = arff.loadarff(io.StringIO(url_open.read().decode('utf-8')))[0]
+    resp = urllib.request.urlopen(url)
+    data = arff.loadarff(io.StringIO(resp.read().decode('utf-8')))[0]
     return np.array(data.tolist(), dtype=dtype)
 
 
@@ -153,6 +158,161 @@ def fetch_ecg(return_X_y: bool = False) \
                      data_test=X_test,
                      target_train=y_train,
                      target_test=y_test)
+
+
+def fetch_cifar10c(corruption: Union[str, List[str]], severity: int, return_X_y: bool = False) \
+        -> Union[Bunch, Tuple[np.ndarray, np.ndarray]]:
+    """
+    Fetch CIFAR-10-C data. Originally obtained from https://zenodo.org/record/2535967#.XkKh2XX7Qts and
+    introduced in "Hendrycks, D and Dietterich, T.G. Benchmarking Neural Network Robustness to Common Corruptions
+    and Perturbations. In 7th International Conference on Learning Represenations, 2019.".
+
+    Parameters
+    ----------
+    corruption
+        Corruption type. Options can be checked with `get_corruption_cifar10c()`.
+        Alternatively, specify 'all' for all corruptions at a severity level.
+    severity
+        Severity level of corruption (1-5).
+    return_X_y
+        Bool, whether to only return the data and target values or a Bunch object.
+
+    Returns
+    -------
+    Bunch
+        Corrupted dataset with labels.
+    (corrupted data, target)
+        Tuple if 'return_X_y' equals True.
+    """
+    url = 'https://storage.googleapis.com/seldon-datasets/cifar10c/'
+    n = 10000  # instances per corrupted test set
+    istart, iend = (severity - 1) * n, severity * n  # idx for the relevant severity level
+    corruption_list = corruption_types_cifar10c()  # get all possible corruption types
+    # convert input to list
+    if isinstance(corruption, str) and corruption != 'all':
+        corruption = [corruption]
+    elif corruption == 'all':
+        corruption = corruption_list
+    for corr in corruption:  # check values in corruptions
+        if corr not in corruption_list:
+            raise ValueError(f'{corr} is not a valid corruption type.')
+    # get corrupted data
+    shape = ((len(corruption)) * n, 32, 32, 3)
+    X = np.zeros(shape)
+    for i, corr in enumerate(corruption):
+        url_corruption = os.path.join(url, corr + '.npy')
+        resp = requests.get(url_corruption)
+        X_corr = np.load(BytesIO(resp.content))[istart:iend].astype('float32')
+        X[i * n:(i + 1) * n] = X_corr
+
+    # get labels
+    url_labels = os.path.join(url, 'labels.npy')
+    resp = requests.get(url_labels)
+    y = np.load(BytesIO(resp.content))[istart:iend].astype('int64')
+    if X.shape[0] != y.shape[0]:
+        repeat = X.shape[0] // y.shape[0]
+        y = np.tile(y, (repeat,))
+
+    if return_X_y:
+        return (X, y)
+    else:
+        return Bunch(data=X, target=y)
+
+
+def google_bucket_list(url: str, folder: str, filetype: str = None, full_path: bool = False) -> List[str]:
+    """
+    Retrieve list with items in google bucket folder.
+
+    Parameters
+    ----------
+    url
+        Bucket directory.
+    folder
+        Folder to retrieve list of items from.
+    filetype
+        File extension, e.g. `npy` for saved numpy arrays.
+
+    Returns
+    -------
+    List with items in the folder of the google bucket.
+    """
+    req = requests.get(url)
+    root = ElementTree.fromstring(req.content)
+    bucket_list = []
+    for r in root:
+        if list(r):
+            filepath = r[0].text
+            if filetype is not None:
+                if filepath.startswith(folder) and filepath.endswith(filetype):
+                    istart, istop = filepath.find('/') + 1, filepath.find('.')
+                    bucket_list.append(filepath[istart:istop])
+            else:
+                if filepath.startswith(folder):
+                    istart, istop = filepath.find('/') + 1, filepath.find('.')
+                    bucket_list.append(filepath[istart:istop])
+    return bucket_list
+
+
+def corruption_types_cifar10c() -> List[str]:
+    """
+    Retrieve list with corruption types used in CIFAR-10-C.
+
+    Returns
+    -------
+    List with corruption types.
+    """
+    url = 'https://storage.googleapis.com/seldon-datasets/'
+    folder = 'cifar10c'
+    filetype = 'npy'
+    corruption_types = google_bucket_list(url, folder, filetype)
+    corruption_types.remove('labels')
+    return corruption_types
+
+
+def fetch_attack(dataset: str, model: str, attack: str, return_X_y: bool = False) \
+        -> Union[Bunch, Tuple[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray]]]:
+    """
+    Load adversarial instances for a given dataset, model and attack type.
+
+    Parameters
+    ----------
+    dataset
+        Dataset under attack.
+    model
+        Model under attack.
+    attack
+        Attack name.
+    return_X_y
+        Bool, whether to only return the data and target values or a Bunch object.
+
+    Returns
+    -------
+    Bunch
+        Adversarial instances with original labels.
+    (train data, train target), (test data, test target)
+        Tuple of tuples if 'return_X_y' equals True.
+    """
+    # define paths
+    url = 'https://storage.googleapis.com/seldon-datasets/'
+    path_attack = os.path.join(url, dataset, 'attacks', model, attack)
+    path_data = path_attack + '.npz'
+    path_meta = path_attack + '_meta.pickle'
+    # get adversarial instances and labels
+    resp = requests.get(path_data)
+    data = np.load(BytesIO(resp.content))
+    X_train, X_test = data['X_train_adv'], data['X_test_adv']
+    y_train, y_test = data['y_train'], data['y_test']
+
+    if return_X_y:
+        return (X_train, y_train), (X_test, y_test)
+
+    # get metadata
+    meta = cp.load(urlopen(path_meta))
+    return Bunch(data_train=X_train,
+                 data_test=X_test,
+                 target_train=y_train,
+                 target_test=y_test,
+                 meta=meta)
 
 
 def fetch_nab(ts: str,

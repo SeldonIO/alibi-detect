@@ -1,6 +1,6 @@
 import numpy as np
 import tensorflow as tf
-from alibi_detect.models.losses import elbo, loss_adv_vae, loss_aegmm, loss_vaegmm
+from alibi_detect.models.losses import elbo, loss_adv_ae, loss_aegmm, loss_vaegmm
 
 N, K, D, F = 10, 5, 1, 3
 x = np.random.rand(N, F).astype(np.float32)
@@ -43,8 +43,8 @@ outputs = tf.keras.layers.Dense(5, activation=tf.nn.softmax)(inputs)
 model = tf.keras.Model(inputs=inputs, outputs=outputs)
 
 
-def test_loss_adv_vae():
-    loss = loss_adv_vae(x, y, model, w_model=1., w_recon=0.)
-    loss_with_recon = loss_adv_vae(x, y, model, w_model=1., w_recon=1.)
+def test_loss_adv_ae():
+    loss = loss_adv_ae(x, y, model, w_model=1., w_recon=0.)
+    loss_with_recon = loss_adv_ae(x, y, model, w_model=1., w_recon=1.)
     assert loss > 0.
     assert loss_with_recon > loss
