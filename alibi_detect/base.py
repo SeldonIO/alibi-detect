@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 import copy
 import numpy as np
-from typing import Dict, Tuple
+from typing import Dict
 
 DEFAULT_DATA = {"instance_score": None}  # type: Dict
 DEFAULT_META = {"name": None,
