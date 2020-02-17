@@ -77,7 +77,7 @@ def test_adv_vae(adv_ae_params):
     advae.infer_threshold(X, threshold_perc=threshold_perc)
     iscore = advae.score(X)
     perc_score = 100 * (iscore < advae.threshold).astype(int).sum() / iscore.shape[0]
-    assert threshold_perc + 15 > perc_score > threshold_perc - 15
+    assert threshold_perc + 1 > perc_score > threshold_perc - 1
 
     # make and check predictions
     ad_preds = advae.predict(X, return_instance_score=return_instance_score)
