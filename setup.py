@@ -28,7 +28,7 @@ setup(
     install_requires=[
         "creme",
         "fbprophet",
-        "holidays>=0.9.11",
+        "holidays==0.9.11",
         "matplotlib",
         "numpy",
         "pandas",
