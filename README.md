@@ -116,3 +116,18 @@ Advised use cases:
 ## Integrations
 
 The integrations folder contains various wrapper tools to allow the alibi-detect algorithms to be used in production machine learning systems with [examples](https://github.com/SeldonIO/alibi-detect/tree/master/integrations/samples/kfserving) on how to deploy outlier and adversarial detectors with [KFServing](https://www.kubeflow.org/docs/components/serving/kfserving/).
+
+## Citations
+If you use alibi-detect in your research, please consider citing it.
+
+BibTeX entry:
+
+```
+@software{alibi-detect,
+  title = {{Alibi-Detect}: Algorithms for outlier and adversarial instance detection, concept drift and metrics.},
+  author = {Van Looveren, Arnaud and Vacanti, Giovanni and Klaise, Janis and Coca, Alexandru},
+  url = {https://github.com/SeldonIO/alibi-detect},
+  version = {0.3.0},
+  date = {2020-02-17},
+}
+```
