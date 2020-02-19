@@ -1,5 +1,5 @@
 CIFAR10OD_IMAGE=cifar10od
-CIFAR10OD_TAG=0.0.3
+CIFAR10OD_TAG=0.0.4
 
 vae_outlier_detector:
 	gsutil cp -r gs://seldon-models/odcd/vae_outlier_detector .
@@ -27,7 +27,7 @@ docker-push-cifar10od:
 	docker push seldonio/${CIFAR10OD_IMAGE}:${CIFAR10OD_TAG} 
 
 docker-run-cifar10od:
-	docker run --name ${CIFAR10OD_IMAGE} -it --rm -p 8080:8080 seldonio/${CIFAR10OD_IMAGE}:${CIFAR10OD_TAG} --model_name cifar10id --storage_uri ./vae_outlier_detector/
+	docker run --name ${CIFAR10OD_IMAGE} -it --rm -p 8080:8080 seldonio/${CIFAR10OD_IMAGE}:${CIFAR10OD_TAG} --model_name cifar10id --storage_uri ./vae_outlier_detector/ --event-type=org.kubeflow.serving.inference.outlier
 
 
 curl-cifar10od-local:

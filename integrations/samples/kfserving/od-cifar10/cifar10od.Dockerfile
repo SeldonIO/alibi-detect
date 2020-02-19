@@ -1,4 +1,4 @@
-FROM python:3.7-slim
+FROM python:3.7
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends git \
@@ -19,7 +19,7 @@ RUN git clone https://github.com/kubeflow/kfserving.git && \
 #    cd alibi-detect && \
 #    pip install -e .
 
-RUN git clone https://github.com/seldonio/seldon-models.git && \
+RUN git clone --branch 1393-od-reqlogging https://github.com/ryandawsonuk/seldon-models.git && \
     cd seldon-models/servers/cloudevents && \
     pip install -e .
 
