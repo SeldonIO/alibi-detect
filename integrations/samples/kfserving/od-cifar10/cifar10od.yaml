@@ -16,6 +16,6 @@ spec:
         - --storage_uri
         - ./vae_outlier_detector/
         - --reply_url
-        - http://message-dumper.default
+        - http://seldon-request-logger.default
         - --event-type
         - org.kubeflow.serving.inference.outlier
