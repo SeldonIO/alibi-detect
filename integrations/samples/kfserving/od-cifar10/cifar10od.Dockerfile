@@ -11,6 +11,7 @@ RUN chmod -R a+w /workspace
 
 RUN pip install --upgrade pip
 
+ADD https://api.github.com/repos/kubeflow/kfserving/git/refs/heads/master version.json
 RUN git clone https://github.com/kubeflow/kfserving.git && \
     cd kfserving/python && \
     pip install -e ./kfserving
@@ -19,6 +20,7 @@ RUN git clone https://github.com/kubeflow/kfserving.git && \
 #    cd alibi-detect && \
 #    pip install -e .
 
+ADD https://api.github.com/repos/ryandawsonuk/seldon-models/git/refs/heads/1393-od-reqlogging version.json
 RUN git clone --branch 1393-od-reqlogging https://github.com/ryandawsonuk/seldon-models.git && \
     cd seldon-models/servers/cloudevents && \
     pip install -e .
