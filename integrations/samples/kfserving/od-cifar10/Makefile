@@ -31,7 +31,7 @@ docker-run-cifar10od:
 	docker run --name ${CIFAR10OD_IMAGE} -it --rm -p 8080:8080 seldonio/${CIFAR10OD_IMAGE}:${CIFAR10OD_TAG} --model_name cifar10id --storage_uri ./vae_outlier_detector/ --event_type org.kubeflow.serving.inference.outlier
 
 local-run:
-	cd cifar10od & python -m cifar10od --http_port 9090 --protocol tensorflow.http --event_type org.kubeflow.serving.inference.outlier --storage_uri file://$(LOCAL_DIR)/vae_outlier_detector/
+	cd cifar10od & python -m cifar10od --http_port 8080 --protocol tensorflow.http --event_type org.kubeflow.serving.inference.outlier --storage_uri file://$(LOCAL_DIR)/vae_outlier_detector/ --reply_url http://localhost:2222
 
 curl-cifar10od-local:
 	curl -v localhost:8080/ -d @./input.json 

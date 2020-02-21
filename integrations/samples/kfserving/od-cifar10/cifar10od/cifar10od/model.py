@@ -63,5 +63,3 @@ class Cifar10OutlierModel(adserver.AlibiDetectModel):  # pylint:disable=c-extens
     def event_source(self) -> str:
         return EVENT_SOURCE_PREFIX + self.name
 
-    def event_type(self) -> str:
-        return self.event_type()
