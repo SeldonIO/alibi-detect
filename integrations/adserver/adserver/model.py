@@ -1,6 +1,6 @@
 import json
 from typing import List, Dict
-
+import logging
 import ceserver
 import kfserving
 import numpy as np
@@ -57,6 +57,9 @@ class AlibiDetectModel(ceserver.CEModel):  # pylint:disable=c-extension-no-membe
              Alibi Detect response
 
         """
+        logging.info('PROCESSING EVENT.')
+        logging.info(str(headers))
+        logging.info('----')
         try:
             X = np.array(inputs)
         except Exception as e:
