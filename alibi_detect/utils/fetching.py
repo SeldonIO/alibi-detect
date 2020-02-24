@@ -10,7 +10,7 @@ from alibi_detect.base import BaseDetector
 from alibi_detect.ad import AdversarialAE
 from alibi_detect.od import (IForest, Mahalanobis, OutlierAE, OutlierAEGMM, OutlierProphet,
                              OutlierSeq2Seq, OutlierVAE, OutlierVAEGMM, SpectralResidual)
-from alibi_detect.utils.saving import load_detector
+from alibi_detect.utils.saving import load_detector  # type: ignore
 
 logger = logging.getLogger(__name__)
 
