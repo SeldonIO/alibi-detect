@@ -51,7 +51,7 @@ class EncoderVAE(Layer):
         super(EncoderVAE, self).__init__(name=name)
         self.encoder_net = encoder_net
         self.fc_mean = Dense(latent_dim, activation=None)
-        self.fc_log_var = Dense(latent_dim, activation=tf.nn.softplus)
+        self.fc_log_var = Dense(latent_dim, activation=None)
         self.sampling = Sampling()
 
     def call(self, x: tf.Tensor) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:

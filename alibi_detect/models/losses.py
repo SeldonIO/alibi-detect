@@ -41,7 +41,7 @@ def elbo(y_true: tf.Tensor,
         y_mn = tfp.distributions.MultivariateNormalDiag(Flatten()(y_pred),
                                                         scale_diag=cov_diag,
                                                         scale_identity_multiplier=sim)
-    loss = -tf.reduce_sum(y_mn.log_prob(Flatten()(y_true)))
+    loss = -tf.reduce_mean(y_mn.log_prob(Flatten()(y_true)))
     return loss
 
 
