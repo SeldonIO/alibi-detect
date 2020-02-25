@@ -22,7 +22,7 @@ spec:
   template:
     spec:
       containers:
-        - image: docker.io/ryandawsonuk/seldon-request-logger-cifar:0.0.4
+        - image: docker.io/seldonio/seldon-request-logger-cifar:0.2.0
           imagePullPolicy: Always
           env:
            - name: ELASTICSEARCH_HOST
