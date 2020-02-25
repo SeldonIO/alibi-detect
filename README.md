@@ -23,7 +23,6 @@ pip install alibi-detect
 This will install `alibi-detect` with all its dependencies:
 ```bash
   creme
-  fbprophet
   matplotlib
   numpy
   pandas
@@ -32,6 +31,11 @@ This will install `alibi-detect` with all its dependencies:
   tensorflow>=2
   tensorflow_probability>=0.8
 ```
+The Prophet outlier detector is optional and can be included via:
+```bash
+pip install alibi-detect[prophet]
+```
+The save and load functionality for this detector is currently experiencing [issues in Python 3.6](https://github.com/facebook/prophet/issues/1361) but works in Python 3.7.
 
 ## Supported algorithms
 
