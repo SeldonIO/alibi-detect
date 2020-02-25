@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from sklearn.metrics import roc_curve, auc
 from typing import Dict, Union
 
 
@@ -326,4 +327,34 @@ def plot_feature_outlier_ts(od_preds: Dict,
 
         n_subplot += 1
 
+    plt.show()
+
+
+def plot_roc(roc_data: Dict[str, Dict[str, np.ndarray]], figsize: tuple = (10, 5)) -> None:
+    """
+    Plot ROC curve.
+
+    Parameters
+    ----------
+    roc_data
+        Dictionary with as key the label to show in the legend and as value another dictionary with as
+        keys `scores` and `labels` with respectively the outlier scores and outlier labels.
+    figsize
+        Figure size.
+    """
+    fig, axes = plt.subplots(nrows=1, ncols=1, figsize=figsize)
+
+    for k, v in roc_data.items():
+        fpr, tpr, thresholds = roc_curve(v['labels'], v['scores'])
+        roc_auc = auc(fpr, tpr)
+        plt.plot(fpr, tpr, lw=1, label='{}: AUC={:.4f}'.format(k, roc_auc))
+
+    plt.plot([0, 1], [0, 1], color='black', lw=1, linestyle='--')
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('{}'.format('ROC curve'))
+    plt.legend(loc="lower right", ncol=1)
+    plt.grid()
     plt.show()

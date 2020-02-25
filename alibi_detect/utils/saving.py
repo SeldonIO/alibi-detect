@@ -1,14 +1,11 @@
 # type: ignore
 # TODO: need to rewrite utilities using isinstance or @singledispatch for type checking to work properly
 
-import cloudpickle as cp
 import logging
 import os
 import pickle
 import tensorflow as tf
-from tensorflow.python.keras import backend
 from typing import Dict, List, Union
-from urllib.request import urlopen
 from alibi_detect.ad import AdversarialAE
 from alibi_detect.ad.adversarialae import DenseHidden
 from alibi_detect.base import BaseDetector
@@ -527,7 +524,7 @@ def save_tf_s2s(od: OutlierSeq2Seq,
         logger.warning('No `tf.keras.Model` Seq2Seq detected. No Seq2Seq model saved.')
 
 
-def load_detector(filepath: str) -> Data:
+def load_detector(filepath: str, **kwargs) -> Data:
     """
     Load outlier or adversarial detector.
 
@@ -540,6 +537,11 @@ def load_detector(filepath: str) -> Data:
     -------
     Loaded outlier or adversarial detector object.
     """
+    if kwargs:
+        k = list(kwargs.keys())
+    else:
+        k = []
+
     # check if path exists
     if not os.path.isdir(filepath):
         raise ValueError('{} does not exist.'.format(filepath))
@@ -573,7 +575,8 @@ def load_detector(filepath: str) -> Data:
         detector = init_od_vaegmm(state_dict, vaegmm)
     elif detector_name == 'AdversarialAE':
         ae = load_tf_ae(filepath)
-        model = load_tf_model(filepath)
+        custom_objects = kwargs['custom_objects'] if 'custom_objects' in k else None
+        model = load_tf_model(filepath, custom_objects=custom_objects)
         model_hl = load_tf_hl(filepath, model, state_dict)
         detector = init_ad_ae(state_dict, ae, model, model_hl)
     elif detector_name == 'OutlierProphet':
@@ -588,7 +591,7 @@ def load_detector(filepath: str) -> Data:
     return detector
 
 
-def load_tf_model(filepath: str, load_dir: str = None) -> tf.keras.Model:
+def load_tf_model(filepath: str, load_dir: str = None, custom_objects: dict = None) -> tf.keras.Model:
     """
     Load TensorFlow model.
 
@@ -598,6 +601,8 @@ def load_tf_model(filepath: str, load_dir: str = None) -> tf.keras.Model:
         Saved model directory.
     load_dir
         Saved model folder.
+    custom_objects
+        Optional custom objects when loading the TensorFlow model.
 
     Returns
     -------
@@ -610,7 +615,7 @@ def load_tf_model(filepath: str, load_dir: str = None) -> tf.keras.Model:
     if 'model.h5' not in [f for f in os.listdir(model_dir) if not f.startswith('.')]:
         logger.warning('No model found in {}.'.format(model_dir))
         return None
-    model = tf.keras.models.load_model(os.path.join(model_dir, 'model.h5'))
+    model = tf.keras.models.load_model(os.path.join(model_dir, 'model.h5'), custom_objects=custom_objects)
     return model
 
 
@@ -1013,111 +1018,3 @@ def init_od_sr(state_dict: Dict) -> SpectralResidual:
                           n_est_points=state_dict['n_est_points'],
                           n_grad_points=state_dict['n_grad_points'])
     return od
-
-
-def fetch_tf_model(dataset: str, model: str):
-    """
-    Fetch pretrained tensorflow models from the google cloud bucket.
-
-    Parameters
-    ----------
-    dataset
-        Dataset trained on.
-    model
-        Model name.
-
-    Returns
-    -------
-    Pretrained tensorflow model.
-    """
-    url = 'https://storage.googleapis.com/seldon-models/alibi-detect/classifier/'
-    path_model = os.path.join(url, dataset, model, 'model.h5')
-    save_path = tf.keras.utils.get_file(model, path_model)
-    if dataset == 'cifar10' and model == 'resnet56':
-        custom_objects = {'backend': backend}
-    else:
-        custom_objects = None
-    clf = tf.keras.models.load_model(save_path, custom_objects=custom_objects)
-    return clf
-
-
-def fetch_detector(filepath: str, detector_type: str, dataset: str,
-                   detector_name: str, model=None):
-    filepath = os.path.join(filepath, detector_name)
-    if not os.path.isdir(filepath):
-        logger.warning('Directory {} does not exist and is now created.'.format(filepath))
-        os.mkdir(filepath)
-    url = 'https://storage.googleapis.com/seldon-models/alibi-detect/'
-    if detector_type == 'adversarial':
-        url = os.path.join(url, 'ad', dataset, model, detector_name)
-    elif detector_type == 'outlier':
-        url = os.path.join(url, 'od', dataset, detector_name)
-    # fetch and save metadata
-    path_meta = os.path.join(url, 'meta.pickle')
-    meta = cp.load(urlopen(path_meta))
-    with open(os.path.join(filepath, 'meta.pickle'), 'wb') as f:
-        pickle.dump(meta, f)
-    # fetch and save state dict
-    path_state = os.path.join(url, meta['name'] + '.pickle')
-    state_dict = cp.load(urlopen(path_state))
-    with open(os.path.join(filepath, meta['name'] + '.pickle'), 'wb') as f:
-        pickle.dump(state_dict, f)
-    # load detector
-    url_models = os.path.join(url, 'model')
-    model_path = os.path.join(filepath, 'model')
-    if not os.path.isdir(model_path):
-        os.mkdir(model_path)
-    if meta['name'] == 'AdversarialAE':
-        # encoder and decoder
-        enc_path = tf.keras.utils.get_file(
-            os.path.join(model_path, 'encoder_net.h5'),
-            os.path.join(url_models, 'encoder_net.h5')
-        )
-        dec_path = tf.keras.utils.get_file(
-            os.path.join(model_path, 'decoder_net.h5'),
-            os.path.join(url_models, 'decoder_net.h5')
-        )
-        encoder_net = tf.keras.models.load_model(enc_path)
-        decoder_net = tf.keras.models.load_model(dec_path)
-        # classifier
-        if dataset == 'cifar10' and model == 'resnet56':
-            custom_objects = {'backend': backend}
-        else:
-            custom_objects = None
-        clf_path = tf.keras.utils.get_file(
-            os.path.join(model_path, 'model.h5'),
-            os.path.join(url_models, 'model.h5')
-        )
-        clf = tf.keras.models.load_model(clf_path, custom_objects=custom_objects)
-        # autoencoder
-        ae = AE(encoder_net, decoder_net)
-        # hidden layers
-        hidden_layer_kld = state_dict['hidden_layer_kld']
-        if isinstance(hidden_layer_kld, dict):
-            model_hl = []
-            for i, (hidden_layer, output_dim) in enumerate(hidden_layer_kld.items()):
-                ckpt_tmp = 'model_hl_' + str(i) + '.ckpt.index'
-                data_0_tmp = 'model_hl_' + str(i) + '.ckpt.data-00000-of-00002'
-                data_1_tmp = 'model_hl_' + str(i) + '.ckpt.data-00001-of-00002'
-                ckpt = tf.keras.utils.get_file(
-                    os.path.join(model_path, ckpt_tmp),
-                    os.path.join(url_models, ckpt_tmp)
-                )
-                data_0 = tf.keras.utils.get_file(  # noqa
-                    os.path.join(model_path, data_0_tmp),
-                    os.path.join(url_models, data_0_tmp)
-                )
-                data_1 = tf.keras.utils.get_file(  # noqa
-                    os.path.join(model_path, data_1_tmp),
-                    os.path.join(url_models, data_1_tmp)
-                )
-                m = DenseHidden(clf, hidden_layer, output_dim)
-                m.load_weights(ckpt[:-6])
-                model_hl.append(m)
-        else:
-            model_hl = None
-        # adversarial detector
-        detector = init_ad_ae(state_dict, ae, clf, model_hl)
-    else:
-        raise NotImplementedError
-    return detector

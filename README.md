@@ -107,11 +107,10 @@ Advised use cases:
 | Adversarial AE    | ✔       | ✔     |  ✘          |  ✘    |  ✘                   |  ✘     |  ✘            |
 
 
- - Adversarial Auto-Encoder (paper coming soon)
+ - Adversarial Auto-Encoder ([Vacanti and Van Looveren, 2020](https://arxiv.org/abs/2002.09364))
    - [Documentation](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/adversarialae.html)
    - Examples:
      [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/ad_ae_cifar10.html)
-
 
 ## Integrations
 
