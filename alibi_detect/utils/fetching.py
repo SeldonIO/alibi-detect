@@ -368,6 +368,7 @@ def fetch_detector(filepath: str,
 
     # load detector
     name = meta['name']
+    kwargs = {}
     if name == 'OutlierAE':
         fetch_ae(url, filepath)
     elif name == 'OutlierAEGMM':
@@ -380,5 +381,7 @@ def fetch_detector(filepath: str,
         fetch_seq2seq(url, filepath)
     elif name == 'AdversarialAE':
         fetch_ad_ae(url, filepath, state_dict)
-    detector = load_detector(filepath)
+        if model == 'resnet56':
+            kwargs = {'custom_objects': {'backend': backend}}
+    detector = load_detector(filepath, **kwargs)
     return detector

@@ -524,7 +524,7 @@ def save_tf_s2s(od: OutlierSeq2Seq,
         logger.warning('No `tf.keras.Model` Seq2Seq detected. No Seq2Seq model saved.')
 
 
-def load_detector(filepath: str) -> Data:
+def load_detector(filepath: str, **kwargs) -> Data:
     """
     Load outlier or adversarial detector.
 
@@ -537,6 +537,11 @@ def load_detector(filepath: str) -> Data:
     -------
     Loaded outlier or adversarial detector object.
     """
+    if kwargs:
+        k = list(kwargs.keys())
+    else:
+        k = []
+
     # check if path exists
     if not os.path.isdir(filepath):
         raise ValueError('{} does not exist.'.format(filepath))
@@ -570,7 +575,8 @@ def load_detector(filepath: str) -> Data:
         detector = init_od_vaegmm(state_dict, vaegmm)
     elif detector_name == 'AdversarialAE':
         ae = load_tf_ae(filepath)
-        model = load_tf_model(filepath)
+        custom_objects = kwargs['custom_objects'] if 'custom_objects' in k else None
+        model = load_tf_model(filepath, custom_objects=custom_objects)
         model_hl = load_tf_hl(filepath, model, state_dict)
         detector = init_ad_ae(state_dict, ae, model, model_hl)
     elif detector_name == 'OutlierProphet':
@@ -585,7 +591,7 @@ def load_detector(filepath: str) -> Data:
     return detector
 
 
-def load_tf_model(filepath: str, load_dir: str = None) -> tf.keras.Model:
+def load_tf_model(filepath: str, load_dir: str = None, custom_objects: dict = None) -> tf.keras.Model:
     """
     Load TensorFlow model.
 
@@ -595,6 +601,8 @@ def load_tf_model(filepath: str, load_dir: str = None) -> tf.keras.Model:
         Saved model directory.
     load_dir
         Saved model folder.
+    custom_objects
+        Optional custom objects when loading the TensorFlow model.
 
     Returns
     -------
@@ -607,7 +615,7 @@ def load_tf_model(filepath: str, load_dir: str = None) -> tf.keras.Model:
     if 'model.h5' not in [f for f in os.listdir(model_dir) if not f.startswith('.')]:
         logger.warning('No model found in {}.'.format(model_dir))
         return None
-    model = tf.keras.models.load_model(os.path.join(model_dir, 'model.h5'))
+    model = tf.keras.models.load_model(os.path.join(model_dir, 'model.h5'), custom_objects=custom_objects)
     return model
 
 
