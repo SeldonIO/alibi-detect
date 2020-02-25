@@ -9,10 +9,7 @@ def readme():
 # read version file
 exec(open("alibi_detect/version.py").read())
 
-extras_require = {
-    "examples": ["seaborn", "tqdm"],
-    "prophet": ["fbprophet", "holidays==0.9.11"]
-}
+extras_require = {"examples": ["seaborn", "tqdm"]}
 
 setup(
     name="alibi-detect",
@@ -30,6 +27,8 @@ setup(
     setup_requires=["pytest-runner"],
     install_requires=[
         "creme",
+        "fbprophet",
+        "holidays==0.9.11",
         "matplotlib",
         "numpy",
         "pandas",

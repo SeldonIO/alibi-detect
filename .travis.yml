@@ -7,7 +7,7 @@ before_install:
   - sudo apt-get install pandoc
   - sudo apt-get install build-essential
 install:
-  - pip install -r requirements/requirements_all.txt
+  - pip install -r requirements/requirements.txt
   - pip install -r requirements/requirements_ci.txt
   - pip install -e .
 script:
