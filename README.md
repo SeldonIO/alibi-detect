@@ -20,9 +20,11 @@ alibi-detect can be installed from [PyPI](https://pypi.org/project/alibi-detect)
 ```bash
 pip install alibi-detect
 ```
-This will install `alibi-detect` with the core dependencies:
+This will install `alibi-detect` with all its dependencies:
 ```bash
   creme
+  fbprophet
+  holidays==0.9.11
   matplotlib
   numpy
   pandas
@@ -31,11 +33,7 @@ This will install `alibi-detect` with the core dependencies:
   tensorflow>=2
   tensorflow_probability>=0.8
 ```
-The [Prophet time series outlier detector](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/prophet.html) is optional and can be included via:
-```bash
-pip install alibi-detect[prophet]
-```
-The save and load functionality for this detector is currently experiencing [issues in Python 3.6](https://github.com/facebook/prophet/issues/1361) but works in Python 3.7.
+The save and load functionality for the [Prophet time series outlier detector](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/prophet.html) is currently experiencing [issues in Python 3.6](https://github.com/facebook/prophet/issues/1361) but works in Python 3.7.
 
 ## Supported algorithms
 
