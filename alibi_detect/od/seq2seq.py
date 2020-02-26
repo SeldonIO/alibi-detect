@@ -6,6 +6,7 @@ from typing import Dict, Tuple, Union
 from alibi_detect.models.autoencoder import Seq2Seq, EncoderLSTM, DecoderLSTM
 from alibi_detect.models.trainer import trainer
 from alibi_detect.base import BaseDetector, FitMixin, ThresholdMixin, outlier_prediction_dict
+from alibi_detect.utils.prediction import predict_batch
 
 logger = logging.getLogger(__name__)
 
@@ -136,7 +137,8 @@ class OutlierSeq2Seq(BaseDetector, FitMixin, ThresholdMixin):
     def infer_threshold(self,
                         X: np.ndarray,
                         outlier_perc: Union[int, float] = 100.,
-                        threshold_perc: Union[int, float, np.ndarray, list] = 95.
+                        threshold_perc: Union[int, float, np.ndarray, list] = 95.,
+                        batch_size: int = 1e10
                         ) -> None:
         """
         Update the outlier threshold by using a sequence of instances from the dataset
@@ -152,6 +154,8 @@ class OutlierSeq2Seq(BaseDetector, FitMixin, ThresholdMixin):
         threshold_perc
             Percentage of X considered to be normal based on the outlier score.
             Overall (float) or feature-wise (array or list).
+        batch_size
+            Batch size used when making predictions with the seq2seq model.
         """
         orig_shape = X.shape
         threshold_shape = (1, orig_shape[-1])
@@ -159,7 +163,7 @@ class OutlierSeq2Seq(BaseDetector, FitMixin, ThresholdMixin):
             threshold_shape = (1,) + threshold_shape  # type: ignore
 
         # compute outlier scores
-        fscore, iscore = self.score(X, outlier_perc=outlier_perc)
+        fscore, iscore = self.score(X, outlier_perc=outlier_perc, batch_size=batch_size)
         if outlier_perc == 100.:
             fscore = fscore.reshape((-1, self.shape[-1]))
 
@@ -201,7 +205,7 @@ class OutlierSeq2Seq(BaseDetector, FitMixin, ThresholdMixin):
         -------
         Feature level outlier scores. Scores above 0 are outliers.
         """
-        fscore = (X_orig - X_recon) ** 2  # MSE
+        fscore = (X_orig - X_recon) ** 2
         # TODO: check casting if nb of features equals time dimension
         fscore_adj = fscore - threshold_est - self.threshold
         return fscore_adj
@@ -229,7 +233,8 @@ class OutlierSeq2Seq(BaseDetector, FitMixin, ThresholdMixin):
         iscore = np.mean(sorted_fscore_perc, axis=1)
         return iscore
 
-    def score(self, X: np.ndarray, outlier_perc: float = 100.) -> Tuple[np.ndarray, np.ndarray]:
+    def score(self, X: np.ndarray, outlier_perc: float = 100., batch_size: int = 1e10) \
+            -> Tuple[np.ndarray, np.ndarray]:
         """
         Compute feature and instance level outlier scores.
 
@@ -239,6 +244,8 @@ class OutlierSeq2Seq(BaseDetector, FitMixin, ThresholdMixin):
             Univariate or multivariate time series.
         outlier_perc
             Percentage of sorted feature level outlier scores used to predict instance level outlier.
+        batch_size
+            Batch size used when making predictions with the seq2seq model.
 
         Returns
         -------
@@ -248,7 +255,7 @@ class OutlierSeq2Seq(BaseDetector, FitMixin, ThresholdMixin):
         orig_shape = X.shape
         if len(orig_shape) == 2:
             X = X.reshape(self.shape)
-        X_recon, threshold_est = self.seq2seq.decode_seq(X)
+        X_recon, threshold_est = predict_batch(self.seq2seq.decode_seq, X, batch_size=batch_size)
 
         if len(orig_shape) == 2:  # reshape back to original shape
             X = X.reshape(orig_shape)
@@ -264,6 +271,7 @@ class OutlierSeq2Seq(BaseDetector, FitMixin, ThresholdMixin):
                 X: np.ndarray,
                 outlier_type: str = 'instance',
                 outlier_perc: float = 100.,
+                batch_size: int = 1e10,
                 return_feature_score: bool = True,
                 return_instance_score: bool = True) \
             -> Dict[Dict[str, str], Dict[np.ndarray, np.ndarray]]:
@@ -278,6 +286,8 @@ class OutlierSeq2Seq(BaseDetector, FitMixin, ThresholdMixin):
             Predict outliers at the 'feature' or 'instance' level.
         outlier_perc
             Percentage of sorted feature level outlier scores used to predict instance level outlier.
+        batch_size
+            Batch size used when making predictions with the seq2seq model.
         return_feature_score
             Whether to return feature level outlier scores.
         return_instance_score
@@ -290,7 +300,7 @@ class OutlierSeq2Seq(BaseDetector, FitMixin, ThresholdMixin):
         'data' contains the outlier predictions and both feature and instance level outlier scores.
         """
         # compute outlier scores
-        fscore, iscore = self.score(X, outlier_perc=outlier_perc)
+        fscore, iscore = self.score(X, outlier_perc=outlier_perc, batch_size=batch_size)
         if outlier_type == 'feature':
             outlier_score = fscore
         elif outlier_type == 'instance':

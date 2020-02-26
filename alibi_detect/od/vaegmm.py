@@ -8,6 +8,7 @@ from alibi_detect.models.gmm import gmm_energy, gmm_params
 from alibi_detect.models.losses import loss_vaegmm
 from alibi_detect.models.trainer import trainer
 from alibi_detect.base import BaseDetector, FitMixin, ThresholdMixin, outlier_prediction_dict
+from alibi_detect.utils.prediction import predict_batch
 
 logger = logging.getLogger(__name__)
 
@@ -160,7 +161,8 @@ class OutlierVAEGMM(BaseDetector, FitMixin, ThresholdMixin):
 
     def infer_threshold(self,
                         X: np.ndarray,
-                        threshold_perc: float = 95.
+                        threshold_perc: float = 95.,
+                        batch_size: int = 1e10
                         ) -> None:
         """
         Update threshold by a value inferred from the percentage of instances considered to be
@@ -172,14 +174,16 @@ class OutlierVAEGMM(BaseDetector, FitMixin, ThresholdMixin):
             Batch of instances.
         threshold_perc
             Percentage of X considered to be normal based on the outlier score.
+        batch_size
+            Batch size used when making predictions with the VAEGMM.
         """
         # compute outlier scores
-        iscore = self.score(X)
+        iscore = self.score(X, batch_size=batch_size)
 
         # update threshold
         self.threshold = np.percentile(iscore, threshold_perc)
 
-    def score(self, X: np.ndarray) -> np.ndarray:
+    def score(self, X: np.ndarray, batch_size: int = 1e10) -> np.ndarray:
         """
         Compute outlier scores.
 
@@ -187,6 +191,8 @@ class OutlierVAEGMM(BaseDetector, FitMixin, ThresholdMixin):
         ----------
         X
             Batch of instances to analyze.
+        batch_size
+            Batch size used when making predictions with the VAEGMM.
 
         Returns
         -------
@@ -194,7 +200,7 @@ class OutlierVAEGMM(BaseDetector, FitMixin, ThresholdMixin):
         """
         # draw samples from latent space
         X_samples = np.repeat(X, self.samples, axis=0)
-        _, z, _ = self.vaegmm(X_samples)
+        _, z, _ = predict_batch(self.vaegmm, X_samples, batch_size=batch_size)
 
         # compute average energy for samples
         energy, _ = gmm_energy(z, self.phi, self.mu, self.cov, self.L, self.log_det_cov, return_mean=False)
@@ -204,6 +210,7 @@ class OutlierVAEGMM(BaseDetector, FitMixin, ThresholdMixin):
 
     def predict(self,
                 X: np.ndarray,
+                batch_size: int = 1e10,
                 return_instance_score: bool = True) \
             -> Dict[Dict[str, str], Dict[np.ndarray, np.ndarray]]:
         """
@@ -213,6 +220,8 @@ class OutlierVAEGMM(BaseDetector, FitMixin, ThresholdMixin):
         ----------
         X
             Batch of instances.
+        batch_size
+            Batch size used when making predictions with the VAEGMM.
         return_instance_score
             Whether to return instance level outlier scores.
 
@@ -223,7 +232,7 @@ class OutlierVAEGMM(BaseDetector, FitMixin, ThresholdMixin):
         'data' contains the outlier predictions and instance level outlier scores.
         """
         # compute outlier scores
-        iscore = self.score(X)
+        iscore = self.score(X, batch_size=batch_size)
 
         # values above threshold are outliers
         outlier_pred = (iscore > self.threshold).astype(int)

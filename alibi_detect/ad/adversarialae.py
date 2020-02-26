@@ -199,7 +199,7 @@ class AdversarialAE(BaseDetector, FitMixin, ThresholdMixin):
                         X: np.ndarray,
                         threshold_perc: float = 99.,
                         margin: float = 0.,
-                        batch_size: int = 64
+                        batch_size: int = 1e10
                         ) -> None:
         """
         Update threshold by a value inferred from the percentage of instances considered to be
@@ -223,7 +223,7 @@ class AdversarialAE(BaseDetector, FitMixin, ThresholdMixin):
         # update threshold
         self.threshold = np.percentile(adv_score, threshold_perc) + margin
 
-    def score(self, X: np.ndarray, batch_size: int = 64, return_predictions: bool = False) \
+    def score(self, X: np.ndarray, batch_size: int = 1e10, return_predictions: bool = False) \
             -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray, np.ndarray]]:
         """
         Compute adversarial scores.
@@ -267,7 +267,7 @@ class AdversarialAE(BaseDetector, FitMixin, ThresholdMixin):
         else:
             return adv_score
 
-    def predict(self, X: np.ndarray, batch_size: int = 64, return_instance_score: bool = True) \
+    def predict(self, X: np.ndarray, batch_size: int = 1e10, return_instance_score: bool = True) \
             -> Dict[Dict[str, str], Dict[str, np.ndarray]]:
         """
         Predict whether instances are adversarial instances or not.
@@ -300,7 +300,7 @@ class AdversarialAE(BaseDetector, FitMixin, ThresholdMixin):
             ad['data']['instance_score'] = adv_score
         return ad
 
-    def correct(self, X: np.ndarray, batch_size: int = 64,
+    def correct(self, X: np.ndarray, batch_size: int = 1e10,
                 return_instance_score: bool = True, return_all_predictions: bool = True) \
             -> Dict[Dict[str, str], Dict[str, np.ndarray]]:
         """

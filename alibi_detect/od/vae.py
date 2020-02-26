@@ -7,6 +7,7 @@ from alibi_detect.models.autoencoder import VAE
 from alibi_detect.models.trainer import trainer
 from alibi_detect.models.losses import elbo
 from alibi_detect.base import BaseDetector, FitMixin, ThresholdMixin, outlier_prediction_dict
+from alibi_detect.utils.prediction import predict_batch
 
 logger = logging.getLogger(__name__)
 
@@ -135,7 +136,8 @@ class OutlierVAE(BaseDetector, FitMixin, ThresholdMixin):
                         X: np.ndarray,
                         outlier_type: str = 'instance',
                         outlier_perc: float = 100.,
-                        threshold_perc: float = 95.
+                        threshold_perc: float = 95.,
+                        batch_size: int = 1e10
                         ) -> None:
         """
         Update threshold by a value inferred from the percentage of instances considered to be
@@ -151,9 +153,11 @@ class OutlierVAE(BaseDetector, FitMixin, ThresholdMixin):
             Percentage of sorted feature level outlier scores used to predict instance level outlier.
         threshold_perc
             Percentage of X considered to be normal based on the outlier score.
+        batch_size
+            Batch size used when making predictions with the VAE.
         """
         # compute outlier scores
-        fscore, iscore = self.score(X, outlier_perc=outlier_perc)
+        fscore, iscore = self.score(X, outlier_perc=outlier_perc, batch_size=batch_size)
         if outlier_type == 'feature':
             outlier_score = fscore
         elif outlier_type == 'instance':
@@ -209,7 +213,8 @@ class OutlierVAE(BaseDetector, FitMixin, ThresholdMixin):
         iscore = np.mean(sorted_fscore_perc, axis=1)
         return iscore
 
-    def score(self, X: np.ndarray, outlier_perc: float = 100.) -> Tuple[np.ndarray, np.ndarray]:
+    def score(self, X: np.ndarray, outlier_perc: float = 100., batch_size: int = 1e10) \
+            -> Tuple[np.ndarray, np.ndarray]:
         """
         Compute feature and instance level outlier scores.
 
@@ -219,6 +224,8 @@ class OutlierVAE(BaseDetector, FitMixin, ThresholdMixin):
             Batch of instances.
         outlier_perc
             Percentage of sorted feature level outlier scores used to predict instance level outlier.
+        batch_size
+            Batch size used when making predictions with the VAE.
 
         Returns
         -------
@@ -226,7 +233,7 @@ class OutlierVAE(BaseDetector, FitMixin, ThresholdMixin):
         """
         # sample reconstructed instances
         X_samples = np.repeat(X, self.samples, axis=0)
-        X_recon = self.vae(X_samples)
+        X_recon = predict_batch(self.vae, X_samples, batch_size=batch_size)
 
         # compute feature and instance level scores
         fscore = self.feature_score(X_samples, X_recon)
@@ -238,6 +245,7 @@ class OutlierVAE(BaseDetector, FitMixin, ThresholdMixin):
                 X: np.ndarray,
                 outlier_type: str = 'instance',
                 outlier_perc: float = 100.,
+                batch_size: int = 1e10,
                 return_feature_score: bool = True,
                 return_instance_score: bool = True) \
             -> Dict[Dict[str, str], Dict[np.ndarray, np.ndarray]]:
@@ -252,6 +260,8 @@ class OutlierVAE(BaseDetector, FitMixin, ThresholdMixin):
             Predict outliers at the 'feature' or 'instance' level.
         outlier_perc
             Percentage of sorted feature level outlier scores used to predict instance level outlier.
+        batch_size
+            Batch size used when making predictions with the VAE.
         return_feature_score
             Whether to return feature level outlier scores.
         return_instance_score
@@ -264,7 +274,7 @@ class OutlierVAE(BaseDetector, FitMixin, ThresholdMixin):
         'data' contains the outlier predictions and both feature and instance level outlier scores.
         """
         # compute outlier scores
-        fscore, iscore = self.score(X, outlier_perc=outlier_perc)
+        fscore, iscore = self.score(X, outlier_perc=outlier_perc, batch_size=batch_size)
         if outlier_type == 'feature':
             outlier_score = fscore
         elif outlier_type == 'instance':
