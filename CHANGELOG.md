@@ -1,5 +1,15 @@
 # Change Log
 
+## [v0.3.1](https://github.com/SeldonIO/alibi-detect/tree/v0.3.1) (2020-02-26)
+[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.3.0...v0.3.1)
+### Added
+- Adversarial autoencoder detection method (offline method, `alibi_detect.ad.adversarialae.AdversarialAE`)
+- Add pretrained adversarial and outlier detectors to Google Cloud Bucket and include fetch functionality
+- Add data/concept drift dataset (CIFAR-10-C) to Google Cloud Bucket and include fetch functionality 
+- Update VAE loss function and log var layer
+- Fix tests for Prophet outlier detector on Python 3.6
+- Add batch sizes for all detectors
+
 ## [v0.3.0](https://github.com/SeldonIO/alibi-detect/tree/v0.3.0) (2020-01-17)
 [Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.2.0...v0.3.0)
 ### Added
