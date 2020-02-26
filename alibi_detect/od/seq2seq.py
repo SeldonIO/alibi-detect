@@ -138,7 +138,7 @@ class OutlierSeq2Seq(BaseDetector, FitMixin, ThresholdMixin):
                         X: np.ndarray,
                         outlier_perc: Union[int, float] = 100.,
                         threshold_perc: Union[int, float, np.ndarray, list] = 95.,
-                        batch_size: int = 1e10
+                        batch_size: int = int(1e10)
                         ) -> None:
         """
         Update the outlier threshold by using a sequence of instances from the dataset
@@ -233,7 +233,7 @@ class OutlierSeq2Seq(BaseDetector, FitMixin, ThresholdMixin):
         iscore = np.mean(sorted_fscore_perc, axis=1)
         return iscore
 
-    def score(self, X: np.ndarray, outlier_perc: float = 100., batch_size: int = 1e10) \
+    def score(self, X: np.ndarray, outlier_perc: float = 100., batch_size: int = int(1e10)) \
             -> Tuple[np.ndarray, np.ndarray]:
         """
         Compute feature and instance level outlier scores.
@@ -271,7 +271,7 @@ class OutlierSeq2Seq(BaseDetector, FitMixin, ThresholdMixin):
                 X: np.ndarray,
                 outlier_type: str = 'instance',
                 outlier_perc: float = 100.,
-                batch_size: int = 1e10,
+                batch_size: int = int(1e10),
                 return_feature_score: bool = True,
                 return_instance_score: bool = True) \
             -> Dict[Dict[str, str], Dict[np.ndarray, np.ndarray]]:

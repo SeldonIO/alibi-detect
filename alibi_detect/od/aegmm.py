@@ -130,7 +130,7 @@ class OutlierAEGMM(BaseDetector, FitMixin, ThresholdMixin):
     def infer_threshold(self,
                         X: np.ndarray,
                         threshold_perc: float = 95.,
-                        batch_size: int = 1e10
+                        batch_size: int = int(1e10)
                         ) -> None:
         """
         Update threshold by a value inferred from the percentage of instances considered to be
@@ -151,7 +151,7 @@ class OutlierAEGMM(BaseDetector, FitMixin, ThresholdMixin):
         # update threshold
         self.threshold = np.percentile(iscore, threshold_perc)
 
-    def score(self, X: np.ndarray, batch_size: int = 1e10) -> np.ndarray:
+    def score(self, X: np.ndarray, batch_size: int = int(1e10)) -> np.ndarray:
         """
         Compute outlier scores.
 
@@ -172,7 +172,7 @@ class OutlierAEGMM(BaseDetector, FitMixin, ThresholdMixin):
 
     def predict(self,
                 X: np.ndarray,
-                batch_size: int = 1e10,
+                batch_size: int = int(1e10),
                 return_instance_score: bool = True) \
             -> Dict[Dict[str, str], Dict[np.ndarray, np.ndarray]]:
         """

@@ -137,7 +137,7 @@ class OutlierVAE(BaseDetector, FitMixin, ThresholdMixin):
                         outlier_type: str = 'instance',
                         outlier_perc: float = 100.,
                         threshold_perc: float = 95.,
-                        batch_size: int = 1e10
+                        batch_size: int = int(1e10)
                         ) -> None:
         """
         Update threshold by a value inferred from the percentage of instances considered to be
@@ -213,7 +213,7 @@ class OutlierVAE(BaseDetector, FitMixin, ThresholdMixin):
         iscore = np.mean(sorted_fscore_perc, axis=1)
         return iscore
 
-    def score(self, X: np.ndarray, outlier_perc: float = 100., batch_size: int = 1e10) \
+    def score(self, X: np.ndarray, outlier_perc: float = 100., batch_size: int = int(1e10)) \
             -> Tuple[np.ndarray, np.ndarray]:
         """
         Compute feature and instance level outlier scores.
@@ -245,7 +245,7 @@ class OutlierVAE(BaseDetector, FitMixin, ThresholdMixin):
                 X: np.ndarray,
                 outlier_type: str = 'instance',
                 outlier_perc: float = 100.,
-                batch_size: int = 1e10,
+                batch_size: int = int(1e10),
                 return_feature_score: bool = True,
                 return_instance_score: bool = True) \
             -> Dict[Dict[str, str], Dict[np.ndarray, np.ndarray]]:

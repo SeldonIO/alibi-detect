@@ -19,7 +19,7 @@ Data = Union[
 
 def predict_batch(model: Data,
                   X: np.ndarray,
-                  batch_size: int = 32,
+                  batch_size: int = int(1e10),
                   proba: bool = False,
                   return_class: bool = False,
                   n_categories: int = None,
@@ -63,9 +63,9 @@ def predict_batch(model: Data,
     else:
         preds = model(X[0:1])
         if isinstance(preds, tuple):
-            shape = tuple([(n, p.shape[1:]) for p in preds])
+            shape = tuple([(n,) + p.numpy().shape[1:] for p in preds])
         else:
-            shape = (n, preds.shape[1:])
+            shape = (n,) + preds.numpy().shape[1:]
 
     if isinstance(shape[0], tuple):
         preds = tuple([np.zeros(s, dtype=dtype) for s in shape])
