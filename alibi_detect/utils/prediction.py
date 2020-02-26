@@ -38,6 +38,8 @@ def predict_batch(model: Data,
         Batch size used during prediction.
     proba
         Whether to return model prediction probabilities.
+    return_class
+        Whether to return model class predictions.
     n_categories
         Number of prediction categories. Can also be inferred from the model.
     shape
@@ -63,9 +65,10 @@ def predict_batch(model: Data,
     else:
         preds = model(X[0:1])
         if isinstance(preds, tuple):
-            shape = tuple([(n,) + p.numpy().shape[1:] for p in preds])
+            shape = tuple([(n,) + p.shape[1:] if isinstance(p, np.ndarray) else
+                           (n,) + p.numpy().shape[1:] for p in preds])
         else:
-            shape = (n,) + preds.numpy().shape[1:]
+            shape = (n,) + preds.shape[1:] if isinstance(preds, np.ndarray) else (n,) + preds.numpy().shape[1:]
 
     if isinstance(shape[0], tuple):
         preds = tuple([np.zeros(s, dtype=dtype) for s in shape])
@@ -80,7 +83,7 @@ def predict_batch(model: Data,
         elif isinstance(shape[0], tuple):
             preds_tmp = model(X[istart:istop])
             for j, p in enumerate(preds_tmp):
-                preds[j][istart:istop] = p.numpy()
+                preds[j][istart:istop] = p if isinstance(p, np.ndarray) else p.numpy()
         else:  # class predictions for classifier
             preds[istart:istop] = model(X[istart:istop]).numpy().argmax(axis=-1)
     return preds
