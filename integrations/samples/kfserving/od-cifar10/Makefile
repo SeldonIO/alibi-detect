@@ -34,7 +34,7 @@ local-run:
 	cd cifar10od & python -m cifar10od --http_port 8080 --protocol tensorflow.http --event_type org.kubeflow.serving.inference.outlier --storage_uri file://$(LOCAL_DIR)/vae_outlier_detector/ --reply_url http://localhost:2222
 
 curl-cifar10od-local:
-	curl -v localhost:8080/ -d @./input.json 
+	curl -v localhost:8080/ -d @./input.json -H "ce-namespace: default" -H "ce-modelid: cifar10"
 
 curl-cifar10od-local-scores:
 	curl -v localhost:8080/ -d @./input.json -H "alibi-detect-return-feature-score: true" -H "alibi-detect-return-instance-score: true"

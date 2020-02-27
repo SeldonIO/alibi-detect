@@ -25,6 +25,9 @@ RUN git clone --branch 1393-od-reqlogging https://github.com/ryandawsonuk/seldon
     cd seldon-models/servers/cloudevents && \
     pip install -e .
 
+RUN git clone --branch 24-extensions https://github.com/ryandawsonuk/sdk-python.git && \
+    cd sdk-python && \
+    pip install -e .
 
 COPY tmp tmp
 
