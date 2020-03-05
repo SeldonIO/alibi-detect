@@ -39,3 +39,8 @@ def update_reference(X_ref: np.ndarray,
             raise KeyError('Only `reservoir_sampling` and `last` are valid update options for X_ref.')
     else:
         return X_ref
+
+
+# TODO: implement fdr method
+def fdr(p_val: np.ndarray) -> np.ndarray:
+    pass
