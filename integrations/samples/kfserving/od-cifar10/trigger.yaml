@@ -4,6 +4,9 @@ metadata:
   name: vaeoutlier-trigger
   namespace: default
 spec:
+  filter:
+    sourceAndType:
+      type: org.kubeflow.serving.inference.request
   subscriber:
     ref:
       apiVersion: serving.knative.dev/v1alpha1
