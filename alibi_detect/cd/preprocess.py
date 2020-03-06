@@ -1,5 +1,7 @@
+# TODO: incremental PCA for online methods
 import logging
 import numpy as np
+from sklearn.decomposition import PCA
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, Flatten, InputLayer
 from tensorflow.keras.models import Model
@@ -78,3 +80,27 @@ def hidden_output(X: np.ndarray,
     hidden_model = Model(inputs=model.inputs, outputs=model.layers[layer].output)
     X_hidden = predict_batch(hidden_model, X, batch_size=batch_size)
     return X_hidden
+
+
+def pca(X: np.ndarray, n_components: int, svd_solver: str = 'auto') -> np.ndarray:
+    """
+    Apply PCA dimensionality reduction and return the projection of X on
+    the first `n_components` principal components.
+
+    Parameters
+    ----------
+    X
+        Batch of instances.
+    n_components
+        Number of principal component projections to return.
+    svd_solver
+        Solver used for SVD. Options are ‘auto’, ‘full’, ‘arpack’ or ‘randomized’.
+
+    Returns
+    -------
+    Projection of X on first `n_components` principcal components.
+    """
+    pca = PCA(n_components=n_components, svd_solver=svd_solver)
+    pca.fit(X)
+    X_pca = pca.transform(X)
+    return X_pca
