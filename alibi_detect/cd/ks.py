@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 class KSDrift(BaseDetector):
 
     def __init__(self,
-                 p_val: float = None,
+                 p_val: float = .05,
                  X_ref: np.ndarray = None,
                  update_X_ref: Dict[str, int] = None,
                  preprocess_fn: Callable = None,
@@ -71,12 +71,11 @@ class KSDrift(BaseDetector):
         elif not isinstance(preprocess_fn, Callable):
             self.n_features = X_ref.reshape(X_ref.shape[0], -1).shape[-1]
         else:  # infer number of features after preprocessing step
-            # TODO: check if preprocessing always works on 2 samples
             X = self.preprocess_fn(X_ref[0:min(X_ref.shape[0], 2)], **self.preprocess_kwargs)
             self.n_features = X.reshape(X.shape[0], -1).shape[-1]
 
         if correction == 'bonferroni' and self.n_features > 1:
-            self.p_val /= self.n_features
+            self.p_val_multi = self.p_val / self.n_features
         elif correction == 'fdr' and self.n_features > 1:
             pass  # TODO: add fdr
         else:
@@ -125,7 +124,8 @@ class KSDrift(BaseDetector):
         X = X.reshape(X.shape[0], -1)
         p_val = np.zeros(self.n_features, dtype=np.float32)
         for f in range(self.n_features):
-            p_val[f] = ks_2samp(X_ref[:, f], X[:, f], alternative=self.alternative)[1]
+            # TODO: update to 'exact' when bug fix is released in scipy 1.5
+            p_val[f] = ks_2samp(X_ref[:, f], X[:, f], alternative=self.alternative, mode='asymp')[1]
         return p_val
 
     def score(self, X: np.ndarray) -> np.ndarray:
@@ -176,9 +176,9 @@ class KSDrift(BaseDetector):
 
         # values below p-value threshold are drift
         if drift_type == 'feature':  # undo multivariate correction
-            drift_pred = (p_vals < self.p_val * self.n_features).astype(int)
+            drift_pred = (p_vals < self.p_val).astype(int)
         elif drift_type == 'batch' and self.correction == 'bonferroni':
-            drift_pred = np.array([(p_vals < self.p_val).any().astype(int)])
+            drift_pred = np.array([(p_vals < self.p_val_multi).any().astype(int)])
         elif drift_type == 'batch' and self.correction == 'fdr':
             pass  # TODO: add fdr
             #q_vals = fdr(p_vals)

@@ -1,4 +1,5 @@
 import numpy as np
+import os  # TODO: remove
 import tensorflow as tf
 from typing import Callable, Tuple
 
@@ -15,7 +16,11 @@ def trainer(model: tf.keras.Model,
             buffer_size: int = 1024,
             verbose: bool = True,
             log_metric:  Tuple[str, "tf.keras.metrics"] = None,
-            callbacks: tf.keras.callbacks = None) -> None:  # TODO: incorporate callbacks + LR schedulers
+            callbacks: tf.keras.callbacks = None,
+            save_every: int = None,  # TODO: remove
+            save_fn: Callable = None,  # TODO: remove
+            save_path: str = None  # TODO: remove
+            ) -> None:  # TODO: incorporate callbacks + LR schedulers
     """
     Train TensorFlow model.
 
@@ -113,3 +118,8 @@ def trainer(model: tf.keras.Model,
                     log_metric[1](ground_truth, preds)
                     pbar_values.append((log_metric[0], log_metric[1].result().numpy()))
                 pbar.add(1, values=pbar_values)
+
+        # TODO: remove
+        if isinstance(save_every, int) and isinstance(save_fn, Callable) and isinstance(save_path, str):
+            if epoch % save_every == 0:
+                save_fn(model, os.path.join(save_path, 'predictor_net_' + str(epoch) + '.h5'))

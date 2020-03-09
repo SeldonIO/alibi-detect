@@ -57,7 +57,7 @@ def uae(X: np.ndarray,
 
 def hidden_output(X: np.ndarray,
                   model: tf.keras.Model = None,
-                  layer: int = -2,
+                  layer: int = -1,
                   batch_size: int = int(1e10)) -> np.ndarray:
     """
     Return hidden layer output from a model on a batch of instances.
@@ -69,7 +69,7 @@ def hidden_output(X: np.ndarray,
     model
         tf.keras.Model.
     layer
-        Hidden layer of model to use as output. The default of -2 would refer to the logits layer.
+        Hidden layer of model to use as output. The default of -1 would refer to the softmax layer.
     batch_size
         Batch size used for the model predictions.
 
