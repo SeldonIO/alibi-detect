@@ -41,6 +41,25 @@ def update_reference(X_ref: np.ndarray,
         return X_ref
 
 
-# TODO: implement fdr method
-def fdr(p_val: np.ndarray) -> np.ndarray:
-    pass
+def fdr(p_val: np.ndarray, q_val: float) -> bool:
+    """
+    Checks the significance of univariate tests on each variable between 2 samples of multivariate data
+    via the False Discovery Rate (FDR) correction of the p-values.
+
+    Parameters
+    ----------
+    p_val
+        p-values for each univariate test.
+    q_val
+        Acceptable q-value threshold.
+
+    Returns
+    -------
+    Whether any of the p-values are significant after the FDR correction.
+    """
+    n = p_val.shape[0]
+    i = np.arange(n) + 1
+    p_sorted = np.sort(p_val)
+    q_threshold = q_val * i / n
+    below_threshold = (p_sorted < q_threshold).any()
+    return below_threshold

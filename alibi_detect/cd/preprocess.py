@@ -82,7 +82,7 @@ def hidden_output(X: np.ndarray,
     return X_hidden
 
 
-def pca(X: np.ndarray, n_components: int, svd_solver: str = 'auto') -> np.ndarray:
+def pca(X: np.ndarray, n_components: int = 2, svd_solver: str = 'auto') -> np.ndarray:
     """
     Apply PCA dimensionality reduction and return the projection of X on
     the first `n_components` principal components.
@@ -100,6 +100,7 @@ def pca(X: np.ndarray, n_components: int, svd_solver: str = 'auto') -> np.ndarra
     -------
     Projection of X on first `n_components` principcal components.
     """
+    X = X.reshape(X.shape[0], -1)
     pca = PCA(n_components=n_components, svd_solver=svd_solver)
     pca.fit(X)
     X_pca = pca.transform(X)

@@ -19,16 +19,18 @@ class KSDrift(BaseDetector):
                  correction: str = 'bonferroni',
                  alternative: str = 'two-sided',
                  n_features: int = None,
+                 n_infer: int = 2,
                  data_type: str = None
                  ) -> None:
         """
-        Kolmogorov-Smirnov (K-S) data drift detector with Bonferroni or False Discovery Rate
+        Kolmogorov-Smirnov (K-S) data drift detector with Bonferroni or False Discovery Rate (FDR)
         correction for multivariate data.
 
         Parameters
         ----------
         p_val
-            p-value used for significance of the K-S test for each feature.
+            p-value used for significance of the K-S test for each feature. If the FDR correction method
+            is used, this corresponds to the acceptable q-value.
         X_ref
             Data used as reference distribution.
         update_X_ref
@@ -48,6 +50,8 @@ class KSDrift(BaseDetector):
             Number of features used in the K-S test. No need to pass it if no preprocessing takes place.
             In case of a preprocessing step, this can also be inferred automatically but could be more
             expensive to compute.
+        n_infer
+            Number of instances used to infer number of features from.
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
@@ -71,14 +75,10 @@ class KSDrift(BaseDetector):
         elif not isinstance(preprocess_fn, Callable):
             self.n_features = X_ref.reshape(X_ref.shape[0], -1).shape[-1]
         else:  # infer number of features after preprocessing step
-            X = self.preprocess_fn(X_ref[0:min(X_ref.shape[0], 2)], **self.preprocess_kwargs)
+            X = self.preprocess_fn(X_ref[0:min(X_ref.shape[0], n_infer)], **self.preprocess_kwargs)
             self.n_features = X.reshape(X.shape[0], -1).shape[-1]
 
-        if correction == 'bonferroni' and self.n_features > 1:
-            self.p_val_multi = self.p_val / self.n_features
-        elif correction == 'fdr' and self.n_features > 1:
-            pass  # TODO: add fdr
-        else:
+        if correction not in ['bonferroni', 'fdr'] and self.n_features > 1:
             raise ValueError('Only `bonferroni` and `fdr` are acceptable for multivariate correction.')
 
         # set metadata
@@ -178,11 +178,9 @@ class KSDrift(BaseDetector):
         if drift_type == 'feature':  # undo multivariate correction
             drift_pred = (p_vals < self.p_val).astype(int)
         elif drift_type == 'batch' and self.correction == 'bonferroni':
-            drift_pred = np.array([(p_vals < self.p_val_multi).any().astype(int)])
+            drift_pred = np.array([(p_vals < self.p_val / self.n_features).any().astype(int)])
         elif drift_type == 'batch' and self.correction == 'fdr':
-            pass  # TODO: add fdr
-            #q_vals = fdr(p_vals)
-            #drift_pred = #
+            drift_pred = np.array([fdr(p_vals, q_val=self.p_val).astype(int)])
         else:
             raise ValueError('`drift_type` needs to be either `feature` or `batch`.')
 

@@ -636,7 +636,7 @@ def load_detector(filepath: str, **kwargs) -> Data:
         detector = init_od_s2s(state_dict, seq2seq)
     elif detector_name == 'KSDrift':
         model = load_tf_ksdrift(filepath, state_dict)
-        detector = init_cd_ks(state_dict, model)
+        detector = init_cd_ksdrift(state_dict, model)
 
     detector.meta = meta_dict
     return detector
@@ -855,7 +855,7 @@ def load_tf_ksdrift(filepath: str, state_dict: dict) -> Union[tf.keras.Model, tf
             elif 'encoder_net' in kwargs_list:
                 k = 'encoder_net'
             if isinstance(k, str):
-                model = load_tf_model(filepath, model_name=k + '.h5')
+                model = load_tf_model(filepath, model_name=k)
     return model
 
 
@@ -1021,7 +1021,7 @@ def init_od_s2s(state_dict: Dict,
     return od
 
 
-def init_cd_ks(state_dict: Dict, model: Union[tf.keras.Model, tf.keras.Sequential] = None) -> KSDrift:
+def init_cd_ksdrift(state_dict: Dict, model: Union[tf.keras.Model, tf.keras.Sequential] = None) -> KSDrift:
     """
     Initialize KSDrift detector.
 
@@ -1054,6 +1054,7 @@ def init_cd_ks(state_dict: Dict, model: Union[tf.keras.Model, tf.keras.Sequentia
         alternative=state_dict['alternative'],
         n_features=state_dict['n_features']
     )
+    cd.n = state_dict['n']
     return cd
 
 
