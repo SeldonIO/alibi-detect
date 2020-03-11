@@ -32,6 +32,7 @@ setup(
         "matplotlib",
         "numpy",
         "pandas",
+        "opencv-python",
         "scipy",
         "scikit-learn",
         "tensorflow>=2",
