@@ -122,6 +122,7 @@ class KSDrift(BaseDetector):
         Feature level drift scores.
         """
         X = X.reshape(X.shape[0], -1)
+        X_ref = X_ref.reshape(X_ref.shape[0], -1)
         p_val = np.zeros(self.n_features, dtype=np.float32)
         for f in range(self.n_features):
             # TODO: update to 'exact' when bug fix is released in scipy 1.5

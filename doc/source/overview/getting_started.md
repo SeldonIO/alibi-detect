@@ -47,31 +47,35 @@ alibi_detect.cd.__all__
 ['KSDrift']
 ```
 
-For detailed information on the methods:
+Summary tables highlighting the practical use cases for all the algorithms can be found [here](../overview/algorithms.md).
 
-* [Overview of available methods](../overview/algorithms.md)
+For detailed information on the **outlier detectors**:
 
-    * [Isolation Forest Outlier Detector](../methods/iforest.ipynb)
+* [Isolation Forest](../methods/iforest.ipynb)
 
-    * [Mahalanobis Distance Outlier Detector](../methods/mahalanobis.ipynb)
+* [Mahalanobis Distance](../methods/mahalanobis.ipynb)
     
-    * [Auto-Encoder (AE) Outlier Detector](../methods/ae.ipynb)
+* [Auto-Encoder (AE)](../methods/ae.ipynb)
 
-    * [Variational Auto-Encoder (VAE) Outlier Detector](../methods/vae.ipynb)
+* [Variational Auto-Encoder (VAE)](../methods/vae.ipynb)
 
-    * [Auto-Encoding Gaussian Mixture Model (AEGMM) Outlier Detector](../methods/aegmm.ipynb)
+* [Auto-Encoding Gaussian Mixture Model (AEGMM)](../methods/aegmm.ipynb)
 
-    * [Variational Auto-Encoding Gaussian Mixture Model (VAEGMM) Outlier Detector](../methods/vaegmm.ipynb)
+* [Variational Auto-Encoding Gaussian Mixture Model (VAEGMM)](../methods/vaegmm.ipynb)
     
-    * [Prophet Outlier Detector](../methods/prophet.ipynb)
+* [Prophet Detector](../methods/prophet.ipynb)
     
-    * [Spectral Residual Outlier Detector](../methods/sr.ipynb)
+* [Spectral Residual Detector](../methods/sr.ipynb)
     
-    * [Sequence-to-Sequence (Seq2Seq) Outlier Detector](../methods/seq2seq.ipynb)
+* [Sequence-to-Sequence (Seq2Seq) Detector](../methods/seq2seq.ipynb)
 
-    * [Adversarial AE Detector](../methods/adversarialae.ipynb)
+Similar for **adversarial detection**:
+
+* [Adversarial AE Detector](../methods/adversarialae.ipynb)
+
+And **data drift**:
     
-    * [Kolmogorov-Smirnov Drift Detector](../methods/ksdrift.ipynb)
+* [Kolmogorov-Smirnov Drift Detector](../methods/ksdrift.ipynb)
 
 ## Basic Usage
 
