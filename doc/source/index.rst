@@ -27,6 +27,7 @@
    methods/sr.ipynb
    methods/seq2seq.ipynb
    methods/adversarialae.ipynb
+   methods/ksdrift.ipynb
 
 .. toctree::
    :maxdepth: 1
@@ -43,6 +44,7 @@
    examples/od_seq2seq_synth
    examples/od_seq2seq_ecg
    examples/ad_ae_cifar10
+   examples/cd_ks_cifar10
 
 .. toctree::
    :maxdepth: 1

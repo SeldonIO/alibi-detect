@@ -39,6 +39,14 @@ alibi_detect.ad.__all__
 ['AdversarialAE']
 ```
 
+```python
+alibi_detect.cd.__all__
+```
+
+```
+['KSDrift']
+```
+
 For detailed information on the methods:
 
 * [Overview of available methods](../overview/algorithms.md)
@@ -62,6 +70,8 @@ For detailed information on the methods:
     * [Sequence-to-Sequence (Seq2Seq) Outlier Detector](../methods/seq2seq.ipynb)
 
     * [Adversarial AE Detector](../methods/adversarialae.ipynb)
+    
+    * [Kolmogorov-Smirnov Drift Detector](../methods/ksdrift.ipynb)
 
 ## Basic Usage
 
