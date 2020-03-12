@@ -99,7 +99,7 @@ class KSDrift(BaseDetector):
         Preprocessed reference data and new instances.
         """
         # TODO: check if makes sense to store preprocessed X_ref in attribute, don't think so for now
-        if isinstance(self.preprocess_fn, Callable):
+        if isinstance(self.preprocess_fn, Callable):  # type: ignore
             X = self.preprocess_fn(X, **self.preprocess_kwargs)
             X_ref = self.preprocess_fn(self.X_ref, **self.preprocess_kwargs)
             return X_ref, X
@@ -181,7 +181,7 @@ class KSDrift(BaseDetector):
         elif drift_type == 'batch' and self.correction == 'bonferroni':
             drift_pred = np.array([(p_vals < self.p_val / self.n_features).any().astype(int)])
         elif drift_type == 'batch' and self.correction == 'fdr':
-            drift_pred = np.array([fdr(p_vals, q_val=self.p_val).astype(int)])
+            drift_pred = np.array([fdr(p_vals, q_val=self.p_val).astype(int)])  # type: ignore
         else:
             raise ValueError('`drift_type` needs to be either `feature` or `batch`.')
 

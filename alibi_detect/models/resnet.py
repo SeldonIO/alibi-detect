@@ -113,7 +113,7 @@ def conv_block(x_in: tf.Tensor,
                kernel_size: Union[int, list, Tuple[int]],
                stage: int,
                block: str,
-               strides: Tuple[int] = (2, 2),
+               strides: Tuple[int, int] = (2, 2),
                l2_regularisation: bool = True) -> tf.Tensor:
     """
     Conv block in ResNet with a parameterised skip connection to reduce the width and height
@@ -198,10 +198,10 @@ def conv_block(x_in: tf.Tensor,
 
 def resnet_block(x_in: tf.Tensor,
                  size: int,
-                 filters: Union[int, Tuple[int, int]],
+                 filters: Tuple[int, int],
                  kernel_size: Union[int, list, Tuple[int]],
                  stage: int,
-                 strides: Union[int, Tuple[int, int]] = (2, 2),
+                 strides: Tuple[int, int] = (2, 2),
                  l2_regularisation: bool = True) -> tf.Tensor:
     """
     Block in ResNet combining a conv block with identity blocks.
