@@ -32,6 +32,7 @@ setup(
         "matplotlib",
         "numpy",
         "pandas",
+        "Pillow",
         "opencv-python",
         "scipy",
         "scikit-learn",
