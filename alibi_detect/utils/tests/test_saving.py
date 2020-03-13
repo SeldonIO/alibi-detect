@@ -1,9 +1,13 @@
+import numpy as np
 import pytest
 import sys
 from tempfile import TemporaryDirectory
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, InputLayer
+from typing import Callable
 from alibi_detect.ad import AdversarialAE
+from alibi_detect.cd import KSDrift
+from alibi_detect.cd.preprocess import uae
 from alibi_detect.models.autoencoder import DecoderLSTM, EncoderLSTM
 from alibi_detect.od import (IForest, Mahalanobis, OutlierAEGMM, OutlierVAE, OutlierVAEGMM,
                              OutlierProphet, SpectralResidual, OutlierSeq2Seq, OutlierAE)
@@ -15,6 +19,8 @@ n_gmm = 2
 threshold = 10.
 samples = 5
 seq_len = 10
+p_val = .05
+X_ref = np.random.rand(samples * input_dim).reshape(samples, input_dim)
 
 # define encoder and decoder
 encoder_net = tf.keras.Sequential(
@@ -87,7 +93,11 @@ detector = [
                    seq_len,
                    threshold=threshold,
                    threshold_net=threshold_net,
-                   latent_dim=latent_dim)
+                   latent_dim=latent_dim),
+    KSDrift(p_val=p_val,
+            X_ref=X_ref,
+            preprocess_fn=uae,
+            preprocess_kwargs={'encoder_net': encoder_net})
 ]
 n_tests = len(detector)
 
@@ -114,7 +124,7 @@ def test_save_load(select_detector):
         det_load_name = det_load.meta['name']
         assert det_load_name == det_name
 
-        if not type(det_load) == OutlierProphet:
+        if not type(det_load) in [OutlierProphet, KSDrift]:
             assert det_load.threshold == det.threshold == threshold
 
         if type(det_load) in [OutlierVAE, OutlierVAEGMM]:
@@ -165,3 +175,10 @@ def test_save_load(select_detector):
             assert det_load.latent_dim == latent_dim
             assert det_load.threshold == threshold
             assert det_load.shape == (-1, seq_len, input_dim)
+        elif type(det_load) == KSDrift:
+            assert isinstance(det_load.preprocess_fn, Callable)
+            assert det_load.preprocess_fn.__name__ == 'uae'
+            assert isinstance(det_load.preprocess_kwargs['encoder_net'], tf.keras.Sequential)
+            assert det_load.n_features == latent_dim
+            assert det_load.p_val == p_val
+            assert (det_load.X_ref == X_ref).all()
