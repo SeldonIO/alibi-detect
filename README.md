@@ -109,6 +109,60 @@ The following tables show the advised use cases for each algorithm. The column *
 - [Kolmogorov-Smirnov](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/ksdrift.html)
    - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_ks_cifar10.html)
 
+## Datasets
+
+The package also contains functionality in `alibi_detect.datasets` to easily fetch a number of datasets for different modalities. For each dataset either the data and labels or a *Bunch* object with the data, labels and optional metadata are returned. Example:
+
+```python
+from alibi_detect.datasets import fetch_ecg
+
+(X_train, y_train), (X_test, y_test) = fetch_ecg(return_X_y=True)
+```
+
+### Time Series
+
+- **ECG 5000**: `fetch_ecg`
+  - 5000 ECG's, originally obtained from [Physionet](https://archive.physionet.org/cgi-bin/atm/ATM).
+
+- **NAB**: `fetch_nab`
+  - Any univariate time series in a DataFrame from the [Numenta Anomaly Benchmark](https://github.com/numenta/NAB). A list with the available time series can be retrieved using `alibi_detect.datasets.get_list_nab()`.
+
+
+### Images
+
+- **CIFAR-10-C**: `fetch_cifar10c`
+  - CIFAR-10-C ([Hendrycks & Dietterich, 2019](https://arxiv.org/abs/1903.12261)) contains the test set of CIFAR-10, but corrupted and perturbed by various types of noise, blur, brightness etc. at different levels of severity, leading to a gradual decline in a classification model's performance trained on CIFAR-10. `fetch_cifar10c` allows you to pick any severity level or corruption type. The dataset can be used in research on robustness and drift. The original data can be found [here](https://zenodo.org/record/2535967#.XnAM2nX7RNw).
+  
+- **Adversarial CIFAR-10**: `fetch_attack`
+  - Load adversarial instances on a ResNet-56 classifier trained on CIFAR-10. Available attacks: Carlini-Wagner ('cw') and SLIDE ('slide'). Example:
+  
+  ```python
+  from alibi_detect.datasets import fetch_attack
+  
+  (X_train, y_train), (X_test, y_test) = fetch_attack('cifar10', 'resnet56', 'cw', return_X_y=True)
+  ```
+
+### Tabular
+
+- **KDD Cup '99**: Dataset with different types of computer network intrusions. `fetch_kdd` allows you to select a subset of network intrusions as targets or pick only specified features. The original data can be found [here](http://kdd.ics.uci.edu/databases/kddcup99/kddcup99.html).
+
+
+## Models
+
+Models and/or building blocks that can be useful outside of outlier, adversarial or drift detection can be found under `alibi_detect.models`. Main implementations:
+
+- Variational Autoencoder: `alibi_detect.models.autoencoder.VAE`
+
+- Sequence-to-sequence model: `alibi_detect.models.autoencoder.Seq2Seq`
+
+- ResNet: `alibi_detect.models.resnet`
+  - Pre-trained ResNet-20/32/44 models on CIFAR-10 can be found on our [Google Cloud Bucket](https://console.cloud.google.com/storage/browser/seldon-models/alibi-detect/classifier/cifar10/?organizationId=156002945562&project=seldon-pub) and can be fetched as follows:
+
+  ```python
+  from alibi_detect.utils.fetching import fetch_tf_model
+  
+  model = fetch_tf_model('cifar10', 'resnet32')
+  ```
 
 ## Integrations
 
