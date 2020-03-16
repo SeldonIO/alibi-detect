@@ -40,9 +40,6 @@ def ksdrift_params(request):
 @pytest.mark.parametrize('ksdrift_params', list(range(n_tests)), indirect=True)
 def test_ksdrift(ksdrift_params):
     n_features, n_enc, preprocess, alternative, correction, update_X_ref = ksdrift_params
-
-    print(n_features, n_enc, preprocess, alternative, correction, update_X_ref)
-
     np.random.seed(0)
     X_ref = np.random.rand(n * n_features).reshape(n, n_features).astype('float32')
     n_infer = 2
@@ -92,7 +89,7 @@ def test_ksdrift(ksdrift_params):
     preds_by_feature = (preds_feature['data']['feature_score'] < cd.p_val).astype(int)
     assert (preds_feature['data']['is_drift'] == preds_by_feature).all()
 
-    mult = 5
+    mult = 100
     X_high, X_low = X_ref.copy() * mult, X_ref.copy() / mult
     preds_batch = cd.predict(X_high, drift_type='batch')
     if alternative != 'less':
