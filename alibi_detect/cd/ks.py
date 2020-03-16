@@ -60,7 +60,7 @@ class KSDrift(BaseDetector):
         if p_val is None:
             logger.warning('No p-value set for the drift threshold. Need to set it to detect data drift.')
 
-        self.X_ref = X_ref
+        self.X_ref = X_ref  # TODO: update rule for X_ref at init?
         self.update_X_ref = update_X_ref
         self.preprocess_fn = preprocess_fn
         self.preprocess_kwargs = preprocess_kwargs
