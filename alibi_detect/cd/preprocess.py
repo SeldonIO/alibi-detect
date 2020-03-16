@@ -3,7 +3,7 @@ import logging
 import numpy as np
 from sklearn.decomposition import PCA
 import tensorflow as tf
-from tensorflow.keras.layers import Dense, Flatten, InputLayer
+from tensorflow.keras.layers import Dense, Flatten, Input, InputLayer
 from tensorflow.keras.models import Model
 from alibi_detect.models.autoencoder import EncoderAE
 from alibi_detect.utils.prediction import predict_batch
@@ -58,6 +58,7 @@ def uae(X: np.ndarray,
 def hidden_output(X: np.ndarray,
                   model: tf.keras.Model = None,
                   layer: int = -1,
+                  input_shape: tuple = None,
                   batch_size: int = int(1e10)) -> np.ndarray:
     """
     Return hidden layer output from a model on a batch of instances.
@@ -70,6 +71,8 @@ def hidden_output(X: np.ndarray,
         tf.keras.Model.
     layer
         Hidden layer of model to use as output. The default of -1 would refer to the softmax layer.
+    input_shape
+        Optional input layer shape.
     batch_size
         Batch size used for the model predictions.
 
@@ -77,7 +80,12 @@ def hidden_output(X: np.ndarray,
     -------
     Model predictions using the specified hidden layer as output layer.
     """
-    hidden_model = Model(inputs=model.inputs, outputs=model.layers[layer].output)
+    if input_shape and not model.inputs:
+        inputs = Input(shape=input_shape)
+        model.call(inputs)
+    else:
+        inputs = model.inputs
+    hidden_model = Model(inputs=inputs, outputs=model.layers[layer].output)
     X_hidden = predict_batch(hidden_model, X, batch_size=batch_size)
     return X_hidden
 
