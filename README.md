@@ -131,10 +131,17 @@ from alibi_detect.datasets import fetch_ecg
 ### Images
 
 - **CIFAR-10-C**: `fetch_cifar10c`
-  - CIFAR-10-C ([Hendrycks & Dietterich, 2019](https://arxiv.org/abs/1903.12261)) contains the test set of CIFAR-10, but corrupted and perturbed by various types of noise, blur, brightness etc. at different levels of severity, leading to a gradual decline in a classification model's performance trained on CIFAR-10. `fetch_cifar10c` allows you to pick any severity level or corruption type. The dataset can be used in research on robustness and drift. The original data can be found [here](https://zenodo.org/record/2535967#.XnAM2nX7RNw).
+  - CIFAR-10-C ([Hendrycks & Dietterich, 2019](https://arxiv.org/abs/1903.12261)) contains the test set of CIFAR-10, but corrupted and perturbed by various types of noise, blur, brightness etc. at different levels of severity, leading to a gradual decline in a classification model's performance trained on CIFAR-10. `fetch_cifar10c` allows you to pick any severity level or corruption type. The list with available corruption types can be retrieved with `alibi_detect.datasets.corruption_types_cifar10c()`. The dataset can be used in research on robustness and drift. The original data can be found [here](https://zenodo.org/record/2535967#.XnAM2nX7RNw). Example:
+  
+  ```python
+  from alibi_detect.datasets import fetch_cifar10c
+  
+  corruption = ['gaussian_noise', 'motion_blur', 'brightness', 'pixelate']
+  X, y = fetch_cifar10c(corruption=corruption, severity=5, return_X_y=True)
+  ```
   
 - **Adversarial CIFAR-10**: `fetch_attack`
-  - Load adversarial instances on a ResNet-56 classifier trained on CIFAR-10. Available attacks: Carlini-Wagner ('cw') and SLIDE ('slide'). Example:
+  - Load adversarial instances on a ResNet-56 classifier trained on CIFAR-10. Available attacks: [Carlini-Wagner](https://arxiv.org/abs/1608.04644) ('cw') and [SLIDE](https://arxiv.org/abs/1904.13000) ('slide'). Example:
   
   ```python
   from alibi_detect.datasets import fetch_attack
@@ -144,7 +151,8 @@ from alibi_detect.datasets import fetch_ecg
 
 ### Tabular
 
-- **KDD Cup '99**: Dataset with different types of computer network intrusions. `fetch_kdd` allows you to select a subset of network intrusions as targets or pick only specified features. The original data can be found [here](http://kdd.ics.uci.edu/databases/kddcup99/kddcup99.html).
+- **KDD Cup '99**: `fetch_kdd`
+  - Dataset with different types of computer network intrusions. `fetch_kdd` allows you to select a subset of network intrusions as targets or pick only specified features. The original data can be found [here](http://kdd.ics.uci.edu/databases/kddcup99/kddcup99.html).
 
 
 ## Models

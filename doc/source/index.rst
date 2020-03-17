@@ -55,6 +55,18 @@
    examples/od_seq2seq_ecg
    examples/ad_ae_cifar10
    examples/cd_ks_cifar10
+   
+.. toctree::
+   :maxdepth: 1
+   :caption: Datasets
+
+   datasets/overview
+   
+.. toctree::
+   :maxdepth: 1
+   :caption: Models
+
+   models/overview
 
 .. toctree::
    :maxdepth: 1
