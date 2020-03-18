@@ -12,11 +12,11 @@
   overview/getting_started
   overview/algorithms
   overview/roadmap
-
+  
 .. toctree::
    :maxdepth: 1
-   :caption: Methods
-
+   :caption: Outlier Detection
+   
    methods/mahalanobis.ipynb
    methods/iforest.ipynb
    methods/vae.ipynb
@@ -26,7 +26,18 @@
    methods/prophet.ipynb
    methods/sr.ipynb
    methods/seq2seq.ipynb
+   
+.. toctree::
+   :maxdepth: 1
+   :caption: Adversarial Detection
+   
    methods/adversarialae.ipynb
+   
+.. toctree::
+   :maxdepth: 1
+   :caption: Drift Detection
+   
+   methods/ksdrift.ipynb
 
 .. toctree::
    :maxdepth: 1
@@ -43,6 +54,19 @@
    examples/od_seq2seq_synth
    examples/od_seq2seq_ecg
    examples/ad_ae_cifar10
+   examples/cd_ks_cifar10
+   
+.. toctree::
+   :maxdepth: 1
+   :caption: Datasets
+
+   datasets/overview
+   
+.. toctree::
+   :maxdepth: 1
+   :caption: Models
+
+   models/overview
 
 .. toctree::
    :maxdepth: 1

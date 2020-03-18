@@ -5,10 +5,11 @@ import logging
 import os
 import pickle
 import tensorflow as tf
-from typing import Dict, List, Union
+from typing import Callable, Dict, List, Union
 from alibi_detect.ad import AdversarialAE
 from alibi_detect.ad.adversarialae import DenseHidden
 from alibi_detect.base import BaseDetector
+from alibi_detect.cd import KSDrift
 from alibi_detect.models.autoencoder import AE, AEGMM, DecoderLSTM, EncoderLSTM, Seq2Seq, VAE, VAEGMM
 from alibi_detect.od import (IForest, Mahalanobis, OutlierAE, OutlierAEGMM, OutlierProphet,
                              OutlierSeq2Seq, OutlierVAE, OutlierVAEGMM, SpectralResidual)
@@ -19,6 +20,7 @@ Data = Union[
     BaseDetector,
     AdversarialAE,
     IForest,
+    KSDrift,
     Mahalanobis,
     OutlierAEGMM,
     OutlierAE,
@@ -32,6 +34,7 @@ Data = Union[
 DEFAULT_DETECTORS = [
     'AdversarialAE',
     'IForest',
+    'KSDrift',
     'Mahalanobis',
     'OutlierAE',
     'OutlierAEGMM',
@@ -76,6 +79,8 @@ def save_detector(detector: Data,
         state_dict = state_mahalanobis(detector)
     elif detector_name == 'IForest':
         state_dict = state_iforest(detector)
+    elif detector_name == 'KSDrift':
+        state_dict = state_ksdrift(detector)
     elif detector_name == 'OutlierAEGMM':
         state_dict = state_aegmm(detector)
     elif detector_name == 'OutlierVAEGMM':
@@ -107,6 +112,33 @@ def save_detector(detector: Data,
         save_tf_hl(detector.model_hl, filepath)
     elif detector_name == 'OutlierSeq2Seq':
         save_tf_s2s(detector, filepath)
+    elif detector_name == 'KSDrift':
+        save_tf_ksdrift(detector, filepath)
+
+
+def state_ksdrift(cd: KSDrift) -> Dict:
+    state_dict = {
+        'p_val': cd.p_val,
+        'X_ref': cd.X_ref,
+        'update_X_ref': cd.update_X_ref,
+        'alternative': cd.alternative,
+        'n': cd.n,
+        'n_features': cd.n_features,
+        'correction': cd.correction,
+        'preprocess_fn': cd.preprocess_fn,
+        'preprocess_kwargs': cd.preprocess_kwargs.copy()
+    }
+    if isinstance(cd.preprocess_fn, Callable):
+        if cd.preprocess_fn.__name__ in ['uae', 'hidden_output']:
+            kwargs_list = list(cd.preprocess_kwargs.keys())
+            k = None
+            if 'model' in kwargs_list:
+                k = 'model'
+            if 'encoder_net' in kwargs_list:
+                k = 'encoder_net'
+            if isinstance(k, str):
+                state_dict['preprocess_kwargs'][k] = k
+    return state_dict
 
 
 def state_iforest(od: IForest) -> Dict:
@@ -360,7 +392,8 @@ def save_tf_vae(detector: OutlierVAE,
 
 def save_tf_model(model: tf.keras.Model,
                   filepath: str,
-                  save_dir: str = None) -> None:
+                  save_dir: str = None,
+                  model_name: str = 'model') -> None:
     """
     Save TensorFlow model.
 
@@ -372,6 +405,8 @@ def save_tf_model(model: tf.keras.Model,
         Save directory.
     save_dir
         Save folder.
+    model_name
+        Name of saved model.
     """
     # create folder for model weights
     if not os.path.isdir(filepath):
@@ -385,10 +420,10 @@ def save_tf_model(model: tf.keras.Model,
         os.mkdir(model_dir)
 
     # save classification model
-    if isinstance(model, tf.keras.Model):  # TODO: not flexible enough!
-        model.save(os.path.join(model_dir, 'model.h5'))
+    if isinstance(model, tf.keras.Model) or isinstance(model, tf.keras.Sequential):
+        model.save(os.path.join(model_dir, model_name + '.h5'))
     else:
-        logger.warning('No `tf.keras.Model` detected. No classification model saved.')
+        logger.warning('No `tf.keras.Model` or `tf.keras.Sequential` detected. No model saved.')
 
 
 def save_tf_hl(models: List[tf.keras.Model],
@@ -524,6 +559,19 @@ def save_tf_s2s(od: OutlierSeq2Seq,
         logger.warning('No `tf.keras.Model` Seq2Seq detected. No Seq2Seq model saved.')
 
 
+def save_tf_ksdrift(cd: KSDrift, filepath: str) -> None:
+    if isinstance(cd.preprocess_fn, Callable):
+        if cd.preprocess_fn.__name__ in ['uae', 'hidden_output']:
+            kwargs_list = list(cd.preprocess_kwargs.keys())
+            k = None
+            if 'model' in kwargs_list:
+                k = 'model'
+            elif 'encoder_net' in kwargs_list:
+                k = 'encoder_net'
+            if isinstance(k, str):
+                save_tf_model(cd.preprocess_kwargs[k], filepath, model_name=k)
+
+
 def load_detector(filepath: str, **kwargs) -> Data:
     """
     Load outlier or adversarial detector.
@@ -586,12 +634,18 @@ def load_detector(filepath: str, **kwargs) -> Data:
     elif detector_name == 'OutlierSeq2Seq':
         seq2seq = load_tf_s2s(filepath, state_dict)
         detector = init_od_s2s(state_dict, seq2seq)
+    elif detector_name == 'KSDrift':
+        model = load_tf_ksdrift(filepath, state_dict)
+        detector = init_cd_ksdrift(state_dict, model)
 
     detector.meta = meta_dict
     return detector
 
 
-def load_tf_model(filepath: str, load_dir: str = None, custom_objects: dict = None) -> tf.keras.Model:
+def load_tf_model(filepath: str,
+                  load_dir: str = None,
+                  custom_objects: dict = None,
+                  model_name: str = 'model') -> tf.keras.Model:
     """
     Load TensorFlow model.
 
@@ -603,6 +657,8 @@ def load_tf_model(filepath: str, load_dir: str = None, custom_objects: dict = No
         Saved model folder.
     custom_objects
         Optional custom objects when loading the TensorFlow model.
+    model_name
+        Name of loaded model.
 
     Returns
     -------
@@ -612,10 +668,10 @@ def load_tf_model(filepath: str, load_dir: str = None, custom_objects: dict = No
         model_dir = os.path.join(filepath, 'model')
     else:
         model_dir = os.path.join(filepath, load_dir)
-    if 'model.h5' not in [f for f in os.listdir(model_dir) if not f.startswith('.')]:
+    if model_name + '.h5' not in [f for f in os.listdir(model_dir) if not f.startswith('.')]:
         logger.warning('No model found in {}.'.format(model_dir))
         return None
-    model = tf.keras.models.load_model(os.path.join(model_dir, 'model.h5'), custom_objects=custom_objects)
+    model = tf.keras.models.load_model(os.path.join(model_dir, model_name + '.h5'), custom_objects=custom_objects)
     return model
 
 
@@ -771,6 +827,36 @@ def load_tf_s2s(filepath: str,
     seq2seq = Seq2Seq(encoder_net, decoder_net, threshold_net, n_features, beta=state_dict['beta'])
     seq2seq.load_weights(os.path.join(model_dir, 'seq2seq.ckpt'))
     return seq2seq
+
+
+def load_tf_ksdrift(filepath: str, state_dict: dict) -> Union[tf.keras.Model, tf.keras.Sequential]:
+    """
+    Load TensorFlow model for KSDrift detector.
+
+    Parameters
+    ----------
+    filepath
+        Saved model directory.
+    state_dict
+        Dictionary containing the detector's parameters.
+
+    Returns
+    -------
+    Loaded model.
+    """
+    model = None
+    preprocess_fn = state_dict['preprocess_fn']
+    if isinstance(preprocess_fn, Callable):
+        if preprocess_fn.__name__ in ['uae', 'hidden_output']:
+            kwargs_list = list(state_dict['preprocess_kwargs'])
+            k = None
+            if 'model' in kwargs_list:
+                k = 'model'
+            elif 'encoder_net' in kwargs_list:
+                k = 'encoder_net'
+            if isinstance(k, str):
+                model = load_tf_model(filepath, model_name=k)
+    return model
 
 
 def init_od_ae(state_dict: Dict,
@@ -933,6 +1019,43 @@ def init_od_s2s(state_dict: Dict,
                         output_activation=state_dict['output_activation'])
 
     return od
+
+
+def init_cd_ksdrift(state_dict: Dict, model: Union[tf.keras.Model, tf.keras.Sequential] = None) -> KSDrift:
+    """
+    Initialize KSDrift detector.
+
+    Parameters
+    ----------
+    state_dict
+        Dictionary containing the parameter values.
+    model
+        Optionally loaded model.
+
+    Returns
+    -------
+    Initialized KSDrift instance.
+    """
+    preprocess_fn = state_dict['preprocess_fn']
+    preprocess_kwargs = state_dict['preprocess_kwargs']
+    if isinstance(preprocess_fn, Callable) and isinstance(model, (tf.keras.Model, tf.keras.Sequential)):
+        if preprocess_fn.__name__ == 'uae':
+            preprocess_kwargs['encoder_net'] = model
+        elif preprocess_fn.__name__ == 'hidden_output':
+            preprocess_kwargs['model'] = model
+
+    cd = KSDrift(
+        p_val=state_dict['p_val'],
+        X_ref=state_dict['X_ref'],
+        update_X_ref=state_dict['update_X_ref'],
+        preprocess_fn=preprocess_fn,
+        preprocess_kwargs=preprocess_kwargs,
+        correction=state_dict['correction'],
+        alternative=state_dict['alternative'],
+        n_features=state_dict['n_features']
+    )
+    cd.n = state_dict['n']
+    return cd
 
 
 def init_od_mahalanobis(state_dict: Dict) -> Mahalanobis:

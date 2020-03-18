@@ -37,9 +37,9 @@ The save and load functionality for the [Prophet time series outlier detector](h
 
 ## Supported algorithms
 
-### Outlier Detection
+The following tables show the advised use cases for each algorithm. The column *Feature Level* indicates whether the detection can be done at the feature level, e.g. per pixel for an image. Check the [algorithm reference list](#reference-list) for more information with links to the documentation and original papers as well as examples for each of the detectors.
 
-The following table shows the advised use cases for each algorithm. The column *Feature Level* indicates whether the outlier scoring and detection can be done and returned at the feature level, e.g. per pixel for an image:
+### Outlier Detection
 
 | Detector              | Tabular | Image | Time Series | Text  | Categorical Features | Online | Feature Level |
 | :---                  |  :---:  | :---: |   :---:     | :---: |   :---:              | :---:  | :---:         |
@@ -53,66 +53,124 @@ The following table shows the advised use cases for each algorithm. The column *
 | Spectral Residual     | ✘       | ✘     |  ✔          |  ✘    |  ✘                   |  ✔     |  ✔            |
 | Seq2Seq               | ✘       | ✘     |  ✔          |  ✘    |  ✘                   |  ✘     |  ✔            |
 
-
- - Isolation Forest ([FT Liu et al., 2008](https://cs.nju.edu.cn/zhouzh/zhouzh.files/publication/icdm08b.pdf))
-   - [Documentation](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/iforest.html)
-   - Examples:
-     [Network Intrusion](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/od_if_kddcup.html)
-
- - Mahalanobis Distance ([Mahalanobis, 1936](https://insa.nic.in/writereaddata/UpLoadedFiles/PINSA/Vol02_1936_1_Art05.pdf))
-   - [Documentation](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/mahalanobis.html)
-   - Examples:
-     [Network Intrusion](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/od_mahalanobis_kddcup.html)
-
-- Auto-Encoder (AE)
-   - [Documentation](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/ae.html)
-   - Examples:
-     [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/od_ae_cifar10.html)
-
- - Variational Auto-Encoder (VAE) ([Kingma et al., 2013](https://arxiv.org/abs/1312.6114))
-   - [Documentation](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/vae.html)
-   - Examples:
-     [Network Intrusion](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/od_vae_kddcup.html), [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/od_vae_cifar10.html)
-
- - Auto-Encoding Gaussian Mixture Model (AEGMM) ([Zong et al., 2018](https://openreview.net/forum?id=BJJLHbb0-))
-   - [Documentation](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/aegmm.html)
-   - Examples:
-     [Network Intrusion](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/od_aegmm_kddcup.html)
-
- - Variational Auto-Encoding Gaussian Mixture Model (VAEGMM)
-   - [Documentation](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/vaegmm.html)
-   - Examples:
-     [Network Intrusion](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/od_aegmm_kddcup.html)
-     
- - Prophet Time Series Outlier Detector ([Taylor et al., 2018](https://peerj.com/preprints/3190/))
-   - [Documentation](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/prophet.html)
-   - Examples:
-     [Weather Forecast](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/od_prophet_weather.html)
-  
- - Spectral Residual Time Series Outlier Detector ([Ren et al., 2019](https://arxiv.org/abs/1906.03821))
-   - [Documentation](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/sr.html)
-   - Examples:
-     [Synthetic Dataset](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/od_sr_synth.html)
-
- - Sequence-to-Sequence (Seq2Seq) Outlier Detector ([Sutskever et al., 2014](https://papers.nips.cc/paper/5346-sequence-to-sequence-learning-with-neural-networks.pdf); [Park et al., 2017](https://arxiv.org/pdf/1711.00614.pdf))
-   - [Documentation](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/seq2seq.html)
-   - Examples:
-     [ECG](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/od_seq2seq_ecg.html), [Synthetic Dataset](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/od_seq2seq_synth.html)
-
-
 ### Adversarial Detection
-
-Advised use cases:
 
 | Detector          | Tabular | Image | Time Series | Text  | Categorical Features | Online | Feature Level |
 | :---              |  :---:  | :---: |   :---:     | :---: |   :---:              | :---:  | :---:         |
 | Adversarial AE    | ✔       | ✔     |  ✘          |  ✘    |  ✘                   |  ✘     |  ✘            |
 
 
- - Adversarial Auto-Encoder ([Vacanti and Van Looveren, 2020](https://arxiv.org/abs/2002.09364))
-   - [Documentation](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/adversarialae.html)
-   - Examples:
-     [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/ad_ae_cifar10.html)
+### Drift Detection
+
+| Detector           | Tabular | Image | Time Series | Text  | Categorical Features | Online | Feature Level |
+| :---               |  :---:  | :---: |   :---:     | :---: |   :---:              | :---:  | :---:         |
+| Kolmogorov-Smirnov | ✔       | ✔     |  ✔          |  ✘    |  ✘                   |  ✔     |  ✔            |
+
+
+### Reference List
+
+#### Outlier Detection
+
+- [Isolation Forest](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/iforest.html) ([FT Liu et al., 2008](https://cs.nju.edu.cn/zhouzh/zhouzh.files/publication/icdm08b.pdf))
+   - Example: [Network Intrusion](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/od_if_kddcup.html)
+
+- [Mahalanobis Distance](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/mahalanobis.html) ([Mahalanobis, 1936](https://insa.nic.in/writereaddata/UpLoadedFiles/PINSA/Vol02_1936_1_Art05.pdf))
+   - Example: [Network Intrusion](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/od_mahalanobis_kddcup.html)
+
+- [Auto-Encoder (AE)](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/ae.html)
+   - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/od_ae_cifar10.html)
+
+- [Variational Auto-Encoder (VAE)](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/vae.html) ([Kingma et al., 2013](https://arxiv.org/abs/1312.6114))
+   - Examples: [Network Intrusion](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/od_vae_kddcup.html), [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/od_vae_cifar10.html)
+
+- [Auto-Encoding Gaussian Mixture Model (AEGMM)](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/aegmm.html) ([Zong et al., 2018](https://openreview.net/forum?id=BJJLHbb0-))
+   - Example: [Network Intrusion](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/od_aegmm_kddcup.html)
+
+- [Variational Auto-Encoding Gaussian Mixture Model (VAEGMM)](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/vaegmm.html)
+   - Example: [Network Intrusion](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/od_aegmm_kddcup.html)
+     
+- [Prophet Time Series Outlier Detector](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/prophet.html) ([Taylor et al., 2018](https://peerj.com/preprints/3190/))
+   - Example: [Weather Forecast](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/od_prophet_weather.html)
+  
+- [Spectral Residual Time Series Outlier Detector](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/sr.html) ([Ren et al., 2019](https://arxiv.org/abs/1906.03821))
+   - Example: [Synthetic Dataset](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/od_sr_synth.html)
+
+- [Sequence-to-Sequence (Seq2Seq) Outlier Detector](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/seq2seq.html) ([Sutskever et al., 2014](https://papers.nips.cc/paper/5346-sequence-to-sequence-learning-with-neural-networks.pdf); [Park et al., 2017](https://arxiv.org/pdf/1711.00614.pdf))
+   - Examples: [ECG](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/od_seq2seq_ecg.html), [Synthetic Dataset](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/od_seq2seq_synth.html)
+
+
+#### Adversarial Detection
+
+- [Adversarial Auto-Encoder](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/adversarialae.html) ([Vacanti and Van Looveren, 2020](https://arxiv.org/abs/2002.09364))
+   - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/ad_ae_cifar10.html)
+     
+#### Drift Detection
+
+- [Kolmogorov-Smirnov](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/ksdrift.html)
+   - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_ks_cifar10.html)
+
+## Datasets
+
+The package also contains functionality in `alibi_detect.datasets` to easily fetch a number of datasets for different modalities. For each dataset either the data and labels or a *Bunch* object with the data, labels and optional metadata are returned. Example:
+
+```python
+from alibi_detect.datasets import fetch_ecg
+
+(X_train, y_train), (X_test, y_test) = fetch_ecg(return_X_y=True)
+```
+
+### Time Series
+
+- **ECG 5000**: `fetch_ecg`
+  - 5000 ECG's, originally obtained from [Physionet](https://archive.physionet.org/cgi-bin/atm/ATM).
+
+- **NAB**: `fetch_nab`
+  - Any univariate time series in a DataFrame from the [Numenta Anomaly Benchmark](https://github.com/numenta/NAB). A list with the available time series can be retrieved using `alibi_detect.datasets.get_list_nab()`.
+
+
+### Images
+
+- **CIFAR-10-C**: `fetch_cifar10c`
+  - CIFAR-10-C ([Hendrycks & Dietterich, 2019](https://arxiv.org/abs/1903.12261)) contains the test set of CIFAR-10, but corrupted and perturbed by various types of noise, blur, brightness etc. at different levels of severity, leading to a gradual decline in a classification model's performance trained on CIFAR-10. `fetch_cifar10c` allows you to pick any severity level or corruption type. The list with available corruption types can be retrieved with `alibi_detect.datasets.corruption_types_cifar10c()`. The dataset can be used in research on robustness and drift. The original data can be found [here](https://zenodo.org/record/2535967#.XnAM2nX7RNw). Example:
+  
+  ```python
+  from alibi_detect.datasets import fetch_cifar10c
+  
+  corruption = ['gaussian_noise', 'motion_blur', 'brightness', 'pixelate']
+  X, y = fetch_cifar10c(corruption=corruption, severity=5, return_X_y=True)
+  ```
+  
+- **Adversarial CIFAR-10**: `fetch_attack`
+  - Load adversarial instances on a ResNet-56 classifier trained on CIFAR-10. Available attacks: [Carlini-Wagner](https://arxiv.org/abs/1608.04644) ('cw') and [SLIDE](https://arxiv.org/abs/1904.13000) ('slide'). Example:
+  
+  ```python
+  from alibi_detect.datasets import fetch_attack
+  
+  (X_train, y_train), (X_test, y_test) = fetch_attack('cifar10', 'resnet56', 'cw', return_X_y=True)
+  ```
+
+### Tabular
+
+- **KDD Cup '99**: `fetch_kdd`
+  - Dataset with different types of computer network intrusions. `fetch_kdd` allows you to select a subset of network intrusions as targets or pick only specified features. The original data can be found [here](http://kdd.ics.uci.edu/databases/kddcup99/kddcup99.html).
+
+
+## Models
+
+Models and/or building blocks that can be useful outside of outlier, adversarial or drift detection can be found under `alibi_detect.models`. Main implementations:
+
+- Variational Autoencoder: `alibi_detect.models.autoencoder.VAE`
+
+- Sequence-to-sequence model: `alibi_detect.models.autoencoder.Seq2Seq`
+
+- ResNet: `alibi_detect.models.resnet`
+  - Pre-trained ResNet-20/32/44 models on CIFAR-10 can be found on our [Google Cloud Bucket](https://console.cloud.google.com/storage/browser/seldon-models/alibi-detect/classifier/cifar10/?organizationId=156002945562&project=seldon-pub) and can be fetched as follows:
+
+  ```python
+  from alibi_detect.utils.fetching import fetch_tf_model
+  
+  model = fetch_tf_model('cifar10', 'resnet32')
+  ```
 
 ## Integrations
 

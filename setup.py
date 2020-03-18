@@ -32,7 +32,10 @@ setup(
         "matplotlib",
         "numpy",
         "pandas",
+        "Pillow",
+        "opencv-python",
         "scipy",
+        "scikit-image",
         "scikit-learn",
         "tensorflow>=2",
         "tensorflow_probability>=0.8"

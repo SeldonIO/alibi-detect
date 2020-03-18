@@ -78,12 +78,12 @@ def predict_batch(model: Data,
     n_minibatch = int(np.ceil(n / batch_size))
     for i in range(n_minibatch):
         istart, istop = i * batch_size, min((i + 1) * batch_size, n)
-        if is_ae or proba:
-            preds[istart:istop] = model(X[istart:istop]).numpy()
-        elif isinstance(shape[0], tuple):
+        if isinstance(shape[0], tuple):
             preds_tmp = model(X[istart:istop])
             for j, p in enumerate(preds_tmp):
                 preds[j][istart:istop] = p if isinstance(p, np.ndarray) else p.numpy()
-        else:  # class predictions for classifier
+        elif return_class:  # class predictions for classifier
             preds[istart:istop] = model(X[istart:istop]).numpy().argmax(axis=-1)
+        else:
+            preds[istart:istop] = model(X[istart:istop]).numpy()
     return preds
