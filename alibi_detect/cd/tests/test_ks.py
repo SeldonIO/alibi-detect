@@ -7,7 +7,7 @@ from typing import Callable
 from alibi_detect.cd import KSDrift
 from alibi_detect.cd.preprocess import hidden_output, pca, uae
 
-n, n_hidden, n_classes = 100, 10, 5
+n, n_hidden, n_classes = 750, 10, 5
 
 
 def mymodel(shape):
@@ -27,7 +27,7 @@ preprocess = [
 ]
 alternative = ['two-sided', 'less', 'greater']
 correction = ['bonferroni', 'fdr']
-update_X_ref = [{'last': 150}, {'reservoir_sampling': 150}]
+update_X_ref = [{'last': 1000}, {'reservoir_sampling': 1000}]
 tests_ksdrift = list(product(n_features, n_enc, preprocess, alternative, correction, update_X_ref))
 n_tests = len(tests_ksdrift)
 
