@@ -187,7 +187,7 @@ class KSDrift(BaseDetector):
 
         # update reference dataset
         self.X_ref = update_reference(self.X_ref, X, self.n, self.update_X_ref)
-        self.n += X.shape[0]
+        self.n += X.shape[0]  # used for reservoir sampling
 
         # populate drift dict
         cd = concept_drift_dict()
