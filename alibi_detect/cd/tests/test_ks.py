@@ -41,7 +41,7 @@ def ksdrift_params(request):
 def test_ksdrift(ksdrift_params):
     n_features, n_enc, preprocess, alternative, correction, update_X_ref = ksdrift_params
     np.random.seed(0)
-    X_ref = np.random.rand(n * n_features).reshape(n, n_features).astype('float32')
+    X_ref = np.random.randn(n * n_features).reshape(n, n_features).astype('float32')
     n_infer = 2
     preprocess_fn, preprocess_kwargs = preprocess
     if isinstance(preprocess_fn, Callable):
@@ -89,8 +89,10 @@ def test_ksdrift(ksdrift_params):
     preds_by_feature = (preds_feature['data']['feature_score'] < cd.p_val).astype(int)
     assert (preds_feature['data']['is_drift'] == preds_by_feature).all()
 
-    mult = 100
-    X_high, X_low = X_ref.copy() * mult, X_ref.copy() / mult
+    X_randn = np.random.randn(n * n_features).reshape(n, n_features).astype('float32')
+    mu, sigma = 5, 5
+    X_low = sigma * X_randn - mu
+    X_high = sigma * X_randn + mu
     preds_batch = cd.predict(X_high, drift_type='batch')
     if alternative != 'less':
         assert preds_batch['data']['is_drift'] == 1
