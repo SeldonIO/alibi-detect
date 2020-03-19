@@ -86,6 +86,7 @@ autodoc_mock_imports = [
     "scipy",
     "matplotlib",
     "creme",
+    "cloudpickle",
     "fbprophet"
 ]
 
