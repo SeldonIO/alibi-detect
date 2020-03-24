@@ -1,5 +1,6 @@
+from creme.utils import Histogram
 import numpy as np
-from typing import Dict
+from typing import Dict, List
 from alibi_detect.utils.sampling import reservoir_sampling
 
 
@@ -63,3 +64,37 @@ def fdr(p_val: np.ndarray, q_val: float) -> bool:
     q_threshold = q_val * i / n
     below_threshold = (p_sorted < q_threshold).any()
     return below_threshold
+
+
+def build_histograms(X: np.ndarray, n_features: int, histograms: List[Histogram] = None) -> List[Histogram]:
+    """
+    Compute an approximate histogram to be used for calculating the ecdf.
+
+    Parameters
+    ----------
+    X
+        Dataset.
+    n_features
+        Number of features.
+    histograms
+        List of `creme` Histogram objects, one for each feature.
+        If passed, then the histograms are updated with the new data in X and returned.
+
+    Returns
+    -------
+    A list of `creme` Histogram objects, one for each feature.
+    """
+    X_flat = X.reshape(X.shape[0], -1)
+    if X_flat.shape[-1] != n_features:
+        raise ValueError('n_features does not correspond to the dimensionality of the data')
+
+    if histograms is None:
+        histograms = []
+        for feature in range(n_features):
+            histograms.append(Histogram())
+
+    for x in X_flat:
+        for feature in range(n_features):
+            histograms[feature].update(x[feature])
+
+    return histograms

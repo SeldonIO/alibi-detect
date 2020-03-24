@@ -1,9 +1,10 @@
+from creme.utils import Histogram
 import logging
 import numpy as np
-from scipy.stats import ks_2samp
-from typing import Callable, Dict, Tuple
+from scipy.stats import ks_2samp, kstwobign
+from typing import Callable, Dict, List, Tuple
 from alibi_detect.base import BaseDetector, concept_drift_dict
-from alibi_detect.cd.utils import fdr, update_reference
+from alibi_detect.cd.utils import build_histograms, fdr, update_reference
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +21,8 @@ class KSDrift(BaseDetector):
                  alternative: str = 'two-sided',
                  n_features: int = None,
                  n_infer: int = 2,
-                 data_type: str = None
+                 data_type: str = None,
+                 online: bool = False
                  ) -> None:
         """
         Kolmogorov-Smirnov (K-S) data drift detector with Bonferroni or False Discovery Rate (FDR)
@@ -54,6 +56,10 @@ class KSDrift(BaseDetector):
             Number of instances used to infer number of features from.
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
+        online
+            If True, perform online drift detection by continuously updating the testing dataset with new
+            instances. This is done by keeping a constant memory approximate histogram of both the reference
+            and test dataset from which the empirical CDF is explicitly calculated at the time of testing.
         """
         super().__init__()
 
@@ -68,6 +74,7 @@ class KSDrift(BaseDetector):
         self.n = X_ref.shape[0]
         self.p_val = p_val
         self.correction = correction
+        self.online = online
 
         # compute number of features for the K-S test
         if isinstance(n_features, int):
@@ -81,8 +88,14 @@ class KSDrift(BaseDetector):
         if correction not in ['bonferroni', 'fdr'] and self.n_features > 1:
             raise ValueError('Only `bonferroni` and `fdr` are acceptable for multivariate correction.')
 
+        if self.online:
+            self.ref_histograms = build_histograms(X_ref, self.n_features, histograms=None)
+            self.test_histograms = None  # type: List[Histogram]
+
         # set metadata
         self.meta['detector_type'] = 'offline'  # offline refers to fitting the CDF for K-S
+        if self.online:
+            self.meta['detector_type'] = 'online'
         self.meta['data_type'] = data_type
 
     def preprocess(self, X: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
@@ -148,6 +161,47 @@ class KSDrift(BaseDetector):
         score = self.feature_score(X_ref, X)  # feature-wise K-S test
         return score
 
+    def ecdf_score(self, X: np.ndarray) -> np.ndarray:
+        X_ref, X = self.preprocess(X)
+        print(self.test_histograms)
+        self.test_histograms = build_histograms(X, self.n_features, self.test_histograms)
+
+        p_val = np.zeros(self.n_features, dtype=np.float32)
+        for f, ref_hist, test_hist in zip(range(self.n_features), self.ref_histograms, self.test_histograms):
+            x_ref = np.linspace(ref_hist[0].left, ref_hist[-1].right, 1000)  # TODO: parameter?
+            x_test = np.linspace(test_hist[0].left, test_hist[-1].right, 1000)
+            x = np.sort(np.hstack((x_ref, x_test)))
+            ecdf_ref = np.fromiter(ref_hist.iter_cdf(x), dtype=np.float32)
+            ecdf_test = np.fromiter(test_hist.iter_cdf(x), dtype=np.float32)
+
+            cddiffs = ecdf_ref - ecdf_test
+            minS = -np.min(cddiffs)
+            maxS = np.max(cddiffs)
+            alt2Dvalue = {'less': minS, 'greater': maxS, 'two-sided': max(minS, maxS)}
+            ks_stat = alt2Dvalue[self.alternative]
+            # ks_stat = np.max(np.abs(ecdf_ref, ecdf_test))
+
+            # calculate the p-value:
+            # https://github.com/scipy/scipy/blob/adc4f4f7bab120ccfab9383aba272954a0a12fb0/scipy/stats/stats.py#L6267-L6281
+            # TODO: need to update when switching to `exact` from `asymp`
+            n1 = ref_hist.n
+            n2 = test_hist.n
+
+            # The product n1*n2 is large.  Use Smirnov's asymptoptic formula.
+            if self.alternative == 'two-sided':
+                en = np.sqrt(n1 * n2 / (n1 + n2))
+                # Switch to using kstwo.sf() when it becomes available.
+                # prob = distributions.kstwo.sf(d, int(np.round(en)))
+                p_val[f] = kstwobign.sf(en * ks_stat)
+            else:
+                m, n = max(n1, n2), min(n1, n2)
+                z = np.sqrt(m * n / (m + n)) * ks_stat
+                # Use Hodges' suggested approximation Eqn 5.3
+                expt = -2 * z ** 2 - 2 * z * (m + 2 * n) / np.sqrt(m * n * (m + n)) / 3.0
+                p_val[f] = np.exp(expt)
+
+        return p_val
+
     def predict(self,
                 X: np.ndarray,
                 drift_type: str = 'batch',
@@ -173,7 +227,10 @@ class KSDrift(BaseDetector):
         'data' contains the drift predictions and both feature and batch level drift scores.
         """
         # compute drift scores
-        p_vals = self.score(X)
+        if self.online:
+            p_vals = self.ecdf_score(X)
+        else:
+            p_vals = self.score(X)
 
         # values below p-value threshold are drift
         if drift_type == 'feature':  # undo multivariate correction
