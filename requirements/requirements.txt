@@ -1,4 +1,5 @@
 creme>=0.4.3
+dask[array]
 fbprophet>=0.5
 holidays==0.9.11
 matplotlib>=3.1.1
