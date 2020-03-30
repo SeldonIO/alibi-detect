@@ -76,7 +76,7 @@ def maximum_mean_discrepancy(x: Union[np.ndarray, da.array],
     k = partial(kernel, **kwargs) if kwargs else kernel
     nx, ny = x.shape[0], y.shape[0]
     cxx, cyy, cxy = 1 / (nx * (nx - 1)), 1 / (ny * (ny - 1)), 2 / (nx * ny)
-    kxx, kyy, kxy = k(x, x), k(y, y), k(x, y)
+    kxx, kyy, kxy = k(x, x), k(y, y), k(x, y)  # type: ignore
     mmd2 = cxx * (kxx.sum() - kxx.trace()) + cyy * (kyy.sum() - kyy.trace()) - cxy * kxy.sum()
     return mmd2
 

@@ -44,7 +44,8 @@ alibi_detect.cd.__all__
 ```
 
 ```
-['KSDrift']
+['KSDrift',
+ 'MMDDrift']
 ```
 
 Summary tables highlighting the practical use cases for all the algorithms can be found [here](../overview/algorithms.md).
@@ -76,6 +77,9 @@ Similar for **adversarial detection**:
 And **data drift**:
     
 * [Kolmogorov-Smirnov Drift Detector](../methods/ksdrift.ipynb)
+
+* [Maximum Mean Discrepancy Drift Detector](../methods/mmddrift.ipynb)
+
 
 ## Basic Usage
 
