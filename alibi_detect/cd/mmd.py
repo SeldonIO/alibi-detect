@@ -78,8 +78,8 @@ class MMDDrift(BaseDetector):
         )
 
         permutation_args = list(self.permutation_test.keywords.keys())
-        self.infer_sigma = True if self.permutation_test.keywords['kernel'].__name__ == 'gaussian_kernel' and \
-                                   'sigma' not in permutation_args else False
+        self.infer_sigma = (True if self.permutation_test.keywords['kernel'].__name__ == 'gaussian_kernel' and
+                            'sigma' not in permutation_args else False)
 
         # set metadata
         self.meta['detector_type'] = 'offline'  # offline refers to fitting the CDF for K-S
