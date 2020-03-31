@@ -21,7 +21,7 @@ alibi-detect can be installed from [PyPI](https://pypi.org/project/alibi-detect)
 pip install alibi-detect
 ```
 
-We will use the [VAE outlier detector](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/vae.ipynb) to illustrate the API.
+We will use the [VAE outlier detector](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/vae.html) to illustrate the API.
 
 ```python
 from alibi_detect.od import OutlierVAE
@@ -40,7 +40,7 @@ save_detector(od, filepath)
 od = load_detector(filepath)
 ```
 
-The predictions are returned in a dictionary with as keys `meta` and `data`. `meta` contains the detector's metadata while `data` is in itself a dictionary with the actual predictions. It contains the outlier, adversarial or drift scores as well as the predictions whether instances are e.g. outliers or not. The exact details can vary slightly from method to method, so we encourage the reader to become familiar with the [types of algorithms supported](https://docs.seldon.io/projects/alibi-detect/en/latest/overview/algorithms.md).
+The predictions are returned in a dictionary with as keys `meta` and `data`. `meta` contains the detector's metadata while `data` is in itself a dictionary with the actual predictions. It contains the outlier, adversarial or drift scores as well as the predictions whether instances are e.g. outliers or not. The exact details can vary slightly from method to method, so we encourage the reader to become familiar with the [types of algorithms supported](https://docs.seldon.io/projects/alibi-detect/en/latest/overview/algorithms.html).
 
 The save and load functionality for the [Prophet time series outlier detector](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/prophet.html) is currently experiencing [issues in Python 3.6](https://github.com/facebook/prophet/issues/1361) but works in Python 3.7.
 
