@@ -19,9 +19,6 @@ def gaussian_kernel_params(request):
 @pytest.mark.parametrize('gaussian_kernel_params', list(range(n_tests_gk)), indirect=True)
 def test_gaussian_kernel(gaussian_kernel_params):
     sigma, n_features, n_instances = gaussian_kernel_params
-
-    print(sigma, n_features, n_instances)
-
     xshape, yshape = (n_instances[0], n_features), (n_instances[1], n_features)
     x = np.random.random(xshape).astype('float32')
     y = np.random.random(yshape).astype('float32')
