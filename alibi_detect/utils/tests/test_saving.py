@@ -6,7 +6,7 @@ import tensorflow as tf
 from tensorflow.keras.layers import Dense, InputLayer
 from typing import Callable
 from alibi_detect.ad import AdversarialAE
-from alibi_detect.cd import KSDrift
+from alibi_detect.cd import KSDrift, MMDDrift
 from alibi_detect.cd.preprocess import uae
 from alibi_detect.models.autoencoder import DecoderLSTM, EncoderLSTM
 from alibi_detect.od import (IForest, Mahalanobis, OutlierAEGMM, OutlierVAE, OutlierVAEGMM,
@@ -97,7 +97,13 @@ detector = [
     KSDrift(p_val=p_val,
             X_ref=X_ref,
             preprocess_fn=uae,
-            preprocess_kwargs={'encoder_net': encoder_net})
+            preprocess_kwargs={'encoder_net': encoder_net}),
+    MMDDrift(p_val=p_val,
+             X_ref=X_ref,
+             preprocess_fn=uae,
+             preprocess_kwargs={'encoder_net': encoder_net},
+             n_permutations=10,
+             chunk_size=10)
 ]
 n_tests = len(detector)
 
@@ -124,7 +130,7 @@ def test_save_load(select_detector):
         det_load_name = det_load.meta['name']
         assert det_load_name == det_name
 
-        if not type(det_load) in [OutlierProphet, KSDrift]:
+        if not type(det_load) in [OutlierProphet, KSDrift, MMDDrift]:
             assert det_load.threshold == det.threshold == threshold
 
         if type(det_load) in [OutlierVAE, OutlierVAEGMM]:
@@ -133,6 +139,13 @@ def test_save_load(select_detector):
         if type(det_load) == AdversarialAE:
             for layer in det_load.model.layers:
                 assert not layer.trainable
+
+        if type(det_load) == MMDDrift:
+            assert det_load.infer_sigma
+            assert isinstance(det_load.permutation_test, Callable)
+
+        if type(det_load) == KSDrift:
+            assert det_load.n_features == latent_dim
 
         if type(det_load) == OutlierAEGMM:
             assert isinstance(det_load.aegmm.encoder, tf.keras.Sequential)
@@ -175,10 +188,9 @@ def test_save_load(select_detector):
             assert det_load.latent_dim == latent_dim
             assert det_load.threshold == threshold
             assert det_load.shape == (-1, seq_len, input_dim)
-        elif type(det_load) == KSDrift:
+        elif type(det_load) in [KSDrift, MMDDrift]:
             assert isinstance(det_load.preprocess_fn, Callable)
             assert det_load.preprocess_fn.__name__ == 'uae'
             assert isinstance(det_load.preprocess_kwargs['encoder_net'], tf.keras.Sequential)
-            assert det_load.n_features == latent_dim
             assert det_load.p_val == p_val
             assert (det_load.X_ref == X_ref).all()

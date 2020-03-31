@@ -78,13 +78,13 @@ def test_ksdrift(ksdrift_params):
         n_infer=n_infer
     )
     X = X_ref.copy()
-    preds_batch = cd.predict(X, drift_type='batch', return_feature_score=True)
+    preds_batch = cd.predict(X, drift_type='batch', return_p_val=True)
     assert preds_batch['data']['is_drift'] == 0
     k = list(update_X_ref.keys())[0]
     assert cd.n == X.shape[0] + X_ref.shape[0]
     assert cd.X_ref.shape[0] == min(update_X_ref[k], X.shape[0] + X_ref.shape[0])
 
-    preds_feature = cd.predict(X, drift_type='feature', return_feature_score=True)
+    preds_feature = cd.predict(X, drift_type='feature', return_p_val=True)
     assert preds_feature['data']['is_drift'].shape[0] == cd.n_features
     preds_by_feature = (preds_feature['data']['feature_score'] < cd.p_val).astype(int)
     assert (preds_feature['data']['is_drift'] == preds_by_feature).all()
