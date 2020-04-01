@@ -46,6 +46,7 @@ def test_ksdrift(ksdrift_params):
     preprocess_fn, preprocess_kwargs = preprocess
     if isinstance(preprocess_fn, Callable):
         if preprocess_fn.__name__ == 'uae' and n_features > 1 and isinstance(n_enc, int):
+            tf.random.set_seed(0)
             encoder_net = tf.keras.Sequential(
                 [
                     InputLayer(input_shape=(n_features,)),
@@ -86,9 +87,10 @@ def test_ksdrift(ksdrift_params):
 
     preds_feature = cd.predict(X, drift_type='feature', return_p_val=True)
     assert preds_feature['data']['is_drift'].shape[0] == cd.n_features
-    preds_by_feature = (preds_feature['data']['feature_score'] < cd.p_val).astype(int)
+    preds_by_feature = (preds_feature['data']['p_val'] < cd.p_val).astype(int)
     assert (preds_feature['data']['is_drift'] == preds_by_feature).all()
 
+    np.random.seed(0)
     X_randn = np.random.randn(n * n_features).reshape(n, n_features).astype('float32')
     mu, sigma = 5, 5
     X_low = sigma * X_randn - mu
