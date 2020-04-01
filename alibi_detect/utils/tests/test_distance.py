@@ -1,8 +1,71 @@
+import dask.array as da
 import numpy as np
 from scipy.spatial.distance import cityblock
 from itertools import product
 import pytest
-from alibi_detect.utils.distance import abdm, cityblock_batch, mvdm, multidim_scaling, relative_euclidean_distance
+from alibi_detect.utils.distance import (pairwise_distance, maximum_mean_discrepancy, abdm,
+                                         cityblock_batch, mvdm, multidim_scaling, relative_euclidean_distance)
+
+n_features = [2, 5]
+n_instances = [(100, 100), (100, 75)]
+tests_pairwise = list(product(n_features, n_instances))
+n_tests_pairwise = len(tests_pairwise)
+
+
+@pytest.fixture
+def pairwise_params(request):
+    return tests_pairwise[request.param]
+
+
+@pytest.mark.parametrize('pairwise_params', list(range(n_tests_pairwise)), indirect=True)
+def test_pairwise(pairwise_params):
+    n_features, n_instances = pairwise_params
+    xshape, yshape = (n_instances[0], n_features), (n_instances[1], n_features)
+    np.random.seed(0)
+    x = np.random.random(xshape).astype('float32')
+    y = np.random.random(yshape).astype('float32')
+    xda = da.from_array(x, chunks=xshape)
+    yda = da.from_array(y, chunks=yshape)
+
+    dist_xx = pairwise_distance(x, x)
+    dist_xy = pairwise_distance(x, y)
+    dist_xx_da = pairwise_distance(xda, xda).compute()
+    dist_xy_da = pairwise_distance(xda, yda).compute()
+
+    assert dist_xx.shape == dist_xx_da.shape == (xshape[0], xshape[0])
+    assert dist_xy.shape == dist_xy_da.shape == n_instances
+    assert (dist_xx == dist_xx_da).all() and (dist_xy == dist_xy_da).all()
+    assert dist_xx.trace() == 0.
+
+
+tests_mmd = tests_pairwise
+n_tests_mmd = n_tests_pairwise
+
+
+@pytest.fixture
+def mmd_params(request):
+    return tests_mmd[request.param]
+
+
+@pytest.mark.parametrize('mmd_params', list(range(n_tests_mmd)), indirect=True)
+def test_mmd(mmd_params):
+    n_features, n_instances = mmd_params
+    xshape, yshape = (n_instances[0], n_features), (n_instances[1], n_features)
+    np.random.seed(0)
+    x = np.random.random(xshape).astype('float32')
+    y = np.random.random(yshape).astype('float32')
+    xda = da.from_array(x, chunks=xshape)
+    yda = da.from_array(y, chunks=yshape)
+
+    kwargs = {'sigma': np.array([1.])}
+    mmd_xx = maximum_mean_discrepancy(x, x, **kwargs)
+    mmd_xy = maximum_mean_discrepancy(x, y, **kwargs)
+    mmd_xx_da = maximum_mean_discrepancy(xda, xda, **kwargs).compute()
+    mmd_xy_da = maximum_mean_discrepancy(xda, yda, **kwargs).compute()
+
+    assert mmd_xx == mmd_xx_da and mmd_xy == mmd_xy_da
+    assert mmd_xy > mmd_xx
+
 
 dims = np.array([1, 10, 50])
 shapes = list(product(dims, dims))
