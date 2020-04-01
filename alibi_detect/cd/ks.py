@@ -171,7 +171,6 @@ class KSDrift(BaseDetector):
         'meta' has the model's metadata.
         'data' contains the drift predictions and both feature and batch level drift scores.
         """
-        # TODO: sync with MMD detector!
         # compute drift scores
         p_vals = self.score(X)
 
@@ -179,10 +178,8 @@ class KSDrift(BaseDetector):
         if drift_type == 'feature':  # undo multivariate correction
             drift_pred = (p_vals < self.p_val).astype(int)
         elif drift_type == 'batch' and self.correction == 'bonferroni':
-            # drift_pred = np.array([(p_vals < self.p_val / self.n_features).any().astype(int)])
             drift_pred = int((p_vals < self.p_val / self.n_features).any())
         elif drift_type == 'batch' and self.correction == 'fdr':
-            # drift_pred = np.array([fdr(p_vals, q_val=self.p_val).astype(int)])  # type: ignore
             drift_pred = int(fdr(p_vals, q_val=self.p_val))
         else:
             raise ValueError('`drift_type` needs to be either `feature` or `batch`.')
