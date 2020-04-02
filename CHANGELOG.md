@@ -1,5 +1,11 @@
 # Change Log
 
+## [v0.4.0](https://github.com/SeldonIO/alibi-detect/tree/v0.4.0) (2020-04-02)
+[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.3.1...v0.4.0)
+### Added
+- Kolmogorov-Smirnov drift detector (`alibi_detect.cd.ks.KSDrift`)
+- Maximum Mean Discrepancy drift detector (`alibi_detect.cd.mmd.MMDDrift`)
+
 ## [v0.3.1](https://github.com/SeldonIO/alibi-detect/tree/v0.3.1) (2020-02-26)
 [Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.3.0...v0.3.1)
 ### Added
