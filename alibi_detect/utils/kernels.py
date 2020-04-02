@@ -1,7 +1,7 @@
 import dask.array as da
 import numpy as np
 from typing import Union
-import alibi_detect.utils.distance as distance
+from . import distance
 
 
 def gaussian_kernel(x: Union[np.ndarray, da.array],
