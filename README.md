@@ -14,25 +14,34 @@
 
 *  [Documentation](https://docs.seldon.io/projects/alibi-detect/en/latest/)
 
-## Installation
+## Installation and usage
 
 alibi-detect can be installed from [PyPI](https://pypi.org/project/alibi-detect):
 ```bash
 pip install alibi-detect
 ```
-This will install `alibi-detect` with all its dependencies:
-```bash
-  creme
-  fbprophet
-  holidays==0.9.11
-  matplotlib
-  numpy
-  pandas
-  scipy
-  scikit-learn
-  tensorflow>=2
-  tensorflow_probability>=0.8
+
+We will use the [VAE outlier detector](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/vae.html) to illustrate the API.
+
+```python
+from alibi_detect.od import OutlierVAE
+from alibi_detect.utils.saving import save_detector, load_detector
+
+# initialize and fit detector
+od = OutlierVAE(threshold=0.1, encoder_net=encoder_net, decoder_net=decoder_net, latent_dim=1024)
+od.fit(X_train)
+
+# make predictions
+preds = od.predict(X_test)
+
+# save and load detectors
+filepath = './my_detector/'
+save_detector(od, filepath)
+od = load_detector(filepath)
 ```
+
+The predictions are returned in a dictionary with as keys `meta` and `data`. `meta` contains the detector's metadata while `data` is in itself a dictionary with the actual predictions. It contains the outlier, adversarial or drift scores as well as the predictions whether instances are e.g. outliers or not. The exact details can vary slightly from method to method, so we encourage the reader to become familiar with the [types of algorithms supported](https://docs.seldon.io/projects/alibi-detect/en/latest/overview/algorithms.html).
+
 The save and load functionality for the [Prophet time series outlier detector](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/prophet.html) is currently experiencing [issues in Python 3.6](https://github.com/facebook/prophet/issues/1361) but works in Python 3.7.
 
 ## Supported algorithms
@@ -62,9 +71,10 @@ The following tables show the advised use cases for each algorithm. The column *
 
 ### Drift Detection
 
-| Detector           | Tabular | Image | Time Series | Text  | Categorical Features | Online | Feature Level |
-| :---               |  :---:  | :---: |   :---:     | :---: |   :---:              | :---:  | :---:         |
-| Kolmogorov-Smirnov | ✔       | ✔     |  ✔          |  ✘    |  ✘                   |  ✔     |  ✔            |
+| Detector                 | Tabular | Image | Time Series | Text  | Categorical Features | Online | Feature Level |
+| :---                     |  :---:  | :---: |   :---:     | :---: |   :---:              | :---:  | :---:         |
+| Kolmogorov-Smirnov       | ✔       | ✔     |  ✘          |  ✘    |  ✔                   |  ✔     |  ✔            |
+| Maximum Mean Discrepancy | ✔       | ✔     |  ✘          |  ✘    |  ✔                   |  ✘     |  ✘            |
 
 
 ### Reference List
@@ -108,6 +118,9 @@ The following tables show the advised use cases for each algorithm. The column *
 
 - [Kolmogorov-Smirnov](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/ksdrift.html)
    - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_ks_cifar10.html)
+   
+- [Maximum Mean Discrepancy](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/mmddrift.html) ([Gretton et al, 2012](http://jmlr.csail.mit.edu/papers/v13/gretton12a.html))
+   - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_mmd_cifar10.html)
 
 ## Datasets
 
@@ -175,6 +188,24 @@ Models and/or building blocks that can be useful outside of outlier, adversarial
 ## Integrations
 
 The integrations folder contains various wrapper tools to allow the alibi-detect algorithms to be used in production machine learning systems with [examples](https://github.com/SeldonIO/alibi-detect/tree/master/integrations/samples/kfserving) on how to deploy outlier and adversarial detectors with [KFServing](https://www.kubeflow.org/docs/components/serving/kfserving/).
+
+## Dependencies
+
+```bash
+creme
+fbprophet
+holidays
+matplotlib
+numpy
+pandas
+opencv-python
+Pillow
+scipy
+scikit-image
+scikit-learn
+tensorflow>=2.0.0
+tensorflow_probability>=0.8
+```
 
 ## Citations
 If you use alibi-detect in your research, please consider citing it.

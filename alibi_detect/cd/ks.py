@@ -3,7 +3,8 @@ import numpy as np
 from scipy.stats import ks_2samp
 from typing import Callable, Dict, Tuple
 from alibi_detect.base import BaseDetector, concept_drift_dict
-from alibi_detect.cd.utils import fdr, update_reference
+from alibi_detect.cd.utils import update_reference
+from alibi_detect.utils.statstest import fdr
 
 logger = logging.getLogger(__name__)
 
@@ -132,8 +133,6 @@ class KSDrift(BaseDetector):
     def score(self, X: np.ndarray) -> np.ndarray:
         """
         Compute the feature-wise drift score which is the p-value of the Kolmogorov-Smirnov.
-        Note that the p-value under H0 is uniformly distributed in [0,1].
-        As a result, no value should be attached to the size of p if H0 is not rejected.
 
         Parameters
         ----------
@@ -151,7 +150,7 @@ class KSDrift(BaseDetector):
     def predict(self,
                 X: np.ndarray,
                 drift_type: str = 'batch',
-                return_feature_score: bool = True
+                return_p_val: bool = True
                 ) -> Dict[Dict[str, str], Dict[str, np.ndarray]]:
         """
         Predict whether a batch of data has drifted from the reference data.
@@ -163,8 +162,8 @@ class KSDrift(BaseDetector):
         drift_type
             Predict drift at the 'feature' or 'batch' level. For 'batch', the K-S statistics for
             each feature are aggregated using the Bonferroni or False Discovery Rate correction.
-        return_feature_score
-            Whether to return feature level drift scores.
+        return_p_val
+            Whether to return feature level p-values.
 
         Returns
         -------
@@ -179,9 +178,9 @@ class KSDrift(BaseDetector):
         if drift_type == 'feature':  # undo multivariate correction
             drift_pred = (p_vals < self.p_val).astype(int)
         elif drift_type == 'batch' and self.correction == 'bonferroni':
-            drift_pred = np.array([(p_vals < self.p_val / self.n_features).any().astype(int)])
+            drift_pred = int((p_vals < self.p_val / self.n_features).any())
         elif drift_type == 'batch' and self.correction == 'fdr':
-            drift_pred = np.array([fdr(p_vals, q_val=self.p_val).astype(int)])  # type: ignore
+            drift_pred = int(fdr(p_vals, q_val=self.p_val))
         else:
             raise ValueError('`drift_type` needs to be either `feature` or `batch`.')
 
@@ -193,6 +192,6 @@ class KSDrift(BaseDetector):
         cd = concept_drift_dict()
         cd['meta'] = self.meta
         cd['data']['is_drift'] = drift_pred
-        if return_feature_score:
-            cd['data']['feature_score'] = p_vals
+        if return_p_val:
+            cd['data']['p_val'] = p_vals
         return cd

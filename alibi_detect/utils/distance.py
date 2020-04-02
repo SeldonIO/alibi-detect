@@ -1,7 +1,84 @@
+import dask.array as da
+from functools import partial
 import numpy as np
 from sklearn.manifold import MDS
 import tensorflow as tf
-from typing import Any, Dict, Tuple
+from typing import Any, Callable, Dict, Tuple, Union
+from alibi_detect.utils.kernels import gaussian_kernel
+
+
+def norm(x: Union[np.ndarray, da.array], p: int) -> Union[np.ndarray, da.array]:
+    """
+    Compute p-norm across the features of a batch of instances.
+
+    Parameters
+    ----------
+    x
+        Batch of instances of shape [N, features].
+    p
+        Power of the norm.
+
+    Returns
+    -------
+    Array where p-norm is applied to the features.
+    """
+    return (x ** p).sum(axis=1) ** (1 / p)
+
+
+def pairwise_distance(x: Union[np.ndarray, da.array],
+                      y: Union[np.ndarray, da.array],
+                      p: int = 2
+                      ) -> Union[np.ndarray, da.array]:
+    """
+    Compute pairwise distance between 2 samples.
+
+    Parameters
+    ----------
+    x
+        Batch of instances of shape [Nx, features].
+    y
+        Batch of instances of shape [Ny, features].
+    p
+        Power of the norm used to compute the distance.
+
+    Returns
+    -------
+    [Nx, Ny] matrix with pairwise distances.
+    """
+    assert len(x.shape) == len(y.shape) and len(x.shape) == 2 and x.shape[-1] == y.shape[-1]
+    diff = x.reshape(x.shape + (1,)) - y.T.reshape((1,) + y.T.shape)  # [Nx,F,1]-[1,F,Ny]=[Nx,F,Ny]
+    dist = norm(diff, p)  # [Nx,Ny]
+    return dist
+
+
+def maximum_mean_discrepancy(x: Union[np.ndarray, da.array],
+                             y: Union[np.ndarray, da.array],
+                             kernel: Callable = gaussian_kernel,
+                             **kwargs) -> float:
+    """
+    Compute maximum mean discrepancy between 2 samples.
+
+    Parameters
+    ----------
+    x
+        Batch of instances of shape [Nx, features].
+    y
+        Batch of instances of shape [Ny, features].
+    kernel
+        Kernel function. Defaults to a Gaussian kernel.
+    kwargs
+        Kwargs for the kernel function. For instance the kernel width `sigma` for the Gaussian kernel.
+
+    Returns
+    -------
+    MMD^2 between the samples x and y.
+    """
+    k = partial(kernel, **kwargs) if kwargs else kernel
+    nx, ny = x.shape[0], y.shape[0]
+    cxx, cyy, cxy = 1 / (nx * (nx - 1)), 1 / (ny * (ny - 1)), 2 / (nx * ny)
+    kxx, kyy, kxy = k(x, x), k(y, y), k(x, y)  # type: ignore
+    mmd2 = cxx * (kxx.sum() - kxx.trace()) + cyy * (kyy.sum() - kyy.trace()) - cxy * kxy.sum()
+    return mmd2
 
 
 def cityblock_batch(X: np.ndarray,
