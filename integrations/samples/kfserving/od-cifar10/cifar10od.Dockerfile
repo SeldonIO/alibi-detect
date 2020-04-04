@@ -7,40 +7,25 @@ RUN apt-get update \
 
 WORKDIR /workspace
 
-RUN chmod -R a+w /workspace
+ADD requirements_server.txt .
 
-RUN pip install --upgrade pip
+RUN pip install -r requirements_server.txt
 
-ADD https://api.github.com/repos/kubeflow/kfserving/git/refs/heads/master version.json
-RUN git clone https://github.com/kubeflow/kfserving.git && \
-    cd kfserving/python && \
-    pip install -e ./kfserving
-
-#RUN git clone https://github.com/seldonio/alibi-detect.git && \
-#    cd alibi-detect && \
-#    pip install -e .
-
-ADD https://api.github.com/repos/ryandawsonuk/seldon-models/git/refs/heads/1393-od-reqlogging version.json
-RUN git clone --branch 1393-od-reqlogging https://github.com/ryandawsonuk/seldon-models.git && \
+# Change to official seld-models repo when work https://github.com/SeldonIO/seldon-models/pull/6 merged
+ADD https://api.github.com/repos/cliveseldon/seldon-models/git/refs/heads/5_ceserver_update ceserver_version.json
+RUN git clone --branch 5_ceserver_update https://github.com/cliveseldon/seldon-models.git && \
     cd seldon-models/servers/cloudevents && \
     pip install -e .
 
+# Fix cloudevents bug: https://github.com/cloudevents/sdk-python/issues/24
 RUN git clone --branch 24-extensions https://github.com/ryandawsonuk/sdk-python.git && \
     cd sdk-python && \
     pip install -e .
 
-COPY tmp tmp
-
-RUN cd tmp/alibi_detect && \
+# Change to official alibi-detect repo when work completed
+ADD https://api.github.com/repos/cliveseldon/alibi-detect/git/refs/heads/update_integrations adserver_version.json
+RUN git clone --branch update_integrations https://github.com/cliveseldon/alibi-detect.git && \
+    cd alibi-detect/integrations/adserver && \
     pip install -e .
 
-RUN cd tmp/adserver && \
-    pip install -e .
-
-COPY cifar10od cifar10od
-
-RUN cd cifar10od && pip install -e .
-
-COPY vae_outlier_detector vae_outlier_detector
-
-ENTRYPOINT ["python", "-m", "cifar10od"]
+ENTRYPOINT ["python", "-m", "adserver"]

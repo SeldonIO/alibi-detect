@@ -9,14 +9,21 @@ spec:
         autoscaling.knative.dev/minScale: "1"
     spec:
       containers:
-      - image: seldonio/cifar10od:0.0.4
-        imagePullPolicy: Always
+      - image: seldonio/cifar10od:0.0.5
+        imagePullPolicy: IfNotPresent
         args:
         - --model_name
-        - vaeod
+        - cifar10od
+        - --http_port
+        - '8080'
+        - --protocol
+        - tensorflow.http
         - --storage_uri
-        - ./vae_outlier_detector/
+        - gs://seldon-models/alibi-detect/od/OutlierVAE/cifar10
         - --reply_url
         - http://seldon-request-logger.default
         - --event_type
         - org.kubeflow.serving.inference.outlier
+        - --event_source
+        - org.kubeflow.serving.cifar10od
+        - OutlierDetector

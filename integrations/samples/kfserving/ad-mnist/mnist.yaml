@@ -15,6 +15,6 @@ spec:
             - --model_dir
             - ./model_mnist/
             - --http_port
-            - "8081"
+            - "8080"
       logger:
         mode: request

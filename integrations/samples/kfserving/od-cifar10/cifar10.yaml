@@ -1,13 +1,12 @@
 apiVersion: "serving.kubeflow.org/v1alpha2"
 kind: "InferenceService"
 metadata:
-  name: "pytorch-cifar10"
+  name: "tfserving-cifar10"
 spec:
   default:
     predictor:
       minReplicas: 1
-      pytorch:
-        storageUri: "gs://kfserving-samples/models/pytorch/cifar10/"
-        modelClassName: "Net"
+      tensorflow:
+        storageUri: "gs://seldon-models/tfserving/cifar10/resnet32"
       logger:
         mode: all
