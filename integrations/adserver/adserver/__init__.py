@@ -1,1 +1,1 @@
-from .model import AlibiDetectModel
+from .od_model import AlibiDetectOutlierModel
