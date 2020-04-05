@@ -4,10 +4,9 @@ import logging
 import ceserver
 import kfserving
 import numpy as np
+from adserver.constants import HEADER_RETURN_INSTANCE_SCORE
 from .numpy_encoder import NumpyEncoder
 from alibi_detect.utils.saving import load_detector, Data
-
-HEADER_RETURN_INSTANCE_SCORE = "Alibi-Detect-Return-Instance-Score"
 
 
 class AlibiDetectAdversarialDetectionModel(

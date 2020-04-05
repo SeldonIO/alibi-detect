@@ -6,10 +6,8 @@ import kfserving
 import numpy as np
 from .numpy_encoder import NumpyEncoder
 from alibi_detect.utils.saving import load_detector, Data
-from .ad_model import HEADER_RETURN_INSTANCE_SCORE
-
-HEADER_RETURN_FEATURE_SCORE = "Alibi-Detect-Return-Feature-Score"
-HEADER_OUTLIER_TYPE = "Alibi-Detect-Outlier-Type"
+from adserver.constants import HEADER_RETURN_INSTANCE_SCORE, HEADER_RETURN_FEATURE_SCORE, \
+    HEADER_OUTLIER_TYPE
 
 
 class AlibiDetectOutlierModel(ceserver.CEModel):  # pylint:disable=c-extension-no-member
