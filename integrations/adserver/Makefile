@@ -1,3 +1,6 @@
+IMAGE=alibi-detect-server
+TAG=0.0.1
+
 .PHONY: install_dev
 install_dev:
 	pip install -e . -r requirements-dev.txt
@@ -13,3 +16,9 @@ test: type_check
 .PHONY: lint
 lint:
 	black .
+
+docker-build: 
+	docker build -f Dockerfile -t seldonio/${IMAGE}:${TAG} .
+
+docker-push:
+	docker push seldonio/${IMAGE}:${TAG} 
