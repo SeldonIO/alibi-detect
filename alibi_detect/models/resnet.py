@@ -443,7 +443,8 @@ def run(num_blocks: int,
         input_shape: Tuple[int, int, int] = (32, 32, 3),
         validation_freq: int = 10,
         verbose: int = 2,
-        seed: int = 1
+        seed: int = 1,
+        serving: bool = False
         ) -> None:
 
     # load and preprocess CIFAR-10 data
@@ -494,6 +495,9 @@ def run(num_blocks: int,
         verbose=verbose
     )
 
+    if serving:
+        tf.saved_model.save(model, model_dir)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Train ResNet on CIFAR-10.")
@@ -505,6 +509,7 @@ if __name__ == '__main__':
     parser.add_argument('--validation_freq', type=int, default=10)
     parser.add_argument('--verbose', type=int, default=2)
     parser.add_argument('--seed', type=int, default=1)
+    parser.add_argument('--serving', type=bool, default=False)
     args = parser.parse_args()
     run(
         args.num_blocks,
@@ -514,5 +519,6 @@ if __name__ == '__main__':
         num_classes=args.num_classes,
         validation_freq=args.validation_freq,
         verbose=args.verbose,
-        seed=args.seed
+        seed=args.seed,
+        serving=args.serving
     )

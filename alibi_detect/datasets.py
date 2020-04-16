@@ -371,3 +371,76 @@ def get_list_nab() -> list:
     labels_json = r.json()
     files = [k[:-4] for k, v in labels_json.items()]
     return files
+
+
+def load_genome_npz(fold: str, return_labels: bool = False) \
+        -> Union[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray, np.ndarray]]:
+    url = 'https://storage.googleapis.com/seldon-datasets/genome/'
+    path_data = os.path.join(url, fold + '.npz')
+    resp = requests.get(path_data)
+    data = np.load(BytesIO(resp.content))
+    if return_labels:
+        return data['x'], data['is_outlier'], data['y']
+    else:
+        return data['x'], data['is_outlier']
+
+
+def fetch_genome(return_X_y: bool = False, return_labels: bool = False) -> Union[Bunch, tuple]:
+    """
+    Load genome data including their labels and whether they are outliers or not. More details about the data can be
+    found in the readme on https://console.cloud.google.com/storage/browser/seldon-datasets/genome/.
+    The original data can be found here: https://drive.google.com/drive/folders/1Ht9xmzyYPbDouUTl_KQdLTJQYX2CuclR.
+
+    Parameters
+    ----------
+    return_X_y
+        Bool, whether to only return the data and target values or a Bunch object.
+    return_labels
+        Whether to return the genome labels which are detailed in the `label_json` dict
+        of the returned Bunch object.
+
+    Returns
+    -------
+    Bunch
+        Training, validation and test data, whether they are outliers and optionally including the
+        genome labels which are specified in the `label_json` key as a dictionary.
+    (data, outlier) or (data, outlier, target)
+        Tuple for the train, validation and test set with either the data and whether they
+        are outliers or the data, outlier flag and labels for the genomes if 'return_X_y' equals True.
+    """
+    data_train = load_genome_npz('train_in', return_labels=return_labels)
+    data_val_in = load_genome_npz('val_in', return_labels=return_labels)
+    data_val_ood = load_genome_npz('val_ood', return_labels=return_labels)
+    data_val = (
+        np.concatenate([data_val_in[0], data_val_ood[0]]),
+        np.concatenate([data_val_in[1], data_val_ood[1]])
+    )
+    data_test_in = load_genome_npz('test_in', return_labels=return_labels)
+    data_test_ood = load_genome_npz('test_ood', return_labels=return_labels)
+    data_test = (
+        np.concatenate([data_test_in[0], data_test_ood[0]]),
+        np.concatenate([data_test_in[1], data_test_ood[1]])
+    )
+    if return_labels:
+        data_val += (np.concatenate([data_val_in[2], data_val_ood[2]]),)
+        data_test += (np.concatenate([data_test_in[2], data_test_ood[2]]),)
+    if return_X_y:
+        return data_train, data_val, data_test
+    resp = requests.get('https://storage.googleapis.com/seldon-datasets/genome/label_dict.json')
+    label_dict = resp.json()
+    bunch = Bunch(
+        data_train=data_train[0],
+        data_val=data_val[0],
+        data_test=data_test[0],
+        outlier_train=data_train[1],
+        outlier_val=data_val[1],
+        outlier_test=data_test[1],
+        label_dict=label_dict
+    )
+    if not return_labels:
+        return bunch
+    else:
+        bunch['target_train'] = data_train[2]
+        bunch['target_val'] = data_val[2]
+        bunch['target_test'] = data_test[2]
+        return bunch
