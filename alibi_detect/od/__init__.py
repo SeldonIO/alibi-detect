@@ -7,6 +7,7 @@ from .vaegmm import OutlierVAEGMM
 from .prophet import OutlierProphet
 from .seq2seq import OutlierSeq2Seq
 from .sr import SpectralResidual
+from .llr import LLR
 
 __all__ = [
     "OutlierAEGMM",
@@ -17,5 +18,6 @@ __all__ = [
     "OutlierVAEGMM",
     "OutlierProphet",
     "OutlierSeq2Seq",
-    "SpectralResidual"
+    "SpectralResidual",
+    "LLR"
 ]

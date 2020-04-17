@@ -38,7 +38,7 @@ def build_model(dist: Union[Distribution, PixelCNN], input_shape: tuple = None) 
     return model
 
 
-class LikelihoodRatio(BaseDetector, FitMixin, ThresholdMixin):
+class LLR(BaseDetector, FitMixin, ThresholdMixin):
 
     def __init__(self,
                  threshold: float = None,
