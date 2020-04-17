@@ -1,9 +1,4 @@
-# OK: data scaling outside of pixelcnn model? fine for PixelCNN! assume (0,256)
 # TODO: check appendix paper for alternative "infer_threshold" method
-# TODO: add L2 regularization for background model: can only be done if kwargs pixelcnn passed explicitly
-# TODO: needs to be more general: at least for LSTM (RNN) / WaveNet / PixelCNN models!
-# TODO: maybe just needs to provide logits? or even convert to logits?
-
 from functools import partial
 import logging
 import numpy as np
@@ -62,7 +57,7 @@ class LikelihoodRatio(BaseDetector, FitMixin, ThresholdMixin):
         threshold
             Threshold used for the likelihood ratio (LLR) to determine outliers.
         model
-            Generative model.
+            Generative model, defaults to PixelCNN.
         model_background
             Optional model for the background. Only needed if it is different from `model`.
         data_type
@@ -117,8 +112,9 @@ class LikelihoodRatio(BaseDetector, FitMixin, ThresholdMixin):
         mutate_batch_size
             Batch size used to generate the mutations for the background dataset.
         loss_fn
-            Loss function used for training. Shape of the function output should be (batch, feature shape).
-            Also used for likelihood evaluation if the model has no `log_prob` attribute.
+            Loss function used for training.
+        loss_fn_kwargs
+            Kwargs for loss function.
         optimizer
             Optimizer used for training.
         epochs
@@ -222,6 +218,7 @@ class LikelihoodRatio(BaseDetector, FitMixin, ThresholdMixin):
         -------
         Log probabilities.
         """
+        # TODO: check with MNIST shapes... might be fine to infer in predict_batch
         shape = X.shape if return_per_feature else (X.shape[0],)
         logp_fn = partial(dist.log_prob, return_per_pixel=return_per_feature)
         return predict_batch(logp_fn, X, batch_size=batch_size, shape=shape)
