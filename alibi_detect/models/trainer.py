@@ -92,6 +92,8 @@ def trainer(model: tf.keras.Model,
                         loss = loss_fn(*args, **loss_fn_kwargs)
                     else:
                         loss = loss_fn(*args)
+                else:
+                    loss = 0.
 
                 if model.losses:  # additional model losses
                     loss += sum(model.losses)

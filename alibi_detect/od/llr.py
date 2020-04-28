@@ -5,18 +5,19 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.keras.layers import Input
 from tensorflow.keras.models import Model
+from tensorflow_probability.python.distributions.distribution import Distribution
 from typing import Callable, Dict, Tuple, Union
 from alibi_detect.models.pixelcnn import PixelCNN
 from alibi_detect.models.trainer import trainer
 from alibi_detect.base import BaseDetector, FitMixin, ThresholdMixin, outlier_prediction_dict
 from alibi_detect.utils.prediction import predict_batch
 from alibi_detect.utils.perturbation import mutate_categorical
-from tensorflow_probability.python.distributions.distribution import Distribution
 
 logger = logging.getLogger(__name__)
 
 
-def build_model(dist: Union[Distribution, PixelCNN], input_shape: tuple = None) -> tf.keras.Model:
+def build_model(dist: Union[Distribution, PixelCNN], input_shape: tuple = None, filepath: str = None) \
+        -> Tuple[tf.keras.Model, Union[Distribution, PixelCNN]]:
     """
     Create tf.keras.Model from TF distribution.
 
@@ -35,7 +36,9 @@ def build_model(dist: Union[Distribution, PixelCNN], input_shape: tuple = None) 
     log_prob = dist.log_prob(x_in)
     model = Model(inputs=x_in, outputs=log_prob)
     model.add_loss(-tf.reduce_mean(log_prob))
-    return model
+    if isinstance(filepath, str):
+        model.load_weights(filepath)
+    return model, dist
 
 
 class LLR(BaseDetector, FitMixin, ThresholdMixin):
@@ -60,6 +63,11 @@ class LLR(BaseDetector, FitMixin, ThresholdMixin):
             Generative model, defaults to PixelCNN.
         model_background
             Optional model for the background. Only needed if it is different from `model`.
+        log_prob
+            Function used to evaluate log probabilities under the model
+            if the model does not have a `log_prob` function.
+        sequential
+            Whether the data is sequential. Used to create targets during training.
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
@@ -68,16 +76,15 @@ class LLR(BaseDetector, FitMixin, ThresholdMixin):
         if threshold is None:
             logger.warning('No threshold level set. Need to infer threshold using `infer_threshold`.')
 
-        # TODO: attribute checking needs to be done recursively
         self.has_log_prob = True if hasattr(model, 'log_prob') else False
         self.sequential = sequential
-        self.log_prob = log_prob  # TODO: check input parameter signature for log_prob: y, y_pred, return_per_feature
+        self.log_prob = log_prob
         self.threshold = threshold
 
         # semantic model trained on original data
         self.dist_s = model
         # background model trained on perturbed data
-        self.dist_b = model if model_background is None else model_background
+        self.dist_b = model.copy() if model_background is None else model_background
 
         # set metadata
         self.meta['detector_type'] = 'offline'
@@ -86,7 +93,7 @@ class LLR(BaseDetector, FitMixin, ThresholdMixin):
     def fit(self,
             X: np.ndarray,
             mutate_fn: Callable = mutate_categorical,
-            mutate_fn_kwargs: dict = {'mutation_rate': .2, 'seed': 0, 'feature_range': (0, 256)},
+            mutate_fn_kwargs: dict = {'rate': .2, 'seed': 0, 'feature_range': (0, 256)},
             mutate_batch_size: int = int(1e10),
             loss_fn: tf.keras.losses = None,
             loss_fn_kwargs: dict = None,
@@ -131,12 +138,9 @@ class LLR(BaseDetector, FitMixin, ThresholdMixin):
         input_shape = X.shape[1:]
 
         # training arguments
-        kwargs = {'optimizer': optimizer,
-                  'loss_fn_kwargs': loss_fn_kwargs,
-                  'epochs': epochs,
+        kwargs = {'epochs': epochs,
                   'batch_size': batch_size,
                   'verbose': verbose,
-                  'log_metric': log_metric,
                   'callbacks': callbacks}
 
         # create background data
@@ -153,17 +157,32 @@ class LLR(BaseDetector, FitMixin, ThresholdMixin):
         # check if model needs to be built
         use_build = True if self.has_log_prob and not isinstance(self.dist_s, tf.keras.Model) else False
 
-        # train semantic model
-        kwargs['y_train'] = y
-        model_s = build_model(self.dist_s, input_shape) if use_build else self.dist_s
-        args = [model_s, loss_fn, X]
-        trainer(*args, **kwargs)
+        if use_build:
+            # build and train semantic model
+            self.model_s = build_model(self.dist_s, input_shape)[0]
+            self.model_s.compile(optimizer=optimizer)
+            self.model_s.fit(X, **kwargs)
+            # build and train background model
+            self.model_b = build_model(self.dist_b, input_shape)[0]
+            self.model_b.compile(optimizer=optimizer)
+            self.model_b.fit(X_back, **kwargs)
+        else:
+            # update training arguments
+            kwargs.update({
+                'optimizer': optimizer,
+                'loss_fn_kwargs': loss_fn_kwargs,
+                'log_metric': log_metric
+            })
 
-        # create background data and train background model
-        kwargs['y_train'] = y_back
-        model_b = build_model(self.dist_b, input_shape) if use_build else self.dist_b
-        args = [model_b, loss_fn, X_back]
-        trainer(*args, **kwargs)
+            # train semantic model
+            args = [self.dist_s, loss_fn, X]
+            kwargs.update({'y_train': y})
+            trainer(*args, **kwargs)
+
+            # train background model
+            args = [self.dist_b, loss_fn, X_back]
+            kwargs.update({'y_train': y_back})
+            trainer(*args, **kwargs)
 
     def infer_threshold(self,
                         X: np.ndarray,
@@ -218,10 +237,8 @@ class LLR(BaseDetector, FitMixin, ThresholdMixin):
         -------
         Log probabilities.
         """
-        # TODO: check with MNIST shapes... might be fine to infer in predict_batch
-        shape = X.shape if return_per_feature else (X.shape[0],)
-        logp_fn = partial(dist.log_prob, return_per_pixel=return_per_feature)
-        return predict_batch(logp_fn, X, batch_size=batch_size, shape=shape)
+        logp_fn = partial(dist.log_prob, return_per_feature=return_per_feature)
+        return predict_batch(logp_fn, X, batch_size=batch_size)
 
     def logp_alt(self, model: tf.keras.Model, X: np.ndarray, return_per_feature: bool = False,
                  batch_size: int = int(1e10)) -> np.ndarray:
@@ -249,7 +266,12 @@ class LLR(BaseDetector, FitMixin, ThresholdMixin):
         else:
             y = X.copy()
         y_preds = predict_batch(model, X, batch_size=batch_size, shape=X.shape)
-        return self.log_prob(y, y_preds, return_per_feature=return_per_feature).numpy()
+        logp = self.log_prob(y, y_preds).numpy()
+        if return_per_feature:
+            return logp
+        else:
+            axis = tuple(np.arange(len(logp.shape))[1:])
+            return np.mean(logp, axis=axis)
 
     def llr(self, X: np.ndarray, return_per_feature: bool, batch_size: int = int(1e10)) -> np.ndarray:
         """

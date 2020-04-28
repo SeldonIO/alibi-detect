@@ -8,7 +8,8 @@ from typing import Tuple, Union
 from urllib.request import urlopen
 from alibi_detect.base import BaseDetector
 from alibi_detect.ad import AdversarialAE
-from alibi_detect.od import (IForest, Mahalanobis, OutlierAE, OutlierAEGMM, OutlierProphet,
+from alibi_detect.models import PixelCNN
+from alibi_detect.od import (IForest, LLR, Mahalanobis, OutlierAE, OutlierAEGMM, OutlierProphet,
                              OutlierSeq2Seq, OutlierVAE, OutlierVAEGMM, SpectralResidual)
 from alibi_detect.utils.saving import load_detector  # type: ignore
 
@@ -18,6 +19,7 @@ Data = Union[
     BaseDetector,
     AdversarialAE,
     IForest,
+    LLR,
     Mahalanobis,
     OutlierAEGMM,
     OutlierAE,
@@ -27,6 +29,23 @@ Data = Union[
     OutlierVAEGMM,
     SpectralResidual
 ]
+
+dist = PixelCNN(
+    image_shape=(28, 28, 1),
+    num_resnet=5,
+    num_hierarchies=2,
+    num_filters=32,
+    num_logistic_mix=1,
+    receptive_field_dims=(3, 3),
+    dropout_p=.3,
+    l2_weight=0.
+)
+
+KWARGS_PIXELCNN = {
+    'dist_s': dist,
+    'dist_b': dist.copy(),
+    'input_shape': (28, 28, 1)
+}
 
 
 def fetch_tf_model(dataset: str, model: str) -> tf.keras.Model:
@@ -296,6 +315,36 @@ def fetch_seq2seq(url: str, filepath: str) -> None:
     )
 
 
+def fetch_llr(url: str, filepath: str) -> str:
+    """
+    Download Likelihood Ratio outlier detector.
+
+    Parameters
+    ----------
+    url
+        URL to fetch detector from.
+    filepath
+        Local directory to save detector to.
+    """
+    url_models = os.path.join(url, 'model')
+    model_path = os.path.join(filepath, 'model')
+    if not os.path.isdir(model_path):
+        os.mkdir(model_path)
+    try:
+        tf.keras.utils.get_file(
+            os.path.join(model_path, 'model_s.h5'),
+            os.path.join(url_models, 'model_s.h5')
+        )
+        tf.keras.utils.get_file(
+            os.path.join(model_path, 'model_b.h5'),
+            os.path.join(url_models, 'model_b.h5')
+        )
+        model_type = 'weights'
+        return model_type
+    except:  # TODO
+        raise NotImplementedError
+
+
 def fetch_state_dict(url: str, filepath: str, save_state_dict: bool = True) -> Tuple[dict, dict]:
     """
     Fetch the metadata and state/hyperparameter values of pre-trained detectors.
@@ -383,5 +432,9 @@ def fetch_detector(filepath: str,
         fetch_ad_ae(url, filepath, state_dict)
         if model == 'resnet56':
             kwargs = {'custom_objects': {'backend': backend}}
+    elif name == 'LLR':
+        model_type = fetch_llr(url, filepath)
+        if model_type == 'weights':
+            kwargs = KWARGS_PIXELCNN
     detector = load_detector(filepath, **kwargs)
     return detector

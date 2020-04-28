@@ -5,14 +5,17 @@ import logging
 import os
 import pickle
 import tensorflow as tf
-from typing import Callable, Dict, List, Union
+from tensorflow_probability.python.distributions.distribution import Distribution
+from typing import Callable, Dict, List, Tuple, Union
 from alibi_detect.ad import AdversarialAE
 from alibi_detect.ad.adversarialae import DenseHidden
 from alibi_detect.base import BaseDetector
 from alibi_detect.cd import KSDrift, MMDDrift
 from alibi_detect.models.autoencoder import AE, AEGMM, DecoderLSTM, EncoderLSTM, Seq2Seq, VAE, VAEGMM
-from alibi_detect.od import (IForest, Mahalanobis, OutlierAE, OutlierAEGMM, OutlierProphet,
+from alibi_detect.models.pixelcnn import PixelCNN
+from alibi_detect.od import (IForest, LLR, Mahalanobis, OutlierAE, OutlierAEGMM, OutlierProphet,
                              OutlierSeq2Seq, OutlierVAE, OutlierVAEGMM, SpectralResidual)
+from alibi_detect.od.llr import build_model
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +24,7 @@ Data = Union[
     AdversarialAE,
     IForest,
     KSDrift,
+    LLR,
     Mahalanobis,
     MMDDrift,
     OutlierAEGMM,
@@ -36,6 +40,7 @@ DEFAULT_DETECTORS = [
     'AdversarialAE',
     'IForest',
     'KSDrift',
+    'LLR',
     'Mahalanobis',
     'MMDDrift',
     'OutlierAE',
@@ -97,6 +102,8 @@ def save_detector(detector: Data,
         state_dict = state_sr(detector)
     elif detector_name == 'OutlierSeq2Seq':
         state_dict = state_s2s(detector)
+    elif detector_name == 'LLR':
+        state_dict = state_llr(detector)
 
     with open(os.path.join(filepath, detector_name + '.pickle'), 'wb') as f:
         pickle.dump(state_dict, f)
@@ -118,6 +125,8 @@ def save_detector(detector: Data,
         save_tf_s2s(detector, filepath)
     elif detector_name in ['KSDrift', 'MMDDrift']:
         save_tf_preprocess(detector, filepath)
+    elif detector_name == 'LLR':
+        save_tf_llr(detector, filepath)
 
 
 def state_preprocess(state_dict: dict, cd: Union[KSDrift, MMDDrift]) -> dict:
@@ -371,6 +380,24 @@ def state_s2s(od: OutlierSeq2Seq) -> Dict:
     return state_dict
 
 
+def state_llr(od: LLR) -> Dict:
+    """
+    LLR parameters to save.
+
+    Parameters
+    ----------
+    od
+        Outlier detector object.
+    """
+    state_dict = {
+        'threshold': od.threshold,
+        'has_log_prob': od.has_log_prob,
+        'sequential': od.sequential,
+        'log_prob': od.log_prob
+    }
+    return state_dict
+
+
 def save_tf_ae(detector: Union[OutlierAE, AdversarialAE],
                filepath: str) -> None:
     """
@@ -473,6 +500,32 @@ def save_tf_model(model: tf.keras.Model,
         model.save(os.path.join(model_dir, model_name + '.h5'))
     else:
         logger.warning('No `tf.keras.Model` or `tf.keras.Sequential` detected. No model saved.')
+
+
+def save_tf_llr(detector: LLR, filepath: str) -> None:
+    """
+    Save LLR TensorFlow models or distributions.
+
+    Parameters
+    ----------
+    detector
+        Outlier detector object.
+    filepath
+        Save directory.
+    """
+    if not os.path.isdir(filepath):
+        logger.warning('Directory {} does not exist and is now created.'.format(filepath))
+        os.mkdir(filepath)
+    if hasattr(detector, 'model_s') and hasattr(detector, 'model_b'):
+        model_dir = os.path.join(filepath, 'model')
+        if not os.path.isdir(model_dir):
+            os.mkdir(model_dir)
+        detector.model_s.save_weights(os.path.join(model_dir, 'model_s.h5'))
+        detector.model_b.save_weights(os.path.join(model_dir, 'model_b.h5'))
+    else:
+        detector.dist_s.save('model', save_format='tf')
+        if detector.dist_b is not None:
+            detector.dist_b.save('model_background', save_format='tf')
 
 
 def save_tf_hl(models: List[tf.keras.Model],
@@ -689,6 +742,9 @@ def load_detector(filepath: str, **kwargs) -> Data:
     elif detector_name == 'MMDDrift':
         model = load_tf_preprocess(filepath, state_dict)
         detector = init_cd_mmddrift(state_dict, model)
+    elif detector_name == 'LLR':
+        models = load_tf_llr(filepath, **kwargs)
+        detector = init_od_llr(state_dict, models)
 
     detector.meta = meta_dict
     return detector
@@ -909,6 +965,43 @@ def load_tf_preprocess(filepath: str, state_dict: dict) -> Union[tf.keras.Model,
             if isinstance(k, str):
                 model = load_tf_model(filepath, model_name=k)
     return model
+
+
+def load_tf_llr(filepath: str, dist_s: Union[Distribution, PixelCNN] = None,
+                dist_b: Union[Distribution, PixelCNN] = None, input_shape: tuple = None): # -> LLR:
+    """
+    Load LLR TensorFlow models or distributions.
+
+    Parameters
+    ----------
+    detector
+        Likelihood ratio detector.
+    filepath
+        Save directory.
+    dist_s
+        TensorFlow distribution for semantic model.
+    dist_b
+        TensorFlow distribution for background model.
+    input_shape
+        Input shape of the model.
+
+    Returns
+    -------
+    Detector with loaded models.
+    """
+    model_dir = os.path.join(filepath, 'model')
+    if 'model_s.h5' in os.listdir(model_dir) and 'model_b.h5' in os.listdir(model_dir):
+        model_s, dist_s = build_model(dist_s, input_shape, os.path.join(model_dir, 'model_s.h5'))
+        model_b, dist_b = build_model(dist_b, input_shape, os.path.join(model_dir, 'model_b.h5'))
+        return dist_s, dist_b, model_s, model_b
+    else:
+        dist_s = tf.keras.models.load_model(model_dir)
+        model_background_dir = os.path.join(filepath, 'model_background')
+        if not os.path.isdir(model_background_dir):
+            dist_b = None
+        else:
+            dist_b = tf.keras.models.load_model(model_background_dir)
+        return dist_s, dist_b, None, None
 
 
 def init_od_ae(state_dict: Dict,
@@ -1229,4 +1322,28 @@ def init_od_sr(state_dict: Dict) -> SpectralResidual:
                           window_local=state_dict['window_local'],
                           n_est_points=state_dict['n_est_points'],
                           n_grad_points=state_dict['n_grad_points'])
+    return od
+
+
+def init_od_llr(state_dict: Dict, models: tuple) -> LLR:
+    """
+    Initialize LLR detector.
+
+    Parameters
+    ----------
+    state_dict
+        Dictionary containing the parameter values.
+
+    Returns
+    -------
+    Initialized LLR instance.
+    """
+    od = LLR(threshold=state_dict['threshold'],
+             model=models[0],
+             model_background=models[1],
+             log_prob=state_dict['log_prob'],
+             sequential=state_dict['sequential'])
+    if models[2] is not None and models[3] is not None:
+        od.model_s = models[2]
+        od.model_b = models[3]
     return od
