@@ -16,22 +16,22 @@
 
 ## Table of Contents
 
-<!--ts-->
-    * [Installation and Usage](#installation-and-usage)
-    * [Supported Algorithms](#supported-algorithms)
-      * [Outlier Detection](#outlier-detection)
-      * [Adversarial Detection](#adversarial-detection)
-      * [Drift Detection](#drift-detection)
-      * [Reference List](#reference-list)
-    * [Datasets](#datasets)
-      * [Sequential Data and Time Series](#sequential-data-and-time-series)
-      * [Images](#images)
-      * [Tabular](#tabular)
-    * [Models](#models)
-    * [Integrations](#integrations)
-    * [Dependencies](#dependencies)
-    * [Citations](#citations)
-<!--te-->
+
+* [Installation and Usage](#installation-and-usage)
+* [Supported Algorithms](#supported-algorithms)
+  * [Outlier Detection](#outlier-detection)
+  * [Adversarial Detection](#adversarial-detection)
+  * [Drift Detection](#drift-detection)
+  * [Reference List](#reference-list)
+* [Datasets](#datasets)
+  * [Sequential Data and Time Series](#sequential-data-and-time-series)
+  * [Images](#images)
+  * [Tabular](#tabular)
+* [Models](#models)
+* [Integrations](#integrations)
+* [Dependencies](#dependencies)
+* [Citations](#citations)
+
 
 
 ## Installation and Usage
