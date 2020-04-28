@@ -14,7 +14,27 @@
 
 *  [Documentation](https://docs.seldon.io/projects/alibi-detect/en/latest/)
 
-## Installation and usage
+## Table of Contents
+
+<!--ts-->
+    * [Installation and Usage](#installation-and-usage)
+    * [Supported Algorithms](#supported-algorithms)
+      * [Outlier Detection](#outlier-detection)
+      * [Adversarial Detection](#adversarial-detection)
+      * [Drift Detection](#drift-detection)
+      * [Reference List](#reference-list)
+    * [Datasets](#datasets)
+      * [Sequential Data and Time Series](#sequential-data-and-time-series)
+      * [Images](#images)
+      * [Tabular](#tabular)
+    * [Models](#models)
+    * [Integrations](#integrations)
+    * [Dependencies](#dependencies)
+    * [Citations](#citations)
+<!--te-->
+
+
+## Installation and Usage
 
 alibi-detect can be installed from [PyPI](https://pypi.org/project/alibi-detect):
 ```bash
@@ -44,7 +64,7 @@ The predictions are returned in a dictionary with as keys `meta` and `data`. `me
 
 The save and load functionality for the [Prophet time series outlier detector](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/prophet.html) is currently experiencing [issues in Python 3.6](https://github.com/facebook/prophet/issues/1361) but works in Python 3.7.
 
-## Supported algorithms
+## Supported Algorithms
 
 The following tables show the advised use cases for each algorithm. The column *Feature Level* indicates whether the detection can be done at the feature level, e.g. per pixel for an image. Check the [algorithm reference list](#reference-list) for more information with links to the documentation and original papers as well as examples for each of the detectors.
 
