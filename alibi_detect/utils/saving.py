@@ -516,16 +516,17 @@ def save_tf_llr(detector: LLR, filepath: str) -> None:
     if not os.path.isdir(filepath):
         logger.warning('Directory {} does not exist and is now created.'.format(filepath))
         os.mkdir(filepath)
+    model_dir = os.path.join(filepath, 'model')
     if hasattr(detector, 'model_s') and hasattr(detector, 'model_b'):
-        model_dir = os.path.join(filepath, 'model')
         if not os.path.isdir(model_dir):
             os.mkdir(model_dir)
         detector.model_s.save_weights(os.path.join(model_dir, 'model_s.h5'))
         detector.model_b.save_weights(os.path.join(model_dir, 'model_b.h5'))
     else:
-        detector.dist_s.save('model', save_format='tf')
+        detector.dist_s.save(model_dir, save_format='tf')
         if detector.dist_b is not None:
-            detector.dist_b.save('model_background', save_format='tf')
+            background_dir = os.path.join(filepath, 'model_background')
+            detector.dist_b.save(background_dir, save_format='tf')
 
 
 def save_tf_hl(models: List[tf.keras.Model],

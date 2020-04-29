@@ -84,7 +84,13 @@ class LLR(BaseDetector, FitMixin, ThresholdMixin):
         # semantic model trained on original data
         self.dist_s = model
         # background model trained on perturbed data
-        self.dist_b = model.copy() if model_background is None else model_background
+        if model_background is None:
+            try:
+                self.dist_b = model.copy()
+            except AttributeError:
+                self.dist_b = tf.keras.models.clone_model(model)
+        else:
+            self.dist_b = model_background
 
         # set metadata
         self.meta['detector_type'] = 'offline'
