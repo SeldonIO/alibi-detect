@@ -99,7 +99,7 @@ class LLR(BaseDetector, FitMixin, ThresholdMixin):
     def fit(self,
             X: np.ndarray,
             mutate_fn: Callable = mutate_categorical,
-            mutate_fn_kwargs: dict = {'rate': .2, 'seed': 0, 'feature_range': (0, 256)},
+            mutate_fn_kwargs: dict = {'rate': .2, 'seed': 0, 'feature_range': (0, 255)},
             mutate_batch_size: int = int(1e10),
             loss_fn: tf.keras.losses = None,
             loss_fn_kwargs: dict = None,
@@ -271,7 +271,7 @@ class LLR(BaseDetector, FitMixin, ThresholdMixin):
             y, X = X[:, 1:], X[:, :-1]
         else:
             y = X.copy()
-        y_preds = predict_batch(model, X, batch_size=batch_size, shape=X.shape)
+        y_preds = predict_batch(model, X, batch_size=batch_size)
         logp = self.log_prob(y, y_preds).numpy()
         if return_per_feature:
             return logp
