@@ -180,15 +180,15 @@ class Shift(bijector.Bijector):
           name: Python `str` name given to ops managed by this object.
         """
         with tf.name_scope(name) as name:
-          dtype = dtype_util.common_dtype([shift], dtype_hint=tf.float32)
-          self._shift = tensor_util.convert_nonref_to_tensor(shift, dtype=dtype, name='shift')
-          super(Shift, self).__init__(
+            dtype = dtype_util.common_dtype([shift], dtype_hint=tf.float32)
+            self._shift = tensor_util.convert_nonref_to_tensor(shift, dtype=dtype, name='shift')
+            super(Shift, self).__init__(
               forward_min_event_ndims=0,
               is_constant_jacobian=True,
               dtype=dtype,
               validate_args=validate_args,
               name=name
-          )
+            )
 
     @property
     def shift(self):
@@ -474,7 +474,7 @@ class PixelCNN(distribution.Distribution):
                 conditional_sample_shape = conditional_input_shape[:conditional_sample_rank]
                 repeat = n // prefer_static.reduce_prod(conditional_sample_shape)
                 h = tf.reshape(conditional_input, prefer_static.concat([(-1,), self.conditional_shape], axis=0))
-                h = tf.tile(h, prefer_static.pad([repeat], paddings=[[0, conditional_event_rank]],constant_values=1))
+                h = tf.tile(h, prefer_static.pad([repeat], paddings=[[0, conditional_event_rank]], constant_values=1))
 
         samples_0 = tf.random.uniform(
             prefer_static.concat([(n,), self.event_shape], axis=0),
@@ -515,7 +515,7 @@ class PixelCNN(distribution.Distribution):
 
         # Construct the while loop for sampling
         total_pixels = image_height * image_width
-        loop_cond = lambda ind, _: tf.less(ind, total_pixels)
+        loop_cond = lambda ind, _: tf.less(ind, total_pixels)  # noqa: E731
         init_vars = (index0, samples_0)
         _, samples = tf.while_loop(loop_cond, loop_body, init_vars, parallel_iterations=1)
 
@@ -658,11 +658,11 @@ class _PixelCNNNetwork(tf.keras.layers.Layer):
     def build(self, input_shape):
         dtype = self.dtype
         if len(input_shape) == 2:
-          batch_image_shape, batch_conditional_shape = input_shape
-          conditional_input = tf.keras.layers.Input(shape=batch_conditional_shape[1:], dtype=dtype)
+            batch_image_shape, batch_conditional_shape = input_shape
+            conditional_input = tf.keras.layers.Input(shape=batch_conditional_shape[1:], dtype=dtype)
         else:
-          batch_image_shape = input_shape
-          conditional_input = None
+            batch_image_shape = input_shape
+            conditional_input = None
 
         image_shape = batch_image_shape[1:]
         image_input = tf.keras.layers.Input(shape=image_shape, dtype=dtype)

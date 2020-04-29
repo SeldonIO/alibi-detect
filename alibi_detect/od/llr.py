@@ -155,8 +155,8 @@ class LLR(BaseDetector, FitMixin, ThresholdMixin):
 
         # prepare sequential data
         if self.sequential and not self.has_log_prob:
-            y, y_back = X[:, 1:], X_back[:, 1:]
-            X, X_back = X[:, :-1], X_back[:, :-1]
+            y, y_back = X[:, 1:], X_back[:, 1:]  # type: ignore
+            X, X_back = X[:, :-1], X_back[:, :-1]  # type: ignore
         else:
             y, y_back = None, None
 
@@ -296,7 +296,7 @@ class LLR(BaseDetector, FitMixin, ThresholdMixin):
         -------
         Likelihood ratios.
         """
-        logp_fn = self.logp if not isinstance(self.log_prob, Callable) else self.logp_alt
+        logp_fn = self.logp if not isinstance(self.log_prob, Callable) else self.logp_alt  # type: ignore
         logp_s = logp_fn(self.dist_s, X, return_per_feature=return_per_feature, batch_size=batch_size)
         logp_b = logp_fn(self.dist_b, X, return_per_feature=return_per_feature, batch_size=batch_size)
         return logp_s - logp_b

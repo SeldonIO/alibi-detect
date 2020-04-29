@@ -6,7 +6,7 @@ import os
 import pickle
 import tensorflow as tf
 from tensorflow_probability.python.distributions.distribution import Distribution
-from typing import Callable, Dict, List, Tuple, Union
+from typing import Callable, Dict, List, Union
 from alibi_detect.ad import AdversarialAE
 from alibi_detect.ad.adversarialae import DenseHidden
 from alibi_detect.base import BaseDetector
@@ -969,7 +969,7 @@ def load_tf_preprocess(filepath: str, state_dict: dict) -> Union[tf.keras.Model,
 
 
 def load_tf_llr(filepath: str, dist_s: Union[Distribution, PixelCNN] = None,
-                dist_b: Union[Distribution, PixelCNN] = None, input_shape: tuple = None): # -> LLR:
+                dist_b: Union[Distribution, PixelCNN] = None, input_shape: tuple = None):
     """
     Load LLR TensorFlow models or distributions.
 

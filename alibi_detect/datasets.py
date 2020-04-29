@@ -422,8 +422,8 @@ def fetch_genome(return_X_y: bool = False, return_labels: bool = False) -> Union
         np.concatenate([data_test_in[1], data_test_ood[1]])
     )
     if return_labels:
-        data_val += (np.concatenate([data_val_in[2], data_val_ood[2]]),)
-        data_test += (np.concatenate([data_test_in[2], data_test_ood[2]]),)
+        data_val += (np.concatenate([data_val_in[2], data_val_ood[2]]),)  # type: ignore
+        data_test += (np.concatenate([data_test_in[2], data_test_ood[2]]),)  # type: ignore
     if return_X_y:
         return data_train, data_val, data_test
     resp = requests.get('https://storage.googleapis.com/seldon-datasets/genome/label_dict.json')
@@ -440,7 +440,7 @@ def fetch_genome(return_X_y: bool = False, return_labels: bool = False) -> Union
     if not return_labels:
         return bunch
     else:
-        bunch['target_train'] = data_train[2]
-        bunch['target_val'] = data_val[2]
-        bunch['target_test'] = data_test[2]
+        bunch['target_train'] = data_train[2]  # type: ignore
+        bunch['target_val'] = data_val[2]  # type: ignore
+        bunch['target_test'] = data_test[2]  # type: ignore
         return bunch

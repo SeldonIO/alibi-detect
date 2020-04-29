@@ -5,6 +5,7 @@ import pickle
 import tensorflow as tf
 from tensorflow.python.keras import backend
 from typing import Tuple, Union
+from urllib.error import HTTPError
 from urllib.request import urlopen
 from alibi_detect.base import BaseDetector
 from alibi_detect.ad import AdversarialAE
@@ -341,7 +342,7 @@ def fetch_llr(url: str, filepath: str) -> str:
         )
         model_type = 'weights'
         return model_type
-    except:  # TODO
+    except HTTPError:  # TODO
         raise NotImplementedError
 
 

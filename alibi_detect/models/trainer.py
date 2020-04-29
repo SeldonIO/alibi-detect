@@ -82,7 +82,7 @@ def trainer(model: tf.keras.Model,
                     ground_truth = y_train_batch
 
                 # compute loss
-                if isinstance(loss_fn, Callable):
+                if isinstance(loss_fn, Callable):  # type: ignore
                     if tf.is_tensor(preds):
                         args = [ground_truth, preds]
                     else:
