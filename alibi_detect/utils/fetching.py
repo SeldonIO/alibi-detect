@@ -342,8 +342,16 @@ def fetch_llr(url: str, filepath: str) -> str:
         )
         model_type = 'weights'
         return model_type
-    except HTTPError:  # TODO
-        raise NotImplementedError
+    except:
+        tf.keras.utils.get_file(
+            os.path.join(model_path, 'model.h5'),
+            os.path.join(url_models, 'model.h5')
+        )
+        tf.keras.utils.get_file(
+            os.path.join(model_path, 'model_background.h5'),
+            os.path.join(url_models, 'model_background.h5')
+        )
+        return 'model'
 
 
 def fetch_state_dict(url: str, filepath: str, save_state_dict: bool = True) -> Tuple[dict, dict]:

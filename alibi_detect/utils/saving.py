@@ -523,10 +523,9 @@ def save_tf_llr(detector: LLR, filepath: str) -> None:
         detector.model_s.save_weights(os.path.join(model_dir, 'model_s.h5'))
         detector.model_b.save_weights(os.path.join(model_dir, 'model_b.h5'))
     else:
-        detector.dist_s.save(model_dir, save_format='tf')
+        detector.dist_s.save(os.path.join(model_dir, 'model.h5'))
         if detector.dist_b is not None:
-            background_dir = os.path.join(filepath, 'model_background')
-            detector.dist_b.save(background_dir, save_format='tf')
+            detector.dist_b.save(os.path.join(model_dir, 'model_background.h5'))
 
 
 def save_tf_hl(models: List[tf.keras.Model],
@@ -996,12 +995,11 @@ def load_tf_llr(filepath: str, dist_s: Union[Distribution, PixelCNN] = None,
         model_b, dist_b = build_model(dist_b, input_shape, os.path.join(model_dir, 'model_b.h5'))
         return dist_s, dist_b, model_s, model_b
     else:
-        dist_s = tf.keras.models.load_model(model_dir)
-        model_background_dir = os.path.join(filepath, 'model_background')
-        if not os.path.isdir(model_background_dir):
-            dist_b = None
+        dist_s = tf.keras.models.load_model(os.path.join(model_dir, 'model.h5'), compile=False)
+        if 'model_background.h5' in os.listdir(model_dir):
+            dist_b = tf.keras.models.load_model(os.path.join(model_dir, 'model_background.h5'), compile=False)
         else:
-            dist_b = tf.keras.models.load_model(model_background_dir)
+            dist_b = None
         return dist_s, dist_b, None, None
 
 
