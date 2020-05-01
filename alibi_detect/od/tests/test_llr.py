@@ -1,3 +1,5 @@
+import os
+os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 from itertools import product
 import numpy as np
 import pytest
@@ -66,9 +68,9 @@ def test_llr(llr_params):
     )
 
     od.infer_threshold(X_val, threshold_perc=threshold_perc)
-    #iscore_test = od.score(X_test)[1]
-    #iscore_train = od.score(X_train)[1]
-    #assert (iscore_test > iscore_train).all()
+    # iscore_test = od.score(X_test)[1]
+    # iscore_train = od.score(X_train)[1]
+    # assert (iscore_test > iscore_train).all()
 
     od_preds = od.predict(X_test,
                           return_instance_score=return_instance_score,
