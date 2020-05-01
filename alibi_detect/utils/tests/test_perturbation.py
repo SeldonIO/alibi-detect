@@ -4,7 +4,7 @@ from operator import mul
 import numpy as np
 import pytest
 from alibi_detect.utils.data import Bunch
-from alibi_detect.utils.perturbation import apply_mask, inject_outlier_ts
+from alibi_detect.utils.perturbation import apply_mask, inject_outlier_ts, mutate_categorical
 
 x = np.random.rand(20 * 20 * 3).reshape(1, 20, 20, 3)
 mask_size = [(2, 2), (8, 8)]
@@ -72,3 +72,26 @@ def test_inject_outlier_ts(inject_outlier_ts_params):
         assert (idx_diff == idx_outlier).all()
     else:
         assert not idx_diff and not idx_outlier
+
+
+rate = [0., .1, .2]
+x_mutate = [np.zeros(10000), np.zeros((10, 10, 10, 1))]
+feature_range = [(0, 1), (0, 2)]
+tests_mutate = list(product(rate, x_mutate, feature_range))
+n_tests_mutate = len(tests_mutate)
+
+
+@pytest.fixture
+def mutate_params(request):
+    return tests_mutate[request.param]
+
+
+@pytest.mark.parametrize('mutate_params', list(range(n_tests_mutate)), indirect=True)
+def test_mutate(mutate_params):
+    rate, x_mutate, feature_range = mutate_params
+    x_pert = mutate_categorical(x_mutate, rate, feature_range=feature_range).numpy()
+    delta = ((x_mutate - x_pert) != 0).astype(int)
+    eps = rate * .5
+    assert rate - eps <= delta.sum() / np.prod(x_mutate.shape) <= rate + eps
+    if rate > 0.:
+        assert x_pert.min() == feature_range[0] and x_pert.max() == feature_range[1]
