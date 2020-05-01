@@ -9,7 +9,7 @@ from alibi_detect.ad import AdversarialAE
 from alibi_detect.cd import KSDrift, MMDDrift
 from alibi_detect.cd.preprocess import uae
 from alibi_detect.models.autoencoder import DecoderLSTM, EncoderLSTM
-from alibi_detect.od import (IForest, Mahalanobis, OutlierAEGMM, OutlierVAE, OutlierVAEGMM,
+from alibi_detect.od import (IForest, LLR, Mahalanobis, OutlierAEGMM, OutlierVAE, OutlierVAEGMM,
                              OutlierProphet, SpectralResidual, OutlierSeq2Seq, OutlierAE)
 from alibi_detect.utils.saving import save_detector, load_detector
 
@@ -67,6 +67,7 @@ detector = [
                   model=model,
                   **kwargs),
     IForest(threshold=threshold),
+    LLR(threshold=threshold, model=model),
     Mahalanobis(threshold=threshold),
     OutlierAEGMM(threshold=threshold,
                  gmm_density_net=gmm_density_net,
@@ -194,3 +195,8 @@ def test_save_load(select_detector):
             assert isinstance(det_load.preprocess_kwargs['encoder_net'], tf.keras.Sequential)
             assert det_load.p_val == p_val
             assert (det_load.X_ref == X_ref).all()
+        elif type(det_load) == LLR:
+            assert isinstance(det_load.dist_s, tf.keras.Model)
+            assert isinstance(det_load.dist_b, tf.keras.Model)
+            assert not det_load.sequential
+            assert not det_load.has_log_prob

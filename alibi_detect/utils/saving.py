@@ -517,6 +517,8 @@ def save_tf_llr(detector: LLR, filepath: str) -> None:
         logger.warning('Directory {} does not exist and is now created.'.format(filepath))
         os.mkdir(filepath)
     model_dir = os.path.join(filepath, 'model')
+    if not os.path.isdir(model_dir):
+        os.mkdir(model_dir)
     if hasattr(detector, 'model_s') and hasattr(detector, 'model_b'):
         if not os.path.isdir(model_dir):
             os.mkdir(model_dir)

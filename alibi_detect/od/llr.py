@@ -1,4 +1,3 @@
-# TODO: check appendix paper for alternative "infer_threshold" method
 from functools import partial
 import logging
 import numpy as np
