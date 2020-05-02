@@ -23,6 +23,7 @@
    methods/ae.ipynb
    methods/vaegmm.ipynb
    methods/aegmm.ipynb
+   methods/llr.ipynb
    methods/prophet.ipynb
    methods/sr.ipynb
    methods/seq2seq.ipynb
@@ -50,6 +51,8 @@
    examples/od_vae_cifar10
    examples/od_ae_cifar10
    examples/od_aegmm_kddcup
+   examples/od_llr_mnist
+   examples/od_llr_genome
    examples/od_prophet_weather
    examples/od_sr_synth
    examples/od_seq2seq_synth

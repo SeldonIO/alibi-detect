@@ -23,7 +23,8 @@ def predict_batch(model: Data,
                   proba: bool = False,
                   return_class: bool = False,
                   n_categories: int = None,
-                  shape: tuple = None
+                  shape: tuple = None,
+                  dtype: type = np.float32
                   ) -> Union[np.ndarray, tuple]:
     """
     Make batch predictions on a model.
@@ -44,6 +45,8 @@ def predict_batch(model: Data,
         Number of prediction categories. Can also be inferred from the model.
     shape
         Optional shape or tuple with shapes of the model predictions.
+    dtype
+        Output type.
 
     Returns
     -------
@@ -51,7 +54,6 @@ def predict_batch(model: Data,
     """
     is_ae = isinstance(model, (AE, VAE))
     n = X.shape[0]
-    dtype = np.float32
     if isinstance(shape, tuple):
         pass  # already defined shape
     elif is_ae:

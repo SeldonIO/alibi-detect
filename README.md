@@ -14,7 +14,27 @@
 
 *  [Documentation](https://docs.seldon.io/projects/alibi-detect/en/latest/)
 
-## Installation and usage
+## Table of Contents
+
+
+* [Installation and Usage](#installation-and-usage)
+* [Supported Algorithms](#supported-algorithms)
+  * [Outlier Detection](#outlier-detection)
+  * [Adversarial Detection](#adversarial-detection)
+  * [Drift Detection](#drift-detection)
+  * [Reference List](#reference-list)
+* [Datasets](#datasets)
+  * [Sequential Data and Time Series](#sequential-data-and-time-series)
+  * [Images](#images)
+  * [Tabular](#tabular)
+* [Models](#models)
+* [Integrations](#integrations)
+* [Dependencies](#dependencies)
+* [Citations](#citations)
+
+
+
+## Installation and Usage
 
 alibi-detect can be installed from [PyPI](https://pypi.org/project/alibi-detect):
 ```bash
@@ -44,7 +64,7 @@ The predictions are returned in a dictionary with as keys `meta` and `data`. `me
 
 The save and load functionality for the [Prophet time series outlier detector](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/prophet.html) is currently experiencing [issues in Python 3.6](https://github.com/facebook/prophet/issues/1361) but works in Python 3.7.
 
-## Supported algorithms
+## Supported Algorithms
 
 The following tables show the advised use cases for each algorithm. The column *Feature Level* indicates whether the detection can be done at the feature level, e.g. per pixel for an image. Check the [algorithm reference list](#reference-list) for more information with links to the documentation and original papers as well as examples for each of the detectors.
 
@@ -58,6 +78,7 @@ The following tables show the advised use cases for each algorithm. The column *
 | VAE                   | ✔       | ✔     |  ✘          |  ✘    |  ✘                   |  ✘     |  ✔            |
 | AEGMM                 | ✔       | ✔     |  ✘          |  ✘    |  ✘                   |  ✘     |  ✘            |
 | VAEGMM                | ✔       | ✔     |  ✘          |  ✘    |  ✘                   |  ✘     |  ✘            |
+| Likelihood Ratios     | ✔       | ✔     |  ✔          |  ✘    |  ✔                   |  ✘     |  ✔            |
 | Prophet               | ✘       | ✘     |  ✔          |  ✘    |  ✘                   |  ✘     |  ✘            |
 | Spectral Residual     | ✘       | ✘     |  ✔          |  ✘    |  ✘                   |  ✔     |  ✔            |
 | Seq2Seq               | ✘       | ✘     |  ✔          |  ✘    |  ✘                   |  ✘     |  ✔            |
@@ -99,6 +120,9 @@ The following tables show the advised use cases for each algorithm. The column *
 - [Variational Auto-Encoding Gaussian Mixture Model (VAEGMM)](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/vaegmm.html)
    - Example: [Network Intrusion](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/od_aegmm_kddcup.html)
      
+- [Likelihood Ratios](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/llr.html) ([Ren et al., 2019](https://arxiv.org/abs/1906.02845))
+   - Examples: [Genome](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/od_llr_genome.html), [Fashion-MNIST vs. MNIST](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/od_llr_mnist.html)
+
 - [Prophet Time Series Outlier Detector](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/prophet.html) ([Taylor et al., 2018](https://peerj.com/preprints/3190/))
    - Example: [Weather Forecast](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/od_prophet_weather.html)
   
@@ -132,7 +156,16 @@ from alibi_detect.datasets import fetch_ecg
 (X_train, y_train), (X_test, y_test) = fetch_ecg(return_X_y=True)
 ```
 
-### Time Series
+### Sequential Data and Time Series
+
+- **Genome Dataset**: `fetch_genome`
+  - Bacteria genomics dataset for out-of-distribution detection, released as part of [Likelihood Ratios for Out-of-Distribution Detection](https://arxiv.org/abs/1906.02845). From the original *TL;DR*: *The dataset contains genomic sequences of 250 base pairs from 10 in-distribution bacteria classes for training, 60 OOD bacteria classes for validation, and another 60 different OOD bacteria classes for test*. There are respectively 1, 7 and again 7 million sequences in the training, validation and test sets. For detailed info on the dataset check the [README](https://storage.cloud.google.com/seldon-datasets/genome/readme.docx?organizationId=156002945562).
+  
+  ```python
+  from alibi_detect.datasets import fetch_genome
+  
+  (X_train, y_train), (X_val, y_val), (X_test, y_test) = fetch_genome(return_X_y=True)
+  ```
 
 - **ECG 5000**: `fetch_ecg`
   - 5000 ECG's, originally obtained from [Physionet](https://archive.physionet.org/cgi-bin/atm/ATM).
@@ -171,6 +204,8 @@ from alibi_detect.datasets import fetch_ecg
 ## Models
 
 Models and/or building blocks that can be useful outside of outlier, adversarial or drift detection can be found under `alibi_detect.models`. Main implementations:
+
+- [PixelCNN++](https://arxiv.org/abs/1701.05517): `alibi_detect.models.pixelcnn.PixelCNN`
 
 - Variational Autoencoder: `alibi_detect.models.autoencoder.VAE`
 

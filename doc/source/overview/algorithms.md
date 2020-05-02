@@ -12,6 +12,7 @@ The following tables summarize the advised use cases for the current algorithms.
 |[VAE](../methods/vae.ipynb)|✔|✔|✘|✘|✘|✘|✔|
 |[AEGMM](../methods/aegmm.ipynb)|✔|✔|✘|✘|✘|✘|✘|
 |[VAEGMM](../methods/vaegmm.ipynb)|✔|✔|✘|✘|✘|✘|✘|
+|[Likelihood Ratios](../methods/llr.ipynb)|✔|✔|✔|✘|✔|✘|✔|
 |[Prophet](../methods/prophet.ipynb)|✘|✘|✔|✘|✘|✘|✘|
 |[Spectral Residual](../methods/sr.ipynb)|✘|✘|✔|✘|✘|✔|✔|
 |[Seq2Seq](../methods/seq2seq.ipynb)|✘|✘|✔|✘|✘|✘|✔|
