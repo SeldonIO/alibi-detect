@@ -1,5 +1,3 @@
-import os
-os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 from itertools import product
 import numpy as np
 import pytest
