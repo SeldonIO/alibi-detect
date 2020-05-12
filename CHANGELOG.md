@@ -1,5 +1,12 @@
 # Change Log
 
+## [v0.4.1](https://github.com/SeldonIO/alibi-detect/tree/v0.4.1) (2020-05-12)
+[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.4.0...v0.4.1)
+### Added
+- Likelihood ratio outlier detector (`alibi_detect.od.llr.LLR`) with image and genome dataset examples
+- Add genome dataset (`alibi_detect.datasets.fetch_genome`)
+- Add PixelCNN++ model (`alibi_detect.models.pixelcnn.PixelCNN`)
+
 ## [v0.4.0](https://github.com/SeldonIO/alibi-detect/tree/v0.4.0) (2020-04-02)
 [Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.3.1...v0.4.0)
 ### Added
