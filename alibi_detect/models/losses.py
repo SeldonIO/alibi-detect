@@ -199,3 +199,38 @@ def loss_adv_ae(x_true: tf.Tensor,
         return loss
     else:
         return loss
+
+
+def loss_distillation(x_true: tf.Tensor,
+                      y_pred: tf.Tensor,
+                      model: tf.keras.Model = None,
+                      temperature: float = 1.
+                      ) -> tf.Tensor:
+    """
+    Loss function used for AdversarialAE.
+
+    Parameters
+    ----------
+    y_true
+        Batch of predictions from the original frozen model.
+    y_pred
+        Batch of prediction from the distilled model.
+    temperature
+        Temperature used for model prediction scaling.
+        Temperature <1 sharpens the prediction probability distribution.
+
+    Returns
+    -------
+    Loss value.
+    """
+    y_true = model(x_true)
+    # apply temperature scaling
+    if temperature != 1.:
+        y_true = y_true ** (1 / temperature)
+        y_true = y_true / tf.reshape(tf.reduce_sum(y_true, axis=-1), (-1, 1))
+
+    # compute K-L divergence loss
+    loss_kld = kld(y_true, y_pred)
+    loss = tf.reduce_mean(loss_kld)
+
+    return loss
