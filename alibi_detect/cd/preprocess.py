@@ -1,10 +1,10 @@
-# TODO: incremental PCA for online methods
 import logging
 import numpy as np
 from sklearn.decomposition import PCA
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, Flatten, Input, InputLayer
 from tensorflow.keras.models import Model
+from transformers import TFAutoModel, BertConfig
 from alibi_detect.models.autoencoder import EncoderAE
 from alibi_detect.utils.prediction import predict_batch
 
@@ -113,3 +113,54 @@ def pca(X: np.ndarray, n_components: int = 2, svd_solver: str = 'auto') -> np.nd
     pca.fit(X)
     X_pca = pca.transform(X)
     return X_pca
+
+
+def embedding_ahs(ahs: list, layers: list, token_range: tuple = None) -> tf.Tensor:
+    token_range = (0, ahs[0].shape[1]) if token_range is None else token_range
+    emb = []
+    for layer in layers:
+        emb.append(ahs[layer][:, token_range[0]:token_range[1], :])
+    emb = tf.concat(emb, axis=1)
+    return tf.reduce_mean(emb, axis=1)
+
+
+class TransformerEmbedding:
+    def __init__(self,
+                 model: str = 'bert-base-cased',
+                 emb: str = 'hidden_state_cls',
+                 layers: list = [-1]) -> None:
+        super(TransformerEmbedding, self).__init__()
+        # TODO: check if config needed for hidden states
+        config = BertConfig.from_pretrained(model, output_hidden_states=True)
+        self.model = TFAutoModel.from_pretrained(model, config=config)
+        self.emb = emb
+        self.nb_layers = layers
+
+    def call(self, x: dict) -> np.ndarray:
+        pooler_output, hidden_states = self.model(x)[1:]
+        attention_hidden_states = hidden_states[1:]
+        if self.emb == 'pooler_output':
+            y = pooler_output
+        elif self.emb == 'hidden_state':
+            y = embedding_ahs(attention_hidden_states, self.nb_layers, token_range=None)
+        elif self.emb == 'hidden_state_cls':
+            y = embedding_ahs(attention_hidden_states, self.nb_layers, token_range=(0, 1))
+        else:
+            raise NotImplementedError('emb needs to be one of pooler_output, hidden_state or hidden_state_cls.')
+        return y.numpy()
+
+    def _call(self, x: dict) -> np.ndarray:
+        last_hidden_state, pooler_output, hidden_states = self.model(x)
+        attention_hidden_states = hidden_states[1:]
+        if self.emb == 'pooler_output':
+            y = pooler_output
+        elif self.emb == 'last_hidden_state':
+            y = tf.reduce_mean(last_hidden_state, axis=1)
+        elif self.emb == 'attention_hidden_states':
+            y = embedding_ahs(attention_hidden_states, self.nb_layers, token_range=None)
+        elif self.emb == 'attention_hidden_states_cls':
+            y = embedding_ahs(attention_hidden_states, self.nb_layers, token_range=(0, 1))
+        else:
+            raise NotImplementedError('emb needs to be one of pooler_output, hidden_state,'
+                                      ' or hidden_state_cls.')
+        return y.numpy()
