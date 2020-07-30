@@ -229,6 +229,9 @@ def loss_distillation(x_true: tf.Tensor,
         y_true = y_true ** (1 / temperature)
         y_true = y_true / tf.reshape(tf.reduce_sum(y_true, axis=-1), (-1, 1))
 
+        y_pred = y_pred ** (1 / temperature)
+        y_pred = y_pred / tf.reshape(tf.reduce_sum(y_pred, axis=-1), (-1, 1))
+
     # compute K-L divergence loss
     loss_kld = kld(y_true, y_pred)
     loss = tf.reduce_mean(loss_kld)
