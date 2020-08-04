@@ -18,6 +18,7 @@ class ModelDistillation(BaseDetector, FitMixin, ThresholdMixin):
                  threshold: float = None,
                  ancillary_model: tf.keras.Model = None,
                  model: tf.keras.Model = None,
+                 loss_type: str = 'kld', # 'xent
                  temperature: float = 1.,
                  data_type: str = None
                  ) -> None:
@@ -54,7 +55,7 @@ class ModelDistillation(BaseDetector, FitMixin, ThresholdMixin):
         else:
             raise TypeError('No valid format detected for `ae` (tf.keras.Model) '
                             'or `encoder_net` and `decoder_net` (tf.keras.Sequential).')
-
+        self.loss_type = loss_type
         self.temperature = temperature
 
         # set metadata
@@ -109,6 +110,7 @@ class ModelDistillation(BaseDetector, FitMixin, ThresholdMixin):
             'preprocess_fn': preprocess_fn,
             'loss_fn_kwargs': {
                 'model': self.model,
+                'loss_type': self.loss_type,
                 'temperature': self.temperature
             }
         }

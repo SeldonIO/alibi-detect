@@ -1,6 +1,6 @@
 import tensorflow as tf
 from tensorflow.keras.layers import Flatten
-from tensorflow.keras.losses import kld
+from tensorflow.keras.losses import kld, categorical_crossentropy
 import tensorflow_probability as tfp
 from alibi_detect.models.gmm import gmm_params, gmm_energy
 
@@ -204,6 +204,7 @@ def loss_adv_ae(x_true: tf.Tensor,
 def loss_distillation(x_true: tf.Tensor,
                       y_pred: tf.Tensor,
                       model: tf.keras.Model = None,
+                      loss_type: str = 'kld',
                       temperature: float = 1.
                       ) -> tf.Tensor:
     """
@@ -232,8 +233,14 @@ def loss_distillation(x_true: tf.Tensor,
         y_pred = y_pred ** (1 / temperature)
         y_pred = y_pred / tf.reshape(tf.reduce_sum(y_pred, axis=-1), (-1, 1))
 
+    if loss_type == 'kld':
+        loss_dist = kld(y_true, y_pred)
+    elif loss_type == 'xent':
+        loss_dist = categorical_crossentropy(y_true, y_pred, from_logits=False)
+    else:
+        raise NotImplementedError
+
     # compute K-L divergence loss
-    loss_kld = kld(y_true, y_pred)
-    loss = tf.reduce_mean(loss_kld)
+    loss = tf.reduce_mean(loss_dist)
 
     return loss
