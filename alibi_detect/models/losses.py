@@ -205,7 +205,8 @@ def loss_distillation(x_true: tf.Tensor,
                       y_pred: tf.Tensor,
                       model: tf.keras.Model = None,
                       loss_type: str = 'kld',
-                      temperature: float = 1.
+                      temperature: float = 1.,
+                      scale_preds: bool = False,
                       ) -> tf.Tensor:
     """
     Loss function used for AdversarialAE.
@@ -229,9 +230,9 @@ def loss_distillation(x_true: tf.Tensor,
     if temperature != 1.:
         y_true = y_true ** (1 / temperature)
         y_true = y_true / tf.reshape(tf.reduce_sum(y_true, axis=-1), (-1, 1))
-
-        y_pred = y_pred ** (1 / temperature)
-        y_pred = y_pred / tf.reshape(tf.reduce_sum(y_pred, axis=-1), (-1, 1))
+        if scale_preds:
+            y_pred = y_pred ** (1 / temperature)
+            y_pred = y_pred / tf.reshape(tf.reduce_sum(y_pred, axis=-1), (-1, 1))
 
     if loss_type == 'kld':
         loss_dist = kld(y_true, y_pred)
