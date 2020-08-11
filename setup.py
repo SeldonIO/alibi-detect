@@ -23,7 +23,7 @@ setup(
     license="Apache 2.0",
     packages=find_packages(),
     include_package_data=True,
-    python_requires=">3.5.1",
+    python_requires=">=3.6",
     setup_requires=["pytest-runner"],
     install_requires=[
         "creme",
