@@ -27,5 +27,5 @@ The following tables summarize the advised use cases for the current algorithms.
 
 |Detector|Tabular|Image|Time Series|Text|Categorical Features|Online|Feature Level|
 |---|---|---|---|---|
-|[Kolmogorov-Smirnov](../methods/ksdrift.ipynb)|✔|✔|✘|✘|✔|✔|✔|
-|[Maximum Mean Discrepancy](../methods/mmddrift.ipynb)|✔|✔|✘|✘|✔|✘|✘|
+|[Kolmogorov-Smirnov](../methods/ksdrift.ipynb)|✔|✔|✘|✔|✔|✔|✔|
+|[Maximum Mean Discrepancy](../methods/mmddrift.ipynb)|✔|✔|✘|✔|✔|✘|✘|
