@@ -64,10 +64,10 @@ class MMDDrift(BaseDetector):
         if p_val is None:
             logger.warning('No p-value set for the drift threshold. Need to set it to detect data drift.')
 
-        if isinstance(preprocess_kwargs, dict) and not isinstance(preprocess_fn, Callable):
+        if isinstance(preprocess_kwargs, dict) and not isinstance(preprocess_fn, Callable):  # type: ignore
             preprocess_fn = preprocess_drift
 
-        if isinstance(preprocess_fn, Callable):
+        if isinstance(preprocess_fn, Callable):  # type: ignore
             self.preprocess_fn = partial(
                 preprocess_fn,
                 **preprocess_kwargs
@@ -79,7 +79,7 @@ class MMDDrift(BaseDetector):
         self.preprocess_X_ref = preprocess_X_ref
         self.X_ref = self.preprocess_fn(X_ref) if preprocess_X_ref else X_ref
         self.update_X_ref = update_X_ref
-        self.n = X_ref.shape[0]
+        self.n = X_ref.shape[0]  # type: ignore
         self.p_val = p_val
         self.chunk_size = chunk_size
 
@@ -174,7 +174,8 @@ class MMDDrift(BaseDetector):
                 and self.preprocess_X_ref):
             X = self.preprocess_fn(X)
         self.X_ref = update_reference(self.X_ref, X, self.n, self.update_X_ref)
-        self.n += X.shape[0]  # used for reservoir sampling
+        # used for reservoir sampling
+        self.n += X.shape[0]  # type: ignore
 
         # populate drift dict
         cd = concept_drift_dict()

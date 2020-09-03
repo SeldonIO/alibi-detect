@@ -5,7 +5,7 @@ import tensorflow as tf
 from tensorflow.keras.layers import Dense, Input, InputLayer
 from typing import Callable
 from alibi_detect.cd import MMDDrift
-from alibi_detect.cd.preprocess import HiddenOutput, UAE, pca, preprocess_drift
+from alibi_detect.cd.preprocess import HiddenOutput, UAE, preprocess_drift
 
 n, n_hidden, n_classes = 500, 10, 5
 
