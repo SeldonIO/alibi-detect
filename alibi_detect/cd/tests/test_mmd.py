@@ -5,7 +5,7 @@ import tensorflow as tf
 from tensorflow.keras.layers import Dense, Input, InputLayer
 from typing import Callable
 from alibi_detect.cd import MMDDrift
-from alibi_detect.cd.preprocess import hidden_output, uae
+from alibi_detect.cd.preprocess import HiddenOutput, UAE, pca, preprocess_drift
 
 n, n_hidden, n_classes = 500, 10, 5
 
@@ -21,13 +21,15 @@ n_features = [10]
 n_enc = [None, 3]
 preprocess = [
     (None, None),
-    (hidden_output, {'model': None, 'layer': -1}),
-    (uae, {'encoder_net': None})
+    (preprocess_drift, {'model': HiddenOutput, 'layer': -1}),
+    (preprocess_drift, {'model': UAE})
 ]
 chunk_size = [None, 500]
 update_X_ref = [{'last': 750}, {'reservoir_sampling': 750}]
+preprocess_X_ref = [True, False]
 n_permutations = [5]
-tests_mmddrift = list(product(n_features, n_enc, preprocess, chunk_size, n_permutations, update_X_ref))
+tests_mmddrift = list(product(n_features, n_enc, preprocess, chunk_size,
+                              n_permutations, update_X_ref, preprocess_X_ref))
 n_tests = len(tests_mmddrift)
 
 
@@ -38,22 +40,27 @@ def mmd_params(request):
 
 @pytest.mark.parametrize('mmd_params', list(range(n_tests)), indirect=True)
 def test_mmd(mmd_params):
-    n_features, n_enc, preprocess, chunk_size, n_permutations, update_X_ref = mmd_params
+    n_features, n_enc, preprocess, chunk_size, n_permutations, \
+        update_X_ref, preprocess_X_ref = mmd_params
     np.random.seed(0)
     X_ref = np.random.randn(n * n_features).reshape(n, n_features).astype('float32')
     preprocess_fn, preprocess_kwargs = preprocess
     if isinstance(preprocess_fn, Callable):
-        if preprocess_fn.__name__ == 'uae' and n_features > 1 and isinstance(n_enc, int):
+        if 'layer' in list(preprocess_kwargs.keys()) \
+                and preprocess_kwargs['model'].__name__ == 'HiddenOutput':
+            model = mymodel((n_features,))
+            layer = preprocess_kwargs['layer']
+            preprocess_kwargs = {'model': HiddenOutput(model=model, layer=layer)}
+        elif preprocess_kwargs['model'].__name__ == 'UAE' \
+                and n_features > 1 and isinstance(n_enc, int):
+            tf.random.set_seed(0)
             encoder_net = tf.keras.Sequential(
                 [
                     InputLayer(input_shape=(n_features,)),
                     Dense(n_enc)
                 ]
             )
-            preprocess_kwargs['encoder_net'] = encoder_net
-        elif preprocess_fn.__name__ == 'hidden_output':
-            model = mymodel((n_features,))
-            preprocess_kwargs['model'] = model
+            preprocess_kwargs = {'model': UAE(encoder_net=encoder_net)}
         else:
             preprocess_fn, preprocess_kwargs = None, None
     else:
@@ -62,6 +69,7 @@ def test_mmd(mmd_params):
     cd = MMDDrift(
         p_val=.05,
         X_ref=X_ref,
+        preprocess_X_ref=preprocess_X_ref if isinstance(preprocess_kwargs, dict) else False,
         update_X_ref=update_X_ref,
         preprocess_fn=preprocess_fn,
         preprocess_kwargs=preprocess_kwargs,

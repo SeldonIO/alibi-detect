@@ -170,7 +170,8 @@ class MMDDrift(BaseDetector):
         drift_pred = int(p_val < self.p_val)
 
         # update reference dataset
-        if isinstance(self.update_X_ref, dict) and self.preprocess_fn is not None:
+        if (isinstance(self.update_X_ref, dict) and self.preprocess_fn is not None
+                and self.preprocess_X_ref):
             X = self.preprocess_fn(X)
         self.X_ref = update_reference(self.X_ref, X, self.n, self.update_X_ref)
         self.n += X.shape[0]  # used for reservoir sampling
