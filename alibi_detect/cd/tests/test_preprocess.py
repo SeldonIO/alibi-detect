@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, Input, InputLayer
-from alibi_detect.cd.preprocess import uae, hidden_output, pca
+from alibi_detect.cd.preprocess import UAE, HiddenOutput, pca
 
 n, n_features, n_classes, latent_dim, n_hidden = 100, 10, 5, 2, 7
 shape = (n_features,)
@@ -32,7 +32,7 @@ def test_uae(uae_params):
         encoder_net, enc_dim = enc, None
     elif isinstance(enc, int):
         encoder_net, enc_dim = None, enc
-    X_enc = uae(X, encoder_net=encoder_net, enc_dim=enc_dim)
+    X_enc = UAE(encoder_net=encoder_net, shape=X.shape[1:], enc_dim=enc_dim)(X)
     assert X_enc.shape == (n, latent_dim)
 
 
@@ -73,7 +73,7 @@ def hidden_output_params(request):
 def test_hidden_output(hidden_output_params):
     model, layer, input_shape = hidden_output_params
     model = Model1() if model == 1 else model2()
-    X_hidden = hidden_output(X, model, layer, input_shape)
+    X_hidden = HiddenOutput(model=model, layer=layer, input_shape=input_shape)(X)
     if layer == -2:
         assert X_hidden.shape == (n, n_hidden)
     elif layer == -1:

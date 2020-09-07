@@ -9,7 +9,7 @@ def readme():
 # read version file
 exec(open("alibi_detect/version.py").read())
 
-extras_require = {"examples": ["seaborn", "tqdm"]}
+extras_require = {"examples": ["seaborn", "tqdm", "nlp"]}
 
 setup(
     name="alibi-detect",
@@ -39,7 +39,8 @@ setup(
         "scikit-image",
         "scikit-learn",
         "tensorflow>=2",
-        "tensorflow_probability>=0.8"
+        "tensorflow_probability>=0.8",
+        "transformers>=2.10.0"
     ],
     tests_require=["pytest", "pytest-cov"],
     extras_require=extras_require,
