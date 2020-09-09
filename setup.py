@@ -28,7 +28,7 @@ setup(
     install_requires=[
         "creme",
         "dask[array]",
-        "fbprophet",
+        "fbprophet>=0.5,<0.7",
         "holidays==0.9.11",
         "matplotlib",
         "numpy",
