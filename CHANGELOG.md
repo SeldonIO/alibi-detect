@@ -1,5 +1,12 @@
 # Change Log
 
+## [v0.4.2](https://github.com/SeldonIO/alibi-detect/tree/v0.4.2) (2020-09-09)
+[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.4.1...v0.4.2)
+### Added
+- Text drift detector functionality for KS and MMD drift detectors
+- Add embedding extraction functionality for pretrained HuggingFace transformers models (`alibi_detect.models.embedding`)
+- Add Python 3.8 support
+
 ## [v0.4.1](https://github.com/SeldonIO/alibi-detect/tree/v0.4.1) (2020-05-12)
 [Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.4.0...v0.4.1)
 ### Added

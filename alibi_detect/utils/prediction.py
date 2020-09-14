@@ -89,3 +89,44 @@ def predict_batch(model: Data,
         else:
             preds[istart:istop] = model(X[istart:istop]).numpy()
     return preds
+
+
+def predict_batch_transformer(model: tf.keras.Model,
+                              tokenizer,
+                              X: np.ndarray,
+                              max_len: int,
+                              batch_size: int = int(1e10)) -> np.ndarray:
+    """
+
+    Parameters
+    ----------
+    model
+        HuggingFace transformer model.
+    tokenizer
+        Tokenizer for model.
+    X
+        Batch of instances.
+    max_len
+        Max token length.
+    batch_size
+        Batch size.
+
+    Returns
+    -------
+    Numpy array with predictions.
+    """
+    n = X.shape[0]
+    n_minibatch = int(np.ceil(n / batch_size))
+    preds = []
+    for i in range(n_minibatch):
+        istart, istop = i * batch_size, min((i + 1) * batch_size, n)
+        x = tokenizer.batch_encode_plus(
+            X[istart:istop],
+            pad_to_max_length=True,
+            max_length=max_len,
+            return_tensors='tf'
+        )
+        preds_batch = model(x)
+        preds.append(preds_batch.numpy())
+    preds = np.concatenate(preds)
+    return preds

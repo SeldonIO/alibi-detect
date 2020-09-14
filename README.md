@@ -94,8 +94,8 @@ The following tables show the advised use cases for each algorithm. The column *
 
 | Detector                 | Tabular | Image | Time Series | Text  | Categorical Features | Online | Feature Level |
 | :---                     |  :---:  | :---: |   :---:     | :---: |   :---:              | :---:  | :---:         |
-| Kolmogorov-Smirnov       | ✔       | ✔     |  ✘          |  ✘    |  ✔                   |  ✔     |  ✔            |
-| Maximum Mean Discrepancy | ✔       | ✔     |  ✘          |  ✘    |  ✔                   |  ✘     |  ✘            |
+| Kolmogorov-Smirnov       | ✔       | ✔     |  ✘          |  ✔    |  ✔                   |  ✔     |  ✔            |
+| Maximum Mean Discrepancy | ✔       | ✔     |  ✘          |  ✔    |  ✔                   |  ✘     |  ✘            |
 
 
 ### Reference List
@@ -141,10 +141,10 @@ The following tables show the advised use cases for each algorithm. The column *
 #### Drift Detection
 
 - [Kolmogorov-Smirnov](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/ksdrift.html)
-   - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_ks_cifar10.html)
+   - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_ks_cifar10.html), [movie reviews](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_text_imdb.html)
    
 - [Maximum Mean Discrepancy](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/mmddrift.html) ([Gretton et al, 2012](http://jmlr.csail.mit.edu/papers/v13/gretton12a.html))
-   - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_mmd_cifar10.html)
+   - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_mmd_cifar10.html), [movie reviews](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_text_imdb.html)
 
 ## Datasets
 
@@ -240,6 +240,7 @@ scikit-image
 scikit-learn
 tensorflow>=2.0.0
 tensorflow_probability>=0.8
+transformers>=2.10.0
 ```
 
 ## Citations
@@ -252,7 +253,8 @@ BibTeX entry:
   title = {{Alibi-Detect}: Algorithms for outlier and adversarial instance detection, concept drift and metrics.},
   author = {Van Looveren, Arnaud and Vacanti, Giovanni and Klaise, Janis and Coca, Alexandru},
   url = {https://github.com/SeldonIO/alibi-detect},
-  version = {0.4.1},
-  date = {2020-05-12},
+  version = {0.4.2},
+  date = {2020-09-09},
+  year = {2019}
 }
 ```

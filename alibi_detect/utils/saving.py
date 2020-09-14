@@ -6,7 +6,7 @@ import os
 import pickle
 import tensorflow as tf
 from tensorflow_probability.python.distributions.distribution import Distribution
-from typing import Callable, Dict, List, Union
+from typing import Callable, Dict, List, Tuple, Union
 from alibi_detect.ad import AdversarialAE
 from alibi_detect.ad.adversarialae import DenseHidden
 from alibi_detect.base import BaseDetector
@@ -56,7 +56,7 @@ DEFAULT_DETECTORS = [
 def save_detector(detector: Data,
                   filepath: str) -> None:
     """
-    Save outlier or adversarial detector.
+    Save outlier, drift or adversarial detector.
 
     Parameters
     ----------
@@ -123,34 +123,8 @@ def save_detector(detector: Data,
         save_tf_hl(detector.model_hl, filepath)
     elif detector_name == 'OutlierSeq2Seq':
         save_tf_s2s(detector, filepath)
-    elif detector_name in ['KSDrift', 'MMDDrift']:
-        save_tf_preprocess(detector, filepath)
     elif detector_name == 'LLR':
         save_tf_llr(detector, filepath)
-
-
-def state_preprocess(state_dict: dict, cd: Union[KSDrift, MMDDrift]) -> dict:
-    """
-    State of preprocessing functions to save.
-
-    Parameters
-    ----------
-    state_dict
-        State dict for detector.
-    cd
-        Drift detection object
-    """
-    if isinstance(cd.preprocess_fn, Callable):
-        if cd.preprocess_fn.__name__ in ['uae', 'hidden_output']:
-            kwargs_list = list(cd.preprocess_kwargs.keys())
-            k = None
-            if 'model' in kwargs_list:
-                k = 'model'
-            if 'encoder_net' in kwargs_list:
-                k = 'encoder_net'
-            if isinstance(k, str):
-                state_dict['preprocess_kwargs'][k] = k
-    return state_dict
 
 
 def state_ksdrift(cd: KSDrift) -> Dict:
@@ -165,15 +139,14 @@ def state_ksdrift(cd: KSDrift) -> Dict:
     state_dict = {
         'p_val': cd.p_val,
         'X_ref': cd.X_ref,
+        'preprocess_X_ref': cd.preprocess_X_ref,
         'update_X_ref': cd.update_X_ref,
         'alternative': cd.alternative,
         'n': cd.n,
         'n_features': cd.n_features,
         'correction': cd.correction,
-        'preprocess_fn': cd.preprocess_fn,
-        'preprocess_kwargs': cd.preprocess_kwargs.copy() if isinstance(cd.preprocess_kwargs, dict) else None
     }
-    return state_preprocess(state_dict, cd)
+    return state_dict
 
 
 def state_mmddrift(cd: MMDDrift) -> Dict:
@@ -188,15 +161,14 @@ def state_mmddrift(cd: MMDDrift) -> Dict:
     state_dict = {
         'p_val': cd.p_val,
         'X_ref': cd.X_ref,
+        'preprocess_X_ref': cd.preprocess_X_ref,
         'update_X_ref': cd.update_X_ref,
         'n': cd.n,
         'chunk_size': cd.chunk_size,
         'permutation_test': cd.permutation_test,
         'infer_sigma': cd.infer_sigma,
-        'preprocess_fn': cd.preprocess_fn,
-        'preprocess_kwargs': cd.preprocess_kwargs.copy() if isinstance(cd.preprocess_kwargs, dict) else None
     }
-    return state_preprocess(state_dict, cd)
+    return state_dict
 
 
 def state_iforest(od: IForest) -> Dict:
@@ -663,22 +635,9 @@ def save_tf_s2s(od: OutlierSeq2Seq,
         logger.warning('No `tf.keras.Model` Seq2Seq detected. No Seq2Seq model saved.')
 
 
-def save_tf_preprocess(cd: Union[KSDrift, MMDDrift], filepath: str) -> None:
-    if isinstance(cd.preprocess_fn, Callable):
-        if cd.preprocess_fn.__name__ in ['uae', 'hidden_output']:
-            kwargs_list = list(cd.preprocess_kwargs.keys())
-            k = None
-            if 'model' in kwargs_list:
-                k = 'model'
-            elif 'encoder_net' in kwargs_list:
-                k = 'encoder_net'
-            if isinstance(k, str):
-                save_tf_model(cd.preprocess_kwargs[k], filepath, model_name=k)
-
-
 def load_detector(filepath: str, **kwargs) -> Data:
     """
-    Load outlier or adversarial detector.
+    Load outlier, drift or adversarial detector.
 
     Parameters
     ----------
@@ -739,11 +698,9 @@ def load_detector(filepath: str, **kwargs) -> Data:
         seq2seq = load_tf_s2s(filepath, state_dict)
         detector = init_od_s2s(state_dict, seq2seq)
     elif detector_name == 'KSDrift':
-        model = load_tf_preprocess(filepath, state_dict)
-        detector = init_cd_ksdrift(state_dict, model)
+        detector = init_cd_ksdrift(state_dict, **kwargs)
     elif detector_name == 'MMDDrift':
-        model = load_tf_preprocess(filepath, state_dict)
-        detector = init_cd_mmddrift(state_dict, model)
+        detector = init_cd_mmddrift(state_dict, **kwargs)
     elif detector_name == 'LLR':
         models = load_tf_llr(filepath, **kwargs)
         detector = init_od_llr(state_dict, models)
@@ -937,36 +894,6 @@ def load_tf_s2s(filepath: str,
     seq2seq = Seq2Seq(encoder_net, decoder_net, threshold_net, n_features, beta=state_dict['beta'])
     seq2seq.load_weights(os.path.join(model_dir, 'seq2seq.ckpt'))
     return seq2seq
-
-
-def load_tf_preprocess(filepath: str, state_dict: dict) -> Union[tf.keras.Model, tf.keras.Sequential]:
-    """
-    Load TensorFlow model for KSDrift or MMDDrift detector.
-
-    Parameters
-    ----------
-    filepath
-        Saved model directory.
-    state_dict
-        Dictionary containing the detector's parameters.
-
-    Returns
-    -------
-    Loaded model.
-    """
-    model = None
-    preprocess_fn = state_dict['preprocess_fn']
-    if isinstance(preprocess_fn, Callable):
-        if preprocess_fn.__name__ in ['uae', 'hidden_output']:
-            kwargs_list = list(state_dict['preprocess_kwargs'])
-            k = None
-            if 'model' in kwargs_list:
-                k = 'model'
-            elif 'encoder_net' in kwargs_list:
-                k = 'encoder_net'
-            if isinstance(k, str):
-                model = load_tf_model(filepath, model_name=k)
-    return model
 
 
 def load_tf_llr(filepath: str, dist_s: Union[Distribution, PixelCNN] = None,
@@ -1167,7 +1094,18 @@ def init_od_s2s(state_dict: Dict,
     return od
 
 
-def init_cd_ksdrift(state_dict: Dict, model: Union[tf.keras.Model, tf.keras.Sequential] = None) -> KSDrift:
+def init_preprocess(**kwargs) -> Tuple[Callable, dict]:
+    """ Return preprocessing function and kwargs. """
+    if isinstance(kwargs, dict):
+        keys = list(kwargs.keys())
+        preprocess_fn = kwargs['preprocess_fn'] if 'preprocess_fn' in keys else None
+        preprocess_kwargs = kwargs['preprocess_kwargs'] if 'preprocess_kwargs' in keys else None
+    else:
+        preprocess_fn, preprocess_kwargs = None, None
+    return preprocess_fn, preprocess_kwargs
+
+
+def init_cd_ksdrift(state_dict: Dict, **kwargs) -> KSDrift:
     """
     Initialize KSDrift detector.
 
@@ -1175,24 +1113,18 @@ def init_cd_ksdrift(state_dict: Dict, model: Union[tf.keras.Model, tf.keras.Sequ
     ----------
     state_dict
         Dictionary containing the parameter values.
-    model
-        Optionally loaded model.
+    kwargs
+        Kwargs optionally containing preprocess_fn and preprocess_kwargs.
 
     Returns
     -------
     Initialized KSDrift instance.
     """
-    preprocess_fn = state_dict['preprocess_fn']
-    preprocess_kwargs = state_dict['preprocess_kwargs']
-    if isinstance(preprocess_fn, Callable) and isinstance(model, (tf.keras.Model, tf.keras.Sequential)):
-        if preprocess_fn.__name__ == 'uae':
-            preprocess_kwargs['encoder_net'] = model
-        elif preprocess_fn.__name__ == 'hidden_output':
-            preprocess_kwargs['model'] = model
-
+    preprocess_fn, preprocess_kwargs = init_preprocess(**kwargs)
     cd = KSDrift(
         p_val=state_dict['p_val'],
         X_ref=state_dict['X_ref'],
+        preprocess_X_ref=False,
         update_X_ref=state_dict['update_X_ref'],
         preprocess_fn=preprocess_fn,
         preprocess_kwargs=preprocess_kwargs,
@@ -1201,10 +1133,11 @@ def init_cd_ksdrift(state_dict: Dict, model: Union[tf.keras.Model, tf.keras.Sequ
         n_features=state_dict['n_features']
     )
     cd.n = state_dict['n']
+    cd.preprocess_X_ref = state_dict['preprocess_X_ref']
     return cd
 
 
-def init_cd_mmddrift(state_dict: Dict, model: Union[tf.keras.Model, tf.keras.Sequential] = None) -> MMDDrift:
+def init_cd_mmddrift(state_dict: Dict, **kwargs) -> MMDDrift:
     """
     Initialize MMDDrift detector.
 
@@ -1212,30 +1145,25 @@ def init_cd_mmddrift(state_dict: Dict, model: Union[tf.keras.Model, tf.keras.Seq
     ----------
     state_dict
         Dictionary containing the parameter values.
-    model
-        Optionally loaded model.
+    kwargs
+        Kwargs optionally containing preprocess_fn and preprocess_kwargs.
 
     Returns
     -------
     Initialized MMDDrift instance.
     """
-    preprocess_fn = state_dict['preprocess_fn']
-    preprocess_kwargs = state_dict['preprocess_kwargs']
-    if isinstance(preprocess_fn, Callable) and isinstance(model, (tf.keras.Model, tf.keras.Sequential)):
-        if preprocess_fn.__name__ == 'uae':
-            preprocess_kwargs['encoder_net'] = model
-        elif preprocess_fn.__name__ == 'hidden_output':
-            preprocess_kwargs['model'] = model
-
+    preprocess_fn, preprocess_kwargs = init_preprocess(**kwargs)
     cd = MMDDrift(
         p_val=state_dict['p_val'],
         X_ref=state_dict['X_ref'],
+        preprocess_X_ref=False,
         update_X_ref=state_dict['update_X_ref'],
         preprocess_fn=preprocess_fn,
         preprocess_kwargs=preprocess_kwargs,
         chunk_size=state_dict['chunk_size']
     )
     cd.n = state_dict['n']
+    cd.preprocess_X_ref = state_dict['preprocess_X_ref']
     cd.infer_sigma = state_dict['infer_sigma']
     cd.permutation_test = state_dict['permutation_test']
     return cd

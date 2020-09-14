@@ -5,7 +5,7 @@ import tensorflow as tf
 from tensorflow.keras.layers import Dense, Input, InputLayer
 from typing import Callable
 from alibi_detect.cd import KSDrift
-from alibi_detect.cd.preprocess import hidden_output, pca, uae
+from alibi_detect.cd.preprocess import HiddenOutput, UAE, pca, preprocess_drift
 
 n, n_hidden, n_classes = 750, 10, 5
 
@@ -21,14 +21,16 @@ n_features = [1, 10]
 n_enc = [None, 3]
 preprocess = [
     (None, None),
-    (hidden_output, {'model': None, 'layer': -1}),
+    (preprocess_drift, {'model': HiddenOutput, 'layer': -1}),
     (pca, {'n_components': None}),
-    (uae, {'encoder_net': None})
+    (preprocess_drift, {'model': UAE})
 ]
 alternative = ['two-sided', 'less', 'greater']
 correction = ['bonferroni', 'fdr']
 update_X_ref = [{'last': 1000}, {'reservoir_sampling': 1000}]
-tests_ksdrift = list(product(n_features, n_enc, preprocess, alternative, correction, update_X_ref))
+preprocess_X_ref = [True, False]
+tests_ksdrift = list(product(n_features, n_enc, preprocess, alternative,
+                             correction, update_X_ref, preprocess_X_ref))
 n_tests = len(tests_ksdrift)
 
 
@@ -39,30 +41,34 @@ def ksdrift_params(request):
 
 @pytest.mark.parametrize('ksdrift_params', list(range(n_tests)), indirect=True)
 def test_ksdrift(ksdrift_params):
-    n_features, n_enc, preprocess, alternative, correction, update_X_ref = ksdrift_params
+    n_features, n_enc, preprocess, alternative, correction, \
+        update_X_ref, preprocess_X_ref = ksdrift_params
     np.random.seed(0)
     X_ref = np.random.randn(n * n_features).reshape(n, n_features).astype('float32')
     n_infer = 2
     preprocess_fn, preprocess_kwargs = preprocess
     if isinstance(preprocess_fn, Callable):
-        if preprocess_fn.__name__ == 'uae' and n_features > 1 and isinstance(n_enc, int):
-            tf.random.set_seed(0)
-            encoder_net = tf.keras.Sequential(
-                [
-                    InputLayer(input_shape=(n_features,)),
-                    Dense(n_enc)
-                ]
-            )
-            preprocess_kwargs['encoder_net'] = encoder_net
-        elif preprocess_fn.__name__ == 'hidden_output':
-            model = mymodel((n_features,))
-            preprocess_kwargs['model'] = model
-        elif preprocess_fn.__name__ == 'pca' and isinstance(n_enc, int):
-            if n_enc < n_features:
-                preprocess_kwargs['n_components'] = n_enc
-                n_infer = n_enc
+        if preprocess_fn.__name__ == 'preprocess_drift':
+            if 'layer' in list(preprocess_kwargs.keys()) \
+                    and preprocess_kwargs['model'].__name__ == 'HiddenOutput':
+                model = mymodel((n_features,))
+                layer = preprocess_kwargs['layer']
+                preprocess_kwargs = {'model': HiddenOutput(model=model, layer=layer)}
+            elif preprocess_kwargs['model'].__name__ == 'UAE' \
+                    and n_features > 1 and isinstance(n_enc, int):
+                tf.random.set_seed(0)
+                encoder_net = tf.keras.Sequential(
+                    [
+                        InputLayer(input_shape=(n_features,)),
+                        Dense(n_enc)
+                    ]
+                )
+                preprocess_kwargs = {'model': UAE(encoder_net=encoder_net)}
             else:
                 preprocess_fn, preprocess_kwargs = None, None
+        elif preprocess_fn.__name__ == 'pca' and isinstance(n_enc, int) and n_enc < n_features:
+            preprocess_kwargs['n_components'] = n_enc
+            n_infer = n_enc
         else:
             preprocess_fn, preprocess_kwargs = None, None
     else:
@@ -71,6 +77,7 @@ def test_ksdrift(ksdrift_params):
     cd = KSDrift(
         p_val=.05,
         X_ref=X_ref,
+        preprocess_X_ref=preprocess_X_ref if isinstance(preprocess_kwargs, dict) else False,
         update_X_ref=update_X_ref,
         preprocess_fn=preprocess_fn,
         preprocess_kwargs=preprocess_kwargs,

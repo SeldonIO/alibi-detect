@@ -60,6 +60,7 @@
    examples/ad_ae_cifar10
    examples/cd_ks_cifar10
    examples/cd_mmd_cifar10
+   examples/cd_text_imdb
    
 .. toctree::
    :maxdepth: 1
