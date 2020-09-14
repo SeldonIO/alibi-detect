@@ -37,6 +37,8 @@ class ModelDistillation(BaseDetector, FitMixin, ThresholdMixin):
         temperature
             Temperature used for model prediction scaling.
             Temperature <1 sharpens the prediction probability distribution.
+        scale_preds
+            If set to True temperature scaling is applied also to the distilled model's predictions.
         data_type
             Optionally specifiy the data type (tabular, image or time-series). Added to metadata.
         """
