@@ -7,7 +7,7 @@ from tensorflow.python.keras import backend
 from typing import Tuple, Union
 from urllib.request import urlopen
 from alibi_detect.base import BaseDetector
-from alibi_detect.ad import AdversarialAE
+from alibi_detect.ad import AdversarialAE, ModelDistillation
 from alibi_detect.models import PixelCNN
 from alibi_detect.od import (IForest, LLR, Mahalanobis, OutlierAE, OutlierAEGMM, OutlierProphet,
                              OutlierSeq2Seq, OutlierVAE, OutlierVAEGMM, SpectralResidual)
@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 Data = Union[
     BaseDetector,
     AdversarialAE,
+    ModelDistillation,
     IForest,
     LLR,
     Mahalanobis,
@@ -181,6 +182,32 @@ def fetch_ad_ae(url: str, filepath: str, state_dict: dict) -> None:
                 os.path.join(model_path, hl + '.ckpt.data-00001-of-00002'),
                 os.path.join(url_models, hl + '.ckpt.data-00001-of-00002')
             )
+
+
+def fetch_ad_md(url: str, filepath: str) -> None:
+    """
+    Download model and distilled model.
+
+    Parameters
+    ----------
+    url
+        URL to fetch detector from.
+    filepath
+        Local directory to save detector to.
+    """
+    url_models = os.path.join(url, 'model')
+    model_path = os.path.join(filepath, 'model')
+    if not os.path.isdir(model_path):
+        os.mkdir(model_path)
+    # encoder and decoder
+    tf.keras.utils.get_file(
+        os.path.join(model_path, 'model.h5'),
+        os.path.join(url_models, 'model.h5')
+    )
+    tf.keras.utils.get_file(
+        os.path.join(model_path, 'distilled_model.h5'),
+        os.path.join(url_models, 'distilled_model.h5')
+    )
 
 
 def fetch_aegmm(url: str, filepath: str) -> None:
@@ -438,6 +465,10 @@ def fetch_detector(filepath: str,
         fetch_seq2seq(url, filepath)
     elif name == 'AdversarialAE':
         fetch_ad_ae(url, filepath, state_dict)
+        if model == 'resnet56':
+            kwargs = {'custom_objects': {'backend': backend}}
+    elif name == 'ModelDistillation':
+        fetch_ad_md(url, filepath)
         if model == 'resnet56':
             kwargs = {'custom_objects': {'backend': backend}}
     elif name == 'LLR':
