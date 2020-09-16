@@ -38,8 +38,8 @@ Data = Union[
 ]
 
 DEFAULT_DETECTORS = [
-    'AdversarialMD'
-    'AdversarialAE',
+    'AdversarialMD',
+    'ModelDistillation',
     'IForest',
     'KSDrift',
     'LLR',
@@ -98,7 +98,7 @@ def save_detector(detector: Data,
         state_dict = state_vaegmm(detector)
     elif detector_name == 'AdversarialAE':
         state_dict = state_adv_ae(detector)
-    elif detector_name == 'AdversarialMD':
+    elif detector_name == 'ModelDistillation':
         state_dict = state_adv_md(detector)
     elif detector_name == 'OutlierProphet':
         state_dict = state_prophet(detector)
@@ -125,7 +125,7 @@ def save_detector(detector: Data,
         save_tf_ae(detector, filepath)
         save_tf_model(detector.model, filepath)
         save_tf_hl(detector.model_hl, filepath)
-    elif detector_name == 'AdversarialMD':
+    elif detector_name == 'ModelDistillation':
         save_tf_md(detector, filepath)
         save_tf_model(detector.model, filepath)
     elif detector_name == 'OutlierSeq2Seq':
@@ -738,7 +738,7 @@ def load_detector(filepath: str, **kwargs) -> Data:
         model = load_tf_model(filepath, custom_objects=custom_objects)
         model_hl = load_tf_hl(filepath, model, state_dict)
         detector = init_ad_ae(state_dict, ae, model, model_hl)
-    elif detector_name == 'AdversarialMD':
+    elif detector_name == 'ModelDistillation':
         md = load_tf_md(filepath)
         custom_objects = kwargs['custom_objects'] if 'custom_objects' in k else None
         model = load_tf_model(filepath, custom_objects=custom_objects)
