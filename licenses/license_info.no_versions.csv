@@ -21,6 +21,7 @@
 "creme","BSD License"
 "cycler","BSD"
 "dask","BSD"
+"dataclasses","Apache Software License"
 "decorator","BSD License"
 "dm-tree","Apache Software License"
 "ephem","GNU Library or Lesser General Public License (LGPL)"
