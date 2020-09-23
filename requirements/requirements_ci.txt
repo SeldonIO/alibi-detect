@@ -13,3 +13,4 @@ pytest-xdist>=1.30.0
 flake8>=3.7.9
 mypy>=0.740
 pre-commit>=1.20.0
+tox<4.0.0

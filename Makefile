@@ -38,3 +38,17 @@ push_pypi: ## Upload the Python package to the PyPI registry
 .PHONY: help
 help: ## Print out help message on using these commands
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+
+.PHONY: licenses
+licenses:
+	# create a tox environment and pull in license information
+	tox --recreate -e licenses
+	cut -d, -f1,3 ./licenses/license_info.csv \
+					> ./licenses/license_info.no_versions.csv
+
+.PHONY: check_licenses
+	# check if there has been a change in license information, used in CI
+check_licenses:
+	git --no-pager diff --exit-code ./licenses/license_info.no_versions.csv
+	
+	
