@@ -89,6 +89,7 @@ class MMDDrift(BaseDetector):
             permutation_test,
             n_permutations=n_permutations,
             metric=maximum_mean_discrepancy,
+            return_distance=True,
             **kwargs
         )
 
@@ -120,7 +121,7 @@ class MMDDrift(BaseDetector):
         else:
             return self.X_ref, X
 
-    def score(self, X: Union[np.ndarray, list]) -> float:
+    def score(self, X: Union[np.ndarray, list]) -> Tuple[float, float]:
         """
         Compute the p-value resulting from a permutation test using the maximum mean discrepancy
         as a distance measure between the reference data and the data to be tested.
@@ -144,11 +145,11 @@ class MMDDrift(BaseDetector):
         if self.infer_sigma:
             sigma = infer_sigma(X_ref, X)
             self.permutation_test.keywords['sigma'] = np.array([sigma])
-        p_val = self.permutation_test(X_ref, X)
-        return p_val
+        p_val, dist = self.permutation_test(X_ref, X)
+        return p_val, dist
 
-    def predict(self, X: Union[np.ndarray, list], return_p_val: bool = True) \
-            -> Dict[Dict[str, str], Dict[str, int]]:
+    def predict(self, X: Union[np.ndarray, list], return_p_val: bool = True,
+                return_distance: bool = True) -> Dict[Dict[str, str], Dict[str, int]]:
         """
         Predict whether a batch of data has drifted from the reference data.
 
@@ -158,15 +159,17 @@ class MMDDrift(BaseDetector):
             Batch of instances.
         return_p_val
             Whether to return the p-value of the permutation test.
+        return_distance
+            Whether to return the MMD metric between the new batch and reference data.
 
         Returns
         -------
         Dictionary containing 'meta' and 'data' dictionaries.
         'meta' has the model's metadata.
-        'data' contains the drift prediction and optionally the p-value.
+        'data' contains the drift prediction and optionally the p-value and MMD metric.
         """
         # compute drift scores
-        p_val = self.score(X)
+        p_val, dist = self.score(X)
         drift_pred = int(p_val < self.p_val)
 
         # update reference dataset
@@ -183,4 +186,6 @@ class MMDDrift(BaseDetector):
         cd['data']['is_drift'] = drift_pred
         if return_p_val:
             cd['data']['p_val'] = p_val
+        if return_distance:
+            cd['data']['distance'] = dist
         return cd

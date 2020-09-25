@@ -1,6 +1,6 @@
 import dask.array as da
 import numpy as np
-from typing import Callable, Union
+from typing import Callable, Tuple, Union
 from alibi_detect.utils.distance import maximum_mean_discrepancy
 
 
@@ -8,7 +8,8 @@ def permutation_test(x: Union[np.ndarray, da.array],
                      y: Union[np.ndarray, da.array],
                      n_permutations: int = 1000,
                      metric: Callable = maximum_mean_discrepancy,
-                     **kwargs) -> np.float:
+                     return_distance: bool = False,
+                     **kwargs) -> Union[np.float, Tuple[np.float, np.float]]:
     """
     Apply a permutation test to samples x and y.
 
@@ -22,6 +23,8 @@ def permutation_test(x: Union[np.ndarray, da.array],
         Number of permutations used in the test.
     metric
         Distance metric used for the test. Defaults to Maximum Mean Discrepancy.
+    return_distance
+        Whether to return the
     kwargs
         Kwargs for the metric. For the default this includes for instance the kernel used.
 
@@ -44,7 +47,10 @@ def permutation_test(x: Union[np.ndarray, da.array],
             x, y = da.from_array(x, chunks=xchunks), da.from_array(y, chunks=ychunks)
         dist_permutation = metric(x, y, **kwargs)
         k += dist <= (dist_permutation if is_np else dist_permutation.compute())
-    return k / n_permutations
+    if return_distance:
+        return k / n_permutations, dist
+    else:
+        return k / n_permutations
 
 
 def fdr(p_val: np.ndarray, q_val: float) -> bool:

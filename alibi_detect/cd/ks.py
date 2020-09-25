@@ -124,9 +124,10 @@ class KSDrift(BaseDetector):
         else:
             return self.X_ref, X
 
-    def feature_score(self, X_ref: np.ndarray, X: np.ndarray) -> np.ndarray:
+    def feature_score(self, X_ref: np.ndarray, X: np.ndarray) \
+            -> Tuple[np.ndarray, np.ndarray]:
         """
-        Compute K-S scores per feature.
+        Compute K-S scores and statistics per feature.
 
         Parameters
         ----------
@@ -137,19 +138,21 @@ class KSDrift(BaseDetector):
 
         Returns
         -------
-        Feature level drift scores.
+        Feature level p-values and K-S statistics.
         """
         X = X.reshape(X.shape[0], -1)
         X_ref = X_ref.reshape(X_ref.shape[0], -1)
         p_val = np.zeros(self.n_features, dtype=np.float32)
+        dist = np.zeros_like(p_val)
         for f in range(self.n_features):
             # TODO: update to 'exact' when bug fix is released in scipy 1.5
-            p_val[f] = ks_2samp(X_ref[:, f], X[:, f], alternative=self.alternative, mode='asymp')[1]
-        return p_val
+            dist[f], p_val[f] = ks_2samp(X_ref[:, f], X[:, f], alternative=self.alternative, mode='asymp')
+        return p_val, dist
 
-    def score(self, X: np.ndarray) -> np.ndarray:
+    def score(self, X: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
-        Compute the feature-wise drift score which is the p-value of the Kolmogorov-Smirnov.
+        Compute the feature-wise drift score which is the p-value of the
+        Kolmogorov-Smirnov test and the test statistic.
 
         Parameters
         ----------
@@ -158,13 +161,14 @@ class KSDrift(BaseDetector):
 
         Returns
         -------
-        Feature level drift scores.
+        Feature level p-values and K-S statistics.
         """
         X_ref, X = self.preprocess(X)
-        score = self.feature_score(X_ref, X)  # feature-wise K-S test
-        return score
+        score, dist = self.feature_score(X_ref, X)  # feature-wise K-S test
+        return score, dist
 
-    def predict(self, X: Union[np.ndarray, list], drift_type: str = 'batch', return_p_val: bool = True) \
+    def predict(self, X: Union[np.ndarray, list], drift_type: str = 'batch',
+                return_p_val: bool = True, return_distance: bool = True) \
             -> Dict[Dict[str, str], Dict[str, np.ndarray]]:
         """
         Predict whether a batch of data has drifted from the reference data.
@@ -178,6 +182,8 @@ class KSDrift(BaseDetector):
             each feature are aggregated using the Bonferroni or False Discovery Rate correction.
         return_p_val
             Whether to return feature level p-values.
+        return_distance
+            Whether to return the K-S statistic between the features of the new batch and reference data.
 
         Returns
         -------
@@ -186,14 +192,16 @@ class KSDrift(BaseDetector):
         'data' contains the drift predictions and both feature and batch level drift scores.
         """
         # compute drift scores
-        p_vals = self.score(X)
+        p_vals, dist = self.score(X)
 
         # values below p-value threshold are drift
         if drift_type == 'feature':  # undo multivariate correction
             drift_pred = (p_vals < self.p_val).astype(int)
         elif drift_type == 'batch' and self.correction == 'bonferroni':
-            drift_pred = int((p_vals < self.p_val / self.n_features).any())
+            p_val_corr = self.p_val / self.n_features
+            drift_pred = int((p_vals < p_val_corr).any())
         elif drift_type == 'batch' and self.correction == 'fdr':
+            # TODO: extract corrected p-value from FDR
             drift_pred = int(fdr(p_vals, q_val=self.p_val))
         else:
             raise ValueError('`drift_type` needs to be either `feature` or `batch`.')
@@ -212,4 +220,8 @@ class KSDrift(BaseDetector):
         cd['data']['is_drift'] = drift_pred
         if return_p_val:
             cd['data']['p_val'] = p_vals
+        if return_p_val and drift_type == 'batch':
+            cd['data']['p_val_corr'] = p_val_corr
+        if return_distance:
+            cd['data']['distance'] = dist
         return cd
