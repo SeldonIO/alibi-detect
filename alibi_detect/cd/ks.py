@@ -169,7 +169,7 @@ class KSDrift(BaseDetector):
 
     def predict(self, X: Union[np.ndarray, list], drift_type: str = 'batch',
                 return_p_val: bool = True, return_distance: bool = True) \
-            -> Dict[Dict[str, str], Dict[str, np.ndarray]]:
+            -> Dict[Dict[str, str], Dict[str, Union[np.ndarray, int, float]]]:
         """
         Predict whether a batch of data has drifted from the reference data.
 
@@ -190,19 +190,20 @@ class KSDrift(BaseDetector):
         Dictionary containing 'meta' and 'data' dictionaries.
         'meta' has the model's metadata.
         'data' contains the drift predictions and both feature and batch level drift scores.
+        'data' contains the drift prediction and optionally the feature level p-values,
+         threshold after multivariate correction if needed and K-S statistics.
         """
         # compute drift scores
         p_vals, dist = self.score(X)
 
         # values below p-value threshold are drift
-        if drift_type == 'feature':  # undo multivariate correction
+        if drift_type == 'feature':
             drift_pred = (p_vals < self.p_val).astype(int)
         elif drift_type == 'batch' and self.correction == 'bonferroni':
-            p_val_corr = self.p_val / self.n_features
-            drift_pred = int((p_vals < p_val_corr).any())
+            threshold = self.p_val / self.n_features
+            drift_pred = int((p_vals < threshold).any())
         elif drift_type == 'batch' and self.correction == 'fdr':
-            # TODO: extract corrected p-value from FDR
-            drift_pred = int(fdr(p_vals, q_val=self.p_val))
+            drift_pred, threshold = fdr(p_vals, q_val=self.p_val)
         else:
             raise ValueError('`drift_type` needs to be either `feature` or `batch`.')
 
@@ -220,8 +221,7 @@ class KSDrift(BaseDetector):
         cd['data']['is_drift'] = drift_pred
         if return_p_val:
             cd['data']['p_val'] = p_vals
-        if return_p_val and drift_type == 'batch':
-            cd['data']['p_val_corr'] = p_val_corr
+            cd['data']['threshold'] = self.p_val if drift_type == 'feature' else threshold
         if return_distance:
             cd['data']['distance'] = dist
         return cd

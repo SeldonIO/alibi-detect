@@ -39,10 +39,11 @@ def adversarial_correction_dict():
 
 
 def concept_drift_dict():
-    data = {  # TODO: needs to work for KS
+    data = {
         'is_drift': None,
         'distance': None,
-        'p_val': None
+        'p_val': None,
+        'threshold': None
     }
     return copy.deepcopy({"data": data, "meta": DEFAULT_META})
 

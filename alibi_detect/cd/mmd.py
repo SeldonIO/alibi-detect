@@ -149,7 +149,7 @@ class MMDDrift(BaseDetector):
         return p_val, dist
 
     def predict(self, X: Union[np.ndarray, list], return_p_val: bool = True,
-                return_distance: bool = True) -> Dict[Dict[str, str], Dict[str, int]]:
+                return_distance: bool = True) -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
         """
         Predict whether a batch of data has drifted from the reference data.
 
@@ -166,7 +166,7 @@ class MMDDrift(BaseDetector):
         -------
         Dictionary containing 'meta' and 'data' dictionaries.
         'meta' has the model's metadata.
-        'data' contains the drift prediction and optionally the p-value and MMD metric.
+        'data' contains the drift prediction and optionally the p-value, threshold and MMD metric.
         """
         # compute drift scores
         p_val, dist = self.score(X)
@@ -186,6 +186,7 @@ class MMDDrift(BaseDetector):
         cd['data']['is_drift'] = drift_pred
         if return_p_val:
             cd['data']['p_val'] = p_val
+            cd['data']['threshold'] = self.p_val
         if return_distance:
             cd['data']['distance'] = dist
         return cd
