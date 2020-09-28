@@ -108,3 +108,7 @@ def test_ksdrift(ksdrift_params):
     preds_batch = cd.predict(X_low, drift_type='batch')
     if alternative != 'greater':
         assert preds_batch['data']['is_drift'] == 1
+    assert preds_batch['data']['distance'].min() >= 0.
+    assert preds_feature['data']['threshold'] == cd.p_val
+    if correction == 'bonferroni':
+        assert preds_batch['data']['threshold'] == cd.p_val / cd.n_features
