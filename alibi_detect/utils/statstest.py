@@ -24,7 +24,7 @@ def permutation_test(x: Union[np.ndarray, da.array],
     metric
         Distance metric used for the test. Defaults to Maximum Mean Discrepancy.
     return_distance
-        Whether to return the
+        Whether to return the test statistic.
     kwargs
         Kwargs for the metric. For the default this includes for instance the kernel used.
 
