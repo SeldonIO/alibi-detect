@@ -88,3 +88,4 @@ def test_mmd(mmd_params):
     X_h1 = sigma * X_h1 + mu
     preds = cd.predict(X_h1, return_p_val=True)
     assert preds['data']['is_drift'] == 1 and preds['data']['p_val'] < cd.p_val
+    assert preds['data']['distance'] >= 0.

@@ -29,8 +29,9 @@ def test_fdr(fdr_params):
         p_val = p_vals['p_val'] + q_val
     else:
         p_val = p_vals['p_val'].copy()
-    below_threshold = fdr(p_val, q_val)
+    below_threshold, thresholds = fdr(p_val, q_val)
     assert below_threshold == p_vals['is_below']
+    assert isinstance(thresholds, (np.ndarray, float))
 
 
 n_features = [2]
