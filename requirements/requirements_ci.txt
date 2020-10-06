@@ -14,3 +14,5 @@ flake8>=3.7.9
 mypy>=0.740
 pre-commit>=1.20.0
 tox<4.0.0
+fbprophet>=0.5,<0.7
+holidays==0.9.11

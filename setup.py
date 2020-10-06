@@ -9,7 +9,8 @@ def readme():
 # read version file
 exec(open("alibi_detect/version.py").read())
 
-extras_require = {"examples": ["seaborn", "tqdm", "nlp"]}
+extras_require = {"examples": ["seaborn", "tqdm", "nlp"],
+                  "prophet": ["fbprophet>=0.5,<0.7", "holidays==0.9.11"]}
 
 setup(
     name="alibi-detect",
@@ -28,8 +29,6 @@ setup(
     install_requires=[
         "creme",
         "dask[array]",
-        "fbprophet>=0.5,<0.7",
-        "holidays==0.9.11",
         "matplotlib",
         "numpy",
         "pandas",

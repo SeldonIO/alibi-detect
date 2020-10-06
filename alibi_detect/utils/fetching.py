@@ -30,22 +30,25 @@ Data = Union[
     SpectralResidual
 ]
 
-dist = PixelCNN(
-    image_shape=(28, 28, 1),
-    num_resnet=5,
-    num_hierarchies=2,
-    num_filters=32,
-    num_logistic_mix=1,
-    receptive_field_dims=(3, 3),
-    dropout_p=.3,
-    l2_weight=0.
-)
 
-KWARGS_PIXELCNN = {
-    'dist_s': dist,
-    'dist_b': dist.copy(),
-    'input_shape': (28, 28, 1)
-}
+def get_pixelcnn_default_kwargs():
+    dist = PixelCNN(
+        image_shape=(28, 28, 1),
+        num_resnet=5,
+        num_hierarchies=2,
+        num_filters=32,
+        num_logistic_mix=1,
+        receptive_field_dims=(3, 3),
+        dropout_p=.3,
+        l2_weight=0.
+    )
+
+    KWARGS_PIXELCNN = {
+        'dist_s': dist,
+        'dist_b': dist.copy(),
+        'input_shape': (28, 28, 1)
+    }
+    return KWARGS_PIXELCNN
 
 
 def fetch_tf_model(dataset: str, model: str) -> tf.keras.Model:
@@ -425,7 +428,7 @@ def fetch_detector(filepath: str,
 
     # load detector
     name = meta['name']
-    kwargs = {}
+    kwargs = {}  # type: dict
     if name == 'OutlierAE':
         fetch_ae(url, filepath)
     elif name == 'OutlierAEGMM':
@@ -443,6 +446,6 @@ def fetch_detector(filepath: str,
     elif name == 'LLR':
         model_type = fetch_llr(url, filepath)
         if model_type == 'weights':
-            kwargs = KWARGS_PIXELCNN
+            kwargs = get_pixelcnn_default_kwargs()
     detector = load_detector(filepath, **kwargs)
     return detector

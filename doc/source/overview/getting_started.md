@@ -26,7 +26,7 @@ alibi_detect.od.__all__
  'OutlierAE',
  'OutlierVAE',
  'OutlierVAEGMM',
- 'OutlierProphet',
+ 'OutlierProphet',  # requires prophet: pip install alibi-detect[prophet]
  'OutlierSeq2Seq',
  'SpectralResidual',
  'LLR']
