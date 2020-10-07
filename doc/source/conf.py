@@ -87,7 +87,9 @@ autodoc_mock_imports = [
     "matplotlib",
     "creme",
     "cloudpickle",
-    "fbprophet"
+    "fbprophet",
+    "dask",
+    "transformers"
 ]
 
 # Napoleon settings

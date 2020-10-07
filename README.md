@@ -228,8 +228,7 @@ The integrations folder contains various wrapper tools to allow the alibi-detect
 
 ```bash
 creme
-fbprophet
-holidays
+dask[array]
 matplotlib
 numpy
 pandas
@@ -241,6 +240,12 @@ scikit-learn
 tensorflow>=2.0.0
 tensorflow_probability>=0.8
 transformers>=2.10.0
+```
+
+Extra dependencies for `OutlierProphet` (install via `pip install alibi-detect[prophet]`):
+```bash
+fbprophet>=0.5,<0.7
+holidays==0.9.11
 ```
 
 ## Citations
