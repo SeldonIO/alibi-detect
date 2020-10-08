@@ -1,5 +1,12 @@
 # Change Log
 
+## [v0.4.3](https://github.com/SeldonIO/alibi-detect/tree/v0.4.3) (2020-10-08)
+[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.4.2...v0.4.3)
+### Added
+- Make Prophet an optional dependency
+- Extend what is returned by the drift detectors to raw scores
+- Add licenses from dependencies
+
 ## [v0.4.2](https://github.com/SeldonIO/alibi-detect/tree/v0.4.2) (2020-09-09)
 [Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.4.1...v0.4.2)
 ### Added
