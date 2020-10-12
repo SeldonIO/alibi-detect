@@ -3,7 +3,6 @@ import numpy as np
 import pytest
 from sklearn.datasets import load_iris
 import tensorflow as tf
-from tensorflow.keras.layers import Dense, InputLayer
 from tensorflow.keras.utils import to_categorical
 from alibi_detect.ad import ModelDistillation
 
@@ -44,13 +43,13 @@ def test_adv_md(adv_md_params):
     # define ancillary model
     layers = [tf.keras.layers.InputLayer(input_shape=(input_dim)),
               tf.keras.layers.Dense(y.shape[1], activation=tf.nn.softmax)]
-    ancillary_model = tf.keras.Sequential(layers)
+    distilled_model = tf.keras.Sequential(layers)
 
     # init ModelDistillation detector
     admd = ModelDistillation(
         threshold=threshold,
         model=model,
-        ancillary_model=ancillary_model,
+        distilled_model=distilled_model,
         loss_type=loss_type
     )
 

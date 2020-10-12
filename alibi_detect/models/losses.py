@@ -206,17 +206,20 @@ def loss_distillation(x_true: tf.Tensor,
                       model: tf.keras.Model = None,
                       loss_type: str = 'kld',
                       temperature: float = 1.,
-                      scale_preds: bool = False,
                       ) -> tf.Tensor:
     """
     Loss function used for AdversarialAE.
 
     Parameters
     ----------
-    y_true
-        Batch of predictions from the original frozen model.
+    x_true
+        Batch of data points.
     y_pred
         Batch of prediction from the distilled model.
+    model
+        Keras model.
+    loss_type
+        Type of loss for distillation. Supported 'kld', 'xent.
     temperature
         Temperature used for model prediction scaling.
         Temperature <1 sharpens the prediction probability distribution.
@@ -230,9 +233,6 @@ def loss_distillation(x_true: tf.Tensor,
     if temperature != 1.:
         y_true = y_true ** (1 / temperature)
         y_true = y_true / tf.reshape(tf.reduce_sum(y_true, axis=-1), (-1, 1))
-        if scale_preds:
-            y_pred = y_pred ** (1 / temperature)
-            y_pred = y_pred / tf.reshape(tf.reduce_sum(y_pred, axis=-1), (-1, 1))
 
     if loss_type == 'kld':
         loss_dist = kld(y_true, y_pred)

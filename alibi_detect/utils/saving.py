@@ -38,7 +38,7 @@ Data = Union[
 ]
 
 DEFAULT_DETECTORS = [
-    'AdversarialMD',
+    'AdversarialAE',
     'ModelDistillation',
     'IForest',
     'KSDrift',
@@ -126,8 +126,8 @@ def save_detector(detector: Data,
         save_tf_model(detector.model, filepath)
         save_tf_hl(detector.model_hl, filepath)
     elif detector_name == 'ModelDistillation':
-        save_tf_md(detector, filepath)
-        save_tf_model(detector.model, filepath)
+        save_tf_model(detector.distilled_model, filepath, model_name='distilled_model')
+        save_tf_model(detector.model, filepath, model_name='model')
     elif detector_name == 'OutlierSeq2Seq':
         save_tf_s2s(detector, filepath)
     elif detector_name == 'LLR':
@@ -311,17 +311,18 @@ def state_adv_ae(ad: AdversarialAE) -> Dict:
     return state_dict
 
 
-def state_adv_md(ad: AdversarialAE) -> Dict:
+def state_adv_md(md: ModelDistillation) -> Dict:
     """
-    AdversarialMD (model distillation) parameters to save.
+    ModelDistillation parameters to save.
 
     Parameters
     ----------
-    ad
-        Adversarial detector object.
+    md
+        ModelDistillation detector object.
     """
-    state_dict = {'threshold': ad.threshold,
-                  'temperature': ad.temperature}
+    state_dict = {'threshold': md.threshold,
+                  'temperature': md.temperature,
+                  'loss_type': md.loss_type}
     return state_dict
 
 
@@ -423,33 +424,6 @@ def save_tf_ae(detector: Union[OutlierAE, AdversarialAE],
         detector.ae.save_weights(os.path.join(model_dir, 'ae.ckpt'))
     else:
         logger.warning('No `tf.keras.Model` ae detected. No ae saved.')
-
-
-def save_tf_md(detector: Union[ModelDistillation],
-               filepath: str) -> None:
-    """
-    Save TensorFlow components of ModelDistillation detector
-
-    Parameters
-    ----------
-    detector
-        Outlier or adversarial detector object.
-    filepath
-        Save directory.
-    """
-    # create folder for model weights
-    if not os.path.isdir(filepath):
-        logger.warning('Directory {} does not exist and is now created.'.format(filepath))
-        os.mkdir(filepath)
-    model_dir = os.path.join(filepath, 'model')
-    if not os.path.isdir(model_dir):
-        os.mkdir(model_dir)
-    # save encoder, decoder and vae weights
-    if (isinstance(detector.ancillary_model, tf.keras.Sequential) or
-            isinstance(detector.ancillary_model, tf.keras.Model)):
-        detector.ancillary_model.save(os.path.join(model_dir, 'distilled_model.h5'))
-    else:
-        logger.warning('No `tf.keras.Sequential` encoder detected. No encoder saved.')
 
 
 def save_tf_vae(detector: OutlierVAE,
@@ -739,7 +713,7 @@ def load_detector(filepath: str, **kwargs) -> Data:
         model_hl = load_tf_hl(filepath, model, state_dict)
         detector = init_ad_ae(state_dict, ae, model, model_hl)
     elif detector_name == 'ModelDistillation':
-        md = load_tf_md(filepath)
+        md = load_tf_model(filepath, model_name='distilled_model')
         custom_objects = kwargs['custom_objects'] if 'custom_objects' in k else None
         model = load_tf_model(filepath, custom_objects=custom_objects)
         detector = init_ad_md(state_dict, md, model)
@@ -846,27 +820,6 @@ def load_tf_ae(filepath: str) -> tf.keras.Model:
     ae = AE(encoder_net, decoder_net)
     ae.load_weights(os.path.join(model_dir, 'ae.ckpt'))
     return ae
-
-
-def load_tf_md(filepath: str) -> tf.keras.Model:
-    """
-    Load distilled model.
-
-    Parameters
-    ----------
-    filepath
-        Save directory.
-
-    Returns
-    -------
-    Loaded AE.
-    """
-    model_dir = os.path.join(filepath, 'model')
-    if not [f for f in os.listdir(model_dir) if not f.startswith('.')]:
-        logger.warning('No encoder, decoder or ae found in {}.'.format(model_dir))
-        return None
-    distilled_model = tf.keras.models.load_model(os.path.join(model_dir, 'distilled_model.h5'))
-    return distilled_model
 
 
 def load_tf_vae(filepath: str,
@@ -1081,10 +1034,10 @@ def init_ad_ae(state_dict: Dict,
 
 
 def init_ad_md(state_dict: Dict,
-               ancillary_model: tf.keras.Model,
+               distilled_model: tf.keras.Model,
                model: tf.keras.Model) -> ModelDistillation:
     """
-    Initialize adversarial model distillation detector.
+    Initialize ModelDistillation.
 
     Parameters
     ----------
@@ -1097,12 +1050,13 @@ def init_ad_md(state_dict: Dict,
 
     Returns
     -------
-    Initialized AdversarialMD instance.
+    Initialized ModelDistillation instance.
     """
     ad = ModelDistillation(threshold=state_dict['threshold'],
-                           ancillary_model=ancillary_model,
+                           distilled_model=distilled_model,
                            model=model,
-                           temperature=state_dict['temperature'])
+                           temperature=state_dict['temperature'],
+                           loss_type=state_dict['loss_type'])
     return ad
 
 

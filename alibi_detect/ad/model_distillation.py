@@ -1,13 +1,13 @@
 import logging
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras.losses import kld
-from typing import Callable, Dict, List, Tuple, Union
+from tensorflow.keras.losses import kld, categorical_crossentropy
+from typing import Callable, Dict, Tuple, Union
 from alibi_detect.models.trainer import trainer
 from alibi_detect.models.losses import loss_distillation
 from alibi_detect.utils.prediction import predict_batch
 from alibi_detect.base import (BaseDetector, FitMixin, ThresholdMixin,
-                               adversarial_prediction_dict, adversarial_correction_dict)
+                               adversarial_prediction_dict)
 
 logger = logging.getLogger(__name__)
 
@@ -16,29 +16,28 @@ class ModelDistillation(BaseDetector, FitMixin, ThresholdMixin):
 
     def __init__(self,
                  threshold: float = None,
-                 ancillary_model: tf.keras.Model = None,
+                 distilled_model: tf.keras.Model = None,
                  model: tf.keras.Model = None,
-                 loss_type: str = 'kld', # 'xent
+                 loss_type: str = 'kld',
                  temperature: float = 1.,
-                 scale_preds: bool = False,
                  data_type: str = None
                  ) -> None:
         """
-        Model distillation concept drift and anomaly detector.
+        Model distillation concept drift and adversarial detector.
 
         Parameters
         ----------
         threshold
-            Threshold used for score to determine outlier instances.
-        ancillary_model
+            Threshold used for score to determine adversarial instances.
+        distilled_model
             A tf.keras model to distill.
         model
             A trained tf.keras classification model.
+        loss_type
+            Loss for distillation. Supported: 'kld', 'xent'
         temperature
             Temperature used for model prediction scaling.
             Temperature <1 sharpens the prediction probability distribution.
-        scale_preds
-            If set to True temperature scaling is applied also to the distilled model's predictions.
         data_type
             Optionally specifiy the data type (tabular, image or time-series). Added to metadata.
         """
@@ -53,14 +52,12 @@ class ModelDistillation(BaseDetector, FitMixin, ThresholdMixin):
             layer.trainable = False
 
         # check if model can be loaded, otherwise initialize AE model
-        if isinstance(ancillary_model, tf.keras.Model):
-            self.ancillary_model = ancillary_model
+        if isinstance(distilled_model, tf.keras.Model):
+            self.distilled_model = distilled_model
         else:
-            raise TypeError('No valid format detected for `ae` (tf.keras.Model) '
-                            'or `encoder_net` and `decoder_net` (tf.keras.Sequential).')
+            raise TypeError('No valid format detected for `distilled_model` (tf.keras.Model) ')
         self.loss_type = loss_type
         self.temperature = temperature
-        self.scale_preds = scale_preds
 
         # set metadata
         self.meta['detector_type'] = 'offline'
@@ -78,7 +75,7 @@ class ModelDistillation(BaseDetector, FitMixin, ThresholdMixin):
             preprocess_fn: Callable = None
             ) -> None:
         """
-        Train Adversarial AE model.
+        Train ModelDistillation detector.
 
         Parameters
         ----------
@@ -86,7 +83,6 @@ class ModelDistillation(BaseDetector, FitMixin, ThresholdMixin):
             Training batch.
         loss_fn
             Loss function used for training.
-            Weight on MSE reconstruction error loss term.
         optimizer
             Optimizer used for training.
         epochs
@@ -103,7 +99,7 @@ class ModelDistillation(BaseDetector, FitMixin, ThresholdMixin):
             Preprocessing function applied to each training batch.
         """
         # train arguments
-        args = [self.ancillary_model, loss_fn, X]
+        args = [self.distilled_model, loss_fn, X]
         kwargs = {
             'optimizer': optimizer,
             'epochs': epochs,
@@ -115,8 +111,7 @@ class ModelDistillation(BaseDetector, FitMixin, ThresholdMixin):
             'loss_fn_kwargs': {
                 'model': self.model,
                 'loss_type': self.loss_type,
-                'temperature': self.temperature,
-                'scale_preds': self.scale_preds
+                'temperature': self.temperature
             }
         }
 
@@ -172,14 +167,19 @@ class ModelDistillation(BaseDetector, FitMixin, ThresholdMixin):
 
         # model predictions
         y = predict_batch(self.model, X, batch_size=batch_size, proba=True)
-        y_distilled = predict_batch(self.ancillary_model, X, batch_size=batch_size, proba=True)
+        y_distilled = predict_batch(self.distilled_model, X, batch_size=batch_size, proba=True)
 
         # scale predictions
         if self.temperature != 1.:
             y = y ** (1 / self.temperature)  # type: ignore
             y = y / tf.reshape(tf.reduce_sum(y, axis=-1), (-1, 1))
 
-        score = kld(y, y_distilled).numpy()
+        if self.loss_type == 'kld':
+            score = kld(y, y_distilled).numpy()
+        elif self.loss_type == 'xent':
+            score = categorical_crossentropy(y, y_distilled).numpy()
+        else:
+            raise NotImplementedError
 
         if return_predictions:
             return score, y, y_distilled
@@ -214,7 +214,7 @@ class ModelDistillation(BaseDetector, FitMixin, ThresholdMixin):
         # populate output dict
         ad = adversarial_prediction_dict()
         ad['meta'] = self.meta
-        ad['data']['is_outlier'] = pred
+        ad['data']['is_adversarial'] = pred
         if return_instance_score:
             ad['data']['instance_score'] = score
         return ad
