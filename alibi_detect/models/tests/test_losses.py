@@ -59,6 +59,5 @@ def test_loss_adv_md():
     y_true = distilled_model(x).numpy()
     loss_kld = loss_distillation(x, y_true, model, loss_type='kld')
     loss_xent = loss_distillation(x, y_true, model, loss_type='xent')
-    print(loss_kld, loss_xent)
     assert loss_kld > 0.
     assert loss_xent > 0.

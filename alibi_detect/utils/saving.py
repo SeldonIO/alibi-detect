@@ -1043,7 +1043,7 @@ def init_ad_md(state_dict: Dict,
     ----------
     state_dict
         Dictionary containing the parameter values.
-    ancillary_model
+    distilled_model
         Loaded distilled model.
     model
         Loaded classification model.

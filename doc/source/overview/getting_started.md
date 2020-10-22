@@ -77,7 +77,7 @@ For detailed information on the **outlier detectors**:
 Similar for **adversarial detection**:
 
 * [Adversarial AE Detector](../methods/adversarialae.ipynb)
-* [Adversarial AE Detector](../methods/modeldistillation.ipynb)
+* [Model Distillation Detector](../methods/modeldistillation.ipynb)
 
 And **data drift**:
     

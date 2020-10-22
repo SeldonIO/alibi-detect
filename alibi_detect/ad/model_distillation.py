@@ -51,7 +51,6 @@ class ModelDistillation(BaseDetector, FitMixin, ThresholdMixin):
         for layer in self.model.layers:  # freeze model layers
             layer.trainable = False
 
-        # check if model can be loaded, otherwise initialize AE model
         if isinstance(distilled_model, tf.keras.Model):
             self.distilled_model = distilled_model
         else:
@@ -172,7 +171,7 @@ class ModelDistillation(BaseDetector, FitMixin, ThresholdMixin):
         # scale predictions
         if self.temperature != 1.:
             y = y ** (1 / self.temperature)  # type: ignore
-            y = y / tf.reshape(tf.reduce_sum(y, axis=-1), (-1, 1))
+            y = (y / tf.reshape(tf.reduce_sum(y, axis=-1), (-1, 1))).numpy()
 
         if self.loss_type == 'kld':
             score = kld(y, y_distilled).numpy()

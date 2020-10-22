@@ -208,7 +208,7 @@ def loss_distillation(x_true: tf.Tensor,
                       temperature: float = 1.,
                       ) -> tf.Tensor:
     """
-    Loss function used for AdversarialAE.
+    Loss function used for Model Distillation.
 
     Parameters
     ----------
@@ -217,7 +217,7 @@ def loss_distillation(x_true: tf.Tensor,
     y_pred
         Batch of prediction from the distilled model.
     model
-        Keras model.
+        tf.keras model.
     loss_type
         Type of loss for distillation. Supported 'kld', 'xent.
     temperature
