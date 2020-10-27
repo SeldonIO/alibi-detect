@@ -251,7 +251,7 @@ class AdversarialAE(BaseDetector, FitMixin, ThresholdMixin):
         # scale predictions
         if self.temperature != 1.:
             y = y ** (1 / self.temperature)  # type: ignore
-            y = y / tf.reshape(tf.reduce_sum(y, axis=-1), (-1, 1))
+            y = (y / tf.reshape(tf.reduce_sum(y, axis=-1), (-1, 1))).numpy()
 
         adv_score = kld(y, y_recon).numpy()
 
