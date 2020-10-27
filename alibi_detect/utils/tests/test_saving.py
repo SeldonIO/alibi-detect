@@ -5,7 +5,7 @@ from tempfile import TemporaryDirectory
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, InputLayer
 from typing import Callable
-from alibi_detect.ad import AdversarialAE
+from alibi_detect.ad import AdversarialAE, ModelDistillation
 from alibi_detect.cd import KSDrift, MMDDrift
 from alibi_detect.cd.preprocess import UAE
 from alibi_detect.models.autoencoder import DecoderLSTM, EncoderLSTM
@@ -68,6 +68,9 @@ detector = [
     AdversarialAE(threshold=threshold,
                   model=model,
                   **kwargs),
+    ModelDistillation(threshold=threshold,
+                      model=model,
+                      distilled_model=model),
     IForest(threshold=threshold),
     LLR(threshold=threshold, model=model),
     Mahalanobis(threshold=threshold),
@@ -142,7 +145,7 @@ def test_save_load(select_detector):
         if type(det_load) in [OutlierVAE, OutlierVAEGMM]:
             assert det_load.samples == det.samples == samples
 
-        if type(det_load) == AdversarialAE:
+        if type(det_load) == AdversarialAE or type(det_load) == ModelDistillation:
             for layer in det_load.model.layers:
                 assert not layer.trainable
 
@@ -170,6 +173,10 @@ def test_save_load(select_detector):
             assert isinstance(det_load.ae.encoder.encoder_net, tf.keras.Sequential)
             assert isinstance(det_load.ae.decoder.decoder_net, tf.keras.Sequential)
             assert isinstance(det_load.ae, tf.keras.Model)
+        elif type(det_load) == ModelDistillation:
+            assert isinstance(det_load.model, tf.keras.Sequential) or isinstance(det_load.model, tf.keras.Model)
+            assert (isinstance(det_load.distilled_model, tf.keras.Sequential) or
+                    isinstance(det_load.distilled_model, tf.keras.Model))
         elif type(det_load) == OutlierVAE:
             assert isinstance(det_load.vae.encoder.encoder_net, tf.keras.Sequential)
             assert isinstance(det_load.vae.decoder.decoder_net, tf.keras.Sequential)

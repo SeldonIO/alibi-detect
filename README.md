@@ -85,9 +85,10 @@ The following tables show the advised use cases for each algorithm. The column *
 
 ### Adversarial Detection
 
-| Detector          | Tabular | Image | Time Series | Text  | Categorical Features | Online | Feature Level |
-| :---              |  :---:  | :---: |   :---:     | :---: |   :---:              | :---:  | :---:         |
-| Adversarial AE    | ✔       | ✔     |  ✘          |  ✘    |  ✘                   |  ✘     |  ✘            |
+| Detector           | Tabular | Image | Time Series | Text  | Categorical Features | Online | Feature Level |
+| :---               |  :---:  | :---: |   :---:     | :---: |   :---:              | :---:  | :---:         |
+| Adversarial AE     | ✔       | ✔     |  ✘          |  ✘    |  ✘                   |  ✘     |  ✘            |
+| Model distillation | ✔       | ✔     |  ✔          |  ✔    |  ✔                   |  ✘     |  ✘            |
 
 
 ### Drift Detection
@@ -137,6 +138,8 @@ The following tables show the advised use cases for each algorithm. The column *
 
 - [Adversarial Auto-Encoder](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/adversarialae.html) ([Vacanti and Van Looveren, 2020](https://arxiv.org/abs/2002.09364))
    - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/ad_ae_cifar10.html)
+- [Model distillation](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/modeldistillation.html) 
+   - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_distillation_cifar10.html)
      
 #### Drift Detection
 

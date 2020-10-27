@@ -7,7 +7,7 @@ import pickle
 import tensorflow as tf
 from tensorflow_probability.python.distributions.distribution import Distribution
 from typing import Callable, Dict, List, Tuple, Union
-from alibi_detect.ad import AdversarialAE
+from alibi_detect.ad import AdversarialAE, ModelDistillation
 from alibi_detect.ad.adversarialae import DenseHidden
 from alibi_detect.base import BaseDetector
 from alibi_detect.cd import KSDrift, MMDDrift
@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 Data = Union[
     BaseDetector,
     AdversarialAE,
+    ModelDistillation,
     IForest,
     KSDrift,
     LLR,
@@ -38,6 +39,7 @@ Data = Union[
 
 DEFAULT_DETECTORS = [
     'AdversarialAE',
+    'ModelDistillation',
     'IForest',
     'KSDrift',
     'LLR',
@@ -96,6 +98,8 @@ def save_detector(detector: Data,
         state_dict = state_vaegmm(detector)
     elif detector_name == 'AdversarialAE':
         state_dict = state_adv_ae(detector)
+    elif detector_name == 'ModelDistillation':
+        state_dict = state_adv_md(detector)
     elif detector_name == 'OutlierProphet':
         state_dict = state_prophet(detector)
     elif detector_name == 'SpectralResidual':
@@ -121,6 +125,9 @@ def save_detector(detector: Data,
         save_tf_ae(detector, filepath)
         save_tf_model(detector.model, filepath)
         save_tf_hl(detector.model_hl, filepath)
+    elif detector_name == 'ModelDistillation':
+        save_tf_model(detector.distilled_model, filepath, model_name='distilled_model')
+        save_tf_model(detector.model, filepath, model_name='model')
     elif detector_name == 'OutlierSeq2Seq':
         save_tf_s2s(detector, filepath)
     elif detector_name == 'LLR':
@@ -301,6 +308,21 @@ def state_adv_ae(ad: AdversarialAE) -> Dict:
                   'w_model_hl': ad.w_model_hl,
                   'temperature': ad.temperature,
                   'hidden_layer_kld': ad.hidden_layer_kld}
+    return state_dict
+
+
+def state_adv_md(md: ModelDistillation) -> Dict:
+    """
+    ModelDistillation parameters to save.
+
+    Parameters
+    ----------
+    md
+        ModelDistillation detector object.
+    """
+    state_dict = {'threshold': md.threshold,
+                  'temperature': md.temperature,
+                  'loss_type': md.loss_type}
     return state_dict
 
 
@@ -690,6 +712,11 @@ def load_detector(filepath: str, **kwargs) -> Data:
         model = load_tf_model(filepath, custom_objects=custom_objects)
         model_hl = load_tf_hl(filepath, model, state_dict)
         detector = init_ad_ae(state_dict, ae, model, model_hl)
+    elif detector_name == 'ModelDistillation':
+        md = load_tf_model(filepath, model_name='distilled_model')
+        custom_objects = kwargs['custom_objects'] if 'custom_objects' in k else None
+        model = load_tf_model(filepath, custom_objects=custom_objects)
+        detector = init_ad_md(state_dict, md, model)
     elif detector_name == 'OutlierProphet':
         detector = init_od_prophet(state_dict)
     elif detector_name == 'SpectralResidual':
@@ -1003,6 +1030,33 @@ def init_ad_ae(state_dict: Dict,
                        model_hl=model_hl,
                        w_model_hl=state_dict['w_model_hl'],
                        temperature=state_dict['temperature'])
+    return ad
+
+
+def init_ad_md(state_dict: Dict,
+               distilled_model: tf.keras.Model,
+               model: tf.keras.Model) -> ModelDistillation:
+    """
+    Initialize ModelDistillation.
+
+    Parameters
+    ----------
+    state_dict
+        Dictionary containing the parameter values.
+    distilled_model
+        Loaded distilled model.
+    model
+        Loaded classification model.
+
+    Returns
+    -------
+    Initialized ModelDistillation instance.
+    """
+    ad = ModelDistillation(threshold=state_dict['threshold'],
+                           distilled_model=distilled_model,
+                           model=model,
+                           temperature=state_dict['temperature'],
+                           loss_type=state_dict['loss_type'])
     return ad
 
 

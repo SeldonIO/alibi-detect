@@ -1,6 +1,6 @@
 import numpy as np
 import tensorflow as tf
-from alibi_detect.models.losses import elbo, loss_adv_ae, loss_aegmm, loss_vaegmm
+from alibi_detect.models.losses import elbo, loss_adv_ae, loss_aegmm, loss_vaegmm, loss_distillation
 
 N, K, D, F = 10, 5, 1, 3
 x = np.random.rand(N, F).astype(np.float32)
@@ -48,3 +48,16 @@ def test_loss_adv_ae():
     loss_with_recon = loss_adv_ae(x, y, model, w_model=1., w_recon=1.)
     assert loss > 0.
     assert loss_with_recon > loss
+
+
+layers = [tf.keras.layers.InputLayer(input_shape=(x.shape[1],)),
+          tf.keras.layers.Dense(5, activation=tf.nn.softmax)]
+distilled_model = tf.keras.Sequential(layers)
+
+
+def test_loss_adv_md():
+    y_true = distilled_model(x).numpy()
+    loss_kld = loss_distillation(x, y_true, model, loss_type='kld')
+    loss_xent = loss_distillation(x, y_true, model, loss_type='xent')
+    assert loss_kld > 0.
+    assert loss_xent > 0.

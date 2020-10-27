@@ -1,6 +1,6 @@
 import tensorflow as tf
 from tensorflow.keras.layers import Flatten
-from tensorflow.keras.losses import kld
+from tensorflow.keras.losses import kld, categorical_crossentropy
 import tensorflow_probability as tfp
 from alibi_detect.models.gmm import gmm_params, gmm_energy
 
@@ -199,3 +199,49 @@ def loss_adv_ae(x_true: tf.Tensor,
         return loss
     else:
         return loss
+
+
+def loss_distillation(x_true: tf.Tensor,
+                      y_pred: tf.Tensor,
+                      model: tf.keras.Model = None,
+                      loss_type: str = 'kld',
+                      temperature: float = 1.,
+                      ) -> tf.Tensor:
+    """
+    Loss function used for Model Distillation.
+
+    Parameters
+    ----------
+    x_true
+        Batch of data points.
+    y_pred
+        Batch of prediction from the distilled model.
+    model
+        tf.keras model.
+    loss_type
+        Type of loss for distillation. Supported 'kld', 'xent.
+    temperature
+        Temperature used for model prediction scaling.
+        Temperature <1 sharpens the prediction probability distribution.
+
+    Returns
+    -------
+    Loss value.
+    """
+    y_true = model(x_true)
+    # apply temperature scaling
+    if temperature != 1.:
+        y_true = y_true ** (1 / temperature)
+        y_true = y_true / tf.reshape(tf.reduce_sum(y_true, axis=-1), (-1, 1))
+
+    if loss_type == 'kld':
+        loss_dist = kld(y_true, y_pred)
+    elif loss_type == 'xent':
+        loss_dist = categorical_crossentropy(y_true, y_pred, from_logits=False)
+    else:
+        raise NotImplementedError
+
+    # compute K-L divergence loss
+    loss = tf.reduce_mean(loss_dist)
+
+    return loss
