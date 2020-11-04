@@ -31,7 +31,7 @@
 "imageio","BSD License"
 "importlib-metadata","Apache Software License"
 "joblib","BSD License"
-"kiwisolver","BSD"
+"kiwisolver","BSD License"
 "matplotlib","Python Software Foundation License"
 "mmh3","CC0 1.0 Universal (CC0 1.0) Public Domain Dedication"
 "networkx","BSD License"
@@ -47,7 +47,7 @@
 "pyparsing","MIT License"
 "python-dateutil","BSD License
 "pytz","MIT License"
-"regex","Python Software Foundation License"
+"regex","Apache Software License"
 "requests","Apache Software License"
 "requests-oauthlib","BSD License"
 "rsa","Apache Software License"
