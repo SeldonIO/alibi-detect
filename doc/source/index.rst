@@ -45,7 +45,8 @@
 .. toctree::
    :maxdepth: 1
    :caption: Examples
-
+    
+   examples/alibi_detect_deploy
    examples/od_mahalanobis_kddcup
    examples/od_if_kddcup
    examples/od_vae_kddcup
