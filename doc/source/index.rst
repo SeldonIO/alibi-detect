@@ -45,7 +45,7 @@
 .. toctree::
    :maxdepth: 1
    :caption: Examples
-
+    
    examples/od_mahalanobis_kddcup
    examples/od_if_kddcup
    examples/od_vae_kddcup
