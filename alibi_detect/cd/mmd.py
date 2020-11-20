@@ -90,6 +90,7 @@ class MMDDrift(BaseDetector):
             n_permutations=n_permutations,
             metric=maximum_mean_discrepancy,
             return_distance=True,
+            return_permutation_distance=True,
             **kwargs
         )
 
@@ -121,7 +122,7 @@ class MMDDrift(BaseDetector):
         else:
             return self.X_ref, X
 
-    def score(self, X: Union[np.ndarray, list]) -> Tuple[float, float]:
+    def score(self, X: Union[np.ndarray, list]) -> Tuple[float, float, np.ndarray]:
         """
         Compute the p-value resulting from a permutation test using the maximum mean discrepancy
         as a distance measure between the reference data and the data to be tested.
@@ -145,8 +146,8 @@ class MMDDrift(BaseDetector):
         if self.infer_sigma:
             sigma = infer_sigma(X_ref, X)
             self.permutation_test.keywords['sigma'] = np.array([sigma])
-        p_val, dist = self.permutation_test(X_ref, X)
-        return p_val, dist
+        p_val, dist, dist_permutations = self.permutation_test(X_ref, X)
+        return p_val, dist, dist_permutations
 
     def predict(self, X: Union[np.ndarray, list], return_p_val: bool = True,
                 return_distance: bool = True) -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
@@ -169,8 +170,12 @@ class MMDDrift(BaseDetector):
         'data' contains the drift prediction and optionally the p-value, threshold and MMD metric.
         """
         # compute drift scores
-        p_val, dist = self.score(X)
+        p_val, dist, dist_permutations = self.score(X)
         drift_pred = int(p_val < self.p_val)
+
+        # compute distance threshold
+        idx_threshold = int(self.p_val * len(dist_permutations))
+        distance_threshold = np.sort(dist_permutations)[::-1][idx_threshold]
 
         # update reference dataset
         if (isinstance(self.update_X_ref, dict) and self.preprocess_fn is not None
@@ -189,4 +194,5 @@ class MMDDrift(BaseDetector):
             cd['data']['threshold'] = self.p_val
         if return_distance:
             cd['data']['distance'] = dist
+            cd['data']['distance_threshold'] = distance_threshold
         return cd

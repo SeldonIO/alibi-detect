@@ -9,7 +9,9 @@ def permutation_test(x: Union[np.ndarray, da.array],
                      n_permutations: int = 1000,
                      metric: Callable = maximum_mean_discrepancy,
                      return_distance: bool = False,
-                     **kwargs) -> Union[np.float, Tuple[np.float, np.float]]:
+                     return_permutation_distance: bool = False,
+                     **kwargs) \
+        -> Union[np.float, Tuple[np.float, np.float], Tuple[np.float, np.float, np.ndarray]]:
     """
     Apply a permutation test to samples x and y.
 
@@ -25,6 +27,8 @@ def permutation_test(x: Union[np.ndarray, da.array],
         Distance metric used for the test. Defaults to Maximum Mean Discrepancy.
     return_distance
         Whether to return the test statistic.
+    return_permutation_distance
+        Whether to return the test statistics for each permutation.
     kwargs
         Kwargs for the metric. For the default this includes for instance the kernel used.
 
@@ -40,17 +44,26 @@ def permutation_test(x: Union[np.ndarray, da.array],
         dist = dist.compute()
         xchunks, ychunks = x.chunksize, y.chunksize
         x_y = np.array(x_y)
+    dist_permutations = np.zeros(n_permutations)
     for _ in range(n_permutations):
         np.random.shuffle(x_y)
         x, y = x_y[:n], x_y[n:]
         if not is_np:
             x, y = da.from_array(x, chunks=xchunks), da.from_array(y, chunks=ychunks)
         dist_permutation = metric(x, y, **kwargs)
-        k += dist <= (dist_permutation if is_np else dist_permutation.compute())
+        if not is_np:
+            dist_permutation = dist_permutation.compute()
+        dist_permutations[_] = dist_permutation
+        k += dist <= dist_permutation
+    outputs = (k / n_permutations,)
     if return_distance:
-        return k / n_permutations, dist
+        outputs += (dist,)
+    if return_permutation_distance:
+        outputs += (dist_permutations,)
+    if len(outputs) == 1:
+        return outputs[0]
     else:
-        return k / n_permutations
+        return outputs
 
 
 def fdr(p_val: np.ndarray, q_val: float) -> Tuple[int, Union[float, np.ndarray]]:
