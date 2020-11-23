@@ -57,9 +57,9 @@ def permutation_test(x: Union[np.ndarray, da.array],
         k += dist <= dist_permutation
     outputs = (k / n_permutations,)
     if return_distance:
-        outputs += (dist,)
+        outputs += (dist,)  # type: ignore
     if return_permutation_distance:
-        outputs += (dist_permutations,)
+        outputs += (dist_permutations,)  # type: ignore
     if len(outputs) == 1:
         return outputs[0]
     else:

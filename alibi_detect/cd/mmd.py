@@ -146,7 +146,7 @@ class MMDDrift(BaseDetector):
         if self.infer_sigma:
             sigma = infer_sigma(X_ref, X)
             self.permutation_test.keywords['sigma'] = np.array([sigma])
-        p_val, dist, dist_permutations = self.permutation_test(X_ref, X)
+        p_val, dist, dist_permutations = self.permutation_test(X_ref, X)  # type: ignore
         return p_val, dist, dist_permutations
 
     def predict(self, X: Union[np.ndarray, list], return_p_val: bool = True,
