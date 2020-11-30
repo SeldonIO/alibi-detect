@@ -47,10 +47,6 @@ jobs:
       - name: Test with pytest
         run: |
           pytest
-      - name: Upload coverage to Codecov
-        if: ${{ success() }}
-        run: |
-          codecov
       - name: Build Python package
         run: |
           make build_pypi
