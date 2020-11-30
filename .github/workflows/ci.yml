@@ -28,9 +28,10 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get install pandoc
+          sudo apt-get install build-essential
           pip install --upgrade pip
-          pip install -r requirements/requirements_all.txt
-          python -m spacy download en_core_web_md
+          pip install -r requirements/requirements.txt
+          pip install -r requirements/requirements_ci.txt
           pip install -e .
           pip freeze
       - name: Lint with flake8
