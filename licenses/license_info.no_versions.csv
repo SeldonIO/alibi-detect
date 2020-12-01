@@ -55,7 +55,6 @@
 "scikit-image","BSD License"
 "scikit-learn","new BSD"
 "scipy","BSD License"
-"sentencepiece","Apache Software License"
 "six","MIT License"
 "tensorboard","Apache Software License"
 "tensorboard-plugin-wit","Apache 2.0"
