@@ -68,7 +68,7 @@ class MMDDrift(BaseDetector):
             logger.warning('No p-value set for the drift threshold. Need to set it to detect data drift.')
 
         if isinstance(preprocess_kwargs, dict):  # type: ignore
-            if not isinstance(preprocess_fn, Callable):
+            if not isinstance(preprocess_fn, Callable):  # type: ignore
                 preprocess_fn = preprocess_drift
             self.preprocess_fn = partial(
                 preprocess_fn,
