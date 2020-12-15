@@ -1344,7 +1344,7 @@ def init_cd_ksdrift(state_dict: Dict, model: Optional[Union[tf.keras.Model, tf.k
 
 
 def init_cd_mmddrift(state_dict: Dict, model: Optional[Union[tf.keras.Model, tf.keras.Sequential]],
-                    emb: Optional[TransformerEmbedding], tokenizer: Optional[Callable], **kwargs) \
+                     emb: Optional[TransformerEmbedding], tokenizer: Optional[Callable], **kwargs) \
         -> MMDDrift:
     """
     Initialize MMDDrift detector.
