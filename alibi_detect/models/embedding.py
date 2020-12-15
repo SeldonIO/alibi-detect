@@ -1,6 +1,6 @@
 from functools import partial
 import tensorflow as tf
-from transformers import TFAutoModel, BertConfig
+from transformers import TFAutoModel, AutoConfig
 from typing import Dict, List
 
 
@@ -35,7 +35,7 @@ def hidden_state_embedding(hidden_states: tf.Tensor, layers: List[int],
 
 class TransformerEmbedding(tf.keras.Model):
     def __init__(self,
-                 model_name: str,
+                 model_name_or_path: str,
                  embedding_type: str,
                  layers: List[int] = None
                  ) -> None:
@@ -44,8 +44,8 @@ class TransformerEmbedding(tf.keras.Model):
 
         Parameters
         ----------
-        model_name
-            Name of the model.
+        model_name_or_path
+            Name of or path to the model.
         embedding_type
             Type of embedding to extract. Needs to be one of pooler_output,
             last_hidden_state, hidden_state or hidden_state_cls.
@@ -71,8 +71,8 @@ class TransformerEmbedding(tf.keras.Model):
             to extract the embedding.
         """
         super(TransformerEmbedding, self).__init__()
-        config = BertConfig.from_pretrained(model_name, output_hidden_states=True)
-        self.model = TFAutoModel.from_pretrained(model_name, config=config)
+        self.config = AutoConfig.from_pretrained(model_name_or_path, output_hidden_states=True)
+        self.model = TFAutoModel.from_pretrained(model_name_or_path, config=self.config)
         self.emb_type = embedding_type
         self.hs_emb = partial(
             hidden_state_embedding,

@@ -2,7 +2,7 @@ from functools import partial
 import logging
 import numpy as np
 from scipy.stats import ks_2samp
-from typing import Callable, Dict, Tuple, Union
+from typing import Callable, Dict, Optional, Tuple, Union
 from alibi_detect.base import BaseDetector, concept_drift_dict
 from alibi_detect.cd.preprocess import preprocess_drift
 from alibi_detect.cd.utils import update_reference
@@ -17,14 +17,15 @@ class KSDrift(BaseDetector):
                  p_val: float = .05,
                  X_ref: Union[np.ndarray, list] = None,
                  preprocess_X_ref: bool = True,
-                 update_X_ref: Dict[str, int] = None,
-                 preprocess_fn: Callable = None,
-                 preprocess_kwargs: dict = dict(),
+                 update_X_ref: Optional[Dict[str, int]] = None,
+                 preprocess_fn: Optional[Callable] = None,
+                 preprocess_kwargs: Optional[dict] = None,
                  correction: str = 'bonferroni',
                  alternative: str = 'two-sided',
-                 n_features: int = None,
+                 n_features: Optional[int] = None,
                  n_infer: int = 2,
-                 data_type: str = None
+                 input_shape: Optional[tuple] = None,
+                 data_type: Optional[str] = None
                  ) -> None:
         """
         Kolmogorov-Smirnov (K-S) data drift detector with Bonferroni or False Discovery Rate (FDR)
@@ -58,6 +59,8 @@ class KSDrift(BaseDetector):
             expensive to compute.
         n_infer
             Number of instances used to infer number of features from.
+        input_shape
+            Shape of input data.
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
@@ -66,16 +69,16 @@ class KSDrift(BaseDetector):
         if p_val is None:
             logger.warning('No p-value set for the drift threshold. Need to set it to detect data drift.')
 
-        if isinstance(preprocess_kwargs, dict) and not isinstance(preprocess_fn, Callable):  # type: ignore
-            preprocess_fn = preprocess_drift
-
-        if isinstance(preprocess_fn, Callable):  # type: ignore
+        if isinstance(preprocess_kwargs, dict):  # type: ignore
+            if not isinstance(preprocess_fn, Callable):
+                preprocess_fn = preprocess_drift
             self.preprocess_fn = partial(
                 preprocess_fn,
                 **preprocess_kwargs
             )
+            keys = list(preprocess_kwargs.keys())
         else:
-            self.preprocess_fn = None
+            self.preprocess_fn, keys = None, []
 
         # optionally already preprocess reference data
         self.preprocess_X_ref = preprocess_X_ref
@@ -85,6 +88,13 @@ class KSDrift(BaseDetector):
         self.n = X_ref.shape[0]  # type: ignore
         self.p_val = p_val
         self.correction = correction
+
+        if isinstance(input_shape, tuple):
+            self.input_shape = input_shape
+        elif 'max_len' in keys:
+            self.input_shape = (preprocess_kwargs['max_len'],)
+        elif isinstance(X_ref, np.ndarray):
+            self.input_shape = X_ref.shape[1:]
 
         # compute number of features for the K-S test
         if isinstance(n_features, int):
