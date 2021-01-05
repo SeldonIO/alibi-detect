@@ -93,7 +93,7 @@ class KSChiDrift(KSDrift):
         continuous or 'dis' for discrete.
         """
         var_types = [
-            "dis" if (np.unique(self.X_ref[:, n]).shape[0] / self.n) < 0.05 else "con"
+            "dis" if (np.unique(self.X_ref[:, n]).shape[0] / self.n) < thresh else "con"
             for n in range(self.n_features)
         ]
 
