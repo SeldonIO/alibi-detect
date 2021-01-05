@@ -128,8 +128,8 @@ class KSChiDrift(KSDrift):
                 dist[f], p_val[f] = ks_2samp(
                     X_ref[:, f], X[:, f], alternative=self.alternative, mode="asymp"
                 )
-            else:  ### chi square ###
-                all_vals = np.unique(np.concatenate((a, b)))
+            else:  # chi square
+                all_vals = np.unique(np.concatenate((X, X_ref)))
                 X_ref_cat = [(X_ref[:, f] == lab).sum() for lab in all_vals]
                 X_cat = [(X[:, f] == lab).sum() for lab in all_vals]
 
