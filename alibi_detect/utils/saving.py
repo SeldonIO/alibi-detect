@@ -1,17 +1,21 @@
 # type: ignore
 # TODO: need to rewrite utilities using isinstance or @singledispatch for type checking to work properly
-
+from functools import partial
 import logging
 import os
 import pickle
 import tensorflow as tf
+from tensorflow.keras.layers import Input, InputLayer
 from tensorflow_probability.python.distributions.distribution import Distribution
-from typing import Callable, Dict, List, Tuple, Union
+from transformers import AutoTokenizer
+from typing import Callable, Dict, List, Optional, Tuple, Union
 from alibi_detect.ad import AdversarialAE, ModelDistillation
 from alibi_detect.ad.adversarialae import DenseHidden
 from alibi_detect.base import BaseDetector
 from alibi_detect.cd import KSDrift, MMDDrift
+from alibi_detect.cd.preprocess import HiddenOutput, UAE
 from alibi_detect.models.autoencoder import AE, AEGMM, DecoderLSTM, EncoderLSTM, Seq2Seq, VAE, VAEGMM
+from alibi_detect.models.embedding import TransformerEmbedding
 from alibi_detect.models.pixelcnn import PixelCNN
 from alibi_detect.od import (IForest, LLR, Mahalanobis, OutlierAE, OutlierAEGMM, OutlierProphet,
                              OutlierSeq2Seq, OutlierVAE, OutlierVAEGMM, SpectralResidual)
@@ -89,9 +93,9 @@ def save_detector(detector: Data,
     elif detector_name == 'IForest':
         state_dict = state_iforest(detector)
     elif detector_name == 'KSDrift':
-        state_dict = state_ksdrift(detector)
+        state_dict, model, embed, embed_args, tokenizer = state_ksdrift(detector)
     elif detector_name == 'MMDDrift':
-        state_dict = state_mmddrift(detector)
+        state_dict, model, embed, embed_args, tokenizer = state_mmddrift(detector)
     elif detector_name == 'OutlierAEGMM':
         state_dict = state_aegmm(detector)
     elif detector_name == 'OutlierVAEGMM':
@@ -117,6 +121,13 @@ def save_detector(detector: Data,
         save_tf_ae(detector, filepath)
     elif detector_name == 'OutlierVAE':
         save_tf_vae(detector, filepath)
+    elif detector_name in ['KSDrift', 'MMDDrift']:
+        if model is not None:
+            save_tf_model(model, filepath, model_name='encoder')
+        if embed is not None:
+            save_embedding(embed, embed_args, filepath)
+        if tokenizer is not None:
+            tokenizer.save_pretrained(os.path.join(filepath, 'model'))
     elif detector_name == 'OutlierAEGMM':
         save_tf_aegmm(detector, filepath)
     elif detector_name == 'OutlierVAEGMM':
@@ -134,7 +145,89 @@ def save_detector(detector: Data,
         save_tf_llr(detector, filepath)
 
 
-def state_ksdrift(cd: KSDrift) -> Dict:
+def save_embedding(embed: tf.keras.Model,
+                   embed_args: dict,
+                   filepath: str,
+                   save_dir: str = 'model',
+                   model_name: str = 'embedding') -> None:
+    """
+    Save embeddings for text drift models.
+
+    Parameters
+    ----------
+    embed
+        Embedding model.
+    embed_args
+        Arguments for TransformerEmbedding module.
+    filepath
+        Save directory.
+    save_dir
+        Save folder.
+    model_name
+        Name of saved model.
+    """
+    # create folder for model weights
+    if not os.path.isdir(filepath):
+        logger.warning('Directory {} does not exist and is now created.'.format(filepath))
+        os.mkdir(filepath)
+    model_dir = os.path.join(filepath, save_dir)
+    if not os.path.isdir(model_dir):
+        os.mkdir(model_dir)
+    embed.save_pretrained(model_dir)
+    with open(os.path.join(filepath, save_dir, model_name + '.pickle'), 'wb') as f:
+        pickle.dump(embed_args, f)
+
+
+def preprocess_step_drift(cd: Union[KSDrift, MMDDrift]) \
+        -> Tuple[
+            Optional[Callable], Dict, Optional[Union[tf.keras.Model, tf.keras.Sequential]],
+            Optional[TransformerEmbedding], Dict, Optional[Callable], bool
+        ]:
+    # note: need to be able to pickle tokenizers other than transformers
+    preprocess_fn, preprocess_kwargs = None, {}
+    model, embed, embed_args, tokenizer, load_emb = None, None, {}, None, False
+    if isinstance(cd.preprocess_fn, partial):
+        preprocess_fn = cd.preprocess_fn.func
+        for k, v in cd.preprocess_fn.keywords.items():
+            if isinstance(v, UAE):
+                if isinstance(v.encoder.layers[0], TransformerEmbedding):  # text drift
+                    # embedding
+                    embed = v.encoder.layers[0].model
+                    embed_args = dict(
+                        embedding_type=v.encoder.layers[0].emb_type,
+                        layers=v.encoder.layers[0].hs_emb.keywords['layers']
+                    )
+                    load_emb = True
+
+                    # preprocessing encoder
+                    inputs = Input(shape=cd.input_shape, dtype=tf.int64)
+                    v.encoder.call(inputs)
+                    shape_enc = (v.encoder.layers[0].output.shape[-1],)
+                    layers = [InputLayer(input_shape=shape_enc)] + v.encoder.layers[1:]
+                    model = tf.keras.Sequential(layers)
+                    _ = model(tf.zeros((1,) + shape_enc))
+                else:
+                    model = v.encoder
+                preprocess_kwargs['model'] = 'UAE'
+            elif isinstance(v, HiddenOutput):
+                model = v.model
+                preprocess_kwargs['model'] = 'HiddenOutput'
+            elif isinstance(v, (tf.keras.Sequential, tf.keras.Model)):
+                model = v
+                preprocess_kwargs['model'] = 'custom'
+            elif hasattr(v, '__module__'):
+                if 'transformers.tokenization' in v.__module__:  # transformers tokenizer
+                    tokenizer = v
+                    preprocess_kwargs[k] = v.__module__
+            else:
+                preprocess_kwargs[k] = v
+    return preprocess_fn, preprocess_kwargs, model, embed, embed_args, tokenizer, load_emb
+
+
+def state_ksdrift(cd: KSDrift) -> Tuple[
+            Dict, Optional[Union[tf.keras.Model, tf.keras.Sequential]],
+            Optional[TransformerEmbedding], Optional[Dict], Optional[Callable]
+        ]:
     """
     K-S drift detector parameters to save.
 
@@ -143,6 +236,8 @@ def state_ksdrift(cd: KSDrift) -> Dict:
     cd
         Drift detection object.
     """
+    preprocess_fn, preprocess_kwargs, model, embed, embed_args, tokenizer, load_emb = \
+        preprocess_step_drift(cd)
     state_dict = {
         'p_val': cd.p_val,
         'X_ref': cd.X_ref,
@@ -152,11 +247,18 @@ def state_ksdrift(cd: KSDrift) -> Dict:
         'n': cd.n,
         'n_features': cd.n_features,
         'correction': cd.correction,
+        'preprocess_fn': preprocess_fn,
+        'preprocess_kwargs': preprocess_kwargs,
+        'input_shape': cd.input_shape,
+        'load_text_embedding': load_emb
     }
-    return state_dict
+    return state_dict, model, embed, embed_args, tokenizer
 
 
-def state_mmddrift(cd: MMDDrift) -> Dict:
+def state_mmddrift(cd: MMDDrift) -> Tuple[
+            Dict, Optional[Union[tf.keras.Model, tf.keras.Sequential]],
+            Optional[TransformerEmbedding], Optional[Dict], Optional[Callable]
+        ]:
     """
     MMD drift detector parameters to save.
 
@@ -165,6 +267,8 @@ def state_mmddrift(cd: MMDDrift) -> Dict:
     cd
         Drift detection object.
     """
+    preprocess_fn, preprocess_kwargs, model, embed, embed_args, tokenizer, load_emb = \
+        preprocess_step_drift(cd)
     state_dict = {
         'p_val': cd.p_val,
         'X_ref': cd.X_ref,
@@ -174,8 +278,12 @@ def state_mmddrift(cd: MMDDrift) -> Dict:
         'chunk_size': cd.chunk_size,
         'permutation_test': cd.permutation_test,
         'infer_sigma': cd.infer_sigma,
+        'preprocess_fn': preprocess_fn,
+        'preprocess_kwargs': preprocess_kwargs,
+        'input_shape': cd.input_shape,
+        'load_text_embedding': load_emb
     }
-    return state_dict
+    return state_dict, model, embed, embed_args, tokenizer
 
 
 def state_iforest(od: IForest) -> Dict:
@@ -470,7 +578,7 @@ def save_tf_model(model: tf.keras.Model,
     Parameters
     ----------
     model
-        A tf.keras Model.
+        tf.keras.Model or tf.keras.Sequential.
     filepath
         Save directory.
     save_dir
@@ -724,10 +832,13 @@ def load_detector(filepath: str, **kwargs) -> Data:
     elif detector_name == 'OutlierSeq2Seq':
         seq2seq = load_tf_s2s(filepath, state_dict)
         detector = init_od_s2s(state_dict, seq2seq)
-    elif detector_name == 'KSDrift':
-        detector = init_cd_ksdrift(state_dict, **kwargs)
-    elif detector_name == 'MMDDrift':
-        detector = init_cd_mmddrift(state_dict, **kwargs)
+    elif detector_name in ['KSDrift', 'MMDDrift']:
+        emb, tokenizer = None, None
+        if state_dict['load_text_embedding']:
+            emb, tokenizer = load_text_embed(filepath)
+        model = load_tf_model(filepath, model_name='encoder')
+        load_fn = init_cd_ksdrift if detector_name == 'KSDrift' else init_cd_mmddrift
+        detector = load_fn(state_dict, model, emb, tokenizer, **kwargs)
     elif detector_name == 'LLR':
         models = load_tf_llr(filepath, **kwargs)
         detector = init_od_llr(state_dict, models)
@@ -1148,18 +1259,52 @@ def init_od_s2s(state_dict: Dict,
     return od
 
 
-def init_preprocess(**kwargs) -> Tuple[Callable, dict]:
+def load_text_embed(filepath: str, load_dir: str = 'model') \
+        -> Tuple[TransformerEmbedding, Callable]:
+    model_dir = os.path.join(filepath, load_dir)
+    tokenizer = AutoTokenizer.from_pretrained(model_dir)
+    args = pickle.load(open(os.path.join(model_dir, 'embedding.pickle'), 'rb'))
+    emb = TransformerEmbedding(
+        model_dir, embedding_type=args['embedding_type'], layers=args['layers']
+    )
+    return emb, tokenizer
+
+
+def init_preprocess(state_dict: Dict, model: Optional[Union[tf.keras.Model, tf.keras.Sequential]],
+                    emb: Optional[TransformerEmbedding], tokenizer: Optional[Callable], **kwargs) \
+        -> Tuple[Optional[Callable], Optional[dict]]:
     """ Return preprocessing function and kwargs. """
-    if isinstance(kwargs, dict):
+    if kwargs:  # override defaults
         keys = list(kwargs.keys())
         preprocess_fn = kwargs['preprocess_fn'] if 'preprocess_fn' in keys else None
         preprocess_kwargs = kwargs['preprocess_kwargs'] if 'preprocess_kwargs' in keys else None
+        return preprocess_fn, preprocess_kwargs
+    elif model is not None and isinstance(state_dict['preprocess_fn'], Callable) \
+            and isinstance(state_dict['preprocess_kwargs'], dict):
+        preprocess_fn = state_dict['preprocess_fn']
+        preprocess_kwargs = state_dict['preprocess_kwargs']
     else:
-        preprocess_fn, preprocess_kwargs = None, None
+        return None, None
+
+    keys = list(preprocess_kwargs.keys())
+
+    if 'model' not in keys:
+        raise ValueError('No model found for the preprocessing step.')
+
+    if preprocess_kwargs['model'] == 'UAE':
+        if emb is not None:
+            model = tf.keras.Sequential([emb] + model.layers)
+            preprocess_kwargs['tokenizer'] = tokenizer
+        preprocess_kwargs['model'] = UAE(encoder_net=model)
+    else:  # incl. preprocess_kwargs['model'] == 'HiddenOutput'
+        preprocess_kwargs['model'] = model
+
     return preprocess_fn, preprocess_kwargs
 
 
-def init_cd_ksdrift(state_dict: Dict, **kwargs) -> KSDrift:
+def init_cd_ksdrift(state_dict: Dict, model: Optional[Union[tf.keras.Model, tf.keras.Sequential]],
+                    emb: Optional[TransformerEmbedding], tokenizer: Optional[Callable], **kwargs) \
+        -> KSDrift:
     """
     Initialize KSDrift detector.
 
@@ -1167,6 +1312,12 @@ def init_cd_ksdrift(state_dict: Dict, **kwargs) -> KSDrift:
     ----------
     state_dict
         Dictionary containing the parameter values.
+    model
+        Optional preprocessing model.
+    emb
+        Optional text embedding model.
+    tokenizer
+        Optional tokenizer for text drift.
     kwargs
         Kwargs optionally containing preprocess_fn and preprocess_kwargs.
 
@@ -1174,7 +1325,7 @@ def init_cd_ksdrift(state_dict: Dict, **kwargs) -> KSDrift:
     -------
     Initialized KSDrift instance.
     """
-    preprocess_fn, preprocess_kwargs = init_preprocess(**kwargs)
+    preprocess_fn, preprocess_kwargs = init_preprocess(state_dict, model, emb, tokenizer, **kwargs)
     cd = KSDrift(
         p_val=state_dict['p_val'],
         X_ref=state_dict['X_ref'],
@@ -1184,14 +1335,17 @@ def init_cd_ksdrift(state_dict: Dict, **kwargs) -> KSDrift:
         preprocess_kwargs=preprocess_kwargs,
         correction=state_dict['correction'],
         alternative=state_dict['alternative'],
-        n_features=state_dict['n_features']
+        n_features=state_dict['n_features'],
+        input_shape=state_dict['input_shape']
     )
     cd.n = state_dict['n']
     cd.preprocess_X_ref = state_dict['preprocess_X_ref']
     return cd
 
 
-def init_cd_mmddrift(state_dict: Dict, **kwargs) -> MMDDrift:
+def init_cd_mmddrift(state_dict: Dict, model: Optional[Union[tf.keras.Model, tf.keras.Sequential]],
+                     emb: Optional[TransformerEmbedding], tokenizer: Optional[Callable], **kwargs) \
+        -> MMDDrift:
     """
     Initialize MMDDrift detector.
 
@@ -1199,6 +1353,12 @@ def init_cd_mmddrift(state_dict: Dict, **kwargs) -> MMDDrift:
     ----------
     state_dict
         Dictionary containing the parameter values.
+    model
+        Optional preprocessing model.
+    emb
+        Optional text embedding model.
+    tokenizer
+        Optional tokenizer for text drift.
     kwargs
         Kwargs optionally containing preprocess_fn and preprocess_kwargs.
 
@@ -1206,7 +1366,7 @@ def init_cd_mmddrift(state_dict: Dict, **kwargs) -> MMDDrift:
     -------
     Initialized MMDDrift instance.
     """
-    preprocess_fn, preprocess_kwargs = init_preprocess(**kwargs)
+    preprocess_fn, preprocess_kwargs = init_preprocess(state_dict, model, emb, tokenizer, **kwargs)
     cd = MMDDrift(
         p_val=state_dict['p_val'],
         X_ref=state_dict['X_ref'],
@@ -1214,7 +1374,8 @@ def init_cd_mmddrift(state_dict: Dict, **kwargs) -> MMDDrift:
         update_X_ref=state_dict['update_X_ref'],
         preprocess_fn=preprocess_fn,
         preprocess_kwargs=preprocess_kwargs,
-        chunk_size=state_dict['chunk_size']
+        chunk_size=state_dict['chunk_size'],
+        input_shape=state_dict['input_shape']
     )
     cd.n = state_dict['n']
     cd.preprocess_X_ref = state_dict['preprocess_X_ref']

@@ -6,7 +6,7 @@
 "PyYAML","5.3.1","MIT License"
 "Werkzeug","1.0.1","BSD License"
 "absl-py","0.11.0","Apache Software License"
-"alibi-detect","0.4.4.dev0","Apache 2.0"
+"alibi-detect","0.4.5.dev0","Apache 2.0"
 "astunparse","1.6.3","BSD License"
 "cachetools","4.2.0","MIT License"
 "certifi","2020.12.5","Mozilla Public License 2.0 (MPL 2.0)"

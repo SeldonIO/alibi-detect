@@ -55,13 +55,18 @@ class OutlierSeq2Seq(BaseDetector, FitMixin, ThresholdMixin):
 
         self.threshold = threshold
         self.shape = (-1, seq_len, n_features)
-        self.latent_dim = latent_dim
+        self.latent_dim = (latent_dim // 2) * 2
+        if self.latent_dim != latent_dim:
+            logger.warning('Odd values for `latent_dim` are not supported, because '
+                           'of Bidirectional(LSTM(latent_dim // 2,...) in the encoder. '
+                           f'{self.latent_dim} is used instead of {latent_dim}.)')
+
         self.output_activation = output_activation
 
         if threshold_net is None and seq2seq is None:  # default threshold network
             threshold_net = tf.keras.Sequential(
                 [
-                    InputLayer(input_shape=(seq_len, latent_dim)),
+                    InputLayer(input_shape=(seq_len, self.latent_dim)),
                     Dense(64, activation=tf.nn.relu),
                     Dense(64, activation=tf.nn.relu),
                 ])
@@ -70,8 +75,8 @@ class OutlierSeq2Seq(BaseDetector, FitMixin, ThresholdMixin):
         if isinstance(seq2seq, tf.keras.Model):
             self.seq2seq = seq2seq
         elif isinstance(latent_dim, int) and isinstance(threshold_net, tf.keras.Sequential):
-            encoder_net = EncoderLSTM(latent_dim)
-            decoder_net = DecoderLSTM(latent_dim, n_features, output_activation)
+            encoder_net = EncoderLSTM(self.latent_dim)
+            decoder_net = DecoderLSTM(self.latent_dim, n_features, output_activation)
             self.seq2seq = Seq2Seq(encoder_net, decoder_net, threshold_net, n_features, beta=beta)
         else:
             raise TypeError('No valid format detected for `seq2seq` (tf.keras.Model), '

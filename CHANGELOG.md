@@ -1,5 +1,12 @@
 # Change Log
 
+## [v0.4.4](https://github.com/SeldonIO/alibi-detect/tree/v0.4.4) (2020-12-23)
+[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.4.3...v0.4.4)
+### Added
+- Remove integrations directory
+- Extend return dict drift detector
+- Update saving functionality drift detectors
+
 ## [v0.4.3](https://github.com/SeldonIO/alibi-detect/tree/v0.4.3) (2020-10-08)
 [Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.4.2...v0.4.3)
 ### Added
