@@ -85,7 +85,6 @@ autodoc_mock_imports = [
     "tensorflow_probability",
     "scipy",
     "matplotlib",
-    "creme",
     "cloudpickle",
     "fbprophet",
     "dask",
