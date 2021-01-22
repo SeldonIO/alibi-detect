@@ -1,13 +1,13 @@
 import logging
 import numpy as np
-from scipy.stats import ks_2samp
+from scipy.stats import chisquare
 from typing import Callable, Dict, Optional, Tuple, Union
 from alibi_detect.cd.base import BaseUnivariateDrift
 
 logger = logging.getLogger(__name__)
 
 
-class KSDrift(BaseUnivariateDrift):
+class ChiSquareDrift(BaseUnivariateDrift):
 
     def __init__(self,
                  p_val: float = .05,
@@ -17,20 +17,19 @@ class KSDrift(BaseUnivariateDrift):
                  preprocess_fn: Optional[Callable] = None,
                  preprocess_kwargs: Optional[dict] = None,
                  correction: str = 'bonferroni',
-                 alternative: str = 'two-sided',
                  n_features: Optional[int] = None,
                  n_infer: int = 2,
                  input_shape: Optional[tuple] = None,
                  data_type: Optional[str] = None
                  ) -> None:
         """
-        Kolmogorov-Smirnov (K-S) data drift detector with Bonferroni or False Discovery Rate (FDR)
+        Chi-Squared data drift detector with Bonferroni or False Discovery Rate (FDR)
         correction for multivariate data.
 
         Parameters
         ----------
         p_val
-            p-value used for significance of the K-S test for each feature. If the FDR correction method
+            p-value used for significance of the Chi-Squared test for each feature. If the FDR correction method
             is used, this corresponds to the acceptable q-value.
         X_ref
             Data used as reference distribution.
@@ -50,7 +49,7 @@ class KSDrift(BaseUnivariateDrift):
         alternative
             Defines the alternative hypothesis. Options are 'two-sided', 'less' or 'greater'.
         n_features
-            Number of features used in the K-S test. No need to pass it if no preprocessing takes place.
+            Number of features used in the Chi-Squared test. No need to pass it if no preprocessing takes place.
             In case of a preprocessing step, this can also be inferred automatically but could be more
             expensive to compute.
         n_infer
@@ -73,12 +72,11 @@ class KSDrift(BaseUnivariateDrift):
             input_shape=input_shape,
             data_type=data_type
         )
-        self.alternative = alternative
 
     def feature_score(self, X_ref: np.ndarray, X: np.ndarray) \
             -> Tuple[np.ndarray, np.ndarray]:
         """
-        Compute K-S scores and statistics per feature.
+        Compute Chi-Squared test statistic and p-values per feature.
 
         Parameters
         ----------
@@ -89,13 +87,16 @@ class KSDrift(BaseUnivariateDrift):
 
         Returns
         -------
-        Feature level p-values and K-S statistics.
+        Feature level p-values and Chi-Squared statistics.
         """
         X = X.reshape(X.shape[0], -1)
         X_ref = X_ref.reshape(X_ref.shape[0], -1)
         p_val = np.zeros(self.n_features, dtype=np.float32)
         dist = np.zeros_like(p_val)
-        for f in range(self.n_features):
-            # TODO: update to 'exact' when bug fix is released in scipy 1.5
-            dist[f], p_val[f] = ks_2samp(X_ref[:, f], X[:, f], alternative=self.alternative, mode='asymp')
+        # TODO: check if chi-squared can be done over axis=1
+        for f in range(self.n_features):  # TODO: can be done all at once?
+            f_vals = np.unique(np.concatenate([X[:, f], X_ref[:, f]]))
+            x = [X[:, f] == val for val in f_vals]
+            x_ref = [X_ref[:, f] == val for val in f_vals]
+            dist[f], p_val[f] = chisquare(x, f_exp=x_ref, ddof=0, axis=0)  # TODO: ddof? axis?
         return p_val, dist
