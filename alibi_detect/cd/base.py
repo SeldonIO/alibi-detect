@@ -78,7 +78,8 @@ class BaseUnivariateDrift(BaseDetector):
 
         # optionally already preprocess reference data
         self.preprocess_X_ref = preprocess_X_ref
-        self.X_ref = self.preprocess_fn(X_ref) if preprocess_X_ref else X_ref
+        self.X_ref = (self.preprocess_fn(X_ref) if preprocess_X_ref and isinstance(self.preprocess_fn, Callable)
+                      else X_ref)
         self.update_X_ref = update_X_ref
         self.n = X_ref.shape[0]  # type: ignore
         self.p_val = p_val
