@@ -97,9 +97,9 @@ def save_detector(detector: Data,
     elif detector_name == 'IForest':
         state_dict = state_iforest(detector)
     elif detector_name == 'ChiSquareDrift':
-        state_dict, model, embed, embed_args, tokenizer = state_ksdrift(detector)
+        state_dict, model, embed, embed_args, tokenizer = state_chisquaredrift(detector)
     elif detector_name == 'TabularDrift':
-        pass
+        state_dict, model, embed, embed_args, tokenizer = state_tabulardrift(detector)
     elif detector_name == 'KSDrift':
         state_dict, model, embed, embed_args, tokenizer = state_ksdrift(detector)
     elif detector_name == 'MMDDrift':
@@ -238,6 +238,38 @@ def state_chisquaredrift(cd: ChiSquareDrift) -> Tuple[
         ]:
     """
     Chi-Squared drift detector parameters to save.
+
+    Parameters
+    ----------
+    cd
+        Drift detection object.
+    """
+    preprocess_fn, preprocess_kwargs, model, embed, embed_args, tokenizer, load_emb = \
+        preprocess_step_drift(cd)
+    state_dict = {
+        'p_val': cd.p_val,
+        'X_ref': cd.X_ref,
+        'preprocess_X_ref': cd.preprocess_X_ref,
+        'update_X_ref': cd.update_X_ref,
+        'n': cd.n,
+        'n_features': cd.n_features,
+        'correction': cd.correction,
+        'preprocess_fn': preprocess_fn,
+        'preprocess_kwargs': preprocess_kwargs,
+        'input_shape': cd.input_shape,
+        'load_text_embedding': load_emb,
+        'categories_per_feature': cd.categories_per_feature,
+        'X_ref_count': cd.X_ref_count
+    }
+    return state_dict, model, embed, embed_args, tokenizer
+
+
+def state_tabulardrift(cd: TabularDrift) -> Tuple[
+            Dict, Optional[Union[tf.keras.Model, tf.keras.Sequential]],
+            Optional[TransformerEmbedding], Optional[Dict], Optional[Callable]
+        ]:
+    """
+    Tabular drift detector parameters to save.
 
     Parameters
     ----------
@@ -920,6 +952,9 @@ def load_tf_model(filepath: str,
         model_dir = os.path.join(filepath, 'model')
     else:
         model_dir = os.path.join(filepath, load_dir)
+    if not os.path.isdir(model_dir):
+        logger.warning('Directory {} does not exist.'.format(model_dir))
+        return None
     if model_name + '.h5' not in [f for f in os.listdir(model_dir) if not f.startswith('.')]:
         logger.warning('No model found in {}.'.format(model_dir))
         return None
