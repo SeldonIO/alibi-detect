@@ -85,9 +85,8 @@ class ChiSquareDrift(BaseUnivariateDrift):
             # already infer categories and frequencies for reference data
             self.X_ref_count = {f: [(self.X_ref[:, f] == v).sum() for v in vals] for f, vals in
                                 self.categories_per_feature.items()}
-            self.ref_done = True
         else:
-            self.ref_done = False
+            self.X_ref_count = None
 
     def feature_score(self, X_ref: np.ndarray, X: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -104,7 +103,7 @@ class ChiSquareDrift(BaseUnivariateDrift):
         -------
         Feature level p-values and Chi-Squared statistics.
         """
-        if not self.ref_done:  # compute categorical frequency counts for each feature
+        if not self.X_ref_count:  # compute categorical frequency counts for each feature
             X_ref = X_ref.reshape(X_ref.shape[0], -1)
             X_ref_count = {f: [(X_ref[:, f] == v).sum() for v in vals] for f, vals in
                            self.categories_per_feature.items()}

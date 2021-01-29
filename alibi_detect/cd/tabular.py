@@ -90,9 +90,8 @@ class TabularDrift(BaseUnivariateDrift):
                 # already infer categories and frequencies for reference data
                 self.X_ref_count = {f: [(self.X_ref[:, f] == v).sum() for v in vals] for f, vals in
                                     self.categories_per_feature.items()}
-                self.ref_done = True
             else:
-                self.ref_done = False
+                self.X_ref_count = None
         else:  # no categorical features assumed present
             self.categories_per_feature = {}
 
@@ -116,7 +115,7 @@ class TabularDrift(BaseUnivariateDrift):
         if self.categories_per_feature:
             X_count = {f: [(X[:, f] == v).sum() for v in vals] for f, vals in
                        self.categories_per_feature.items()}
-            if not self.ref_done:  # compute categorical frequency counts for each feature
+            if not self.X_ref_count:  # compute categorical frequency counts for each feature
                 X_ref_count = {f: [(X_ref[:, f] == v).sum() for v in vals] for f, vals in
                                self.categories_per_feature.items()}
             else:
