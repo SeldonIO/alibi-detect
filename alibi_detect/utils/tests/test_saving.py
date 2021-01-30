@@ -6,7 +6,7 @@ import tensorflow as tf
 from tensorflow.keras.layers import Dense, InputLayer
 from typing import Callable
 from alibi_detect.ad import AdversarialAE, ModelDistillation
-from alibi_detect.cd import KSDrift, MMDDrift
+from alibi_detect.cd import ChiSquareDrift, KSDrift, MMDDrift, TabularDrift
 from alibi_detect.cd.preprocess import UAE
 from alibi_detect.models.autoencoder import DecoderLSTM, EncoderLSTM
 from alibi_detect.od import (IForest, LLR, Mahalanobis, OutlierAEGMM, OutlierVAE, OutlierVAEGMM,
@@ -109,7 +109,13 @@ detector = [
              preprocess_X_ref=False,
              preprocess_kwargs=preprocess_kwargs,
              n_permutations=10,
-             chunk_size=10)
+             chunk_size=10),
+    ChiSquareDrift(p_val=p_val,
+                   X_ref=X_ref,
+                   preprocess_X_ref=False),
+    TabularDrift(p_val=p_val,
+                 X_ref=X_ref,
+                 preprocess_X_ref=False)
 ]
 n_tests = len(detector)
 
