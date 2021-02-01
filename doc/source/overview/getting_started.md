@@ -46,8 +46,10 @@ alibi_detect.cd.__all__
 ```
 
 ```
-['KSDrift',
- 'MMDDrift']
+['ChiSquareDrift',
+ 'KSDrift',
+ 'MMDDrift',
+ 'TabularDrift']
 ```
 
 Summary tables highlighting the practical use cases for all the algorithms can be found [here](../overview/algorithms.md).
@@ -77,6 +79,7 @@ For detailed information on the **outlier detectors**:
 Similar for **adversarial detection**:
 
 * [Adversarial AE Detector](../methods/adversarialae.ipynb)
+  
 * [Model Distillation Detector](../methods/modeldistillation.ipynb)
 
 And **data drift**:
@@ -84,6 +87,10 @@ And **data drift**:
 * [Kolmogorov-Smirnov Drift Detector](../methods/ksdrift.ipynb)
 
 * [Maximum Mean Discrepancy Drift Detector](../methods/mmddrift.ipynb)
+
+* [Chi-Squared Drift Detector](../methods/chisquaredrift.ipynb)
+
+* [Mixed-type Tabular Data Drift Detector](../methods/tabulardrift.ipynb)
 
 
 ## Basic Usage
