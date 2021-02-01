@@ -1,3 +1,4 @@
+from abc import abstractmethod
 from functools import partial
 import logging
 import numpy as np
@@ -78,8 +79,10 @@ class BaseUnivariateDrift(BaseDetector):
 
         # optionally already preprocess reference data
         self.preprocess_X_ref = preprocess_X_ref
-        self.X_ref = (self.preprocess_fn(X_ref) if preprocess_X_ref and isinstance(self.preprocess_fn, Callable)
-                      else X_ref)
+        if preprocess_X_ref and isinstance(self.preprocess_fn, Callable):  # type: ignore
+            self.X_ref = self.preprocess_fn(X_ref)
+        else:
+            self.X_ref = X_ref
         self.update_X_ref = update_X_ref
         self.n = X_ref.shape[0]  # type: ignore
         self.p_val = p_val
@@ -129,6 +132,10 @@ class BaseUnivariateDrift(BaseDetector):
             return X_ref, X
         else:
             return self.X_ref, X
+
+    @abstractmethod
+    def feature_score(self, X_ref: np.ndarray, X: np.ndarray):
+        pass
 
     def score(self, X: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
