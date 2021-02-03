@@ -33,7 +33,8 @@ class ChiSquareDrift(BaseUnivariateDrift):
             p-value used for significance of the Chi-Squared test for each feature. If the FDR correction method
             is used, this corresponds to the acceptable q-value.
         X_ref
-            Data used as reference distribution.
+            Data used as reference distribution. Can be a list for text data which is then turned into an array
+            after the preprocessing step.
         categories_per_feature
             Dict with as keys the feature column index and as values the number of possible categorical
             values for that feature. Eg: {0: 5, 1: 9, 2: 7}.

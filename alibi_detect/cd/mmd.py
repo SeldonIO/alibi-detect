@@ -37,7 +37,8 @@ class MMDDrift(BaseDetector):
         p_val
             p-value used for the significance of the permutation test.
         X_ref
-            Data used as reference distribution.
+            Data used as reference distribution. Can be a list for text data which is then turned into an array
+            after the preprocessing step.
         preprocess_X_ref
             Whether to already preprocess and store the reference data.
         update_X_ref

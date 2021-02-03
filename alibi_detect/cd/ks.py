@@ -33,7 +33,8 @@ class KSDrift(BaseUnivariateDrift):
             p-value used for significance of the K-S test for each feature. If the FDR correction method
             is used, this corresponds to the acceptable q-value.
         X_ref
-            Data used as reference distribution.
+            Data used as reference distribution. Can be a list for text data which is then turned into an array
+            after the preprocessing step.
         preprocess_X_ref
             Whether to already preprocess and store the reference data.
         update_X_ref
