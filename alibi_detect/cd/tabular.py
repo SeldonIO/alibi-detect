@@ -1,7 +1,7 @@
 import logging
 import numpy as np
 from scipy.stats import chisquare, ks_2samp
-from typing import Callable, Dict, Optional, Tuple, Union
+from typing import Callable, Dict, Optional, Tuple
 from alibi_detect.cd.base import BaseUnivariateDrift
 
 logger = logging.getLogger(__name__)
@@ -11,7 +11,7 @@ class TabularDrift(BaseUnivariateDrift):
 
     def __init__(self,
                  p_val: float = .05,
-                 X_ref: np.ndarray = None,
+                 X_ref: Optional[np.ndarray] = None,
                  categories_per_feature: Dict[int, Optional[int]] = None,
                  preprocess_X_ref: bool = True,
                  update_X_ref: Optional[Dict[str, int]] = None,
