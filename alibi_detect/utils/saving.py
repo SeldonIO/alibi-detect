@@ -283,6 +283,7 @@ def state_tabulardrift(cd: TabularDrift) -> Tuple[
         'X_ref': cd.X_ref,
         'preprocess_X_ref': cd.preprocess_X_ref,
         'update_X_ref': cd.update_X_ref,
+        'alternative': cd.alternative,
         'n': cd.n,
         'n_features': cd.n_features,
         'correction': cd.correction,
@@ -1460,6 +1461,7 @@ def init_cd_tabulardrift(state_dict: Dict, model: Optional[Union[tf.keras.Model,
         preprocess_fn=preprocess_fn,
         preprocess_kwargs=preprocess_kwargs,
         correction=state_dict['correction'],
+        alternative=state_dict['alternative'],
         n_features=state_dict['n_features'],
         input_shape=state_dict['input_shape']
     )

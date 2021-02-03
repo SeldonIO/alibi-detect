@@ -11,13 +11,14 @@ class TabularDrift(BaseUnivariateDrift):
 
     def __init__(self,
                  p_val: float = .05,
-                 X_ref: Union[np.ndarray, list] = None,
+                 X_ref: Union[np.ndarray] = None,
                  categories_per_feature: Dict[int, Optional[int]] = None,
                  preprocess_X_ref: bool = True,
                  update_X_ref: Optional[Dict[str, int]] = None,
                  preprocess_fn: Optional[Callable] = None,
                  preprocess_kwargs: Optional[dict] = None,
                  correction: str = 'bonferroni',
+                 alternative: str = 'two-sided',
                  n_features: Optional[int] = None,
                  n_infer: int = 2,
                  input_shape: Optional[tuple] = None,
@@ -35,13 +36,13 @@ class TabularDrift(BaseUnivariateDrift):
             If the FDR correction method is used, this corresponds to the acceptable q-value.
         X_ref
             Data used as reference distribution.
-        preprocess_X_ref
-            Whether to already preprocess and infer categories and frequencies for categorical reference data.
         categories_per_feature
             Dict with as keys the column indices of the categorical features and as optional values
             the number of possible categories for that feature. If left to None, all features are assumed
             to be continuous numerical. The column indices are post a potential preprocessing step.
             Eg: {0: 5, 1: 9, 2: 7} or {0: None, 1: None, 2: None}.
+        preprocess_X_ref
+            Whether to already preprocess and infer categories and frequencies for categorical reference data.
         update_X_ref
             Reference data can optionally be updated to the last n instances seen by the detector
             or via reservoir sampling with size n. For the former, the parameter equals {'last': n} while
@@ -53,6 +54,8 @@ class TabularDrift(BaseUnivariateDrift):
             Kwargs for `preprocess_fn`.
         correction
             Correction type for multivariate data. Either 'bonferroni' or 'fdr' (False Discovery Rate).
+        alternative
+            Defines the alternative hypothesis for the K-S tests. Options are 'two-sided', 'less' or 'greater'.
         n_features
             Number of features used in the combined K-S/Chi-Squared tests. No need to pass it if
             no preprocessing takes place. In case of a preprocessing step, this can also be inferred
@@ -77,6 +80,7 @@ class TabularDrift(BaseUnivariateDrift):
             input_shape=input_shape,
             data_type=data_type
         )
+        self.alternative = alternative
         if isinstance(categories_per_feature, dict):
             if None not in list(categories_per_feature.values()):
                 # convert from Dict[int, int] to Dict[int, List[int]]
@@ -126,5 +130,5 @@ class TabularDrift(BaseUnivariateDrift):
             if f in list(self.categories_per_feature.keys()):
                 dist[f], p_val[f] = chisquare(X_ref_count[f], f_exp=X_count[f])
             else:
-                dist[f], p_val[f] = ks_2samp(X_ref[:, f], X[:, f], alternative='two-sided', mode='asymp')
+                dist[f], p_val[f] = ks_2samp(X_ref[:, f], X[:, f], alternative=self.alternative, mode='asymp')
         return p_val, dist

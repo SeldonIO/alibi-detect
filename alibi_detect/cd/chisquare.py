@@ -34,11 +34,11 @@ class ChiSquareDrift(BaseUnivariateDrift):
             is used, this corresponds to the acceptable q-value.
         X_ref
             Data used as reference distribution.
-        preprocess_X_ref
-            Whether to already preprocess and infer categories and frequencies for reference data.
         categories_per_feature
             Dict with as keys the feature column index and as values the number of possible categorical
             values for that feature. Eg: {0: 5, 1: 9, 2: 7}.
+        preprocess_X_ref
+            Whether to already preprocess and infer categories and frequencies for reference data.
         update_X_ref
             Reference data can optionally be updated to the last n instances seen by the detector
             or via reservoir sampling with size n. For the former, the parameter equals {'last': n} while

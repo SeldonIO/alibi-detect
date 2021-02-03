@@ -27,7 +27,7 @@ class BaseUnivariateDrift(BaseDetector):
                  data_type: Optional[str] = None
                  ) -> None:
         """
-        Generic drift detector components which serves as a base class for methods using
+        Generic drift detector component which serves as a base class for methods using
         univariate tests with multivariate correction.
 
         Parameters
@@ -66,7 +66,7 @@ class BaseUnivariateDrift(BaseDetector):
         if p_val is None:
             logger.warning('No p-value set for the drift threshold. Need to set it to detect data drift.')
 
-        if isinstance(preprocess_kwargs, dict):  # type: ignore
+        if isinstance(preprocess_kwargs, dict):
             if not isinstance(preprocess_fn, Callable):  # type: ignore
                 preprocess_fn = preprocess_drift
             self.preprocess_fn = partial(
@@ -98,9 +98,8 @@ class BaseUnivariateDrift(BaseDetector):
         # compute number of features for the univariate tests
         if isinstance(n_features, int):
             self.n_features = n_features
-        elif not isinstance(preprocess_fn, Callable):
-            self.n_features = X_ref.reshape(X_ref.shape[0], -1).shape[-1]
-        elif preprocess_X_ref:  # infer features from preprocessed reference data
+        elif not isinstance(preprocess_fn, Callable) or preprocess_X_ref:
+            # infer features from preprocessed reference data
             self.n_features = self.X_ref.reshape(self.X_ref.shape[0], -1).shape[-1]
         else:  # infer number of features after applying preprocessing step
             X = self.preprocess_fn(X_ref[0:min(X_ref.shape[0], n_infer)])
@@ -134,7 +133,7 @@ class BaseUnivariateDrift(BaseDetector):
             return self.X_ref, X
 
     @abstractmethod
-    def feature_score(self, X_ref: np.ndarray, X: np.ndarray):
+    def feature_score(self, X_ref: np.ndarray, X: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         pass
 
     def score(self, X: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
@@ -177,7 +176,6 @@ class BaseUnivariateDrift(BaseDetector):
         -------
         Dictionary containing 'meta' and 'data' dictionaries.
         'meta' has the model's metadata.
-        'data' contains the drift predictions and both feature and batch level drift scores.
         'data' contains the drift prediction and optionally the feature level p-values,
          threshold after multivariate correction if needed and test statistics.
         """
