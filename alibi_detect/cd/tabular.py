@@ -11,7 +11,7 @@ class TabularDrift(BaseUnivariateDrift):
 
     def __init__(self,
                  p_val: float = .05,
-                 X_ref: Union[np.ndarray] = None,
+                 X_ref: np.ndarray = None,
                  categories_per_feature: Dict[int, Optional[int]] = None,
                  preprocess_X_ref: bool = True,
                  update_X_ref: Optional[Dict[str, int]] = None,
