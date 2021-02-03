@@ -12,7 +12,7 @@ from typing import Callable, Dict, List, Optional, Tuple, Union
 from alibi_detect.ad import AdversarialAE, ModelDistillation
 from alibi_detect.ad.adversarialae import DenseHidden
 from alibi_detect.base import BaseDetector
-from alibi_detect.cd import KSDrift, MMDDrift
+from alibi_detect.cd import ChiSquareDrift, KSDrift, MMDDrift, TabularDrift
 from alibi_detect.cd.preprocess import HiddenOutput, UAE
 from alibi_detect.models.autoencoder import AE, AEGMM, DecoderLSTM, EncoderLSTM, Seq2Seq, VAE, VAEGMM
 from alibi_detect.models.embedding import TransformerEmbedding
@@ -24,38 +24,42 @@ from alibi_detect.od.llr import build_model
 logger = logging.getLogger(__name__)
 
 Data = Union[
-    BaseDetector,
     AdversarialAE,
-    ModelDistillation,
+    BaseDetector,
+    ChiSquareDrift,
     IForest,
     KSDrift,
     LLR,
     Mahalanobis,
     MMDDrift,
+    ModelDistillation,
     OutlierAEGMM,
     OutlierAE,
     OutlierProphet,
     OutlierSeq2Seq,
     OutlierVAE,
     OutlierVAEGMM,
-    SpectralResidual
+    SpectralResidual,
+    TabularDrift
 ]
 
 DEFAULT_DETECTORS = [
     'AdversarialAE',
-    'ModelDistillation',
+    'ChiSquareDrift',
     'IForest',
     'KSDrift',
     'LLR',
     'Mahalanobis',
     'MMDDrift',
+    'ModelDistillation',
     'OutlierAE',
     'OutlierAEGMM',
     'OutlierProphet',
     'OutlierSeq2Seq',
     'OutlierVAE',
     'OutlierVAEGMM',
-    'SpectralResidual'
+    'SpectralResidual',
+    'TabularDrift'
 ]
 
 
@@ -92,6 +96,10 @@ def save_detector(detector: Data,
         state_dict = state_mahalanobis(detector)
     elif detector_name == 'IForest':
         state_dict = state_iforest(detector)
+    elif detector_name == 'ChiSquareDrift':
+        state_dict, model, embed, embed_args, tokenizer = state_chisquaredrift(detector)
+    elif detector_name == 'TabularDrift':
+        state_dict, model, embed, embed_args, tokenizer = state_tabulardrift(detector)
     elif detector_name == 'KSDrift':
         state_dict, model, embed, embed_args, tokenizer = state_ksdrift(detector)
     elif detector_name == 'MMDDrift':
@@ -121,7 +129,7 @@ def save_detector(detector: Data,
         save_tf_ae(detector, filepath)
     elif detector_name == 'OutlierVAE':
         save_tf_vae(detector, filepath)
-    elif detector_name in ['KSDrift', 'MMDDrift']:
+    elif detector_name in ['ChiSquareDrift', 'KSDrift', 'MMDDrift', 'TabularDrift']:
         if model is not None:
             save_tf_model(model, filepath, model_name='encoder')
         if embed is not None:
@@ -222,6 +230,71 @@ def preprocess_step_drift(cd: Union[KSDrift, MMDDrift]) \
             else:
                 preprocess_kwargs[k] = v
     return preprocess_fn, preprocess_kwargs, model, embed, embed_args, tokenizer, load_emb
+
+
+def state_chisquaredrift(cd: ChiSquareDrift) -> Tuple[
+            Dict, Optional[Union[tf.keras.Model, tf.keras.Sequential]],
+            Optional[TransformerEmbedding], Optional[Dict], Optional[Callable]
+        ]:
+    """
+    Chi-Squared drift detector parameters to save.
+
+    Parameters
+    ----------
+    cd
+        Drift detection object.
+    """
+    preprocess_fn, preprocess_kwargs, model, embed, embed_args, tokenizer, load_emb = \
+        preprocess_step_drift(cd)
+    state_dict = {
+        'p_val': cd.p_val,
+        'X_ref': cd.X_ref,
+        'preprocess_X_ref': cd.preprocess_X_ref,
+        'update_X_ref': cd.update_X_ref,
+        'n': cd.n,
+        'n_features': cd.n_features,
+        'correction': cd.correction,
+        'preprocess_fn': preprocess_fn,
+        'preprocess_kwargs': preprocess_kwargs,
+        'input_shape': cd.input_shape,
+        'load_text_embedding': load_emb,
+        'categories_per_feature': cd.categories_per_feature,
+        'X_ref_count': cd.X_ref_count
+    }
+    return state_dict, model, embed, embed_args, tokenizer
+
+
+def state_tabulardrift(cd: TabularDrift) -> Tuple[
+            Dict, Optional[Union[tf.keras.Model, tf.keras.Sequential]],
+            Optional[TransformerEmbedding], Optional[Dict], Optional[Callable]
+        ]:
+    """
+    Tabular drift detector parameters to save.
+
+    Parameters
+    ----------
+    cd
+        Drift detection object.
+    """
+    preprocess_fn, preprocess_kwargs, model, embed, embed_args, tokenizer, load_emb = \
+        preprocess_step_drift(cd)
+    state_dict = {
+        'p_val': cd.p_val,
+        'X_ref': cd.X_ref,
+        'preprocess_X_ref': cd.preprocess_X_ref,
+        'update_X_ref': cd.update_X_ref,
+        'alternative': cd.alternative,
+        'n': cd.n,
+        'n_features': cd.n_features,
+        'correction': cd.correction,
+        'preprocess_fn': preprocess_fn,
+        'preprocess_kwargs': preprocess_kwargs,
+        'input_shape': cd.input_shape,
+        'load_text_embedding': load_emb,
+        'categories_per_feature': cd.categories_per_feature,
+        'X_ref_count': cd.X_ref_count
+    }
+    return state_dict, model, embed, embed_args, tokenizer
 
 
 def state_ksdrift(cd: KSDrift) -> Tuple[
@@ -832,12 +905,19 @@ def load_detector(filepath: str, **kwargs) -> Data:
     elif detector_name == 'OutlierSeq2Seq':
         seq2seq = load_tf_s2s(filepath, state_dict)
         detector = init_od_s2s(state_dict, seq2seq)
-    elif detector_name in ['KSDrift', 'MMDDrift']:
+    elif detector_name in ['ChiSquareDrift', 'KSDrift', 'MMDDrift', 'TabularDrift']:
         emb, tokenizer = None, None
         if state_dict['load_text_embedding']:
             emb, tokenizer = load_text_embed(filepath)
         model = load_tf_model(filepath, model_name='encoder')
-        load_fn = init_cd_ksdrift if detector_name == 'KSDrift' else init_cd_mmddrift
+        if detector_name == 'KSDrift':
+            load_fn = init_cd_ksdrift
+        elif detector_name == 'MMDDrift':
+            load_fn = init_cd_mmddrift
+        elif detector_name == 'ChiSquareDrift':
+            load_fn = init_cd_chisquaredrift
+        elif detector_name == 'TabularDrift':
+            load_fn = init_cd_tabulardrift
         detector = load_fn(state_dict, model, emb, tokenizer, **kwargs)
     elif detector_name == 'LLR':
         models = load_tf_llr(filepath, **kwargs)
@@ -873,6 +953,9 @@ def load_tf_model(filepath: str,
         model_dir = os.path.join(filepath, 'model')
     else:
         model_dir = os.path.join(filepath, load_dir)
+    if not os.path.isdir(model_dir):
+        logger.warning('Directory {} does not exist.'.format(model_dir))
+        return None
     if model_name + '.h5' not in [f for f in os.listdir(model_dir) if not f.startswith('.')]:
         logger.warning('No model found in {}.'.format(model_dir))
         return None
@@ -1300,6 +1383,93 @@ def init_preprocess(state_dict: Dict, model: Optional[Union[tf.keras.Model, tf.k
         preprocess_kwargs['model'] = model
 
     return preprocess_fn, preprocess_kwargs
+
+
+def init_cd_chisquaredrift(state_dict: Dict, model: Optional[Union[tf.keras.Model, tf.keras.Sequential]],
+                           emb: Optional[TransformerEmbedding], tokenizer: Optional[Callable], **kwargs) \
+        -> ChiSquareDrift:
+    """
+    Initialize ChiSquareDrift detector.
+
+    Parameters
+    ----------
+    state_dict
+        Dictionary containing the parameter values.
+    model
+        Optional preprocessing model.
+    emb
+        Optional text embedding model.
+    tokenizer
+        Optional tokenizer for text drift.
+    kwargs
+        Kwargs optionally containing preprocess_fn and preprocess_kwargs.
+
+    Returns
+    -------
+    Initialized ChiSquareDrift instance.
+    """
+    preprocess_fn, preprocess_kwargs = init_preprocess(state_dict, model, emb, tokenizer, **kwargs)
+    cd = ChiSquareDrift(
+        p_val=state_dict['p_val'],
+        X_ref=state_dict['X_ref'],
+        categories_per_feature=None,
+        preprocess_X_ref=False,
+        update_X_ref=state_dict['update_X_ref'],
+        preprocess_fn=preprocess_fn,
+        preprocess_kwargs=preprocess_kwargs,
+        correction=state_dict['correction'],
+        n_features=state_dict['n_features'],
+        input_shape=state_dict['input_shape']
+    )
+    cd.n = state_dict['n']
+    cd.preprocess_X_ref = state_dict['preprocess_X_ref']
+    cd.categories_per_feature = state_dict['categories_per_feature']
+    cd.X_ref_count = state_dict['X_ref_count']
+    return cd
+
+
+def init_cd_tabulardrift(state_dict: Dict, model: Optional[Union[tf.keras.Model, tf.keras.Sequential]],
+                         emb: Optional[TransformerEmbedding], tokenizer: Optional[Callable], **kwargs) \
+        -> TabularDrift:
+    """
+    Initialize TabularDrift detector.
+
+    Parameters
+    ----------
+    state_dict
+        Dictionary containing the parameter values.
+    model
+        Optional preprocessing model.
+    emb
+        Optional text embedding model.
+    tokenizer
+        Optional tokenizer for text drift.
+    kwargs
+        Kwargs optionally containing preprocess_fn and preprocess_kwargs.
+
+    Returns
+    -------
+    Initialized TabularDrift instance.
+    """
+    preprocess_fn, preprocess_kwargs = init_preprocess(state_dict, model, emb, tokenizer, **kwargs)
+    cd = TabularDrift(
+        p_val=state_dict['p_val'],
+        X_ref=state_dict['X_ref'],
+        categories_per_feature=None,
+        preprocess_X_ref=False,
+        update_X_ref=state_dict['update_X_ref'],
+        preprocess_fn=preprocess_fn,
+        preprocess_kwargs=preprocess_kwargs,
+        correction=state_dict['correction'],
+        alternative=state_dict['alternative'],
+        n_features=state_dict['n_features'],
+        input_shape=state_dict['input_shape']
+    )
+    cd.n = state_dict['n']
+    cd.preprocess_X_ref = state_dict['preprocess_X_ref']
+    cd.categories_per_feature = state_dict['categories_per_feature']
+    cd.X_ref_count = state_dict['X_ref_count']
+    return cd
 
 
 def init_cd_ksdrift(state_dict: Dict, model: Optional[Union[tf.keras.Model, tf.keras.Sequential]],

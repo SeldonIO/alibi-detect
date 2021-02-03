@@ -1,4 +1,4 @@
-import dask.array as da
+from abc import abstractmethod
 from functools import partial
 import logging
 import numpy as np
@@ -6,14 +6,12 @@ from typing import Callable, Dict, Optional, Tuple, Union
 from alibi_detect.base import BaseDetector, concept_drift_dict
 from alibi_detect.cd.preprocess import preprocess_drift
 from alibi_detect.cd.utils import update_reference
-from alibi_detect.utils.distance import maximum_mean_discrepancy
-from alibi_detect.utils.kernels import gaussian_kernel, infer_sigma
-from alibi_detect.utils.statstest import permutation_test
+from alibi_detect.utils.statstest import fdr
 
 logger = logging.getLogger(__name__)
 
 
-class MMDDrift(BaseDetector):
+class BaseUnivariateDrift(BaseDetector):
 
     def __init__(self,
                  p_val: float = .05,
@@ -22,20 +20,21 @@ class MMDDrift(BaseDetector):
                  update_X_ref: Optional[Dict[str, int]] = None,
                  preprocess_fn: Optional[Callable] = None,
                  preprocess_kwargs: Optional[dict] = None,
-                 kernel: Callable = gaussian_kernel,
-                 kernel_kwargs: Optional[dict] = None,
-                 n_permutations: int = 1000,
-                 chunk_size: Optional[int] = None,
+                 correction: str = 'bonferroni',
+                 n_features: Optional[int] = None,
+                 n_infer: int = 2,
                  input_shape: Optional[tuple] = None,
                  data_type: Optional[str] = None
                  ) -> None:
         """
-        Maximum Mean Discrepancy (MMD) data drift detector using a permutation test.
+        Generic drift detector component which serves as a base class for methods using
+        univariate tests with multivariate correction.
 
         Parameters
         ----------
         p_val
-            p-value used for the significance of the permutation test.
+            p-value used for significance of the statistical test for each feature. If the FDR correction method
+            is used, this corresponds to the acceptable q-value.
         X_ref
             Data used as reference distribution. Can be a list for text data which is then turned into an array
             after the preprocessing step.
@@ -50,14 +49,14 @@ class MMDDrift(BaseDetector):
             Typically a dimensionality reduction technique.
         preprocess_kwargs
             Kwargs for `preprocess_fn`.
-        kernel
-            Kernel function used for the MMD.
-        kernel_kwargs
-            Kwargs for `kernel`
-        n_permutations
-            Number of permutations used in the permutation test.
-        chunk_size
-            Chunk size if dask is used to parallelise the computation.
+        correction
+            Correction type for multivariate data. Either 'bonferroni' or 'fdr' (False Discovery Rate).
+        n_features
+            Number of features used in the statistical test. No need to pass it if no preprocessing takes place.
+            In case of a preprocessing step, this can also be inferred automatically but could be more
+            expensive to compute.
+        n_infer
+            Number of instances used to infer number of features from.
         input_shape
             Shape of input data.
         data_type
@@ -68,7 +67,7 @@ class MMDDrift(BaseDetector):
         if p_val is None:
             logger.warning('No p-value set for the drift threshold. Need to set it to detect data drift.')
 
-        if isinstance(preprocess_kwargs, dict):  # type: ignore
+        if isinstance(preprocess_kwargs, dict):
             if not isinstance(preprocess_fn, Callable):  # type: ignore
                 preprocess_fn = preprocess_drift
             self.preprocess_fn = partial(
@@ -81,11 +80,14 @@ class MMDDrift(BaseDetector):
 
         # optionally already preprocess reference data
         self.preprocess_X_ref = preprocess_X_ref
-        self.X_ref = self.preprocess_fn(X_ref) if preprocess_X_ref else X_ref
+        if preprocess_X_ref and isinstance(self.preprocess_fn, Callable):  # type: ignore
+            self.X_ref = self.preprocess_fn(X_ref)
+        else:
+            self.X_ref = X_ref
         self.update_X_ref = update_X_ref
         self.n = X_ref.shape[0]  # type: ignore
         self.p_val = p_val
-        self.chunk_size = chunk_size
+        self.correction = correction
 
         if isinstance(input_shape, tuple):
             self.input_shape = input_shape
@@ -94,20 +96,18 @@ class MMDDrift(BaseDetector):
         elif isinstance(X_ref, np.ndarray):
             self.input_shape = X_ref.shape[1:]
 
-        kwargs = kernel_kwargs if isinstance(kernel_kwargs, dict) else {}
-        kwargs['kernel'] = kernel
-        self.permutation_test = partial(
-            permutation_test,
-            n_permutations=n_permutations,
-            metric=maximum_mean_discrepancy,
-            return_distance=True,
-            return_permutation_distance=True,
-            **kwargs
-        )
+        # compute number of features for the univariate tests
+        if isinstance(n_features, int):
+            self.n_features = n_features
+        elif not isinstance(preprocess_fn, Callable) or preprocess_X_ref:
+            # infer features from preprocessed reference data
+            self.n_features = self.X_ref.reshape(self.X_ref.shape[0], -1).shape[-1]
+        else:  # infer number of features after applying preprocessing step
+            X = self.preprocess_fn(X_ref[0:min(X_ref.shape[0], n_infer)])
+            self.n_features = X.reshape(X.shape[0], -1).shape[-1]
 
-        permutation_args = list(self.permutation_test.keywords.keys())
-        self.infer_sigma = (True if self.permutation_test.keywords['kernel'].__name__ == 'gaussian_kernel' and
-                            'sigma' not in permutation_args else False)
+        if correction not in ['bonferroni', 'fdr'] and self.n_features > 1:
+            raise ValueError('Only `bonferroni` and `fdr` are acceptable for multivariate correction.')
 
         # set metadata
         self.meta['detector_type'] = 'offline'  # offline refers to fitting the CDF for K-S
@@ -133,10 +133,14 @@ class MMDDrift(BaseDetector):
         else:
             return self.X_ref, X
 
-    def score(self, X: Union[np.ndarray, list]) -> Tuple[float, float, np.ndarray]:
+    @abstractmethod
+    def feature_score(self, X_ref: np.ndarray, X: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+        pass
+
+    def score(self, X: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
-        Compute the p-value resulting from a permutation test using the maximum mean discrepancy
-        as a distance measure between the reference data and the data to be tested.
+        Compute the feature-wise drift score which is the p-value of the
+        statistical test and the test statistic.
 
         Parameters
         ----------
@@ -145,23 +149,15 @@ class MMDDrift(BaseDetector):
 
         Returns
         -------
-        p-value obtained from the permutation test.
+        Feature level p-values and test statistics.
         """
         X_ref, X = self.preprocess(X)
+        score, dist = self.feature_score(X_ref, X)  # feature-wise univariate test
+        return score, dist
 
-        if isinstance(self.chunk_size, int):  # convert to dask arrays
-            chunks = (self.chunk_size, X.shape[-1])
-            X_ref = da.from_array(X_ref, chunks=chunks)
-            X = da.from_array(X, chunks=chunks)
-
-        if self.infer_sigma:
-            sigma = infer_sigma(X_ref, X)
-            self.permutation_test.keywords['sigma'] = np.array([sigma])
-        p_val, dist, dist_permutations = self.permutation_test(X_ref, X)  # type: ignore
-        return p_val, dist, dist_permutations
-
-    def predict(self, X: Union[np.ndarray, list], return_p_val: bool = True,
-                return_distance: bool = True) -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
+    def predict(self, X: Union[np.ndarray, list], drift_type: str = 'batch',
+                return_p_val: bool = True, return_distance: bool = True) \
+            -> Dict[Dict[str, str], Dict[str, Union[np.ndarray, int, float]]]:
         """
         Predict whether a batch of data has drifted from the reference data.
 
@@ -169,24 +165,34 @@ class MMDDrift(BaseDetector):
         ----------
         X
             Batch of instances.
+        drift_type
+            Predict drift at the 'feature' or 'batch' level. For 'batch', the test statistics for
+            each feature are aggregated using the Bonferroni or False Discovery Rate correction.
         return_p_val
-            Whether to return the p-value of the permutation test.
+            Whether to return feature level p-values.
         return_distance
-            Whether to return the MMD metric between the new batch and reference data.
+            Whether to return the test statistic between the features of the new batch and reference data.
 
         Returns
         -------
         Dictionary containing 'meta' and 'data' dictionaries.
         'meta' has the model's metadata.
-        'data' contains the drift prediction and optionally the p-value, threshold and MMD metric.
+        'data' contains the drift prediction and optionally the feature level p-values,
+         threshold after multivariate correction if needed and test statistics.
         """
         # compute drift scores
-        p_val, dist, dist_permutations = self.score(X)
-        drift_pred = int(p_val < self.p_val)
+        p_vals, dist = self.score(X)
 
-        # compute distance threshold
-        idx_threshold = int(self.p_val * len(dist_permutations))
-        distance_threshold = np.sort(dist_permutations)[::-1][idx_threshold]
+        # values below p-value threshold are drift
+        if drift_type == 'feature':
+            drift_pred = (p_vals < self.p_val).astype(int)
+        elif drift_type == 'batch' and self.correction == 'bonferroni':
+            threshold = self.p_val / self.n_features
+            drift_pred = int((p_vals < threshold).any())
+        elif drift_type == 'batch' and self.correction == 'fdr':
+            drift_pred, threshold = fdr(p_vals, q_val=self.p_val)
+        else:
+            raise ValueError('`drift_type` needs to be either `feature` or `batch`.')
 
         # update reference dataset
         if (isinstance(self.update_X_ref, dict) and self.preprocess_fn is not None
@@ -201,9 +207,8 @@ class MMDDrift(BaseDetector):
         cd['meta'] = self.meta
         cd['data']['is_drift'] = drift_pred
         if return_p_val:
-            cd['data']['p_val'] = p_val
-            cd['data']['threshold'] = self.p_val
+            cd['data']['p_val'] = p_vals
+            cd['data']['threshold'] = self.p_val if drift_type == 'feature' else threshold
         if return_distance:
             cd['data']['distance'] = dist
-            cd['data']['distance_threshold'] = distance_threshold
         return cd

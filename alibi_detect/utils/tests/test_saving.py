@@ -6,7 +6,7 @@ import tensorflow as tf
 from tensorflow.keras.layers import Dense, InputLayer
 from typing import Callable
 from alibi_detect.ad import AdversarialAE, ModelDistillation
-from alibi_detect.cd import KSDrift, MMDDrift
+from alibi_detect.cd import ChiSquareDrift, KSDrift, MMDDrift, TabularDrift
 from alibi_detect.cd.preprocess import UAE
 from alibi_detect.models.autoencoder import DecoderLSTM, EncoderLSTM
 from alibi_detect.od import (IForest, LLR, Mahalanobis, OutlierAEGMM, OutlierVAE, OutlierVAEGMM,
@@ -17,10 +17,13 @@ input_dim = 4
 latent_dim = 2
 n_gmm = 2
 threshold = 10.
-samples = 5
+samples = 6
 seq_len = 10
 p_val = .05
 X_ref = np.random.rand(samples * input_dim).reshape(samples, input_dim)
+X_ref_cat = np.tile(np.array([np.arange(samples)] * input_dim).T, (2, 1))
+X_ref_mix = X_ref.copy()
+X_ref_mix[:, 0] = np.tile(np.array(np.arange(samples // 2)), (1, 2)).T[:, 0]
 
 # define encoder and decoder
 encoder_net = tf.keras.Sequential(
@@ -109,7 +112,14 @@ detector = [
              preprocess_X_ref=False,
              preprocess_kwargs=preprocess_kwargs,
              n_permutations=10,
-             chunk_size=10)
+             chunk_size=10),
+    ChiSquareDrift(p_val=p_val,
+                   X_ref=X_ref_cat,
+                   preprocess_X_ref=True),
+    TabularDrift(p_val=p_val,
+                 X_ref=X_ref_mix,
+                 categories_per_feature={0: None},
+                 preprocess_X_ref=True)
 ]
 n_tests = len(detector)
 
@@ -139,7 +149,7 @@ def test_save_load(select_detector):
         det_load_name = det_load.meta['name']
         assert det_load_name == det_name
 
-        if not type(det_load) in [OutlierProphet, KSDrift, MMDDrift]:
+        if not type(det_load) in [OutlierProphet, ChiSquareDrift, KSDrift, MMDDrift, TabularDrift]:
             assert det_load.threshold == det.threshold == threshold
 
         if type(det_load) in [OutlierVAE, OutlierVAEGMM]:
@@ -155,6 +165,10 @@ def test_save_load(select_detector):
 
         if type(det_load) == KSDrift:
             assert det_load.n_features == latent_dim
+
+        if type(det_load) in [ChiSquareDrift, TabularDrift]:
+            assert isinstance(det_load.categories_per_feature, dict)
+            assert isinstance(det_load.X_ref_count, dict)
 
         if type(det_load) == OutlierAEGMM:
             assert isinstance(det_load.aegmm.encoder, tf.keras.Sequential)
@@ -202,10 +216,14 @@ def test_save_load(select_detector):
             assert det_load.threshold == threshold
             assert det_load.shape == (-1, seq_len, input_dim)
         elif type(det_load) in [KSDrift, MMDDrift]:
-            assert isinstance(det_load.preprocess_fn, Callable)
-            assert det_load.preprocess_fn.func.__name__ == 'preprocess_drift'
             assert det_load.p_val == p_val
             assert (det_load.X_ref == X_ref).all()
+            assert isinstance(det_load.preprocess_fn, Callable)
+            assert det_load.preprocess_fn.func.__name__ == 'preprocess_drift'
+        elif type(det_load) in [ChiSquareDrift, TabularDrift]:
+            assert det_load.p_val == p_val
+            x = X_ref_cat.copy() if isinstance(det_load, ChiSquareDrift) else X_ref_mix.copy()
+            assert (det_load.X_ref == x).all()
         elif type(det_load) == LLR:
             assert isinstance(det_load.dist_s, tf.keras.Model)
             assert isinstance(det_load.dist_b, tf.keras.Model)

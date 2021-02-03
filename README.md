@@ -98,7 +98,9 @@ The following tables show the advised use cases for each algorithm. The column *
 | Detector                 | Tabular | Image | Time Series | Text  | Categorical Features | Online | Feature Level |
 | :---                     |  :---:  | :---: |   :---:     | :---: |   :---:              | :---:  | :---:         |
 | Kolmogorov-Smirnov       | ✔       | ✔     |  ✘          |  ✔    |  ✔                   |  ✔     |  ✔            |
-| Maximum Mean Discrepancy | ✔       | ✔     |  ✘          |  ✔    |  ✔                   |  ✘     |  ✘            |
+| Maximum Mean Discrepancy | ✔       | ✔     |  ✘          |  ✔    |  ✔                   |  ✔     |  ✘            |
+| Chi-Squared | ✔       | ✘     |  ✘          |  ✘    |  ✔                   |  ✔     |  ✔            |
+| Mixed-type tabular data | ✔       | ✘     |  ✘          |  ✘    |  ✔                   |  ✔     |  ✔            |
 
 
 ### Reference List
@@ -150,6 +152,12 @@ The following tables show the advised use cases for each algorithm. The column *
    
 - [Maximum Mean Discrepancy](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/mmddrift.html) ([Gretton et al, 2012](http://jmlr.csail.mit.edu/papers/v13/gretton12a.html))
    - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_mmd_cifar10.html), [movie reviews](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_text_imdb.html)
+
+- [Chi-Squared](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/chisquaredrift.html)
+   - Example: [Income Prediction](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_chi2ks_adult.html)
+
+- [Mixed-type tabular data](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/tabulardrift.html)
+   - Example: [Income Prediction](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_chi2ks_adult.html)
 
 ## Datasets
 

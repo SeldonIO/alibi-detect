@@ -16,7 +16,7 @@ It will also be possible to combine different algorithms in ensemble detectors.
 
 The library **currently** covers both online and offline outlier detection algorithms for 
 tabular data, images and time series as well as an offline adversarial detector for 
-tabular data and images. Current drift detection capabilities cover tabular data, text and images.
+tabular data and images. Current drift detection capabilities cover mixed type tabular data, text and images.
 
 The **near term** focus will be on extending drift, outlier and adversarial detectors for 
 text data and adding outlier detectors for mixed data types.

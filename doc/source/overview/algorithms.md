@@ -30,3 +30,5 @@ The following tables summarize the advised use cases for the current algorithms.
 |---|---|---|---|---|
 |[Kolmogorov-Smirnov](../methods/ksdrift.ipynb)|✔|✔|✘|✔|✔|✔|✔|
 |[Maximum Mean Discrepancy](../methods/mmddrift.ipynb)|✔|✔|✘|✔|✔|✘|✘|
+|[Chi-Squared](../methods/chisquaredrift.ipynb)|✔|✘|✘|✘|✔|✔|✔|
+|[Mixed-type tabular](../methods/tabulardrift.ipynb)|✔|✘|✘|✘|✔|✔|✔|
