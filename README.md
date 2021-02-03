@@ -240,7 +240,6 @@ The integrations folder contains various wrapper tools to allow the alibi-detect
 ## Dependencies
 
 ```bash
-creme
 dask[array]
 matplotlib
 numpy

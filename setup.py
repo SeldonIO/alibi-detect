@@ -27,7 +27,6 @@ setup(
     python_requires=">=3.6",
     setup_requires=["pytest-runner"],
     install_requires=[
-        "creme",
         "dask[array]",
         "matplotlib",
         "numpy",
