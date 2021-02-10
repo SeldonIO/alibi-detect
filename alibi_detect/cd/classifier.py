@@ -102,7 +102,7 @@ class ClassifierDrift(BaseDetector):
         if isinstance(preprocess_fn, Callable) and isinstance(preprocess_kwargs, dict):  # type: ignore
             self.preprocess_fn = partial(preprocess_fn, **preprocess_kwargs)
         else:
-            self.preprocess_fn = preprocess_fn
+            self.preprocess_fn = preprocess_fn  # type: ignore
 
         # optionally already preprocess reference data
         self.preprocess_X_ref = preprocess_X_ref
