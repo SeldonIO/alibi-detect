@@ -63,8 +63,7 @@ class ClassifierDrift(BaseDetector):
             Kwargs for `preprocess_fn`.
         metric_fn
             Function computing the drift metric. Takes `y_true` and `y_pred` as input and
-            returns a float: metric_fn(y_true, y_pred). Defaults to accuracy but could
-            also be for instance `sklearn.metrics.roc_auc_score`.
+            returns a float: metric_fn(y_true, y_pred). Defaults to accuracy.
         train_size
             Optional fraction (float between 0 and 1) of the dataset used to train the classifier.
             The drift is detected on `1 - train_size`. Cannot be used in combination with `n_folds`.
