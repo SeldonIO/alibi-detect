@@ -33,7 +33,7 @@ jobs:
           sudo apt-get install build-essential
           pip install --upgrade pip
           pip install -r requirements/dev.txt -r requirements/docs.txt
-          pip install -e .
+          pip install -e .[prophet]
           pip freeze
       - name: Lint with flake8
         run: |
