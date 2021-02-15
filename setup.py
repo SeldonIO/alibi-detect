@@ -25,7 +25,6 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     python_requires=">=3.6",
-    setup_requires=["pytest-runner"],
     # lower bounds based on Debian Stable versions where available
     install_requires=[
         "dask[array]>=2.25.0, <2022.0.0",  # dask switched to calver https://github.com/dask/community/issues/100
@@ -41,7 +40,6 @@ setup(
         "tensorflow_probability>=0.8.0, <0.13.0",
         "transformers>=2.10.0, <5.0.0"
     ],
-    tests_require=["pytest", "pytest-cov"],
     extras_require=extras_require,
     test_suite="tests",
     zip_safe=False,
