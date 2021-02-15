@@ -9,8 +9,8 @@ def readme():
 # read version file
 exec(open("alibi_detect/version.py").read())
 
-extras_require = {"examples": ["seaborn", "tqdm", "nlp"],
-                  "prophet": ["fbprophet>=0.5,<0.7", "holidays==0.9.11"]}
+extras_require = {"examples": ["seaborn>=0.9.0", "tqdm>=4.28.1", "nlp>=0.3.0"],
+                  "prophet": ["fbprophet>=0.5, <0.7", "holidays==0.9.11"]}
 
 setup(
     name="alibi-detect",
@@ -26,19 +26,20 @@ setup(
     include_package_data=True,
     python_requires=">=3.6",
     setup_requires=["pytest-runner"],
+    # lower bounds based on Debian Stable versions where available
     install_requires=[
-        "dask[array]",
-        "matplotlib",
-        "numpy",
-        "pandas",
-        "Pillow",
-        "opencv-python",
-        "scipy",
-        "scikit-image",
-        "scikit-learn",
-        "tensorflow>=2",
-        "tensorflow_probability>=0.8",
-        "transformers>=2.10.0"
+        "dask[array]>=2.25.0, <2022.0.0",  # dask switched to calver https://github.com/dask/community/issues/100
+        "matplotlib>=3.0.0, <4.0.0",
+        "numpy>=1.16.2, <2.0.0",
+        "pandas>=0.23.3, <2.0.0",
+        "Pillow>=5.4.1, <9.0.0",
+        "opencv-python>=3.2.0, <5.0.0",
+        "scipy>=1.1.0, <2.0.0",
+        'scikit-image>=0.14.2, !=0.17.1, <0.19',  # https://github.com/SeldonIO/alibi/issues/215
+        "scikit-learn>=0.20.2, <0.25.0",
+        "tensorflow>=2.0.0, <2.5.0",
+        "tensorflow_probability>=0.8.0, <0.13.0",
+        "transformers>=2.10.0, <5.0.0"
     ],
     tests_require=["pytest", "pytest-cov"],
     extras_require=extras_require,
