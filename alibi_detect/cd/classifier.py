@@ -96,7 +96,7 @@ class ClassifierDrift(BaseDetector):
             logger.warning('Need to set drift threshold to detect data drift.')
 
         if isinstance(train_size, float) and isinstance(n_folds, int):
-            logger.warning('Both `n_folds` and `train_size` specified. By default `n_folds` used.')
+            logger.warning('Both `n_folds` and `train_size` specified. By default `n_folds` is used.')
 
         if isinstance(preprocess_fn, Callable) and isinstance(preprocess_kwargs, dict):  # type: ignore
             self.preprocess_fn = partial(preprocess_fn, **preprocess_kwargs)
