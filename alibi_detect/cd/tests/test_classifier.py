@@ -7,7 +7,7 @@ from tensorflow.keras.layers import Dense, Input
 from alibi_detect.cd import ClassifierDrift
 from alibi_detect.utils.metrics import accuracy
 
-n = 10
+n = 100
 
 
 def mymodel(shape):
@@ -22,10 +22,10 @@ def f1_adj(y_true: np.ndarray, y_pred: np.ndarray) -> float:
 
 
 threshold = [.6]
-n_features = [10]
+n_features = [4]
 metric_fns = [accuracy, f1_adj]
 n_folds = [None, 2]
-train_size = [.75]
+train_size = [.5]
 update_X_ref = [None, {'last': 1000}, {'reservoir_sampling': 1000}]
 tests_clfdrift = list(product(threshold, n_features, metric_fns, n_folds,
                               train_size, update_X_ref))
