@@ -42,6 +42,8 @@ def test_clfdrift(clfdrift_params):
     threshold, n_features, metric_fn, n_folds, train_size, update_X_ref = clfdrift_params
 
     np.random.seed(0)
+    tf.random.set_seed(0)
+
     model = mymodel((n_features,))
     X_ref = np.random.randn(*(n, n_features))
     X_test0 = X_ref.copy()
