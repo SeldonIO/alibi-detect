@@ -23,6 +23,7 @@ class ClassifierDrift(BaseDetector):
                  preprocess_fn: Optional[Callable] = None,
                  preprocess_kwargs: Optional[dict] = None,
                  metric_fn: Callable = accuracy,
+                 metric_name: Optional[str] = None,
                  train_size: Optional[float] = .75,
                  n_folds: Optional[int] = None,
                  seed: int = 0,
@@ -64,6 +65,8 @@ class ClassifierDrift(BaseDetector):
         metric_fn
             Function computing the drift metric. Takes `y_true` and `y_pred` as input and
             returns a float: metric_fn(y_true, y_pred). Defaults to accuracy.
+        metric_name
+            Optional name for the metric_fn used in the return dict. Defaults to 'metric_fn.__name__'.
         train_size
             Optional fraction (float between 0 and 1) of the dataset used to train the classifier.
             The drift is detected on `1 - train_size`. Cannot be used in combination with `n_folds`.
@@ -131,6 +134,8 @@ class ClassifierDrift(BaseDetector):
         # set metadata
         self.meta['detector_type'] = 'offline'
         self.meta['data_type'] = data_type
+        self.metric_name = metric_fn.__name__ if metric_name is None else metric_name
+        self.meta['params'] = {'metric_fn': self.metric_name}
 
     def preprocess(self, X: Union[np.ndarray, list]) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -231,6 +236,6 @@ class ClassifierDrift(BaseDetector):
         cd['meta'] = self.meta
         cd['data']['is_drift'] = drift_pred
         if return_metric:
-            cd['data'][f'{self.metric_fn.__name__}'] = drift_metric
+            cd['data'][self.metric_name] = drift_metric
             cd['data']['threshold'] = self.threshold
         return cd

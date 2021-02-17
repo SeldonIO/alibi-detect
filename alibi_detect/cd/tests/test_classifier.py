@@ -69,3 +69,5 @@ def test_clfdrift(clfdrift_params):
     assert preds_1['data'][f'{metric_fn.__name__}'] > threshold
     assert cd.n == X_test1.shape[0] + X_test0.shape[0] + X_ref.shape[0]
     assert preds_1['data']['is_drift'] == 1
+
+    assert cd.meta['params']['metric_fn'] == metric_fn.__name__
