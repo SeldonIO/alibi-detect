@@ -31,7 +31,6 @@ For more background on the importance of monitoring outliers and distributions i
   * [Tabular](#tabular)
 * [Models](#models)
 * [Integrations](#integrations)
-* [Dependencies](#dependencies)
 * [Citations](#citations)
 
 
@@ -41,6 +40,15 @@ For more background on the importance of monitoring outliers and distributions i
 alibi-detect can be installed from [PyPI](https://pypi.org/project/alibi-detect):
 ```bash
 pip install alibi-detect
+```
+Alternatively, the development version can be installed:
+```bash
+pip install git+https://github.com/SeldonIO/alibi-detect.git
+```
+
+To use the `Prophet` time series outlier detector:
+```bash
+pip install alibi-detect[prophet]
 ```
 
 We will use the [VAE outlier detector](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/vae.html) to illustrate the API.
@@ -240,29 +248,6 @@ Models and/or building blocks that can be useful outside of outlier, adversarial
 ## Integrations
 
 The integrations folder contains various wrapper tools to allow the alibi-detect algorithms to be used in production machine learning systems with [examples](https://github.com/SeldonIO/alibi-detect/tree/master/integrations/samples/kfserving) on how to deploy outlier and adversarial detectors with [KFServing](https://www.kubeflow.org/docs/components/serving/kfserving/).
-
-## Dependencies
-
-```bash
-dask[array]
-matplotlib
-numpy
-pandas
-opencv-python
-Pillow
-scipy
-scikit-image
-scikit-learn
-tensorflow>=2.0.0
-tensorflow_probability>=0.8
-transformers>=2.10.0
-```
-
-Extra dependencies for `OutlierProphet` (install via `pip install alibi-detect[prophet]`):
-```bash
-fbprophet>=0.5,<0.7
-holidays==0.9.11
-```
 
 ## Citations
 If you use alibi-detect in your research, please consider citing it.

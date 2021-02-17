@@ -9,8 +9,7 @@ When you contribute code, you affirm that the contribution is your original work
 The easiest way to get started is to install all the development dependencies
 in a separate virtual environment:
 ```
-pip install -r requirements/requirements.txt
-pip install -r requirements/requirements_ci.txt
+pip install -r requirements/dev.txt -r requirements/docs.txt
 ```
 This will install everything needed to run alibi-detect and all the dev tools
 (docs builder, testing, linting etc.)
@@ -45,4 +44,4 @@ We use `sphinx` for building documentation. You can call `make build_docs` from 
 the docs will be built under `doc/_build/html`.
 
 ## CI
-All PRs triger a TravisCI build to run linting, type checking, tests, and build docs.
+All PRs triger a Github Actions  build to run linting, type checking, tests, and build docs.
