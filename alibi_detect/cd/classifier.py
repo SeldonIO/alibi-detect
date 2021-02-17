@@ -173,7 +173,7 @@ class ClassifierDrift(BaseDetector):
         y = np.concatenate([np.zeros(X_ref.shape[0]), np.ones(X.shape[0])], axis=0).astype(int)
 
         # random shuffle if stratified folds are not used
-        if self.skf is None and isinstance(self.train_size, float):
+        if self.skf is None:
             n_tot = x.shape[0]
             idx_shuffle = np.random.choice(np.arange(x.shape[0]), size=n_tot, replace=False)
             n_tr = int(n_tot * self.train_size)
@@ -188,8 +188,7 @@ class ClassifierDrift(BaseDetector):
             x_tr, y_tr, x_te = x[idx_tr], np.eye(2)[y[idx_tr]], x[idx_te]
             clf = tf.keras.models.clone_model(self.model)
             clf.compile(**self.compile_kwargs)
-            self.fit_kwargs.update({'x': x_tr, 'y': y_tr})
-            clf.fit(**self.fit_kwargs)
+            clf.fit(x=x_tr, y=y_tr, **self.fit_kwargs)
             preds = clf.predict(x_te, batch_size=self.fit_kwargs['batch_size'])
             preds_oof.append(preds)
             idx_oof.append(idx_te)
