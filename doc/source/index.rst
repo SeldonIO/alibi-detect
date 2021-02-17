@@ -40,6 +40,7 @@
    :caption: Drift Detection
 
    methods/chisquaredrift.ipynb
+   methods/classifierdrift.ipynb
    methods/ksdrift.ipynb
    methods/mmddrift.ipynb
    methods/tabulardrift.ipynb
@@ -67,6 +68,7 @@
    examples/cd_ks_cifar10
    examples/cd_mmd_cifar10
    examples/cd_text_imdb
+   examples/cd_clf_cifar10
 
 .. toctree::
    :maxdepth: 1

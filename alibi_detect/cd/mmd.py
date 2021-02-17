@@ -71,17 +71,17 @@ class MMDDrift(BaseDetector):
         if isinstance(preprocess_kwargs, dict):  # type: ignore
             if not isinstance(preprocess_fn, Callable):  # type: ignore
                 preprocess_fn = preprocess_drift
-            self.preprocess_fn = partial(
-                preprocess_fn,
-                **preprocess_kwargs
-            )
+            self.preprocess_fn = partial(preprocess_fn, **preprocess_kwargs)
             keys = list(preprocess_kwargs.keys())
         else:
             self.preprocess_fn, keys = None, []
 
         # optionally already preprocess reference data
         self.preprocess_X_ref = preprocess_X_ref
-        self.X_ref = self.preprocess_fn(X_ref) if preprocess_X_ref else X_ref
+        if preprocess_X_ref and isinstance(self.preprocess_fn, Callable):  # type: ignore
+            self.X_ref = self.preprocess_fn(X_ref)
+        else:
+            self.X_ref = X_ref
         self.update_X_ref = update_X_ref
         self.n = X_ref.shape[0]  # type: ignore
         self.p_val = p_val
@@ -110,7 +110,7 @@ class MMDDrift(BaseDetector):
                             'sigma' not in permutation_args else False)
 
         # set metadata
-        self.meta['detector_type'] = 'offline'  # offline refers to fitting the CDF for K-S
+        self.meta['detector_type'] = 'offline'
         self.meta['data_type'] = data_type
 
     def preprocess(self, X: Union[np.ndarray, list]) -> Tuple[np.ndarray, np.ndarray]:
