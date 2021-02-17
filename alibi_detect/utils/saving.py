@@ -287,6 +287,7 @@ def state_classifierdrift(cd: ClassifierDrift) -> Tuple[
     """
     preprocess_fn, preprocess_kwargs, model, embed, embed_args, tokenizer, load_emb = \
         preprocess_step_drift(cd)
+    cd.compile_kwargs['optimizer'] = tf.keras.optimizers.serialize(cd.compile_kwargs['optimizer'])
     state_dict = {
         'threshold': cd.threshold,
         'X_ref': cd.X_ref,
@@ -1458,6 +1459,7 @@ def init_cd_classifierdrift(clf_drift: Union[tf.keras.Sequential, tf.keras.Model
     Initialized ClassifierDrift instance.
     """
     preprocess_fn, preprocess_kwargs = init_preprocess(state_dict, model, emb, tokenizer, **kwargs)
+    state_dict['compile_kwargs']['optimizer'] = tf.keras.optimizers.get(state_dict['compile_kwargs']['optimizer'])
     cd = ClassifierDrift(
         threshold=state_dict['threshold'],
         model=clf_drift,
