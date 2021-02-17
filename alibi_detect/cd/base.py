@@ -70,10 +70,7 @@ class BaseUnivariateDrift(BaseDetector):
         if isinstance(preprocess_kwargs, dict):
             if not isinstance(preprocess_fn, Callable):  # type: ignore
                 preprocess_fn = preprocess_drift
-            self.preprocess_fn = partial(
-                preprocess_fn,
-                **preprocess_kwargs
-            )
+            self.preprocess_fn = partial(preprocess_fn, **preprocess_kwargs)
             keys = list(preprocess_kwargs.keys())
         else:
             self.preprocess_fn, keys = None, []

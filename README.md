@@ -105,10 +105,11 @@ The following tables show the advised use cases for each algorithm. The column *
 
 | Detector                 | Tabular | Image | Time Series | Text  | Categorical Features | Online | Feature Level |
 | :---                     |  :---:  | :---: |   :---:     | :---: |   :---:              | :---:  | :---:         |
-| Kolmogorov-Smirnov       | ✔       | ✔     |  ✘          |  ✔    |  ✔                   |  ✔     |  ✔            |
-| Maximum Mean Discrepancy | ✔       | ✔     |  ✘          |  ✔    |  ✔                   |  ✔     |  ✘            |
-| Chi-Squared | ✔       | ✘     |  ✘          |  ✘    |  ✔                   |  ✔     |  ✔            |
-| Mixed-type tabular data | ✔       | ✘     |  ✘          |  ✘    |  ✔                   |  ✔     |  ✔            |
+| Kolmogorov-Smirnov       | ✔       | ✔     |  ✘          |  ✔    |  ✔                   |  ✘     |  ✔            |
+| Maximum Mean Discrepancy | ✔       | ✔     |  ✘          |  ✔    |  ✔                   |  ✘     |  ✘            |
+| Chi-Squared              | ✔       | ✘     |  ✘          |  ✘    |  ✔                   |  ✘     |  ✔            |
+| Mixed-type tabular data  | ✔       | ✘     |  ✘          |  ✘    |  ✔                   |  ✘     |  ✔            |
+| Classifier               | ✔       | ✔     |  ✔          |  ✔    |  ✔                   |  ✘     |  ✘            |
 
 
 ### Reference List
@@ -166,6 +167,9 @@ The following tables show the advised use cases for each algorithm. The column *
 
 - [Mixed-type tabular data](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/tabulardrift.html)
    - Example: [Income Prediction](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_chi2ks_adult.html)
+
+- [Classifier](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/classifierdrift.html) [Lopez-Paz and Oquab, 2017](https://openreview.net/forum?id=SJkXfE5xx)
+   - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_clf_cifar10.html)
 
 ## Datasets
 

@@ -1,12 +1,13 @@
 import numpy as np
 import pytest
+from sklearn.model_selection import StratifiedKFold
 import sys
 from tempfile import TemporaryDirectory
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, InputLayer
 from typing import Callable
 from alibi_detect.ad import AdversarialAE, ModelDistillation
-from alibi_detect.cd import ChiSquareDrift, KSDrift, MMDDrift, TabularDrift
+from alibi_detect.cd import ChiSquareDrift, ClassifierDrift, KSDrift, MMDDrift, TabularDrift
 from alibi_detect.cd.preprocess import UAE
 from alibi_detect.models.autoencoder import DecoderLSTM, EncoderLSTM
 from alibi_detect.od import (IForest, LLR, Mahalanobis, OutlierAEGMM, OutlierVAE, OutlierVAEGMM,
@@ -17,6 +18,8 @@ input_dim = 4
 latent_dim = 2
 n_gmm = 2
 threshold = 10.
+threshold_drift = .55
+n_folds_drift = 5
 samples = 6
 seq_len = 10
 p_val = .05
@@ -119,7 +122,12 @@ detector = [
     TabularDrift(p_val=p_val,
                  X_ref=X_ref_mix,
                  categories_per_feature={0: None},
-                 preprocess_X_ref=True)
+                 preprocess_X_ref=True),
+    ClassifierDrift(threshold=threshold_drift,
+                    model=model,
+                    X_ref=X_ref,
+                    n_folds=n_folds_drift,
+                    train_size=None)
 ]
 n_tests = len(detector)
 
@@ -149,7 +157,9 @@ def test_save_load(select_detector):
         det_load_name = det_load.meta['name']
         assert det_load_name == det_name
 
-        if not type(det_load) in [OutlierProphet, ChiSquareDrift, KSDrift, MMDDrift, TabularDrift]:
+        if not type(det_load) in [
+            OutlierProphet, ChiSquareDrift, ClassifierDrift, KSDrift, MMDDrift, TabularDrift
+        ]:
             assert det_load.threshold == det.threshold == threshold
 
         if type(det_load) in [OutlierVAE, OutlierVAEGMM]:
@@ -224,6 +234,12 @@ def test_save_load(select_detector):
             assert det_load.p_val == p_val
             x = X_ref_cat.copy() if isinstance(det_load, ChiSquareDrift) else X_ref_mix.copy()
             assert (det_load.X_ref == x).all()
+        elif type(det_load) == ClassifierDrift:
+            assert det_load.threshold == threshold_drift
+            assert (det_load.X_ref == X_ref).all()
+            assert isinstance(det_load.skf, StratifiedKFold)
+            assert isinstance(det_load.compile_kwargs, dict) and isinstance(det_load.fit_kwargs, dict)
+            assert isinstance(det_load.model, tf.keras.Model)
         elif type(det_load) == LLR:
             assert isinstance(det_load.dist_s, tf.keras.Model)
             assert isinstance(det_load.dist_b, tf.keras.Model)
