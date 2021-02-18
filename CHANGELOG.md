@@ -1,5 +1,19 @@
 # Change Log
 
+## [v0.5.0](https://github.com/SeldonIO/alibi-detect/tree/v0.5.0) (2021-02-18)
+[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.4.4...v0.5.0)
+### Added
+- Chi-square drift detector for categorical data: `alibi_detect.cd.chisquare.ChiSquareDrift`
+- Mixed-type tabular data drift detector: `alibi_detect.cd.tabular.TabularDrift`
+- Classifier-based drift detector: `alibi_detect.cd.classifier.ClassifierDrift`
+
+### Removed
+- DataTracker utility
+
+### Development
+- Docs build improvements, dependabot integration, daily build cronjob
+
+
 ## [v0.4.4](https://github.com/SeldonIO/alibi-detect/tree/v0.4.4) (2020-12-23)
 [Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.4.3...v0.4.4)
 ### Added
