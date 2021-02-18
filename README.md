@@ -168,7 +168,7 @@ The following tables show the advised use cases for each algorithm. The column *
 - [Mixed-type tabular data](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/tabulardrift.html)
    - Example: [Income Prediction](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_chi2ks_adult.html)
 
-- [Classifier](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/classifierdrift.html) [Lopez-Paz and Oquab, 2017](https://openreview.net/forum?id=SJkXfE5xx)
+- [Classifier](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/classifierdrift.html) ([Lopez-Paz and Oquab, 2017](https://openreview.net/forum?id=SJkXfE5xx))
    - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_clf_cifar10.html)
 
 ## Datasets
@@ -247,7 +247,12 @@ Models and/or building blocks that can be useful outside of outlier, adversarial
 
 ## Integrations
 
-The integrations folder contains various wrapper tools to allow the alibi-detect algorithms to be used in production machine learning systems with [examples](https://github.com/SeldonIO/alibi-detect/tree/master/integrations/samples/kfserving) on how to deploy outlier and adversarial detectors with [KFServing](https://www.kubeflow.org/docs/components/serving/kfserving/).
+Alibi-detect is integrated in the open source machine learning model deployment platform [Seldon Core](https://docs.seldon.io/projects/seldon-core/en/latest/index.html) and model serving framework [KFServing](https://github.com/kubeflow/kfserving).
+
+- **Seldon Core**: [outlier](https://docs.seldon.io/projects/seldon-core/en/latest/analytics/outlier_detection.html) and [drift](https://docs.seldon.io/projects/seldon-core/en/latest/analytics/drift_detection.html) detection worked examples.
+
+- **KFServing**: [outlier](https://github.com/kubeflow/kfserving/tree/master/docs/samples/outlier-detection/alibi-detect/cifar10) and [drift](https://github.com/kubeflow/kfserving/tree/master/docs/samples/drift-detection/alibi-detect/cifar10) detection examples.
+
 
 ## Citations
 If you use alibi-detect in your research, please consider citing it.
