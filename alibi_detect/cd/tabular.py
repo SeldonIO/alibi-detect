@@ -95,9 +95,7 @@ class TabularDrift(BaseUnivariateDrift):
             else:
                 self.X_ref_count = None
         else:  # no categorical features assumed present
-            categories_per_feature, self.X_ref_count = {}, None
-
-        self.categories_per_feature = categories_per_feature
+            self.categories_per_feature, self.X_ref_count = {}, None
 
     def feature_score(self, X_ref: np.ndarray, X: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
