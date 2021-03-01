@@ -37,7 +37,8 @@ class ChiSquareDrift(BaseUnivariateDrift):
             after the preprocessing step.
         categories_per_feature
             Dict with as keys the feature column index and as values the number of possible categorical
-            values for that feature. Eg: {0: 5, 1: 9, 2: 7}.
+            values `n` for that feature. Eg: {0: 5, 1: 9, 2: 7}. If `None`, the number of categories is inferred
+             from the data. Categories are assumed to take values in the range `[0, 1, ..., n]`.
         preprocess_X_ref
             Whether to already preprocess and infer categories and frequencies for reference data.
         update_X_ref
@@ -75,17 +76,14 @@ class ChiSquareDrift(BaseUnivariateDrift):
             input_shape=input_shape,
             data_type=data_type
         )
-        # convert from Dict[int, int] to Dict[int, List[int]]
-        if isinstance(categories_per_feature, dict):
-            self.categories_per_feature = {f: list(np.arange(v)) for f, v in categories_per_feature.items()}
-        else:  # infer number of possible categories for each feature from reference data
+        if categories_per_feature is None:  # infer number of possible categories for each feature from reference data
             X_flat = self.X_ref.reshape(self.X_ref.shape[0], -1)
-            self.categories_per_feature = {f: list(np.unique(X_flat[:, f])) for f in range(self.n_features)}
+            categories_per_feature = {f: X_flat[:, f].max().astype(int) + 1 for f in range(self.n_features)}
+        self.categories_per_feature = categories_per_feature
 
         if update_X_ref is None and preprocess_X_ref:
             # already infer categories and frequencies for reference data
-            self.X_ref_count = {f: [(self.X_ref[:, f] == v).sum() for v in vals] for f, vals in
-                                self.categories_per_feature.items()}
+            self.X_ref_count = self._get_counts(X_ref)  # type: ignore
         else:
             self.X_ref_count = None
 
@@ -106,15 +104,21 @@ class ChiSquareDrift(BaseUnivariateDrift):
         """
         if not self.X_ref_count:  # compute categorical frequency counts for each feature
             X_ref = X_ref.reshape(X_ref.shape[0], -1)
-            X_ref_count = {f: [(X_ref[:, f] == v).sum() for v in vals] for f, vals in
-                           self.categories_per_feature.items()}
+            X_ref_count = self._get_counts(X_ref)
         else:
             X_ref_count = self.X_ref_count
         X = X.reshape(X.shape[0], -1)
-        X_count = {f: [(X[:, f] == v).sum() for v in vals] for f, vals in
-                   self.categories_per_feature.items()}
+        X_count = self._get_counts(X)
         p_val = np.zeros(self.n_features, dtype=np.float32)
         dist = np.zeros_like(p_val)
         for f in range(self.n_features):  # apply Chi-Squared test
-            dist[f], p_val[f] = chisquare(X_ref_count[f], f_exp=X_count[f])
+            n_ref, n_obs = X_ref_count[f].sum(), X_count[f].sum()
+            dist[f], p_val[f] = chisquare(X_count[f], f_exp=X_ref_count[f] * n_obs / n_ref)
         return p_val, dist
+
+    def _get_counts(self, X: np.ndarray) -> Dict[int, np.ndarray]:
+        """
+        Utility method for getting the counts of categories for each categorical variable.
+        """
+        return {f: np.bincount(X[:, f].astype(int), minlength=n_cat) for f, n_cat in
+                self.categories_per_feature.items()}
