@@ -86,7 +86,8 @@ class TabularDrift(BaseUnivariateDrift):
             # infer number of possible categories for each categorical feature from reference data
             if None in list(categories_per_feature.values()):
                 X_flat = self.X_ref.reshape(self.X_ref.shape[0], -1)
-                self.categories_per_feature = {f: X_flat[:, f].max().astype(int) + 1 for f in range(self.n_features)}
+                categories_per_feature = {f: X_flat[:, f].max().astype(int) + 1 for f in range(self.n_features)}
+            self.categories_per_feature = categories_per_feature
 
             if update_X_ref is None and preprocess_X_ref:
                 # already infer categories and frequencies for reference data
@@ -94,7 +95,9 @@ class TabularDrift(BaseUnivariateDrift):
             else:
                 self.X_ref_count = None
         else:  # no categorical features assumed present
-            self.categories_per_feature, self.X_ref_count = {}, None
+            categories_per_feature, self.X_ref_count = {}, None
+
+        self.categories_per_feature = categories_per_feature
 
     def feature_score(self, X_ref: np.ndarray, X: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
