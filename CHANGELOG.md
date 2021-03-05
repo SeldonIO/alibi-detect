@@ -1,5 +1,15 @@
 # Change Log
 
+## [v0.5.1](https://github.com/SeldonIO/alibi-detect/tree/v0.5.1) (2021-03-05)
+[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.5.0...v0.5.1)
+
+This is a bug fix release.
+
+### Fixed
+- The order of the reference and test dataset for the `TabularDrift` and `ChiSquareDrift` was reversed leading to incorrect test statistics
+- The implementation of `TabularDrift` and `ChiSquareDrift` were not accounting for the different sample sizes between reference and test datasets leading to incorrect test statistics
+- Bumped required `scipy` version to `1.3.0` as older versions were missing the `alternative` keyword argument for `ks_2samp` function 
+
 ## [v0.5.0](https://github.com/SeldonIO/alibi-detect/tree/v0.5.0) (2021-02-18)
 [Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.4.4...v0.5.0)
 ### Added
