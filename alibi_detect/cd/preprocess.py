@@ -86,7 +86,7 @@ def preprocess_drift(X: np.ndarray,
     Numpy array with predictions.
     """
     if tokenizer is None:
-        return predict_batch(model, X, batch_size=batch_size)
+        return predict_batch(model, X, batch_size=batch_size)  # type: ignore
     else:
         return predict_batch_transformer(model, tokenizer, X, max_len, batch_size=batch_size)
 

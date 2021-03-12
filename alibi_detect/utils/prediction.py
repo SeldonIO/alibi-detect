@@ -1,7 +1,7 @@
 import logging
 import numpy as np
 import tensorflow as tf
-from typing import Callable, Union
+from typing import Any, Callable, Union
 from alibi_detect.models.autoencoder import AE, AEGMM, Seq2Seq, VAE, VAEGMM
 
 logger = logging.getLogger(__name__)
@@ -24,7 +24,7 @@ def predict_batch(model: Data,
                   return_class: bool = False,
                   n_categories: int = None,
                   shape: tuple = None,
-                  dtype: type = np.float32
+                  dtype: np.dtype = np.float32  # type: ignore
                   ) -> Union[np.ndarray, tuple]:
     """
     Make batch predictions on a model.
@@ -65,7 +65,7 @@ def predict_batch(model: Data,
         shape = (n,)
         dtype = np.int64
     else:
-        preds = model(X[0:1])
+        preds = model(X[0:1])  # type: Any
         if isinstance(preds, tuple):
             shape = tuple([(n,) + p.shape[1:] if isinstance(p, np.ndarray) else
                            (n,) + p.numpy().shape[1:] for p in preds])
@@ -117,7 +117,7 @@ def predict_batch_transformer(model: tf.keras.Model,
     """
     n = X.shape[0]
     n_minibatch = int(np.ceil(n / batch_size))
-    preds = []
+    preds = []  # type: Any
     for i in range(n_minibatch):
         istart, istop = i * batch_size, min((i + 1) * batch_size, n)
         x = tokenizer.batch_encode_plus(

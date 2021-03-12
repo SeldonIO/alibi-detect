@@ -182,12 +182,12 @@ class LLR(BaseDetector, FitMixin, ThresholdMixin):
             # train semantic model
             args = [self.dist_s, loss_fn, X]
             kwargs.update({'y_train': y})
-            trainer(*args, **kwargs)
+            trainer(*args, **kwargs)  # type: ignore
 
             # train background model
             args = [self.dist_b, loss_fn, X_back]
             kwargs.update({'y_train': y_back})
-            trainer(*args, **kwargs)
+            trainer(*args, **kwargs)  # type: ignore
 
     def infer_threshold(self,
                         X: np.ndarray,
@@ -243,7 +243,7 @@ class LLR(BaseDetector, FitMixin, ThresholdMixin):
         Log probabilities.
         """
         logp_fn = partial(dist.log_prob, return_per_feature=return_per_feature)
-        return predict_batch(logp_fn, X, batch_size=batch_size)
+        return predict_batch(logp_fn, X, batch_size=batch_size)  # type: ignore
 
     def logp_alt(self, model: tf.keras.Model, X: np.ndarray, return_per_feature: bool = False,
                  batch_size: int = int(1e10)) -> np.ndarray:
@@ -276,7 +276,7 @@ class LLR(BaseDetector, FitMixin, ThresholdMixin):
             return logp
         else:
             axis = tuple(np.arange(len(logp.shape))[1:])
-            return np.mean(logp, axis=axis)
+            return np.mean(logp, axis=axis)  # type: ignore
 
     def llr(self, X: np.ndarray, return_per_feature: bool, batch_size: int = int(1e10)) -> np.ndarray:
         """

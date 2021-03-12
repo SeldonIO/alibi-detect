@@ -110,7 +110,7 @@ def fetch_kdd(target: list = ['dos', 'r2l', 'u2r', 'probe'],
                  feature_names=keep_cols)
 
 
-def load_url_arff(url: str, dtype: Union[str, np.dtype] = np.float32) -> np.ndarray:
+def load_url_arff(url: str, dtype: Union[str, np.dtype] = np.float32) -> np.ndarray:  # type: ignore
     """
     Load arff files from url.
 

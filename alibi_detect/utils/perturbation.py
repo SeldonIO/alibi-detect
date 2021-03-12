@@ -8,7 +8,7 @@ from scipy.ndimage.interpolation import map_coordinates
 import skimage as sk
 from skimage.filters import gaussian
 import tensorflow as tf
-from typing import List, Tuple
+from typing import Any, List, Tuple
 from alibi_detect.utils.data import Bunch
 from alibi_detect.utils.discretizer import Discretizer
 from alibi_detect.utils.distance import abdm, multidim_scaling
@@ -137,7 +137,7 @@ def apply_mask(X: np.ndarray,
             ] = update_val
 
     # apply masks to instances
-    X_mask = []
+    X_mask = []  # type: Any
     for _ in range(X_shape[0]):
         if mask_type == 'zero':
             X_mask_ = X[_].reshape((1,) + X_shape[1:]) * mask
@@ -200,7 +200,7 @@ def inject_outlier_ts(X: np.ndarray,
         X_outlier[outlier_idx, s] += np.sign(rnd) * np.maximum(np.abs(rnd * n_std), min_std) * stdev
         is_outlier[outlier_idx] = 1
     if n_dim == 1:
-        X_outlier = X_outlier.reshape(n_samples,)
+        X_outlier = X_outlier.reshape(n_samples, )
     return Bunch(data=X_outlier, target=is_outlier, target_names=['normal', 'outlier'])
 
 
@@ -376,6 +376,7 @@ def inject_outlier_categorical(X: np.ndarray,
                  cat_perturb=cat_perturb,
                  d_abs=d_abs,
                  target_names=['normal', 'outlier'])
+
 
 # Note: the perturbation functions below are adopted from
 # https://github.com/hendrycks/robustness/blob/master/ImageNet-C/imagenet_c/imagenet_c/corruptions.py
@@ -633,7 +634,7 @@ def glass_blur(x: np.ndarray, sigma: float, max_delta: int, iterations: int, xra
     if xrange[0] != 0 or xrange[1] != 255:
         x = (x - xrange[0]) / (xrange[1] - xrange[0]) * 255
 
-    x = np.uint8(gaussian(x, sigma=sigma, multichannel=True))
+    x = gaussian(x, sigma=sigma, multichannel=True).astype(np.uint8)  # TODO: (Arnaud) check this works as intended
     for i in range(iterations):
         for h in range(nrows - max_delta, max_delta, -1):
             for w in range(ncols - max_delta, max_delta, -1):
@@ -707,7 +708,7 @@ def defocus_blur(x: np.ndarray, radius: int, alias_blur: float, xrange: tuple = 
     if scale_back:
         x_db = x_db * (xrange[1] - xrange[0]) + xrange[0]
     if isinstance(xrange, tuple):
-        return np.clip(x_db, xrange[0], xrange[1])
+        return np.clip(x_db, xrange[0], xrange[1])  # type: ignore
     else:
         return x_db
 
@@ -940,7 +941,7 @@ def jpeg_compression(x: np.ndarray, strength: float, xrange: tuple = None) -> np
 
     x = Image.fromarray(x.astype('uint8'), mode='RGB')
     output = BytesIO()
-    x.save(output, 'JPEG', quality=strength)
+    x.save(output, 'JPEG', quality=strength)  # type: ignore
     x = Image.open(output)
     x_jpeg = np.array(x, dtype=np.float32) / 255
     x_jpeg = x_jpeg * (xrange[1] - xrange[0]) + xrange[0]
@@ -978,9 +979,9 @@ def elastic_transform(x: np.ndarray, mult_dxdy: float, sigma: float,
     rnd_rng *= shape[0]
 
     # random affine
-    center_square = np.float32(shape_size) // 2
+    center_square = np.float32(shape_size) // 2  # type: ignore
     square_size = min(shape_size) // 3
-    pts1 = np.float32([center_square + square_size,
+    pts1 = np.float32([center_square + square_size,  # type: ignore
                        [center_square[0] + square_size, center_square[1] - square_size],
                        center_square - square_size])
     pts2 = pts1 + np.random.uniform(-rnd_rng, rnd_rng, size=pts1.shape).astype(np.float32)

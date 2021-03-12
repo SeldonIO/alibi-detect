@@ -173,7 +173,7 @@ class OutlierAE(BaseDetector, FitMixin, ThresholdMixin):
         sorted_fscore = np.sort(fscore_flat, axis=1)
         sorted_fscore_perc = sorted_fscore[:, -n_score_features:]
         iscore = np.mean(sorted_fscore_perc, axis=1)
-        return iscore
+        return iscore  # type: ignore
 
     def score(self, X: np.ndarray, outlier_perc: float = 100., batch_size: int = int(1e10)) \
             -> Tuple[np.ndarray, np.ndarray]:
@@ -197,7 +197,7 @@ class OutlierAE(BaseDetector, FitMixin, ThresholdMixin):
         X_recon = predict_batch(self.ae, X, batch_size=batch_size)
 
         # compute feature and instance level scores
-        fscore = self.feature_score(X, X_recon)
+        fscore = self.feature_score(X, X_recon)  # type: ignore
         iscore = self.instance_score(fscore, outlier_perc=outlier_perc)
 
         return fscore, iscore

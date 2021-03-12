@@ -206,7 +206,7 @@ class OutlierVAEGMM(BaseDetector, FitMixin, ThresholdMixin):
         energy, _ = gmm_energy(z, self.phi, self.mu, self.cov, self.L, self.log_det_cov, return_mean=False)
         energy_samples = energy.numpy().reshape((-1, self.samples))
         iscore = np.mean(energy_samples, axis=-1)
-        return iscore
+        return iscore  # type: ignore
 
     def predict(self,
                 X: np.ndarray,

@@ -181,7 +181,7 @@ class ModelDistillation(BaseDetector, FitMixin, ThresholdMixin):
             raise NotImplementedError
 
         if return_predictions:
-            return score, y, y_distilled
+            return score, y, y_distilled  # type: ignore
         else:
             return score
 

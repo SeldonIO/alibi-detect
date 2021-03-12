@@ -126,9 +126,9 @@ class BaseUnivariateDrift(BaseDetector):
         if isinstance(self.preprocess_fn, Callable):  # type: ignore
             X = self.preprocess_fn(X)
             X_ref = self.X_ref if self.preprocess_X_ref else self.preprocess_fn(self.X_ref)
-            return X_ref, X
+            return X_ref, X  # type: ignore
         else:
-            return self.X_ref, X
+            return self.X_ref, X  # type: ignore
 
     @abstractmethod
     def feature_score(self, X_ref: np.ndarray, X: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
@@ -178,7 +178,9 @@ class BaseUnivariateDrift(BaseDetector):
          threshold after multivariate correction if needed and test statistics.
         """
         # compute drift scores
-        p_vals, dist = self.score(X)
+        # TODO: (Arnaud) should `score` take Union[np.ndarray, list] ?
+        #  Also, we should document exactly when a list is expected (i.e. text)
+        p_vals, dist = self.score(X)  # type: ignore
 
         # values below p-value threshold are drift
         if drift_type == 'feature':
@@ -187,7 +189,7 @@ class BaseUnivariateDrift(BaseDetector):
             threshold = self.p_val / self.n_features
             drift_pred = int((p_vals < threshold).any())
         elif drift_type == 'batch' and self.correction == 'fdr':
-            drift_pred, threshold = fdr(p_vals, q_val=self.p_val)
+            drift_pred, threshold = fdr(p_vals, q_val=self.p_val)  # type: ignore
         else:
             raise ValueError('`drift_type` needs to be either `feature` or `batch`.')
 
@@ -195,7 +197,7 @@ class BaseUnivariateDrift(BaseDetector):
         if (isinstance(self.update_X_ref, dict) and self.preprocess_fn is not None
                 and self.preprocess_X_ref):
             X = self.preprocess_fn(X)
-        self.X_ref = update_reference(self.X_ref, X, self.n, self.update_X_ref)
+        self.X_ref = update_reference(self.X_ref, X, self.n, self.update_X_ref)  # type: ignore
         # used for reservoir sampling
         self.n += X.shape[0]  # type: ignore
 

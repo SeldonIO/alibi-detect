@@ -44,8 +44,8 @@ class SpectralResidual(BaseDetector, ThresholdMixin):
         self.threshold = threshold
         self.window_amp = window_amp
         self.window_local = window_local
-        self.conv_amp = np.ones((1, window_amp)).reshape(-1,) / window_amp
-        self.conv_local = np.ones((1, window_local)).reshape(-1,) / window_local
+        self.conv_amp = np.ones((1, window_amp)).reshape(-1, ) / window_amp
+        self.conv_local = np.ones((1, window_local)).reshape(-1, ) / window_local
         self.n_est_points = n_est_points
         self.n_grad_points = n_grad_points
 
@@ -116,10 +116,10 @@ class SpectralResidual(BaseDetector, ThresholdMixin):
         -------
         Array with slope values.
         """
-        dX = X[-1] - X[-self.n_grad_points-1:-1]
-        dt = t[-1] - t[-self.n_grad_points-1:-1]
+        dX = X[-1] - X[-self.n_grad_points - 1:-1]
+        dt = t[-1] - t[-self.n_grad_points - 1:-1]
         mean_grads = np.mean(dX / dt) * np.mean(dt)
-        return mean_grads
+        return mean_grads  # type: ignore
 
     def add_est_points(self, X: np.ndarray, t: np.ndarray) -> np.ndarray:
         """
@@ -162,7 +162,7 @@ class SpectralResidual(BaseDetector, ThresholdMixin):
 
         if len(X.shape) == 2:
             n_samples, n_dim = X.shape
-            X = X.reshape(-1,)
+            X = X.reshape(-1, )
             if X.shape[0] != n_samples:
                 raise ValueError('Only univariate time series allowed for SR method. Number of features '
                                  'of time series equals {}.'.format(n_dim))

@@ -246,7 +246,7 @@ class AdversarialAE(BaseDetector, FitMixin, ThresholdMixin):
 
         # model predictions
         y = predict_batch(self.model, X, batch_size=batch_size, proba=True)
-        y_recon = predict_batch(self.model, X_recon, batch_size=batch_size, proba=True)
+        y_recon = predict_batch(self.model, X_recon, batch_size=batch_size, proba=True)  # type: ignore
 
         # scale predictions
         if self.temperature != 1.:
@@ -259,11 +259,11 @@ class AdversarialAE(BaseDetector, FitMixin, ThresholdMixin):
         if isinstance(self.model_hl, list):
             for m, w in zip(self.model_hl, self.w_model_hl):
                 h = predict_batch(m, X, batch_size=batch_size, proba=True)
-                h_recon = predict_batch(m, X_recon, batch_size=batch_size, proba=True)
+                h_recon = predict_batch(m, X_recon, batch_size=batch_size, proba=True)  # type: ignore
                 adv_score += w * kld(h, h_recon).numpy()
 
         if return_predictions:
-            return adv_score, y, y_recon
+            return adv_score, y, y_recon  # type: ignore
         else:
             return adv_score
 
@@ -331,7 +331,7 @@ class AdversarialAE(BaseDetector, FitMixin, ThresholdMixin):
         y = y.argmax(axis=-1)
         y_recon = y_recon.argmax(axis=-1)
         y_correct = y.copy()
-        y_correct[idx_adv] = y_recon[idx_adv]
+        y_correct[idx_adv] = y_recon[idx_adv]  # type: ignore
 
         # populate output dict
         ad = adversarial_correction_dict()

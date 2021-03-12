@@ -189,7 +189,7 @@ class OutlierSeq2Seq(BaseDetector, FitMixin, ThresholdMixin):
                 self.threshold += np.mean(sorted_fscore_perc, axis=(0, 1)).reshape(threshold_shape)  # (1,1,n_features)
             else:  # (batch_size, n_features)
                 sorted_fscore_perc = sorted_fscore[:, -n_score:]  # (batch_size, n_score)
-                self.threshold += np.mean(sorted_fscore_perc, axis=0)  # float
+                self.threshold += np.mean(sorted_fscore_perc, axis=0)  # type: ignore # float
         else:
             raise TypeError('Incorrect type for `threshold` and/or `threshold_perc`.')
 
@@ -236,7 +236,7 @@ class OutlierSeq2Seq(BaseDetector, FitMixin, ThresholdMixin):
         sorted_fscore = np.sort(fscore_flat, axis=1)
         sorted_fscore_perc = sorted_fscore[:, -n_score_features:]
         iscore = np.mean(sorted_fscore_perc, axis=1)
-        return iscore
+        return iscore  # type: ignore
 
     def score(self, X: np.ndarray, outlier_perc: float = 100., batch_size: int = int(1e10)) \
             -> Tuple[np.ndarray, np.ndarray]:

@@ -1,6 +1,6 @@
 import dask.array as da
 import numpy as np
-from typing import Callable, Tuple, Union
+from typing import Any, Callable, Tuple, Union
 from alibi_detect.utils.distance import maximum_mean_discrepancy
 
 
@@ -11,7 +11,8 @@ def permutation_test(x: Union[np.ndarray, da.array],
                      return_distance: bool = False,
                      return_permutation_distance: bool = False,
                      **kwargs) \
-        -> Union[np.float, Tuple[np.float, np.float], Tuple[np.float, np.float, np.ndarray]]:
+        -> Union[float, Tuple[float, float], Tuple[float, float, np.ndarray]]:
+    # TODO: (Arnaud) are these supposed to be `float` or `np.float32`?
     """
     Apply a permutation test to samples x and y.
 
@@ -42,7 +43,7 @@ def permutation_test(x: Union[np.ndarray, da.array],
     x_y = np.concatenate([x, y])
     if not is_np:  # dask array
         dist = dist.compute()
-        xchunks, ychunks = x.chunksize, y.chunksize
+        xchunks, ychunks = x.chunksize, y.chunksize  # type: ignore
         x_y = np.array(x_y)
     dist_permutations = np.zeros(n_permutations)
     for _ in range(n_permutations):
@@ -55,11 +56,13 @@ def permutation_test(x: Union[np.ndarray, da.array],
             dist_permutation = dist_permutation.compute()
         dist_permutations[_] = dist_permutation
         k += dist <= dist_permutation
-    outputs = (k / n_permutations,)
+    outputs = (k / n_permutations,)  # type: Any
+    # TODO: the following logic seems pretty brittle, i.e. not clear what you get in each position of the tuple
+    # should we just replace it with a dictionary or a namedtuple?
     if return_distance:
-        outputs += (dist,)  # type: ignore
+        outputs += (dist,)
     if return_permutation_distance:
-        outputs += (dist_permutations,)  # type: ignore
+        outputs += (dist_permutations,)
     if len(outputs) == 1:
         return outputs[0]
     else:

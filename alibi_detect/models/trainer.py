@@ -1,6 +1,6 @@
 import numpy as np
 import tensorflow as tf
-from typing import Callable, Tuple
+from typing import Any, Callable, Tuple
 
 
 def trainer(model: tf.keras.Model,
@@ -14,7 +14,7 @@ def trainer(model: tf.keras.Model,
             batch_size: int = 64,
             buffer_size: int = 1024,
             verbose: bool = True,
-            log_metric:  Tuple[str, "tf.keras.metrics"] = None,
+            log_metric: Tuple[str, "tf.keras.metrics"] = None,
             callbacks: tf.keras.callbacks = None) -> None:  # TODO: incorporate callbacks + LR schedulers
     """
     Train TensorFlow model.
@@ -50,7 +50,7 @@ def trainer(model: tf.keras.Model,
     """
     # create dataset
     if y_train is None:  # unsupervised model without teacher forcing
-        train_data = X_train
+        train_data = X_train  # type: Any
     else:
         train_data = (X_train, y_train)
     train_data = tf.data.Dataset.from_tensor_slices(train_data)
@@ -106,7 +106,7 @@ def trainer(model: tf.keras.Model,
                 if loss_val.shape:
                     if loss_val.shape[0] != batch_size:
                         if len(loss_val.shape) == 1:
-                            shape = (batch_size - loss_val.shape[0], )
+                            shape = (batch_size - loss_val.shape[0],)
                         elif len(loss_val.shape) == 2:
                             shape = (batch_size - loss_val.shape[0], loss_val.shape[1])  # type: ignore
                         add_mean = np.ones(shape) * loss_val.mean()
