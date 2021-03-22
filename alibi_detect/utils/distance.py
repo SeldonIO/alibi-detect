@@ -1,13 +1,9 @@
-import dask.array as da
-from functools import partial
 import numpy as np
 from sklearn.manifold import MDS
-import tensorflow as tf
-from typing import Any, Callable, Dict, Tuple, Union
-from alibi_detect.utils.kernels import gaussian_kernel
+from typing import Any, Dict, Tuple, Union
 
 
-def norm(x: Union[np.ndarray, da.array], p: int) -> Union[np.ndarray, da.array]:
+def norm(x: Union[np.ndarray, 'da.array'], p: int) -> Union[np.ndarray, 'da.array']:
     """
     Compute p-norm across the features of a batch of instances.
 
@@ -25,10 +21,8 @@ def norm(x: Union[np.ndarray, da.array], p: int) -> Union[np.ndarray, da.array]:
     return (x ** p).sum(axis=1) ** (1 / p)
 
 
-def pairwise_distance(x: Union[np.ndarray, da.array],
-                      y: Union[np.ndarray, da.array],
-                      p: int = 2
-                      ) -> Union[np.ndarray, da.array]:
+def pairwise_distance(x: Union[np.ndarray, 'da.array'], y: Union[np.ndarray, 'da.array'],
+                      p: int = 2) -> Union[np.ndarray, 'da.array']:
     """
     Compute pairwise distance between 2 samples.
 
@@ -51,38 +45,7 @@ def pairwise_distance(x: Union[np.ndarray, da.array],
     return dist
 
 
-def maximum_mean_discrepancy(x: Union[np.ndarray, da.array],
-                             y: Union[np.ndarray, da.array],
-                             kernel: Callable = gaussian_kernel,
-                             **kwargs) -> float:
-    """
-    Compute maximum mean discrepancy between 2 samples.
-
-    Parameters
-    ----------
-    x
-        Batch of instances of shape [Nx, features].
-    y
-        Batch of instances of shape [Ny, features].
-    kernel
-        Kernel function. Defaults to a Gaussian kernel.
-    kwargs
-        Kwargs for the kernel function. For instance the kernel width `sigma` for the Gaussian kernel.
-
-    Returns
-    -------
-    MMD^2 between the samples x and y.
-    """
-    k = partial(kernel, **kwargs) if kwargs else kernel
-    nx, ny = x.shape[0], y.shape[0]
-    cxx, cyy, cxy = 1 / (nx * (nx - 1)), 1 / (ny * (ny - 1)), 2 / (nx * ny)
-    kxx, kyy, kxy = k(x, x), k(y, y), k(x, y)  # type: ignore
-    mmd2 = cxx * (kxx.sum() - kxx.trace()) + cyy * (kyy.sum() - kyy.trace()) - cxy * kxy.sum()
-    return mmd2
-
-
-def cityblock_batch(X: np.ndarray,
-                    y: np.ndarray) -> np.ndarray:
+def cityblock_batch(X: np.ndarray, y: np.ndarray) -> np.ndarray:
     """
     Calculate the L1 distances between a batch of arrays X and an array of the same shape y.
 
@@ -109,10 +72,7 @@ def cityblock_batch(X: np.ndarray,
     return np.abs(X - y).sum(axis=tuple(np.arange(1, X_dim))).reshape(X.shape[0], -1)
 
 
-def mvdm(X: np.ndarray,
-         y: np.ndarray,
-         cat_vars: dict,
-         alpha: int = 1) -> Dict[Any, np.ndarray]:
+def mvdm(X: np.ndarray, y: np.ndarray, cat_vars: dict, alpha: int = 1) -> Dict[Any, np.ndarray]:
     """
     Calculate the pair-wise distances between categories of a categorical variable using
     the Modified Value Difference Measure based on Cost et al (1993).
@@ -163,9 +123,7 @@ def mvdm(X: np.ndarray,
     return d_pair
 
 
-def abdm(X: np.ndarray,
-         cat_vars: dict,
-         cat_vars_bin: dict = dict()) -> dict:
+def abdm(X: np.ndarray, cat_vars: dict, cat_vars_bin: dict = dict()) -> dict:
     """
     Calculate the pair-wise distances between categories of a categorical variable using
     the Association-Based Distance Metric based on Le et al (2005).
@@ -320,31 +278,3 @@ def multidim_scaling(d_pair: dict,
         feature_range = new_feature_range
 
     return d_abs_scaled, feature_range
-
-
-def relative_euclidean_distance(x: tf.Tensor,
-                                y: tf.Tensor,
-                                eps: float = 1e-12,
-                                axis: int = -1) -> tf.Tensor:
-    """
-    Relative Euclidean distance in TensorFlow.
-
-    Parameters
-    ----------
-    x
-        Tensor used in distance computation.
-    y
-        Tensor used in distance computation.
-    eps
-        Epsilon added to denominator for numerical stability.
-    axis
-        Axis used to compute distance.
-
-    Returns
-    -------
-    Tensor with relative Euclidean distance across specified axis.
-    """
-    denom = tf.concat([tf.reshape(tf.norm(x, ord=2, axis=axis), (-1, 1)),
-                       tf.reshape(tf.norm(y, ord=2, axis=axis), (-1, 1))], axis=1)
-    dist = tf.norm(x - y, ord=2, axis=axis) / (tf.reduce_min(denom, axis=axis) + eps)
-    return dist
