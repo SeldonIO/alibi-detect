@@ -42,6 +42,7 @@
    methods/chisquaredrift.ipynb
    methods/classifierdrift.ipynb
    methods/ksdrift.ipynb
+   methods/margindensitydrift.ipynb
    methods/mmddrift.ipynb
    methods/tabulardrift.ipynb
 
