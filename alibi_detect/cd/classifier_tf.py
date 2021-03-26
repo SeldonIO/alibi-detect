@@ -42,7 +42,7 @@ class ClassifierDriftTF(BaseClassifierDrift):
         x_ref
             Data used as reference distribution.
         model
-            Classification model used for drift detection.
+            TensorFlow classification model used for drift detection.
         threshold
             Threshold for the drift metric (default is accuracy). Values above the threshold are
             classified as drift.
@@ -71,6 +71,8 @@ class ClassifierDriftTF(BaseClassifierDrift):
             Optional random seed for fold selection.
         optimizer
             Optimizer used during training of the classifier.
+        learning_rate
+            Learning rate used by optimizer.
         compile_kwargs
             Optional additional kwargs when compiling the classifier.
         batch_size

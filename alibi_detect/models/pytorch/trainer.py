@@ -13,13 +13,13 @@ def trainer(
         optimizer: torch.optim.optimizer = torch.optim.Adam,
         learning_rate: float = 1e-3,
         epochs: int = 20,
-        verbose: bool = True,
+        verbose: int = 1,
 ) -> None:
 
     optimizer = optimizer(model.parameters(), lr=learning_rate)
 
     for epoch in range(epochs):
-        dl = tqdm(enumerate(dataloader), total=len(dataloader)) if verbose else enumerate(dataloader)
+        dl = tqdm(enumerate(dataloader), total=len(dataloader)) if verbose == 1 else enumerate(dataloader)
         for step, (x, y) in dl:
             x, y = x.to(device), y.to(device)
             y_hat = model(x)
@@ -27,6 +27,6 @@ def trainer(
             loss = loss_fn(y_hat, y)
             loss.backward()
             optimizer.step()
-            if verbose:
+            if verbose == 1:
                 dl.set_description(f'Epoch {epoch + 1}/{epochs}')
                 dl.set_postfix(dict(loss=loss.item()))

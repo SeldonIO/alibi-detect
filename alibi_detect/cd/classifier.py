@@ -13,8 +13,6 @@ if has_tensorflow:
 logger = logging.getLogger(__name__)
 
 
-# TODO: define default optimizer etc for both frameworks
-# TODO: automatically infer framework from model!
 class ClassifierDrift:
 
     def __init__(
@@ -31,11 +29,12 @@ class ClassifierDrift:
             n_folds: Optional[int] = None,
             seed: int = 0,
             optimizer: Optional = None,
+            learning_rate: float = 1e-3,
             compile_kwargs: Optional[dict] = None,
             batch_size: int = 32,
             epochs: int = 3,
             verbose: int = 0,
-            fit_kwargs: Optional[dict] = None,
+            train_kwargs: Optional[dict] = None,
             device: Optional[str] = None,
             data_type: Optional[str] = None
     ) -> None:
@@ -55,6 +54,7 @@ class ClassifierDrift:
             kwargs.pop('device', None)
             self._detector = ClassifierDriftTF(*args, **kwargs)
         else:
+            kwargs.pop('compile_kwargs', None)
             self._detector = ClassifierDriftTorch(*args, **kwargs)
 
     def predict(self, x: np.ndarray, return_metric: bool = True) \
