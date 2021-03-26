@@ -1,13 +1,125 @@
 from abc import abstractmethod
-from functools import partial
 import logging
 import numpy as np
+from sklearn.model_selection import StratifiedKFold
 from typing import Callable, Dict, Optional, Tuple, Union
 from alibi_detect.base import BaseDetector, concept_drift_dict
 from alibi_detect.cd.utils import update_reference
+from alibi_detect.utils.metrics import accuracy
 from alibi_detect.utils.statstest import fdr
 
 logger = logging.getLogger(__name__)
+
+
+class BaseClassifierDrift(BaseDetector):
+
+    def __init__(
+            self,
+            x_ref: np.ndarray,
+            threshold: float = .55,
+            preprocess_x_ref: bool = True,
+            update_x_ref: Optional[Dict[str, int]] = None,
+            preprocess_fn: Optional[Callable] = None,
+            metric_fn: Callable = accuracy,
+            metric_name: Optional[str] = None,
+            train_size: Optional[float] = .75,
+            n_folds: Optional[int] = None,
+            seed: int = 0,
+            data_type: Optional[str] = None
+    ) -> None:
+        super().__init__()
+
+        if threshold is None:
+            logger.warning('Need to set drift threshold to detect data drift.')
+
+        if isinstance(train_size, float) and isinstance(n_folds, int):
+            logger.warning('Both `n_folds` and `train_size` specified. By default `n_folds` is used.')
+
+        # optionally already preprocess reference data
+        self.threshold = threshold
+        if preprocess_x_ref and isinstance(preprocess_fn, Callable):  # type: ignore
+            self.x_ref = preprocess_fn(x_ref)
+        else:
+            self.x_ref = x_ref
+        self.preprocess_x_ref = preprocess_x_ref
+        self.update_x_ref = update_x_ref
+        self.preprocess_fn = preprocess_fn
+        self.n = x_ref.shape[0]  # type: ignore
+
+        # define the metric function and optionally the stratified k-fold split
+        self.metric_fn = metric_fn
+        if isinstance(n_folds, int):
+            self.train_size = None
+            self.skf = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=seed)
+        else:
+            self.train_size, self.skf = train_size, None
+
+        # set metadata
+        self.meta['detector_type'] = 'offline'
+        self.meta['data_type'] = data_type
+        self.metric_name = metric_fn.__name__ if metric_name is None else metric_name
+        self.meta['params'] = {'metric_fn': self.metric_name}
+
+    def preprocess(self, x: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Data preprocessing before computing the drift scores.
+        Parameters
+        ----------
+        x
+            Batch of instances.
+        Returns
+        -------
+        Preprocessed reference data and new instances.
+        """
+        if isinstance(self.preprocess_fn, Callable):  # type: ignore
+            x = self.preprocess_fn(x)
+            x_ref = self.x_ref if self.preprocess_x_ref else self.preprocess_fn(self.x_ref)
+            return x_ref, x
+        else:
+            return self.x_ref, x
+
+    @abstractmethod
+    def score(self, x: np.ndarray) -> float:
+        pass
+
+    def predict(self, x: np.ndarray, return_metric: bool = True) \
+            -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
+        """
+        Predict whether a batch of data has drifted from the reference data.
+
+        Parameters
+        ----------
+        x
+            Batch of instances.
+        return_metric
+            Whether to return the drift metric from the detector.
+
+        Returns
+        -------
+        Dictionary containing 'meta' and 'data' dictionaries.
+        'meta' has the model's metadata.
+        'data' contains the drift prediction and optionally the drift metric and threshold.
+        """
+        # compute drift scores
+        drift_metric = self.score(x)
+        drift_pred = int(drift_metric > self.threshold)
+
+        # update reference dataset
+        if isinstance(self.update_x_ref, dict) and self.preprocess_fn is not None and self.preprocess_x_ref:
+            x = self.preprocess_fn(x)
+        self.x_ref = update_reference(self.x_ref, x, self.n, self.update_x_ref)
+        # used for reservoir sampling
+        self.n += x.shape[0]  # type: ignore
+
+        # populate drift dict
+        # TODO: add instance level feedback
+        cd = concept_drift_dict()
+        cd['meta'] = self.meta
+        cd['data']['is_drift'] = drift_pred
+        if return_metric:
+            cd['data'][self.metric_name] = drift_metric
+            cd['data']['threshold'] = self.threshold
+        return cd
 
 
 class BaseMMDDrift(BaseDetector):
