@@ -29,8 +29,7 @@ class ChiSquareDrift(BaseUnivariateDrift):
         Parameters
         ----------
         x_ref
-            Data used as reference distribution. Can be a list for text data which is then turned into an array
-            after the preprocessing step.
+            Data used as reference distribution.
         p_val
             p-value used for significance of the Chi-Squared test for each feature. If the FDR correction method
             is used, this corresponds to the acceptable q-value.
