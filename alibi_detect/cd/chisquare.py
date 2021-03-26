@@ -1,10 +1,7 @@
-import logging
 import numpy as np
 from scipy.stats import chisquare
 from typing import Callable, Dict, Optional, Tuple
 from alibi_detect.cd.base import BaseUnivariateDrift
-
-logger = logging.getLogger(__name__)
 
 
 class ChiSquareDrift(BaseUnivariateDrift):
