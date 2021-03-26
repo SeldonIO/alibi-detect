@@ -14,13 +14,13 @@ logger = logging.getLogger(__name__)
 
 
 # TODO: define default optimizer etc for both frameworks
+# TODO: automatically infer framework from model!
 class ClassifierDrift:
 
     def __init__(
             self,
             x_ref: np.ndarray,
             model: Callable,
-            backend: str = 'tensorflow',
             threshold: float = .55,
             preprocess_x_ref: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
@@ -41,12 +41,10 @@ class ClassifierDrift:
     ) -> None:
         super().__init__()
 
-        backend = backend.lower()
+        backend = 'tensorflow' if hasattr(model, 'predict') else 'pytorch'
         if backend == 'tensorflow' and not has_tensorflow or backend == 'pytorch' and not has_pytorch:
             raise ImportError(f'{backend} not installed. Cannot initialize and run the '
                               f'ClassifierDrift detector with {backend} backend.')
-        elif backend not in ['tensorflow', 'pytorch']:
-            raise NotImplementedError(f'{backend} not implemented. Use tensorflow or pytorch instead.')
 
         kwargs = locals()
         args = [kwargs['x_ref'], kwargs['model']]

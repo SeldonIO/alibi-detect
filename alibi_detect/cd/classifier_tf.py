@@ -21,12 +21,13 @@ class ClassifierDriftTF(BaseClassifierDrift):
             train_size: Optional[float] = .75,
             n_folds: Optional[int] = None,
             seed: int = 0,
-            optimizer: tf.keras.optimizers = tf.keras.optimizers.Adam(learning_rate=1e-3),
+            optimizer: tf.keras.optimizers = tf.keras.optimizers.Adam,
+            learning_rate: float = 1e-3,
             compile_kwargs: Optional[dict] = None,
             batch_size: int = 32,
             epochs: int = 3,
             verbose: int = 0,
-            fit_kwargs: Optional[dict] = None,
+            train_kwargs: Optional[dict] = None,
             data_type: Optional[str] = None
     ) -> None:
         """
@@ -79,7 +80,7 @@ class ClassifierDriftTF(BaseClassifierDrift):
         verbose
             Verbosity level during the training of the classifier.
             0 is silent, 1 a progress bar and 2 prints the statistics after each epoch.
-        fit_kwargs
+        train_kwargs
             Optional additional kwargs when fitting the classifier.
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
@@ -101,12 +102,12 @@ class ClassifierDriftTF(BaseClassifierDrift):
 
         # define and compile classifier model
         self.model = model
-        self.compile_kwargs = {'optimizer': optimizer, 'loss': BinaryCrossentropy()}
+        self.compile_kwargs = {'optimizer': optimizer(learning_rate=learning_rate), 'loss': BinaryCrossentropy()}
         if isinstance(compile_kwargs, dict):
             self.compile_kwargs.update(compile_kwargs)
-        self.fit_kwargs = {'batch_size': batch_size, 'epochs': epochs, 'verbose': verbose}
-        if isinstance(fit_kwargs, dict):
-            self.fit_kwargs.update(fit_kwargs)
+        self.train_kwargs = {'batch_size': batch_size, 'epochs': epochs, 'verbose': verbose}
+        if isinstance(train_kwargs, dict):
+            self.train_kwargs.update(train_kwargs)
 
     def score(self, x: np.ndarray) -> float:
         """
@@ -123,20 +124,7 @@ class ClassifierDriftTF(BaseClassifierDrift):
         Drift metric (e.g. accuracy) obtained from out-of-fold predictions from a trained classifier.
         """
         x_ref, x = self.preprocess(x)
-
-        # create dataset and labels
-        y = np.concatenate([np.zeros(x_ref.shape[0]), np.ones(x.shape[0])], axis=0).astype(int)
-        x = np.concatenate([x_ref, x], axis=0)
-
-        # random shuffle if stratified folds are not used
-        if self.skf is None:
-            n_tot = x.shape[0]
-            idx_shuffle = np.random.choice(np.arange(x.shape[0]), size=n_tot, replace=False)
-            n_tr = int(n_tot * self.train_size)
-            idx_tr, idx_te = idx_shuffle[:n_tr], idx_shuffle[n_tr:]
-            splits = [(idx_tr, idx_te)]
-        else:  # use stratified folds
-            splits = self.skf.split(x, y)
+        x, y, splits = self.get_splits(x_ref, x)
 
         # iterate over folds: train a new model for each fold and make out-of-fold (oof) predictions
         preds_oof, idx_oof = [], []
@@ -144,8 +132,8 @@ class ClassifierDriftTF(BaseClassifierDrift):
             x_tr, y_tr, x_te = x[idx_tr], np.eye(2)[y[idx_tr]], x[idx_te]
             clf = tf.keras.models.clone_model(self.model)
             clf.compile(**self.compile_kwargs)
-            clf.fit(x=x_tr, y=y_tr, **self.fit_kwargs)
-            preds = clf.predict(x_te, batch_size=self.fit_kwargs['batch_size'])
+            clf.fit(x=x_tr, y=y_tr, **self.train_kwargs)
+            preds = clf.predict(x_te, batch_size=self.train_kwargs['batch_size'])
             preds_oof.append(preds)
             idx_oof.append(idx_te)
         preds_oof = np.concatenate(preds_oof, axis=0)[:, 1]

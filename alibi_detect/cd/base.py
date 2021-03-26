@@ -2,7 +2,7 @@ from abc import abstractmethod
 import logging
 import numpy as np
 from sklearn.model_selection import StratifiedKFold
-from typing import Callable, Dict, Optional, Tuple, Union
+from typing import Callable, Dict, List, Optional, Tuple, Union
 from alibi_detect.base import BaseDetector, concept_drift_dict
 from alibi_detect.cd.utils import update_reference
 from alibi_detect.utils.metrics import accuracy
@@ -77,6 +77,37 @@ class BaseClassifierDrift(BaseDetector):
             return x_ref, x
         else:
             return self.x_ref, x
+
+    def get_splits(self, x_ref: np.ndarray, x: np.ndarray) \
+            -> Tuple[np.ndarray, np.ndarray, List[Tuple[np.ndarray]]]:
+        """
+        Split reference and test data in train and test folds used by the classifier.
+
+        Parameters
+        ----------
+        x_ref
+            Data used as reference distribution.
+        x
+            Batch of instances.
+
+        Returns
+        -------
+        List with tuples of train and test indices for optionally different folds.
+        """
+        # create dataset and labels
+        y = np.concatenate([np.zeros(x_ref.shape[0]), np.ones(x.shape[0])], axis=0).astype(int)
+        x = np.concatenate([x_ref, x], axis=0)
+
+        # random shuffle if stratified folds are not used
+        if self.skf is None:
+            n_tot = x.shape[0]
+            idx_shuffle = np.random.choice(np.arange(x.shape[0]), size=n_tot, replace=False)
+            n_tr = int(n_tot * self.train_size)
+            idx_tr, idx_te = idx_shuffle[:n_tr], idx_shuffle[n_tr:]
+            splits = [(idx_tr, idx_te)]
+        else:  # use stratified folds
+            splits = self.skf.split(x, y)
+        return x, y, splits
 
     @abstractmethod
     def score(self, x: np.ndarray) -> float:
