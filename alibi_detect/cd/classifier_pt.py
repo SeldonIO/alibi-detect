@@ -25,7 +25,7 @@ class ClassifierDriftTorch(BaseClassifierDrift):
             train_size: Optional[float] = .75,
             n_folds: Optional[int] = None,
             seed: int = 0,
-            optimizer: torch.optim.optimizer = torch.optim.Adam,
+            optimizer: torch.optim = torch.optim.Adam,
             learning_rate: float = 1e-3,
             batch_size: int = 32,
             epochs: int = 3,
@@ -113,7 +113,7 @@ class ClassifierDriftTorch(BaseClassifierDrift):
                 print('No GPU detected, fall back on CPU.')
         else:
             self.device = torch.device('cpu')
-        self.model = model
+        self.model = model.to(self.device)
 
         # define kwargs for dataloader and trainer
         self.dl_kwargs = {'batch_size': batch_size, 'shuffle': True}
@@ -142,16 +142,20 @@ class ClassifierDriftTorch(BaseClassifierDrift):
         # iterate over folds: train a new model for each fold and make out-of-fold (oof) predictions
         preds_oof, idx_oof = [], []
         for idx_tr, idx_te in splits:
-            x_tr, y_tr, x_te = x[idx_tr], np.eye(2)[y[idx_tr]], x[idx_te]
-            ds_tr = TensorDataset(x_tr, y_tr)
+            x_tr, y_tr, x_te = x[idx_tr], y[idx_tr], x[idx_te]
+            ds_tr = TensorDataset(torch.from_numpy(x_tr), torch.from_numpy(y_tr))
             dl_tr = DataLoader(ds_tr, **self.dl_kwargs)
             model = deepcopy(self.model)
+            for param in model.parameters():
+                print(param.data)
             train_args = [model, nn.CrossEntropyLoss(), dl_tr, self.device]
             trainer(*train_args, **self.train_kwargs)
-            preds = predict_batch(x_te, model, device=self.device, batch_size=self.dl_kwargs['batch_size'])
+            for param in model.parameters():
+                print(param.data)
+            preds = predict_batch(x_te, model.eval(), device=self.device, batch_size=self.dl_kwargs['batch_size'])
             preds_oof.append(preds)
             idx_oof.append(idx_te)
-        preds_oof = np.concatenate(preds_oof, axis=0)[:, 1]
+        preds_oof = np.concatenate(preds_oof, axis=0).argmax(axis=1)
         idx_oof = np.concatenate(idx_oof, axis=0)
         drift_metric = self.metric_fn(y[idx_oof], preds_oof)
         return drift_metric

@@ -10,14 +10,14 @@ def trainer(
         loss_fn: Callable,
         dataloader: DataLoader,
         device: torch.device,
-        optimizer: torch.optim.optimizer = torch.optim.Adam,
+        optimizer: torch.optim = torch.optim.Adam,
         learning_rate: float = 1e-3,
         epochs: int = 20,
         verbose: int = 1,
 ) -> None:
 
     optimizer = optimizer(model.parameters(), lr=learning_rate)
-
+    model.train()
     for epoch in range(epochs):
         dl = tqdm(enumerate(dataloader), total=len(dataloader)) if verbose == 1 else enumerate(dataloader)
         for step, (x, y) in dl:
