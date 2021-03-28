@@ -1,4 +1,5 @@
 from copy import deepcopy
+import logging
 import numpy as np
 import torch
 import torch.nn as nn
@@ -8,6 +9,8 @@ from alibi_detect.cd.base import BaseClassifierDrift
 from alibi_detect.models.pytorch.trainer import trainer
 from alibi_detect.utils.metrics import accuracy
 from alibi_detect.utils.pytorch.prediction import predict_batch
+
+logger = logging.getLogger(__name__)
 
 
 class ClassifierDriftTorch(BaseClassifierDrift):
@@ -110,7 +113,7 @@ class ClassifierDriftTorch(BaseClassifierDrift):
         if device is None or device.lower() in ['gpu', 'cuda']:
             self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
             if self.device.type == 'cpu':
-                print('No GPU detected, fall back on CPU.')
+                logger.warning('No GPU detected, fall back on CPU.')
         else:
             self.device = torch.device('cpu')
         self.model = model.to(self.device)
@@ -146,12 +149,8 @@ class ClassifierDriftTorch(BaseClassifierDrift):
             ds_tr = TensorDataset(torch.from_numpy(x_tr), torch.from_numpy(y_tr))
             dl_tr = DataLoader(ds_tr, **self.dl_kwargs)
             model = deepcopy(self.model)
-            for param in model.parameters():
-                print(param.data)
             train_args = [model, nn.CrossEntropyLoss(), dl_tr, self.device]
             trainer(*train_args, **self.train_kwargs)
-            for param in model.parameters():
-                print(param.data)
             preds = predict_batch(x_te, model.eval(), device=self.device, batch_size=self.dl_kwargs['batch_size'])
             preds_oof.append(preds)
             idx_oof.append(idx_te)

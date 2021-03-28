@@ -15,7 +15,6 @@ def trainer(
         epochs: int = 20,
         verbose: int = 1,
 ) -> None:
-
     optimizer = optimizer(model.parameters(), lr=learning_rate)
     model.train()
     for epoch in range(epochs):
