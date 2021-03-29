@@ -20,6 +20,7 @@
 "dm-tree","Apache Software License"
 "filelock","Public Domain"
 "flatbuffers","Apache Software License"
+"fsspec","BSD License"
 "gast","BSD License"
 "google-auth","Apache Software License"
 "google-auth-oauthlib","Apache Software License"
@@ -32,6 +33,7 @@
 "importlib-metadata","Apache Software License"
 "joblib","BSD License"
 "kiwisolver","BSD License"
+"locket","BSD License"
 "matplotlib","Python Software Foundation License"
 "networkx","BSD License"
 "numpy","BSD"
@@ -40,6 +42,7 @@
 "opt-einsum","MIT"
 "packaging","Apache Software License
 "pandas","BSD"
+"partd","BSD"
 "protobuf","3-Clause BSD License"
 "pyasn1","BSD License"
 "pyasn1-modules","BSD License"
