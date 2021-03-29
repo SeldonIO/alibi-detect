@@ -33,3 +33,4 @@ The following tables summarize the advised use cases for the current algorithms.
 |[Chi-Squared](../methods/chisquaredrift.ipynb)|✔|✘|✘|✘|✔|✘|✔|
 |[Mixed-type tabular](../methods/tabulardrift.ipynb)|✔|✘|✘|✘|✔|✘|✔|
 |[Classifier](../methods/classifierdrift.ipynb)|✔|✔|✔|✔|✔|✘|✘|
+|[Margin Density](../methods/margindensitydrift.ipynb)|✔|✔|✘|✘|✘|✘|✘|

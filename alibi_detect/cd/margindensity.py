@@ -1,8 +1,7 @@
-from functools import partial
 import logging
 import numpy as np
 import tensorflow as tf
-from typing import Callable, Dict, Optional, Tuple, Union
+from typing import Dict, Optional, Tuple, Union
 from alibi_detect.base import BaseDetector, concept_drift_dict
 
 logger = logging.getLogger(__name__)
@@ -14,8 +13,6 @@ class MarginDensityDrift(BaseDetector):
                  margin: float = None,
                  model: Union[tf.keras.Model, tf.keras.Sequential] = None,
                  density_range: Tuple = None,
-                 preprocess_fn: Optional[Callable] = None,
-                 preprocess_kwargs: Optional[dict] = None,
                  data_type: Optional[str] = None
                  ) -> None:
         """
@@ -30,10 +27,6 @@ class MarginDensityDrift(BaseDetector):
             A trained tf.keras binary classification model.
         density_range
             Tuple of length 2 that defines margin density lower and upper bounds.
-        preprocess_fn
-            Function to preprocess the data before computing the data drift metrics.
-        preprocess_kwargs
-            Kwargs for `preprocess_fn`.
         data_type
             Optionally specify the data type (tabular or image). Added to metadata.
         """
@@ -44,11 +37,6 @@ class MarginDensityDrift(BaseDetector):
         elif density_range is None:
             logger.warning('Need to set density_range to detect data drift.')
 
-        if isinstance(preprocess_fn, Callable) and isinstance(preprocess_kwargs, dict):  # type: ignore
-            self.preprocess_fn = partial(preprocess_fn, **preprocess_kwargs)
-        else:
-            self.preprocess_fn = preprocess_fn  # type: ignore
-
         self.margin = margin
         self.model = model
         self.density_range = density_range
@@ -56,23 +44,6 @@ class MarginDensityDrift(BaseDetector):
         # set metadata
         self.meta['detector_type'] = 'offline'
         self.meta['data_type'] = data_type
-
-    def preprocess(self, X: Union[np.ndarray, list]) -> np.ndarray:
-        """
-        Data preprocessing before computing the drift scores.
-
-        Parameters
-        ----------
-        X
-            Batch of instances.
-
-        Returns
-        -------
-        Preprocessed new instances.
-        """
-        if isinstance(self.preprocess_fn, Callable):  # type: ignore
-            X = self.preprocess_fn(X)
-        return X
 
     def score(self, X: Union[np.ndarray, list]) -> float:
         """
@@ -87,7 +58,6 @@ class MarginDensityDrift(BaseDetector):
         -------
         Margin density.
         """
-        X = self.preprocess(X)
 
         preds = self.model.predict(X).ravel()
         class_prob_diff = abs(preds*2-1)

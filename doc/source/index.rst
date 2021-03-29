@@ -70,6 +70,7 @@
    examples/cd_mmd_cifar10
    examples/cd_text_imdb
    examples/cd_clf_cifar10
+   examples/cd_md3_winequality
 
 .. toctree::
    :maxdepth: 1
