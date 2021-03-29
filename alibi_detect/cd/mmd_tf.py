@@ -58,7 +58,6 @@ class MMDDriftTF(BaseMMDDrift):
         return kernel_mat
 
     def score(self, x: np.ndarray) -> Tuple[float, float, np.ndarray]:
-
         """
         Compute the p-value resulting from a permutation test using the maximum mean discrepancy
         as a distance measure between the reference data and the data to be tested.
@@ -77,7 +76,7 @@ class MMDDriftTF(BaseMMDDrift):
         # compute kernel matrix, MMD^2 and apply permutation test using the kernel matrix
         n = x.shape[0]
         kernel_mat = self.kernel_matrix(x_ref, x)
-        kernel_mat = kernel_mat - tf.linalg.diag(kernel_mat)
+        kernel_mat = kernel_mat - tf.linalg.diag(tf.linalg.diag_part(kernel_mat))  # zero diagonal
         mmd2 = mmd2_from_kernel_matrix(kernel_mat, n, permute=False, zero_diag=False).numpy()
         mmd2_permuted = np.array(
             [mmd2_from_kernel_matrix(kernel_mat, n, permute=True, zero_diag=False).numpy()
