@@ -54,7 +54,7 @@ def mmd2_from_kernel_matrix(kernel_mat: tf.Tensor, m: int, permute: bool = False
         kernel_mat = kernel_mat - tf.linalg.diag(kernel_mat)
     if permute:
         idx = np.random.permutation(kernel_mat.shape[0])
-        kernel_mat = kernel_mat[idx][:, idx]
+        kernel_mat = tf.gather(tf.gather(kernel_mat, indices=idx, axis=0), indices=idx, axis=1)
     k_xx, k_yy, k_xy = kernel_mat[:-m, :-m], kernel_mat[-m:, -m:], kernel_mat[-m:, :-m]
     c_xx, c_yy = 1 / (n * (n - 1)), 1 / (m * (m - 1))
     mmd2 = c_xx * tf.reduce_sum(k_xx) + c_yy * tf.reduce_sum(k_yy) - 2. * tf.reduce_mean(k_xy)

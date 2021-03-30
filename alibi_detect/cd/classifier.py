@@ -16,6 +16,7 @@ class ClassifierDrift:
             self,
             x_ref: np.ndarray,
             model: Callable,
+            backend: str = 'tensorflow',
             threshold: float = .55,
             preprocess_x_ref: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
@@ -37,7 +38,7 @@ class ClassifierDrift:
     ) -> None:
         super().__init__()
 
-        backend = 'tensorflow' if hasattr(model, 'predict') else 'pytorch'
+        backend = backend.lower()
         if backend == 'tensorflow' and not has_tensorflow or backend == 'pytorch' and not has_pytorch:
             raise ImportError(f'{backend} not installed. Cannot initialize and run the '
                               f'ClassifierDrift detector with {backend} backend.')

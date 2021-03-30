@@ -13,7 +13,7 @@ from alibi_detect.ad import AdversarialAE, ModelDistillation
 from alibi_detect.ad.adversarialae import DenseHidden
 from alibi_detect.base import BaseDetector
 from alibi_detect.cd import ChiSquareDrift, ClassifierDrift, KSDrift, MMDDrift, TabularDrift
-from alibi_detect.cd.preprocess import HiddenOutput, UAE
+#from alibi_detect.cd.preprocess import HiddenOutput, UAE
 from alibi_detect.models.autoencoder import AE, AEGMM, DecoderLSTM, EncoderLSTM, Seq2Seq, VAE, VAEGMM
 from alibi_detect.models.embedding import TransformerEmbedding
 from alibi_detect.models.pixelcnn import PixelCNN
