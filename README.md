@@ -110,7 +110,7 @@ The following tables show the advised use cases for each algorithm. The column *
 | Chi-Squared              | ✔       | ✘     |  ✘          |  ✘    |  ✔                   |  ✘     |  ✔            |
 | Mixed-type tabular data  | ✔       | ✘     |  ✘          |  ✘    |  ✔                   |  ✘     |  ✔            |
 | Classifier               | ✔       | ✔     |  ✔          |  ✔    |  ✔                   |  ✘     |  ✘            |
-
+| Margin Density           | ✔       | ✔     |  ✘          |  ✘    |  ✘                   |  ✘     |  ✘            |
 
 ### Reference List
 

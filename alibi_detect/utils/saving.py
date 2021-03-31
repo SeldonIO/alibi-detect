@@ -12,7 +12,7 @@ from typing import Callable, Dict, List, Optional, Tuple, Union
 from alibi_detect.ad import AdversarialAE, ModelDistillation
 from alibi_detect.ad.adversarialae import DenseHidden
 from alibi_detect.base import BaseDetector
-from alibi_detect.cd import ChiSquareDrift, ClassifierDrift, KSDrift, MMDDrift, TabularDrift
+from alibi_detect.cd import ChiSquareDrift, ClassifierDrift, KSDrift, MMDDrift, TabularDrift, MarginDensityDrift
 from alibi_detect.cd.preprocess import HiddenOutput, UAE
 from alibi_detect.models.autoencoder import AE, AEGMM, DecoderLSTM, EncoderLSTM, Seq2Seq, VAE, VAEGMM
 from alibi_detect.models.embedding import TransformerEmbedding
@@ -32,6 +32,7 @@ Data = Union[
     KSDrift,
     LLR,
     Mahalanobis,
+    MarginDensityDrift,
     MMDDrift,
     ModelDistillation,
     OutlierAEGMM,
@@ -52,6 +53,7 @@ DEFAULT_DETECTORS = [
     'KSDrift',
     'LLR',
     'Mahalanobis',
+    'MarginDensityDrift',
     'MMDDrift',
     'ModelDistillation',
     'OutlierAE',
@@ -124,6 +126,8 @@ def save_detector(detector: Data,
         state_dict = state_s2s(detector)
     elif detector_name == 'LLR':
         state_dict = state_llr(detector)
+    elif detector_name == 'MarginDensityDrift':
+        state_dict = state_md3(detector)
 
     with open(os.path.join(filepath, detector_name + '.pickle'), 'wb') as f:
         pickle.dump(state_dict, f)
@@ -157,6 +161,8 @@ def save_detector(detector: Data,
         save_tf_s2s(detector, filepath)
     elif detector_name == 'LLR':
         save_tf_llr(detector, filepath)
+    elif detector_name == 'MarginDensityDrift':
+        save_tf_model(detector.model, filepath, model_name='model')
 
 
 def save_embedding(embed: tf.keras.Model,
@@ -272,6 +278,20 @@ def state_chisquaredrift(cd: ChiSquareDrift) -> Tuple[
     return state_dict, model, embed, embed_args, tokenizer
 
 
+def state_md3(cd: MarginDensityDrift) -> Dict:
+    """
+    MarginDensityDrift parameters to save.
+
+    Parameters
+    ----------
+    cd
+        Drift detector object.
+    """
+    state_dict = {'margin': cd.margin,
+                  'density_range': cd.density_range}
+    return state_dict
+
+
 def state_classifierdrift(cd: ClassifierDrift) -> Tuple[
             Dict, Union[tf.keras.Sequential, tf.keras.Model],
             Optional[Union[tf.keras.Model, tf.keras.Sequential]],
@@ -279,6 +299,7 @@ def state_classifierdrift(cd: ClassifierDrift) -> Tuple[
         ]:
     """
     Classifier-based drift detector parameters to save.
+
 
     Parameters
     ----------
@@ -969,6 +990,9 @@ def load_detector(filepath: str, **kwargs) -> Data:
     elif detector_name == 'LLR':
         models = load_tf_llr(filepath, **kwargs)
         detector = init_od_llr(state_dict, models)
+    elif detector_name == 'MarginDensityDrift':
+        model = load_tf_model(filepath, model_name='model')
+        detector = init_cd_md3(state_dict, model)
 
     detector.meta = meta_dict
     return detector
@@ -1755,3 +1779,25 @@ def init_od_llr(state_dict: Dict, models: tuple) -> LLR:
         od.model_s = models[2]
         od.model_b = models[3]
     return od
+
+
+def init_cd_md3(state_dict: Dict,
+                model: tf.keras.Model) -> MarginDensityDrift:
+    """
+    Initialize MarginDensityDrift.
+
+    Parameters
+    ----------
+    state_dict
+        Dictionary containing the parameter values.
+    model
+        Loaded binary classifier.
+
+    Returns
+    -------
+    Initialized MarginDensityDrift instance.
+    """
+    cd = MarginDensityDrift(margin=state_dict['margin'],
+                            model=model,
+                            density_range=state_dict['density_range'])
+    return cd
