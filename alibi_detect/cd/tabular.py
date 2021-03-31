@@ -79,7 +79,8 @@ class TabularDrift(BaseUnivariateDrift):
             # infer number of possible categories for each categorical feature from reference data
             if None in list(categories_per_feature.values()):
                 x_flat = self.x_ref.reshape(self.x_ref.shape[0], -1)
-                categories_per_feature = {f: x_flat[:, f].max().astype(int) + 1 for f in range(self.n_features)}
+                categories_per_feature = {f: x_flat[:, f].max().astype(int) + 1
+                                          for f in categories_per_feature.keys()}
             self.categories_per_feature = categories_per_feature
 
             if update_x_ref is None and preprocess_x_ref:
@@ -90,7 +91,7 @@ class TabularDrift(BaseUnivariateDrift):
         else:  # no categorical features assumed present
             self.categories_per_feature, self.x_ref_count = {}, None
 
-    def feature_score(self, x_ref: np.ndarray, X: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def feature_score(self, x_ref: np.ndarray, x: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
         Compute K-S or Chi-Squared test statistics and p-values per feature.
 
@@ -98,18 +99,17 @@ class TabularDrift(BaseUnivariateDrift):
         ----------
         x_ref
             Reference instances to compare distribution with.
-        X
+        x
             Batch of instances.
 
         Returns
         -------
         Feature level p-values and K-S or Chi-Squared statistics.
         """
-        X = X.reshape(X.shape[0], -1)
+        x = x.reshape(x.shape[0], -1)
         x_ref = x_ref.reshape(x_ref.shape[0], -1)
         if self.categories_per_feature:
-            x_count = self._get_counts(X)
-
+            x_count = self._get_counts(x)
             if not self.x_ref_count:  # compute categorical frequency counts for each feature
                 x_ref_count = self._get_counts(x_ref)
             else:
@@ -121,12 +121,12 @@ class TabularDrift(BaseUnivariateDrift):
                 n_ref, n_obs = x_ref_count[f].sum(), x_count[f].sum()
                 dist[f], p_val[f] = chisquare(x_count[f], f_exp=x_ref_count[f] * n_obs / n_ref)
             else:
-                dist[f], p_val[f] = ks_2samp(x_ref[:, f], X[:, f], alternative=self.alternative, mode='asymp')
+                dist[f], p_val[f] = ks_2samp(x_ref[:, f], x[:, f], alternative=self.alternative, mode='asymp')
         return p_val, dist
 
-    def _get_counts(self, X: np.ndarray) -> Dict[int, np.ndarray]:
+    def _get_counts(self, x: np.ndarray) -> Dict[int, np.ndarray]:
         """
         Utility method for getting the counts of categories for each categorical variable.
         """
-        return {f: np.bincount(X[:, f].astype(int), minlength=n_cat) for f, n_cat in
+        return {f: np.bincount(x[:, f].astype(int), minlength=n_cat) for f, n_cat in
                 self.categories_per_feature.items()}
