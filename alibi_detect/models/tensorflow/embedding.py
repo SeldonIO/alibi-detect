@@ -1,4 +1,3 @@
-# TODO: place under utils/tensorflow/embedding?
 from functools import partial
 import tensorflow as tf
 from transformers import TFAutoModel, AutoConfig

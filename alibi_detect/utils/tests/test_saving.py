@@ -9,7 +9,7 @@ from typing import Callable
 from alibi_detect.ad import AdversarialAE, ModelDistillation
 from alibi_detect.cd import ChiSquareDrift, ClassifierDrift, KSDrift, MMDDrift, TabularDrift
 from alibi_detect.cd.preprocess import UAE
-from alibi_detect.models.autoencoder import DecoderLSTM, EncoderLSTM
+from alibi_detect.models.tensorflow.autoencoder import DecoderLSTM, EncoderLSTM
 from alibi_detect.od import (IForest, LLR, Mahalanobis, OutlierAEGMM, OutlierVAE, OutlierVAEGMM,
                              OutlierProphet, SpectralResidual, OutlierSeq2Seq, OutlierAE)
 from alibi_detect.utils.saving import save_detector, load_detector  # type: ignore

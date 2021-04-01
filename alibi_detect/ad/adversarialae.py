@@ -5,9 +5,9 @@ from tensorflow.keras.layers import Dense, Flatten
 from tensorflow.keras.losses import kld
 from tensorflow.keras.models import Model
 from typing import Callable, Dict, List, Tuple, Union
-from alibi_detect.models.autoencoder import AE
-from alibi_detect.models.trainer import trainer
-from alibi_detect.models.losses import loss_adv_ae
+from alibi_detect.models.tensorflow.autoencoder import AE
+from alibi_detect.models.tensorflow.trainer import trainer
+from alibi_detect.models.tensorflow.losses import loss_adv_ae
 from alibi_detect.utils.prediction import predict_batch
 from alibi_detect.base import (BaseDetector, FitMixin, ThresholdMixin,
                                adversarial_prediction_dict, adversarial_correction_dict)

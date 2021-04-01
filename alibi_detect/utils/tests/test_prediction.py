@@ -3,7 +3,7 @@ import pytest
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, InputLayer
 from alibi_detect.utils.prediction import predict_batch
-from alibi_detect.models.autoencoder import AE
+from alibi_detect.models.tensorflow.autoencoder import AE
 
 n, n_features, n_classes, latent_dim = 100, 10, 5, 2
 X = np.zeros((n, n_features))

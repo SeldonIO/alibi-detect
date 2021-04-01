@@ -2,9 +2,9 @@ import numpy as np
 import pytest
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, InputLayer
-from alibi_detect.models.autoencoder import AE, AEGMM, VAE, VAEGMM, Seq2Seq, EncoderLSTM, DecoderLSTM
-from alibi_detect.models.losses import loss_aegmm, loss_vaegmm
-from alibi_detect.models.trainer import trainer
+from alibi_detect.models.tensorflow.autoencoder import AE, AEGMM, VAE, VAEGMM, Seq2Seq, EncoderLSTM, DecoderLSTM
+from alibi_detect.models.tensorflow.losses import loss_aegmm, loss_vaegmm
+from alibi_detect.models.tensorflow.trainer import trainer
 
 input_dim = 784
 latent_dim = 50

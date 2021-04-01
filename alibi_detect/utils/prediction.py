@@ -2,7 +2,7 @@ import logging
 import numpy as np
 import tensorflow as tf
 from typing import Callable, Union
-from alibi_detect.models.autoencoder import AE, AEGMM, Seq2Seq, VAE, VAEGMM
+from alibi_detect.models.tensorflow.autoencoder import AE, AEGMM, Seq2Seq, VAE, VAEGMM
 
 logger = logging.getLogger(__name__)
 
