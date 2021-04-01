@@ -1,7 +1,7 @@
-from .preprocess import HiddenOutput, Union, preprocess_drift
+from .preprocess import HiddenOutput, UAE, preprocess_drift
 
 __all__ = [
     "HiddenOutput",
     "UAE",
-    "predict_batch"
+    "preprocess_drift"
 ]

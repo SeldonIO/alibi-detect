@@ -1,6 +1,8 @@
 from .autoencoder import AE, AEGMM, VAE, VAEGMM
+from .embedding import TransformerEmbedding
 from .pixelcnn import PixelCNN
 from .resnet import resnet
+from .trainer import trainer
 
 __all__ = [
     "AE",
@@ -8,5 +10,7 @@ __all__ = [
     "VAE",
     "VAEGMM",
     "resnet",
-    "PixelCNN"
+    "PixelCNN",
+    "TransformerEmbedding",
+    "trainer"
 ]

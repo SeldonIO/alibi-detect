@@ -1,4 +1,3 @@
-# TODO: both functions need to be exposed at higher level if it is clear that pytorch is used!
 import numpy as np
 import torch
 import torch.nn as nn

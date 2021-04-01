@@ -1,4 +1,3 @@
-# TODO: both functions need to be exposed at higher level if it is clear that tensorflow is used!
 import numpy as np
 import tensorflow as tf
 from typing import Union

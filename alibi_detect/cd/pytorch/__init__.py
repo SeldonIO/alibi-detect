@@ -1,6 +1,6 @@
-from .preprocess import HiddenOutput, predict_batch
+from .preprocess import HiddenOutput, preprocess_drift
 
 __all__ = [
     "HiddenOutput",
-    "predict_batch"
+    "preprocess_drift"
 ]

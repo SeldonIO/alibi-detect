@@ -1,4 +1,3 @@
-# TODO: UAE needed for text preprocessing? -> Yep, would be helpful!
 import numpy as np
 import torch
 import torch.nn as nn
