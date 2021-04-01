@@ -4,10 +4,10 @@ from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
 from alibi_detect.utils.metrics import accuracy
 
 if has_pytorch:
-    from alibi_detect.cd.classifier_pt import ClassifierDriftTorch
+    from alibi_detect.cd.pytorch.classifier import ClassifierDriftTorch
 
 if has_tensorflow:
-    from alibi_detect.cd.classifier_tf import ClassifierDriftTF
+    from alibi_detect.cd.tensorflow.classifier import ClassifierDriftTF
 
 
 class ClassifierDrift:

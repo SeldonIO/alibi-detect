@@ -4,10 +4,10 @@ from typing import Callable, Dict, Optional, Union
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
 
 if has_pytorch:
-    from alibi_detect.cd.mmd_pt import MMDDriftTorch
+    from alibi_detect.cd.pytorch.mmd import MMDDriftTorch
 
 if has_tensorflow:
-    from alibi_detect.cd.mmd_tf import MMDDriftTF
+    from alibi_detect.cd.tensorflow.mmd import MMDDriftTF
 
 logger = logging.getLogger(__name__)
 
