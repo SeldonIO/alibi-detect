@@ -34,9 +34,9 @@ def predict_batch(x: Union[np.ndarray, tf.Tensor], model: tf.keras.Model, batch_
             preds_tmp = preds_tmp.numpy()
         preds.append(preds_tmp)
     if return_np:
-        return np.concatenate(preds)
+        return np.concatenate(preds, axis=0)
     else:
-        return tf.concat(preds)
+        return tf.concat(preds, axis=0)
 
 
 def predict_batch_transformer(x: np.ndarray, model: tf.keras.Model, tokenizer,
@@ -76,6 +76,6 @@ def predict_batch_transformer(x: np.ndarray, model: tf.keras.Model, tokenizer,
             preds_tmp = preds_tmp.numpy()
         preds.append(preds_tmp)
     if return_np:
-        return np.concatenate(preds)
+        return np.concatenate(preds, axis=0)
     else:
-        return tf.concat(preds)
+        return tf.concat(preds, axis=0)

@@ -2,8 +2,8 @@ import numpy as np
 import pytest
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, InputLayer
-from alibi_detect.models.tensorflow import AE
-from alibi_detect.utils.tensorflow import predict_batch
+from alibi_detect.utils.prediction import predict_batch
+from alibi_detect.models.tensorflow.autoencoder import AE
 
 n, n_features, n_classes, latent_dim = 100, 10, 5, 2
 X = np.zeros((n, n_features))
@@ -34,28 +34,31 @@ decoder_net = tf.keras.Sequential(
 )
 AutoEncoder = AE(encoder_net, decoder_net)
 
-# model, batch size, dtype
+# model, proba, return_class, shape
 tests_predict = [
-    (model, 2, np.float32),
-    (model, int(1e10), np.float32),
-    (model, int(1e10), tf.float32),
-    (AutoEncoder, 2, np.float32),
-    (AutoEncoder, int(1e10), np.float32)
+    (model, True, False, None),
+    (model, False, True, None),
+    (model, False, False, (n, n_classes)),
+    (AutoEncoder, False, False, None),
+    (AutoEncoder, True, False, None)
 ]
 n_tests = len(tests_predict)
 
 
 @pytest.fixture
-def predict_batch_params(request):
+def update_predict_batch(request):
     return tests_predict[request.param]
 
 
-@pytest.mark.parametrize('predict_batch_params', list(range(n_tests)), indirect=True)
-def test_predict_batch(predict_batch_params):
-    model, batch_size, dtype = predict_batch_params
-    preds = predict_batch(X, model, batch_size=batch_size, dtype=dtype)
-    assert preds.dtype == dtype
+@pytest.mark.parametrize('update_predict_batch', list(range(n_tests)), indirect=True)
+def test_predict_batch(update_predict_batch):
+    model, proba, return_class, shape = update_predict_batch
+    preds = predict_batch(model, X, proba=proba, return_class=return_class, shape=shape)
     if isinstance(model, AE):
         assert preds.shape == X.shape
-    elif isinstance(model, tf.keras.Model):
+    elif isinstance(model, tf.keras.Model) and proba:
         assert preds.shape == (n, n_classes)
+    elif isinstance(model, tf.keras.Model) and not proba and return_class:
+        assert preds.shape == (n,)
+    elif isinstance(model, tf.keras.Model) and shape:
+        assert preds.shape == shape
