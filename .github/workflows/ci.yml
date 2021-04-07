@@ -77,6 +77,6 @@ jobs:
           python-version: '3.8'
       - name: Check 3rd party licenses haven't changed
         run: |
-          pip install tox>=3.21.0,<4.0.0
+          pip install "tox>=3.21.0,<4.0.0"
           make licenses
           make check_licenses
