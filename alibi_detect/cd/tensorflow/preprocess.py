@@ -1,4 +1,3 @@
-# TODO: move TransformerEmbedding here?
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, Flatten, Input, InputLayer
@@ -7,7 +6,6 @@ from typing import Dict, Optional, Union
 from alibi_detect.utils.tensorflow.prediction import predict_batch, predict_batch_transformer
 
 
-# TODO: should be exposed conveniently at higher level w/o pytorch conflict
 class UAE(tf.keras.Model):
     def __init__(
             self,
@@ -41,7 +39,6 @@ class UAE(tf.keras.Model):
         return self.encoder(x)
 
 
-# TODO: should be exposed conveniently at higher level w/o pytorch conflict
 class HiddenOutput(tf.keras.Model):
     def __init__(
             self,
@@ -61,9 +58,9 @@ class HiddenOutput(tf.keras.Model):
         return self.model(x)
 
 
-# TODO: update with pytorch version
 def preprocess_drift(x: np.ndarray, model: tf.keras.Model, tokenizer=None,
-                     max_len: int = None, batch_size: int = int(1e10)) -> np.ndarray:
+                     max_len: int = None, batch_size: int = int(1e10),
+                     dtype: type = np.float32) -> Union[np.ndarray, tf.Tensor]:
     """
     Prediction function used for preprocessing step of drift detector.
 
@@ -79,12 +76,14 @@ def preprocess_drift(x: np.ndarray, model: tf.keras.Model, tokenizer=None,
         Optional max token length for text drift.
     batch_size
         Batch size.
+    dtype
+        Model output type, e.g. np.float32 or torch.float32.
 
     Returns
     -------
     Numpy array with predictions.
     """
     if tokenizer is None:
-        return predict_batch(x, model, batch_size=batch_size)
+        return predict_batch(x, model, batch_size=batch_size, dtype=dtype)
     else:
-        return predict_batch_transformer(x, model, tokenizer, max_len, batch_size=batch_size)
+        return predict_batch_transformer(x, model, tokenizer, max_len, batch_size=batch_size, dtype=dtype)
