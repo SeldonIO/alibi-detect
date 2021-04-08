@@ -15,8 +15,7 @@ from alibi_detect.base import BaseDetector
 from alibi_detect.cd import ChiSquareDrift, ClassifierDrift, KSDrift, MMDDrift, TabularDrift
 #from alibi_detect.cd.preprocess import HiddenOutput, UAE
 from alibi_detect.models.tensorflow.autoencoder import AE, AEGMM, DecoderLSTM, EncoderLSTM, Seq2Seq, VAE, VAEGMM
-from alibi_detect.models import TransformerEmbedding
-from alibi_detect.models import PixelCNN
+from alibi_detect.models.tensorflow import PixelCNN, TransformerEmbedding
 from alibi_detect.od import (IForest, LLR, Mahalanobis, OutlierAE, OutlierAEGMM, OutlierProphet,
                              OutlierSeq2Seq, OutlierVAE, OutlierVAEGMM, SpectralResidual)
 from alibi_detect.od.llr import build_model
@@ -65,8 +64,7 @@ DEFAULT_DETECTORS = [
 ]
 
 
-def save_detector(detector: Data,
-                  filepath: str) -> None:
+def save_detector(detector: Data, filepath: str) -> None:
     """
     Save outlier, drift or adversarial detector.
 

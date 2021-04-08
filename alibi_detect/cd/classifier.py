@@ -42,6 +42,8 @@ class ClassifierDrift:
         if backend == 'tensorflow' and not has_tensorflow or backend == 'pytorch' and not has_pytorch:
             raise ImportError(f'{backend} not installed. Cannot initialize and run the '
                               f'ClassifierDrift detector with {backend} backend.')
+        elif backend not in ['tensorflow', 'pytorch']:
+            raise NotImplementedError(f'{backend} not implemented. Use tensorflow or pytorch instead.')
 
         kwargs = locals()
         args = [kwargs['x_ref'], kwargs['model']]
@@ -53,11 +55,10 @@ class ClassifierDrift:
         if backend == 'tensorflow' and has_tensorflow:
             kwargs.pop('device', None)
             self._detector = ClassifierDriftTF(*args, **kwargs)
-        elif backend == 'pytorch' and has_pytorch:
+        else:
             kwargs.pop('compile_kwargs', None)
             self._detector = ClassifierDriftTorch(*args, **kwargs)
-        else:
-            raise NotImplementedError(f'{backend} ClassifierDrift detector not implemented.')
+        self.meta = self._detector.meta
 
     def predict(self, x: np.ndarray, return_metric: bool = True) \
             -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:

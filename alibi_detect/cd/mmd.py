@@ -56,6 +56,7 @@ class MMDDrift:
             self._detector = MMDDriftTF(*args, **kwargs)
         else:
             self._detector = MMDDriftTorch(*args, **kwargs)
+        self.meta = self._detector.meta
 
     def predict(self, x: np.ndarray, return_p_val: bool = True, return_distance: bool = True) \
             -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
