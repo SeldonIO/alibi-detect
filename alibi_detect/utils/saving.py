@@ -13,7 +13,7 @@ from alibi_detect.ad import AdversarialAE, ModelDistillation
 from alibi_detect.ad.adversarialae import DenseHidden
 from alibi_detect.base import BaseDetector
 from alibi_detect.cd import ChiSquareDrift, ClassifierDrift, KSDrift, MMDDrift, TabularDrift
-#from alibi_detect.cd.preprocess import HiddenOutput, UAE
+from alibi_detect.cd.tensorflow import HiddenOutput, UAE
 from alibi_detect.models.tensorflow.autoencoder import AE, AEGMM, DecoderLSTM, EncoderLSTM, Seq2Seq, VAE, VAEGMM
 from alibi_detect.models.tensorflow import PixelCNN, TransformerEmbedding
 from alibi_detect.od import (IForest, LLR, Mahalanobis, OutlierAE, OutlierAEGMM, OutlierProphet,
@@ -33,8 +33,8 @@ Data = Union[
     Mahalanobis,
     MMDDrift,
     ModelDistillation,
-    OutlierAEGMM,
     OutlierAE,
+    OutlierAEGMM,
     OutlierProphet,
     OutlierSeq2Seq,
     OutlierVAE,
@@ -75,6 +75,9 @@ def save_detector(detector: Data, filepath: str) -> None:
     filepath
         Save directory.
     """
+    if 'backend' in list(detector.meta.keys()) and detector.meta['backend'] == 'pytorch':
+        raise NotImplementedError('Detectors with PyTorch backend are not yet supported.')
+
     detector_name = detector.meta['name']
     if detector_name not in DEFAULT_DETECTORS:
         raise ValueError('{} is not supported by `save_detector`.'.format(detector_name))
@@ -253,19 +256,30 @@ def state_chisquaredrift(cd: ChiSquareDrift) -> Tuple[
     preprocess_fn, preprocess_kwargs, model, embed, embed_args, tokenizer, load_emb = \
         preprocess_step_drift(cd)
     state_dict = {
-        'p_val': cd.p_val,
-        'X_ref': cd.X_ref,
-        'preprocess_X_ref': cd.preprocess_X_ref,
-        'update_X_ref': cd.update_X_ref,
-        'n': cd.n,
-        'n_features': cd.n_features,
-        'correction': cd.correction,
-        'preprocess_fn': preprocess_fn,
-        'preprocess_kwargs': preprocess_kwargs,
-        'input_shape': cd.input_shape,
-        'load_text_embedding': load_emb,
-        'categories_per_feature': cd.categories_per_feature,
-        'X_ref_count': cd.X_ref_count
+        'args':
+            {
+                'x_ref': cd.x_ref
+            },
+        'kwargs':
+            {
+                'p_val': cd.p_val,
+                'categories_per_feature': None,
+                'preprocess_x_ref': False,
+                'update_x_ref': cd.update_x_ref,
+                'correction': cd.correction,
+                'n_features': cd.n_features,
+                'input_shape': cd.input_shape,
+            },
+        'other':
+            {
+                'n': cd.n,
+                'preprocess_x_ref': cd.preprocess_x_ref,
+                'categories_per_feature': cd.categories_per_feature,
+                'x_ref_count': cd.x_ref_count,
+                'load_text_embedding': load_emb,
+                'preprocess_fn': preprocess_fn,
+                'preprocess_kwargs': preprocess_kwargs
+            }
     }
     return state_dict, model, embed, embed_args, tokenizer
 
@@ -903,6 +917,9 @@ def load_detector(filepath: str, **kwargs) -> Data:
     # load metadata
     meta_dict = pickle.load(open(os.path.join(filepath, 'meta.pickle'), 'rb'))
 
+    if 'backend' in list(meta_dict.keys()) and meta_dict['backend'] == 'pytorch':
+        raise NotImplementedError('Detectors with PyTorch backend are not yet supported.')
+
     detector_name = meta_dict['name']
     if detector_name not in DEFAULT_DETECTORS:
         raise ValueError('{} is not supported by `load_detector`.'.format(detector_name))
@@ -1500,23 +1517,15 @@ def init_cd_chisquaredrift(state_dict: Dict, model: Optional[Union[tf.keras.Mode
     -------
     Initialized ChiSquareDrift instance.
     """
-    preprocess_fn, preprocess_kwargs = init_preprocess(state_dict, model, emb, tokenizer, **kwargs)
-    cd = ChiSquareDrift(
-        p_val=state_dict['p_val'],
-        X_ref=state_dict['X_ref'],
-        categories_per_feature=None,
-        preprocess_X_ref=False,
-        update_X_ref=state_dict['update_X_ref'],
-        preprocess_fn=preprocess_fn,
-        preprocess_kwargs=preprocess_kwargs,
-        correction=state_dict['correction'],
-        n_features=state_dict['n_features'],
-        input_shape=state_dict['input_shape']
-    )
-    cd.n = state_dict['n']
-    cd.preprocess_X_ref = state_dict['preprocess_X_ref']
-    cd.categories_per_feature = state_dict['categories_per_feature']
-    cd.X_ref_count = state_dict['X_ref_count']
+    preprocess_fn, preprocess_kwargs = init_preprocess(state_dict['other'], model, emb, tokenizer, **kwargs)
+    if isinstance(preprocess_fn, Callable) and isinstance(preprocess_kwargs, dict):
+        state_dict['kwargs'].update({'preprocess_fn': partial(preprocess_fn, **preprocess_kwargs)})
+    cd = ChiSquareDrift(*list(state_dict['args'].values()), **state_dict['kwargs'])
+    attrs = state_dict['other']
+    cd.n = attrs['n']
+    cd.preprocess_x_ref = attrs['preprocess_x_ref']
+    cd.categories_per_feature = attrs['categories_per_feature']
+    cd.x_ref_count = attrs['x_ref_count']
     return cd
 
 
