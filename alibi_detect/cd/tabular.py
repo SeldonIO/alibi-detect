@@ -22,7 +22,7 @@ class TabularDrift(BaseUnivariateDrift):
             n_features: Optional[int] = None,
             input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None
-        ) -> None:
+    ) -> None:
         """
         Mixed-type tabular data drift detector with Bonferroni or False Discovery Rate (FDR)
         correction for multivariate data. Kolmogorov-Smirnov (K-S) univariate tests are applied to

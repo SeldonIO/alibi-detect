@@ -43,8 +43,6 @@ class ChiSquareDrift(BaseUnivariateDrift):
         preprocess_fn
             Function to preprocess the data before computing the data drift metrics.
             Typically a dimensionality reduction technique.
-        preprocess_kwargs
-            Kwargs for `preprocess_fn`.
         correction
             Correction type for multivariate data. Either 'bonferroni' or 'fdr' (False Discovery Rate).
         n_features

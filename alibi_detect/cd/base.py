@@ -168,6 +168,30 @@ class BaseMMDDrift(BaseDetector):
             input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None
     ) -> None:
+        """
+        Maximum Mean Discrepancy (MMD) data drift detector using a permutation test.
+
+        Parameters
+        ----------
+        x_ref
+            Data used as reference distribution.
+        p_val
+            p-value used for the significance of the permutation test.
+        preprocess_x_ref
+            Whether to already preprocess and store the reference data.
+        update_x_ref
+            Reference data can optionally be updated to the last n instances seen by the detector
+            or via reservoir sampling with size n. For the former, the parameter equals {'last': n} while
+            for reservoir sampling {'reservoir_sampling': n} is passed.
+        preprocess_fn
+            Function to preprocess the data before computing the data drift metrics.
+        n_permutations
+            Number of permutations used in the permutation test.
+        input_shape
+            Shape of input data.
+        data_type
+            Optionally specify the data type (tabular, image or time-series). Added to metadata.
+        """
         super().__init__()
 
         if p_val is None:
