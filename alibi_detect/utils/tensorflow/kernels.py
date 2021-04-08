@@ -31,4 +31,4 @@ class GaussianRBF:
         gamma = 1. / (2. * self.sigma ** 2)   # [Ns,]
         # TODO: do matrix multiplication after all?
         kernel_mat = tf.exp(- tf.concat([(g * dist)[None, :, :] for g in gamma], axis=0))  # [Ns, Nx, Ny]
-        return tf.reduce_sum(kernel_mat, axis=0)  # [Nx, Ny]
+        return tf.reduce_mean(kernel_mat, axis=0)  # [Nx, Ny]

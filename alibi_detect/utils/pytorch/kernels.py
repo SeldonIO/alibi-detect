@@ -32,4 +32,4 @@ class GaussianRBF:
         gamma = 1. / (2. * self.sigma ** 2)   # [Ns,]
         # TODO: do matrix multiplication after all?
         kernel_mat = torch.exp(- torch.cat([(g * dist)[None, :, :] for g in gamma], dim=0))  # [Ns, Nx, Ny]
-        return kernel_mat.sum(dim=0)  # [Nx, Ny]
+        return kernel_mat.mean(dim=0)  # [Nx, Ny]
