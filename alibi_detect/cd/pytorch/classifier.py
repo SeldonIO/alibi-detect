@@ -39,9 +39,7 @@ class ClassifierDriftTorch(BaseClassifierDrift):
         """
         Classifier-based drift detector. The classifier is trained on a fraction of the combined
         reference and test data and drift is detected on the remaining data. To use all the data
-        to detect drift, a stratified cross-validation scheme can be chosen. The metric to evaluate
-        the drift detector defaults to accuracy but is flexible and can be changed to any function
-        to handle e.g. imbalanced splits between reference and test sets.
+        to detect drift, a stratified cross-validation scheme can be chosen.
 
         Parameters
         ----------
@@ -89,7 +87,7 @@ class ClassifierDriftTorch(BaseClassifierDrift):
             Optional additional kwargs when fitting the classifier.
         device
             Device type used. The default None tries to use the GPU and falls back on CPU if needed.
-            Can be specified by passing either torch.device('cuda') or torch.device('cpu').
+            Can be specified by passing either 'cuda', 'gpu' or 'cpu'.
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """

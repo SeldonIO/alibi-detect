@@ -7,7 +7,6 @@ from alibi_detect.utils.metrics import accuracy
 
 
 class ClassifierDriftTF(BaseClassifierDrift):
-
     def __init__(
             self,
             x_ref: np.ndarray,
@@ -33,9 +32,7 @@ class ClassifierDriftTF(BaseClassifierDrift):
         """
         Classifier-based drift detector. The classifier is trained on a fraction of the combined
         reference and test data and drift is detected on the remaining data. To use all the data
-        to detect drift, a stratified cross-validation scheme can be chosen. The metric to evaluate
-        the drift detector defaults to accuracy but is flexible and can be changed to any function
-        to handle e.g. imbalanced splits between reference and test sets.
+        to detect drift, a stratified cross-validation scheme can be chosen.
 
         Parameters
         ----------

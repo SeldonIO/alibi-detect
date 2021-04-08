@@ -11,7 +11,6 @@ if has_tensorflow:
 
 
 class ClassifierDrift:
-
     def __init__(
             self,
             x_ref: np.ndarray,

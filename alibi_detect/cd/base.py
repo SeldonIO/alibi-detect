@@ -26,6 +26,42 @@ class BaseClassifierDrift(BaseDetector):
             seed: int = 0,
             data_type: Optional[str] = None
     ) -> None:
+        """
+        Base class for the classifier-based drift detector.
+
+        Parameters
+        ----------
+        x_ref
+            Data used as reference distribution.
+        threshold
+            Threshold for the drift metric (default is accuracy). Values above the threshold are
+            classified as drift.
+        preprocess_x_ref
+            Whether to already preprocess and store the reference data.
+        update_x_ref
+            Reference data can optionally be updated to the last n instances seen by the detector
+            or via reservoir sampling with size n. For the former, the parameter equals {'last': n} while
+            for reservoir sampling {'reservoir_sampling': n} is passed.
+        preprocess_fn
+            Function to preprocess the data before computing the data drift metrics.
+        metric_fn
+            Function computing the drift metric. Takes `y_true` and `y_pred` as input and
+            returns a float: metric_fn(y_true, y_pred). Defaults to accuracy.
+        metric_name
+            Optional name for the metric_fn used in the return dict. Defaults to 'metric_fn.__name__'.
+        train_size
+            Optional fraction (float between 0 and 1) of the dataset used to train the classifier.
+            The drift is detected on `1 - train_size`. Cannot be used in combination with `n_folds`.
+        n_folds
+            Optional number of stratified folds used for training. The metric is then calculated
+            on all the out-of-fold predictions. This allows to leverage all the reference and test data
+            for drift detection at the expense of longer computation. If both `train_size` and `n_folds`
+            are specified, `n_folds` is prioritized.
+        seed
+            Optional random seed for fold selection.
+        data_type
+            Optionally specify the data type (tabular, image or time-series). Added to metadata.
+        """
         super().__init__()
 
         if threshold is None:
@@ -167,7 +203,7 @@ class BaseMMDDrift(BaseDetector):
             data_type: Optional[str] = None
     ) -> None:
         """
-        Maximum Mean Discrepancy (MMD) data drift detector using a permutation test.
+        Maximum Mean Discrepancy (MMD) base data drift detector using a permutation test.
 
         Parameters
         ----------
@@ -183,6 +219,11 @@ class BaseMMDDrift(BaseDetector):
             for reservoir sampling {'reservoir_sampling': n} is passed.
         preprocess_fn
             Function to preprocess the data before computing the data drift metrics.
+        sigma
+            Optionally set the Gaussian RBF kernel bandwidth. Can also pass multiple bandwidth values as an array.
+            The kernel evaluation is then averaged over those bandwidths.
+        configure_kernel_from_x_ref
+            Whether to already configure the kernel bandwidth from the reference data.
         n_permutations
             Number of permutations used in the permutation test.
         input_shape
