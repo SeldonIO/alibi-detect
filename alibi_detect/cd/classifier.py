@@ -2,6 +2,7 @@ from functools import partial
 import logging
 import numpy as np
 from sklearn.model_selection import StratifiedKFold
+from scipy.stats import binom_test
 import tensorflow as tf
 from tensorflow.keras.losses import BinaryCrossentropy
 from typing import Callable, Dict, Optional, Tuple, Union
@@ -15,15 +16,13 @@ logger = logging.getLogger(__name__)
 class ClassifierDrift(BaseDetector):
 
     def __init__(self,
-                 threshold: float = None,
+                 p_val: float = .05,
                  model: Union[tf.keras.Model, tf.keras.Sequential] = None,
                  X_ref: Union[np.ndarray, list] = None,
                  preprocess_X_ref: bool = True,
                  update_X_ref: Optional[Dict[str, int]] = None,
                  preprocess_fn: Optional[Callable] = None,
                  preprocess_kwargs: Optional[dict] = None,
-                 metric_fn: Callable = accuracy,
-                 metric_name: Optional[str] = None,
                  train_size: Optional[float] = .75,
                  n_folds: Optional[int] = None,
                  seed: int = 0,
@@ -38,15 +37,12 @@ class ClassifierDrift(BaseDetector):
         """
         Classifier-based drift detector. The classifier is trained on a fraction of the combined
         reference and test data and drift is detected on the remaining data. To use all the data
-        to detect drift, a stratified cross-validation scheme can be chosen. The metric to evaluate
-        the drift detector defaults to accuracy but is flexible and can be changed to any function
-        to handle e.g. imbalanced splits between reference and test sets.
+        to detect drift, a stratified cross-validation scheme can be chosen.
 
         Parameters
         ----------
-        threshold
-            Threshold for the drift metric (default is accuracy). Values above the threshold are
-            classified as drift.
+        p_val
+            p-value used for the significance of the test.
         model
             Classification model used for drift detection.
         X_ref
@@ -62,16 +58,11 @@ class ClassifierDrift(BaseDetector):
             Function to preprocess the data before computing the data drift metrics.
         preprocess_kwargs
             Kwargs for `preprocess_fn`.
-        metric_fn
-            Function computing the drift metric. Takes `y_true` and `y_pred` as input and
-            returns a float: metric_fn(y_true, y_pred). Defaults to accuracy.
-        metric_name
-            Optional name for the metric_fn used in the return dict. Defaults to 'metric_fn.__name__'.
         train_size
             Optional fraction (float between 0 and 1) of the dataset used to train the classifier.
             The drift is detected on `1 - train_size`. Cannot be used in combination with `n_folds`.
         n_folds
-            Optional number of stratified folds used for training. The metric is then calculated
+            Optional number of stratified folds used for training. The accuracy is then calculated
             on all the out-of-fold predictions. This allows to leverage all the reference and test data
             for drift detection at the expense of longer computation. If both `train_size` and `n_folds`
             are specified, `n_folds` is prioritized.
@@ -95,8 +86,8 @@ class ClassifierDrift(BaseDetector):
         """
         super().__init__()
 
-        if threshold is None:
-            logger.warning('Need to set drift threshold to detect data drift.')
+        if p_val is None:
+            logger.warning('No p-value set for the drift threshold. Need to set it to detect data drift.')
 
         if isinstance(train_size, float) and isinstance(n_folds, int):
             logger.warning('Both `n_folds` and `train_size` specified. By default `n_folds` is used.')
@@ -114,9 +105,8 @@ class ClassifierDrift(BaseDetector):
             self.X_ref = X_ref
         self.update_X_ref = update_X_ref
         self.n = X_ref.shape[0]  # type: ignore
+        self.p_val = p_val
 
-        self.threshold = threshold
-        self.metric_fn = metric_fn
         if isinstance(n_folds, int):
             self.train_size = None
             self.skf = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=seed)
@@ -134,8 +124,6 @@ class ClassifierDrift(BaseDetector):
         # set metadata
         self.meta['detector_type'] = 'offline'
         self.meta['data_type'] = data_type
-        self.metric_name = metric_fn.__name__ if metric_name is None else metric_name
-        self.meta['params'] = {'metric_fn': self.metric_name}
 
     def preprocess(self, X: Union[np.ndarray, list]) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -159,7 +147,7 @@ class ClassifierDrift(BaseDetector):
 
     def score(self, X: Union[np.ndarray, list]) -> float:
         """
-        Compute the out-of-fold drift metric such as the accuracy from a classifier
+        Compute the out-of-fold accuracy of the classifier
         trained to distinguish the reference data from the data to be tested.
 
         Parameters
@@ -169,7 +157,8 @@ class ClassifierDrift(BaseDetector):
 
         Returns
         -------
-        Drift metric (e.g. accuracy) obtained from out-of-fold predictions from a trained classifier.
+        p-value, accuracy obtained from out-of-fold predictions from a trained classifier,
+        and the expected accuracy under the assumption of no drift.
         """
         X_ref, X = self.preprocess(X)
 
@@ -199,11 +188,16 @@ class ClassifierDrift(BaseDetector):
             idx_oof.append(idx_te)
         preds_oof = np.concatenate(preds_oof, axis=0)[:, 1]
         idx_oof = np.concatenate(idx_oof, axis=0)
-        drift_metric = self.metric_fn(y[idx_oof], preds_oof)
-        return drift_metric
 
-    def predict(self, X: Union[np.ndarray, list], return_metric: bool = True) \
-            -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
+        baseline_accuracy = max(X_ref.shape[0], X.shape[0]) / (X_ref.shape[0] + X.shape[0]) # expected acc under null
+        n_oof = idx_oof.shape[0]
+        n_correct = (y[idx_oof]==preds_oof).sum()
+        p_val = binom_test(n_correct, n_oof, baseline_accuracy, alternative='greater')
+
+        return p_val, n_correct/n_oof, baseline_accuracy
+
+    def predict(self, X: Union[np.ndarray, list],  return_p_val: bool = True, 
+        return_accuracy: bool = True) -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
         """
         Predict whether a batch of data has drifted from the reference data.
 
@@ -211,18 +205,20 @@ class ClassifierDrift(BaseDetector):
         ----------
         X
             Batch of instances.
-        return_metric
-            Whether to return the drift metric from the detector.
+        return_p_val
+            Whether to return the p-value of the test.
+        return_accuracy
+            Whether to return the accuracy of the classifier.
 
         Returns
         -------
         Dictionary containing 'meta' and 'data' dictionaries.
         'meta' has the model's metadata.
-        'data' contains the drift prediction and optionally the drift metric and threshold.
+        'data' contains the drift prediction and optionally the classifier accuracy and its expectation under the null.
         """
         # compute drift scores
-        drift_metric = self.score(X)
-        drift_pred = int(drift_metric > self.threshold)
+        p_val, oof_accuracy, baseline_accuracy = self.score(X)
+        drift_pred = int(p_val < self.p_val)
 
         # update reference dataset
         if isinstance(self.update_X_ref, dict) and self.preprocess_fn is not None and self.preprocess_X_ref:
@@ -235,7 +231,10 @@ class ClassifierDrift(BaseDetector):
         cd = concept_drift_dict()
         cd['meta'] = self.meta
         cd['data']['is_drift'] = drift_pred
-        if return_metric:
-            cd['data'][self.metric_name] = drift_metric
-            cd['data']['threshold'] = self.threshold
+        if return_p_val:
+            cd['data']['p_val'] = p_val
+            cd['data']['threshold'] = self.p_val
+        if return_accuracy:
+            cd['data']['baseline_accuracy'] = baseline_accuracy
+            cd['data']['oof_accuracy'] = oof_accuracy
         return cd
