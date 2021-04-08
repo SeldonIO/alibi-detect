@@ -1,6 +1,6 @@
 import logging
 import numpy as np
-from scipy.stats import chisquare, ks_2samp
+from scipy.stats import chi2_contingency, ks_2samp
 from typing import Callable, Dict, Optional, Tuple
 from alibi_detect.cd.base import BaseUnivariateDrift
 
@@ -125,8 +125,8 @@ class TabularDrift(BaseUnivariateDrift):
         dist = np.zeros_like(p_val)
         for f in range(self.n_features):
             if f in list(self.categories_per_feature.keys()):
-                n_ref, n_obs = X_ref_count[f].sum(), X_count[f].sum()
-                dist[f], p_val[f] = chisquare(X_count[f], f_exp=X_ref_count[f] * n_obs / n_ref)
+                contingency_table = np.vstack((X_ref_count[f], X_count[f]))
+                dist[f], p_val[f], _, _ = chi2_contingency(contingency_table)
             else:
                 dist[f], p_val[f] = ks_2samp(X_ref[:, f], X[:, f], alternative=self.alternative, mode='asymp')
         return p_val, dist
