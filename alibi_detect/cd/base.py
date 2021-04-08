@@ -12,7 +12,6 @@ logger = logging.getLogger(__name__)
 
 
 class BaseClassifierDrift(BaseDetector):
-
     def __init__(
             self,
             x_ref: np.ndarray,
@@ -154,7 +153,6 @@ class BaseClassifierDrift(BaseDetector):
 
 
 class BaseMMDDrift(BaseDetector):
-
     def __init__(
             self,
             x_ref: np.ndarray,
@@ -163,7 +161,7 @@ class BaseMMDDrift(BaseDetector):
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
             sigma: Optional[np.ndarray] = None,
-            infer_sigma: bool = True,
+            configure_kernel_from_x_ref: bool = True,
             n_permutations: int = 100,
             input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None
@@ -197,11 +195,12 @@ class BaseMMDDrift(BaseDetector):
         if p_val is None:
             logger.warning('No p-value set for the drift threshold. Need to set it to detect data drift.')
 
-        self.infer_sigma = infer_sigma
-        if infer_sigma and isinstance(sigma, np.ndarray):
+        self.infer_sigma = configure_kernel_from_x_ref
+        if configure_kernel_from_x_ref and isinstance(sigma, np.ndarray):
             self.infer_sigma = False
-            logger.warning('`sigma` is specified for the kernel and `infer_sigma` is set to True.'
-                           '`sigma` keyword argument takes priority over `infer_sigma` (set to False).')
+            logger.warning('`sigma` is specified for the kernel and `configure_kernel_from_x_ref` '
+                           'is set to True. `sigma` argument takes priority over '
+                           '`configure_kernel_from_x_ref` (set to False).')
 
         # optionally already preprocess reference data
         self.p_val = p_val
@@ -297,7 +296,6 @@ class BaseMMDDrift(BaseDetector):
 
 
 class BaseUnivariateDrift(BaseDetector):
-
     def __init__(
             self,
             x_ref: np.ndarray,

@@ -4,7 +4,7 @@ from typing import Union
 
 
 def predict_batch(x: Union[np.ndarray, tf.Tensor], model: tf.keras.Model, batch_size: int = int(1e10),
-                  dtype: Union[np.float32, tf.float32] = np.float32) -> Union[np.ndarray, tf.Tensor]:
+                  dtype: Union[np.float32, 'tensorflow.python.framework.dtypes.DType'] = np.float32) -> Union[np.ndarray, tf.Tensor]:
     """
     Make batch predictions on a model.
 
@@ -41,7 +41,7 @@ def predict_batch(x: Union[np.ndarray, tf.Tensor], model: tf.keras.Model, batch_
 
 def predict_batch_transformer(x: np.ndarray, model: tf.keras.Model, tokenizer,
                               max_len: int, batch_size: int = int(1e10),
-                              dtype: Union[np.float32, tf.float32] = np.float32) \
+                              dtype: Union[np.float32, 'tensorflow.python.framework.dtypes.DType'] = np.float32) \
         -> Union[np.ndarray, tf.Tensor]:
     """
     Make batch predictions using a transformers tokenizer and model.

@@ -14,7 +14,6 @@ logger = logging.getLogger(__name__)
 
 
 class ClassifierDriftTorch(BaseClassifierDrift):
-
     def __init__(
             self,
             x_ref: np.ndarray,

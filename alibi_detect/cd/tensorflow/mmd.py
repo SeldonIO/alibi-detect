@@ -10,7 +10,6 @@ logger = logging.getLogger(__name__)
 
 
 class MMDDriftTF(BaseMMDDrift):
-
     def __init__(
             self,
             x_ref: np.ndarray,
@@ -20,7 +19,7 @@ class MMDDriftTF(BaseMMDDrift):
             preprocess_fn: Optional[Callable] = None,
             kernel: Callable = GaussianRBF,
             sigma: Optional[np.ndarray] = None,
-            infer_sigma: bool = True,
+            configure_kernel_from_x_ref: bool = True,
             n_permutations: int = 100,
             input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None
@@ -32,7 +31,7 @@ class MMDDriftTF(BaseMMDDrift):
             update_x_ref=update_x_ref,
             preprocess_fn=preprocess_fn,
             sigma=sigma,
-            infer_sigma=infer_sigma,
+            configure_kernel_from_x_ref=configure_kernel_from_x_ref,
             n_permutations=n_permutations,
             input_shape=input_shape,
             data_type=data_type
@@ -44,7 +43,7 @@ class MMDDriftTF(BaseMMDDrift):
 
         # compute kernel matrix for the reference data
         if self.infer_sigma or isinstance(sigma, np.ndarray):
-            self.k_xx = self.kernel(self.x_ref, self.x_ref, infer_sigma=infer_sigma)
+            self.k_xx = self.kernel(self.x_ref, self.x_ref, infer_sigma=configure_kernel_from_x_ref)
             self.infer_sigma = False
         else:
             self.k_xx, self.infer_sigma = None, True

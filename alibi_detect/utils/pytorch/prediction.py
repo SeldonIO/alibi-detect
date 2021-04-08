@@ -6,7 +6,7 @@ from typing import Callable, Union
 
 def predict_batch(x: Union[np.ndarray, torch.Tensor], model: Union[nn.Module, nn.Sequential],
                   device: torch.device = None, batch_size: int = int(1e10),
-                  dtype: Union[np.float32, torch.float32] = np.float32) -> Union[np.ndarray, torch.Tensor]:
+                  dtype: Union[np.float32, torch.dtype] = np.float32) -> Union[np.ndarray, torch.Tensor]:
     """
     Make batch predictions on a model.
 
@@ -53,7 +53,7 @@ def predict_batch(x: Union[np.ndarray, torch.Tensor], model: Union[nn.Module, nn
 
 def predict_batch_transformer(x: Union[np.ndarray, torch.Tensor], model: Union[nn.Module, nn.Sequential],
                               tokenizer: Callable, max_len: int, device: torch.device = None,
-                              batch_size: int = int(1e10), dtype: Union[np.float32, torch.float32] = np.float32) \
+                              batch_size: int = int(1e10), dtype: Union[np.float32, torch.dtype] = np.float32) \
         -> Union[np.ndarray, torch.Tensor]:
     """
     Make batch predictions using a transformers tokenizer and model.

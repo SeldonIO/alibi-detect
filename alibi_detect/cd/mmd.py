@@ -13,7 +13,6 @@ logger = logging.getLogger(__name__)
 
 
 class MMDDrift:
-
     def __init__(
             self,
             x_ref: np.ndarray,

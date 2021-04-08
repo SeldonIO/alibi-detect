@@ -10,7 +10,6 @@ logger = logging.getLogger(__name__)
 
 
 class MMDDriftTorch(BaseMMDDrift):
-
     def __init__(
             self,
             x_ref: np.ndarray,
@@ -20,7 +19,7 @@ class MMDDriftTorch(BaseMMDDrift):
             preprocess_fn: Optional[Callable] = None,
             kernel: Callable = GaussianRBF,
             sigma: Optional[np.ndarray] = None,
-            infer_sigma: bool = True,
+            configure_kernel_from_x_ref: bool = True,
             n_permutations: int = 100,
             device: Optional[str] = None,
             input_shape: Optional[tuple] = None,
@@ -33,7 +32,7 @@ class MMDDriftTorch(BaseMMDDrift):
             update_x_ref=update_x_ref,
             preprocess_fn=preprocess_fn,
             sigma=sigma,
-            infer_sigma=infer_sigma,
+            configure_kernel_from_x_ref=configure_kernel_from_x_ref,
             n_permutations=n_permutations,
             input_shape=input_shape,
             data_type=data_type
@@ -55,7 +54,7 @@ class MMDDriftTorch(BaseMMDDrift):
         # compute kernel matrix for the reference data
         if self.infer_sigma or isinstance(sigma, torch.Tensor):
             x = torch.from_numpy(self.x_ref).to(self.device)
-            self.k_xx = self.kernel(x, x, infer_sigma=infer_sigma)
+            self.k_xx = self.kernel(x, x, infer_sigma=configure_kernel_from_x_ref)
             self.infer_sigma = False
         else:
             self.k_xx, self.infer_sigma = None, True
