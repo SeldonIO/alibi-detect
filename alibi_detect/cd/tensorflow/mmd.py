@@ -52,7 +52,7 @@ class MMDDriftTF(BaseMMDDrift):
     def kernel_matrix(self, x: Union[np.ndarray, tf.Tensor], y: Union[np.ndarray, tf.Tensor]) -> tf.Tensor:
         """ Compute and return full kernel matrix between arrays x and y. """
         k_xy = self.kernel(x, y, self.infer_sigma)
-        k_xx = self.k_xx if self.k_xx is not None else self.kernel(x, x)
+        k_xx = self.k_xx if self.k_xx is not None and self.update_x_ref is None else self.kernel(x, x)
         k_yy = self.kernel(y, y)
         kernel_mat = tf.concat([tf.concat([k_xx, k_xy], 1), tf.concat([tf.transpose(k_xy, (1, 0)), k_yy], 1)], 0)
         return kernel_mat

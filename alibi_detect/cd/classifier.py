@@ -53,9 +53,11 @@ class ClassifierDrift:
         if backend == 'tensorflow' and has_tensorflow:
             kwargs.pop('device', None)
             self._detector = ClassifierDriftTF(*args, **kwargs)
-        else:
+        elif backend == 'pytorch' and has_pytorch:
             kwargs.pop('compile_kwargs', None)
             self._detector = ClassifierDriftTorch(*args, **kwargs)
+        else:
+            raise NotImplementedError(f'{backend} ClassifierDrift detector not implemented.')
 
     def predict(self, x: np.ndarray, return_metric: bool = True) \
             -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:

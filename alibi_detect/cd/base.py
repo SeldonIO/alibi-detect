@@ -250,7 +250,7 @@ class BaseMMDDrift(BaseDetector):
 
         # compute distance threshold
         idx_threshold = int(self.p_val * len(dist_permutations))
-        distance_threshold = np.sort(dist_permutations)[::-1][idx_threshold]  # TODO: make sure .item() no longer needed
+        distance_threshold = np.sort(dist_permutations)[::-1][idx_threshold]
 
         # update reference dataset
         if isinstance(self.update_x_ref, dict) and self.preprocess_fn is not None and self.preprocess_x_ref:

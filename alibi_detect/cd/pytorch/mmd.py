@@ -63,7 +63,7 @@ class MMDDriftTorch(BaseMMDDrift):
     def kernel_matrix(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         """ Compute and return full kernel matrix between arrays x and y. """
         k_xy = self.kernel(x, y, self.infer_sigma)
-        k_xx = self.k_xx if self.k_xx is not None else self.kernel(x, x)
+        k_xx = self.k_xx if self.k_xx is not None and self.update_x_ref is None else self.kernel(x, x)
         k_yy = self.kernel(y, y)
         kernel_mat = torch.cat([torch.cat([k_xx, k_xy], 1), torch.cat([k_xy.T, k_yy], 1)], 0)
         return kernel_mat
