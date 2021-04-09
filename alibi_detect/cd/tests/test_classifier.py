@@ -23,7 +23,7 @@ def f1_adj(y_true: np.ndarray, y_pred: np.ndarray) -> float:
 
 p_val = [.05]
 n_features = [4]
-metrics = ['log-loss', 'accuracy']
+metrics = ['log-prob', 'accuracy']
 n_folds = [None, 2]
 train_size = [.5]
 update_X_ref = [None, {'last': 1000}, {'reservoir_sampling': 1000}]
@@ -69,6 +69,6 @@ def test_clfdrift(clfdrift_params):
     assert cd.n == X_test1.shape[0] + X_test0.shape[0] + X_ref.shape[0]
     assert preds_1['data']['is_drift'] == 1
     assert preds_1['data']['distance'] >= 0
-    
+
     assert preds_0['data']['distance'] < preds_1['data']['distance']
     assert cd.meta['params']['metric'] == metric

@@ -23,7 +23,7 @@ class ClassifierDrift(BaseDetector):
                  update_X_ref: Optional[Dict[str, int]] = None,
                  preprocess_fn: Optional[Callable] = None,
                  preprocess_kwargs: Optional[dict] = None,
-                 metric: str = 'log-loss',
+                 metric: str = 'log-prob',
                  train_size: Optional[float] = .75,
                  n_folds: Optional[int] = None,
                  seed: int = 0,
@@ -61,7 +61,7 @@ class ClassifierDrift(BaseDetector):
             Kwargs for `preprocess_fn`.
         metric
             Defines the metric that will be tested against its expectation under the null. 
-            Either 'log-loss' (with K-S test) or 'accuracy' (with Binomial test).
+            Either 'log-prob' (with K-S test) or 'accuracy' (with Binomial test).
         train_size
             Optional fraction (float between 0 and 1) of the dataset used to train the classifier.
             The drift is detected on `1 - train_size`. Cannot be used in combination with `n_folds`.
@@ -101,10 +101,10 @@ class ClassifierDrift(BaseDetector):
         else:
             self.preprocess_fn = preprocess_fn  # type: ignore
         
-        if metric in ['log-loss', 'accuracy']:
+        if metric in ['log-prob', 'accuracy']:
             self.metric = metric
         else:
-            raise ValueError('Only `log-loss` and `accuracy` are supported metrics.')
+            raise ValueError('Only `log-prob` and `accuracy` are supported metrics.')
         
         # optionally already preprocess reference data
         self.preprocess_X_ref = preprocess_X_ref
@@ -200,7 +200,7 @@ class ClassifierDrift(BaseDetector):
         preds_oof = np.concatenate(preds_oof, axis=0)[:, 1]
         idx_oof = np.concatenate(idx_oof, axis=0)
 
-        if self.metric == 'log-loss':
+        if self.metric == 'log-prob':
             log_losses_ref = preds_oof[y[idx_oof]==0]
             log_losses_cur = preds_oof[y[idx_oof]==1]
             dist, p_val = ks_2samp(log_losses_ref, log_losses_cur, alternative='greater')
@@ -230,7 +230,7 @@ class ClassifierDrift(BaseDetector):
             Whether to return the p-value of the test.
         return_distance
             Whether to return a notion of strength of the drift.
-            K-S test stat if metric='log-loss', relative error reduction if metric='accuracy'
+            K-S test stat if metric='log-prob', relative error reduction if metric='accuracy'
 
         Returns
         -------
