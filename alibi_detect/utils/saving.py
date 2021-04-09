@@ -296,7 +296,7 @@ def state_classifierdrift(cd: ClassifierDrift) -> Tuple[
         'n': cd.n,
         'preprocess_fn': preprocess_fn,
         'preprocess_kwargs': preprocess_kwargs,
-        'metric': cd.metric,
+        'soft_preds': cd.soft_preds,
         'train_size': cd.train_size,
         'skf': cd.skf,
         'compile_kwargs': cd.compile_kwargs,
@@ -1468,7 +1468,7 @@ def init_cd_classifierdrift(clf_drift: Union[tf.keras.Sequential, tf.keras.Model
         update_X_ref=state_dict['update_X_ref'],
         preprocess_fn=preprocess_fn,
         preprocess_kwargs=preprocess_kwargs,
-        metric=state_dict['metric'],
+        soft_preds=state_dict['soft_preds'],
         train_size=state_dict['train_size'],
         compile_kwargs=state_dict['compile_kwargs'],
         fit_kwargs=state_dict['fit_kwargs']

@@ -8,7 +8,6 @@ from tensorflow.keras.losses import BinaryCrossentropy
 from typing import Callable, Dict, Optional, Tuple, Union
 from alibi_detect.base import BaseDetector, concept_drift_dict
 from alibi_detect.cd.utils import update_reference
-from alibi_detect.utils.metrics import accuracy
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +22,7 @@ class ClassifierDrift(BaseDetector):
                  update_X_ref: Optional[Dict[str, int]] = None,
                  preprocess_fn: Optional[Callable] = None,
                  preprocess_kwargs: Optional[dict] = None,
-                 metric: str = 'log-prob',
+                 soft_preds: bool=True,
                  train_size: Optional[float] = .75,
                  n_folds: Optional[int] = None,
                  seed: int = 0,
@@ -59,15 +58,15 @@ class ClassifierDrift(BaseDetector):
             Function to preprocess the data before computing the data drift metrics.
         preprocess_kwargs
             Kwargs for `preprocess_fn`.
-        metric
-            Defines the metric that will be tested against its expectation under the null. 
-            Either 'log-prob' (with K-S test) or 'accuracy' (with Binomial test).
+        soft_preds
+            Whether to test for discrepency on soft (e.g. prob/log-prob) model predictions directly
+            with a K-S test or binarise to 0-1 prediction errors and apply a binomial test.
         train_size
             Optional fraction (float between 0 and 1) of the dataset used to train the classifier.
             The drift is detected on `1 - train_size`. Cannot be used in combination with `n_folds`.
         n_folds
-            Optional number of stratified folds used for training. The metric is then calculated
-            on all the out-of-fold predictions. This allows to leverage all the reference and test data
+            Optional number of stratified folds used for training. The model preds are then calculated
+            on all the out-of-fold instances. This allows to leverage all the reference and test data
             for drift detection at the expense of longer computation. If both `train_size` and `n_folds`
             are specified, `n_folds` is prioritized.
         seed
@@ -101,11 +100,6 @@ class ClassifierDrift(BaseDetector):
         else:
             self.preprocess_fn = preprocess_fn  # type: ignore
         
-        if metric in ['log-prob', 'accuracy']:
-            self.metric = metric
-        else:
-            raise ValueError('Only `log-prob` and `accuracy` are supported metrics.')
-        
         # optionally already preprocess reference data
         self.preprocess_X_ref = preprocess_X_ref
         if preprocess_X_ref and isinstance(self.preprocess_fn, Callable):  # type: ignore
@@ -115,6 +109,7 @@ class ClassifierDrift(BaseDetector):
         self.update_X_ref = update_X_ref
         self.n = X_ref.shape[0]  # type: ignore
         self.p_val = p_val
+        self.soft_preds = soft_preds
 
         if isinstance(n_folds, int):
             self.train_size = None
@@ -133,7 +128,7 @@ class ClassifierDrift(BaseDetector):
         # set metadata
         self.meta['detector_type'] = 'offline'
         self.meta['data_type'] = data_type
-        self.meta['params'] = {'metric': self.metric}
+        self.meta['params'] = {'soft_preds': soft_preds}
 
 
     def preprocess(self, X: Union[np.ndarray, list]) -> Tuple[np.ndarray, np.ndarray]:
@@ -200,7 +195,7 @@ class ClassifierDrift(BaseDetector):
         preds_oof = np.concatenate(preds_oof, axis=0)[:, 1]
         idx_oof = np.concatenate(idx_oof, axis=0)
 
-        if self.metric == 'log-prob':
+        if self.soft_preds:
             log_losses_ref = preds_oof[y[idx_oof]==0]
             log_losses_cur = preds_oof[y[idx_oof]==1]
             dist, p_val = ks_2samp(log_losses_ref, log_losses_cur, alternative='greater')
@@ -230,7 +225,7 @@ class ClassifierDrift(BaseDetector):
             Whether to return the p-value of the test.
         return_distance
             Whether to return a notion of strength of the drift.
-            K-S test stat if metric='log-prob', relative error reduction if metric='accuracy'
+            K-S test stat if soft_preds=True, otherwise relative error reduction.
 
         Returns
         -------

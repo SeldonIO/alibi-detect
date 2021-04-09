@@ -5,7 +5,6 @@ from sklearn.metrics import f1_score
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, Input
 from alibi_detect.cd import ClassifierDrift
-from alibi_detect.utils.metrics import accuracy
 
 n = 100
 
@@ -23,11 +22,11 @@ def f1_adj(y_true: np.ndarray, y_pred: np.ndarray) -> float:
 
 p_val = [.05]
 n_features = [4]
-metrics = ['log-prob', 'accuracy']
+soft_preds = [True, False]
 n_folds = [None, 2]
 train_size = [.5]
 update_X_ref = [None, {'last': 1000}, {'reservoir_sampling': 1000}]
-tests_clfdrift = list(product(p_val, n_features, metrics, n_folds,
+tests_clfdrift = list(product(p_val, n_features, soft_preds, n_folds,
                               train_size, update_X_ref))
 n_tests = len(tests_clfdrift)
 
@@ -39,7 +38,7 @@ def clfdrift_params(request):
 
 @pytest.mark.parametrize('clfdrift_params', list(range(n_tests)), indirect=True)
 def test_clfdrift(clfdrift_params):
-    p_val, n_features, metric, n_folds, train_size, update_X_ref = clfdrift_params
+    p_val, n_features, soft_preds, n_folds, train_size, update_X_ref = clfdrift_params
 
     np.random.seed(0)
     tf.random.set_seed(0)
@@ -56,7 +55,7 @@ def test_clfdrift(clfdrift_params):
         update_X_ref=update_X_ref,
         train_size=train_size,
         n_folds=n_folds,
-        metric=metric,
+        soft_preds=soft_preds,
         batch_size=1
     )
 
@@ -71,4 +70,4 @@ def test_clfdrift(clfdrift_params):
     assert preds_1['data']['distance'] >= 0
 
     assert preds_0['data']['distance'] < preds_1['data']['distance']
-    assert cd.meta['params']['metric'] == metric
+    assert cd.meta['params']['soft_preds'] == soft_preds
