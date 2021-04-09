@@ -133,6 +133,8 @@ class ClassifierDrift(BaseDetector):
         # set metadata
         self.meta['detector_type'] = 'offline'
         self.meta['data_type'] = data_type
+        self.meta['params'] = {'metric': self.metric}
+
 
     def preprocess(self, X: Union[np.ndarray, list]) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -199,18 +201,19 @@ class ClassifierDrift(BaseDetector):
         idx_oof = np.concatenate(idx_oof, axis=0)
 
         if self.metric == 'log-loss':
-            log_losses_ref = preds_oof[idx_oof][y==0]
-            log_losses_cur = preds_oof[idx_oof][y==1]
+            log_losses_ref = preds_oof[y[idx_oof]==0]
+            log_losses_cur = preds_oof[y[idx_oof]==1]
             dist, p_val = ks_2samp(log_losses_ref, log_losses_cur, alternative='greater')
         else:
             baseline_accuracy = max(X_ref.shape[0], X.shape[0]) / (X_ref.shape[0] + X.shape[0]) # expected acc under null
             n_oof = idx_oof.shape[0]
-            n_correct = (y[idx_oof]==preds_oof).sum()
+            n_correct = (y[idx_oof]==preds_oof.round()).sum()
             p_val = binom_test(n_correct, n_oof, baseline_accuracy, alternative='greater')
             accuracy = n_correct/n_oof
             # relative error reduction, in [0,1]
             # e.g. (90% acc -> 99% acc) = 0.9, (50% acc -> 59% acc) = 0.18
             dist = 1 - (1 - accuracy)/(1-baseline_accuracy)
+            dist = max(0, dist) # below 0 = no evidence for drift
 
         return p_val, dist
 
@@ -255,3 +258,4 @@ class ClassifierDrift(BaseDetector):
             cd['data']['threshold'] = self.p_val
         if return_distance:
             cd['data']['distance'] = dist
+        return cd
