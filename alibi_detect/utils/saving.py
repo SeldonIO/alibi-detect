@@ -289,14 +289,14 @@ def state_classifierdrift(cd: ClassifierDrift) -> Tuple[
         preprocess_step_drift(cd)
     cd.compile_kwargs['optimizer'] = tf.keras.optimizers.serialize(cd.compile_kwargs['optimizer'])
     state_dict = {
-        'threshold': cd.threshold,
+        'p_val': cd.p_val,
         'X_ref': cd.X_ref,
         'preprocess_X_ref': cd.preprocess_X_ref,
         'update_X_ref': cd.update_X_ref,
         'n': cd.n,
         'preprocess_fn': preprocess_fn,
         'preprocess_kwargs': preprocess_kwargs,
-        'metric_fn': cd.metric_fn,
+        'metric': cd.metric,
         'train_size': cd.train_size,
         'skf': cd.skf,
         'compile_kwargs': cd.compile_kwargs,
@@ -1461,14 +1461,14 @@ def init_cd_classifierdrift(clf_drift: Union[tf.keras.Sequential, tf.keras.Model
     preprocess_fn, preprocess_kwargs = init_preprocess(state_dict, model, emb, tokenizer, **kwargs)
     state_dict['compile_kwargs']['optimizer'] = tf.keras.optimizers.get(state_dict['compile_kwargs']['optimizer'])
     cd = ClassifierDrift(
-        threshold=state_dict['threshold'],
+        p_val=state_dict['p_val'],
         model=clf_drift,
         X_ref=state_dict['X_ref'],
         preprocess_X_ref=False,
         update_X_ref=state_dict['update_X_ref'],
         preprocess_fn=preprocess_fn,
         preprocess_kwargs=preprocess_kwargs,
-        metric_fn=state_dict['metric_fn'],
+        metric=state_dict['metric'],
         train_size=state_dict['train_size'],
         compile_kwargs=state_dict['compile_kwargs'],
         fit_kwargs=state_dict['fit_kwargs']
