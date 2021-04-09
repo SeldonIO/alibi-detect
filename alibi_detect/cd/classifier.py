@@ -66,7 +66,7 @@ class ClassifierDrift(BaseDetector):
             Optional fraction (float between 0 and 1) of the dataset used to train the classifier.
             The drift is detected on `1 - train_size`. Cannot be used in combination with `n_folds`.
         n_folds
-            Optional number of stratified folds used for training. The accuracy is then calculated
+            Optional number of stratified folds used for training. The metric is then calculated
             on all the out-of-fold predictions. This allows to leverage all the reference and test data
             for drift detection at the expense of longer computation. If both `train_size` and `n_folds`
             are specified, `n_folds` is prioritized.
@@ -158,7 +158,7 @@ class ClassifierDrift(BaseDetector):
 
     def score(self, X: Union[np.ndarray, list]) -> Tuple[float, float]:
         """
-        Compute the out-of-fold accuracy of the classifier
+        Compute the out-of-fold performance of the classifier
         trained to distinguish the reference data from the data to be tested.
 
         Parameters
@@ -168,8 +168,8 @@ class ClassifierDrift(BaseDetector):
 
         Returns
         -------
-        p-value, accuracy obtained from out-of-fold predictions from a trained classifier,
-        and the expected accuracy under the assumption of no drift.
+        p-value, and a notion of distance between the trained classifier's out-of-fold performance
+        and that which we'd expect under the null assumption of no drift.
         """
         X_ref, X = self.preprocess(X)
 
@@ -236,7 +236,8 @@ class ClassifierDrift(BaseDetector):
         -------
         Dictionary containing 'meta' and 'data' dictionaries.
         'meta' has the model's metadata.
-        'data' contains the drift prediction and optionally the classifier accuracy and its expectation under the null.
+        'data' contains the drift prediction and optionally the performance of the classifier 
+            relative to its expectation under the no-change null.
         """
         # compute drift scores
         p_val, dist = self.score(X)
