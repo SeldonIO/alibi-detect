@@ -182,17 +182,17 @@ class ClassifierDrift(BaseDetector):
             splits = self.skf.split(x, y)
 
         # iterate over folds: train a new model for each fold and make out-of-fold (oof) predictions
-        preds_oof, idx_oof = [], []
+        preds_oof_list, idx_oof_list = [], []
         for idx_tr, idx_te in splits:
             x_tr, y_tr, x_te = x[idx_tr], np.eye(2)[y[idx_tr]], x[idx_te]
             clf = tf.keras.models.clone_model(self.model)
             clf.compile(**self.compile_kwargs)
             clf.fit(x=x_tr, y=y_tr, **self.fit_kwargs)
             preds = clf.predict(x_te, batch_size=self.fit_kwargs['batch_size'])
-            preds_oof.append(preds)
-            idx_oof.append(idx_te)
-        preds_oof = np.concatenate(preds_oof, axis=0)[:, 1]
-        idx_oof = np.concatenate(idx_oof, axis=0)
+            preds_oof_list.append(preds)
+            idx_oof_list.append(idx_te)
+        preds_oof = np.array(np.concatenate(preds_oof_list, axis=0)[:, 1])
+        idx_oof = np.array(np.concatenate(idx_oof_list, axis=0))
 
         if self.soft_preds:
             log_losses_ref = preds_oof[y[idx_oof] == 0]
