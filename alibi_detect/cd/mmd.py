@@ -23,7 +23,7 @@ class MMDDrift:
             preprocess_fn: Optional[Callable] = None,
             kernel: Callable = None,
             sigma: Optional[np.ndarray] = None,
-            infer_sigma: bool = True,
+            configure_kernel_from_x_ref: bool = True,
             n_permutations: int = 100,
             device: Optional[str] = None,
             input_shape: Optional[tuple] = None,

@@ -88,7 +88,7 @@ class MMDDriftTorch(BaseMMDDrift):
         # compute kernel matrix for the reference data
         if self.infer_sigma or isinstance(sigma, torch.Tensor):
             x = torch.from_numpy(self.x_ref).to(self.device)
-            self.k_xx = self.kernel(x, x, infer_sigma=configure_kernel_from_x_ref)
+            self.k_xx = self.kernel(x, x, infer_sigma=self.infer_sigma)
             self.infer_sigma = False
         else:
             self.k_xx, self.infer_sigma = None, True

@@ -21,6 +21,7 @@ from alibi_detect.models.tensorflow import PixelCNN, TransformerEmbedding
 from alibi_detect.od import (IForest, LLR, Mahalanobis, OutlierAE, OutlierAEGMM, OutlierProphet,
                              OutlierSeq2Seq, OutlierVAE, OutlierVAEGMM, SpectralResidual)
 from alibi_detect.od.llr import build_model
+from alibi_detect.utils.tensorflow.kernels import GaussianRBF
 
 logger = logging.getLogger(__name__)
 
@@ -425,6 +426,7 @@ def state_mmddrift(cd: MMDDrift) -> Tuple[
         ]:
     """
     MMD drift detector parameters to save.
+    Note: only GaussianRBF kernel supported.
 
     Parameters
     ----------
@@ -432,20 +434,33 @@ def state_mmddrift(cd: MMDDrift) -> Tuple[
         Drift detection object.
     """
     preprocess_fn, preprocess_kwargs, model, embed, embed_args, tokenizer, load_emb = \
-        preprocess_step_drift(cd)
+        preprocess_step_drift(cd._detector)
+    if not isinstance(cd._detector.kernel, GaussianRBF):
+        logger.warning('Currently only the default GaussianRBF kernel is supported.')
+    sigma = cd._detector.kernel.sigma.numpy() if not cd._detector.infer_sigma else None
     state_dict = {
-        'p_val': cd.p_val,
-        'X_ref': cd.X_ref,
-        'preprocess_X_ref': cd.preprocess_X_ref,
-        'update_X_ref': cd.update_X_ref,
-        'n': cd.n,
-        'chunk_size': cd.chunk_size,
-        'permutation_test': cd.permutation_test,
-        'infer_sigma': cd.infer_sigma,
-        'preprocess_fn': preprocess_fn,
-        'preprocess_kwargs': preprocess_kwargs,
-        'input_shape': cd.input_shape,
-        'load_text_embedding': load_emb
+        'args':
+            {
+                'x_ref': cd._detector.x_ref,
+            },
+        'kwargs':
+            {
+                'p_val': cd._detector.p_val,
+                'preprocess_x_ref': False,
+                'update_x_ref': cd._detector.update_x_ref,
+                'sigma': sigma,
+                'configure_kernel_from_x_ref': not cd._detector.infer_sigma,
+                'n_permutations': cd._detector.n_permutations,
+                'input_shape': cd._detector.input_shape,
+            },
+        'other':
+            {
+                'n': cd._detector.n,
+                'preprocess_x_ref': cd._detector.preprocess_x_ref,
+                'load_text_embedding': load_emb,
+                'preprocess_fn': preprocess_fn,
+                'preprocess_kwargs': preprocess_kwargs
+            }
     }
     return state_dict, model, embed, embed_args, tokenizer
 
@@ -1650,21 +1665,13 @@ def init_cd_mmddrift(state_dict: Dict, model: Optional[Union[tf.keras.Model, tf.
     -------
     Initialized MMDDrift instance.
     """
-    preprocess_fn, preprocess_kwargs = init_preprocess(state_dict, model, emb, tokenizer, **kwargs)
-    cd = MMDDrift(
-        p_val=state_dict['p_val'],
-        X_ref=state_dict['X_ref'],
-        preprocess_X_ref=False,
-        update_X_ref=state_dict['update_X_ref'],
-        preprocess_fn=preprocess_fn,
-        preprocess_kwargs=preprocess_kwargs,
-        chunk_size=state_dict['chunk_size'],
-        input_shape=state_dict['input_shape']
-    )
-    cd.n = state_dict['n']
-    cd.preprocess_X_ref = state_dict['preprocess_X_ref']
-    cd.infer_sigma = state_dict['infer_sigma']
-    cd.permutation_test = state_dict['permutation_test']
+    preprocess_fn, preprocess_kwargs = init_preprocess(state_dict['other'], model, emb, tokenizer, **kwargs)
+    if isinstance(preprocess_fn, Callable) and isinstance(preprocess_kwargs, dict):
+        state_dict['kwargs'].update({'preprocess_fn': partial(preprocess_fn, **preprocess_kwargs)})
+    cd = MMDDrift(*list(state_dict['args'].values()), **state_dict['kwargs'])
+    attrs = state_dict['other']
+    cd._detector.n = attrs['n']
+    cd._detector.preprocess_x_ref = attrs['preprocess_x_ref']
     return cd
 
 

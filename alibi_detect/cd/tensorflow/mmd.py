@@ -70,11 +70,13 @@ class MMDDriftTF(BaseMMDDrift):
         self.meta.update({'backend': 'tensorflow'})
 
         # initialize kernel
+        if isinstance(sigma, np.ndarray):
+            sigma = tf.convert_to_tensor(sigma)
         self.kernel = kernel(sigma) if kernel == GaussianRBF else kernel
 
         # compute kernel matrix for the reference data
-        if self.infer_sigma or isinstance(sigma, np.ndarray):
-            self.k_xx = self.kernel(self.x_ref, self.x_ref, infer_sigma=configure_kernel_from_x_ref)
+        if self.infer_sigma or isinstance(sigma, tf.Tensor):
+            self.k_xx = self.kernel(self.x_ref, self.x_ref, infer_sigma=self.infer_sigma)
             self.infer_sigma = False
         else:
             self.k_xx, self.infer_sigma = None, True
