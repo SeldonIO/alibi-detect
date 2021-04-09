@@ -2,7 +2,7 @@ from functools import partial
 import logging
 import numpy as np
 from sklearn.model_selection import StratifiedKFold
-from scipy.stats import binom_test
+from scipy.stats import binom_test, ks_2samp
 import tensorflow as tf
 from tensorflow.keras.losses import BinaryCrossentropy
 from typing import Callable, Dict, Optional, Tuple, Union
@@ -23,6 +23,7 @@ class ClassifierDrift(BaseDetector):
                  update_X_ref: Optional[Dict[str, int]] = None,
                  preprocess_fn: Optional[Callable] = None,
                  preprocess_kwargs: Optional[dict] = None,
+                 metric: str = 'log-loss',
                  train_size: Optional[float] = .75,
                  n_folds: Optional[int] = None,
                  seed: int = 0,
@@ -58,6 +59,9 @@ class ClassifierDrift(BaseDetector):
             Function to preprocess the data before computing the data drift metrics.
         preprocess_kwargs
             Kwargs for `preprocess_fn`.
+        metric
+            Defines the metric that will be tested against its expectation under the null. 
+            Either 'log-loss' (with K-S test) or 'accuracy' (with Binomial test).
         train_size
             Optional fraction (float between 0 and 1) of the dataset used to train the classifier.
             The drift is detected on `1 - train_size`. Cannot be used in combination with `n_folds`.
@@ -96,7 +100,12 @@ class ClassifierDrift(BaseDetector):
             self.preprocess_fn = partial(preprocess_fn, **preprocess_kwargs)
         else:
             self.preprocess_fn = preprocess_fn  # type: ignore
-
+        
+        if metric in ['log-loss', 'accuracy']:
+            self.metric = metric
+        else:
+            raise ValueError('Only `log-loss` and `accuracy` are supported metrics.')
+        
         # optionally already preprocess reference data
         self.preprocess_X_ref = preprocess_X_ref
         if preprocess_X_ref and isinstance(self.preprocess_fn, Callable):  # type: ignore
@@ -145,7 +154,7 @@ class ClassifierDrift(BaseDetector):
         else:
             return self.X_ref, X
 
-    def score(self, X: Union[np.ndarray, list]) -> float:
+    def score(self, X: Union[np.ndarray, list]) -> Tuple[float, float]:
         """
         Compute the out-of-fold accuracy of the classifier
         trained to distinguish the reference data from the data to be tested.
@@ -189,15 +198,24 @@ class ClassifierDrift(BaseDetector):
         preds_oof = np.concatenate(preds_oof, axis=0)[:, 1]
         idx_oof = np.concatenate(idx_oof, axis=0)
 
-        baseline_accuracy = max(X_ref.shape[0], X.shape[0]) / (X_ref.shape[0] + X.shape[0]) # expected acc under null
-        n_oof = idx_oof.shape[0]
-        n_correct = (y[idx_oof]==preds_oof).sum()
-        p_val = binom_test(n_correct, n_oof, baseline_accuracy, alternative='greater')
+        if self.metric == 'log-loss':
+            log_losses_ref = preds_oof[idx_oof][y==0]
+            log_losses_cur = preds_oof[idx_oof][y==1]
+            dist, p_val = ks_2samp(log_losses_ref, log_losses_cur, alternative='greater')
+        else:
+            baseline_accuracy = max(X_ref.shape[0], X.shape[0]) / (X_ref.shape[0] + X.shape[0]) # expected acc under null
+            n_oof = idx_oof.shape[0]
+            n_correct = (y[idx_oof]==preds_oof).sum()
+            p_val = binom_test(n_correct, n_oof, baseline_accuracy, alternative='greater')
+            accuracy = n_correct/n_oof
+            # relative error reduction, in [0,1]
+            # e.g. (90% acc -> 99% acc) = 0.9, (50% acc -> 59% acc) = 0.18
+            dist = 1 - (1 - accuracy)/(1-baseline_accuracy)
 
-        return p_val, n_correct/n_oof, baseline_accuracy
+        return p_val, dist
 
     def predict(self, X: Union[np.ndarray, list],  return_p_val: bool = True, 
-        return_accuracy: bool = True) -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
+        return_distance: bool = True) -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
         """
         Predict whether a batch of data has drifted from the reference data.
 
@@ -207,8 +225,9 @@ class ClassifierDrift(BaseDetector):
             Batch of instances.
         return_p_val
             Whether to return the p-value of the test.
-        return_accuracy
-            Whether to return the accuracy of the classifier.
+        return_distance
+            Whether to return a notion of strength of the drift.
+            K-S test stat if metric='log-loss', relative error reduction if metric='accuracy'
 
         Returns
         -------
@@ -217,7 +236,7 @@ class ClassifierDrift(BaseDetector):
         'data' contains the drift prediction and optionally the classifier accuracy and its expectation under the null.
         """
         # compute drift scores
-        p_val, oof_accuracy, baseline_accuracy = self.score(X)
+        p_val, dist = self.score(X)
         drift_pred = int(p_val < self.p_val)
 
         # update reference dataset
@@ -234,7 +253,5 @@ class ClassifierDrift(BaseDetector):
         if return_p_val:
             cd['data']['p_val'] = p_val
             cd['data']['threshold'] = self.p_val
-        if return_accuracy:
-            cd['data']['baseline_accuracy'] = baseline_accuracy
-            cd['data']['oof_accuracy'] = oof_accuracy
-        return cd
+        if return_distance:
+            cd['data']['distance'] = dist
