@@ -22,7 +22,7 @@ class ClassifierDrift(BaseDetector):
                  update_X_ref: Optional[Dict[str, int]] = None,
                  preprocess_fn: Optional[Callable] = None,
                  preprocess_kwargs: Optional[dict] = None,
-                 soft_preds: bool=True,
+                 soft_preds: bool = True,
                  train_size: Optional[float] = .75,
                  n_folds: Optional[int] = None,
                  seed: int = 0,
@@ -99,7 +99,7 @@ class ClassifierDrift(BaseDetector):
             self.preprocess_fn = partial(preprocess_fn, **preprocess_kwargs)
         else:
             self.preprocess_fn = preprocess_fn  # type: ignore
-        
+
         # optionally already preprocess reference data
         self.preprocess_X_ref = preprocess_X_ref
         if preprocess_X_ref and isinstance(self.preprocess_fn, Callable):  # type: ignore
@@ -129,7 +129,6 @@ class ClassifierDrift(BaseDetector):
         self.meta['detector_type'] = 'offline'
         self.meta['data_type'] = data_type
         self.meta['params'] = {'soft_preds': soft_preds}
-
 
     def preprocess(self, X: Union[np.ndarray, list]) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -196,24 +195,24 @@ class ClassifierDrift(BaseDetector):
         idx_oof = np.concatenate(idx_oof, axis=0)
 
         if self.soft_preds:
-            log_losses_ref = preds_oof[y[idx_oof]==0]
-            log_losses_cur = preds_oof[y[idx_oof]==1]
+            log_losses_ref = preds_oof[y[idx_oof] == 0]
+            log_losses_cur = preds_oof[y[idx_oof] == 1]
             dist, p_val = ks_2samp(log_losses_ref, log_losses_cur, alternative='greater')
         else:
-            baseline_accuracy = max(X_ref.shape[0], X.shape[0]) / (X_ref.shape[0] + X.shape[0]) # expected acc under null
+            baseline_accuracy = max(X_ref.shape[0], X.shape[0]) / (X_ref.shape[0] + X.shape[0])  # exp under null
             n_oof = idx_oof.shape[0]
-            n_correct = (y[idx_oof]==preds_oof.round()).sum()
+            n_correct = (y[idx_oof] == preds_oof.round()).sum()
             p_val = binom_test(n_correct, n_oof, baseline_accuracy, alternative='greater')
             accuracy = n_correct/n_oof
             # relative error reduction, in [0,1]
             # e.g. (90% acc -> 99% acc) = 0.9, (50% acc -> 59% acc) = 0.18
             dist = 1 - (1 - accuracy)/(1-baseline_accuracy)
-            dist = max(0, dist) # below 0 = no evidence for drift
+            dist = max(0, dist)  # below 0 = no evidence for drift
 
         return p_val, dist
 
-    def predict(self, X: Union[np.ndarray, list],  return_p_val: bool = True, 
-        return_distance: bool = True) -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
+    def predict(self, X: Union[np.ndarray, list],  return_p_val: bool = True,
+                return_distance: bool = True) -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
         """
         Predict whether a batch of data has drifted from the reference data.
 
@@ -231,7 +230,7 @@ class ClassifierDrift(BaseDetector):
         -------
         Dictionary containing 'meta' and 'data' dictionaries.
         'meta' has the model's metadata.
-        'data' contains the drift prediction and optionally the performance of the classifier 
+        'data' contains the drift prediction and optionally the performance of the classifier
             relative to its expectation under the no-change null.
         """
         # compute drift scores
