@@ -21,13 +21,13 @@ def f1_adj(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     return f1_score(y_true, np.round(y_pred))
 
 
-threshold = [.6]
+p_val = [.05]
 n_features = [4]
-metric_fns = [accuracy, f1_adj]
+metrics = ['log-loss', 'accuracy']
 n_folds = [None, 2]
 train_size = [.5]
 update_X_ref = [None, {'last': 1000}, {'reservoir_sampling': 1000}]
-tests_clfdrift = list(product(threshold, n_features, metric_fns, n_folds,
+tests_clfdrift = list(product(p_val, n_features, metrics, n_folds,
                               train_size, update_X_ref))
 n_tests = len(tests_clfdrift)
 
@@ -39,7 +39,7 @@ def clfdrift_params(request):
 
 @pytest.mark.parametrize('clfdrift_params', list(range(n_tests)), indirect=True)
 def test_clfdrift(clfdrift_params):
-    threshold, n_features, metric_fn, n_folds, train_size, update_X_ref = clfdrift_params
+    p_val, n_features, metric, n_folds, train_size, update_X_ref = clfdrift_params
 
     np.random.seed(0)
     tf.random.set_seed(0)
@@ -50,24 +50,25 @@ def test_clfdrift(clfdrift_params):
     X_test1 = np.ones_like(X_ref)
 
     cd = ClassifierDrift(
-        threshold=threshold,
+        p_val=p_val,
         model=model,
         X_ref=X_ref,
         update_X_ref=update_X_ref,
         train_size=train_size,
         n_folds=n_folds,
-        metric_fn=metric_fn,
+        metric=metric,
         batch_size=1
     )
 
     preds_0 = cd.predict(X_test0)
-    assert preds_0['data'][f'{metric_fn.__name__}'] <= threshold
     assert cd.n == X_test0.shape[0] + X_ref.shape[0]
     assert preds_0['data']['is_drift'] == 0
+    assert preds_0['data']['distance'] >= 0
 
     preds_1 = cd.predict(X_test1)
-    assert preds_1['data'][f'{metric_fn.__name__}'] > threshold
     assert cd.n == X_test1.shape[0] + X_test0.shape[0] + X_ref.shape[0]
     assert preds_1['data']['is_drift'] == 1
-
-    assert cd.meta['params']['metric_fn'] == metric_fn.__name__
+    assert preds_1['data']['distance'] >= 0
+    
+    assert preds_0['data']['distance'] < preds_1['data']['distance']
+    assert cd.meta['params']['metric'] == metric
