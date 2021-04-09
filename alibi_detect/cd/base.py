@@ -487,7 +487,7 @@ class BaseUnivariateDrift(BaseDetector):
         # compute drift scores
         p_vals, dist = self.score(x)
 
-        # TODO: return both
+        # TODO: return both feature-level and batch-level drift predictions by default
         # values below p-value threshold are drift
         if drift_type == 'feature':
             drift_pred = (p_vals < self.p_val).astype(int)
