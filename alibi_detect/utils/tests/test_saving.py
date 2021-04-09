@@ -123,7 +123,7 @@ detector = [
                  X_ref=X_ref_mix,
                  categories_per_feature={0: None},
                  preprocess_X_ref=True),
-    ClassifierDrift(threshold=threshold_drift,
+    ClassifierDrift(p_val=p_val,
                     model=model,
                     X_ref=X_ref,
                     n_folds=n_folds_drift,
@@ -235,7 +235,7 @@ def test_save_load(select_detector):
             x = X_ref_cat.copy() if isinstance(det_load, ChiSquareDrift) else X_ref_mix.copy()
             assert (det_load.X_ref == x).all()
         elif type(det_load) == ClassifierDrift:
-            assert det_load.threshold == threshold_drift
+            assert det_load.p_val == p_val
             assert (det_load.X_ref == X_ref).all()
             assert isinstance(det_load.skf, StratifiedKFold)
             assert isinstance(det_load.compile_kwargs, dict) and isinstance(det_load.fit_kwargs, dict)
