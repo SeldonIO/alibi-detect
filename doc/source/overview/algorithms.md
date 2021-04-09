@@ -26,6 +26,8 @@ The following tables summarize the advised use cases for the current algorithms.
 
 ## Drift Detection
 
+All drift detectors support both **PyTorch** and **TensorFlow** backends.
+
 |Detector|Tabular|Image|Time Series|Text|Categorical Features|Online|Feature Level|
 |---|---|---|---|---|
 |[Kolmogorov-Smirnov](../methods/ksdrift.ipynb)|✔|✔|✘|✔|✔|✘|✔|
