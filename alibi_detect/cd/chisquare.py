@@ -5,7 +5,6 @@ from alibi_detect.cd.base import BaseUnivariateDrift
 
 
 class ChiSquareDrift(BaseUnivariateDrift):
-
     def __init__(
             self,
             x_ref: np.ndarray,

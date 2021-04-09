@@ -333,20 +333,31 @@ def state_tabulardrift(cd: TabularDrift) -> Tuple[
     preprocess_fn, preprocess_kwargs, model, embed, embed_args, tokenizer, load_emb = \
         preprocess_step_drift(cd)
     state_dict = {
-        'p_val': cd.p_val,
-        'X_ref': cd.X_ref,
-        'preprocess_X_ref': cd.preprocess_X_ref,
-        'update_X_ref': cd.update_X_ref,
-        'alternative': cd.alternative,
-        'n': cd.n,
-        'n_features': cd.n_features,
-        'correction': cd.correction,
-        'preprocess_fn': preprocess_fn,
-        'preprocess_kwargs': preprocess_kwargs,
-        'input_shape': cd.input_shape,
-        'load_text_embedding': load_emb,
-        'categories_per_feature': cd.categories_per_feature,
-        'X_ref_count': cd.X_ref_count
+        'args':
+            {
+                'x_ref': cd.x_ref
+            },
+        'kwargs':
+            {
+                'p_val': cd.p_val,
+                'categories_per_feature': None,
+                'preprocess_x_ref': False,
+                'update_x_ref': cd.update_x_ref,
+                'correction': cd.correction,
+                'alternative': cd.alternative,
+                'n_features': cd.n_features,
+                'input_shape': cd.input_shape,
+            },
+        'other':
+            {
+                'n': cd.n,
+                'categories_per_feature': cd.categories_per_feature,
+                'x_ref_count': cd.x_ref_count,
+                'preprocess_x_ref': cd.preprocess_x_ref,
+                'load_text_embedding': load_emb,
+                'preprocess_fn': preprocess_fn,
+                'preprocess_kwargs': preprocess_kwargs
+            }
     }
     return state_dict, model, embed, embed_args, tokenizer
 
@@ -366,18 +377,28 @@ def state_ksdrift(cd: KSDrift) -> Tuple[
     preprocess_fn, preprocess_kwargs, model, embed, embed_args, tokenizer, load_emb = \
         preprocess_step_drift(cd)
     state_dict = {
-        'p_val': cd.p_val,
-        'X_ref': cd.X_ref,
-        'preprocess_X_ref': cd.preprocess_X_ref,
-        'update_X_ref': cd.update_X_ref,
-        'alternative': cd.alternative,
-        'n': cd.n,
-        'n_features': cd.n_features,
-        'correction': cd.correction,
-        'preprocess_fn': preprocess_fn,
-        'preprocess_kwargs': preprocess_kwargs,
-        'input_shape': cd.input_shape,
-        'load_text_embedding': load_emb
+        'args':
+            {
+                'x_ref': cd.x_ref
+            },
+        'kwargs':
+            {
+                'p_val': cd.p_val,
+                'preprocess_x_ref': False,
+                'update_x_ref': cd.update_x_ref,
+                'correction': cd.correction,
+                'alternative': cd.alternative,
+                'n_features': cd.n_features,
+                'input_shape': cd.input_shape,
+            },
+        'other':
+            {
+                'n': cd.n,
+                'preprocess_x_ref': cd.preprocess_x_ref,
+                'load_text_embedding': load_emb,
+                'preprocess_fn': preprocess_fn,
+                'preprocess_kwargs': preprocess_kwargs
+            }
     }
     return state_dict, model, embed, embed_args, tokenizer
 
@@ -964,7 +985,7 @@ def load_detector(filepath: str, **kwargs) -> Data:
         detector = init_od_s2s(state_dict, seq2seq)
     elif detector_name in ['ChiSquareDrift', 'ClassifierDrift', 'KSDrift', 'MMDDrift', 'TabularDrift']:
         emb, tokenizer = None, None
-        if state_dict['load_text_embedding']:
+        if state_dict['other']['load_text_embedding']:
             emb, tokenizer = load_text_embed(filepath)
         model = load_tf_model(filepath, model_name='encoder')
         if detector_name == 'KSDrift':
@@ -1552,24 +1573,15 @@ def init_cd_tabulardrift(state_dict: Dict, model: Optional[Union[tf.keras.Model,
     -------
     Initialized TabularDrift instance.
     """
-    preprocess_fn, preprocess_kwargs = init_preprocess(state_dict, model, emb, tokenizer, **kwargs)
-    cd = TabularDrift(
-        p_val=state_dict['p_val'],
-        X_ref=state_dict['X_ref'],
-        categories_per_feature=None,
-        preprocess_X_ref=False,
-        update_X_ref=state_dict['update_X_ref'],
-        preprocess_fn=preprocess_fn,
-        preprocess_kwargs=preprocess_kwargs,
-        correction=state_dict['correction'],
-        alternative=state_dict['alternative'],
-        n_features=state_dict['n_features'],
-        input_shape=state_dict['input_shape']
-    )
-    cd.n = state_dict['n']
-    cd.preprocess_X_ref = state_dict['preprocess_X_ref']
-    cd.categories_per_feature = state_dict['categories_per_feature']
-    cd.X_ref_count = state_dict['X_ref_count']
+    preprocess_fn, preprocess_kwargs = init_preprocess(state_dict['other'], model, emb, tokenizer, **kwargs)
+    if isinstance(preprocess_fn, Callable) and isinstance(preprocess_kwargs, dict):
+        state_dict['kwargs'].update({'preprocess_fn': partial(preprocess_fn, **preprocess_kwargs)})
+    cd = TabularDrift(*list(state_dict['args'].values()), **state_dict['kwargs'])
+    attrs = state_dict['other']
+    cd.n = attrs['n']
+    cd.preprocess_x_ref = attrs['preprocess_x_ref']
+    cd.categories_per_feature = attrs['categories_per_feature']
+    cd.x_ref_count = attrs['x_ref_count']
     return cd
 
 
@@ -1596,21 +1608,13 @@ def init_cd_ksdrift(state_dict: Dict, model: Optional[Union[tf.keras.Model, tf.k
     -------
     Initialized KSDrift instance.
     """
-    preprocess_fn, preprocess_kwargs = init_preprocess(state_dict, model, emb, tokenizer, **kwargs)
-    cd = KSDrift(
-        p_val=state_dict['p_val'],
-        X_ref=state_dict['X_ref'],
-        preprocess_X_ref=False,
-        update_X_ref=state_dict['update_X_ref'],
-        preprocess_fn=preprocess_fn,
-        preprocess_kwargs=preprocess_kwargs,
-        correction=state_dict['correction'],
-        alternative=state_dict['alternative'],
-        n_features=state_dict['n_features'],
-        input_shape=state_dict['input_shape']
-    )
-    cd.n = state_dict['n']
-    cd.preprocess_X_ref = state_dict['preprocess_X_ref']
+    preprocess_fn, preprocess_kwargs = init_preprocess(state_dict['other'], model, emb, tokenizer, **kwargs)
+    if isinstance(preprocess_fn, Callable) and isinstance(preprocess_kwargs, dict):
+        state_dict['kwargs'].update({'preprocess_fn': partial(preprocess_fn, **preprocess_kwargs)})
+    cd = KSDrift(*list(state_dict['args'].values()), **state_dict['kwargs'])
+    attrs = state_dict['other']
+    cd.n = attrs['n']
+    cd.preprocess_x_ref = attrs['preprocess_x_ref']
     return cd
 
 

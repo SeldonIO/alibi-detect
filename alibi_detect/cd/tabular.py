@@ -8,7 +8,6 @@ logger = logging.getLogger(__name__)
 
 
 class TabularDrift(BaseUnivariateDrift):
-
     def __init__(
             self,
             x_ref: np.ndarray,
