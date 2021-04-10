@@ -35,6 +35,65 @@ class ClassifierDrift:
             device: Optional[str] = None,
             data_type: Optional[str] = None
     ) -> None:
+        """
+        Classifier-based drift detector. The classifier is trained on a fraction of the combined
+        reference and test data and drift is detected on the remaining data. To use all the data
+        to detect drift, a stratified cross-validation scheme can be chosen.
+
+        Parameters
+        ----------
+        x_ref
+            Data used as reference distribution.
+        model
+            PyTorch or TensorFlow classification model used for drift detection.
+        backend
+            Backend used for the training loop implementation.
+        threshold
+            Threshold for the drift metric (default is accuracy). Values above the threshold are
+            classified as drift.
+        preprocess_x_ref
+            Whether to already preprocess and store the reference data.
+        update_x_ref
+            Reference data can optionally be updated to the last n instances seen by the detector
+            or via reservoir sampling with size n. For the former, the parameter equals {'last': n} while
+            for reservoir sampling {'reservoir_sampling': n} is passed.
+        preprocess_fn
+            Function to preprocess the data before computing the data drift metrics.
+        metric_fn
+            Function computing the drift metric. Takes `y_true` and `y_pred` as input and
+            returns a float: metric_fn(y_true, y_pred). Defaults to accuracy.
+        metric_name
+            Optional name for the metric_fn used in the return dict. Defaults to 'metric_fn.__name__'.
+        train_size
+            Optional fraction (float between 0 and 1) of the dataset used to train the classifier.
+            The drift is detected on `1 - train_size`. Cannot be used in combination with `n_folds`.
+        n_folds
+            Optional number of stratified folds used for training. The metric is then calculated
+            on all the out-of-fold predictions. This allows to leverage all the reference and test data
+            for drift detection at the expense of longer computation. If both `train_size` and `n_folds`
+            are specified, `n_folds` is prioritized.
+        seed
+            Optional random seed for fold selection.
+        optimizer
+            Optimizer used during training of the classifier.
+        learning_rate
+            Learning rate used by optimizer.
+        compile_kwargs
+            Optional additional kwargs when compiling the classifier. Only relevant for 'tensorflow' backend.
+        batch_size
+            Batch size used during training of the classifier.
+        epochs
+            Number of training epochs for the classifier for each (optional) fold.
+        verbose
+            Verbosity level during the training of the classifier. 0 is silent, 1 a progress bar.
+        train_kwargs
+            Optional additional kwargs when fitting the classifier.
+        device
+            Device type used. The default None tries to use the GPU and falls back on CPU if needed.
+            Can be specified by passing either 'cuda', 'gpu' or 'cpu'. Only relevant for 'pytorch' backend.
+        data_type
+            Optionally specify the data type (tabular, image or time-series). Added to metadata.
+        """
         super().__init__()
 
         backend = backend.lower()
