@@ -10,7 +10,7 @@ pip install alibi-detect
 
 ## Features
 
-alibi-detect is a Python package focused on outlier, adversarial and concept drift detection. The package aims to cover both online and offline detectors for tabular data, text, images and time series. The outlier detection methods should allow the user to identify global, contextual and collective outliers.
+[Alibi Detect](https://github.com/SeldonIO/alibi-detect) is an open source Python library focused on **outlier**, **adversarial** and **drift** detection. The package aims to cover both online and offline detectors for tabular data, text, images and time series. Both **TensorFlow** and **PyTorch** backends are supported for drift detection.
 
 To get a list of respectively the latest outlier and adversarial detection algorithms, you can type:
 
