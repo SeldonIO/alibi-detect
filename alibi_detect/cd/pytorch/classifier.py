@@ -27,7 +27,7 @@ class ClassifierDriftTorch(BaseClassifierDrift):
             train_size: Optional[float] = .75,
             n_folds: Optional[int] = None,
             seed: int = 0,
-            optimizer: torch.optim = torch.optim.Adam,
+            optimizer: Callable = torch.optim.Adam,
             learning_rate: float = 1e-3,
             batch_size: int = 32,
             epochs: int = 3,
@@ -144,10 +144,10 @@ class ClassifierDriftTorch(BaseClassifierDrift):
         for idx_tr, idx_te in splits:
             x_tr, y_tr, x_te = x[idx_tr], y[idx_tr], x[idx_te]
             ds_tr = TensorDataset(torch.from_numpy(x_tr), torch.from_numpy(y_tr))
-            dl_tr = DataLoader(ds_tr, **self.dl_kwargs)
+            dl_tr = DataLoader(ds_tr, **self.dl_kwargs)  # type: ignore
             model = deepcopy(self.model)
             train_args = [model, nn.CrossEntropyLoss(), dl_tr, self.device]
-            trainer(*train_args, **self.train_kwargs)
+            trainer(*train_args, **self.train_kwargs)  # type: ignore
             preds = predict_batch(x_te, model.eval(), device=self.device, batch_size=self.dl_kwargs['batch_size'])
             preds_oof.append(preds)
             idx_oof.append(idx_te)

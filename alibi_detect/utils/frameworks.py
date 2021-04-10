@@ -1,11 +1,11 @@
 try:
-    import tensorflow as tf
+    import tensorflow as tf  # noqa
     has_tensorflow = True
 except ImportError:
     has_tensorflow = False
 
 try:
-    import torch
+    import torch  # noqa
     has_pytorch = True
 except ImportError:
     has_pytorch = False

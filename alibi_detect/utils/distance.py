@@ -1,9 +1,9 @@
 import numpy as np
 from sklearn.manifold import MDS
-from typing import Any, Dict, Tuple, Union
+from typing import Any, Dict, Tuple
 
 
-def norm(x: Union[np.ndarray, 'da.array'], p: int) -> Union[np.ndarray, 'da.array']:
+def norm(x: np.ndarray, p: int) -> np.ndarray:
     """
     Compute p-norm across the features of a batch of instances.
 
@@ -21,8 +21,7 @@ def norm(x: Union[np.ndarray, 'da.array'], p: int) -> Union[np.ndarray, 'da.arra
     return (x ** p).sum(axis=1) ** (1 / p)
 
 
-def pairwise_distance(x: Union[np.ndarray, 'da.array'], y: Union[np.ndarray, 'da.array'],
-                      p: int = 2) -> Union[np.ndarray, 'da.array']:
+def pairwise_distance(x: np.ndarray, y: np.ndarray, p: int = 2) -> np.ndarray:
     """
     Compute pairwise distance between 2 samples.
 

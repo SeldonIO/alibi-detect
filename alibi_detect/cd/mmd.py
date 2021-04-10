@@ -83,14 +83,14 @@ class MMDDrift:
             if backend == 'tensorflow':
                 from alibi_detect.utils.tensorflow.kernels import GaussianRBF
             else:
-                from alibi_detect.utils.pytorch.kernels import GaussianRBF
+                from alibi_detect.utils.pytorch.kernels import GaussianRBF  # type: ignore
             kwargs.update({'kernel': GaussianRBF})
 
         if backend == 'tensorflow' and has_tensorflow:
             kwargs.pop('device', None)
-            self._detector = MMDDriftTF(*args, **kwargs)
+            self._detector = MMDDriftTF(*args, **kwargs)  # type: ignore
         else:
-            self._detector = MMDDriftTorch(*args, **kwargs)
+            self._detector = MMDDriftTorch(*args, **kwargs)  # type: ignore
         self.meta = self._detector.meta
 
     def predict(self, x: np.ndarray, return_p_val: bool = True, return_distance: bool = True) \

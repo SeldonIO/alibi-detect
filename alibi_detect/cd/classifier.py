@@ -25,7 +25,7 @@ class ClassifierDrift:
             train_size: Optional[float] = .75,
             n_folds: Optional[int] = None,
             seed: int = 0,
-            optimizer: Optional = None,
+            optimizer: Optional[Callable] = None,
             learning_rate: float = 1e-3,
             compile_kwargs: Optional[dict] = None,
             batch_size: int = 32,
@@ -112,10 +112,10 @@ class ClassifierDrift:
 
         if backend == 'tensorflow' and has_tensorflow:
             kwargs.pop('device', None)
-            self._detector = ClassifierDriftTF(*args, **kwargs)
+            self._detector = ClassifierDriftTF(*args, **kwargs)  # type: ignore
         else:
             kwargs.pop('compile_kwargs', None)
-            self._detector = ClassifierDriftTorch(*args, **kwargs)
+            self._detector = ClassifierDriftTorch(*args, **kwargs)  # type: ignore
         self.meta = self._detector.meta
 
     def predict(self, x: np.ndarray, return_metric: bool = True) \

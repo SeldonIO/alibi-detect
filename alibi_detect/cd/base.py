@@ -5,8 +5,15 @@ from sklearn.model_selection import StratifiedKFold
 from typing import Callable, Dict, List, Optional, Tuple, Union
 from alibi_detect.base import BaseDetector, concept_drift_dict
 from alibi_detect.cd.utils import update_reference
+from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
 from alibi_detect.utils.metrics import accuracy
 from alibi_detect.utils.statstest import fdr
+
+if has_pytorch:
+    import torch  # noqa F401
+
+if has_tensorflow:
+    import tensorflow as tf  # noqa F401
 
 logger = logging.getLogger(__name__)
 
@@ -114,7 +121,7 @@ class BaseClassifierDrift(BaseDetector):
             return self.x_ref, x
 
     def get_splits(self, x_ref: np.ndarray, x: np.ndarray) \
-            -> Tuple[np.ndarray, np.ndarray, List[Tuple[np.ndarray]]]:
+            -> Tuple[np.ndarray, np.ndarray, List[Tuple[np.ndarray, np.ndarray]]]:
         """
         Split reference and test data in train and test folds used by the classifier.
 
