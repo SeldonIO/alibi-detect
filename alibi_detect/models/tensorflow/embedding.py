@@ -24,7 +24,7 @@ def hidden_state_embedding(hidden_states: tf.Tensor, layers: List[int],
     -------
     Tensor with embeddings.
     """
-    hs = [hidden_states[l][:, 0:1, :] if use_cls else hidden_states[l] for l in layers]
+    hs = [hidden_states[layer][:, 0:1, :] if use_cls else hidden_states[layer] for layer in layers]
     hs = tf.concat(hs, axis=1)
     y = tf.reduce_mean(hs, axis=1) if reduce_mean else hs
     return y
