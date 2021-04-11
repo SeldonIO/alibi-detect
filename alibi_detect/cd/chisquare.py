@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.stats import chisquare
+from scipy.stats import chi2_contingency
 from typing import Callable, Dict, Optional, Tuple
 from alibi_detect.cd.base import BaseUnivariateDrift
 
@@ -100,8 +100,8 @@ class ChiSquareDrift(BaseUnivariateDrift):
         p_val = np.zeros(self.n_features, dtype=np.float32)
         dist = np.zeros_like(p_val)
         for f in range(self.n_features):  # apply Chi-Squared test
-            n_ref, n_obs = x_ref_count[f].sum(), x_count[f].sum()
-            dist[f], p_val[f] = chisquare(x_count[f], f_exp=x_ref_count[f] * n_obs / n_ref)
+            contingency_table = np.vstack((x_ref_count[f], x_count[f]))
+            dist[f], p_val[f], _, _ = chi2_contingency(contingency_table)
         return p_val, dist
 
     def _get_counts(self, x: np.ndarray) -> Dict[int, np.ndarray]:
