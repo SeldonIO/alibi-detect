@@ -9,6 +9,9 @@ __pycache__/
 # pycharm
 .idea/
 
+# vscode
+.vscode
+
 # C extensions
 *.so
 
