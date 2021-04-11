@@ -4,8 +4,6 @@ from tensorflow.keras.layers import Bidirectional, Concatenate, Dense, Flatten, 
 from typing import Callable, List, Tuple
 from alibi_detect.utils.tensorflow.distance import relative_euclidean_distance
 
-# TODO: add difference between train and inference mode for dropout
-
 
 class Sampling(Layer):
     """ Reparametrization trick. Uses (z_mean, z_log_var) to sample the latent vector z. """
