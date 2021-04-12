@@ -5,31 +5,36 @@ The following tables summarize the advised use cases for the current algorithms.
 ## Outlier Detection
 
 |Detector|Tabular|Image|Time Series|Text|Categorical Features|Online|Feature Level|
-|---|---|---|---|---|
-|[Isolation Forest](../methods/iforest.ipynb)|✔|✘|✘|✘|✔|✘|✘|
-|[Mahalanobis Distance](../methods/mahalanobis.ipynb)|✔|✘|✘|✘|✔|✔|✘|
-|[AE](../methods/ae.ipynb)|✔|✔|✘|✘|✘|✘|✔|
-|[VAE](../methods/vae.ipynb)|✔|✔|✘|✘|✘|✘|✔|
-|[AEGMM](../methods/aegmm.ipynb)|✔|✔|✘|✘|✘|✘|✘|
-|[VAEGMM](../methods/vaegmm.ipynb)|✔|✔|✘|✘|✘|✘|✘|
-|[Likelihood Ratios](../methods/llr.ipynb)|✔|✔|✔|✘|✔|✘|✔|
-|[Prophet](../methods/prophet.ipynb)|✘|✘|✔|✘|✘|✘|✘|
-|[Spectral Residual](../methods/sr.ipynb)|✘|✘|✔|✘|✘|✔|✔|
-|[Seq2Seq](../methods/seq2seq.ipynb)|✘|✘|✔|✘|✘|✘|✔|
+|:---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+|[Isolation Forest](../methods/iforest.ipynb)|✔| | | |✔| | |
+|[Mahalanobis Distance](../methods/mahalanobis.ipynb)|✔| | | |✔|✔| |
+|[AE](../methods/ae.ipynb)|✔|✔| | | | |✔|
+|[VAE](../methods/vae.ipynb)|✔|✔| | | | |✔|
+|[AEGMM](../methods/aegmm.ipynb)|✔|✔| | | | | |
+|[VAEGMM](../methods/vaegmm.ipynb)|✔|✔| | | | | |
+|[Likelihood Ratios](../methods/llr.ipynb)|✔|✔|✔| |✔| |✔|
+|[Prophet](../methods/prophet.ipynb)| | |✔| | | | |
+|[Spectral Residual](../methods/sr.ipynb)| | |✔| | |✔|✔|
+|[Seq2Seq](../methods/seq2seq.ipynb)| | |✔| | | |✔|
 
 ## Adversarial Detection
 
 |Detector|Tabular|Image|Time Series|Text|Categorical Features|Online|Feature Level|
-|---|---|---|---|---|
-|[Adversarial AE](../methods/adversarialae.ipynb)|✔|✔|✘|✘|✘|✘|✘|
-|[Model distillation](../methods/modeldistillation.ipynb)|✔|✔|✔|✔|✔|✘|✘|
+|:---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+|[Adversarial AE](../methods/adversarialae.ipynb)|✔|✔| | | | | |
+|[Model distillation](../methods/modeldistillation.ipynb)|✔|✔|✔|✔|✔| | | |
 
 ## Drift Detection
 
 |Detector|Tabular|Image|Time Series|Text|Categorical Features|Online|Feature Level|
-|---|---|---|---|---|
-|[Kolmogorov-Smirnov](../methods/ksdrift.ipynb)|✔|✔|✘|✔|✔|✘|✔|
-|[Maximum Mean Discrepancy](../methods/mmddrift.ipynb)|✔|✔|✘|✔|✔|✘|✘|
-|[Chi-Squared](../methods/chisquaredrift.ipynb)|✔|✘|✘|✘|✔|✘|✔|
-|[Mixed-type tabular](../methods/tabulardrift.ipynb)|✔|✘|✘|✘|✔|✘|✔|
-|[Classifier](../methods/classifierdrift.ipynb)|✔|✔|✔|✔|✔|✘|✘|
+|:---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+|[Kolmogorov-Smirnov](../methods/ksdrift.ipynb)|✔|✔| |✔|✔| |✔|
+|[Maximum Mean Discrepancy](../methods/mmddrift.ipynb)|✔|✔| |✔|✔| | |
+|[Chi-Squared](../methods/chisquaredrift.ipynb)|✔| | | |✔| |✔|
+|[Mixed-type tabular](../methods/tabulardrift.ipynb)|✔| | | |✔| |✔|
+|[Classifier](../methods/classifierdrift.ipynb)|✔|✔|✔|✔|✔| | | |
+
+All drift detectors and built-in preprocessing methods support both **PyTorch** and **TensorFlow** backends.
+The preprocessing steps include randomly initialized encoders, pretrained text embeddings to detect drift on 
+using the [transformers](https://github.com/huggingface/transformers) library and extraction of hidden layers from machine learning models. 
+The preprocessing steps allow to detect different types of drift such as covariate and predicted distribution shift.

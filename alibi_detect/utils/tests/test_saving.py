@@ -1,3 +1,4 @@
+from functools import partial
 import numpy as np
 import pytest
 from sklearn.model_selection import StratifiedKFold
@@ -8,8 +9,8 @@ from tensorflow.keras.layers import Dense, InputLayer
 from typing import Callable
 from alibi_detect.ad import AdversarialAE, ModelDistillation
 from alibi_detect.cd import ChiSquareDrift, ClassifierDrift, KSDrift, MMDDrift, TabularDrift
-from alibi_detect.cd.preprocess import UAE
-from alibi_detect.models.autoencoder import DecoderLSTM, EncoderLSTM
+from alibi_detect.cd.tensorflow import UAE, preprocess_drift
+from alibi_detect.models.tensorflow.autoencoder import DecoderLSTM, EncoderLSTM
 from alibi_detect.od import (IForest, LLR, Mahalanobis, OutlierAEGMM, OutlierVAE, OutlierVAEGMM,
                              OutlierProphet, SpectralResidual, OutlierSeq2Seq, OutlierAE)
 from alibi_detect.utils.saving import save_detector, load_detector  # type: ignore
@@ -27,6 +28,7 @@ X_ref = np.random.rand(samples * input_dim).reshape(samples, input_dim)
 X_ref_cat = np.tile(np.array([np.arange(samples)] * input_dim).T, (2, 1))
 X_ref_mix = X_ref.copy()
 X_ref_mix[:, 0] = np.tile(np.array(np.arange(samples // 2)), (1, 2)).T[:, 0]
+n_permutations = 10
 
 # define encoder and decoder
 encoder_net = tf.keras.Sequential(
@@ -48,7 +50,7 @@ decoder_net = tf.keras.Sequential(
 kwargs = {'encoder_net': encoder_net,
           'decoder_net': decoder_net}
 
-preprocess_kwargs = {'model': UAE(encoder_net=encoder_net)}
+preprocess_fn = partial(preprocess_drift, model=UAE(encoder_net=encoder_net))
 
 gmm_density_net = tf.keras.Sequential(
     [
@@ -106,26 +108,26 @@ detector = [
                    threshold=threshold,
                    threshold_net=threshold_net,
                    latent_dim=latent_dim),
-    KSDrift(p_val=p_val,
-            X_ref=X_ref,
-            preprocess_X_ref=False,
-            preprocess_kwargs=preprocess_kwargs),
-    MMDDrift(p_val=p_val,
-             X_ref=X_ref,
-             preprocess_X_ref=False,
-             preprocess_kwargs=preprocess_kwargs,
-             n_permutations=10,
-             chunk_size=10),
-    ChiSquareDrift(p_val=p_val,
-                   X_ref=X_ref_cat,
-                   preprocess_X_ref=True),
-    TabularDrift(p_val=p_val,
-                 X_ref=X_ref_mix,
+    KSDrift(X_ref,
+            p_val=p_val,
+            preprocess_x_ref=False,
+            preprocess_fn=preprocess_fn),
+    MMDDrift(X_ref,
+             p_val=p_val,
+             preprocess_x_ref=False,
+             preprocess_fn=preprocess_fn,
+             configure_kernel_from_x_ref=True,
+             n_permutations=n_permutations),
+    ChiSquareDrift(X_ref_cat,
+                   p_val=p_val,
+                   preprocess_x_ref=True),
+    TabularDrift(X_ref_mix,
+                 p_val=p_val,
                  categories_per_feature={0: None},
-                 preprocess_X_ref=True),
-    ClassifierDrift(threshold=threshold_drift,
+                 preprocess_x_ref=True),
+    ClassifierDrift(X_ref,
+                    threshold=threshold_drift,
                     model=model,
-                    X_ref=X_ref,
                     n_folds=n_folds_drift,
                     train_size=None)
 ]
@@ -150,10 +152,7 @@ def test_save_load(select_detector):
     with TemporaryDirectory() as temp_dir:
         temp_dir += '/'
         save_detector(det, temp_dir)
-        if isinstance(det, (KSDrift, MMDDrift)):
-            det_load = load_detector(temp_dir, **{'preprocess_kwargs': preprocess_kwargs})
-        else:
-            det_load = load_detector(temp_dir)
+        det_load = load_detector(temp_dir)
         det_load_name = det_load.meta['name']
         assert det_load_name == det_name
 
@@ -168,17 +167,6 @@ def test_save_load(select_detector):
         if type(det_load) == AdversarialAE or type(det_load) == ModelDistillation:
             for layer in det_load.model.layers:
                 assert not layer.trainable
-
-        if type(det_load) == MMDDrift:
-            assert det_load.infer_sigma
-            assert isinstance(det_load.permutation_test, Callable)
-
-        if type(det_load) == KSDrift:
-            assert det_load.n_features == latent_dim
-
-        if type(det_load) in [ChiSquareDrift, TabularDrift]:
-            assert isinstance(det_load.categories_per_feature, dict)
-            assert isinstance(det_load.X_ref_count, dict)
 
         if type(det_load) == OutlierAEGMM:
             assert isinstance(det_load.aegmm.encoder, tf.keras.Sequential)
@@ -225,21 +213,32 @@ def test_save_load(select_detector):
             assert det_load.latent_dim == latent_dim
             assert det_load.threshold == threshold
             assert det_load.shape == (-1, seq_len, input_dim)
-        elif type(det_load) in [KSDrift, MMDDrift]:
+        elif type(det_load) == KSDrift:
+            assert det_load.n_features == latent_dim
             assert det_load.p_val == p_val
-            assert (det_load.X_ref == X_ref).all()
+            assert (det_load.x_ref == X_ref).all()
             assert isinstance(det_load.preprocess_fn, Callable)
             assert det_load.preprocess_fn.func.__name__ == 'preprocess_drift'
         elif type(det_load) in [ChiSquareDrift, TabularDrift]:
+            assert isinstance(det_load.categories_per_feature, dict)
+            assert isinstance(det_load.x_ref_count, dict)
             assert det_load.p_val == p_val
             x = X_ref_cat.copy() if isinstance(det_load, ChiSquareDrift) else X_ref_mix.copy()
-            assert (det_load.X_ref == x).all()
+            assert (det_load.x_ref == x).all()
+        elif type(det_load) == MMDDrift:
+            assert not det_load._detector.infer_sigma
+            assert det_load._detector.n_permutations == n_permutations
+            assert det_load._detector.p_val == p_val
+            assert (det_load._detector.x_ref == X_ref).all()
+            assert isinstance(det_load._detector.preprocess_fn, Callable)
+            assert det_load._detector.preprocess_fn.func.__name__ == 'preprocess_drift'
         elif type(det_load) == ClassifierDrift:
-            assert det_load.threshold == threshold_drift
-            assert (det_load.X_ref == X_ref).all()
-            assert isinstance(det_load.skf, StratifiedKFold)
-            assert isinstance(det_load.compile_kwargs, dict) and isinstance(det_load.fit_kwargs, dict)
-            assert isinstance(det_load.model, tf.keras.Model)
+            assert det_load._detector.threshold == threshold_drift
+            assert (det_load._detector.x_ref == X_ref).all()
+            assert isinstance(det_load._detector.skf, StratifiedKFold)
+            assert isinstance(det_load._detector.compile_kwargs, dict)
+            assert isinstance(det_load._detector.train_kwargs, dict)
+            assert isinstance(det_load._detector.model, tf.keras.Model)
         elif type(det_load) == LLR:
             assert isinstance(det_load.dist_s, tf.keras.Model)
             assert isinstance(det_load.dist_b, tf.keras.Model)

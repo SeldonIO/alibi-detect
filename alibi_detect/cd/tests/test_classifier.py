@@ -1,13 +1,14 @@
-from itertools import product
 import numpy as np
 import pytest
-from sklearn.metrics import f1_score
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, Input
+import torch
+import torch.nn as nn
 from alibi_detect.cd import ClassifierDrift
-from alibi_detect.utils.metrics import accuracy
+from alibi_detect.cd.pytorch.classifier import ClassifierDriftTorch
+from alibi_detect.cd.tensorflow.classifier import ClassifierDriftTF
 
-n = 100
+n, n_features = 100, 5
 
 
 def mymodel(shape):
@@ -17,18 +18,18 @@ def mymodel(shape):
     return tf.keras.models.Model(inputs=x_in, outputs=x_out)
 
 
-def f1_adj(y_true: np.ndarray, y_pred: np.ndarray) -> float:
-    return f1_score(y_true, np.round(y_pred))
+class MyModel(nn.Module):
+    def __init__(self, n_features: int):
+        super().__init__()
+        self.dense1 = nn.Linear(n_features, 20)
+        self.dense2 = nn.Linear(20, 2)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = nn.ReLU()(self.dense1(x))
+        return self.dense2(x)
 
 
-threshold = [.6]
-n_features = [4]
-metric_fns = [accuracy, f1_adj]
-n_folds = [None, 2]
-train_size = [.5]
-update_X_ref = [None, {'last': 1000}, {'reservoir_sampling': 1000}]
-tests_clfdrift = list(product(threshold, n_features, metric_fns, n_folds,
-                              train_size, update_X_ref))
+tests_clfdrift = ['tensorflow', 'pytorch', 'PyToRcH', 'mxnet']
 n_tests = len(tests_clfdrift)
 
 
@@ -39,35 +40,23 @@ def clfdrift_params(request):
 
 @pytest.mark.parametrize('clfdrift_params', list(range(n_tests)), indirect=True)
 def test_clfdrift(clfdrift_params):
-    threshold, n_features, metric_fn, n_folds, train_size, update_X_ref = clfdrift_params
+    backend = clfdrift_params
+    if backend.lower() == 'pytorch':
+        model = MyModel(n_features)
+    elif backend.lower() == 'tensorflow':
+        model = mymodel((n_features,))
+    else:
+        model = None
+    x_ref = np.random.randn(*(n, n_features))
 
-    np.random.seed(0)
-    tf.random.set_seed(0)
+    try:
+        cd = ClassifierDrift(x_ref=x_ref, model=model, backend=backend)
+    except NotImplementedError:
+        cd = None
 
-    model = mymodel((n_features,))
-    X_ref = np.random.randn(*(n, n_features))
-    X_test0 = X_ref.copy()
-    X_test1 = np.ones_like(X_ref)
-
-    cd = ClassifierDrift(
-        threshold=threshold,
-        model=model,
-        X_ref=X_ref,
-        update_X_ref=update_X_ref,
-        train_size=train_size,
-        n_folds=n_folds,
-        metric_fn=metric_fn,
-        batch_size=1
-    )
-
-    preds_0 = cd.predict(X_test0)
-    assert preds_0['data'][f'{metric_fn.__name__}'] <= threshold
-    assert cd.n == X_test0.shape[0] + X_ref.shape[0]
-    assert preds_0['data']['is_drift'] == 0
-
-    preds_1 = cd.predict(X_test1)
-    assert preds_1['data'][f'{metric_fn.__name__}'] > threshold
-    assert cd.n == X_test1.shape[0] + X_test0.shape[0] + X_ref.shape[0]
-    assert preds_1['data']['is_drift'] == 1
-
-    assert cd.meta['params']['metric_fn'] == metric_fn.__name__
+    if backend.lower() == 'pytorch':
+        assert isinstance(cd._detector, ClassifierDriftTorch)
+    elif backend.lower() == 'tensorflow':
+        assert isinstance(cd._detector, ClassifierDriftTF)
+    else:
+        assert cd is None

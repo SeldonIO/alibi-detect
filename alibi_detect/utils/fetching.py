@@ -8,7 +8,7 @@ from typing import Tuple, Union
 from urllib.request import urlopen
 from alibi_detect.base import BaseDetector
 from alibi_detect.ad import AdversarialAE, ModelDistillation
-from alibi_detect.models import PixelCNN
+from alibi_detect.models.tensorflow import PixelCNN
 from alibi_detect.od import (IForest, LLR, Mahalanobis, OutlierAE, OutlierAEGMM, OutlierProphet,
                              OutlierSeq2Seq, OutlierVAE, OutlierVAEGMM, SpectralResidual)
 from alibi_detect.utils.saving import load_detector  # type: ignore

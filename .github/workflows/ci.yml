@@ -33,6 +33,7 @@ jobs:
           pip install --upgrade pip
           pip install -r requirements/dev.txt
           pip install -e .[prophet]
+          pip install -e .[torch]
           pip freeze
       - name: Lint with flake8
         run: |

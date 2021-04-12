@@ -3,7 +3,7 @@ import numpy as np
 import pytest
 import tensorflow as tf
 from tensorflow.keras.losses import categorical_crossentropy
-from alibi_detect.models.trainer import trainer
+from alibi_detect.models.tensorflow.trainer import trainer
 
 N, F = 100, 2
 x = np.random.rand(N, F).astype(np.float32)

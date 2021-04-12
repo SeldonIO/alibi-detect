@@ -5,7 +5,7 @@ from typing import Dict, List
 
 
 def hidden_state_embedding(hidden_states: tf.Tensor, layers: List[int],
-                           use_cls: bool, reduce: str = 'mean') -> tf.Tensor:
+                           use_cls: bool, reduce_mean: bool = True) -> tf.Tensor:
     """
     Extract embeddings from hidden attention state layers.
 
@@ -17,19 +17,16 @@ def hidden_state_embedding(hidden_states: tf.Tensor, layers: List[int],
         List of layers to use for the embedding.
     use_cls
         Whether to use the next sentence token (CLS) to extract the embeddings.
-    reduce
-
+    reduce_mean
+        Whether to take the mean of the output tensor.
 
     Returns
     -------
     Tensor with embeddings.
     """
-    hs = []
-    for layer in layers:
-        hs_tmp = hidden_states[layer][:, 0:1, :] if use_cls else hidden_states[layer]
-        hs.append(hs_tmp)
+    hs = [hidden_states[layer][:, 0:1, :] if use_cls else hidden_states[layer] for layer in layers]
     hs = tf.concat(hs, axis=1)
-    y = tf.reduce_mean(hs, axis=1) if reduce == 'mean' else hs
+    y = tf.reduce_mean(hs, axis=1) if reduce_mean else hs
     return y
 
 
@@ -74,16 +71,10 @@ class TransformerEmbedding(tf.keras.Model):
         self.config = AutoConfig.from_pretrained(model_name_or_path, output_hidden_states=True)
         self.model = TFAutoModel.from_pretrained(model_name_or_path, config=self.config)
         self.emb_type = embedding_type
-        self.hs_emb = partial(
-            hidden_state_embedding,
-            layers=layers,
-            use_cls=embedding_type.endswith('cls'),
-            reduce='mean'
-        )
+        self.hs_emb = partial(hidden_state_embedding, layers=layers, use_cls=embedding_type.endswith('cls'))
 
-    def call(self, x: Dict[str, tf.Tensor]) -> tf.Tensor:
-        outputs = self.model(x)
-        last_hidden_state, pooler_output, hidden_states = outputs
+    def call(self, tokens: Dict[str, tf.Tensor]) -> tf.Tensor:
+        last_hidden_state, pooler_output, hidden_states = self.model(tokens)
         if self.emb_type == 'pooler_output':
             return pooler_output
         elif self.emb_type == 'last_hidden_state':

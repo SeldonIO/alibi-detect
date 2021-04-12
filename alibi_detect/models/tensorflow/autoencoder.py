@@ -2,9 +2,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.keras.layers import Bidirectional, Concatenate, Dense, Flatten, Layer, LSTM
 from typing import Callable, List, Tuple
-from alibi_detect.utils.distance import relative_euclidean_distance
-
-# TODO: add difference between train and inference mode for dropout
+from alibi_detect.utils.tensorflow.distance import relative_euclidean_distance
 
 
 class Sampling(Layer):

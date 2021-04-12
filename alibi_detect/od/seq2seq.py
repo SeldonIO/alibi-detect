@@ -3,8 +3,8 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, InputLayer
 from typing import Dict, Tuple, Union
-from alibi_detect.models.autoencoder import Seq2Seq, EncoderLSTM, DecoderLSTM
-from alibi_detect.models.trainer import trainer
+from alibi_detect.models.tensorflow.autoencoder import Seq2Seq, EncoderLSTM, DecoderLSTM
+from alibi_detect.models.tensorflow.trainer import trainer
 from alibi_detect.base import BaseDetector, FitMixin, ThresholdMixin, outlier_prediction_dict
 from alibi_detect.utils.prediction import predict_batch
 
