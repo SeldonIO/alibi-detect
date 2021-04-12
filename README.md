@@ -112,7 +112,8 @@ The following tables show the advised use cases for each algorithm. The column *
 
 #### TensorFlow and PyTorch support
 
-The drift detectors support TensorFlow and PyTorch backends. Example:
+The drift detectors support TensorFlow and PyTorch backends. Alibi Detect does however not install PyTorch for you. 
+Check the [PyTorch docs](https://pytorch.org/) how to do this. Example:
 
 ```python
 from alibi_detect.cd import MMDDrift
