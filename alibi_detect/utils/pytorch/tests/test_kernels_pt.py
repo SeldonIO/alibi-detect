@@ -30,5 +30,5 @@ def test_gaussian_kernel(gaussian_kernel_params):
     k_xx = kernel(x, x, infer_sigma=infer_sigma).numpy()
 
     assert k_xy.shape == n_instances and k_xx.shape == (xshape[0], xshape[0])
-    np.testing.assert_almost_equal(k_xx.trace(), xshape[0], decimal=5)
+    np.testing.assert_almost_equal(k_xx.trace(), xshape[0], decimal=4)
     assert (k_xx > 0.).all() and (k_xy > 0.).all()
