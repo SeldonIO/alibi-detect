@@ -52,8 +52,8 @@ def test_permutation(permutation_params):
     n_features, n_instances, n_permutations, mult = permutation_params
     xshape, yshape = (n_instances[0], n_features), (n_instances[1], n_features)
     np.random.seed(0)
-    x = np.random.random(xshape).astype('float32')
-    y = np.random.random(yshape).astype('float32') * mult
+    x = np.random.random(xshape).astype(np.float32)
+    y = np.random.random(yshape).astype(np.float32) * mult
 
     def metric_fn(x, y):
         return mmd2(x, y, kernel=GaussianRBF(sigma=tf.ones(1))).numpy()
@@ -65,4 +65,4 @@ def test_permutation(permutation_params):
         assert p_val > .2
     elif mult > 1:
         assert p_val <= .2
-    assert np.where(dist_permutations >= dist)[0].astype(np.float32).mean() == p_val
+    assert np.where(dist_permutations >= dist)[0].shape[0] / n_permutations == p_val
