@@ -146,7 +146,7 @@ class BaseClassifierDrift(BaseDetector):
         return x, y, splits
 
     @abstractmethod
-    def score(self, x: np.ndarray) -> float:
+    def score(self, x: np.ndarray) -> Tuple[float, float]:
         pass
 
     def predict(self, x: Union[np.ndarray, list],  return_p_val: bool = True,
