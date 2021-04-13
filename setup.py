@@ -10,7 +10,8 @@ def readme():
 exec(open("alibi_detect/version.py").read())
 
 extras_require = {"examples": ["seaborn>=0.9.0", "tqdm>=4.28.1", "nlp>=0.3.0"],
-                  "prophet": ["fbprophet>=0.5, <0.7", "holidays==0.9.11", "pystan<3.0"]}
+                  "prophet": ["fbprophet>=0.5, <0.7", "holidays==0.9.11", "pystan<3.0"],
+                  "torch": ["torch>=1.0"]}
 
 setup(
     name="alibi-detect",
@@ -27,7 +28,6 @@ setup(
     python_requires=">=3.6",
     # lower bounds based on Debian Stable versions where available
     install_requires=[
-        "dask[array]>=2.0.0, <2022.0.0",  # dask switched to calver https://github.com/dask/community/issues/100
         "matplotlib>=3.0.0, <4.0.0",
         "numpy>=1.16.2, <2.0.0",
         "pandas>=0.23.3, <2.0.0",

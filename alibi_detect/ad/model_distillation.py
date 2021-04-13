@@ -3,8 +3,8 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.keras.losses import kld, categorical_crossentropy
 from typing import Callable, Dict, Tuple, Union
-from alibi_detect.models.trainer import trainer
-from alibi_detect.models.losses import loss_distillation
+from alibi_detect.models.tensorflow.trainer import trainer
+from alibi_detect.models.tensorflow.losses import loss_distillation
 from alibi_detect.utils.prediction import predict_batch
 from alibi_detect.base import (BaseDetector, FitMixin, ThresholdMixin,
                                adversarial_prediction_dict)

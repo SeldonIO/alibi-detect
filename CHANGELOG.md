@@ -1,5 +1,24 @@
 # Change Log
 
+## [v0.6.0](https://github.com/SeldonIO/alibi-detect/tree/v0.6.0) (2021-04-12)
+[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.5.1...v0.6.0)
+
+### Added
+- Flexible backend support (TensorFlow and PyTorch) for drift detectors `MMDDrift` and `ClassifierDrift` as well as support for both frameworks for preprocessing steps (`from alibi_detect.cd.tensorflow import HiddenOutput, preprocess_drift` and `from alibi_detect.models.tensorflow import TransformerEmbedding`, replace `tensorflow` with `pytorch` for PyTorch support) and various utility functions (kernels and distance metrics) under `alibi_detect.utils.tensorflow` and `alibi_detect.utils.pytorch`.
+- Significantly faster implementation MMDDrift detector leveraging both GPU implementations in TensorFlow and PyTorch as well as making efficient use of the cached kernel matrix for the permutation tests.
+- Change test for `ChiSquareDrift` from goodness-of-fit of the observed data against the empirical distribution of the reference data to a test for homogeneity which does not bias p-values as much to extremes.
+- Include NumpyEncoder in library to facilitate json serialization.
+
+### Removed
+- As part of the introduction of flexible backends for various drift detectors, dask is no longer supported for the `MMDDrift` detector and distance computations.
+
+### Fixed
+- Update RTD theme version due to rendering bug.
+- Bug when using `TabularDrift` with categorical features and continuous numerical features. Incorrect indexing of categorical columns was performed.
+
+### Development
+- Pin pystan version to working release with prophet.
+
 ## [v0.5.1](https://github.com/SeldonIO/alibi-detect/tree/v0.5.1) (2021-03-05)
 [Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.5.0...v0.5.1)
 

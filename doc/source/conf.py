@@ -87,7 +87,7 @@ autodoc_mock_imports = [
     "matplotlib",
     "cloudpickle",
     "fbprophet",
-    "dask",
+    "torch",
     "transformers"
 ]
 

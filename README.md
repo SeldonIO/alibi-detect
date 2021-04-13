@@ -10,8 +10,7 @@
 [![Slack channel](https://img.shields.io/badge/chat-on%20slack-e51670.svg)](http://seldondev.slack.com/messages/alibi)
 ---
 
-[Alibi Detect](https://github.com/SeldonIO/alibi-detect) is an open source Python library focused on outlier, adversarial and drift detection. The package aims to cover both online and offline detectors for tabular data, text, images and time series. The outlier detection methods should allow the user to identify global, contextual and collective outliers.
-
+[Alibi Detect](https://github.com/SeldonIO/alibi-detect) is an open source Python library focused on **outlier**, **adversarial** and **drift** detection. The package aims to cover both online and offline detectors for tabular data, text, images and time series. Both **TensorFlow** and **PyTorch** backends are supported for drift detection.
 *  [Documentation](https://docs.seldon.io/projects/alibi-detect/en/latest/)
 
 For more background on the importance of monitoring outliers and distributions in a production setting, check out [this talk](https://slideslive.com/38931758/monitoring-and-explainability-of-models-in-production?ref=speaker-37384-latest) from the *Challenges in Deploying and Monitoring Machine Learning Systems* ICML 2020 workshop, based on the paper [Monitoring and explainability of models in production](https://arxiv.org/abs/2007.06299) and referencing Alibi Detect.
@@ -55,14 +54,14 @@ We will use the [VAE outlier detector](https://docs.seldon.io/projects/alibi-det
 
 ```python
 from alibi_detect.od import OutlierVAE
-from alibi_detect.utils.saving import save_detector, load_detector
+from alibi_detect.utils import save_detector, load_detector
 
 # initialize and fit detector
 od = OutlierVAE(threshold=0.1, encoder_net=encoder_net, decoder_net=decoder_net, latent_dim=1024)
-od.fit(X_train)
+od.fit(x_train)
 
 # make predictions
-preds = od.predict(X_test)
+preds = od.predict(x_test)
 
 # save and load detectors
 filepath = './my_detector/'
@@ -70,7 +69,7 @@ save_detector(od, filepath)
 od = load_detector(filepath)
 ```
 
-The predictions are returned in a dictionary with as keys `meta` and `data`. `meta` contains the detector's metadata while `data` is in itself a dictionary with the actual predictions. It contains the outlier, adversarial or drift scores as well as the predictions whether instances are e.g. outliers or not. The exact details can vary slightly from method to method, so we encourage the reader to become familiar with the [types of algorithms supported](https://docs.seldon.io/projects/alibi-detect/en/latest/overview/algorithms.html).
+The predictions are returned in a dictionary with as keys `meta` and `data`. `meta` contains the detector's metadata while `data` is in itself a dictionary with the actual predictions. It contains the outlier, adversarial or drift scores and thresholds as well as the predictions whether instances are e.g. outliers or not. The exact details can vary slightly from method to method, so we encourage the reader to become familiar with the [types of algorithms supported](https://docs.seldon.io/projects/alibi-detect/en/latest/overview/algorithms.html).
 
 The save and load functionality for the [Prophet time series outlier detector](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/prophet.html) is currently experiencing [issues in Python 3.6](https://github.com/facebook/prophet/issues/1361) but works in Python 3.7.
 
@@ -82,35 +81,71 @@ The following tables show the advised use cases for each algorithm. The column *
 
 | Detector              | Tabular | Image | Time Series | Text  | Categorical Features | Online | Feature Level |
 | :---                  |  :---:  | :---: |   :---:     | :---: |   :---:              | :---:  | :---:         |
-| Isolation Forest      | ✔       | ✘     |  ✘          |  ✘    |  ✔                   |  ✘     |  ✘            |
-| Mahalanobis Distance  | ✔       | ✘     |  ✘          |  ✘    |  ✔                   |  ✔     |  ✘            |
-| AE                    | ✔       | ✔     |  ✘          |  ✘    |  ✘                   |  ✘     |  ✔            |
-| VAE                   | ✔       | ✔     |  ✘          |  ✘    |  ✘                   |  ✘     |  ✔            |
-| AEGMM                 | ✔       | ✔     |  ✘          |  ✘    |  ✘                   |  ✘     |  ✘            |
-| VAEGMM                | ✔       | ✔     |  ✘          |  ✘    |  ✘                   |  ✘     |  ✘            |
-| Likelihood Ratios     | ✔       | ✔     |  ✔          |  ✘    |  ✔                   |  ✘     |  ✔            |
-| Prophet               | ✘       | ✘     |  ✔          |  ✘    |  ✘                   |  ✘     |  ✘            |
-| Spectral Residual     | ✘       | ✘     |  ✔          |  ✘    |  ✘                   |  ✔     |  ✔            |
-| Seq2Seq               | ✘       | ✘     |  ✔          |  ✘    |  ✘                   |  ✘     |  ✔            |
+| Isolation Forest      | ✔       |      |            |      |  ✔                   |       |              |
+| Mahalanobis Distance  | ✔       |      |            |      |  ✔                   |  ✔     |              |
+| AE                    | ✔       | ✔     |            |     |                     |       |  ✔            |
+| VAE                   | ✔       | ✔     |            |      |                     |      |  ✔            |
+| AEGMM                 | ✔       | ✔     |            |      |                     |       |              |
+| VAEGMM                | ✔       | ✔     |            |      |                     |       |              |
+| Likelihood Ratios     | ✔       | ✔     |  ✔          |      |  ✔                   |       |  ✔            |
+| Prophet               |        |      |  ✔          |      |                     |       |              |
+| Spectral Residual     |        |      |  ✔          |      |                     |  ✔     |  ✔            |
+| Seq2Seq               |        |      |  ✔          |      |                     |       |  ✔            |
 
 ### Adversarial Detection
 
 | Detector           | Tabular | Image | Time Series | Text  | Categorical Features | Online | Feature Level |
 | :---               |  :---:  | :---: |   :---:     | :---: |   :---:              | :---:  | :---:         |
-| Adversarial AE     | ✔       | ✔     |  ✘          |  ✘    |  ✘                   |  ✘     |  ✘            |
-| Model distillation | ✔       | ✔     |  ✔          |  ✔    |  ✔                   |  ✘     |  ✘            |
+| Adversarial AE     | ✔       | ✔     |            |      |                     |       |              |
+| Model distillation | ✔       | ✔     |  ✔          |  ✔    |  ✔                   |       |              |
 
 
 ### Drift Detection
 
 | Detector                 | Tabular | Image | Time Series | Text  | Categorical Features | Online | Feature Level |
 | :---                     |  :---:  | :---: |   :---:     | :---: |   :---:              | :---:  | :---:         |
-| Kolmogorov-Smirnov       | ✔       | ✔     |  ✘          |  ✔    |  ✔                   |  ✘     |  ✔            |
-| Maximum Mean Discrepancy | ✔       | ✔     |  ✘          |  ✔    |  ✔                   |  ✘     |  ✘            |
-| Chi-Squared              | ✔       | ✘     |  ✘          |  ✘    |  ✔                   |  ✘     |  ✔            |
-| Mixed-type tabular data  | ✔       | ✘     |  ✘          |  ✘    |  ✔                   |  ✘     |  ✔            |
-| Classifier               | ✔       | ✔     |  ✔          |  ✔    |  ✔                   |  ✘     |  ✘            |
+| Kolmogorov-Smirnov       | ✔       | ✔     |            |  ✔    |  ✔                   |       |  ✔            |
+| Maximum Mean Discrepancy | ✔       | ✔     |            |  ✔    |  ✔                   |       |              |
+| Chi-Squared              | ✔       |      |            |      |  ✔                   |       |  ✔            |
+| Mixed-type tabular data  | ✔       |      |            |      |  ✔                   |       |  ✔            |
+| Classifier               | ✔       | ✔     |  ✔          |  ✔    |  ✔                   |       |              |
 
+#### TensorFlow and PyTorch support
+
+The drift detectors support TensorFlow and PyTorch backends. Alibi Detect does however not install PyTorch for you. 
+Check the [PyTorch docs](https://pytorch.org/) how to do this. Example:
+
+```python
+from alibi_detect.cd import MMDDrift
+
+cd = MMDDrift(x_ref, backend='tensorflow', p_val=.05)
+preds = cd.predict(x)
+```
+
+The same detector in PyTorch:
+
+```python
+cd = MMDDrift(x_ref, backend='pytorch', p_val=.05)
+preds = cd.predict(x)
+```
+
+#### Built-in preprocessing steps
+
+Alibi Detect also comes with various preprocessing steps such as randomly initialized encoders, pretrained text
+embeddings to detect drift on using the [transformers](https://github.com/huggingface/transformers) library and 
+extraction of hidden layers from machine learning models. This allows to detect different types of drift such as 
+**covariate and predicted distribution shift**. The preprocessing steps are again supported in TensorFlow and PyTorch.
+
+```python
+from alibi_detect.cd.tensorflow import HiddenOutput, preprocess_drift
+
+model = # TensorFlow model; tf.keras.Model or tf.keras.Sequential
+preprocess_fn = partial(preprocess_drift, model=HiddenOutput(model, layer=-1), batch_size=128)
+cd = MMDDrift(x_ref, backend='tensorflow', p_val=.05, preprocess_fn=preprocess_fn)
+preds = cd.predict(x)
+```
+
+Check the example notebooks (e.g. [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_mmd_cifar10.html), [movie reviews](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_text_imdb.html)) for more details.
 
 ### Reference List
 
@@ -264,8 +299,8 @@ BibTeX entry:
   title = {{Alibi-Detect}: Algorithms for outlier and adversarial instance detection, concept drift and metrics.},
   author = {Van Looveren, Arnaud and Vacanti, Giovanni and Klaise, Janis and Coca, Alexandru},
   url = {https://github.com/SeldonIO/alibi-detect},
-  version = {0.5.1},
-  date = {2021-03-05},
+  version = {0.6.0},
+  date = {2021-04-12},
   year = {2019}
 }
 ```

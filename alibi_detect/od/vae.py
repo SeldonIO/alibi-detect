@@ -3,9 +3,9 @@ import numpy as np
 import tensorflow as tf
 import tensorflow_probability as tfp
 from typing import Dict, Tuple
-from alibi_detect.models.autoencoder import VAE
-from alibi_detect.models.trainer import trainer
-from alibi_detect.models.losses import elbo
+from alibi_detect.models.tensorflow.autoencoder import VAE
+from alibi_detect.models.tensorflow.trainer import trainer
+from alibi_detect.models.tensorflow.losses import elbo
 from alibi_detect.base import BaseDetector, FitMixin, ThresholdMixin, outlier_prediction_dict
 from alibi_detect.utils.prediction import predict_batch
 

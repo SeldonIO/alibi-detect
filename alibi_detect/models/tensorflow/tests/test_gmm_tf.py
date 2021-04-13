@@ -1,5 +1,5 @@
 import numpy as np
-from alibi_detect.models.gmm import gmm_energy, gmm_params
+from alibi_detect.models.tensorflow.gmm import gmm_energy, gmm_params
 
 N, K, D = 10, 5, 1
 z = np.random.rand(N, D).astype(np.float32)
