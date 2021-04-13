@@ -1,11 +1,9 @@
 from itertools import product
 import numpy as np
 import pytest
-from sklearn.metrics import f1_score
 import torch
 import torch.nn as nn
 from alibi_detect.cd.pytorch.classifier import ClassifierDriftTorch
-from alibi_detect.utils.metrics import accuracy
 
 n = 100
 
@@ -19,10 +17,6 @@ class MyModel(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = nn.ReLU()(self.dense1(x))
         return self.dense2(x)
-
-
-def f1_adj(y_true: np.ndarray, y_pred: np.ndarray) -> float:
-    return f1_score(y_true, np.round(y_pred))
 
 
 p_val = [.05]

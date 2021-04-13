@@ -1,11 +1,9 @@
 from itertools import product
 import numpy as np
 import pytest
-from sklearn.metrics import f1_score
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, Input
 from alibi_detect.cd.tensorflow.classifier import ClassifierDriftTF
-from alibi_detect.utils.metrics import accuracy
 
 n = 100
 
@@ -15,10 +13,6 @@ def mymodel(shape):
     x = Dense(20, activation=tf.nn.relu)(x_in)
     x_out = Dense(2, activation='softmax')(x)
     return tf.keras.models.Model(inputs=x_in, outputs=x_out)
-
-
-def f1_adj(y_true: np.ndarray, y_pred: np.ndarray) -> float:
-    return f1_score(y_true, np.round(y_pred))
 
 
 p_val = [.05]
