@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import TensorDataset, DataLoader
 from scipy.stats import binom_test, ks_2samp
-from typing import Callable, Dict, Optional, Union
+from typing import Callable, Dict, Optional, Union, Tuple
 from alibi_detect.cd.base import BaseClassifierDrift
 from alibi_detect.models.pytorch.trainer import trainer
 from alibi_detect.utils.pytorch.prediction import predict_batch
@@ -117,7 +117,7 @@ class ClassifierDriftTorch(BaseClassifierDrift):
         if isinstance(train_kwargs, dict):
             self.train_kwargs.update(train_kwargs)
 
-    def score(self, x: np.ndarray) -> float:
+    def score(self, x: np.ndarray) -> Tuple[float, float]:
         """
         Compute the out-of-fold drift metric such as the accuracy from a classifier
         trained to distinguish the reference data from the data to be tested.
