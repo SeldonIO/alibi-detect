@@ -191,8 +191,8 @@ class ClassifierDrift(BaseDetector):
             preds = clf.predict(x_te, batch_size=self.fit_kwargs['batch_size'])
             preds_oof_list.append(preds)
             idx_oof_list.append(idx_te)
-        preds_oof = np.array(np.concatenate(preds_oof_list, axis=0)[:, 1])
-        idx_oof = np.array(np.concatenate(idx_oof_list, axis=0))
+        preds_oof = np.concatenate(preds_oof_list, axis=0)[:, 1]
+        idx_oof = np.concatenate(idx_oof_list, axis=0)
 
         if self.soft_preds:
             log_losses_ref = preds_oof[y[idx_oof] == 0]
