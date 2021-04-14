@@ -77,10 +77,12 @@ class TabularDrift(BaseUnivariateDrift):
             vals = list(categories_per_feature.values())
             if all(v is None for v in vals):  # categories_per_feature = Dict[int, NoneType]
                 x_flat = self.x_ref.reshape(self.x_ref.shape[0], -1)
-                categories_per_feature = {f: list(np.unique(x_flat[:, f])) for f in categories_per_feature.keys()}
+                categories_per_feature = {f: list(np.unique(x_flat[:, f]))  # type: ignore
+                                          for f in categories_per_feature.keys()}
             elif all(isinstance(v, (int, np.int16, np.int32, np.int64)) for v in vals):
                 # categories_per_feature = Dict[int, int]
-                categories_per_feature = {f: list(np.arange(v)) for f, v in categories_per_feature.items()}
+                categories_per_feature = {f: list(np.arange(v))  # type: ignore
+                                          for f, v in categories_per_feature.items()}
             elif not all(isinstance(v, list) for v in vals):
                 raise NotImplementedError  # categories_per_feature not Dict[int, list]
             self.x_ref_categories = categories_per_feature
@@ -107,7 +109,7 @@ class TabularDrift(BaseUnivariateDrift):
         # apply counts on union of categories per variable in both the reference and test data
         if self.cat_vars:
             x_categories = {f: list(np.unique(x[:, f])) for f in self.cat_vars}
-            all_categories = {f: list(set().union(self.x_ref_categories[f], x_categories[f]))
+            all_categories = {f: list(set().union(self.x_ref_categories[f], x_categories[f]))  # type: ignore
                               for f in self.cat_vars}
             x_ref_count = self._get_counts(x_ref, all_categories)
             x_count = self._get_counts(x, all_categories)
