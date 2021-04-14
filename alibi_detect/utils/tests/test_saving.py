@@ -220,8 +220,7 @@ def test_save_load(select_detector):
             assert isinstance(det_load.preprocess_fn, Callable)
             assert det_load.preprocess_fn.func.__name__ == 'preprocess_drift'
         elif type(det_load) in [ChiSquareDrift, TabularDrift]:
-            assert isinstance(det_load.categories_per_feature, dict)
-            assert isinstance(det_load.x_ref_count, dict)
+            assert isinstance(det_load.x_ref_categories, dict)
             assert det_load.p_val == p_val
             x = X_ref_cat.copy() if isinstance(det_load, ChiSquareDrift) else X_ref_mix.copy()
             assert (det_load.x_ref == x).all()
