@@ -67,11 +67,13 @@ class ChiSquareDrift(BaseUnivariateDrift):
         # construct categories from the user-specified dict
         if isinstance(categories_per_feature, dict):
             vals = list(categories_per_feature.values())
-            if all(isinstance(v, (int, np.int16, np.int32, np.int64)) for v in vals):
+            int_types = (int, np.int16, np.int32, np.int64)
+            if all(isinstance(v, int_types) for v in vals):
                 # categories_per_feature = Dict[int, int]
                 categories_per_feature = {f: list(np.arange(v))  # type: ignore
                                           for f, v in categories_per_feature.items()}
-            elif not all(isinstance(v, list) for v in vals):
+            elif not all(isinstance(val, list) for val in vals) and \
+                    all(isinstance(v, int_types) for val in vals for v in val):  # type: ignore
                 raise NotImplementedError('categories_per_feature needs to be None or one of '
                                           'Dict[int, int], Dict[int, List[int]]')
         else:  # infer number of possible categories for each feature from reference data
