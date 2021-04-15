@@ -30,9 +30,13 @@ class ChiSquareDrift(BaseUnivariateDrift):
             p-value used for significance of the Chi-Squared test for each feature. If the FDR correction method
             is used, this corresponds to the acceptable q-value.
         categories_per_feature
-            Dict with as keys the feature column index and as values the number of possible categorical
-            values `n` for that feature. Eg: {0: 5, 1: 9, 2: 7}. If `None`, the number of categories is inferred
-             from the data. Categories are assumed to take values in the range `[0, 1, ..., n]`.
+            Optional dictionary with as keys the feature column index and as values the number of possible
+            categorical values for that feature or a list with the possible values. If you know how many
+            categories are present for a given feature you could pass this in the `categories_per_feature` dict
+            in the Dict[int, int] format, e.g. {0: 3, 3: 2}. If you pass N categories this will assume the
+            possible values for the feature are [0, ..., N-1]. You can also explicitly pass the possible categories
+            in the Dict[int, List[int]] format, e.g. {0: [0, 1, 2], 3: [0, 55]}. Not that the categories can be
+            arbitrary int values. If it is not specified, `categories_per_feature` is inferred from `x_ref`.
         preprocess_x_ref
             Whether to already preprocess and infer categories and frequencies for reference data.
         update_x_ref
