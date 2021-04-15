@@ -72,7 +72,8 @@ class ChiSquareDrift(BaseUnivariateDrift):
                 categories_per_feature = {f: list(np.arange(v))  # type: ignore
                                           for f, v in categories_per_feature.items()}
             elif not all(isinstance(v, list) for v in vals):
-                raise NotImplementedError  # categories_per_feature not Dict[int, list]
+                raise NotImplementedError('categories_per_feature needs to be None or one of '
+                                          'Dict[int, int], Dict[int, List[int]]')
         else:  # infer number of possible categories for each feature from reference data
             x_flat = self.x_ref.reshape(self.x_ref.shape[0], -1)
             categories_per_feature = {f: list(np.unique(x_flat[:, f]))  # type: ignore
