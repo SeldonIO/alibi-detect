@@ -270,7 +270,7 @@ def state_chisquaredrift(cd: ChiSquareDrift) -> Tuple[
         'kwargs':
             {
                 'p_val': cd.p_val,
-                'categories_per_feature': None,
+                'categories_per_feature': cd.x_ref_categories,
                 'preprocess_x_ref': False,
                 'update_x_ref': cd.update_x_ref,
                 'correction': cd.correction,
@@ -281,8 +281,6 @@ def state_chisquaredrift(cd: ChiSquareDrift) -> Tuple[
             {
                 'n': cd.n,
                 'preprocess_x_ref': cd.preprocess_x_ref,
-                'categories_per_feature': cd.categories_per_feature,
-                'x_ref_count': cd.x_ref_count,
                 'load_text_embedding': load_emb,
                 'preprocess_fn': preprocess_fn,
                 'preprocess_kwargs': preprocess_kwargs
@@ -357,7 +355,7 @@ def state_tabulardrift(cd: TabularDrift) -> Tuple[
         'kwargs':
             {
                 'p_val': cd.p_val,
-                'categories_per_feature': None,
+                'categories_per_feature': cd.x_ref_categories,
                 'preprocess_x_ref': False,
                 'update_x_ref': cd.update_x_ref,
                 'correction': cd.correction,
@@ -368,8 +366,6 @@ def state_tabulardrift(cd: TabularDrift) -> Tuple[
         'other':
             {
                 'n': cd.n,
-                'categories_per_feature': cd.categories_per_feature,
-                'x_ref_count': cd.x_ref_count,
                 'preprocess_x_ref': cd.preprocess_x_ref,
                 'load_text_embedding': load_emb,
                 'preprocess_fn': preprocess_fn,
@@ -1569,8 +1565,6 @@ def init_cd_chisquaredrift(state_dict: Dict, model: Optional[Union[tf.keras.Mode
     attrs = state_dict['other']
     cd.n = attrs['n']
     cd.preprocess_x_ref = attrs['preprocess_x_ref']
-    cd.categories_per_feature = attrs['categories_per_feature']
-    cd.x_ref_count = attrs['x_ref_count']
     return cd
 
 
@@ -1604,8 +1598,6 @@ def init_cd_tabulardrift(state_dict: Dict, model: Optional[Union[tf.keras.Model,
     attrs = state_dict['other']
     cd.n = attrs['n']
     cd.preprocess_x_ref = attrs['preprocess_x_ref']
-    cd.categories_per_feature = attrs['categories_per_feature']
-    cd.x_ref_count = attrs['x_ref_count']
     return cd
 
 

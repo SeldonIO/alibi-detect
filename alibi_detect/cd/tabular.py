@@ -1,10 +1,7 @@
-import logging
 import numpy as np
 from scipy.stats import chi2_contingency, ks_2samp
-from typing import Callable, Dict, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 from alibi_detect.cd.base import BaseUnivariateDrift
-
-logger = logging.getLogger(__name__)
 
 
 class TabularDrift(BaseUnivariateDrift):
@@ -74,21 +71,22 @@ class TabularDrift(BaseUnivariateDrift):
             data_type=data_type
         )
         self.alternative = alternative
-        if isinstance(categories_per_feature, dict):
-            # infer number of possible categories for each categorical feature from reference data
-            if None in list(categories_per_feature.values()):
-                x_flat = self.x_ref.reshape(self.x_ref.shape[0], -1)
-                categories_per_feature = {f: x_flat[:, f].max().astype(int) + 1
-                                          for f in categories_per_feature.keys()}
-            self.categories_per_feature = categories_per_feature
 
-            if update_x_ref is None and preprocess_x_ref:
-                # already infer categories and frequencies for reference data
-                self.x_ref_count = self._get_counts(x_ref)
-            else:
-                self.x_ref_count = None
-        else:  # no categorical features assumed present
-            self.categories_per_feature, self.x_ref_count = {}, None
+        self.x_ref_categories, self.cat_vars = {}, []  # no categorical features assumed present
+        if isinstance(categories_per_feature, dict):
+            vals = list(categories_per_feature.values())
+            if all(v is None for v in vals):  # categories_per_feature = Dict[int, NoneType]
+                x_flat = self.x_ref.reshape(self.x_ref.shape[0], -1)
+                categories_per_feature = {f: list(np.unique(x_flat[:, f]))  # type: ignore
+                                          for f in categories_per_feature.keys()}
+            elif all(isinstance(v, (int, np.int16, np.int32, np.int64)) for v in vals):
+                # categories_per_feature = Dict[int, int]
+                categories_per_feature = {f: list(np.arange(v))  # type: ignore
+                                          for f, v in categories_per_feature.items()}
+            elif not all(isinstance(v, list) for v in vals):
+                raise NotImplementedError  # categories_per_feature not Dict[int, list]
+            self.x_ref_categories = categories_per_feature
+            self.cat_vars = list(self.x_ref_categories.keys())
 
     def feature_score(self, x_ref: np.ndarray, x: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -105,27 +103,29 @@ class TabularDrift(BaseUnivariateDrift):
         -------
         Feature level p-values and K-S or Chi-Squared statistics.
         """
-        x = x.reshape(x.shape[0], -1)
         x_ref = x_ref.reshape(x_ref.shape[0], -1)
-        if self.categories_per_feature:
-            x_count = self._get_counts(x)
-            if not self.x_ref_count:  # compute categorical frequency counts for each feature
-                x_ref_count = self._get_counts(x_ref)
-            else:
-                x_ref_count = self.x_ref_count
+        x = x.reshape(x.shape[0], -1)
+
+        # apply counts on union of categories per variable in both the reference and test data
+        if self.cat_vars:
+            x_categories = {f: list(np.unique(x[:, f])) for f in self.cat_vars}
+            all_categories = {f: list(set().union(self.x_ref_categories[f], x_categories[f]))  # type: ignore
+                              for f in self.cat_vars}
+            x_ref_count = self._get_counts(x_ref, all_categories)
+            x_count = self._get_counts(x, all_categories)
+
         p_val = np.zeros(self.n_features, dtype=np.float32)
         dist = np.zeros_like(p_val)
         for f in range(self.n_features):
-            if f in list(self.categories_per_feature.keys()):
+            if f in self.cat_vars:
                 contingency_table = np.vstack((x_ref_count[f], x_count[f]))
                 dist[f], p_val[f], _, _ = chi2_contingency(contingency_table)
             else:
                 dist[f], p_val[f] = ks_2samp(x_ref[:, f], x[:, f], alternative=self.alternative, mode='asymp')
         return p_val, dist
 
-    def _get_counts(self, x: np.ndarray) -> Dict[int, np.ndarray]:
+    def _get_counts(self, x: np.ndarray, categories: Dict[int, List[int]]) -> Dict[int, List[int]]:
         """
         Utility method for getting the counts of categories for each categorical variable.
         """
-        return {f: np.bincount(x[:, f].astype(int), minlength=n_cat) for f, n_cat in
-                self.categories_per_feature.items()}
+        return {f: [(x[:, f] == v).sum() for v in vals] for f, vals in categories.items()}
