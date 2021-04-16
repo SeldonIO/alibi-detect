@@ -40,7 +40,7 @@ class TabularDrift(BaseUnivariateDrift):
             present for a given feature you could pass this in the `categories_per_feature` dict in the
             Dict[int, int] format, e.g. *{0: 3, 3: 2}*. If you pass N categories this will assume the possible
             values for the feature are [0, ..., N-1]. You can also explicitly pass the possible categories in the
-            Dict[int, List[int]] format, e.g. {0: [0, 1, 2], 3: [0, 55]}. Not that the categories can be
+            Dict[int, List[int]] format, e.g. {0: [0, 1, 2], 3: [0, 55]}. Note that the categories can be
             arbitrary int values.
         preprocess_x_ref
             Whether to already preprocess and infer categories and frequencies for categorical reference data.
