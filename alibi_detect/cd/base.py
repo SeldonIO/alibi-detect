@@ -191,7 +191,7 @@ class BaseClassifierDrift(BaseDetector):
     def score(self, x: np.ndarray) -> Tuple[float, float]:
         pass
 
-    def predict(self, x: Union[np.ndarray, list],  return_p_val: bool = True,
+    def predict(self, x: np.ndarray,  return_p_val: bool = True,
                 return_distance: bool = True) -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
         """
         Predict whether a batch of data has drifted from the reference data.
