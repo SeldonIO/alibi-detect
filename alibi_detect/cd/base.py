@@ -2,6 +2,7 @@ from abc import abstractmethod
 import logging
 import numpy as np
 from sklearn.model_selection import StratifiedKFold
+from scipy.stats import binom_test, ks_2samp
 from typing import Callable, Dict, List, Optional, Tuple, Union
 from alibi_detect.base import BaseDetector, concept_drift_dict
 from alibi_detect.cd.utils import update_reference
@@ -144,6 +145,47 @@ class BaseClassifierDrift(BaseDetector):
         else:  # use stratified folds
             splits = self.skf.split(x, y)
         return x, y, splits
+
+    def test_probs(
+        self, y_oof: np.ndarray, probs_oof: np.ndarray, n_ref: int, n_cur: int
+    ) -> Tuple[float, float]:
+        """
+        Perform a statistical test of the probabilities predicted by the model against
+        what we'd expect under the no-change null.
+
+        Parameters
+        ----------
+        y_oof
+            Out of fold targets (0 ref, 1 cur)
+        probs_oof
+            Probabilities predicted by the model
+        n_ref
+            Size of reference window used in training model
+        n_cur
+            Size of current window used in trianing model
+
+        Returns
+        -------
+        p-value and notion of performance of classifier relative to expectation under null
+        """
+        probs_oof = probs_oof[:, 1]  # [1-p, p]
+
+        if self.soft_preds:
+            probs_ref = probs_oof[y_oof == 0]
+            probs_cur = probs_oof[y_oof == 1]
+            dist, p_val = ks_2samp(probs_ref, probs_cur, alternative='greater')
+        else:
+            baseline_accuracy = max(n_ref, n_cur) / (n_ref + n_cur)  # exp under null
+            n_oof = y_oof.shape[0]
+            n_correct = (y_oof == probs_oof.round()).sum()
+            p_val = binom_test(n_correct, n_oof, baseline_accuracy, alternative='greater')
+            accuracy = n_correct/n_oof
+            # relative error reduction, in [0,1]
+            # e.g. (90% acc -> 99% acc) = 0.9, (50% acc -> 59% acc) = 0.18
+            dist = 1 - (1 - accuracy)/(1-baseline_accuracy)
+            dist = max(0, dist)  # below 0 = no evidence for drift
+
+        return p_val, dist
 
     @abstractmethod
     def score(self, x: np.ndarray) -> Tuple[float, float]:

@@ -4,7 +4,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 from torch.utils.data import TensorDataset, DataLoader
-from scipy.stats import binom_test, ks_2samp
+from scipy.special import softmax
 from typing import Callable, Dict, Optional, Union, Tuple
 from alibi_detect.cd.base import BaseClassifierDrift
 from alibi_detect.models.pytorch.trainer import trainer
@@ -147,22 +147,10 @@ class ClassifierDriftTorch(BaseClassifierDrift):
             preds = predict_batch(x_te, model.eval(), device=self.device, batch_size=self.dl_kwargs['batch_size'])
             preds_oof_list.append(preds)
             idx_oof_list.append(idx_te)
-        preds_oof = np.concatenate(preds_oof_list, axis=0).argmax(axis=1)
+        preds_oof = np.concatenate(preds_oof_list, axis=0)
+        probs_oof = softmax(preds_oof, axis=-1)
         idx_oof = np.concatenate(idx_oof_list, axis=0)
+        y_oof = y[idx_oof]
 
-        if self.soft_preds:
-            log_losses_ref = preds_oof[y[idx_oof] == 0]
-            log_losses_cur = preds_oof[y[idx_oof] == 1]
-            dist, p_val = ks_2samp(log_losses_ref, log_losses_cur, alternative='greater')
-        else:
-            baseline_accuracy = max(x_ref.shape[0], x.shape[0]) / (x_ref.shape[0] + x.shape[0])  # exp under null
-            n_oof = idx_oof.shape[0]
-            n_correct = (y[idx_oof] == preds_oof.round()).sum()
-            p_val = binom_test(n_correct, n_oof, baseline_accuracy, alternative='greater')
-            accuracy = n_correct/n_oof
-            # relative error reduction, in [0,1]
-            # e.g. (90% acc -> 99% acc) = 0.9, (50% acc -> 59% acc) = 0.18
-            dist = 1 - (1 - accuracy)/(1-baseline_accuracy)
-            dist = max(0, dist)  # below 0 = no evidence for drift
-
+        p_val, dist = self.test_probs(y_oof, probs_oof, x_ref.shape[0], x.shape[0])
         return p_val, dist
