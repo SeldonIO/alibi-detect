@@ -20,7 +20,9 @@ class ClassifierUncertaintyDrift:
             margin_width: float = 0.1,
             batch_size: int = 32,
             device: Optional[str] = None,
-            data_type: Optional[str] = None
+            tokenizer: Optional[Callable] = None,
+            max_len: Optional[int] = None,
+            data_type: Optional[str] = None,
     ) -> None:
         """
         Test for a change in the number of instances falling into regions on which the model is uncertain.
@@ -54,12 +56,15 @@ class ClassifierUncertaintyDrift:
         device
             Device type used. The default None tries to use the GPU and falls back on CPU if needed.
             Can be specified by passing either 'cuda', 'gpu' or 'cpu'. Only relevant for 'pytorch' backend.
+        tokenizer
+            Optional tokenizer for NLP models.
+        max_len
+            Optional max token length for NLP models.
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
-        super().__init__()
 
-        self.preprocess_fn = partial(
+        preprocess_fn = partial(
             classifier_uncertainty,
             model=model,
             backend=backend,
@@ -67,7 +72,9 @@ class ClassifierUncertaintyDrift:
             uncertainty_type=uncertainty_type,
             margin_width=margin_width,
             batch_size=batch_size,
-            device=device
+            device=device,
+            tokenizer=tokenizer,
+            max_len=max_len
         )
 
         if uncertainty_type == 'entropy':
@@ -76,7 +83,7 @@ class ClassifierUncertaintyDrift:
                 p_val=p_val,
                 preprocess_x_ref=True,
                 update_x_ref=update_x_ref,
-                preprocess_fn=self.preprocess_fn,
+                preprocess_fn=preprocess_fn,
                 data_type=data_type
             )
         elif uncertainty_type == 'margin':
@@ -85,13 +92,18 @@ class ClassifierUncertaintyDrift:
                 p_val=p_val,
                 preprocess_x_ref=True,
                 update_x_ref=update_x_ref,
-                preprocess_fn=self.preprocess_fn,
+                preprocess_fn=preprocess_fn,
                 data_type=data_type
             )
         else:
             raise NotImplementedError("Only uncertainty types 'entropy' or 'margin' supported.")
 
         self.meta = self._detector.meta
+        self.meta['name'] = 'ClassifierUncertaintyDrift'
+        self.meta['prediction_type'] = prediction_type
+        self.meta['uncertainty_type'] = uncertainty_type
+        if uncertainty_type == 'margin':
+            self.meta['margin_width'] = margin_width
 
     def predict(self, x: Union[np.ndarray, list],  return_p_val: bool = True,
                 return_distance: bool = True) -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
@@ -106,7 +118,7 @@ class ClassifierUncertaintyDrift:
             Whether to return the p-value of the test.
         return_distance
             Whether to return the corresponding test statistic (K-S for 'entropy', Chi2 for 'margin').
-        # TODO: Offer to return uncertainty delta
+        # TODO: Offer to return difference in uncertainty
 
         Returns
         -------
