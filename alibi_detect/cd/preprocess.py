@@ -1,5 +1,7 @@
 import numpy as np
 from sklearn.decomposition import PCA
+from scipy.special import softmax
+from scipy.stats import entropy
 from typing import Callable, Optional
 from functools import partial
 
@@ -38,6 +40,8 @@ def classifier_uncertainty(
     margin_width: float = 0.1,
     batch_size: int = 32,
     device: Optional[str] = None,
+    tokenizer: Optional[Callable] = None,
+    max_len: Optional[int] = None,
 ) -> np.ndarray:
     """
     Evaluate model on X and transform predictions to prediction uncertainties.
@@ -62,22 +66,29 @@ def classifier_uncertainty(
     device
         Device type used. The default None tries to use the GPU and falls back on CPU if needed.
         Can be specified by passing either 'cuda', 'gpu' or 'cpu'. Only relevant for 'pytorch' backend.
+    tokenizer
+        Optional tokenizer for NLP models.
+    max_len
+        Optional max token length for NLP models.
 
     Returns
     -------
-    Projection of X on first `n_components` principcal components.
+    A scalar indication of uncertainty of the model on each instance in X.
     """
 
     if backend is not None:
         backend = backend.lower()
+        model_kwargs = {
+            'model': model, 'batch_size': batch_size, 'tokenizer': tokenizer, 'max_len': max_len
+        }
         if backend == 'tensorflow':
             from alibi_detect.cd.tensorflow.preprocess import preprocess_drift
-            model_fn = partial(preprocess_drift, model=model, batch_size=batch_size)
         elif backend == 'pytorch':
             from alibi_detect.cd.pytorch.preprocess import preprocess_drift
-            model_fn = partial(preprocess_drift, model=model, device=device, batch_size=batch_size)
+            model_kwargs['device'] = device
         else:
             raise NotImplementedError(f'{backend} not implemented. Use tensorflow or pytorch instead.')
+        model_fn = partial(preprocess_drift, **model_kwargs)
     else:
         model_fn = model
         if device not in [None, 'cpu']:
@@ -86,19 +97,21 @@ def classifier_uncertainty(
     preds = np.asarray(model_fn(X))
 
     if prediction_type == 'probs':
+        if (1 - np.sum(preds, axis=-1)).abs().mean() > 1e-6:
+            raise ValueError("Probabilities across labels should sum to 1")
         probs = preds
     elif prediction_type == 'logits':
-        probs = preds.exp()/preds.exp().sum(-1)
+        probs = softmax(preds)
     else:
         raise NotImplementedError("Only prediction types 'probs' and 'logits' supported.")
 
     if uncertainty_type == 'entropy':
-        uncertainties = -(probs*np.log(probs)).sum(-1)[:, None]
+        uncertainties = entropy(probs, axis=-1)
     elif uncertainty_type == 'margin':
         top_2_probs = -np.partition(-probs, kth=1, axis=-1)[:, :2]
         diff = np.abs(top_2_probs[:, 0] - top_2_probs[:, 1])
-        uncertainties = (diff < margin_width).astype(int)[:, None]
+        uncertainties = (diff < margin_width).astype(int)
     else:
         raise NotImplementedError("Only uncertainty types 'entropy' or 'margin' supported")
-
-    return uncertainties
+    
+    return uncertainties[:, None]  # Detectors expect N x d
