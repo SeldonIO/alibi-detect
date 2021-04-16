@@ -91,8 +91,8 @@ class TabularDrift(BaseUnivariateDrift):
                                           for f, v in categories_per_feature.items()}
             elif not all(isinstance(v, list) for v in vals) and \
                     all(isinstance(v, int_types) for val in vals for v in val):  # type: ignore
-                raise NotImplementedError('categories_per_feature needs to be None or one of '
-                                          'Dict[int, NoneType], Dict[int, int], Dict[int, List[int]]')
+                raise ValueError('categories_per_feature needs to be None or one of '
+                                 'Dict[int, NoneType], Dict[int, int], Dict[int, List[int]]')
             self.x_ref_categories = categories_per_feature
             self.cat_vars = list(self.x_ref_categories.keys())
 
