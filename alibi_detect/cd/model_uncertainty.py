@@ -1,7 +1,6 @@
 import numpy as np
 from typing import Callable, Dict, Optional, Union
 from functools import partial
-
 from alibi_detect.cd.ks import KSDrift
 from alibi_detect.cd.chisquare import ChiSquareDrift
 from alibi_detect.cd.preprocess import classifier_uncertainty
