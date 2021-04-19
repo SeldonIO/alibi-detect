@@ -97,11 +97,11 @@ def classifier_uncertainty(
     preds = np.asarray(model_fn(X))
 
     if prediction_type == 'probs':
-        if (1 - np.sum(preds, axis=-1)).abs().mean() > 1e-6:
+        if np.abs(1 - np.sum(preds, axis=-1)).mean() > 1e-6:
             raise ValueError("Probabilities across labels should sum to 1")
         probs = preds
     elif prediction_type == 'logits':
-        probs = softmax(preds)
+        probs = softmax(preds, axis=-1)
     else:
         raise NotImplementedError("Only prediction types 'probs' and 'logits' supported.")
 
