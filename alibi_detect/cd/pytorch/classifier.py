@@ -137,6 +137,8 @@ class ClassifierDriftTorch(BaseClassifierDrift):
         and that which we'd expect under the null assumption of no drift.
         """
         x_ref, x = self.preprocess(x)
+        n_ref, n_cur = x_ref.shape[0], x.shape[0]
+
         x, y, splits = self.get_splits(x_ref, x)
 
         # iterate over folds: train a new model for each fold and make out-of-fold (oof) predictions
@@ -146,7 +148,8 @@ class ClassifierDriftTorch(BaseClassifierDrift):
             ds_tr = TensorDataset(torch.from_numpy(x_tr), torch.from_numpy(y_tr))
             dl_tr = DataLoader(ds_tr, **self.dl_kwargs)  # type: ignore
             model = deepcopy(self.model)
-            train_args = [model, nn.CrossEntropyLoss(), dl_tr, self.device]
+            loss_fn = nn.CrossEntropyLoss() if (self.preds_type == 'logits') else nn.NLLLoss()
+            train_args = [model, loss_fn, dl_tr, self.device]
             trainer(*train_args, **self.train_kwargs)  # type: ignore
             preds = predict_batch(x_te, model.eval(), device=self.device, batch_size=self.dl_kwargs['batch_size'])
             preds_oof_list.append(preds)
@@ -156,5 +159,5 @@ class ClassifierDriftTorch(BaseClassifierDrift):
         idx_oof = np.concatenate(idx_oof_list, axis=0)
         y_oof = y[idx_oof]
 
-        p_val, dist = self.test_probs(y_oof, probs_oof, x_ref.shape[0], x.shape[0])
+        p_val, dist = self.test_probs(y_oof, probs_oof, n_ref, n_cur)
         return p_val, dist

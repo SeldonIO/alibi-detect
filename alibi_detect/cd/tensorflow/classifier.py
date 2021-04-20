@@ -100,7 +100,10 @@ class ClassifierDriftTF(BaseClassifierDrift):
 
         # define and compile classifier model
         self.model = model
-        self.compile_kwargs = {'optimizer': optimizer(learning_rate=learning_rate), 'loss': BinaryCrossentropy()}
+        self.compile_kwargs = {
+            'optimizer': optimizer(learning_rate=learning_rate),
+            'loss': BinaryCrossentropy(from_logits=(self.preds_type == 'logits'))
+        }
         if isinstance(compile_kwargs, dict):
             self.compile_kwargs.update(compile_kwargs)
         self.train_kwargs = {'batch_size': batch_size, 'epochs': epochs, 'verbose': verbose}
@@ -123,6 +126,8 @@ class ClassifierDriftTF(BaseClassifierDrift):
         and that which we'd expect under the null assumption of no drift.
         """
         x_ref, x = self.preprocess(x)
+        n_ref, n_cur = x_ref.shape[0], x.shape[0]
+
         x, y, splits = self.get_splits(x_ref, x)
 
         # iterate over folds: train a new model for each fold and make out-of-fold (oof) predictions
@@ -140,5 +145,5 @@ class ClassifierDriftTF(BaseClassifierDrift):
         idx_oof = np.concatenate(idx_oof_list, axis=0)
         y_oof = y[idx_oof]
 
-        p_val, dist = self.test_probs(y_oof, probs_oof, x_ref.shape[0], x.shape[0])
+        p_val, dist = self.test_probs(y_oof, probs_oof, n_ref, n_cur)
         return p_val, dist
