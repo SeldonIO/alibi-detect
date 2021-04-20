@@ -1,9 +1,11 @@
 import numpy as np
+import random
 from sklearn.decomposition import PCA
 from scipy.special import softmax
 from scipy.stats import entropy
 from typing import Callable, Optional
 from functools import partial
+from alibi_detect.cd.utils import activate_train_mode_for_dropout_layers
 
 
 def pca(X: np.ndarray, n_components: int = 2, svd_solver: str = 'auto') -> np.ndarray:
@@ -32,7 +34,7 @@ def pca(X: np.ndarray, n_components: int = 2, svd_solver: str = 'auto') -> np.nd
 
 
 def classifier_uncertainty(
-    X: np.ndarray,
+    x: np.ndarray,
     model: Callable,
     backend: Optional[str] = None,
     prediction_type: str = 'probs',
@@ -44,11 +46,11 @@ def classifier_uncertainty(
     max_len: Optional[int] = None,
 ) -> np.ndarray:
     """
-    Evaluate model on X and transform predictions to prediction uncertainties.
+    Evaluate model on x and transform predictions to prediction uncertainties.
 
     Parameters
     ----------
-    X
+    x
         Batch of instances.
     model
         Classification model outputting class probabilities (or logits)
@@ -73,28 +75,17 @@ def classifier_uncertainty(
 
     Returns
     -------
-    A scalar indication of uncertainty of the model on each instance in X.
+    A scalar indication of uncertainty of the model on each instance in x.
     """
 
     if backend is not None:
-        backend = backend.lower()
-        model_kwargs = {
-            'model': model, 'batch_size': batch_size, 'tokenizer': tokenizer, 'max_len': max_len
-        }
-        if backend == 'tensorflow':
-            from alibi_detect.cd.tensorflow.preprocess import preprocess_drift
-        elif backend == 'pytorch':
-            from alibi_detect.cd.pytorch.preprocess import preprocess_drift
-            model_kwargs['device'] = device
-        else:
-            raise NotImplementedError(f'{backend} not implemented. Use tensorflow or pytorch instead.')
-        model_fn = partial(preprocess_drift, **model_kwargs)
+        preds = get_preds(
+            x, model, backend, batch_size, device=device, tokenizer=tokenizer, max_len=max_len
+        )
     else:
-        model_fn = model
         if device not in [None, 'cpu']:
             raise NotImplementedError('Non-pytorch/tensorflow models must run on cpu')
-
-    preds = np.asarray(model_fn(X))
+        preds = np.asarray(model(x))
 
     if prediction_type == 'probs':
         if np.abs(1 - np.sum(preds, axis=-1)).mean() > 1e-6:
@@ -115,3 +106,115 @@ def classifier_uncertainty(
         raise NotImplementedError("Only uncertainty types 'entropy' or 'margin' supported")
     
     return uncertainties[:, None]  # Detectors expect N x d
+
+
+def regressor_uncertainty(
+    x: np.ndarray,
+    model: Callable,
+    backend: str,
+    uncertainty_type: str = 'mc_dropout',
+    n_evals: int = 25,
+    batch_size: int = 32,
+    device: Optional[str] = None,
+    tokenizer: Optional[Callable] = None,
+    max_len: Optional[int] = None,
+) -> np.ndarray:
+    """
+    Evaluate model on x and transform predictions to prediction uncertainties.
+
+    Parameters
+    ----------
+    x
+        Batch of instances.
+    model
+        Classification model outputting class probabilities (or logits)
+    backend
+        Backend to use if model requires batch prediction. Options are 'tensorflow' or 'pytorch'.
+    uncertainty_type
+        Method for determining the model's uncertainty for a given instance. Options are 'mc_dropout' or 'ensemble'.
+        The former should output a scalar per instance. The latter should output a vector of predictions per instance.
+    n_evals:
+        The number of times to evaluate the model under different dropout configurations. Only relavent when using
+        the 'mc_dropout' uncertainty type.
+    batch_size
+        Batch size used to evaluate model. Only relavent when backend has been specified for batch prediction.
+    device
+        Device type used. The default None tries to use the GPU and falls back on CPU if needed.
+        Can be specified by passing either 'cuda', 'gpu' or 'cpu'. Only relevant for 'pytorch' backend.
+    tokenizer
+        Optional tokenizer for NLP models.
+    max_len
+        Optional max token length for NLP models.
+
+    Returns
+    -------
+    A scalar indication of uncertainty of the model on each instance in xs.
+    """
+
+    if uncertainty_type == 'mc_dropout':
+        model = activate_train_mode_for_dropout_layers(model, backend)
+        preds = np.stack([
+            get_preds(
+                x, model, backend, batch_size, shuffle=True, force_full_batches=True,
+                device=device, tokenizer=tokenizer, max_len=max_len
+            ) for i in range(n_evals)
+        ], axis=-1)
+    elif uncertainty_type == 'ensemble':
+        if backend is not None:
+            preds = get_preds(
+                x, model, backend, batch_size, device=device, tokenizer=tokenizer, max_len=max_len
+            )
+        else:
+            if device not in [None, 'cpu']:
+                raise NotImplementedError('Non-pytorch/tensorflow models must run on cpu')
+            preds = np.asarray(model(x))
+    else:
+        raise NotImplementedError("Only 'mc_dropout' and 'ensemble' are supported uncertainty types for regressors.")
+
+    uncertainties = np.std(preds, axis=-1)
+
+    return uncertainties[:, None]  # Detectors expect N x d
+
+
+def get_preds(
+    x: np.ndarray,
+    model: Callable,
+    backend: str,
+    batch_size: int,
+    shuffle: bool = False,
+    force_full_batches: bool = False,
+    device: Optional[str] = None,
+    tokenizer: Optional[Callable] = None,
+    max_len: Optional[int] = None,
+) -> np.ndarray:
+
+    backend = backend.lower()
+    model_kwargs = {
+        'model': model, 'batch_size': batch_size, 'tokenizer': tokenizer, 'max_len': max_len
+    }
+    if backend == 'tensorflow':
+        from alibi_detect.cd.tensorflow.preprocess import preprocess_drift
+    elif backend == 'pytorch':
+        from alibi_detect.cd.pytorch.preprocess import preprocess_drift
+        model_kwargs['device'] = device
+    else:
+        raise NotImplementedError(f'{backend} not implemented. Use tensorflow or pytorch instead.')
+    model_fn = partial(preprocess_drift, **model_kwargs)
+
+    n_x = x.shape[0]
+
+    if shuffle:
+        perm = np.random.permutation(n_x)
+        x = x[perm]
+
+    final_batch_size = n_x % batch_size
+    if force_full_batches and final_batch_size != 0:
+        doubles_inds = random.sample(range(n_x), batch_size - final_batch_size)
+        x = np.concatenate([x, x[doubles_inds]], axis=0)
+
+    preds = np.asarray(model_fn(x))[:n_x]
+
+    if shuffle:
+        preds = preds[np.argsort(perm)]
+
+    return preds

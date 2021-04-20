@@ -1,5 +1,7 @@
 import numpy as np
-from typing import Dict
+from typing import Dict, Callable
+from functools import partial
+from torch import nn
 from alibi_detect.utils.sampling import reservoir_sampling
 
 
@@ -39,3 +41,25 @@ def update_reference(X_ref: np.ndarray,
             raise KeyError('Only `reservoir_sampling` and `last` are valid update options for X_ref.')
     else:
         return X_ref
+
+
+def activate_train_mode_for_dropout_layers(model: Callable, backend: str) -> Callable:
+    # TODO: Figure a way to do this properly for tensorflow models.
+    if backend == 'pytorch':
+        model.eval()
+        n_dropout_layers = 0
+        for module in model.modules():
+            if isinstance(module, nn.Dropout):
+                module.train()
+                n_dropout_layers += 1
+        if n_dropout_layers == 0:
+            raise ValueError("No dropout layers identified.")
+        else:
+            print(f'{n_dropout_layers} identified')
+    elif backend == 'tensorflow':
+        model.trainable = False
+        model = partial(model, training=True)  # Note this affects batchnorm etc also
+    else:
+        raise NotImplementedError("Only 'pytorch' or 'tensorflow' backends supported")
+
+    return model

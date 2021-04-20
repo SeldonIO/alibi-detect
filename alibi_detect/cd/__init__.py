@@ -2,7 +2,7 @@ from .chisquare import ChiSquareDrift
 from .classifier import ClassifierDrift
 from .ks import KSDrift
 from .mmd import MMDDrift
-from .model_uncertainty import ClassifierUncertaintyDrift
+from .model_uncertainty import ClassifierUncertaintyDrift, RegressorUncertaintyDrift
 from .tabular import TabularDrift
 
 __all__ = [
@@ -12,4 +12,5 @@ __all__ = [
     "MMDDrift",
     "TabularDrift",
     "ClassifierUncertaintyDrift",
+    "RegressorUncertaintyDrift"
 ]
