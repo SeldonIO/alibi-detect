@@ -26,6 +26,7 @@ class BaseClassifierDrift(BaseDetector):
             preprocess_x_ref: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
+            preds_type: str = 'probs',
             binarize_preds: bool = False,
             train_size: Optional[float] = .75,
             n_folds: Optional[int] = None,
@@ -49,6 +50,8 @@ class BaseClassifierDrift(BaseDetector):
             for reservoir sampling {'reservoir_sampling': n} is passed.
         preprocess_fn
             Function to preprocess the data before computing the data drift metrics.
+        preds_type
+            Whether the model output probabilities or logits
         binarize_preds
             Whether to test for discrepency on soft (e.g. prob/log-prob) model predictions directly
             with a K-S test or binarise to 0-1 prediction errors and apply a binomial test.
@@ -73,6 +76,9 @@ class BaseClassifierDrift(BaseDetector):
         if isinstance(train_size, float) and isinstance(n_folds, int):
             logger.warning('Both `n_folds` and `train_size` specified. By default `n_folds` is used.')
 
+        if preds_type not in ['probs', 'logits']:
+            raise ValueError("'preds_type' should be 'probs' or 'logits'")
+
         # optionally already preprocess reference data
         self.p_val = p_val
         if preprocess_x_ref and isinstance(preprocess_fn, Callable):  # type: ignore
@@ -85,6 +91,7 @@ class BaseClassifierDrift(BaseDetector):
         self.n = x_ref.shape[0]  # type: ignore
 
         # define whether soft preds and optionally the stratified k-fold split
+        self.preds_type = preds_type
         self.binarize_preds = binarize_preds
         if isinstance(n_folds, int):
             self.train_size = None
@@ -95,7 +102,7 @@ class BaseClassifierDrift(BaseDetector):
         # set metadata
         self.meta['detector_type'] = 'offline'
         self.meta['data_type'] = data_type
-        self.meta['params'] = {'binarize_preds ': binarize_preds}
+        self.meta['params'] = {'binarize_preds ': binarize_preds, 'preds_type': preds_type}
 
     def preprocess(self, x: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -170,7 +177,7 @@ class BaseClassifierDrift(BaseDetector):
         """
         probs_oof = probs_oof[:, 1]  # [1-p, p]
 
-        if self.self.binarize_preds:
+        if self.binarize_preds:
             baseline_accuracy = max(n_ref, n_cur) / (n_ref + n_cur)  # exp under null
             n_oof = y_oof.shape[0]
             n_correct = (y_oof == probs_oof.round()).sum()
