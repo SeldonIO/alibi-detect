@@ -40,7 +40,6 @@ def clfdrift_params(request):
 
 @pytest.mark.parametrize('clfdrift_params', list(range(n_tests)), indirect=True)
 def test_clfdrift(clfdrift_params):
-    print(clfdrift_params)
     backend = clfdrift_params
     if backend.lower() == 'pytorch':
         model = MyModel(n_features)
