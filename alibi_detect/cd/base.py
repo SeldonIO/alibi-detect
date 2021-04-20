@@ -26,7 +26,7 @@ class BaseClassifierDrift(BaseDetector):
             preprocess_x_ref: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
-            soft_preds: bool = True,
+            binarize_preds: bool = False,
             train_size: Optional[float] = .75,
             n_folds: Optional[int] = None,
             seed: int = 0,
@@ -49,7 +49,7 @@ class BaseClassifierDrift(BaseDetector):
             for reservoir sampling {'reservoir_sampling': n} is passed.
         preprocess_fn
             Function to preprocess the data before computing the data drift metrics.
-        soft_preds
+        binarize_preds
             Whether to test for discrepency on soft (e.g. prob/log-prob) model predictions directly
             with a K-S test or binarise to 0-1 prediction errors and apply a binomial test.
         train_size
@@ -85,7 +85,7 @@ class BaseClassifierDrift(BaseDetector):
         self.n = x_ref.shape[0]  # type: ignore
 
         # define whether soft preds and optionally the stratified k-fold split
-        self.soft_preds = soft_preds
+        self.binarize_preds = binarize_preds
         if isinstance(n_folds, int):
             self.train_size = None
             self.skf = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=seed)
@@ -95,7 +95,7 @@ class BaseClassifierDrift(BaseDetector):
         # set metadata
         self.meta['detector_type'] = 'offline'
         self.meta['data_type'] = data_type
-        self.meta['params'] = {'soft_preds': soft_preds}
+        self.meta['params'] = {'binarize_preds ': binarize_preds}
 
     def preprocess(self, x: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -170,11 +170,7 @@ class BaseClassifierDrift(BaseDetector):
         """
         probs_oof = probs_oof[:, 1]  # [1-p, p]
 
-        if self.soft_preds:
-            probs_ref = probs_oof[y_oof == 0]
-            probs_cur = probs_oof[y_oof == 1]
-            dist, p_val = ks_2samp(probs_ref, probs_cur, alternative='greater')
-        else:
+        if self.self.binarize_preds:
             baseline_accuracy = max(n_ref, n_cur) / (n_ref + n_cur)  # exp under null
             n_oof = y_oof.shape[0]
             n_correct = (y_oof == probs_oof.round()).sum()
@@ -184,6 +180,10 @@ class BaseClassifierDrift(BaseDetector):
             # e.g. (90% acc -> 99% acc) = 0.9, (50% acc -> 59% acc) = 0.18
             dist = 1 - (1 - accuracy)/(1-baseline_accuracy)
             dist = max(0, dist)  # below 0 = no evidence for drift
+        else:
+            probs_ref = probs_oof[y_oof == 0]
+            probs_cur = probs_oof[y_oof == 1]
+            dist, p_val = ks_2samp(probs_ref, probs_cur, alternative='greater')
 
         return p_val, dist
 
@@ -204,7 +204,7 @@ class BaseClassifierDrift(BaseDetector):
             Whether to return the p-value of the test.
         return_distance
             Whether to return a notion of strength of the drift.
-            K-S test stat if soft_preds=True, otherwise relative error reduction.
+            K-S test stat if binarize_preds=False, otherwise relative error reduction.
 
         Returns
         -------

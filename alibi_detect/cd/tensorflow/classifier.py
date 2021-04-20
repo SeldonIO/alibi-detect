@@ -15,7 +15,7 @@ class ClassifierDriftTF(BaseClassifierDrift):
             preprocess_x_ref: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
-            soft_preds: bool = True,
+            binarize_preds: bool = False,
             train_size: Optional[float] = .75,
             n_folds: Optional[int] = None,
             seed: int = 0,
@@ -49,7 +49,7 @@ class ClassifierDriftTF(BaseClassifierDrift):
             for reservoir sampling {'reservoir_sampling': n} is passed.
         preprocess_fn
             Function to preprocess the data before computing the data drift metrics.
-        soft_preds
+        binarize_preds
             Whether to test for discrepency on soft (e.g. prob/log-prob) model predictions directly
             with a K-S test or binarise to 0-1 prediction errors and apply a binomial test.
         train_size
@@ -86,7 +86,7 @@ class ClassifierDriftTF(BaseClassifierDrift):
             preprocess_x_ref=preprocess_x_ref,
             update_x_ref=update_x_ref,
             preprocess_fn=preprocess_fn,
-            soft_preds=soft_preds,
+            binarize_preds=binarize_preds,
             train_size=train_size,
             n_folds=n_folds,
             seed=seed,
