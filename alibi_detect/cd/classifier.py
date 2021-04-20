@@ -60,7 +60,7 @@ class ClassifierDrift:
         preds_type
             Whether the model outputs 'probs' or 'logits'
         binarize_preds
-            Whether to test for discrepency on soft (e.g. prob/log-prob) model predictions directly
+            Whether to test for discrepency on soft  (e.g. probs/logits) model predictions directly
             with a K-S test or binarise to 0-1 prediction errors and apply a binomial test.
         train_size
             Optional fraction (float between 0 and 1) of the dataset used to train the classifier.
