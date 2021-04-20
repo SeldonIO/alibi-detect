@@ -4,10 +4,10 @@ import numpy as np
 import torch
 import torch.nn as nn
 from torch.utils.data import TensorDataset, DataLoader
-from typing import Callable, Dict, Optional, Union
+from scipy.special import softmax
+from typing import Callable, Dict, Optional, Union, Tuple
 from alibi_detect.cd.base import BaseClassifierDrift
 from alibi_detect.models.pytorch.trainer import trainer
-from alibi_detect.utils.metrics import accuracy
 from alibi_detect.utils.pytorch.prediction import predict_batch
 
 logger = logging.getLogger(__name__)
@@ -18,12 +18,12 @@ class ClassifierDriftTorch(BaseClassifierDrift):
             self,
             x_ref: np.ndarray,
             model: Union[nn.Module, nn.Sequential],
-            threshold: float = .55,
+            p_val: float = .05,
             preprocess_x_ref: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
-            metric_fn: Callable = accuracy,
-            metric_name: Optional[str] = None,
+            preds_type: str = 'probs',
+            binarize_preds: bool = False,
             train_size: Optional[float] = .75,
             n_folds: Optional[int] = None,
             seed: int = 0,
@@ -47,9 +47,8 @@ class ClassifierDriftTorch(BaseClassifierDrift):
             Data used as reference distribution.
         model
             PyTorch classification model used for drift detection.
-        threshold
-            Threshold for the drift metric (default is accuracy). Values above the threshold are
-            classified as drift.
+        p_val
+            p-value used for the significance of the test.
         preprocess_x_ref
             Whether to already preprocess and store the reference data.
         update_x_ref
@@ -58,11 +57,11 @@ class ClassifierDriftTorch(BaseClassifierDrift):
             for reservoir sampling {'reservoir_sampling': n} is passed.
         preprocess_fn
             Function to preprocess the data before computing the data drift metrics.
-        metric_fn
-            Function computing the drift metric. Takes `y_true` and `y_pred` as input and
-            returns a float: metric_fn(y_true, y_pred). Defaults to accuracy.
-        metric_name
-            Optional name for the metric_fn used in the return dict. Defaults to 'metric_fn.__name__'.
+        preds_type
+            Whether the model outputs 'probs' or 'logits'
+        binarize_preds
+            Whether to test for discrepency on soft (e.g. probs/logits) model predictions directly
+            with a K-S test or binarise to 0-1 prediction errors and apply a binomial test.
         train_size
             Optional fraction (float between 0 and 1) of the dataset used to train the classifier.
             The drift is detected on `1 - train_size`. Cannot be used in combination with `n_folds`.
@@ -93,12 +92,12 @@ class ClassifierDriftTorch(BaseClassifierDrift):
         """
         super().__init__(
             x_ref=x_ref,
-            threshold=threshold,
+            p_val=p_val,
             preprocess_x_ref=preprocess_x_ref,
             update_x_ref=update_x_ref,
             preprocess_fn=preprocess_fn,
-            metric_fn=metric_fn,
-            metric_name=metric_name,
+            preds_type=preds_type,
+            binarize_preds=binarize_preds,
             train_size=train_size,
             n_folds=n_folds,
             seed=seed,
@@ -116,13 +115,14 @@ class ClassifierDriftTorch(BaseClassifierDrift):
         self.model = model.to(self.device)
 
         # define kwargs for dataloader and trainer
+        self.loss_fn = nn.CrossEntropyLoss() if (self.preds_type == 'logits') else nn.NLLLoss()
         self.dl_kwargs = {'batch_size': batch_size, 'shuffle': True}
         self.train_kwargs = {'optimizer': optimizer, 'epochs': epochs,
                              'learning_rate': learning_rate, 'verbose': verbose}
         if isinstance(train_kwargs, dict):
             self.train_kwargs.update(train_kwargs)
 
-    def score(self, x: np.ndarray) -> float:
+    def score(self, x: np.ndarray) -> Tuple[float, float]:
         """
         Compute the out-of-fold drift metric such as the accuracy from a classifier
         trained to distinguish the reference data from the data to be tested.
@@ -134,24 +134,30 @@ class ClassifierDriftTorch(BaseClassifierDrift):
 
         Returns
         -------
-        Drift metric (e.g. accuracy) obtained from out-of-fold predictions from a trained classifier.
+        p-value, and a notion of distance between the trained classifier's out-of-fold performance
+        and that which we'd expect under the null assumption of no drift.
         """
         x_ref, x = self.preprocess(x)
+        n_ref, n_cur = x_ref.shape[0], x.shape[0]
+
         x, y, splits = self.get_splits(x_ref, x)
 
         # iterate over folds: train a new model for each fold and make out-of-fold (oof) predictions
-        preds_oof, idx_oof = [], []
+        preds_oof_list, idx_oof_list = [], []
         for idx_tr, idx_te in splits:
             x_tr, y_tr, x_te = x[idx_tr], y[idx_tr], x[idx_te]
             ds_tr = TensorDataset(torch.from_numpy(x_tr), torch.from_numpy(y_tr))
             dl_tr = DataLoader(ds_tr, **self.dl_kwargs)  # type: ignore
             model = deepcopy(self.model)
-            train_args = [model, nn.CrossEntropyLoss(), dl_tr, self.device]
+            train_args = [model, self.loss_fn, dl_tr, self.device]
             trainer(*train_args, **self.train_kwargs)  # type: ignore
             preds = predict_batch(x_te, model.eval(), device=self.device, batch_size=self.dl_kwargs['batch_size'])
-            preds_oof.append(preds)
-            idx_oof.append(idx_te)
-        preds_oof = np.concatenate(preds_oof, axis=0).argmax(axis=1)
-        idx_oof = np.concatenate(idx_oof, axis=0)
-        drift_metric = self.metric_fn(y[idx_oof], preds_oof)
-        return drift_metric
+            preds_oof_list.append(preds)
+            idx_oof_list.append(idx_te)
+        preds_oof = np.concatenate(preds_oof_list, axis=0)
+        probs_oof = softmax(preds_oof, axis=-1) if self.preds_type == 'logits' else preds_oof
+        idx_oof = np.concatenate(idx_oof_list, axis=0)
+        y_oof = y[idx_oof]
+
+        p_val, dist = self.test_probs(y_oof, probs_oof, n_ref, n_cur)
+        return p_val, dist

@@ -1,7 +1,6 @@
 import numpy as np
 from typing import Callable, Dict, Optional, Union
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
-from alibi_detect.utils.metrics import accuracy
 
 if has_pytorch:
     from alibi_detect.cd.pytorch.classifier import ClassifierDriftTorch
@@ -16,12 +15,12 @@ class ClassifierDrift:
             x_ref: np.ndarray,
             model: Callable,
             backend: str = 'tensorflow',
-            threshold: float = .55,
+            p_val: float = .05,
             preprocess_x_ref: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
-            metric_fn: Callable = accuracy,
-            metric_name: Optional[str] = None,
+            preds_type: str = 'probs',
+            binarize_preds: bool = False,
             train_size: Optional[float] = .75,
             n_folds: Optional[int] = None,
             seed: int = 0,
@@ -48,9 +47,8 @@ class ClassifierDrift:
             PyTorch or TensorFlow classification model used for drift detection.
         backend
             Backend used for the training loop implementation.
-        threshold
-            Threshold for the drift metric (default is accuracy). Values above the threshold are
-            classified as drift.
+        p_val
+            p-value used for the significance of the test.
         preprocess_x_ref
             Whether to already preprocess and store the reference data.
         update_x_ref
@@ -59,17 +57,17 @@ class ClassifierDrift:
             for reservoir sampling {'reservoir_sampling': n} is passed.
         preprocess_fn
             Function to preprocess the data before computing the data drift metrics.
-        metric_fn
-            Function computing the drift metric. Takes `y_true` and `y_pred` as input and
-            returns a float: metric_fn(y_true, y_pred). Defaults to accuracy.
-        metric_name
-            Optional name for the metric_fn used in the return dict. Defaults to 'metric_fn.__name__'.
+        preds_type
+            Whether the model outputs 'probs' or 'logits'
+        binarize_preds
+            Whether to test for discrepency on soft  (e.g. probs/logits) model predictions directly
+            with a K-S test or binarise to 0-1 prediction errors and apply a binomial test.
         train_size
             Optional fraction (float between 0 and 1) of the dataset used to train the classifier.
             The drift is detected on `1 - train_size`. Cannot be used in combination with `n_folds`.
         n_folds
-            Optional number of stratified folds used for training. The metric is then calculated
-            on all the out-of-fold predictions. This allows to leverage all the reference and test data
+            Optional number of stratified folds used for training. The model preds are then calculated
+            on all the out-of-fold instances. This allows to leverage all the reference and test data
             for drift detection at the expense of longer computation. If both `train_size` and `n_folds`
             are specified, `n_folds` is prioritized.
         seed
@@ -118,8 +116,8 @@ class ClassifierDrift:
             self._detector = ClassifierDriftTorch(*args, **kwargs)  # type: ignore
         self.meta = self._detector.meta
 
-    def predict(self, x: np.ndarray, return_metric: bool = True) \
-            -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
+    def predict(self, x: np.ndarray,  return_p_val: bool = True,
+                return_distance: bool = True) -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
         """
         Predict whether a batch of data has drifted from the reference data.
 
@@ -127,13 +125,17 @@ class ClassifierDrift:
         ----------
         x
             Batch of instances.
-        return_metric
-            Whether to return the drift metric from the detector.
+        return_p_val
+            Whether to return the p-value of the test.
+        return_distance
+            Whether to return a notion of strength of the drift.
+            K-S test stat if binarize_preds=False, otherwise relative error reduction.
 
         Returns
         -------
         Dictionary containing 'meta' and 'data' dictionaries.
         'meta' has the model's metadata.
-        'data' contains the drift prediction and optionally the drift metric and threshold.
+        'data' contains the drift prediction and optionally the p-value and performance of
+        the classifier relative to its expectation under the no-change null.
         """
-        return self._detector.predict(x, return_metric)
+        return self._detector.predict(x, return_p_val, return_distance)

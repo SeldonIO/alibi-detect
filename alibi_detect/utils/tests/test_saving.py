@@ -126,8 +126,8 @@ detector = [
                  categories_per_feature={0: None},
                  preprocess_x_ref=True),
     ClassifierDrift(X_ref,
-                    threshold=threshold_drift,
                     model=model,
+                    p_val=p_val,
                     n_folds=n_folds_drift,
                     train_size=None)
 ]
@@ -232,7 +232,7 @@ def test_save_load(select_detector):
             assert isinstance(det_load._detector.preprocess_fn, Callable)
             assert det_load._detector.preprocess_fn.func.__name__ == 'preprocess_drift'
         elif type(det_load) == ClassifierDrift:
-            assert det_load._detector.threshold == threshold_drift
+            assert det_load._detector.p_val == p_val
             assert (det_load._detector.x_ref == X_ref).all()
             assert isinstance(det_load._detector.skf, StratifiedKFold)
             assert isinstance(det_load._detector.compile_kwargs, dict)

@@ -2,11 +2,11 @@ from abc import abstractmethod
 import logging
 import numpy as np
 from sklearn.model_selection import StratifiedKFold
+from scipy.stats import binom_test, ks_2samp
 from typing import Callable, Dict, List, Optional, Tuple, Union
 from alibi_detect.base import BaseDetector, concept_drift_dict
 from alibi_detect.cd.utils import update_reference
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
-from alibi_detect.utils.metrics import accuracy
 from alibi_detect.utils.statstest import fdr
 
 if has_pytorch:
@@ -22,12 +22,12 @@ class BaseClassifierDrift(BaseDetector):
     def __init__(
             self,
             x_ref: np.ndarray,
-            threshold: float = .55,
+            p_val: float = .05,
             preprocess_x_ref: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
-            metric_fn: Callable = accuracy,
-            metric_name: Optional[str] = None,
+            preds_type: str = 'probs',
+            binarize_preds: bool = False,
             train_size: Optional[float] = .75,
             n_folds: Optional[int] = None,
             seed: int = 0,
@@ -40,9 +40,8 @@ class BaseClassifierDrift(BaseDetector):
         ----------
         x_ref
             Data used as reference distribution.
-        threshold
-            Threshold for the drift metric (default is accuracy). Values above the threshold are
-            classified as drift.
+        p_val
+            p-value used for the significance of the test.
         preprocess_x_ref
             Whether to already preprocess and store the reference data.
         update_x_ref
@@ -51,11 +50,11 @@ class BaseClassifierDrift(BaseDetector):
             for reservoir sampling {'reservoir_sampling': n} is passed.
         preprocess_fn
             Function to preprocess the data before computing the data drift metrics.
-        metric_fn
-            Function computing the drift metric. Takes `y_true` and `y_pred` as input and
-            returns a float: metric_fn(y_true, y_pred). Defaults to accuracy.
-        metric_name
-            Optional name for the metric_fn used in the return dict. Defaults to 'metric_fn.__name__'.
+        preds_type
+            Whether the model outputs probabilities or logits
+        binarize_preds
+            Whether to test for discrepency on soft (e.g. probs/logits) model predictions directly
+            with a K-S test or binarise to 0-1 prediction errors and apply a binomial test.
         train_size
             Optional fraction (float between 0 and 1) of the dataset used to train the classifier.
             The drift is detected on `1 - train_size`. Cannot be used in combination with `n_folds`.
@@ -71,14 +70,17 @@ class BaseClassifierDrift(BaseDetector):
         """
         super().__init__()
 
-        if threshold is None:
-            logger.warning('Need to set drift threshold to detect data drift.')
+        if p_val is None:
+            logger.warning('No p-value set for the drift threshold. Need to set it to detect data drift.')
 
         if isinstance(train_size, float) and isinstance(n_folds, int):
             logger.warning('Both `n_folds` and `train_size` specified. By default `n_folds` is used.')
 
+        if preds_type not in ['probs', 'logits']:
+            raise ValueError("'preds_type' should be 'probs' or 'logits'")
+
         # optionally already preprocess reference data
-        self.threshold = threshold
+        self.p_val = p_val
         if preprocess_x_ref and isinstance(preprocess_fn, Callable):  # type: ignore
             self.x_ref = preprocess_fn(x_ref)
         else:
@@ -88,8 +90,9 @@ class BaseClassifierDrift(BaseDetector):
         self.preprocess_fn = preprocess_fn
         self.n = x_ref.shape[0]  # type: ignore
 
-        # define the metric function and optionally the stratified k-fold split
-        self.metric_fn = metric_fn
+        # define whether soft preds and optionally the stratified k-fold split
+        self.preds_type = preds_type
+        self.binarize_preds = binarize_preds
         if isinstance(n_folds, int):
             self.train_size = None
             self.skf = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=seed)
@@ -99,8 +102,7 @@ class BaseClassifierDrift(BaseDetector):
         # set metadata
         self.meta['detector_type'] = 'offline'
         self.meta['data_type'] = data_type
-        self.metric_name = metric_fn.__name__ if metric_name is None else metric_name
-        self.meta['params'] = {'metric_fn': self.metric_name}
+        self.meta['params'] = {'binarize_preds ': binarize_preds, 'preds_type': preds_type}
 
     def preprocess(self, x: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -151,12 +153,53 @@ class BaseClassifierDrift(BaseDetector):
             splits = self.skf.split(x, y)
         return x, y, splits
 
+    def test_probs(
+        self, y_oof: np.ndarray, probs_oof: np.ndarray, n_ref: int, n_cur: int
+    ) -> Tuple[float, float]:
+        """
+        Perform a statistical test of the probabilities predicted by the model against
+        what we'd expect under the no-change null.
+
+        Parameters
+        ----------
+        y_oof
+            Out of fold targets (0 ref, 1 cur)
+        probs_oof
+            Probabilities predicted by the model
+        n_ref
+            Size of reference window used in training model
+        n_cur
+            Size of current window used in trianing model
+
+        Returns
+        -------
+        p-value and notion of performance of classifier relative to expectation under null
+        """
+        probs_oof = probs_oof[:, 1]  # [1-p, p]
+
+        if self.binarize_preds:
+            baseline_accuracy = max(n_ref, n_cur) / (n_ref + n_cur)  # exp under null
+            n_oof = y_oof.shape[0]
+            n_correct = (y_oof == probs_oof.round()).sum()
+            p_val = binom_test(n_correct, n_oof, baseline_accuracy, alternative='greater')
+            accuracy = n_correct/n_oof
+            # relative error reduction, in [0,1]
+            # e.g. (90% acc -> 99% acc) = 0.9, (50% acc -> 59% acc) = 0.18
+            dist = 1 - (1 - accuracy)/(1-baseline_accuracy)
+            dist = max(0, dist)  # below 0 = no evidence for drift
+        else:
+            probs_ref = probs_oof[y_oof == 0]
+            probs_cur = probs_oof[y_oof == 1]
+            dist, p_val = ks_2samp(probs_ref, probs_cur, alternative='greater')
+
+        return p_val, dist
+
     @abstractmethod
-    def score(self, x: np.ndarray) -> float:
+    def score(self, x: np.ndarray) -> Tuple[float, float]:
         pass
 
-    def predict(self, x: np.ndarray, return_metric: bool = True) \
-            -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
+    def predict(self, x: np.ndarray,  return_p_val: bool = True,
+                return_distance: bool = True) -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
         """
         Predict whether a batch of data has drifted from the reference data.
 
@@ -164,18 +207,22 @@ class BaseClassifierDrift(BaseDetector):
         ----------
         x
             Batch of instances.
-        return_metric
-            Whether to return the drift metric from the detector.
+        return_p_val
+            Whether to return the p-value of the test.
+        return_distance
+            Whether to return a notion of strength of the drift.
+            K-S test stat if binarize_preds=False, otherwise relative error reduction.
 
         Returns
         -------
         Dictionary containing 'meta' and 'data' dictionaries.
         'meta' has the model's metadata.
-        'data' contains the drift prediction and optionally the drift metric and threshold.
+        'data' contains the drift prediction and optionally the performance of the classifier
+            relative to its expectation under the no-change null.
         """
         # compute drift scores
-        drift_metric = self.score(x)
-        drift_pred = int(drift_metric > self.threshold)
+        p_val, dist = self.score(x)
+        drift_pred = int(p_val < self.p_val)
 
         # update reference dataset
         if isinstance(self.update_x_ref, dict) and self.preprocess_fn is not None and self.preprocess_x_ref:
@@ -189,9 +236,11 @@ class BaseClassifierDrift(BaseDetector):
         cd = concept_drift_dict()
         cd['meta'] = self.meta
         cd['data']['is_drift'] = drift_pred
-        if return_metric:
-            cd['data'][self.metric_name] = drift_metric
-            cd['data']['threshold'] = self.threshold
+        if return_p_val:
+            cd['data']['p_val'] = p_val
+            cd['data']['threshold'] = self.p_val
+        if return_distance:
+            cd['data']['distance'] = dist
         return cd
 
 

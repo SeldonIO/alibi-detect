@@ -1,9 +1,9 @@
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.losses import BinaryCrossentropy
-from typing import Callable, Dict, Optional, Union
+from scipy.special import softmax
+from typing import Callable, Dict, Optional, Union, Tuple
 from alibi_detect.cd.base import BaseClassifierDrift
-from alibi_detect.utils.metrics import accuracy
 
 
 class ClassifierDriftTF(BaseClassifierDrift):
@@ -11,12 +11,12 @@ class ClassifierDriftTF(BaseClassifierDrift):
             self,
             x_ref: np.ndarray,
             model: Union[tf.keras.Model, tf.keras.Sequential],
-            threshold: float = .55,
+            p_val: float = .05,
             preprocess_x_ref: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
-            metric_fn: Callable = accuracy,
-            metric_name: Optional[str] = None,
+            preds_type: str = 'preds',
+            binarize_preds: bool = False,
             train_size: Optional[float] = .75,
             n_folds: Optional[int] = None,
             seed: int = 0,
@@ -40,9 +40,8 @@ class ClassifierDriftTF(BaseClassifierDrift):
             Data used as reference distribution.
         model
             TensorFlow classification model used for drift detection.
-        threshold
-            Threshold for the drift metric (default is accuracy). Values above the threshold are
-            classified as drift.
+        p_val
+            p-value used for the significance of the test.
         preprocess_x_ref
             Whether to already preprocess and store the reference data.
         update_x_ref
@@ -51,11 +50,11 @@ class ClassifierDriftTF(BaseClassifierDrift):
             for reservoir sampling {'reservoir_sampling': n} is passed.
         preprocess_fn
             Function to preprocess the data before computing the data drift metrics.
-        metric_fn
-            Function computing the drift metric. Takes `y_true` and `y_pred` as input and
-            returns a float: metric_fn(y_true, y_pred). Defaults to accuracy.
-        metric_name
-            Optional name for the metric_fn used in the return dict. Defaults to 'metric_fn.__name__'.
+        preds_type
+            Whether the model outputs 'probs' or 'logits'
+        binarize_preds
+            Whether to test for discrepency on soft (e.g. prob/log-prob) model predictions directly
+            with a K-S test or binarise to 0-1 prediction errors and apply a binomial test.
         train_size
             Optional fraction (float between 0 and 1) of the dataset used to train the classifier.
             The drift is detected on `1 - train_size`. Cannot be used in combination with `n_folds`.
@@ -86,12 +85,12 @@ class ClassifierDriftTF(BaseClassifierDrift):
         """
         super().__init__(
             x_ref=x_ref,
-            threshold=threshold,
+            p_val=p_val,
             preprocess_x_ref=preprocess_x_ref,
             update_x_ref=update_x_ref,
             preprocess_fn=preprocess_fn,
-            metric_fn=metric_fn,
-            metric_name=metric_name,
+            preds_type=preds_type,
+            binarize_preds=binarize_preds,
             train_size=train_size,
             n_folds=n_folds,
             seed=seed,
@@ -101,14 +100,17 @@ class ClassifierDriftTF(BaseClassifierDrift):
 
         # define and compile classifier model
         self.model = model
-        self.compile_kwargs = {'optimizer': optimizer(learning_rate=learning_rate), 'loss': BinaryCrossentropy()}
+        self.compile_kwargs = {
+            'optimizer': optimizer(learning_rate=learning_rate),
+            'loss': BinaryCrossentropy(from_logits=(self.preds_type == 'logits'))
+        }
         if isinstance(compile_kwargs, dict):
             self.compile_kwargs.update(compile_kwargs)
         self.train_kwargs = {'batch_size': batch_size, 'epochs': epochs, 'verbose': verbose}
         if isinstance(train_kwargs, dict):
             self.train_kwargs.update(train_kwargs)
 
-    def score(self, x: np.ndarray) -> float:
+    def score(self, x: np.ndarray) -> Tuple[float, float]:
         """
         Compute the out-of-fold drift metric such as the accuracy from a classifier
         trained to distinguish the reference data from the data to be tested.
@@ -120,22 +122,28 @@ class ClassifierDriftTF(BaseClassifierDrift):
 
         Returns
         -------
-        Drift metric (e.g. accuracy) obtained from out-of-fold predictions from a trained classifier.
+        p-value, and a notion of distance between the trained classifier's out-of-fold performance
+        and that which we'd expect under the null assumption of no drift.
         """
         x_ref, x = self.preprocess(x)
+        n_ref, n_cur = x_ref.shape[0], x.shape[0]
+
         x, y, splits = self.get_splits(x_ref, x)
 
         # iterate over folds: train a new model for each fold and make out-of-fold (oof) predictions
-        preds_oof, idx_oof = [], []
+        preds_oof_list, idx_oof_list = [], []
         for idx_tr, idx_te in splits:
             x_tr, y_tr, x_te = x[idx_tr], np.eye(2)[y[idx_tr]], x[idx_te]
             clf = tf.keras.models.clone_model(self.model)
             clf.compile(**self.compile_kwargs)
             clf.fit(x=x_tr, y=y_tr, **self.train_kwargs)
             preds = clf.predict(x_te, batch_size=self.train_kwargs['batch_size'])
-            preds_oof.append(preds)
-            idx_oof.append(idx_te)
-        preds_oof = np.concatenate(preds_oof, axis=0)[:, 1]
-        idx_oof = np.concatenate(idx_oof, axis=0)
-        drift_metric = self.metric_fn(y[idx_oof], preds_oof)
-        return drift_metric
+            preds_oof_list.append(preds)
+            idx_oof_list.append(idx_te)
+        preds_oof = np.concatenate(preds_oof_list, axis=0)
+        probs_oof = softmax(preds_oof, axis=-1) if self.preds_type == 'logits' else preds_oof
+        idx_oof = np.concatenate(idx_oof_list, axis=0)
+        y_oof = y[idx_oof]
+
+        p_val, dist = self.test_probs(y_oof, probs_oof, n_ref, n_cur)
+        return p_val, dist
