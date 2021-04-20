@@ -115,6 +115,7 @@ class ClassifierDriftTorch(BaseClassifierDrift):
         self.model = model.to(self.device)
 
         # define kwargs for dataloader and trainer
+        self.loss_fn = nn.CrossEntropyLoss() if (self.preds_type == 'logits') else nn.NLLLoss()
         self.dl_kwargs = {'batch_size': batch_size, 'shuffle': True}
         self.train_kwargs = {'optimizer': optimizer, 'epochs': epochs,
                              'learning_rate': learning_rate, 'verbose': verbose}
@@ -148,8 +149,7 @@ class ClassifierDriftTorch(BaseClassifierDrift):
             ds_tr = TensorDataset(torch.from_numpy(x_tr), torch.from_numpy(y_tr))
             dl_tr = DataLoader(ds_tr, **self.dl_kwargs)  # type: ignore
             model = deepcopy(self.model)
-            loss_fn = nn.CrossEntropyLoss() if (self.preds_type == 'logits') else nn.NLLLoss()
-            train_args = [model, loss_fn, dl_tr, self.device]
+            train_args = [model, self.loss_fn, dl_tr, self.device]
             trainer(*train_args, **self.train_kwargs)  # type: ignore
             preds = predict_batch(x_te, model.eval(), device=self.device, batch_size=self.dl_kwargs['batch_size'])
             preds_oof_list.append(preds)
