@@ -84,7 +84,7 @@ def test_clfuncdrift(clfuncdrift_params):
 
     np.random.seed(0)
     tf.random.set_seed(0)
-    
+
     model = gen_model(n_features, n_labels, backend, preds_type == 'probs')
     x_ref = np.random.randn(*(n, n_features)).astype(np.float32)
     x_test0 = x_ref.copy()
@@ -175,4 +175,3 @@ def test_reguncdrift(reguncdrift_params):
 
     assert preds_0['data']['distance'] < preds_1['data']['distance']
     assert cd.meta['params']['uncertainty_type'] == uncertainty_type
-

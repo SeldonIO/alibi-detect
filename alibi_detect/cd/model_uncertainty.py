@@ -166,7 +166,7 @@ class RegressorUncertaintyDrift:
             for reservoir sampling {'reservoir_sampling': n} is passed.
         uncertainty_type
             Method for determining the model's uncertainty for a given instance. Options are 'mc_dropout' or 'ensemble'.
-            The former should output a scalar per instance. The latter should output a vector of predictions 
+            The former should output a scalar per instance. The latter should output a vector of predictions
             per instance.
         n_evals:
             The number of times to evaluate the model under different dropout configurations. Only relavent when using

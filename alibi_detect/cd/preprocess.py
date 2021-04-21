@@ -102,7 +102,7 @@ def classifier_uncertainty(
         uncertainties = (diff < margin_width).astype(int)
     else:
         raise NotImplementedError("Only uncertainty types 'entropy' or 'margin' supported")
-    
+
     return uncertainties[:, None]  # Detectors expect N x d
 
 
