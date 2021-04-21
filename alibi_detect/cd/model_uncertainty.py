@@ -106,7 +106,7 @@ class ClassifierUncertaintyDrift:
         if uncertainty_type == 'margin':
             self.meta['margin_width'] = margin_width
 
-    def predict(self, x: Union[np.ndarray, list],  return_p_val: bool = True,
+    def predict(self, x: np.ndarray,  return_p_val: bool = True,
                 return_distance: bool = True) -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
         """
         Predict whether a batch of data has drifted from the reference data.
@@ -212,7 +212,7 @@ class RegressorUncertaintyDrift:
         if uncertainty_type == 'mc_dropout':
             self.meta['n_evals'] = n_evals
 
-    def predict(self, x: Union[np.ndarray, list],  return_p_val: bool = True,
+    def predict(self, x: np.ndarray,  return_p_val: bool = True,
                 return_distance: bool = True) -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
         """
         Predict whether a batch of data has drifted from the reference data.
