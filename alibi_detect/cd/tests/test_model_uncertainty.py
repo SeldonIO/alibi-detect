@@ -113,8 +113,6 @@ def test_clfuncdrift(clfuncdrift_params):
     assert preds_1['data']['distance'] >= 0
 
     assert preds_0['data']['distance'] < preds_1['data']['distance']
-    assert cd.meta['params']['preds_type'] == preds_type
-    assert cd.meta['params']['uncertainty_type'] == uncertainty_type
 
 
 p_val = [.05]
@@ -172,4 +170,3 @@ def test_reguncdrift(reguncdrift_params):
     assert preds_1['data']['distance'] >= 0
 
     assert preds_0['data']['distance'] < preds_1['data']['distance']
-    assert cd.meta['params']['uncertainty_type'] == uncertainty_type
