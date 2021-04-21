@@ -59,7 +59,7 @@ class BaseClassifierDrift(BaseDetector):
             Optional fraction (float between 0 and 1) of the dataset used to train the classifier.
             The drift is detected on `1 - train_size`. Cannot be used in combination with `n_folds`.
         n_folds
-            Optional number of stratified folds used for training. The metric is then calculated
+            Optional number of stratified folds used for training. The model preds are then calculated
             on all the out-of-fold predictions. This allows to leverage all the reference and test data
             for drift detection at the expense of longer computation. If both `train_size` and `n_folds`
             are specified, `n_folds` is prioritized.
