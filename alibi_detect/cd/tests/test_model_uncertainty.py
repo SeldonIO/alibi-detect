@@ -46,11 +46,11 @@ def dumb_model(x, n_labels, softmax=False):
     return x
 
 
-# def other_model(prediction_type):
-#     if prediction_type == 'probs':
-#         return partial(dumb_model, prediction_type='probs')
-#     elif prediction_type == 'logits':
-#         return partial(dumb_model, prediction_type='logits')
+# def other_model(preds_type):
+#     if preds_type == 'probs':
+#         return partial(dumb_model, preds_type='probs')
+#     elif preds_type == 'logits':
+#         return partial(dumb_model, preds_type='logits')
 
 
 def gen_model(n_features, n_labels, backend, softmax=False, dropout=False):
@@ -66,10 +66,10 @@ p_val = [.05]
 backend = ['tensorflow', 'pytorch', None]
 n_features = [16]
 n_labels = [3]
-prediction_type = ['probs', 'logits']
+preds_type = ['probs', 'logits']
 uncertainty_type = ['entropy', 'margin']
 update_x_ref = [None, {'last': 1000}, {'reservoir_sampling': 1000}]
-tests_clfuncdrift = list(product(p_val, backend, n_features, n_labels, prediction_type, uncertainty_type, update_x_ref))
+tests_clfuncdrift = list(product(p_val, backend, n_features, n_labels, preds_type, uncertainty_type, update_x_ref))
 n_tests = len(tests_clfuncdrift)
 
 
@@ -80,12 +80,12 @@ def clfuncdrift_params(request):
 
 @pytest.mark.parametrize('clfuncdrift_params', list(range(n_tests)), indirect=True)
 def test_clfuncdrift(clfuncdrift_params):
-    p_val, backend, n_features, n_labels, prediction_type, uncertainty_type, update_x_ref = clfuncdrift_params
+    p_val, backend, n_features, n_labels, preds_type, uncertainty_type, update_x_ref = clfuncdrift_params
 
     np.random.seed(0)
     tf.random.set_seed(0)
     
-    model = gen_model(n_features, n_labels, backend, prediction_type == 'probs')
+    model = gen_model(n_features, n_labels, backend, preds_type == 'probs')
     x_ref = np.random.randn(*(n, n_features)).astype(np.float32)
     x_test0 = x_ref.copy()
     x_test1 = np.ones_like(x_ref)
@@ -96,7 +96,7 @@ def test_clfuncdrift(clfuncdrift_params):
         p_val=p_val,
         backend=backend,
         update_x_ref=update_x_ref,
-        prediction_type=prediction_type,
+        preds_type=preds_type,
         uncertainty_type=uncertainty_type,
         margin_width=0.1,
         batch_size=10
@@ -115,7 +115,7 @@ def test_clfuncdrift(clfuncdrift_params):
     assert preds_1['data']['distance'] >= 0
 
     assert preds_0['data']['distance'] < preds_1['data']['distance']
-    assert cd.meta['params']['prediction_type'] == prediction_type
+    assert cd.meta['params']['preds_type'] == preds_type
     assert cd.meta['params']['uncertainty_type'] == uncertainty_type
 
 

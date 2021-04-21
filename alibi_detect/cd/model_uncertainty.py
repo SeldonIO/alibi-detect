@@ -14,7 +14,7 @@ class ClassifierUncertaintyDrift:
             p_val: float = .05,
             backend: Optional[str] = None,
             update_x_ref: Optional[Dict[str, int]] = None,
-            prediction_type: str = 'probs',
+            preds_type: str = 'probs',
             uncertainty_type: str = 'entropy',
             margin_width: float = 0.1,
             batch_size: int = 32,
@@ -43,7 +43,7 @@ class ClassifierUncertaintyDrift:
             Reference data can optionally be updated to the last n instances seen by the detector
             or via reservoir sampling with size n. For the former, the parameter equals {'last': n} while
             for reservoir sampling {'reservoir_sampling': n} is passed.
-        prediction_type
+        preds_type
             Type of prediction output by the model. Options are 'probs' (in [0,1]) or 'logits' (in [-inf,inf]).
         uncertainty_type
             Method for determining the model's uncertainty for a given instance. Options are 'entropy' or 'margin'.
@@ -67,7 +67,7 @@ class ClassifierUncertaintyDrift:
             classifier_uncertainty,
             model=model,
             backend=backend,
-            prediction_type=prediction_type,
+            preds_type=preds_type,
             uncertainty_type=uncertainty_type,
             margin_width=margin_width,
             batch_size=batch_size,
@@ -99,7 +99,7 @@ class ClassifierUncertaintyDrift:
 
         self.meta = self._detector.meta
         self.meta['name'] = 'ClassifierUncertaintyDrift'
-        self.meta['prediction_type'] = prediction_type
+        self.meta['preds_type'] = preds_type
         self.meta['uncertainty_type'] = uncertainty_type
         if uncertainty_type == 'margin':
             self.meta['margin_width'] = margin_width

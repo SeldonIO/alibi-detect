@@ -35,7 +35,7 @@ def classifier_uncertainty(
     x: np.ndarray,
     model: Callable,
     backend: Optional[str] = None,
-    prediction_type: str = 'probs',
+    preds_type: str = 'probs',
     uncertainty_type: str = 'entropy',
     margin_width: float = 0.1,
     batch_size: int = 32,
@@ -54,7 +54,7 @@ def classifier_uncertainty(
         Classification model outputting class probabilities (or logits)
     backend
         Backend to use if model requires batch prediction. Options are 'tensorflow' or 'pytorch'.
-    prediction_type
+    preds_type
         Type of prediction output by the model. Options are 'probs' (in [0,1]) or 'logits' (in [-inf,inf]).
     uncertainty_type
         Method for determining the model's uncertainty for a given instance. Options are 'entropy' or 'margin'.
@@ -85,11 +85,11 @@ def classifier_uncertainty(
             raise NotImplementedError('Non-pytorch/tensorflow models must run on cpu')
         preds = np.asarray(model(x))
 
-    if prediction_type == 'probs':
+    if preds_type == 'probs':
         if np.abs(1 - np.sum(preds, axis=-1)).mean() > 1e-6:
             raise ValueError("Probabilities across labels should sum to 1")
         probs = preds
-    elif prediction_type == 'logits':
+    elif preds_type == 'logits':
         probs = softmax(preds, axis=-1)
     else:
         raise NotImplementedError("Only prediction types 'probs' and 'logits' supported.")
