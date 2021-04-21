@@ -76,6 +76,8 @@ class ClassifierUncertaintyDrift:
             max_len=max_len
         )
 
+        self._detector: Union[KSDrift, ChiSquareDrift]
+
         if uncertainty_type == 'entropy':
             self._detector = KSDrift(
                 x_ref=x_ref,

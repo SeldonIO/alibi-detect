@@ -1,8 +1,9 @@
 import numpy as np
 import random
-from typing import Dict, Callable, Optional
+from typing import Dict, Callable, Optional, Union
 from functools import partial
 from torch import nn
+import tensorflow as tf
 from alibi_detect.utils.sampling import reservoir_sampling
 
 
@@ -44,7 +45,7 @@ def update_reference(X_ref: np.ndarray,
         return X_ref
 
 
-def activate_train_mode_for_dropout_layers(model: Callable, backend: str) -> Callable:
+def activate_train_mode_for_dropout_layers(model: Union[nn.Module, tf.keras.Model], backend: str) -> Callable:
     # TODO: Figure a way to do this properly for tensorflow models.
     if backend == 'pytorch':
         model.eval()
@@ -83,7 +84,7 @@ def get_preds(
     if backend == 'tensorflow':
         from alibi_detect.cd.tensorflow.preprocess import preprocess_drift
     elif backend == 'pytorch':
-        from alibi_detect.cd.pytorch.preprocess import preprocess_drift
+        from alibi_detect.cd.pytorch.preprocess import preprocess_drift  # type: ignore
         model_kwargs['device'] = device
     else:
         raise NotImplementedError(f'{backend} not implemented. Use tensorflow or pytorch instead.')
