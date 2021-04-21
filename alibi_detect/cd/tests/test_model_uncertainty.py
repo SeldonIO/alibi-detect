@@ -109,8 +109,6 @@ def test_clfuncdrift(clfuncdrift_params):
 
     preds_1 = cd.predict(x_test1)
     assert cd._detector.n == x_test1.shape[0] + x_test0.shape[0] + x_ref.shape[0]
-    if not preds_1['data']['is_drift'] == 1:
-        breakpoint()
     assert preds_1['data']['is_drift'] == 1
     assert preds_1['data']['distance'] >= 0
 
