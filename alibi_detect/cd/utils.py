@@ -1,5 +1,6 @@
 import numpy as np
-from typing import Dict, Callable
+import random
+from typing import Dict, Callable, Optional
 from functools import partial
 from torch import nn
 from alibi_detect.utils.sampling import reservoir_sampling
@@ -54,8 +55,6 @@ def activate_train_mode_for_dropout_layers(model: Callable, backend: str) -> Cal
                 n_dropout_layers += 1
         if n_dropout_layers == 0:
             raise ValueError("No dropout layers identified.")
-        else:
-            print(f'{n_dropout_layers} identified')
     elif backend == 'tensorflow':
         model.trainable = False
         model = partial(model, training=True)  # Note this affects batchnorm etc also
@@ -63,3 +62,47 @@ def activate_train_mode_for_dropout_layers(model: Callable, backend: str) -> Cal
         raise NotImplementedError("Only 'pytorch' or 'tensorflow' backends supported")
 
     return model
+
+
+def get_preds(
+    x: np.ndarray,
+    model: Callable,
+    backend: str,
+    batch_size: int,
+    shuffle: bool = False,
+    force_full_batches: bool = False,
+    device: Optional[str] = None,
+    tokenizer: Optional[Callable] = None,
+    max_len: Optional[int] = None,
+) -> np.ndarray:
+
+    backend = backend.lower()
+    model_kwargs = {
+        'model': model, 'batch_size': batch_size, 'tokenizer': tokenizer, 'max_len': max_len
+    }
+    if backend == 'tensorflow':
+        from alibi_detect.cd.tensorflow.preprocess import preprocess_drift
+    elif backend == 'pytorch':
+        from alibi_detect.cd.pytorch.preprocess import preprocess_drift
+        model_kwargs['device'] = device
+    else:
+        raise NotImplementedError(f'{backend} not implemented. Use tensorflow or pytorch instead.')
+    model_fn = partial(preprocess_drift, **model_kwargs)
+
+    n_x = x.shape[0]
+
+    if shuffle:
+        perm = np.random.permutation(n_x)
+        x = x[perm]
+
+    final_batch_size = n_x % batch_size
+    if force_full_batches and final_batch_size != 0:
+        doubles_inds = random.choices([i for i in range(n_x)], k=batch_size - final_batch_size)
+        x = np.concatenate([x, x[doubles_inds]], axis=0)
+
+    preds = np.asarray(model_fn(x))[:n_x]
+
+    if shuffle:
+        preds = preds[np.argsort(perm)]
+
+    return preds

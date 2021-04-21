@@ -1,11 +1,9 @@
 import numpy as np
-import random
 from sklearn.decomposition import PCA
 from scipy.special import softmax
 from scipy.stats import entropy
 from typing import Callable, Optional
-from functools import partial
-from alibi_detect.cd.utils import activate_train_mode_for_dropout_layers
+from alibi_detect.cd.utils import activate_train_mode_for_dropout_layers, get_preds
 
 
 def pca(X: np.ndarray, n_components: int = 2, svd_solver: str = 'auto') -> np.ndarray:
@@ -153,7 +151,7 @@ def regressor_uncertainty(
 
     if uncertainty_type == 'mc_dropout':
         model = activate_train_mode_for_dropout_layers(model, backend)
-        preds = np.stack([
+        preds = np.concatenate([
             get_preds(
                 x, model, backend, batch_size, shuffle=True, force_full_batches=True,
                 device=device, tokenizer=tokenizer, max_len=max_len
@@ -174,47 +172,3 @@ def regressor_uncertainty(
     uncertainties = np.std(preds, axis=-1)
 
     return uncertainties[:, None]  # Detectors expect N x d
-
-
-def get_preds(
-    x: np.ndarray,
-    model: Callable,
-    backend: str,
-    batch_size: int,
-    shuffle: bool = False,
-    force_full_batches: bool = False,
-    device: Optional[str] = None,
-    tokenizer: Optional[Callable] = None,
-    max_len: Optional[int] = None,
-) -> np.ndarray:
-
-    backend = backend.lower()
-    model_kwargs = {
-        'model': model, 'batch_size': batch_size, 'tokenizer': tokenizer, 'max_len': max_len
-    }
-    if backend == 'tensorflow':
-        from alibi_detect.cd.tensorflow.preprocess import preprocess_drift
-    elif backend == 'pytorch':
-        from alibi_detect.cd.pytorch.preprocess import preprocess_drift
-        model_kwargs['device'] = device
-    else:
-        raise NotImplementedError(f'{backend} not implemented. Use tensorflow or pytorch instead.')
-    model_fn = partial(preprocess_drift, **model_kwargs)
-
-    n_x = x.shape[0]
-
-    if shuffle:
-        perm = np.random.permutation(n_x)
-        x = x[perm]
-
-    final_batch_size = n_x % batch_size
-    if force_full_batches and final_batch_size != 0:
-        doubles_inds = random.sample(range(n_x), batch_size - final_batch_size)
-        x = np.concatenate([x, x[doubles_inds]], axis=0)
-
-    preds = np.asarray(model_fn(x))[:n_x]
-
-    if shuffle:
-        preds = preds[np.argsort(perm)]
-
-    return preds
