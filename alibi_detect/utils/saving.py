@@ -315,7 +315,8 @@ def state_classifierdrift(cd: ClassifierDrift) -> Tuple[
                 'p_val': cd._detector.p_val,
                 'preprocess_x_ref': False,
                 'update_x_ref': cd._detector.update_x_ref,
-                'soft_preds': cd._detector.soft_preds,
+                'preds_type': cd._detector.preds_type,
+                'binarize_preds': cd._detector.binarize_preds,
                 'train_size': cd._detector.train_size,
                 'train_kwargs': cd._detector.train_kwargs,
                 'compile_kwargs': cd._detector.compile_kwargs

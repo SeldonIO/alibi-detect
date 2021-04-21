@@ -32,11 +32,16 @@ class TabularDrift(BaseUnivariateDrift):
             p-value used for significance of the K-S and Chi2 test for each feature.
             If the FDR correction method is used, this corresponds to the acceptable q-value.
         categories_per_feature
-            Dict with as keys the column indices of the categorical features and as optional values
-            the number of possible categories `n` for that feature. If left to None, all features are assumed
-            to be continuous numerical. The column indices are post a potential preprocessing step.
-            Eg: {0: 5, 1: 9, 2: 7} or {0: None, 1: None, 2: None}. In the latter case, the number of categories is
-            inferred from the data. Categories are assumed to take values in the range `[0, 1, ..., n]`.
+            Dictionary with as keys the column indices of the categorical features and optionally as values
+            the number of possible categorical values for that feature or a list with the possible values.
+            If you know which features are categorical and simply want to infer the possible values of the
+            categorical feature from the reference data you can pass a Dict[int, NoneType] such as
+            {0: None, 3: None} if features 0 and 3 are categorical. If you also know how many categories are
+            present for a given feature you could pass this in the `categories_per_feature` dict in the
+            Dict[int, int] format, e.g. *{0: 3, 3: 2}*. If you pass N categories this will assume the possible
+            values for the feature are [0, ..., N-1]. You can also explicitly pass the possible categories in the
+            Dict[int, List[int]] format, e.g. {0: [0, 1, 2], 3: [0, 55]}. Note that the categories can be
+            arbitrary int values.
         preprocess_x_ref
             Whether to already preprocess and infer categories and frequencies for categorical reference data.
         update_x_ref
@@ -75,16 +80,19 @@ class TabularDrift(BaseUnivariateDrift):
         self.x_ref_categories, self.cat_vars = {}, []  # no categorical features assumed present
         if isinstance(categories_per_feature, dict):
             vals = list(categories_per_feature.values())
+            int_types = (int, np.int16, np.int32, np.int64)
             if all(v is None for v in vals):  # categories_per_feature = Dict[int, NoneType]
                 x_flat = self.x_ref.reshape(self.x_ref.shape[0], -1)
                 categories_per_feature = {f: list(np.unique(x_flat[:, f]))  # type: ignore
                                           for f in categories_per_feature.keys()}
-            elif all(isinstance(v, (int, np.int16, np.int32, np.int64)) for v in vals):
+            elif all(isinstance(v, int_types) for v in vals):
                 # categories_per_feature = Dict[int, int]
                 categories_per_feature = {f: list(np.arange(v))  # type: ignore
                                           for f, v in categories_per_feature.items()}
-            elif not all(isinstance(v, list) for v in vals):
-                raise NotImplementedError  # categories_per_feature not Dict[int, list]
+            elif not all(isinstance(v, list) for v in vals) and \
+                    all(isinstance(v, int_types) for val in vals for v in val):  # type: ignore
+                raise ValueError('categories_per_feature needs to be None or one of '
+                                 'Dict[int, NoneType], Dict[int, int], Dict[int, List[int]]')
             self.x_ref_categories = categories_per_feature
             self.cat_vars = list(self.x_ref_categories.keys())
 

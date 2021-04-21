@@ -30,9 +30,13 @@ class ChiSquareDrift(BaseUnivariateDrift):
             p-value used for significance of the Chi-Squared test for each feature. If the FDR correction method
             is used, this corresponds to the acceptable q-value.
         categories_per_feature
-            Dict with as keys the feature column index and as values the number of possible categorical
-            values `n` for that feature. Eg: {0: 5, 1: 9, 2: 7}. If `None`, the number of categories is inferred
-             from the data. Categories are assumed to take values in the range `[0, 1, ..., n]`.
+            Optional dictionary with as keys the feature column index and as values the number of possible
+            categorical values for that feature or a list with the possible values. If you know how many
+            categories are present for a given feature you could pass this in the `categories_per_feature` dict
+            in the Dict[int, int] format, e.g. {0: 3, 3: 2}. If you pass N categories this will assume the
+            possible values for the feature are [0, ..., N-1]. You can also explicitly pass the possible categories
+            in the Dict[int, List[int]] format, e.g. {0: [0, 1, 2], 3: [0, 55]}. Note that the categories can be
+            arbitrary int values. If it is not specified, `categories_per_feature` is inferred from `x_ref`.
         preprocess_x_ref
             Whether to already preprocess and infer categories and frequencies for reference data.
         update_x_ref
@@ -67,13 +71,15 @@ class ChiSquareDrift(BaseUnivariateDrift):
         # construct categories from the user-specified dict
         if isinstance(categories_per_feature, dict):
             vals = list(categories_per_feature.values())
-            if all(isinstance(v, (int, np.int16, np.int32, np.int64)) for v in vals):
+            int_types = (int, np.int16, np.int32, np.int64)
+            if all(isinstance(v, int_types) for v in vals):
                 # categories_per_feature = Dict[int, int]
                 categories_per_feature = {f: list(np.arange(v))  # type: ignore
                                           for f, v in categories_per_feature.items()}
-            elif not all(isinstance(v, list) for v in vals):
-                raise NotImplementedError('categories_per_feature needs to be None or one of '
-                                          'Dict[int, int], Dict[int, List[int]]')
+            elif not all(isinstance(val, list) for val in vals) and \
+                    all(isinstance(v, int_types) for val in vals for v in val):  # type: ignore
+                raise ValueError('categories_per_feature needs to be None or one of '
+                                 'Dict[int, int], Dict[int, List[int]]')
         else:  # infer number of possible categories for each feature from reference data
             x_flat = self.x_ref.reshape(self.x_ref.shape[0], -1)
             categories_per_feature = {f: list(np.unique(x_flat[:, f]))  # type: ignore
