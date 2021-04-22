@@ -38,7 +38,7 @@ def classifier_uncertainty(
     margin_width: float = 0.1,
 ) -> np.ndarray:
     """
-    Evaluate model on x and transform predictions to prediction uncertainties.
+    Evaluate model_fn on x and transform predictions to prediction uncertainties.
 
     Parameters
     ----------
@@ -89,14 +89,14 @@ def regressor_uncertainty(
     n_evals: int = 25,
 ) -> np.ndarray:
     """
-    Evaluate model on x and transform predictions to prediction uncertainties.
+    Evaluate model_fn on x and transform predictions to prediction uncertainties.
 
     Parameters
     ----------
     x
         Batch of instances.
     model_fn
-        Function that evaluates a classification model on x in a single call (contains batching logic if necessary).
+        Function that evaluates a regression model on x in a single call (contains batching logic if necessary).
     uncertainty_type
         Method for determining the model's uncertainty for a given instance. Options are 'mc_dropout' or 'ensemble'.
         The former should output a scalar per instance. The latter should output a vector of predictions per instance.

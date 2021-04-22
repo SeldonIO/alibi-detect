@@ -134,7 +134,6 @@ class ClassifierUncertaintyDrift:
             Whether to return the p-value of the test.
         return_distance
             Whether to return the corresponding test statistic (K-S for 'entropy', Chi2 for 'margin').
-        # TODO: Offer to return difference in uncertainty
 
         Returns
         -------
@@ -266,7 +265,6 @@ class RegressorUncertaintyDrift:
             Whether to return the p-value of the test.
         return_distance
             Whether to return the K-S test statistic
-        # TODO: Offer to return difference in uncertainty
 
         Returns
         -------
