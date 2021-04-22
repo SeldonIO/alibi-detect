@@ -74,7 +74,7 @@ def classifier_uncertainty(
         uncertainties = entropy(probs, axis=-1)
     elif uncertainty_type == 'margin':
         top_2_probs = -np.partition(-probs, kth=1, axis=-1)[:, :2]
-        diff = np.abs(top_2_probs[:, 0] - top_2_probs[:, 1])
+        diff = top_2_probs[:, 0] - top_2_probs[:, 1]
         uncertainties = (diff < margin_width).astype(int)
     else:
         raise NotImplementedError("Only uncertainty types 'entropy' or 'margin' supported")
