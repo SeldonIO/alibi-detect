@@ -5,7 +5,7 @@ from functools import partial
 from alibi_detect.cd.ks import KSDrift
 from alibi_detect.cd.chisquare import ChiSquareDrift
 from alibi_detect.cd.preprocess import classifier_uncertainty, regressor_uncertainty
-from alibi_detect.cd.utils import get_preds
+from alibi_detect.cd.utils import encompass_batching, encompass_shuffling_and_batch_filling
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
 
 logger = logging.getLogger(__name__)
@@ -77,8 +77,7 @@ class ClassifierUncertaintyDrift:
                 raise NotImplementedError('Non-pytorch/tensorflow models must run on cpu')
             model_fn = model
         else:
-            model_fn = partial(
-                get_preds,
+            model_fn = encompass_batching(
                 model=model,
                 backend=backend,
                 batch_size=batch_size,
@@ -207,7 +206,6 @@ class RegressorUncertaintyDrift:
         if backend is None:
             model_fn = model
         else:
-            shuffle, force_full_batches = False, False
             if uncertainty_type == 'mc_dropout':
                 if backend == 'pytorch':
                     from alibi_detect.cd.pytorch.utils import activate_train_mode_for_dropout_layers
@@ -219,19 +217,19 @@ class RegressorUncertaintyDrift:
                     )
                     from alibi_detect.cd.tensorflow.utils import activate_train_mode_for_all_layers
                     model = activate_train_mode_for_all_layers(model)
-                    shuffle, force_full_batches = True, True  # To average over possible batchnorm effects
 
-            model_fn = partial(
-                get_preds,
+            model_fn = encompass_batching(
                 model=model,
                 backend=backend,
                 batch_size=batch_size,
-                shuffle=shuffle,
-                force_full_batches=force_full_batches,
                 device=device,
                 tokenizer=tokenizer,
                 max_len=max_len
             )
+
+            if uncertainty_type == 'mc_dropout' and backend == 'tensorflow':
+                # To average over possible batchnorm effects as all layers evaluated in training mode.
+                model_fn = encompass_shuffling_and_batch_filling(model_fn, batch_size=batch_size)
 
         preprocess_fn = partial(
             regressor_uncertainty,
