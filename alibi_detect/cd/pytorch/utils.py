@@ -2,11 +2,11 @@ from torch import nn
 from typing import Callable
 
 
-def activate_train_mode_for_dropout_layers(model: nn.Module) -> Callable:
+def activate_train_mode_for_dropout_layers(model: Callable) -> Callable:
 
-    model.eval()
+    model.eval()  # type: ignore
     n_dropout_layers = 0
-    for module in model.modules():
+    for module in model.modules():  # type: ignore
         if isinstance(module, nn.Dropout):
             module.train()
             n_dropout_layers += 1

@@ -1,9 +1,7 @@
 import numpy as np
 import random
-from typing import Dict, Callable, Optional, Union
+from typing import Dict, Callable, Optional
 from functools import partial
-from torch import nn
-import tensorflow as tf
 from alibi_detect.utils.sampling import reservoir_sampling
 
 
