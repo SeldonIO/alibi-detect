@@ -2,8 +2,7 @@ import numpy as np
 from sklearn.decomposition import PCA
 from scipy.special import softmax
 from scipy.stats import entropy
-from typing import Callable, Optional
-from alibi_detect.cd.utils import activate_train_mode_for_dropout_layers, get_preds
+from typing import Callable
 
 
 def pca(X: np.ndarray, n_components: int = 2, svd_solver: str = 'auto') -> np.ndarray:
@@ -33,15 +32,10 @@ def pca(X: np.ndarray, n_components: int = 2, svd_solver: str = 'auto') -> np.nd
 
 def classifier_uncertainty(
     x: np.ndarray,
-    model: Callable,
-    backend: Optional[str] = None,
+    model_fn: Callable,
     preds_type: str = 'probs',
     uncertainty_type: str = 'entropy',
     margin_width: float = 0.1,
-    batch_size: int = 32,
-    device: Optional[str] = None,
-    tokenizer: Optional[Callable] = None,
-    max_len: Optional[int] = None,
 ) -> np.ndarray:
     """
     Evaluate model on x and transform predictions to prediction uncertainties.
@@ -50,10 +44,8 @@ def classifier_uncertainty(
     ----------
     x
         Batch of instances.
-    model
-        Classification model outputting class probabilities (or logits)
-    backend
-        Backend to use if model requires batch prediction. Options are 'tensorflow' or 'pytorch'.
+    model_fn
+        Function that evaluates a classification model on x in a single call (contains batching logic if necessary).
     preds_type
         Type of prediction output by the model. Options are 'probs' (in [0,1]) or 'logits' (in [-inf,inf]).
     uncertainty_type
@@ -61,29 +53,13 @@ def classifier_uncertainty(
     margin_width
         Width of the margin if uncertainty_type = 'margin'. The model is considered uncertain on an instance
         if the highest two class probabilities it assigns to the instance differ by less than margin_width.
-    batch_size
-        Batch size used to evaluate model. Only relavent when backend has been specified for batch prediction.
-    device
-        Device type used. The default None tries to use the GPU and falls back on CPU if needed.
-        Can be specified by passing either 'cuda', 'gpu' or 'cpu'. Only relevant for 'pytorch' backend.
-    tokenizer
-        Optional tokenizer for NLP models.
-    max_len
-        Optional max token length for NLP models.
 
     Returns
     -------
     A scalar indication of uncertainty of the model on each instance in x.
     """
 
-    if backend is not None:
-        preds = get_preds(
-            x, model, backend, batch_size, device=device, tokenizer=tokenizer, max_len=max_len
-        )
-    else:
-        if device not in [None, 'cpu']:
-            raise NotImplementedError('Non-pytorch/tensorflow models must run on cpu')
-        preds = np.asarray(model(x))
+    preds = model_fn(x)
 
     if preds_type == 'probs':
         if np.abs(1 - np.sum(preds, axis=-1)).mean() > 1e-6:
@@ -108,14 +84,9 @@ def classifier_uncertainty(
 
 def regressor_uncertainty(
     x: np.ndarray,
-    model: Callable,
-    backend: str,
+    model_fn: Callable,
     uncertainty_type: str = 'mc_dropout',
     n_evals: int = 25,
-    batch_size: int = 32,
-    device: Optional[str] = None,
-    tokenizer: Optional[Callable] = None,
-    max_len: Optional[int] = None,
 ) -> np.ndarray:
     """
     Evaluate model on x and transform predictions to prediction uncertainties.
@@ -124,48 +95,24 @@ def regressor_uncertainty(
     ----------
     x
         Batch of instances.
-    model
-        Classification model outputting class probabilities (or logits)
-    backend
-        Backend to use if model requires batch prediction. Options are 'tensorflow' or 'pytorch'.
+    model_fn
+        Function that evaluates a classification model on x in a single call (contains batching logic if necessary).
     uncertainty_type
         Method for determining the model's uncertainty for a given instance. Options are 'mc_dropout' or 'ensemble'.
         The former should output a scalar per instance. The latter should output a vector of predictions per instance.
     n_evals:
         The number of times to evaluate the model under different dropout configurations. Only relavent when using
         the 'mc_dropout' uncertainty type.
-    batch_size
-        Batch size used to evaluate model. Only relavent when backend has been specified for batch prediction.
-    device
-        Device type used. The default None tries to use the GPU and falls back on CPU if needed.
-        Can be specified by passing either 'cuda', 'gpu' or 'cpu'. Only relevant for 'pytorch' backend.
-    tokenizer
-        Optional tokenizer for NLP models.
-    max_len
-        Optional max token length for NLP models.
 
     Returns
     -------
-    A scalar indication of uncertainty of the model on each instance in xs.
+    A scalar indication of uncertainty of the model on each instance in x.
     """
 
     if uncertainty_type == 'mc_dropout':
-        model = activate_train_mode_for_dropout_layers(model, backend)
-        preds = np.concatenate([
-            get_preds(
-                x, model, backend, batch_size, shuffle=True, force_full_batches=True,
-                device=device, tokenizer=tokenizer, max_len=max_len
-            ) for i in range(n_evals)
-        ], axis=-1)
+        preds = np.concatenate([model_fn(x) for i in range(n_evals)], axis=-1)
     elif uncertainty_type == 'ensemble':
-        if backend is not None:
-            preds = get_preds(
-                x, model, backend, batch_size, device=device, tokenizer=tokenizer, max_len=max_len
-            )
-        else:
-            if device not in [None, 'cpu']:
-                raise NotImplementedError('Non-pytorch/tensorflow models must run on cpu')
-            preds = np.asarray(model(x))
+        preds = model_fn(x)
     else:
         raise NotImplementedError("Only 'mc_dropout' and 'ensemble' are supported uncertainty types for regressors.")
 

@@ -4,6 +4,7 @@ from functools import partial
 from alibi_detect.cd.ks import KSDrift
 from alibi_detect.cd.chisquare import ChiSquareDrift
 from alibi_detect.cd.preprocess import classifier_uncertainty, regressor_uncertainty
+from alibi_detect.cd.utils import get_preds, activate_train_mode_for_dropout_layers
 
 
 class ClassifierUncertaintyDrift:
@@ -63,17 +64,27 @@ class ClassifierUncertaintyDrift:
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
 
+        if backend is None:
+            if device not in [None, 'cpu']:
+                raise NotImplementedError('Non-pytorch/tensorflow models must run on cpu')
+            model_fn = model
+        else:
+            model_fn = partial(
+                get_preds,
+                model=model,
+                backend=backend,
+                batch_size=batch_size,
+                device=device,
+                tokenizer=tokenizer,
+                max_len=max_len
+            )
+
         preprocess_fn = partial(
             classifier_uncertainty,
-            model=model,
-            backend=backend,
+            model_fn=model_fn,
             preds_type=preds_type,
             uncertainty_type=uncertainty_type,
             margin_width=margin_width,
-            batch_size=batch_size,
-            device=device,
-            tokenizer=tokenizer,
-            max_len=max_len
         )
 
         self._detector: Union[KSDrift, ChiSquareDrift]
@@ -182,15 +193,33 @@ class RegressorUncertaintyDrift:
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
 
+        if backend is None:
+            model_fn = model
+        else:
+            shuffle, force_full_batches = False, False
+            if uncertainty_type == 'mc_dropout':
+                model = activate_train_mode_for_dropout_layers(model, backend)
+                if backend == 'tensorflow':
+                    # Necessary to also average over batch norm effects for tf models
+                    shuffle, force_full_batches = True, True
+
+            model_fn = partial(
+                get_preds,
+                model=model,
+                backend=backend,
+                batch_size=batch_size,
+                shuffle=shuffle,
+                force_full_batches=force_full_batches,
+                device=device,
+                tokenizer=tokenizer,
+                max_len=max_len
+            )
+
         preprocess_fn = partial(
             regressor_uncertainty,
-            model=model,
-            backend=backend,
+            model_fn=model_fn,
             uncertainty_type=uncertainty_type,
-            batch_size=batch_size,
-            device=device,
-            tokenizer=tokenizer,
-            max_len=max_len
+            n_evals=n_evals
         )
 
         self._detector = KSDrift(
