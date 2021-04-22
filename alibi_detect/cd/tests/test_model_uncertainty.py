@@ -46,13 +46,6 @@ def dumb_model(x, n_labels, softmax=False):
     return x
 
 
-# def other_model(preds_type):
-#     if preds_type == 'probs':
-#         return partial(dumb_model, preds_type='probs')
-#     elif preds_type == 'logits':
-#         return partial(dumb_model, preds_type='logits')
-
-
 def gen_model(n_features, n_labels, backend, softmax=False, dropout=False):
     if backend == 'tensorflow':
         return tf_model(n_features, n_labels, softmax, dropout)
