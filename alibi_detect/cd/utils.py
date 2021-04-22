@@ -1,5 +1,6 @@
 import numpy as np
-from typing import Dict
+import random
+from typing import Dict, Callable, Optional
 from alibi_detect.utils.sampling import reservoir_sampling
 
 
@@ -39,3 +40,61 @@ def update_reference(X_ref: np.ndarray,
             raise KeyError('Only `reservoir_sampling` and `last` are valid update options for X_ref.')
     else:
         return X_ref
+
+
+def encompass_batching(
+    model: Callable,
+    backend: str,
+    batch_size: int,
+    device: Optional[str] = None,
+    tokenizer: Optional[Callable] = None,
+    max_len: Optional[int] = None,
+) -> Callable:
+    """
+    Takes a function that must be batch evaluated (on tokenized input) and returns a function
+    that handles batching (and tokenization).
+    """
+
+    backend = backend.lower()
+    kwargs = {
+        'batch_size': batch_size, 'tokenizer': tokenizer, 'max_len': max_len
+    }
+    if backend == 'tensorflow':
+        from alibi_detect.cd.tensorflow.preprocess import preprocess_drift
+    elif backend == 'pytorch':
+        from alibi_detect.cd.pytorch.preprocess import preprocess_drift  # type: ignore
+        kwargs['device'] = device
+    else:
+        raise NotImplementedError(f'{backend} not implemented. Use tensorflow or pytorch instead.')
+
+    def model_fn(x: np.ndarray) -> np.ndarray:
+        return preprocess_drift(x, model, **kwargs)  # type: ignore
+
+    return model_fn
+
+
+def encompass_shuffling_and_batch_filling(
+    model_fn: Callable,
+    batch_size: int
+) -> np.ndarray:
+    """
+    Takes a function that already handles batching but additionally performing shuffling
+    and ensures instances are evaluated as part of full batches.
+    """
+
+    def new_model_fn(x: np.ndarray) -> np.ndarray:
+        # shuffle
+        n_x = x.shape[0]
+        perm = np.random.permutation(n_x)
+        x = x[perm]
+        # add extras if necessary
+        final_batch_size = n_x % batch_size
+        if final_batch_size != 0:
+            doubles_inds = random.choices([i for i in range(n_x)], k=batch_size - final_batch_size)
+            x = np.concatenate([x, x[doubles_inds]], axis=0)
+        # remove any extras and unshuffle
+        preds = np.asarray(model_fn(x))[:n_x]
+        preds = preds[np.argsort(perm)]
+        return preds
+
+    return new_model_fn
