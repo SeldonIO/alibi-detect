@@ -164,7 +164,7 @@ class RegressorUncertaintyDrift:
             Data used as reference distribution. Should be disjoint from the data the model was trained on
             for accurate p-values.
         model
-            Classification model outputting class probabilities (or logits)
+            Regression model outputting class probabilities (or logits)
         backend
             Backend to use if model requires batch prediction. Options are 'tensorflow' or 'pytorch'.
         p_val
