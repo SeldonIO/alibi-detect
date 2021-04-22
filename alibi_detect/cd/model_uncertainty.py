@@ -1,10 +1,14 @@
+import logging
 import numpy as np
 from typing import Callable, Dict, Optional, Union
 from functools import partial
 from alibi_detect.cd.ks import KSDrift
 from alibi_detect.cd.chisquare import ChiSquareDrift
 from alibi_detect.cd.preprocess import classifier_uncertainty, regressor_uncertainty
-from alibi_detect.cd.utils import get_preds, activate_train_mode_for_dropout_layers
+from alibi_detect.cd.utils import get_preds
+from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
+
+logger = logging.getLogger(__name__)
 
 
 class ClassifierUncertaintyDrift:
@@ -63,6 +67,10 @@ class ClassifierUncertaintyDrift:
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
+
+        if backend == 'tensorflow' and not has_tensorflow or backend == 'pytorch' and not has_pytorch:
+            raise ImportError(f'{backend} not installed. Cannot initialize and run the '
+                              f'ClassifierUncertaintyDrift detector with {backend} backend.')
 
         if backend is None:
             if device not in [None, 'cpu']:
@@ -193,15 +201,26 @@ class RegressorUncertaintyDrift:
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
 
+        if backend == 'tensorflow' and not has_tensorflow or backend == 'pytorch' and not has_pytorch:
+            raise ImportError(f'{backend} not installed. Cannot initialize and run the '
+                              f'ClassifierUncertaintyDrift detector with {backend} backend.')
+
         if backend is None:
             model_fn = model
         else:
             shuffle, force_full_batches = False, False
             if uncertainty_type == 'mc_dropout':
-                model = activate_train_mode_for_dropout_layers(model, backend)
-                if backend == 'tensorflow':
-                    # Necessary to also average over batch norm effects for tf models
-                    shuffle, force_full_batches = True, True
+                if backend == 'pytorch':
+                    from alibi_detect.cd.pytorch.utils import activate_train_mode_for_dropout_layers
+                    model = activate_train_mode_for_dropout_layers(model)
+                elif backend == 'tensorflow':
+                    logger.warning(
+                        "MC dropout being applied to tensorflow model. May not be suitable if model contains"
+                        "non-dropout layers with different train and inference time behaviour"
+                    )
+                    from alibi_detect.cd.tensorflow.utils import activate_train_mode_for_all_layers
+                    model = activate_train_mode_for_all_layers(model)
+                    shuffle, force_full_batches = True, True  # To average over possible batchnorm effects
 
             model_fn = partial(
                 get_preds,

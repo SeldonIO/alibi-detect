@@ -45,26 +45,6 @@ def update_reference(X_ref: np.ndarray,
         return X_ref
 
 
-def activate_train_mode_for_dropout_layers(model: Union[nn.Module, tf.keras.Model], backend: str) -> Callable:
-    # TODO: Figure a way to do this properly for tensorflow models.
-    if backend == 'pytorch':
-        model.eval()
-        n_dropout_layers = 0
-        for module in model.modules():
-            if isinstance(module, nn.Dropout):
-                module.train()
-                n_dropout_layers += 1
-        if n_dropout_layers == 0:
-            raise ValueError("No dropout layers identified.")
-    elif backend == 'tensorflow':
-        model.trainable = False
-        model = partial(model, training=True)  # Note this affects batchnorm etc also
-    else:
-        raise NotImplementedError("Only 'pytorch' or 'tensorflow' backends supported")
-
-    return model
-
-
 def get_preds(
     x: np.ndarray,
     model: Callable,
