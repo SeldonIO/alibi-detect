@@ -1,6 +1,6 @@
 import numpy as np
 from typing import Callable, Dict, Optional, Union
-from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, validate_backend
+from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, _validate_backend
 
 if has_pytorch:
     from alibi_detect.cd.pytorch.classifier import ClassifierDriftTorch
@@ -94,14 +94,7 @@ class ClassifierDrift:
         """
         super().__init__()
 
-        # backend = backend.lower()
-        # if backend == 'tensorflow' and not has_tensorflow or backend == 'pytorch' and not has_pytorch:
-        #     raise ImportError(f'{backend} not installed. Cannot initialize and run the '
-        #                       f'ClassifierDrift detector with {backend} backend.')
-        # elif backend not in ['tensorflow', 'pytorch']:
-        #     raise NotImplementedError(f'{backend} not implemented. Use tensorflow or pytorch instead.')
-
-        validate_backend(backend)
+        _validate_backend(backend)
 
         kwargs = locals()
         args = [kwargs['x_ref'], kwargs['model']]
