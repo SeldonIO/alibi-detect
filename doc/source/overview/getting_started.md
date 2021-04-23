@@ -52,8 +52,10 @@ alibi_detect.cd.__all__
 ```
 ['ChiSquareDrift',
  'ClassifierDrift',
+ 'ClassifierUncertaintyDrift',
  'KSDrift',
  'MMDDrift',
+ 'RegressorUncertaintyDrift',
  'TabularDrift']
 ```
 
@@ -99,6 +101,7 @@ And **data drift**:
 
 * [Classifier Drift Detector](../methods/classifierdrift.ipynb)
 
+* [Classifier and Regressor Drift Detectors](../methods/modeluncdrift.ipynb)
 
 ## Basic Usage
 

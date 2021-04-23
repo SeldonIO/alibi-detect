@@ -104,11 +104,13 @@ The following tables show the advised use cases for each algorithm. The column *
 
 | Detector                 | Tabular | Image | Time Series | Text  | Categorical Features | Online | Feature Level |
 | :---                     |  :---:  | :---: |   :---:     | :---: |   :---:              | :---:  | :---:         |
-| Kolmogorov-Smirnov       | ✔       | ✔     |            |  ✔    |  ✔                   |       |  ✔            |
-| Maximum Mean Discrepancy | ✔       | ✔     |            |  ✔    |  ✔                   |       |              |
-| Chi-Squared              | ✔       |      |            |      |  ✔                   |       |  ✔            |
-| Mixed-type tabular data  | ✔       |      |            |      |  ✔                   |       |  ✔            |
-| Classifier               | ✔       | ✔     |  ✔          |  ✔    |  ✔                   |       |              |
+| Kolmogorov-Smirnov       | ✔       | ✔     |             |  ✔    |  ✔                   |       |  ✔             |
+| Maximum Mean Discrepancy | ✔       | ✔     |             |  ✔    |  ✔                   |       |                |
+| Chi-Squared              | ✔       |       |             |       |  ✔                   |       |  ✔             |
+| Mixed-type tabular data  | ✔       |       |             |       |  ✔                   |       |  ✔             |
+| Classifier               | ✔       | ✔     |  ✔          |  ✔    |  ✔                   |       |                |
+| Classifier Uncertainty   | ✔       | ✔     |  ✔          |  ✔    |  ✔                   |       |                |
+| Regressor Uncertainty    | ✔       | ✔     |  ✔          |  ✔    |  ✔                   |       |                |
 
 #### TensorFlow and PyTorch support
 
@@ -205,6 +207,10 @@ Check the example notebooks (e.g. [CIFAR10](https://docs.seldon.io/projects/alib
 
 - [Classifier](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/classifierdrift.html) ([Lopez-Paz and Oquab, 2017](https://openreview.net/forum?id=SJkXfE5xx))
    - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_clf_cifar10.html)
+
+- [Classifier and Regressor Uncertainty](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/modeluncdrift.html)
+   - Example: [CIFAR10 and Wine](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_model_unc_cifar10_wine.html)
+
 
 ## Datasets
 

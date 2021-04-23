@@ -32,7 +32,9 @@ The following tables summarize the advised use cases for the current algorithms.
 |[Maximum Mean Discrepancy](../methods/mmddrift.ipynb)|✔|✔| |✔|✔| | |
 |[Chi-Squared](../methods/chisquaredrift.ipynb)|✔| | | |✔| |✔|
 |[Mixed-type tabular](../methods/tabulardrift.ipynb)|✔| | | |✔| |✔|
-|[Classifier](../methods/classifierdrift.ipynb)|✔|✔|✔|✔|✔| | | |
+|[Classifier](../methods/classifierdrift.ipynb)|✔|✔|✔|✔|✔| | |
+|[Classifier Uncertainty](../methods/modeluncdrift.ipynb)|✔|✔|✔|✔|✔| | |
+|[Regressor Uncertainty](../methods/modeluncdrift.ipynb)|✔|✔|✔|✔|✔| | | |
 
 All drift detectors and built-in preprocessing methods support both **PyTorch** and **TensorFlow** backends.
 The preprocessing steps include randomly initialized encoders, pretrained text embeddings to detect drift on 
