@@ -105,7 +105,8 @@ class MMDDriftOnlineTorch(BaseMMDDriftOnline):
         # and an extended test window (y). The extended test window will be treated as W overlapping
         # test windows of size W (so 2W-1 test samples in total)
 
-        etw_size = 2*self.window_size-1  # etw = extended test window
+        w_size = self.window_size
+        etw_size = 2*w_size-1  # etw = extended test window
         srw_size = self.n - etw_size  # srw = sub-ref window
 
         perms = [torch.randperm(self.n) for _ in range(self.n_bootstraps)]
@@ -127,16 +128,16 @@ class MMDDriftOnlineTorch(BaseMMDDriftOnline):
         k_xx_sums_all = [(
             k_full_sum - zero_diag(self.k_xx[y_inds][:, y_inds]).sum() - 2*k_xy_col_sums.sum()
         )/(srw_size*(srw_size-1)) for y_inds, k_xy_col_sums in zip(y_inds_all, k_xy_col_sums_all)]
-        k_xy_col_sums_all = [k_xy_col_sums/(srw_size*self.window_size) for k_xy_col_sums in k_xy_col_sums_all]
+        k_xy_col_sums_all = [k_xy_col_sums/(srw_size*w_size) for k_xy_col_sums in k_xy_col_sums_all]
 
         # Now to iterate through the W overlapping windows
         thresholds = []
-        for w in tqdm(range(self.window_size), "Computing thresholds"):
-            y_inds_all_w = [y_inds[w:w+self.window_size] for y_inds in y_inds_all]  # test windows of size W
+        for w in tqdm(range(w_size), "Computing thresholds"):
+            y_inds_all_w = [y_inds[w:w+w_size] for y_inds in y_inds_all]  # test windows of size w_size
             mmds = [(
                 k_xx_sum +
-                zero_diag(self.k_xx[y_inds_w][:, y_inds_w]).sum()/(self.window_size*(self.window_size-1)) -
-                2*k_xy_col_sums[w:w+self.window_size].sum()
+                zero_diag(self.k_xx[y_inds_w][:, y_inds_w]).sum()/(w_size*(w_size-1)) -
+                2*k_xy_col_sums[w:w+w_size].sum()
             ) for k_xx_sum, y_inds_w, k_xy_col_sums in zip(k_xx_sums_all, y_inds_all_w, k_xy_col_sums_all)
             ]
             mmds = torch.tensor(mmds)  # an mmd for each bootstrap sample
@@ -178,6 +179,7 @@ class MMDDriftOnlineTorch(BaseMMDDriftOnline):
         """
         x_t = torch.from_numpy(x_t[None, :]).to(self.device)
         kernel_col = self.kernel(self.x_ref[self.ref_inds], x_t)
+        
         if self.t == 0:
             self.test_window = x_t
             self.k_xy = kernel_col
