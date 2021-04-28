@@ -94,6 +94,7 @@ class BaseMMDDriftOnline(BaseDetector):
     def _initialise(self) -> None:
         self.t = -1  # 0 will correspond to first observation
         self.test_stats = np.array([])
+        self.drift_preds = np.array([])
         self._configure_ref_subset()
 
     def reset(self) -> None:
@@ -128,11 +129,10 @@ class BaseMMDDriftOnline(BaseDetector):
         # update test window and return updated test stat
         test_stat = self.score(x_t)
         threshold = self.get_threshold(self.t)
+        drift_pred = 0 if test_stat is None else int(test_stat > threshold)
 
-        if test_stat is None:
-            drift_pred = 0
-        else:
-            drift_pred = int(test_stat > threshold)
+        self.test_stats = np.concatenate([self.test_stats, np.array([test_stat])])
+        self.drift_preds = np.concatenate([self.drift_preds, np.array([drift_pred])])
 
         # populate drift dict
         # TODO: add instance level feedback
