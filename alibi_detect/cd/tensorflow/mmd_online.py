@@ -2,7 +2,7 @@ import logging
 from tqdm import tqdm
 import numpy as np
 import tensorflow as tf
-from typing import Callable, Dict, Optional, Union
+from typing import Callable, Optional, Union
 from alibi_detect.cd.base_online import BaseMMDDriftOnline
 from alibi_detect.utils.tensorflow.kernels import GaussianRBF
 from alibi_detect.cd.tensorflow.utils import zero_diag, quantile, subset_matrix
@@ -77,45 +77,62 @@ class MMDDriftOnlineTF(BaseMMDDriftOnline):
         self.k_xx = self.kernel(self.x_ref, self.x_ref, infer_sigma=(sigma is None))
         self.infer_sigma = False
 
-        self._initialise()
         self._configure_thresholds()
+        self._initialise()
 
     def _configure_ref_subset(self):
-        self.ref_inds = tf.random.shuffle(tf.range(self.n))[:(-2*self.window_size)]
+        etw_size = 2*self.window_size-1  # etw = extended test window
+        srw_size = self.n - etw_size  # srw = sub-ref window
+        self.ref_inds = tf.random.shuffle(tf.range(self.n))[:-etw_size]
         self.k_xx_sub = subset_matrix(self.k_xx, self.ref_inds, self.ref_inds)
-        self.k_xx_sub_sum = tf.reduce_sum(zero_diag(self.k_xx_sub))/(len(self.ref_inds)*(len(self.ref_inds)-1))
+        self.k_xx_sub_sum = tf.reduce_sum(zero_diag(self.k_xx_sub))/(srw_size*(srw_size-1))
 
     def _configure_thresholds(self):
 
+        # Each bootstrap sample splits the reference samples into a sub-reference sample (x)
+        # and an extended test window (y). The extended test window will be treated as W overlapping
+        # test windows of size W (so 2W-1 test samples in total)
+
+        w_size = self.window_size
+        etw_size = 2*w_size-1  # etw = extended test window
+        srw_size = self.n - etw_size  # srw = sub-ref window
+
         perms = [tf.random.shuffle(tf.range(self.n)) for _ in range(self.n_bootstraps)]
-        x_inds_all = [perm[:(-2*self.window_size)] for perm in perms]
-        y_inds_all = [perm[(-2*self.window_size):] for perm in perms]
-
-        thresholds = []
-
-        rw_size = self.n - 2*self.window_size
+        x_inds_all = [perm[:-etw_size] for perm in perms]
+        y_inds_all = [perm[-etw_size:] for perm in perms]
 
         print("Generating permutations of kernel matrix..")
+        # Need to compute mmd for each bs for each of W overlapping windows
+        # Most of the computation can be done once however
+        # We avoid summing the srw_size^2 submatrix for each bootstrap sample by instead computing the full
+        # sum once and then subtracting the relavent parts (k_xx_sum = k_full_sum - 2*k_xy_sum - k_yy_sum).
+        # We also reduce computation of k_xy_sum from O(nW) to O(W) by caching column sums
+
+        k_full_sum = tf.reduce_sum(zero_diag(self.k_xx))
         k_xy_col_sums_all = [
             tf.reduce_sum(subset_matrix(self.k_xx, x_inds, y_inds), axis=0) for x_inds, y_inds in
             tqdm(zip(x_inds_all, y_inds_all), total=self.n_bootstraps)
         ]
-        k_full_sum = tf.reduce_sum(zero_diag(self.k_xx))
         k_xx_sums_all = [(
-            k_full_sum - tf.reduce_sum(zero_diag(subset_matrix(self.k_xx, y_inds, y_inds))) - 2*tf.reduce_sum(k_xy_col_sums)
-        )/(rw_size*(rw_size-1)) for y_inds, k_xy_col_sums in zip(y_inds_all, k_xy_col_sums_all)]  # This is bottleneck w.r.t. large num_bootstraps
-        k_xy_col_sums_all = [k_xy_col_sums/(rw_size*self.window_size) for k_xy_col_sums in k_xy_col_sums_all]
+            k_full_sum -
+            tf.reduce_sum(zero_diag(subset_matrix(self.k_xx, y_inds, y_inds))) -
+            2*tf.reduce_sum(k_xy_col_sums)
+        )/(srw_size*(srw_size-1)) for y_inds, k_xy_col_sums in zip(y_inds_all, k_xy_col_sums_all)]
+        k_xy_col_sums_all = [k_xy_col_sums/(srw_size*w_size) for k_xy_col_sums in k_xy_col_sums_all]
 
-        for w in tqdm(range(self.window_size), "Computing thresholds"):
-            y_inds_all_w = [y_inds[w:w+self.window_size] for y_inds in y_inds_all]
+        # Now to iterate through the W overlapping windows
+        thresholds = []
+        for w in tqdm(range(w_size), "Computing thresholds"):
+            y_inds_all_w = [y_inds[w:w+w_size] for y_inds in y_inds_all]  # test windows of size W
             mmds = [(
                 k_xx_sum +
-                tf.reduce_sum(zero_diag(subset_matrix(self.k_xx, y_inds_w, y_inds_w)))/(self.window_size*(self.window_size-1)) -
-                2*tf.reduce_sum(k_xy_col_sums[w:w+self.window_size])
+                tf.reduce_sum(zero_diag(subset_matrix(self.k_xx, y_inds_w, y_inds_w)))/(w_size*(w_size-1)) -
+                2*tf.reduce_sum(k_xy_col_sums[w:w+w_size])
             ) for k_xx_sum, y_inds_w, k_xy_col_sums in zip(k_xx_sums_all, y_inds_all_w, k_xy_col_sums_all)
             ]
-            mmds = tf.concat(mmds, axis=0)
+            mmds = tf.concat(mmds, axis=0)  # an mmd for each bootstrap sample
 
+            # Now we discard all bootstrap samples for which mmd is in top (1/ert)% and record the thresholds
             thresholds.append(quantile(mmds, 1-self.fpr))
             y_inds_all = [y_inds_all[i] for i in range(len(y_inds_all)) if mmds[i] < thresholds[-1]]
             k_xx_sums_all = [
