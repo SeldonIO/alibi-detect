@@ -87,22 +87,17 @@ class BaseMMDDriftOnline(BaseDetector):
             threshold = None
         if self.window_size <= t < 2*self.window_size:
             threshold = self.thresholds[t-self.window_size]
-        if self.window_size >= 2*self.window_size:
+        if t >= 2*self.window_size:
             threshold = self.thresholds[-1]
         return threshold
 
     def _initialise(self) -> None:
         self.t = -1  # 0 will correspond to first observation
         self.test_stats = np.array([])
-        self.thresholds = np.array([])
         self._configure_ref_subset()
 
     def reset(self) -> None:
         self._initialise()
-
-    # @abstractmethod
-    # def _update(self, x_t: np.ndarray) -> float:
-    #     pass
 
     def predict(self, x_t: np.ndarray,  return_test_stat: bool = True,
                 ) -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
@@ -128,13 +123,16 @@ class BaseMMDDriftOnline(BaseDetector):
 
         # preprocess if necessary
         if self.preprocess_x_ref and isinstance(self.preprocess_fn, Callable):
-            x_t = self.preprocess_fn(x_t)
+            x_t = self.preprocess_fn(x_t[None, :])[0]
 
         # update test window and return updated test stat
         test_stat = self.score(x_t)
         threshold = self.get_threshold(self.t)
 
-        drift_pred = int(self.test_stat < threshold)
+        if test_stat is None:
+            drift_pred = 0
+        else:
+            drift_pred = int(test_stat > threshold)
 
         # populate drift dict
         # TODO: add instance level feedback

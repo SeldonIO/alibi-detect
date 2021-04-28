@@ -74,18 +74,16 @@ class MMDDriftOnlineTF(BaseMMDDriftOnline):
         self.kernel = kernel(sigma) if kernel == GaussianRBF else kernel
 
         # compute kernel matrix for the reference data
-        y = self.x_ref
-        self.k_yy = self.kernel(y, y, infer_sigma=(sigma is None))
+        self.k_xx = self.kernel(self.x_ref, self.x_ref, infer_sigma=(sigma is None))
         self.infer_sigma = False
 
         self._initialise()
-        self.thresholds = self._configure_thresholds()
+        self._configure_thresholds()
 
     def _configure_ref_subset(self):
         self.ref_inds = tf.random.shuffle(tf.range(self.n))[:(-2*self.window_size)]
-        self.k_yy_sum = tf.reduce_sum(zero_diag(
-            subset_matrix(self.k_yy, self.ref_inds, self.ref_inds)
-        ))/(len(self.ref_inds)*(len(self.ref_inds)-1))
+        self.k_xx_sub = subset_matrix(self.k_xx, self.ref_inds, self.ref_inds)
+        self.k_xx_sub_sum = tf.reduce_sum(zero_diag(self.k_xx_sub))/(len(self.ref_inds)*(len(self.ref_inds)-1))
 
     def _configure_thresholds(self):
 
@@ -98,33 +96,33 @@ class MMDDriftOnlineTF(BaseMMDDriftOnline):
         rw_size = self.n - 2*self.window_size
 
         print("Generating permutations of kernel matrix..")
-        k_yx_col_sums_all = [
-            tf.reduce_sum(subset_matrix(self.k_yy, p_inds, q_inds), axis=0) for p_inds, q_inds in
+        k_xy_col_sums_all = [
+            tf.reduce_sum(subset_matrix(self.k_xx, p_inds, q_inds), axis=0) for p_inds, q_inds in
             tqdm(zip(p_inds_all, q_inds_all), total=self.n_bootstraps)
         ]
-        k_full_sum = tf.reduce_sum(zero_diag(self.k_yy))
-        k_yy_sums_all = [(
-            k_full_sum - tf.reduce_sum(zero_diag(subset_matrix(self.k_yy, q_inds, q_inds))) - tf.reduce_sum(2*k_yx_col_sums)
-        )/(rw_size*(rw_size-1)) for q_inds, k_yx_col_sums in zip(q_inds_all, k_yx_col_sums_all)]  # This is bottleneck w.r.t. large num_bootstraps
-        k_yx_col_sums_all = [k_yx_col_sums/(rw_size*self.window_size) for k_yx_col_sums in k_yx_col_sums_all]
+        k_full_sum = tf.reduce_sum(zero_diag(self.k_xx))
+        k_xx_sums_all = [(
+            k_full_sum - tf.reduce_sum(zero_diag(subset_matrix(self.k_xx, q_inds, q_inds))) - 2*tf.reduce_sum(k_xy_col_sums)
+        )/(rw_size*(rw_size-1)) for q_inds, k_xy_col_sums in zip(q_inds_all, k_xy_col_sums_all)]  # This is bottleneck w.r.t. large num_bootstraps
+        k_xy_col_sums_all = [k_xy_col_sums/(rw_size*self.window_size) for k_xy_col_sums in k_xy_col_sums_all]
 
         for w in tqdm(range(self.window_size), "Computing thresholds"):
             q_inds_all_w = [q_inds[w:w+self.window_size] for q_inds in q_inds_all]
             mmds = [(
-                k_yy_sum +
-                tf.reduce_sum(zero_diag(subset_matrix(self.k_yy, q_inds_w, q_inds_w)))/(self.window_size*(self.window_size-1)) -
-                tf.reduce_sum(2*k_yx_col_sums[w:w+self.window_size])
-            ) for k_yy_sum, q_inds_w, k_yx_col_sums in zip(k_yy_sums_all, q_inds_all_w, k_yx_col_sums_all)
+                k_xx_sum +
+                tf.reduce_sum(zero_diag(subset_matrix(self.k_xx, q_inds_w, q_inds_w)))/(self.window_size*(self.window_size-1)) -
+                2*tf.reduce_sum(k_xy_col_sums[w:w+self.window_size])
+            ) for k_xx_sum, q_inds_w, k_xy_col_sums in zip(k_xx_sums_all, q_inds_all_w, k_xy_col_sums_all)
             ]
             mmds = tf.concat(mmds, axis=0)
 
             thresholds.append(quantile(mmds, 1-self.fpr))
             q_inds_all = [q_inds_all[i] for i in range(len(q_inds_all)) if mmds[i] < thresholds[-1]]
-            k_yy_sums_all = [
-                k_yy_sums_all[i] for i in range(len(k_yy_sums_all)) if mmds[i] < thresholds[-1]
+            k_xx_sums_all = [
+                k_xx_sums_all[i] for i in range(len(k_xx_sums_all)) if mmds[i] < thresholds[-1]
             ]
-            k_yx_col_sums_all = [
-                k_yx_col_sums_all[i] for i in range(len(k_yx_col_sums_all)) if mmds[i] < thresholds[-1]
+            k_xy_col_sums_all = [
+                k_xy_col_sums_all[i] for i in range(len(k_xy_col_sums_all)) if mmds[i] < thresholds[-1]
             ]
 
         self.thresholds = tf.concat(thresholds, axis=0)
@@ -132,7 +130,7 @@ class MMDDriftOnlineTF(BaseMMDDriftOnline):
     def kernel_matrix(self, x: Union[np.ndarray, tf.Tensor], y: Union[np.ndarray, tf.Tensor]) -> tf.Tensor:
         """ Compute and return full kernel matrix between arrays x and y. """
         k_xy = self.kernel(x, y, self.infer_sigma)
-        k_xx = self.k_xx if self.k_xx is not None and self.update_x_ref is None else self.kernel(x, x)
+        k_xx = self.k_xx if self.k_xx is not None else self.kernel(x, x)
         k_yy = self.kernel(y, y)
         kernel_mat = tf.concat([tf.concat([k_xx, k_xy], 1), tf.concat([tf.transpose(k_xy, (1, 0)), k_yy], 1)], 0)
         return kernel_mat
@@ -153,23 +151,23 @@ class MMDDriftOnlineTF(BaseMMDDriftOnline):
         and the MMD^2 values from the permutation test.
         """
         x_t = x_t[None, :]
-        k_yx_t = self.kernel_matrix(self.x_ref[self.ref_inds], x_t)
+        kernel_col = self.kernel(self.x_ref[self.ref_inds], x_t)
 
         if self.t == 0:
             self.test_window = x_t
-            self.k_yx = k_yx_t
+            self.k_xy = kernel_col
             return None
         elif 0 < self.t < self.window_size:
             self.test_window = tf.concat([self.test_window, x_t], axis=0)
-            self.k_yx = tf.concat([self.k_yx, k_yx_t], axis=0)
+            self.k_xy = tf.concat([self.k_xy, kernel_col], axis=1)
             return None
         elif self.t >= self.window_size:
             self.test_window = tf.concat([self.test_window[(1-self.window_size):], x_t], axis=0)
-            self.k_yx_mat = tf.concat([self.k_yx[(1-self.window_size):], k_yx_t])
-            k_xx = self.kernel(self.test_window, self.test_window)
+            self.k_xy = tf.concat([self.k_xy[:, (1-self.window_size):], kernel_col], axis=1)
+            k_yy = self.kernel(self.test_window, self.test_window)
             mmd = (
-                self.k_yy_sum +
-                zero_diag(k_xx).sum()/(self.window_size*(self.window_size-1)) -
-                2*self.k_yx.mean()
+                self.k_xx_sub_sum +
+                tf.reduce_sum(zero_diag(k_yy))/(self.window_size*(self.window_size-1)) -
+                2*tf.reduce_mean(self.k_xy)
             )
-            return mmd
+            return mmd.numpy()
