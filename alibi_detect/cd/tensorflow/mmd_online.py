@@ -88,8 +88,8 @@ class MMDDriftOnlineTF(BaseMMDDriftOnline):
     def _configure_thresholds(self):
 
         perms = [tf.random.shuffle(tf.range(self.n)) for _ in range(self.n_bootstraps)]
-        p_inds_all = [perm[:(-2*self.window_size)] for perm in perms]
-        q_inds_all = [perm[(-2*self.window_size):] for perm in perms]
+        x_inds_all = [perm[:(-2*self.window_size)] for perm in perms]
+        y_inds_all = [perm[(-2*self.window_size):] for perm in perms]
 
         thresholds = []
 
@@ -97,27 +97,27 @@ class MMDDriftOnlineTF(BaseMMDDriftOnline):
 
         print("Generating permutations of kernel matrix..")
         k_xy_col_sums_all = [
-            tf.reduce_sum(subset_matrix(self.k_xx, p_inds, q_inds), axis=0) for p_inds, q_inds in
-            tqdm(zip(p_inds_all, q_inds_all), total=self.n_bootstraps)
+            tf.reduce_sum(subset_matrix(self.k_xx, x_inds, y_inds), axis=0) for x_inds, y_inds in
+            tqdm(zip(x_inds_all, y_inds_all), total=self.n_bootstraps)
         ]
         k_full_sum = tf.reduce_sum(zero_diag(self.k_xx))
         k_xx_sums_all = [(
-            k_full_sum - tf.reduce_sum(zero_diag(subset_matrix(self.k_xx, q_inds, q_inds))) - 2*tf.reduce_sum(k_xy_col_sums)
-        )/(rw_size*(rw_size-1)) for q_inds, k_xy_col_sums in zip(q_inds_all, k_xy_col_sums_all)]  # This is bottleneck w.r.t. large num_bootstraps
+            k_full_sum - tf.reduce_sum(zero_diag(subset_matrix(self.k_xx, y_inds, y_inds))) - 2*tf.reduce_sum(k_xy_col_sums)
+        )/(rw_size*(rw_size-1)) for y_inds, k_xy_col_sums in zip(y_inds_all, k_xy_col_sums_all)]  # This is bottleneck w.r.t. large num_bootstraps
         k_xy_col_sums_all = [k_xy_col_sums/(rw_size*self.window_size) for k_xy_col_sums in k_xy_col_sums_all]
 
         for w in tqdm(range(self.window_size), "Computing thresholds"):
-            q_inds_all_w = [q_inds[w:w+self.window_size] for q_inds in q_inds_all]
+            y_inds_all_w = [y_inds[w:w+self.window_size] for y_inds in y_inds_all]
             mmds = [(
                 k_xx_sum +
-                tf.reduce_sum(zero_diag(subset_matrix(self.k_xx, q_inds_w, q_inds_w)))/(self.window_size*(self.window_size-1)) -
+                tf.reduce_sum(zero_diag(subset_matrix(self.k_xx, y_inds_w, y_inds_w)))/(self.window_size*(self.window_size-1)) -
                 2*tf.reduce_sum(k_xy_col_sums[w:w+self.window_size])
-            ) for k_xx_sum, q_inds_w, k_xy_col_sums in zip(k_xx_sums_all, q_inds_all_w, k_xy_col_sums_all)
+            ) for k_xx_sum, y_inds_w, k_xy_col_sums in zip(k_xx_sums_all, y_inds_all_w, k_xy_col_sums_all)
             ]
             mmds = tf.concat(mmds, axis=0)
 
             thresholds.append(quantile(mmds, 1-self.fpr))
-            q_inds_all = [q_inds_all[i] for i in range(len(q_inds_all)) if mmds[i] < thresholds[-1]]
+            y_inds_all = [y_inds_all[i] for i in range(len(y_inds_all)) if mmds[i] < thresholds[-1]]
             k_xx_sums_all = [
                 k_xx_sums_all[i] for i in range(len(k_xx_sums_all)) if mmds[i] < thresholds[-1]
             ]
