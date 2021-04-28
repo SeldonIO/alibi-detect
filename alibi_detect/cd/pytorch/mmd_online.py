@@ -2,9 +2,8 @@ import logging
 from tqdm import tqdm
 import numpy as np
 import torch
-from typing import Callable, Dict, Optional, Tuple
+from typing import Callable, Optional, Tuple
 from alibi_detect.cd.base_online import BaseMMDDriftOnline
-from alibi_detect.utils.pytorch.distance import mmd2_from_kernel_matrix
 from alibi_detect.utils.pytorch.kernels import GaussianRBF
 from alibi_detect.cd.pytorch.utils import zero_diag, quantile
 
@@ -90,46 +89,59 @@ class MMDDriftOnlineTorch(BaseMMDDriftOnline):
         self.k_xx = self.kernel(self.x_ref, self.x_ref, infer_sigma=(sigma is None))
         self.infer_sigma = False
 
-        self._initialise()
         self._configure_thresholds()
+        self._initialise()
 
     def _configure_ref_subset(self):
-        self.ref_inds = torch.randperm(self.n)[:(-2*self.window_size)]
+        etw_size = 2*self.window_size-1  # etw = extended test window
+        srw_size = self.n - etw_size  # srw = sub-ref window
+        self.ref_inds = torch.randperm(self.n)[:-etw_size]
         self.k_xx_sub = self.k_xx[self.ref_inds][:, self.ref_inds]
-        self.k_xx_sub_sum = zero_diag(self.k_xx_sub).sum()/(len(self.ref_inds)*(len(self.ref_inds)-1))
+        self.k_xx_sub_sum = zero_diag(self.k_xx_sub).sum()/(srw_size*(srw_size-1))
 
     def _configure_thresholds(self):
 
+        # Each bootstrap sample splits the reference samples into a sub-reference sample (x)
+        # and an extended test window (y). The extended test window will be treated as W overlapping
+        # test windows of size W (so 2W-1 test samples in total)
+
+        etw_size = 2*self.window_size-1  # etw = extended test window
+        srw_size = self.n - etw_size  # srw = sub-ref window
+
         perms = [torch.randperm(self.n) for _ in range(self.n_bootstraps)]
-        x_inds_all = [perm[:(-2*self.window_size)] for perm in perms]
-        y_inds_all = [perm[(-2*self.window_size):] for perm in perms]
-
-        thresholds = []
-
-        rw_size = self.n - 2*self.window_size
+        x_inds_all = [perm[:-etw_size] for perm in perms]
+        y_inds_all = [perm[-etw_size:] for perm in perms]
 
         print("Generating permutations of kernel matrix..")
+        # Need to compute mmd for each bs for each of W overlapping windows
+        # Most of the computation can be done once however
+        # We avoid summing the srw_size^2 submatrix for each bootstrap sample by instead computing the full
+        # sum once and then subtracting the relavent parts (k_xx_sum = k_full_sum - 2*k_xy_sum - k_yy_sum).
+        # We also reduce computation of k_xy_sum from O(nW) to O(W) by caching column sums
+
+        k_full_sum = zero_diag(self.k_xx).sum()
         k_xy_col_sums_all = [
-            self.k_xx[x_inds][:, y_inds].sum(0) for x_inds, y_inds in \
+            self.k_xx[x_inds][:, y_inds].sum(0) for x_inds, y_inds in
             tqdm(zip(x_inds_all, y_inds_all), total=self.n_bootstraps)
         ]
-        k_full_sum = zero_diag(self.k_xx).sum()
         k_xx_sums_all = [(
-            k_full_sum - zero_diag(self.k_xx[y_inds][:,y_inds]).sum() - 2*k_xy_col_sums.sum()
-        )/(rw_size*(rw_size-1)) for y_inds, k_xy_col_sums in zip(y_inds_all, k_xy_col_sums_all)]  # This is bottleneck w.r.t. large num_bootstraps
-        k_xy_col_sums_all = [k_xy_col_sums/(rw_size*self.window_size) for k_xy_col_sums in k_xy_col_sums_all]
+            k_full_sum - zero_diag(self.k_xx[y_inds][:, y_inds]).sum() - 2*k_xy_col_sums.sum()
+        )/(srw_size*(srw_size-1)) for y_inds, k_xy_col_sums in zip(y_inds_all, k_xy_col_sums_all)]
+        k_xy_col_sums_all = [k_xy_col_sums/(srw_size*self.window_size) for k_xy_col_sums in k_xy_col_sums_all]
 
+        # Now to iterate through the W overlapping windows
+        thresholds = []
         for w in tqdm(range(self.window_size), "Computing thresholds"):
-            y_inds_all_w = [y_inds[w:w+self.window_size] for y_inds in y_inds_all]
+            y_inds_all_w = [y_inds[w:w+self.window_size] for y_inds in y_inds_all]  # test windows of size W
             mmds = [(
                 k_xx_sum +
                 zero_diag(self.k_xx[y_inds_w][:, y_inds_w]).sum()/(self.window_size*(self.window_size-1)) -
                 2*k_xy_col_sums[w:w+self.window_size].sum()
             ) for k_xx_sum, y_inds_w, k_xy_col_sums in zip(k_xx_sums_all, y_inds_all_w, k_xy_col_sums_all)
             ]
+            mmds = torch.tensor(mmds)  # an mmd for each bootstrap sample
 
-            mmds = torch.tensor(mmds)
-
+            # Now we discard all bootstrap samples for which mmd is in top (1/ert)% and record the thresholds
             thresholds.append(quantile(mmds, 1-self.fpr))
             y_inds_all = [y_inds_all[i] for i in range(len(y_inds_all)) if mmds[i] < thresholds[-1]]
             k_xx_sums_all = [
@@ -138,7 +150,7 @@ class MMDDriftOnlineTorch(BaseMMDDriftOnline):
             k_xy_col_sums_all = [
                 k_xy_col_sums_all[i] for i in range(len(k_xy_col_sums_all)) if mmds[i] < thresholds[-1]
             ]
-  
+
         self.thresholds = torch.stack(thresholds, axis=0).detach().cpu().numpy()
 
     def kernel_matrix(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
