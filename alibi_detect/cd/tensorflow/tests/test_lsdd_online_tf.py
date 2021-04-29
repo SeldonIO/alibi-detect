@@ -110,5 +110,5 @@ def test_lsdd_online(lsdd_online_params):
 
     assert np.abs(average_delay_h1) < ert/3
     assert min(detection_times_h0) >= window_size
-    breakpoint()
+
     assert np.mean(test_stats_h1) > np.mean(test_stats_h0)

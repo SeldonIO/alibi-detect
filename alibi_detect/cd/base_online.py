@@ -208,11 +208,6 @@ class BaseLSDDDriftOnline(BaseDetector):
         self.meta['data_type'] = data_type
 
     @abstractmethod
-    def kernel_matrix(self, x: Union['torch.Tensor', 'tf.Tensor'], y: Union['torch.Tensor', 'tf.Tensor']) \
-            -> Union['torch.Tensor', 'tf.Tensor']:
-        pass
-
-    @abstractmethod
     def _configure_thresholds(self):
         pass
 
