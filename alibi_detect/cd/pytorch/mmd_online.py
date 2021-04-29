@@ -94,10 +94,10 @@ class MMDDriftOnlineTorch(BaseMMDDriftOnline):
 
     def _configure_ref_subset(self):
         etw_size = 2*self.window_size-1  # etw = extended test window
-        srw_size = self.n - etw_size  # srw = sub-ref window
-        self.ref_inds = torch.randperm(self.n)[:-etw_size]
+        rw_size = self.n - etw_size  # rw = ref-window
+        self.ref_inds = torch.randperm(self.n)[:rw_size]
         self.k_xx_sub = self.k_xx[self.ref_inds][:, self.ref_inds]
-        self.k_xx_sub_sum = zero_diag(self.k_xx_sub).sum()/(srw_size*(srw_size-1))
+        self.k_xx_sub_sum = zero_diag(self.k_xx_sub).sum()/(rw_size*(rw_size-1))
 
     def _configure_thresholds(self):
 
@@ -107,7 +107,7 @@ class MMDDriftOnlineTorch(BaseMMDDriftOnline):
 
         w_size = self.window_size
         etw_size = 2*w_size-1  # etw = extended test window
-        srw_size = self.n - etw_size  # srw = sub-ref window
+        rw_size = self.n - etw_size  # rw = sub-ref window
 
         perms = [torch.randperm(self.n) for _ in range(self.n_bootstraps)]
         x_inds_all = [perm[:-etw_size] for perm in perms]
@@ -116,7 +116,7 @@ class MMDDriftOnlineTorch(BaseMMDDriftOnline):
         print("Generating permutations of kernel matrix..")
         # Need to compute mmd for each bs for each of W overlapping windows
         # Most of the computation can be done once however
-        # We avoid summing the srw_size^2 submatrix for each bootstrap sample by instead computing the full
+        # We avoid summing the rw_size^2 submatrix for each bootstrap sample by instead computing the full
         # sum once and then subtracting the relavent parts (k_xx_sum = k_full_sum - 2*k_xy_sum - k_yy_sum).
         # We also reduce computation of k_xy_sum from O(nW) to O(W) by caching column sums
 
@@ -127,8 +127,8 @@ class MMDDriftOnlineTorch(BaseMMDDriftOnline):
         ]
         k_xx_sums_all = [(
             k_full_sum - zero_diag(self.k_xx[y_inds][:, y_inds]).sum() - 2*k_xy_col_sums.sum()
-        )/(srw_size*(srw_size-1)) for y_inds, k_xy_col_sums in zip(y_inds_all, k_xy_col_sums_all)]
-        k_xy_col_sums_all = [k_xy_col_sums/(srw_size*w_size) for k_xy_col_sums in k_xy_col_sums_all]
+        )/(rw_size*(rw_size-1)) for y_inds, k_xy_col_sums in zip(y_inds_all, k_xy_col_sums_all)]
+        k_xy_col_sums_all = [k_xy_col_sums/(rw_size*w_size) for k_xy_col_sums in k_xy_col_sums_all]
 
         # Now to iterate through the W overlapping windows
         thresholds = []
