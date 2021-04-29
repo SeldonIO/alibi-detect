@@ -131,7 +131,7 @@ class LSDDDriftOnlineTorch(BaseLSDDDriftOnline):
         # We perform the initialisation for multiple candidate lambda values and pick the largest
         # one for which the relative difference (RD) between two difference estimates is below lambda_rd_max. 
         # See Appendix A  
-        candidate_lambdas = [1/(2**i) for i in range(10)]
+        candidate_lambdas = [1/(4**i) for i in range(10)]  # TODO: More principled selection
         H_plus_lams = torch.stack([H+torch.eye(H.shape[0])*can_lam for can_lam in candidate_lambdas], axis=0)
         H_plus_lam_invs = torch.inverse(H_plus_lams)
         H_plus_lam_invs = H_plus_lam_invs.permute(1, 2, 0)  # put lambdas in final axis
