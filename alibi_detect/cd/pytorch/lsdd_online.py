@@ -84,31 +84,25 @@ class LSDDDriftOnlineTorch(BaseLSDDDriftOnline):
             self.device = torch.device('cpu')
 
         # initialize kernel
-        sigma = torch.from_numpy(sigma).to(self.device) if isinstance(sigma, np.ndarray) else None
-        self.kernel = GaussianRBF(sigma)
-
-        # compute kernel matrix for the reference data
-        self.x_ref = torch.from_numpy(self.x_ref).to(self.device)
-        _ = self.kernel(self.x_ref, self.x_ref, infer_sigma=(sigma is None))
-        self.infer_sigma = False
+        if sigma is None:
+            self.x_ref = torch.from_numpy(self.x_ref).to(self.device)
+            self.kernel = GaussianRBF()
+            _ = self.kernel(self.x_ref, self.x_ref, infer_sigma=True)
+        else:
+            sigma = torch.from_numpy(sigma).to(self.device) if isinstance(sigma, np.ndarray) else None
+            self.kernel = GaussianRBF(sigma)
 
         self._configure_kernel_centers()
         self._configure_thresholds()
         self._initialise()
 
     def _configure_kernel_centers(self):
+        "Set aside reference samples to act as kernel centers"
         perm = torch.randperm(self.n)
         self.c_inds, self.non_c_inds = perm[:self.n_kernel_centers], perm[self.n_kernel_centers:]
         self.kernel_centers = self.x_ref[self.c_inds]
         self.x_ref_eff = self.x_ref[self.non_c_inds]  # the effective reference set
-        self.k_xc = GaussianRBF(2*self.kernel.sigma)(self.x_ref_eff, self.kernel_centers)
-
-    def _configure_ref_subset(self):
-        etw_size = 2*self.window_size-1  # etw = extended test window
-        nkc_size = self.n - self.n_kernel_centers  # nkc = non-kernel-centers
-        rw_size = nkc_size - etw_size  # rw = ref-window
-        self.ref_inds = torch.randperm(nkc_size)[:rw_size]
-        self.c2s = self.k_xc[self.ref_inds].mean(0)
+        self.k_xc = self.kernel(self.x_ref_eff, self.kernel_centers)
 
     def _configure_thresholds(self):
 
@@ -126,51 +120,55 @@ class LSDDDriftOnlineTorch(BaseLSDDDriftOnline):
         x_inds_all = [perm[:rw_size] for perm in perms]
         y_inds_all = [perm[rw_size:] for perm in perms]
 
-        x_ks = torch.stack([self.k_xc[x_inds] for x_inds in x_inds_all], axis=0)
-        y_ks = torch.stack([self.k_xc[y_inds[:w_size]] for y_inds in y_inds_all], axis=0)
-        hs = x_ks.mean(1) - y_ks.mean(1)
+        # Compute (for each bootstrap) the average distance to each kernel center (Eqn 7)
+        k_xc_all = torch.stack([self.k_xc[x_inds] for x_inds in x_inds_all], axis=0)
+        k_yc_all = torch.stack([self.k_xc[y_inds[:w_size]] for y_inds in y_inds_all], axis=0)
+        h_all = k_xc_all.mean(1) - k_yc_all.mean(1)
 
-        eps = 1e-8
-        candidate_lambdas = [1/(2**i)-eps for i in range(10)]
-        H = GaussianRBF(4*self.kernel.sigma)(self.kernel_centers, self.kernel_centers) * \
-            ((torch.tensor(np.pi)*self.kernel.sigma)**(d/2))
+        H = GaussianRBF(2*self.kernel.sigma)(self.kernel_centers, self.kernel_centers) * \
+            ((torch.tensor(np.pi)*self.kernel.sigma**2)**(d/2))  # (Eqn 5)
+
+        # We perform the initialisation for multiple candidate lambda values and pick the largest
+        # one for which the relative difference (RD) between two difference estimates is below lambda_rd_max. 
+        # See Appendix A  
+        candidate_lambdas = [1/(2**i) for i in range(10)]
         H_plus_lams = torch.stack([H+torch.eye(H.shape[0])*can_lam for can_lam in candidate_lambdas], axis=0)
-        H_plus_lam_invs = torch.inverse(H_plus_lams).permute(1, 2, 0)  # lambdas last
+        H_plus_lam_invs = torch.inverse(H_plus_lams)
+        H_plus_lam_invs = H_plus_lam_invs.permute(1, 2, 0)  # put lambdas in final axis
 
-        omegas = torch.einsum('jkl,bk->bjl', H_plus_lam_invs, hs)
-
-        h_omegas = torch.einsum('bj,bjl->bl', hs, omegas)
+        omegas = torch.einsum('jkl,bk->bjl', H_plus_lam_invs, h_all)  # (Eqn 8)
+        h_omegas = torch.einsum('bj,bjl->bl', h_all, omegas)
         omega_H_omegas = torch.einsum('bkl,bkl->bl', torch.einsum('bjl,jk->bkl', omegas, H), omegas)
-
         rds = (1 - (omega_H_omegas/h_omegas)).mean(0)
         lambda_index = (rds < self.lambda_rd_max).nonzero()[0]
         lam = candidate_lambdas[lambda_index]
         print(f"Using lambda value of {lam:.2g} with RD of {rds[lambda_index].item():.2g}")
 
+        # With chosen lambda, compute an LSDD estimate for each bootstrap sample
         H_plus_lam_inv = H_plus_lam_invs[:, :, lambda_index.item()]
-        self.H_lam_inv = 2*H_plus_lam_inv - (H_plus_lam_inv.transpose(0, 1) @ H @ H_plus_lam_inv)
+        self.H_lam_inv = 2*H_plus_lam_inv - (H_plus_lam_inv.transpose(0, 1) @ H @ H_plus_lam_inv)  # (below Eqn 11)
+        lsdds = (h_all * (self.H_lam_inv @ h_all.transpose(0, 1)).transpose(0, 1)).sum(-1)  # (Eqn 11)
 
-        # distances = (2*h_omegas[:,lambda_index] - omega_H_omegas[:, lambda_index])[:,0].sort().values
-        distances = (hs * (self.H_lam_inv @ hs.transpose(0, 1)).transpose(0, 1)).sum(-1)  # same thing
-
-        self.thresholds = [quantile(torch.tensor(distances), 1-self.fpr)]
+        # Can compute threshold for first window
+        thresholds = [quantile(torch.tensor(lsdds), 1-self.fpr)]
+        # And now to iterate through the other W-1 overlapping windows
         for w in tqdm(range(1, w_size), "Computing thresholds"):
-            x_ks = torch.stack([self.k_xc[x_inds] for x_inds in x_inds_all], axis=0)
-            y_ks = torch.stack([self.k_xc[y_inds[w:(w+w_size)]] for y_inds in y_inds_all], axis=0)
-            hs = x_ks.mean(1) - y_ks.mean(1)
-            distances = (hs * (self.H_lam_inv @ hs.transpose(0, 1)).transpose(0, 1)).sum(-1)
-            self.thresholds.append(quantile(torch.tensor(distances), 1-self.fpr))
-            x_inds_all = [x_inds_all[i] for i in range(len(x_inds_all)) if distances[i] < self.thresholds[-1]]
-            y_inds_all = [y_inds_all[i] for i in range(len(y_inds_all)) if distances[i] < self.thresholds[-1]]
-        print(self.thresholds)
+            k_xc_all = torch.stack([self.k_xc[x_inds] for x_inds in x_inds_all], axis=0)
+            k_yc_all = torch.stack([self.k_xc[y_inds[w:(w+w_size)]] for y_inds in y_inds_all], axis=0)
+            h_all = k_xc_all.mean(1) - k_yc_all.mean(1)
+            lsdds = (h_all * (self.H_lam_inv @ h_all.transpose(0, 1)).transpose(0, 1)).sum(-1)
+            thresholds.append(quantile(torch.tensor(lsdds), 1-self.fpr))
+            x_inds_all = [x_inds_all[i] for i in range(len(x_inds_all)) if lsdds[i] < thresholds[-1]]
+            y_inds_all = [y_inds_all[i] for i in range(len(y_inds_all)) if lsdds[i] < thresholds[-1]]
 
-    def kernel_matrix(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-        """ Compute and return full kernel matrix between arrays x and y. """
-        k_xy = self.kernel(x, y, self.infer_sigma)
-        k_xx = self.k_xx if self.k_xx is not None else self.kernel(x, x)
-        k_yy = self.kernel(y, y)
-        kernel_mat = torch.cat([torch.cat([k_xx, k_xy], 1), torch.cat([k_xy.T, k_yy], 1)], 0)
-        return kernel_mat
+        self.thresholds = thresholds
+
+    def _configure_ref_subset(self):
+        etw_size = 2*self.window_size-1  # etw = extended test window
+        nkc_size = self.n - self.n_kernel_centers  # nkc = non-kernel-centers
+        rw_size = nkc_size - etw_size  # rw = ref-window
+        self.ref_inds = torch.randperm(nkc_size)[:rw_size]
+        self.c2s = self.k_xc[self.ref_inds].mean(0)  # (below Eqn 21)
 
     def score(self, x_t: np.ndarray) -> Tuple[float, float, np.ndarray]:
         """
@@ -188,7 +186,7 @@ class LSDDDriftOnlineTorch(BaseLSDDDriftOnline):
         and the MMD^2 values from the permutation test.
         """
         x_t = torch.from_numpy(x_t[None, :]).to(self.device)
-        k_xtc = GaussianRBF(2*self.kernel.sigma)(x_t, self.kernel_centers)
+        k_xtc = self.kernel(x_t, self.kernel_centers)
 
         if self.t == 0:
             self.test_window = x_t
@@ -201,6 +199,6 @@ class LSDDDriftOnlineTorch(BaseLSDDDriftOnline):
         elif self.t >= self.window_size:
             self.test_window = torch.cat([self.test_window[(1-self.window_size):], x_t], axis=0)
             self.k_xtc = torch.cat([self.k_xtc[(1-self.window_size):], k_xtc], axis=0)
-            hs = self.c2s - self.k_xtc.mean(0)
-            lsdd = hs[None, :] @ self.H_lam_inv @ hs[:, None]
+            h = self.c2s - self.k_xtc.mean(0)  # (Eqn 21)
+            lsdd = h[None, :] @ self.H_lam_inv @ h[:, None]  # (Eqn 11)
             return float(lsdd.detach().cpu())
