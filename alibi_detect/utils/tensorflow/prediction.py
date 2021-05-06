@@ -70,7 +70,7 @@ def predict_batch_transformer(x: np.ndarray, model: tf.keras.Model, tokenizer,
     for i in range(n_minibatch):
         istart, istop = i * batch_size, min((i + 1) * batch_size, n)
         tokens = tokenizer.batch_encode_plus(
-            x[istart:istop], pad_to_max_length=True, max_length=max_len, return_tensors='tf'
+            list(x[istart:istop]), pad_to_max_length=True, max_length=max_len, return_tensors='tf'
         )
         preds_tmp = model(tokens)
         if return_np:

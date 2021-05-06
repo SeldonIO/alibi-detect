@@ -6,34 +6,57 @@ from typing import Dict, Optional, Union
 from alibi_detect.utils.tensorflow.prediction import predict_batch, predict_batch_transformer
 
 
-class UAE(tf.keras.Model):
+class _Encoder(tf.keras.Model):
     def __init__(
             self,
-            encoder_net: tf.keras.Sequential = None,
-            input_layer: Union[tf.keras.layers.Layer, tf.keras.Model] = None,
-            shape: Optional[tuple] = None,
-            enc_dim: int = None
+            input_layer: Union[tf.keras.layers.Layer, tf.keras.Sequential, tf.keras.Model],
+            mlp: Optional[Union[tf.keras.Model, tf.keras.Sequential]] = None,
+            enc_dim: Optional[int] = None,
+            step_dim: Optional[int] = None
     ) -> None:
         super().__init__()
-        is_tf_seq = isinstance(encoder_net, tf.keras.Sequential)
-        is_enc_dim = isinstance(enc_dim, int)
-        if is_tf_seq:
-            self.encoder = encoder_net
-        elif not is_tf_seq and is_enc_dim:  # set default encoder
-            input_layer = InputLayer(input_shape=shape) if input_layer is None else input_layer
-            input_dim = np.prod(shape)
-            step_dim = int((input_dim - enc_dim) / 3)
-            self.encoder = tf.keras.Sequential(
+        self.input_layer = input_layer
+        if isinstance(mlp, (tf.keras.Model, tf.keras.Sequential)):
+            self.mlp = mlp
+        elif isinstance(enc_dim, int) and isinstance(step_dim, int):
+            self.mlp = tf.keras.Sequential(
                 [
-                    input_layer,
                     Flatten(),
                     Dense(enc_dim + 2 * step_dim, activation=tf.nn.relu),
                     Dense(enc_dim + step_dim, activation=tf.nn.relu),
                     Dense(enc_dim, activation=None)
                 ]
             )
-        elif not is_tf_seq and not is_enc_dim:
-            raise ValueError('Need to provide either `enc_dim` or a tf.keras.Sequential `encoder_net`.')
+        else:
+            raise ValueError('Need to provide either `enc_dim` and `step_dim` or a '
+                             'tf.keras.Sequential or tf.keras.Model `mlp`')
+
+    def call(self, x: Union[np.ndarray, tf.Tensor, Dict[str, tf.Tensor]]) -> tf.Tensor:
+        x = self.input_layer(x)
+        return self.mlp(x)
+
+
+class UAE(tf.keras.Model):
+    def __init__(
+            self,
+            encoder_net: Union[tf.keras.Model, tf.keras.Sequential] = None,
+            input_layer: Union[tf.keras.layers.Layer, tf.keras.Model] = None,
+            shape: Optional[tuple] = None,
+            enc_dim: int = None
+    ) -> None:
+        super().__init__()
+        is_enc = isinstance(encoder_net, (tf.keras.Model, tf.keras.Sequential))
+        is_enc_dim = isinstance(enc_dim, int)
+        if is_enc:
+            self.encoder = encoder_net
+        elif not is_enc and is_enc_dim:  # set default encoder
+            input_layer = InputLayer(input_shape=shape) if input_layer is None else input_layer
+            input_dim = np.prod(shape)
+            step_dim = int((input_dim - enc_dim) / 3)
+            self.encoder = _Encoder(input_layer, enc_dim=enc_dim, step_dim=step_dim)
+        elif not is_enc and not is_enc_dim:
+            raise ValueError('Need to provide either `enc_dim` or a tf.keras.Sequential'
+                             ' or tf.keras.Model `encoder_net`.')
 
     def call(self, x: Union[np.ndarray, tf.Tensor, Dict[str, tf.Tensor]]) -> tf.Tensor:
         return self.encoder(x)

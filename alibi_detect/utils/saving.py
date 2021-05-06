@@ -16,6 +16,7 @@ from alibi_detect.cd import ChiSquareDrift, ClassifierDrift, KSDrift, MMDDrift, 
 from alibi_detect.cd.tensorflow.classifier import ClassifierDriftTF
 from alibi_detect.cd.tensorflow.mmd import MMDDriftTF
 from alibi_detect.cd.tensorflow import HiddenOutput, UAE
+from alibi_detect.cd.tensorflow.preprocess import _Encoder
 from alibi_detect.models.tensorflow.autoencoder import AE, AEGMM, DecoderLSTM, EncoderLSTM, Seq2Seq, VAE, VAEGMM
 from alibi_detect.models.tensorflow import PixelCNN, TransformerEmbedding
 from alibi_detect.od import (IForest, LLR, Mahalanobis, OutlierAE, OutlierAEGMM, OutlierProphet,
@@ -238,7 +239,7 @@ def preprocess_step_drift(cd: Union[ChiSquareDrift, ClassifierDriftTF, KSDrift, 
                 model = v
                 preprocess_kwargs['model'] = 'custom'
             elif hasattr(v, '__module__'):
-                if 'transformers.tokenization' in v.__module__:  # transformers tokenizer
+                if 'transformers' in v.__module__:  # transformers tokenizer
                     tokenizer = v
                     preprocess_kwargs[k] = v.__module__
             else:
@@ -1449,7 +1450,6 @@ def init_od_s2s(state_dict: Dict,
                         seq2seq=seq2seq,
                         latent_dim=state_dict['latent_dim'],
                         output_activation=state_dict['output_activation'])
-
     return od
 
 
@@ -1487,7 +1487,7 @@ def init_preprocess(state_dict: Dict, model: Optional[Union[tf.keras.Model, tf.k
 
     if preprocess_kwargs['model'] == 'UAE':
         if emb is not None:
-            model = tf.keras.Sequential([emb] + model.layers)
+            model = _Encoder(emb, mlp=model)
             preprocess_kwargs['tokenizer'] = tokenizer
         preprocess_kwargs['model'] = UAE(encoder_net=model)
     else:  # incl. preprocess_kwargs['model'] == 'HiddenOutput'

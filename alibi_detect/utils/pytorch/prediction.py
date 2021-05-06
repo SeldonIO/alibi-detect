@@ -90,7 +90,7 @@ def predict_batch_transformer(x: Union[np.ndarray, torch.Tensor], model: Union[n
         for i in range(n_minibatch):
             istart, istop = i * batch_size, min((i + 1) * batch_size, n)
             tokens = tokenizer.batch_encode_plus(  # type: ignore
-                x[istart:istop], pad_to_max_length=True, max_length=max_len, return_tensors='pt'
+                list(x[istart:istop]), pad_to_max_length=True, max_length=max_len, return_tensors='pt'
             ).to(device)
             preds_tmp = model(tokens)
             if device.type == 'cuda':
