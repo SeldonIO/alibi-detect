@@ -9,14 +9,14 @@ from alibi_detect.utils.tensorflow.prediction import predict_batch, predict_batc
 class _Encoder(tf.keras.Model):
     def __init__(
             self,
-            input_layer: Union[tf.keras.layers.Layer, tf.keras.Sequential, tf.keras.Model],
-            mlp: Optional[Union[tf.keras.Model, tf.keras.Sequential]] = None,
+            input_layer: Union[tf.keras.layers.Layer, tf.keras.Model],
+            mlp: Optional[tf.keras.Model] = None,
             enc_dim: Optional[int] = None,
             step_dim: Optional[int] = None
     ) -> None:
         super().__init__()
         self.input_layer = input_layer
-        if isinstance(mlp, (tf.keras.Model, tf.keras.Sequential)):
+        if isinstance(mlp, tf.keras.Model):
             self.mlp = mlp
         elif isinstance(enc_dim, int) and isinstance(step_dim, int):
             self.mlp = tf.keras.Sequential(
@@ -39,13 +39,13 @@ class _Encoder(tf.keras.Model):
 class UAE(tf.keras.Model):
     def __init__(
             self,
-            encoder_net: Union[tf.keras.Model, tf.keras.Sequential] = None,
-            input_layer: Union[tf.keras.layers.Layer, tf.keras.Model] = None,
+            encoder_net: Optional[tf.keras.Model] = None,
+            input_layer: Optional[Union[tf.keras.layers.Layer, tf.keras.Model]] = None,
             shape: Optional[tuple] = None,
-            enc_dim: int = None
+            enc_dim: Optional[int] = None
     ) -> None:
         super().__init__()
-        is_enc = isinstance(encoder_net, (tf.keras.Model, tf.keras.Sequential))
+        is_enc = isinstance(encoder_net, tf.keras.Model)
         is_enc_dim = isinstance(enc_dim, int)
         if is_enc:
             self.encoder = encoder_net
