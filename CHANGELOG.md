@@ -1,5 +1,12 @@
 # Change Log
 
+## [v0.6.2](https://github.com/SeldonIO/alibi-detect/tree/v0.6.2) (2021-05-06)
+[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.6.1...v0.6.2)
+
+### Fixed
+- alibi-detect compatibility with transformers>=4.0.0
+- update slack link to point to alibi-detect channel
+
 ## [v0.6.1](https://github.com/SeldonIO/alibi-detect/tree/v0.6.1) (2021-04-26)
 [Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.6.0...v0.6.1)
 
