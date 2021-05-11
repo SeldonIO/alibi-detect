@@ -86,6 +86,23 @@ class LSDDDriftOnline:
             self._detector = LSDDDriftOnlineTorch(*args, **kwargs)  # type: ignore
         self.meta = self._detector.meta
 
+    @property
+    def t(self):
+        return self._detector.t
+
+    @property
+    def test_stats(self):
+        return self._detector.test_stats
+
+    @property
+    def thresholds(self):
+        thresholds = []
+        for s in range(self.t):
+            threshold_s = self._detector.thresholds[s] if s < self._detector.window_size else \
+                self._detector.thresholds[-1]
+            thresholds.append(threshold_s)
+        return thresholds
+
     def predict(self, x_t: np.ndarray, return_test_stat: bool = True) \
                 -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
         """
