@@ -28,18 +28,31 @@ class BaseMMDDriftOnline(BaseDetector):
             data_type: Optional[str] = None
     ) -> None:
         """
-        Base class for the classifier-based drift detector.
+        Base class for the online MMD-based drift detector.
 
         Parameters
         ----------
         x_ref
             Data used as reference distribution.
-        p_val
-            p-value used for the significance of the test.
+        ert
+            The expected run-time (ERT) in the absence of drift.
+        window_size
+            The size of the sliding test-window used to compute the test-statistic.
+            Smaller windows focus on responding quickly to severe drift, larger windows focus on
+            ability to detect slight drift.
         preprocess_x_ref
             Whether to already preprocess and store the reference data.
         preprocess_fn
             Function to preprocess the data before computing the data drift metrics.
+        sigma
+            Optionally set the GaussianRBF kernel bandwidth. Can also pass multiple bandwidth values as an array.
+            The kernel evaluation is then averaged over those bandwidths.
+        n_bootstraps
+            The number of bootstrap simulations used to configure the thresholds. The larger this is the
+            more accurately the desired ERT will be targeted. Should ideally be at least an order of magnitude
+            larger than the ERT.
+        input_shape
+            Shape of input data.
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
@@ -70,11 +83,6 @@ class BaseMMDDriftOnline(BaseDetector):
         self.meta['data_type'] = data_type
 
     @abstractmethod
-    def kernel_matrix(self, x: Union['torch.Tensor', 'tf.Tensor'], y: Union['torch.Tensor', 'tf.Tensor']) \
-            -> Union['torch.Tensor', 'tf.Tensor']:
-        pass
-
-    @abstractmethod
     def _configure_thresholds(self):
         pass
 
@@ -103,16 +111,14 @@ class BaseMMDDriftOnline(BaseDetector):
     def predict(self, x_t: np.ndarray,  return_test_stat: bool = True,
                 ) -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
         """
-        Predict whether a of data has drifted from the reference data.
+        Predict whether the most recent window of data has drifted from the reference data.
 
         Parameters
         ----------
         x_t
-            A single instance.
+            A single instance to be added to the test-window.
         return_test_stat
-            Whether to return the test-statistic S_t.
-        return_threshold
-            Whether to return the threshold b_t.
+            Whether to return the test statistic
 
         Returns
         -------
@@ -135,7 +141,6 @@ class BaseMMDDriftOnline(BaseDetector):
         self.drift_preds = np.concatenate([self.drift_preds, np.array([drift_pred])])
 
         # populate drift dict
-        # TODO: add instance level feedback
         cd = concept_drift_dict()
         cd['meta'] = self.meta
         cd['data']['is_drift'] = drift_pred
@@ -159,23 +164,42 @@ class BaseLSDDDriftOnline(BaseDetector):
             sigma: Optional[np.ndarray] = None,
             n_bootstraps: int = 1000,
             n_kernel_centers: Optional[int] = None,
-            lambda_rd_max: float = 0.2,         
+            lambda_rd_max: float = 0.2,
             input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None
     ) -> None:
         """
-        Base class for the classifier-based drift detector.
+        Base class for the online LSDD-based drift detector.
 
         Parameters
         ----------
         x_ref
             Data used as reference distribution.
-        p_val
-            p-value used for the significance of the test.
+        ert
+            The expected run-time (ERT) in the absence of drift.
+        window_size
+            The size of the sliding test-window used to compute the test-statistic.
+            Smaller windows focus on responding quickly to severe drift, larger windows focus on
+            ability to detect slight drift.
         preprocess_x_ref
             Whether to already preprocess and store the reference data.
         preprocess_fn
-            Function to preprocess the data before computing the data drift metrics.
+            Function to preprocess the data before computing the data drift metrics.s
+        sigma
+            Optionally set the GaussianRBF kernel bandwidth. Can also pass multiple bandwidth values as an array.
+            The kernel evaluation is then averaged over those bandwidths.
+        n_bootstraps
+            The number of bootstrap simulations used to configure the thresholds. The larger this is the
+            more accurate the desired ERT will be targeted. Should ideally be at least an order of magnitude
+            larger than the ert.
+        n_kernel_centers
+            Number of reference data points to use kernel centers to use in the estimation of the LSDD.
+            Defaults to 2*window_size.
+        lambda_rd_max
+            The maximum relative difference between two estimates of LSDD that the regularization parameter
+            lambda is allowed to cause. Defaults to 0.2 as in the paper.
+        input_shape
+            Shape of input data.
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
@@ -231,21 +255,20 @@ class BaseLSDDDriftOnline(BaseDetector):
         self._configure_ref_subset()
 
     def reset(self) -> None:
+        "Resets the detector but does not reconfigure thresholds."
         self._initialise()
 
     def predict(self, x_t: np.ndarray,  return_test_stat: bool = True,
                 ) -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
         """
-        Predict whether a of data has drifted from the reference data.
+        Predict whether the most recent window of data has drifted from the reference data.
 
         Parameters
         ----------
         x_t
-            A single instance.
+            A single instance to be added to the test-window.
         return_test_stat
-            Whether to return the test-statistic S_t.
-        return_threshold
-            Whether to return the threshold b_t.
+            Whether to return the test statistic (LSDD) and threshold.
 
         Returns
         -------
@@ -268,7 +291,6 @@ class BaseLSDDDriftOnline(BaseDetector):
         self.drift_preds = np.concatenate([self.drift_preds, np.array([drift_pred])])
 
         # populate drift dict
-        # TODO: add instance level feedback
         cd = concept_drift_dict()
         cd['meta'] = self.meta
         cd['data']['is_drift'] = drift_pred

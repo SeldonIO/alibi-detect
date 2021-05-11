@@ -26,31 +26,37 @@ class LSDDDriftOnlineTF(BaseLSDDDriftOnline):
             data_type: Optional[str] = None
     ) -> None:
         """
-        Maximum Mean Discrepancy (MMD) data drift detector using a permutation test.
+        Online least squares density difference (LSDD) data drift detector using preconfigured thresholds.
+        Motivated by Bu et al. (2017): https://ieeexplore.ieee.org/abstract/document/7890493
+        Modifications are made such that a desired ERT can be accurately targeted however.
 
         Parameters
         ----------
         x_ref
             Data used as reference distribution.
-        p_val
-            p-value used for the significance of the permutation test.
+        ert
+            The expected run-time (ERT) in the absence of drift.
+        window_size
+            The size of the sliding test-window used to compute the test-statistic.
+            Smaller windows focus on responding quickly to severe drift, larger windows focus on
+            ability to detect slight drift.
         preprocess_x_ref
             Whether to already preprocess and store the reference data.
-        update_x_ref
-            Reference data can optionally be updated to the last n instances seen by the detector
-            or via reservoir sampling with size n. For the former, the parameter equals {'last': n} while
-            for reservoir sampling {'reservoir_sampling': n} is passed.
         preprocess_fn
-            Function to preprocess the data before computing the data drift metrics.
-        kernel
-            Kernel used for the MMD computation, defaults to Gaussian RBF kernel.
+            Function to preprocess the data before computing the data drift metrics.s
         sigma
             Optionally set the GaussianRBF kernel bandwidth. Can also pass multiple bandwidth values as an array.
             The kernel evaluation is then averaged over those bandwidths.
-        configure_kernel_from_x_ref
-            Whether to already configure the kernel bandwidth from the reference data.
-        n_permutations
-            Number of permutations used in the permutation test.
+        n_bootstraps
+            The number of bootstrap simulations used to configure the thresholds. The larger this is the
+            more accurate the desired ERT will be targeted. Should ideally be at least an order of magnitude
+            larger than the ert.
+        n_kernel_centers
+            Number of reference data points to use kernel centers to use in the estimation of the LSDD. 
+            Defaults to 2*window_size.
+        lambda_rd_max
+            The maximum relative difference between two estimates of LSDD that the regularization parameter
+            lambda is allowed to cause. Defaults to 0.2 as in the paper.
         input_shape
             Shape of input data.
         data_type
@@ -170,18 +176,17 @@ class LSDDDriftOnlineTF(BaseLSDDDriftOnline):
 
     def score(self, x_t: np.ndarray) -> Union[float, None]:
         """
-        Compute the p-value resulting from a permutation test using the maximum mean discrepancy
-        as a distance measure between the reference data and the data to be tested.
+        Compute the test-statistic (LSDD) between the reference window and test window.
 
         Parameters
         ----------
-        x
-            Batch of instances.
+        x_t
+            A single instance.
 
         Returns
         -------
-        p-value obtained from the permutation test, the MMD^2 between the reference and test set
-        and the MMD^2 values from the permutation test.
+        LSDD estimate between reference window and test window.
+        If the test-window is not yet full then a test-statistic of None is returned.
         """
         x_t = tf.convert_to_tensor(x_t[None, :])
         x_t = self._normalize(x_t)

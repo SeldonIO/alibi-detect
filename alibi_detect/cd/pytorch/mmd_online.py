@@ -26,20 +26,20 @@ class MMDDriftOnlineTorch(BaseMMDDriftOnline):
             data_type: Optional[str] = None
     ) -> None:
         """
-        Maximum Mean Discrepancy (MMD) data drift detector using a permutation test.
+        Online maximum Mean Discrepancy (MMD) data drift detector using preconfigured thresholds.
 
         Parameters
         ----------
         x_ref
             Data used as reference distribution.
-        p_val
-            p-value used for the significance of the permutation test.
+        ert
+            The expected run-time (ERT) in the absence of drift.
+        window_size
+            The size of the sliding test-window used to compute the test-statistic.
+            Smaller windows focus on responding quickly to severe drift, larger windows focus on
+            ability to detect slight drift.
         preprocess_x_ref
             Whether to already preprocess and store the reference data.
-        update_x_ref
-            Reference data can optionally be updated to the last n instances seen by the detector
-            or via reservoir sampling with size n. For the former, the parameter equals {'last': n} while
-            for reservoir sampling {'reservoir_sampling': n} is passed.
         preprocess_fn
             Function to preprocess the data before computing the data drift metrics.
         kernel
@@ -47,13 +47,13 @@ class MMDDriftOnlineTorch(BaseMMDDriftOnline):
         sigma
             Optionally set the GaussianRBF kernel bandwidth. Can also pass multiple bandwidth values as an array.
             The kernel evaluation is then averaged over those bandwidths.
-        configure_kernel_from_x_ref
-            Whether to already configure the kernel bandwidth from the reference data.
-        n_permutations
-            Number of permutations used in the permutation test.
+        n_bootstraps
+            The number of bootstrap simulations used to configure the thresholds. The larger this is the
+            more accurately the desired ERT will be targeted. Should ideally be at least an order of magnitude
+            larger than the ERT.
         device
             Device type used. The default None tries to use the GPU and falls back on CPU if needed.
-            Can be specified by passing either 'cuda', 'gpu' or 'cpu'.
+            Can be specified by passing either 'cuda', 'gpu' or 'cpu'. Only relevant for 'pytorch' backend.
         input_shape
             Shape of input data.
         data_type
@@ -154,32 +154,23 @@ class MMDDriftOnlineTorch(BaseMMDDriftOnline):
 
         self.thresholds = torch.stack(thresholds, axis=0).detach().cpu().numpy()
 
-    def kernel_matrix(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-        """ Compute and return full kernel matrix between arrays x and y. """
-        k_xy = self.kernel(x, y, self.infer_sigma)
-        k_xx = self.k_xx if self.k_xx is not None else self.kernel(x, x)
-        k_yy = self.kernel(y, y)
-        kernel_mat = torch.cat([torch.cat([k_xx, k_xy], 1), torch.cat([k_xy.T, k_yy], 1)], 0)
-        return kernel_mat
-
     def score(self, x_t: np.ndarray) -> Tuple[float, float, np.ndarray]:
         """
-        Compute the p-value resulting from a permutation test using the maximum mean discrepancy
-        as a distance measure between the reference data and the data to be tested.
+        Compute the test-statistic (squared MMD) between the reference window and test window.
+        If the test-window is not yet full then a test-statistic of None is returned.
 
         Parameters
         ----------
-        x
-            Batch of instances.
+        x_t
+            A single instance.
 
         Returns
         -------
-        p-value obtained from the permutation test, the MMD^2 between the reference and test set
-        and the MMD^2 values from the permutation test.
+        Squared MMD estimate between reference window and test window
         """
         x_t = torch.from_numpy(x_t[None, :]).to(self.device)
         kernel_col = self.kernel(self.x_ref[self.ref_inds], x_t)
-        
+
         if self.t == 0:
             self.test_window = x_t
             self.k_xy = kernel_col

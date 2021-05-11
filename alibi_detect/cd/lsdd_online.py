@@ -30,33 +30,39 @@ class LSDDDriftOnline:
             data_type: Optional[str] = None
     ) -> None:
         """
-        Maximum Mean Discrepancy (MMD) data drift detector using a permutation test.
+        Online least squares density difference (LSDD) data drift detector using preconfigured thresholds.
+        Motivated by Bu et al. (2017): https://ieeexplore.ieee.org/abstract/document/7890493
+        We have made modifications such that a desired ERT can be accurately targeted however.
 
         Parameters
         ----------
         x_ref
             Data used as reference distribution.
+        ert
+            The expected run-time (ERT) in the absence of drift.
+        window_size
+            The size of the sliding test-window used to compute the test-statistic.
+            Smaller windows focus on responding quickly to severe drift, larger windows focus on
+            ability to detect slight drift.
         backend
-            Backend used for the MMD implementation.
-        p_val
-            p-value used for the significance of the permutation test.
+            Backend used for the MMD implementation and configuration.
         preprocess_x_ref
             Whether to already preprocess and store the reference data.
-        update_x_ref
-            Reference data can optionally be updated to the last n instances seen by the detector
-            or via reservoir sampling with size n. For the former, the parameter equals {'last': n} while
-            for reservoir sampling {'reservoir_sampling': n} is passed.
         preprocess_fn
-            Function to preprocess the data before computing the data drift metrics.
-        kernel
-            Kernel used for the MMD computation, defaults to Gaussian RBF kernel.
+            Function to preprocess the data before computing the data drift metrics.s
         sigma
             Optionally set the GaussianRBF kernel bandwidth. Can also pass multiple bandwidth values as an array.
             The kernel evaluation is then averaged over those bandwidths.
-        configure_kernel_from_x_ref
-            Whether to already configure the kernel bandwidth from the reference data.
-        n_permutations
-            Number of permutations used in the permutation test.
+        n_bootstraps
+            The number of bootstrap simulations used to configure the thresholds. The larger this is the
+            more accurate the desired ERT will be targeted. Should ideally be at least an order of magnitude
+            larger than the ert.
+        n_kernel_centers
+            Number of reference data points to use kernel centers to use in the estimation of the LSDD. 
+            Defaults to 2*window_size.
+        lambda_rd_max
+            The maximum relative difference between two estimates of LSDD that the regularization parameter
+            lambda is allowed to cause. Defaults to 0.2 as in the paper.
         device
             Device type used. The default None tries to use the GPU and falls back on CPU if needed.
             Can be specified by passing either 'cuda', 'gpu' or 'cpu'. Only relevant for 'pytorch' backend.
@@ -103,24 +109,26 @@ class LSDDDriftOnline:
             thresholds.append(threshold_s)
         return thresholds
 
+    def reset(self):
+        "Resets the detector but does not reconfigure thresholds."
+        self._detector.reset()
+
     def predict(self, x_t: np.ndarray, return_test_stat: bool = True) \
                 -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
         """
-        Predict whether a batch of data has drifted from the reference data.
+        Predict whether the most recent window of data has drifted from the reference data.
 
         Parameters
         ----------
-        x
-            Batch of instances.
-        return_p_val
-            Whether to return the p-value of the permutation test.
-        return_distance
-            Whether to return the MMD metric between the new batch and reference data.
+        x_t
+            A single instance to be added to the test-window.
+        return_test_stat
+            Whether to return the test statistic (LSDD) and threshold.
 
         Returns
         -------
         Dictionary containing 'meta' and 'data' dictionaries.
         'meta' has the model's metadata.
-        'data' contains the drift prediction and optionally the p-value, threshold and MMD metric.
+        'data' contains the drift prediction and optionally the test-statistic and threshold.
         """
         return self._detector.predict(x_t, return_test_stat)
