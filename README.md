@@ -18,19 +18,26 @@ For more background on the importance of monitoring outliers and distributions i
 ## Table of Contents
 
 
-* [Installation and Usage](#installation-and-usage)
-* [Supported Algorithms](#supported-algorithms)
-  * [Outlier Detection](#outlier-detection)
-  * [Adversarial Detection](#adversarial-detection)
-  * [Drift Detection](#drift-detection)
-  * [Reference List](#reference-list)
-* [Datasets](#datasets)
-  * [Sequential Data and Time Series](#sequential-data-and-time-series)
-  * [Images](#images)
-  * [Tabular](#tabular)
-* [Models](#models)
-* [Integrations](#integrations)
-* [Citations](#citations)
+- [![Slack channel](http://seldondev.slack.com/messages/alibi)](#)
+- [Table of Contents](#table-of-contents)
+- [Installation and Usage](#installation-and-usage)
+- [Supported Algorithms](#supported-algorithms)
+  - [Outlier Detection](#outlier-detection)
+  - [Adversarial Detection](#adversarial-detection)
+  - [Drift Detection](#drift-detection)
+    - [TensorFlow and PyTorch support](#tensorflow-and-pytorch-support)
+    - [Built-in preprocessing steps](#built-in-preprocessing-steps)
+  - [Reference List](#reference-list)
+    - [Outlier Detection](#outlier-detection-1)
+    - [Adversarial Detection](#adversarial-detection-1)
+    - [Drift Detection](#drift-detection-1)
+- [Datasets](#datasets)
+  - [Sequential Data and Time Series](#sequential-data-and-time-series)
+  - [Images](#images)
+  - [Tabular](#tabular)
+- [Models](#models)
+- [Integrations](#integrations)
+- [Citations](#citations)
 
 
 
@@ -105,11 +112,11 @@ The following tables show the advised use cases for each algorithm. The column *
 | Detector                 | Tabular | Image | Time Series | Text  | Categorical Features | Online | Feature Level |
 | :---                     |  :---:  | :---: |   :---:     | :---: |   :---:              | :---:  | :---:         |
 | Kolmogorov-Smirnov       | ✔       | ✔     |            |  ✔    |  ✔                   |       |  ✔            |
-| Maximum Mean Discrepancy | ✔       | ✔     |            |  ✔    |  ✔                   |       |              |
+| Maximum Mean Discrepancy | ✔       | ✔     |            |  ✔    |  ✔                   | ✔      |              |
+| Least-Squares Density Difference | ✔       | ✔     |            |  ✔    |  ✔                   | ✔      |              |
 | Chi-Squared              | ✔       |      |            |      |  ✔                   |       |  ✔            |
 | Mixed-type tabular data  | ✔       |      |            |      |  ✔                   |       |  ✔            |
 | Classifier               | ✔       | ✔     |  ✔          |  ✔    |  ✔                   |       |              |
-
 #### TensorFlow and PyTorch support
 
 The drift detectors support TensorFlow and PyTorch backends. Alibi Detect does however not install PyTorch for you. 
@@ -205,6 +212,12 @@ Check the example notebooks (e.g. [CIFAR10](https://docs.seldon.io/projects/alib
 
 - [Classifier](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/classifierdrift.html) ([Lopez-Paz and Oquab, 2017](https://openreview.net/forum?id=SJkXfE5xx))
    - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_clf_cifar10.html)
+
+- [Online Maximum Mean Discrepancy](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/onlinemmddrift.html)
+  - Example: [Wine Quality](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_online_wine.html)
+  
+- [Online Least-Squares Density Difference](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/onlinemmddrift.html) ([Bu et al, 2017](https://ieeexplore.ieee.org/abstract/document/7890493))
+  - Example: [Wine Quality](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_online_wine.html)
 
 ## Datasets
 

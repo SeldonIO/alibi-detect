@@ -44,6 +44,8 @@
    methods/ksdrift.ipynb
    methods/mmddrift.ipynb
    methods/tabulardrift.ipynb
+   methods/onlinemmddrift.ipynb
+   methods/onlinelsdddrift.ipynb
 
 .. toctree::
    :maxdepth: 1
@@ -69,6 +71,7 @@
    examples/cd_mmd_cifar10
    examples/cd_text_imdb
    examples/cd_clf_cifar10
+   examples/cd_online_wine
 
 .. toctree::
    :maxdepth: 1
