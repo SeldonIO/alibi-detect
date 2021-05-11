@@ -45,7 +45,7 @@ class LSDDDriftOnline:
             Smaller windows focus on responding quickly to severe drift, larger windows focus on
             ability to detect slight drift.
         backend
-            Backend used for the MMD implementation and configuration.
+            Backend used for the LSDD implementation and configuration.
         preprocess_x_ref
             Whether to already preprocess and store the reference data.
         preprocess_fn
