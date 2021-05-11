@@ -71,6 +71,8 @@ class LSDDDriftOnlineTF(BaseLSDDDriftOnline):
         )
         self.meta.update({'backend': 'tensorflow'})
 
+        self._configure_normalization()
+
         # initialize kernel
         if sigma is None:
             self.kernel = GaussianRBF()
@@ -82,6 +84,12 @@ class LSDDDriftOnlineTF(BaseLSDDDriftOnline):
         self._configure_kernel_centers()
         self._configure_thresholds()
         self._initialise()
+
+    def _configure_normalization(self):
+        x_ref_means = tf.reduce_mean(self.x_ref, axis=0)
+        x_ref_stds = tf.math.reduce_std(self.x_ref, axis=0)
+        self._normalize = lambda x: (x - x_ref_means)/(x_ref_stds)
+        self.x_ref = self._normalize(self.x_ref)
 
     def _configure_kernel_centers(self):
         "Set aside reference samples to act as kernel centers"
@@ -176,6 +184,7 @@ class LSDDDriftOnlineTF(BaseLSDDDriftOnline):
         and the MMD^2 values from the permutation test.
         """
         x_t = tf.convert_to_tensor(x_t[None, :])
+        x_t = self._normalize(x_t)
         k_xtc = self.kernel(x_t, self.kernel_centers)
 
         if self.t == 0:

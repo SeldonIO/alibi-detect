@@ -83,6 +83,8 @@ class LSDDDriftOnlineTorch(BaseLSDDDriftOnline):
         else:
             self.device = torch.device('cpu')
 
+        self._configure_normalization()
+        
         # initialize kernel
         if sigma is None:
             self.x_ref = torch.from_numpy(self.x_ref).to(self.device)
@@ -95,6 +97,12 @@ class LSDDDriftOnlineTorch(BaseLSDDDriftOnline):
         self._configure_kernel_centers()
         self._configure_thresholds()
         self._initialise()
+
+    def _configure_normalization(self):
+        x_ref_means = self.x_ref.mean(axis=0)
+        x_ref_stds = self.x_ref.std(axis=0)
+        self._normalize = lambda x: (x - x_ref_means)/(x_ref_stds)
+        self.x_ref = self._normalize(self.x_ref)
 
     def _configure_kernel_centers(self):
         "Set aside reference samples to act as kernel centers"
@@ -186,6 +194,7 @@ class LSDDDriftOnlineTorch(BaseLSDDDriftOnline):
         and the MMD^2 values from the permutation test.
         """
         x_t = torch.from_numpy(x_t[None, :]).to(self.device)
+        x_t = self._normalize(x_t)
         k_xtc = self.kernel(x_t, self.kernel_centers)
 
         if self.t == 0:
