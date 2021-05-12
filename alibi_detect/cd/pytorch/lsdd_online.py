@@ -50,7 +50,7 @@ class LSDDDriftOnlineTorch(BaseLSDDDriftOnline):
             The kernel evaluation is then averaged over those bandwidths.
         n_bootstraps
             The number of bootstrap simulations used to configure the thresholds. The larger this is the
-            more accurate the desired ERT will be targeted. Should ideally be at least an order of magnitude
+            more accurately the desired ERT will be targeted. Should ideally be at least an order of magnitude
             larger than the ert.
         n_kernel_centers
             Number of reference data points to use kernel centers to use in the estimation of the LSDD. 
