@@ -25,6 +25,7 @@
 "google-pasta","Apache Software License"
 "grpcio","Apache Software License"
 "h5py","BSD License"
+"huggingface-hub","Apache Software License"
 "idna","BSD License"
 "idna-ssl","MIT License"
 "imageio","BSD License"
