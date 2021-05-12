@@ -17,11 +17,11 @@ def activate_train_mode_for_dropout_layers(model: Callable) -> Callable:
     return model
 
 
-def zero_diag(mat: torch.tensor) -> torch.tensor:
+def zero_diag(mat: torch.Tensor) -> torch.Tensor:
     return mat - torch.diag(mat.diag())
 
 
-def quantile(sample: torch.tensor, p: float, type: int = 7, sorted: bool = False) -> torch.tensor:
+def quantile(sample: torch.Tensor, p: float, type: int = 7, sorted: bool = False) -> torch.Tensor:
     """ See https://wikipedia.org/wiki/Quantile#Estimating_quantiles_from_a_sample """
     N = len(sample)
     if type == 6:  # With M = k*ert - 1 this one is exact

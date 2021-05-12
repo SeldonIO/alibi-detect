@@ -2,7 +2,7 @@ import logging
 from tqdm import tqdm
 import numpy as np
 import torch
-from typing import Callable, Optional, Tuple
+from typing import Callable, Optional, Union
 from alibi_detect.cd.base_online import BaseMMDDriftOnline
 from alibi_detect.utils.pytorch.kernels import GaussianRBF
 from alibi_detect.cd.pytorch.utils import zero_diag, quantile
@@ -154,7 +154,7 @@ class MMDDriftOnlineTorch(BaseMMDDriftOnline):
 
         self.thresholds = torch.stack(thresholds, axis=0).detach().cpu().numpy()
 
-    def score(self, x_t: np.ndarray) -> Tuple[float, float, np.ndarray]:
+    def score(self, x_t: np.ndarray) -> Union[float, None]:
         """
         Compute the test-statistic (squared MMD) between the reference window and test window.
         If the test-window is not yet full then a test-statistic of None is returned.
@@ -176,12 +176,12 @@ class MMDDriftOnlineTorch(BaseMMDDriftOnline):
             self.k_xy = kernel_col
             return None
         elif 0 < self.t < self.window_size:
-            self.test_window = torch.cat([self.test_window, x_t], axis=0)
-            self.k_xy = torch.cat([self.k_xy, kernel_col], axis=1)
+            self.test_window = torch.cat([self.test_window, x_t], 0)
+            self.k_xy = torch.cat([self.k_xy, kernel_col], 1)
             return None
-        elif self.t >= self.window_size:
-            self.test_window = torch.cat([self.test_window[(1-self.window_size):], x_t], axis=0)
-            self.k_xy = torch.cat([self.k_xy[:, (1-self.window_size):], kernel_col], axis=1)
+        else:
+            self.test_window = torch.cat([self.test_window[(1-self.window_size):], x_t], 0)
+            self.k_xy = torch.cat([self.k_xy[:, (1-self.window_size):], kernel_col], 1)
             k_yy = self.kernel(self.test_window, self.test_window)
             mmd = (
                 self.k_xx_sub_sum +

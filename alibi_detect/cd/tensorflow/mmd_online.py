@@ -169,7 +169,7 @@ class MMDDriftOnlineTF(BaseMMDDriftOnline):
             self.test_window = tf.concat([self.test_window, x_t], axis=0)
             self.k_xy = tf.concat([self.k_xy, kernel_col], axis=1)
             return None
-        elif self.t >= self.window_size:
+        else:
             self.test_window = tf.concat([self.test_window[(1-self.window_size):], x_t], axis=0)
             self.k_xy = tf.concat([self.k_xy[:, (1-self.window_size):], kernel_col], axis=1)
             k_yy = self.kernel(self.test_window, self.test_window)

@@ -94,9 +94,9 @@ class BaseMMDDriftOnline(BaseDetector):
         if t < self.window_size:
             threshold = None
         if self.window_size <= t < 2*self.window_size:
-            threshold = self.thresholds[t-self.window_size]
+            threshold = self.thresholds[t-self.window_size]  # type: ignore
         if t >= 2*self.window_size:
-            threshold = self.thresholds[-1]
+            threshold = self.thresholds[-1]  # type: ignore
         return threshold
 
     def _initialise(self) -> None:
@@ -129,7 +129,7 @@ class BaseMMDDriftOnline(BaseDetector):
         self.t += 1
 
         # preprocess if necessary
-        if self.preprocess_x_ref and isinstance(self.preprocess_fn, Callable):
+        if self.preprocess_x_ref and isinstance(self.preprocess_fn, Callable):  # type: ignore
             x_t = self.preprocess_fn(x_t[None, :])[0]
 
         # update test window and return updated test stat
@@ -243,9 +243,9 @@ class BaseLSDDDriftOnline(BaseDetector):
         if t < self.window_size:
             threshold = None
         if self.window_size <= t < 2*self.window_size:
-            threshold = self.thresholds[t-self.window_size]
+            threshold = self.thresholds[t-self.window_size]  # type: ignore
         if t >= 2*self.window_size:
-            threshold = self.thresholds[-1]
+            threshold = self.thresholds[-1]  # type: ignore
         return threshold
 
     def _initialise(self) -> None:
@@ -279,7 +279,7 @@ class BaseLSDDDriftOnline(BaseDetector):
         self.t += 1
 
         # preprocess if necessary
-        if self.preprocess_x_ref and isinstance(self.preprocess_fn, Callable):
+        if self.preprocess_x_ref and isinstance(self.preprocess_fn, Callable):  # type: ignore
             x_t = self.preprocess_fn(x_t[None, :])[0]
 
         # update test window and return updated test stat

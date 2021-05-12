@@ -2,7 +2,7 @@ import logging
 from tqdm import tqdm
 import numpy as np
 import torch
-from typing import Callable, Optional, Tuple
+from typing import Callable, Optional, Union
 from alibi_detect.cd.base_online import BaseLSDDDriftOnline
 from alibi_detect.utils.pytorch.kernels import GaussianRBF
 from alibi_detect.cd.pytorch.utils import zero_diag, quantile
@@ -184,7 +184,7 @@ class LSDDDriftOnlineTorch(BaseLSDDDriftOnline):
         self.ref_inds = torch.randperm(nkc_size)[:rw_size]
         self.c2s = self.k_xc[self.ref_inds].mean(0)  # (below Eqn 21)
 
-    def score(self, x_t: np.ndarray) -> Tuple[float, float, np.ndarray]:
+    def score(self, x_t: np.ndarray) -> Union[float, None]:
         """
         Compute the test-statistic (LSDD) between the reference window and test window.
         If the test-window is not yet full then a test-statistic of None is returned.
@@ -207,12 +207,12 @@ class LSDDDriftOnlineTorch(BaseLSDDDriftOnline):
             self.k_xtc = k_xtc
             return None
         elif 0 < self.t < self.window_size:
-            self.test_window = torch.cat([self.test_window, x_t], axis=0)
-            self.k_xtc = torch.cat([self.k_xtc, k_xtc], axis=0)
+            self.test_window = torch.cat([self.test_window, x_t], 0)
+            self.k_xtc = torch.cat([self.k_xtc, k_xtc], 0)
             return None
-        elif self.t >= self.window_size:
-            self.test_window = torch.cat([self.test_window[(1-self.window_size):], x_t], axis=0)
-            self.k_xtc = torch.cat([self.k_xtc[(1-self.window_size):], k_xtc], axis=0)
+        else:
+            self.test_window = torch.cat([self.test_window[(1-self.window_size):], x_t], 0)
+            self.k_xtc = torch.cat([self.k_xtc[(1-self.window_size):], k_xtc], 0)
             h = self.c2s - self.k_xtc.mean(0)  # (Eqn 21)
             lsdd = h[None, :] @ self.H_lam_inv @ h[:, None]  # (Eqn 11)
             return float(lsdd.detach().cpu())
