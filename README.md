@@ -117,6 +117,9 @@ The following tables show the advised use cases for each algorithm. The column *
 | Chi-Squared              | ✔       |      |            |      |  ✔                   |       |  ✔            |
 | Mixed-type tabular data  | ✔       |      |            |      |  ✔                   |       |  ✔            |
 | Classifier               | ✔       | ✔     |  ✔          |  ✔    |  ✔                   |       |              |
+| Classifier Uncertainty   | ✔       | ✔     |  ✔          |  ✔    |  ✔                   |       |                |
+| Regressor Uncertainty    | ✔       | ✔     |  ✔          |  ✔    |  ✔                   |       |                |
+
 #### TensorFlow and PyTorch support
 
 The drift detectors support TensorFlow and PyTorch backends. Alibi Detect does however not install PyTorch for you. 
@@ -213,11 +216,15 @@ Check the example notebooks (e.g. [CIFAR10](https://docs.seldon.io/projects/alib
 - [Classifier](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/classifierdrift.html) ([Lopez-Paz and Oquab, 2017](https://openreview.net/forum?id=SJkXfE5xx))
    - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_clf_cifar10.html)
 
+- [Classifier and Regressor Uncertainty](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/modeluncdrift.html)
+   - Example: [CIFAR10 and Wine](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_model_unc_cifar10_wine.html)
+
 - [Online Maximum Mean Discrepancy](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/onlinemmddrift.html)
   - Example: [Wine Quality](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_online_wine.html)
   
 - [Online Least-Squares Density Difference](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/onlinemmddrift.html) ([Bu et al, 2017](https://ieeexplore.ieee.org/abstract/document/7890493))
   - Example: [Wine Quality](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_online_wine.html)
+
 
 ## Datasets
 
