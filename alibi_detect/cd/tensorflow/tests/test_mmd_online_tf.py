@@ -69,7 +69,7 @@ def test_mmd_online(mmd_online_params):
             preprocess_fn = None
     else:
         preprocess_fn = None
-    
+
     cd = MMDDriftOnlineTF(
         x_ref=x_ref,
         ert=ert,

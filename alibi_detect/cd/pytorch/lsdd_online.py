@@ -5,7 +5,7 @@ import torch
 from typing import Callable, Optional, Union
 from alibi_detect.cd.base_online import BaseLSDDDriftOnline
 from alibi_detect.utils.pytorch.kernels import GaussianRBF
-from alibi_detect.cd.pytorch.utils import zero_diag, quantile
+from alibi_detect.cd.pytorch.utils import quantile
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +53,7 @@ class LSDDDriftOnlineTorch(BaseLSDDDriftOnline):
             more accurately the desired ERT will be targeted. Should ideally be at least an order of magnitude
             larger than the ert.
         n_kernel_centers
-            Number of reference data points to use kernel centers to use in the estimation of the LSDD. 
+            Number of reference data points to use kernel centers to use in the estimation of the LSDD.
             Defaults to 2*window_size.
         lambda_rd_max
             The maximum relative difference between two estimates of LSDD that the regularization parameter
@@ -90,7 +90,7 @@ class LSDDDriftOnlineTorch(BaseLSDDDriftOnline):
             self.device = torch.device('cpu')
 
         self._configure_normalization()
-        
+
         # initialize kernel
         if sigma is None:
             self.x_ref = torch.from_numpy(self.x_ref).to(self.device)
@@ -143,8 +143,8 @@ class LSDDDriftOnlineTorch(BaseLSDDDriftOnline):
             ((torch.tensor(np.pi)*self.kernel.sigma**2)**(d/2))  # (Eqn 5)
 
         # We perform the initialisation for multiple candidate lambda values and pick the largest
-        # one for which the relative difference (RD) between two difference estimates is below lambda_rd_max. 
-        # See Appendix A  
+        # one for which the relative difference (RD) between two difference estimates is below lambda_rd_max.
+        # See Appendix A
         candidate_lambdas = [1/(4**i) for i in range(10)]  # TODO: More principled selection
         H_plus_lams = torch.stack([H+torch.eye(H.shape[0])*can_lam for can_lam in candidate_lambdas], axis=0)
         H_plus_lam_invs = torch.inverse(H_plus_lams)

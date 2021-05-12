@@ -114,7 +114,7 @@ class MMDDriftOnline:
         self._detector.reset()
 
     def predict(self, x_t: np.ndarray, return_test_stat: bool = True) \
-                -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
+            -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
         """
         Predict whether the most recent window of data has drifted from the reference data.
 

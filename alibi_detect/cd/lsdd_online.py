@@ -58,7 +58,7 @@ class LSDDDriftOnline:
             more accurately the desired ERT will be targeted. Should ideally be at least an order of magnitude
             larger than the ert.
         n_kernel_centers
-            Number of reference data points to use kernel centers to use in the estimation of the LSDD. 
+            Number of reference data points to use kernel centers to use in the estimation of the LSDD.
             Defaults to 2*window_size.
         lambda_rd_max
             The maximum relative difference between two estimates of LSDD that the regularization parameter
@@ -114,7 +114,7 @@ class LSDDDriftOnline:
         self._detector.reset()
 
     def predict(self, x_t: np.ndarray, return_test_stat: bool = True) \
-                -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
+            -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
         """
         Predict whether the most recent window of data has drifted from the reference data.
 

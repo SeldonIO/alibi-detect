@@ -52,7 +52,7 @@ class LSDDDriftOnlineTF(BaseLSDDDriftOnline):
             more accurately the desired ERT will be targeted. Should ideally be at least an order of magnitude
             larger than the ert.
         n_kernel_centers
-            Number of reference data points to use kernel centers to use in the estimation of the LSDD. 
+            Number of reference data points to use kernel centers to use in the estimation of the LSDD.
             Defaults to 2*window_size.
         lambda_rd_max
             The maximum relative difference between two estimates of LSDD that the regularization parameter
@@ -130,7 +130,7 @@ class LSDDDriftOnlineTF(BaseLSDDDriftOnline):
             ((np.pi*self.kernel.sigma**2)**(d/2))  # (Eqn 5)
 
         # We perform the initialisation for multiple candidate lambda values and pick the largest
-        # one for which the relative difference (RD) between two difference estimates is below lambda_rd_max. 
+        # one for which the relative difference (RD) between two difference estimates is below lambda_rd_max.
         # See Appendix A
         candidate_lambdas = [1/(4**i) for i in range(10)]  # TODO: More principled selection
         H_plus_lams = tf.stack([H+tf.eye(H.shape[0], dtype=H.dtype)*can_lam for can_lam in candidate_lambdas], axis=0)
@@ -146,7 +146,7 @@ class LSDDDriftOnlineTF(BaseLSDDDriftOnline):
 
         # With chosen lambda, compute an LSDD estimate for each bootstrap sample
         H_plus_lam_inv = H_plus_lam_invs[:, :, int(lambda_index)]
-        self.H_lam_inv = 2*H_plus_lam_inv - (tf.transpose(H_plus_lam_inv, [1, 0]) @ H @ H_plus_lam_inv)  # (below Eqn 11)
+        self.H_lam_inv = 2*H_plus_lam_inv - (tf.transpose(H_plus_lam_inv, [1, 0]) @ H @ H_plus_lam_inv)  # (blw Eqn 11)
         lsdds = tf.reduce_sum(
             h_all * tf.transpose(self.H_lam_inv @ tf.transpose(h_all, [1, 0]), [1, 0]), axis=1
         )  # (Eqn 11)

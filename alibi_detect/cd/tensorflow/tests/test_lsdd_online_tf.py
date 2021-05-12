@@ -69,7 +69,7 @@ def test_lsdd_online(lsdd_online_params):
             preprocess_fn = None
     else:
         preprocess_fn = None
-    
+
     cd = LSDDDriftOnlineTF(
         x_ref=x_ref,
         ert=ert,
