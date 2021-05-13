@@ -123,8 +123,8 @@ class LSDDDriftOnlineTF(BaseLSDDDriftOnline):
 
         # Compute (for each bootstrap) the average distance to each kernel center (Eqn 7)
         k_xc_all = tf.stack([tf.gather(self.k_xc, x_inds) for x_inds in x_inds_all], axis=0)
-        k_xy_all = tf.stack([tf.gather(self.k_xc, y_inds[:w_size]) for y_inds in y_inds_all], axis=0)
-        h_all = tf.reduce_mean(k_xc_all, axis=1) - tf.reduce_mean(k_xy_all, axis=1)
+        k_yc_all = tf.stack([tf.gather(self.k_xc, y_inds[:w_size]) for y_inds in y_inds_all], axis=0)
+        h_all = tf.reduce_mean(k_xc_all, axis=1) - tf.reduce_mean(k_yc_all, axis=1)
 
         H = GaussianRBF(2*self.kernel.sigma)(self.kernel_centers, self.kernel_centers) * \
             ((np.pi*self.kernel.sigma**2)**(d/2))  # (Eqn 5)
@@ -156,8 +156,8 @@ class LSDDDriftOnlineTF(BaseLSDDDriftOnline):
         # And now to iterate through the other W-1 overlapping windows
         for w in tqdm(range(1, w_size), "Computing thresholds"):
             k_xc_all = tf.stack([tf.gather(self.k_xc, x_inds) for x_inds in x_inds_all], axis=0)
-            k_xy_all = tf.stack([tf.gather(self.k_xc, y_inds[w:(w+w_size)]) for y_inds in y_inds_all], axis=0)
-            h_all = tf.reduce_mean(k_xc_all, axis=1) - tf.reduce_mean(k_xy_all, axis=1)
+            k_yc_all = tf.stack([tf.gather(self.k_xc, y_inds[w:(w+w_size)]) for y_inds in y_inds_all], axis=0)
+            h_all = tf.reduce_mean(k_xc_all, axis=1) - tf.reduce_mean(k_yc_all, axis=1)
             lsdds = tf.reduce_sum(
                 h_all * tf.transpose((self.H_lam_inv @ tf.transpose(h_all, [1, 0])), [1, 0]), axis=1
             )
