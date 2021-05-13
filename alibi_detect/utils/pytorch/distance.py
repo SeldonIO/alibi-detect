@@ -1,5 +1,5 @@
 import torch
-from typing import Callable, List, Tuple, Optional
+from typing import Callable, List, Tuple, Optional, Union
 
 
 @torch.jit.script
@@ -89,11 +89,11 @@ def permed_lsdds(
     H_lam_inv: Optional[torch.Tensor] = None,
     lam_rd_max: float = 0.2,
     return_unpermed: bool = False,
-) -> Tuple[float, torch.Tensor]:
+) -> Union[Tuple[torch.Tensor, torch.Tensor], Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]:
 
     # Compute (for each bootstrap) the average distance to each kernel center (Eqn 7)
-    k_xc_perms = torch.stack([k_all_c[x_inds] for x_inds in x_perms], axis=0)
-    k_yc_perms = torch.stack([k_all_c[y_inds] for y_inds in y_perms], axis=0)
+    k_xc_perms = torch.stack([k_all_c[x_inds] for x_inds in x_perms], 0)
+    k_yc_perms = torch.stack([k_all_c[y_inds] for y_inds in y_perms], 0)
     h_perms = k_xc_perms.mean(1) - k_yc_perms.mean(1)
 
     if H_lam_inv is None:
@@ -101,7 +101,7 @@ def permed_lsdds(
         # one for which the relative difference (RD) between two difference estimates is below lambda_rd_max.
         # See Appendix A
         candidate_lambdas = [1/(4**i) for i in range(10)]  # TODO: More principled selection
-        H_plus_lams = torch.stack([H+torch.eye(H.shape[0])*can_lam for can_lam in candidate_lambdas], axis=0)
+        H_plus_lams = torch.stack([H+torch.eye(H.shape[0])*can_lam for can_lam in candidate_lambdas], 0)
         H_plus_lam_invs = torch.inverse(H_plus_lams)
         H_plus_lam_invs = H_plus_lam_invs.permute(1, 2, 0)  # put lambdas in final axis
 
@@ -121,7 +121,7 @@ def permed_lsdds(
     if return_unpermed:
         n_x = x_perms[0].shape[0]
         h = k_all_c[:n_x].mean(1) - k_all_c[n_x:].mean(1)
-        lsdd_unpermed = (h[None, :] * (H_lam_inv @ h[:, None]).tranpose(0, 1)).sum()
+        lsdd_unpermed = (h[None, :] * (H_lam_inv @ h[:, None]).transpose(0, 1)).sum()
         return lsdd_perms, H_lam_inv, lsdd_unpermed
     else:
         return lsdd_perms, H_lam_inv

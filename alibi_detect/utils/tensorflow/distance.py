@@ -1,6 +1,6 @@
 import numpy as np
 import tensorflow as tf
-from typing import Callable, Tuple, List, Optional
+from typing import Callable, Tuple, List, Optional, Union
 
 
 def squared_pairwise_distance(x: tf.Tensor, y: tf.Tensor, a_min: float = 1e-30, a_max: float = 1e30) -> tf.Tensor:
@@ -118,7 +118,7 @@ def permed_lsdds(
     H_lam_inv: Optional[tf.Tensor] = None,
     lam_rd_max: float = 0.2,
     return_unpermed: bool = False,
-) -> Tuple[float, tf.Tensor]:
+) -> Union[Tuple[tf.Tensor, tf.Tensor], Tuple[tf.Tensor, tf.Tensor, tf.Tensor]]:
 
     # Compute (for each bootstrap) the average distance to each kernel center (Eqn 7)
     k_xc_perms = tf.stack([tf.gather(k_all_c, x_inds) for x_inds in x_perms], axis=0)
