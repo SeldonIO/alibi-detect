@@ -96,7 +96,7 @@ def test_mmd_online(mmd_online_params):
 
     cd.reset()
 
-    x_h1 = np.ones(n * n_features).reshape(n, n_features).astype(np.float32)
+    x_h1 = 1 + np.random.randn(n * n_features).reshape(n, n_features).astype(np.float32)
     detection_times_h1 = []
     test_stats_h1 = []
     for x_t in x_h1:
