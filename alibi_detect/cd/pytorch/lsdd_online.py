@@ -5,6 +5,7 @@ import torch
 from typing import Callable, Optional, Union
 from alibi_detect.cd.base_online import BaseLSDDDriftOnline
 from alibi_detect.utils.pytorch.kernels import GaussianRBF
+from alibi_detect.utils.pytorch.distance import permed_lsdds
 from alibi_detect.cd.pytorch.utils import quantile
 
 logger = logging.getLogger(__name__)
@@ -134,48 +135,27 @@ class LSDDDriftOnlineTorch(BaseLSDDDriftOnline):
         x_inds_all = [perm[:rw_size] for perm in perms]
         y_inds_all = [perm[rw_size:] for perm in perms]
 
-        # Compute (for each bootstrap) the average distance to each kernel center (Eqn 7)
-        k_xc_all = torch.stack([self.k_xc[x_inds] for x_inds in x_inds_all], axis=0)
-        k_yc_all = torch.stack([self.k_xc[y_inds[:w_size]] for y_inds in y_inds_all], axis=0)
-        h_all = k_xc_all.mean(1) - k_yc_all.mean(1)
-
-        H = GaussianRBF(2*self.kernel.sigma)(self.kernel_centers, self.kernel_centers) * \
+        H = GaussianRBF(np.sqrt(2.)*self.kernel.sigma)(self.kernel_centers, self.kernel_centers) * \
             ((torch.tensor(np.pi)*self.kernel.sigma**2)**(d/2))  # (Eqn 5)
 
-        # We perform the initialisation for multiple candidate lambda values and pick the largest
-        # one for which the relative difference (RD) between two difference estimates is below lambda_rd_max.
-        # See Appendix A
-        candidate_lambdas = [1/(4**i) for i in range(10)]  # TODO: More principled selection
-        H_plus_lams = torch.stack([H+torch.eye(H.shape[0])*can_lam for can_lam in candidate_lambdas], axis=0)
-        H_plus_lam_invs = torch.inverse(H_plus_lams)
-        H_plus_lam_invs = H_plus_lam_invs.permute(1, 2, 0)  # put lambdas in final axis
-
-        omegas = torch.einsum('jkl,bk->bjl', H_plus_lam_invs, h_all)  # (Eqn 8)
-        h_omegas = torch.einsum('bj,bjl->bl', h_all, omegas)
-        omega_H_omegas = torch.einsum('bkl,bkl->bl', torch.einsum('bjl,jk->bkl', omegas, H), omegas)
-        rds = (1 - (omega_H_omegas/h_omegas)).mean(0)
-        lambda_index = (rds < self.lambda_rd_max).nonzero()[0]
-        lam = candidate_lambdas[lambda_index]
-        print(f"Using lambda value of {lam:.2g} with RD of {rds[lambda_index].item():.2g}")
-
-        # With chosen lambda, compute an LSDD estimate for each bootstrap sample
-        H_plus_lam_inv = H_plus_lam_invs[:, :, lambda_index.item()]
-        self.H_lam_inv = 2*H_plus_lam_inv - (H_plus_lam_inv.transpose(0, 1) @ H @ H_plus_lam_inv)  # (below Eqn 11)
-        lsdds = (h_all * (self.H_lam_inv @ h_all.transpose(0, 1)).transpose(0, 1)).sum(-1)  # (Eqn 11)
+        # Compute lsdds for first test-window. We infer regularisation constant lambda here.
+        y_inds_all_0 = [y_inds[:w_size] for y_inds in y_inds_all]
+        lsdds_0, H_lam_inv = permed_lsdds(
+            self.k_xc, x_inds_all, y_inds_all_0, H, lam_rd_max=self.lambda_rd_max,
+        )
 
         # Can compute threshold for first window
-        thresholds = [quantile(torch.tensor(lsdds), 1-self.fpr)]
+        thresholds = [quantile(lsdds_0, 1-self.fpr)]
         # And now to iterate through the other W-1 overlapping windows
         for w in tqdm(range(1, w_size), "Computing thresholds"):
-            k_xc_all = torch.stack([self.k_xc[x_inds] for x_inds in x_inds_all], axis=0)
-            k_yc_all = torch.stack([self.k_xc[y_inds[w:(w+w_size)]] for y_inds in y_inds_all], axis=0)
-            h_all = k_xc_all.mean(1) - k_yc_all.mean(1)
-            lsdds = (h_all * (self.H_lam_inv @ h_all.transpose(0, 1)).transpose(0, 1)).sum(-1)
-            thresholds.append(quantile(torch.tensor(lsdds), 1-self.fpr))
-            x_inds_all = [x_inds_all[i] for i in range(len(x_inds_all)) if lsdds[i] < thresholds[-1]]
-            y_inds_all = [y_inds_all[i] for i in range(len(y_inds_all)) if lsdds[i] < thresholds[-1]]
+            y_inds_all_w = [y_inds[w:(w+w_size)] for y_inds in y_inds_all]
+            lsdds_w, _ = permed_lsdds(self.k_xc, x_inds_all, y_inds_all_w, H, H_lam_inv=H_lam_inv)
+            thresholds.append(quantile(lsdds_w, 1-self.fpr))
+            x_inds_all = [x_inds_all[i] for i in range(len(x_inds_all)) if lsdds_w[i] < thresholds[-1]]
+            y_inds_all = [y_inds_all[i] for i in range(len(y_inds_all)) if lsdds_w[i] < thresholds[-1]]
 
         self.thresholds = thresholds
+        self.H_lam_inv = H_lam_inv
 
     def _configure_ref_subset(self):
         etw_size = 2*self.window_size-1  # etw = extended test window

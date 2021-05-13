@@ -1,5 +1,5 @@
 import torch
-from typing import Callable
+from typing import Callable, List, Tuple, Optional
 
 
 @torch.jit.script
@@ -79,3 +79,49 @@ def mmd2(x: torch.Tensor, y: torch.Tensor, kernel: Callable) -> float:
     c_xx, c_yy = 1 / (n * (n - 1)), 1 / (m * (m - 1))
     k_xx, k_yy, k_xy = kernel(x, x), kernel(y, y), kernel(x, y)  # type: ignore
     return c_xx * (k_xx.sum() - k_xx.trace()) + c_yy * (k_yy.sum() - k_yy.trace()) - 2. * k_xy.mean()
+
+
+def permed_lsdds(
+    k_all_c: torch.Tensor,
+    x_perms: List[torch.Tensor],
+    y_perms: List[torch.Tensor],
+    H: torch.Tensor,
+    H_lam_inv: Optional[torch.Tensor] = None,
+    lam_rd_max: float = 0.2,
+    return_unpermed: bool = False,
+) -> Tuple[float, torch.Tensor]:
+
+    # Compute (for each bootstrap) the average distance to each kernel center (Eqn 7)
+    k_xc_perms = torch.stack([k_all_c[x_inds] for x_inds in x_perms], axis=0)
+    k_yc_perms = torch.stack([k_all_c[y_inds] for y_inds in y_perms], axis=0)
+    h_perms = k_xc_perms.mean(1) - k_yc_perms.mean(1)
+
+    if H_lam_inv is None:
+        # We perform the initialisation for multiple candidate lambda values and pick the largest
+        # one for which the relative difference (RD) between two difference estimates is below lambda_rd_max.
+        # See Appendix A
+        candidate_lambdas = [1/(4**i) for i in range(10)]  # TODO: More principled selection
+        H_plus_lams = torch.stack([H+torch.eye(H.shape[0])*can_lam for can_lam in candidate_lambdas], axis=0)
+        H_plus_lam_invs = torch.inverse(H_plus_lams)
+        H_plus_lam_invs = H_plus_lam_invs.permute(1, 2, 0)  # put lambdas in final axis
+
+        omegas = torch.einsum('jkl,bk->bjl', H_plus_lam_invs, h_perms)  # (Eqn 8)
+        h_omegas = torch.einsum('bj,bjl->bl', h_perms, omegas)
+        omega_H_omegas = torch.einsum('bkl,bkl->bl', torch.einsum('bjl,jk->bkl', omegas, H), omegas)
+        rds = (1 - (omega_H_omegas/h_omegas)).mean(0)
+        lam_index = (rds < lam_rd_max).nonzero()[0]
+        lam = candidate_lambdas[lam_index]
+        print(f"Using lambda value of {lam:.2g} with RD of {float(rds[lam_index]):.2g}")
+        H_plus_lam_inv = H_plus_lam_invs[:, :, lam_index.item()]
+        H_lam_inv = 2*H_plus_lam_inv - (H_plus_lam_inv.transpose(0, 1) @ H @ H_plus_lam_inv)  # (below Eqn 11)
+
+    # Now to compute an LSDD estimate for each permutation
+    lsdd_perms = (h_perms * (H_lam_inv @ h_perms.transpose(0, 1)).transpose(0, 1)).sum(-1)  # (Eqn 11)
+
+    if return_unpermed:
+        n_x = x_perms[0].shape[0]
+        h = k_all_c[:n_x].mean(1) - k_all_c[n_x:].mean(1)
+        lsdd_unpermed = (h[None, :] * (H_lam_inv @ h[:, None]).tranpose(0, 1)).sum()
+        return lsdd_perms, H_lam_inv, lsdd_unpermed
+    else:
+        return lsdd_perms, H_lam_inv

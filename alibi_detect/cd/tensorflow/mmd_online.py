@@ -142,7 +142,7 @@ class MMDDriftOnlineTF(BaseMMDDriftOnline):
                 k_xy_col_sums_all[i] for i in range(len(k_xy_col_sums_all)) if mmds[i] < thresholds[-1]
             ]
 
-        self.thresholds = tf.concat(thresholds, axis=0)
+        self.thresholds = thresholds
 
     def score(self, x_t: np.ndarray) -> Union[float, None]:
         """

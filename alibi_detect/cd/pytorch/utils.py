@@ -21,7 +21,7 @@ def zero_diag(mat: torch.Tensor) -> torch.Tensor:
     return mat - torch.diag(mat.diag())
 
 
-def quantile(sample: torch.Tensor, p: float, type: int = 7, sorted: bool = False) -> torch.Tensor:
+def quantile(sample: torch.Tensor, p: float, type: int = 7, sorted: bool = False) -> float:
     """ See https://wikipedia.org/wiki/Quantile#Estimating_quantiles_from_a_sample """
     N = len(sample)
     if type == 6:  # With M = k*ert - 1 this one is exact
@@ -36,4 +36,4 @@ def quantile(sample: torch.Tensor, p: float, type: int = 7, sorted: bool = False
     quantile = sorted_sample[h_floor-1]
     if h_floor != h:
         quantile += (h - h_floor)*(sorted_sample[h_floor]-sorted_sample[h_floor-1])
-    return quantile
+    return float(quantile)

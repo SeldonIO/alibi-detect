@@ -13,7 +13,7 @@ def zero_diag(mat: tf.Tensor) -> tf.Tensor:
     return mat - tf.linalg.diag(tf.linalg.diag_part(mat))
 
 
-def quantile(sample: tf.Tensor, p: float, type: int = 7, sorted: bool = False) -> tf.Tensor:
+def quantile(sample: tf.Tensor, p: float, type: int = 7, sorted: bool = False) -> float:
     """ See https://wikipedia.org/wiki/Quantile#Estimating_quantiles_from_a_sample """
     N = len(sample)
     if type == 6:  # With M = k*ert - 1 this one is exact
@@ -28,7 +28,7 @@ def quantile(sample: tf.Tensor, p: float, type: int = 7, sorted: bool = False) -
     quantile = sorted_sample[h_floor-1]
     if h_floor != h:
         quantile += (h - h_floor)*(sorted_sample[h_floor]-sorted_sample[h_floor-1])
-    return quantile
+    return float(quantile)
 
 
 def subset_matrix(
