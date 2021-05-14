@@ -97,7 +97,7 @@ def test_mmd_online(mmd_online_params):
     average_delay_h1 = (np.array(detection_times_h1) - window_size).mean()
     test_stats_h1 = [ts for ts in test_stats_h1 if ts is not None]
 
-    assert np.abs(average_delay_h1) < ert/3
+    assert np.abs(average_delay_h1) < ert/2
     assert min(detection_times_h0) >= window_size
 
     assert np.mean(test_stats_h1) > np.mean(test_stats_h0)
