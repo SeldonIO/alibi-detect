@@ -150,7 +150,7 @@ def permed_lsdds(
 
     if return_unpermed:
         n_x = x_perms[0].shape[0]
-        h = tf.reduce_mean(k_all_c[:n_x], axis=1) - tf.reduce_mean(k_all_c[n_x:], axis=1)
+        h = tf.reduce_mean(k_all_c[:n_x], axis=0) - tf.reduce_mean(k_all_c[n_x:], axis=0)
         lsdd_unpermed = tf.reduce_sum(h[None, :] * tf.transpose(H_lam_inv @ h[:, None], [1, 0]))
         return lsdd_perms, H_lam_inv, lsdd_unpermed
     else:

@@ -1,6 +1,7 @@
 from .chisquare import ChiSquareDrift
 from .classifier import ClassifierDrift
 from .ks import KSDrift
+from .lsdd import LSDDDrift
 from .lsdd_online import LSDDDriftOnline
 from .mmd import MMDDrift
 from .mmd_online import MMDDriftOnline
@@ -11,6 +12,7 @@ __all__ = [
     "ChiSquareDrift",
     "ClassifierDrift",
     "KSDrift",
+    "LSDDDrift",
     "LSDDDriftOnline",
     "MMDDrift",
     "MMDDriftOnline",

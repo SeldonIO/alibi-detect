@@ -120,7 +120,7 @@ def permed_lsdds(
 
     if return_unpermed:
         n_x = x_perms[0].shape[0]
-        h = k_all_c[:n_x].mean(1) - k_all_c[n_x:].mean(1)
+        h = k_all_c[:n_x].mean(0) - k_all_c[n_x:].mean(0)
         lsdd_unpermed = (h[None, :] * (H_lam_inv @ h[:, None]).transpose(0, 1)).sum()
         return lsdd_perms, H_lam_inv, lsdd_unpermed
     else:
