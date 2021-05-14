@@ -8,7 +8,7 @@ from typing import Callable
 from alibi_detect.cd.pytorch.mmd_online import MMDDriftOnlineTorch
 from alibi_detect.cd.pytorch.preprocess import HiddenOutput, preprocess_drift
 
-n, n_hidden, n_classes = 300, 10, 5
+n, n_hidden, n_classes = 400, 10, 5
 
 
 class MyModel(nn.Module):

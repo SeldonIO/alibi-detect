@@ -8,7 +8,7 @@ from typing import Callable
 from alibi_detect.cd.tensorflow.mmd_online import MMDDriftOnlineTF
 from alibi_detect.cd.tensorflow.preprocess import HiddenOutput, UAE, preprocess_drift
 
-n, n_hidden, n_classes = 300, 10, 5
+n, n_hidden, n_classes = 400, 10, 5
 
 tf.random.set_seed(0)
 
