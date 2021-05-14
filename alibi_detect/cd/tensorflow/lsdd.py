@@ -48,7 +48,7 @@ class LSDDDriftTF(BaseLSDDDrift):
             Number of permutations used in the permutation test.
         n_kernel_centers
             Number of reference data points to use kernel centers to use in the estimation of the LSDD.
-            Defaults to 2*window_size.
+            Defaults to 1/20th of the reference data.
         lambda_rd_max
             The maximum relative difference between two estimates of LSDD that the regularization parameter
             lambda is allowed to cause. Defaults to 0.2 as in the paper.
@@ -73,10 +73,12 @@ class LSDDDriftTF(BaseLSDDDrift):
         self.meta.update({'backend': 'tensorflow'})
 
         if self.preprocess_x_ref or self.preprocess_fn is None:
-            self._configure_normalization(self.x_ref)
-            self.x_ref = self._normalize(self.x_ref).numpy()
-            self._initialize_kernel(self.x_ref)
-            self._configure_kernel_centers(self.x_ref)
+            x_ref = tf.convert_to_tensor(self.x_ref)
+            self._configure_normalization(x_ref)
+            x_ref = self._normalize(x_ref)
+            self._initialize_kernel(x_ref)
+            self._configure_kernel_centers(x_ref)
+            self.x_ref = x_ref.numpy()
 
             d = self.x_ref.shape[-1]
             self.H = GaussianRBF(np.sqrt(2.)*self.kernel.sigma)(self.kernel_centers, self.kernel_centers) * \
@@ -108,8 +110,8 @@ class LSDDDriftTF(BaseLSDDDrift):
 
     def score(self, x: np.ndarray) -> Tuple[float, float, np.ndarray]:
         """
-        Compute the p-value resulting from a permutation test using the least-squares density difference
-        as a distance measure between the reference data and the data to be tested.
+        Compute the p-value resulting from a permutation test using the least-squares density
+        difference as a distance measure between the reference data and the data to be tested.
 
         Parameters
         ----------
@@ -132,9 +134,6 @@ class LSDDDriftTF(BaseLSDDDrift):
             self.H = GaussianRBF(np.sqrt(2.)*self.kernel.sigma)(self.kernel_centers, self.kernel_centers) * \
                 ((np.pi*self.kernel.sigma**2)**(d/2))  # (Eqn 5)
 
-        if np.linalg.det(self.H.numpy()) == 0:
-            breakpoint()
-
         x = self._normalize(x)
 
         k_yc = self.kernel(x, self.kernel_centers)
@@ -148,7 +147,7 @@ class LSDDDriftTF(BaseLSDDDrift):
 
         lsdd_permuted, _, lsdd = permed_lsdds(
             k_all_c, x_perms, y_perms, self.H, lam_rd_max=self.lambda_rd_max, return_unpermed=True
-        )
+        )  # type: ignore
 
         p_val = tf.reduce_mean(tf.cast(lsdd <= lsdd_permuted, float))
         return float(p_val), float(lsdd), lsdd_permuted.numpy()

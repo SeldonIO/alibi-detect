@@ -55,10 +55,10 @@ class LSDDDrift:
             Number of permutations used in the permutation test.
         n_kernel_centers
             Number of reference data points to use kernel centers to use in the estimation of the LSDD.
-            Defaults to 2*window_size.
+            Defaults to 1/20th of the reference data.
         lambda_rd_max
             The maximum relative difference between two estimates of LSDD that the regularization parameter
-            lambda is allowed to cause. Defaults to 0.2 as in the paper.       
+            lambda is allowed to cause. Defaults to 0.2 as in the paper.
         device
             Device type used. The default None tries to use the GPU and falls back on CPU if needed.
             Can be specified by passing either 'cuda', 'gpu' or 'cpu'. Only relevant for 'pytorch' backend.

@@ -49,7 +49,7 @@ class LSDDDriftTorch(BaseLSDDDrift):
             Number of permutations used in the permutation test.
         n_kernel_centers
             Number of reference data points to use kernel centers to use in the estimation of the LSDD.
-            Defaults to 2*window_size.
+            Defaults to 1/20th of the reference data.
         lambda_rd_max
             The maximum relative difference between two estimates of LSDD that the regularization parameter
             lambda is allowed to cause. Defaults to 0.2 as in the paper.
@@ -122,8 +122,8 @@ class LSDDDriftTorch(BaseLSDDDrift):
 
     def score(self, x: np.ndarray) -> Tuple[float, float, np.ndarray]:
         """
-        Compute the p-value resulting from a permutation test using the maximum mean discrepancy
-        as a distance measure between the reference data and the data to be tested.
+        Compute the p-value resulting from a permutation test using the least-squares density
+        difference as a distance measure between the reference data and the data to be tested.
 
         Parameters
         ----------
@@ -161,7 +161,7 @@ class LSDDDriftTorch(BaseLSDDDrift):
 
         lsdd_permuted, _, lsdd = permed_lsdds(
             k_all_c, x_perms, y_perms, self.H, lam_rd_max=self.lambda_rd_max, return_unpermed=True
-        )
+        )  # type: ignore
 
         p_val = (lsdd <= lsdd_permuted).to(dtype=float).mean()
         return float(p_val.cpu()), float(lsdd.numpy()), lsdd_permuted.numpy()
