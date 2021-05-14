@@ -54,6 +54,7 @@ alibi_detect.cd.__all__
  'ClassifierDrift',
  'ClassifierUncertaintyDrift',
  'KSDrift',
+ 'LSDDDrift',
  'LSDDDriftOnline',
  'MMDDrift',
  'MMDDriftOnline',
@@ -94,6 +95,8 @@ Similar for **adversarial detection**:
 And **data drift**:
     
 * [Kolmogorov-Smirnov Drift Detector](../methods/ksdrift.ipynb)
+
+* [Least-Squares Density Difference Drift Detector](../methods/lsdddrift.ipynb)
 
 * [Maximum Mean Discrepancy Drift Detector](../methods/mmddrift.ipynb)
 

@@ -163,5 +163,5 @@ class LSDDDriftTorch(BaseLSDDDrift):
             k_all_c, x_perms, y_perms, self.H, lam_rd_max=self.lambda_rd_max, return_unpermed=True
         )
 
-        p_val = (lsdd <= lsdd_permuted).to(dtype=float).mean()
+        p_val = (lsdd <= lsdd_permuted).float().mean()
         return float(p_val.cpu()), float(lsdd.numpy()), lsdd_permuted.numpy()
