@@ -159,9 +159,9 @@ class LSDDDriftTorch(BaseLSDDDrift):
         x_perms = [perm[:n_x] for perm in perms]
         y_perms = [perm[n_x:] for perm in perms]
 
-        lsdd_permuted, _, lsdd = permed_lsdds(
+        lsdd_permuted, _, lsdd = permed_lsdds(  # type: ignore
             k_all_c, x_perms, y_perms, self.H, lam_rd_max=self.lambda_rd_max, return_unpermed=True
-        )  # type: ignore
+        )
 
         p_val = (lsdd <= lsdd_permuted).to(dtype=float).mean()
         return float(p_val.cpu()), float(lsdd.numpy()), lsdd_permuted.numpy()

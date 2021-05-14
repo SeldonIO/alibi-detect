@@ -145,9 +145,9 @@ class LSDDDriftTF(BaseLSDDDrift):
         x_perms = [perm[:n_x] for perm in perms]
         y_perms = [perm[n_x:] for perm in perms]
 
-        lsdd_permuted, _, lsdd = permed_lsdds(
+        lsdd_permuted, _, lsdd = permed_lsdds(  # type: ignore
             k_all_c, x_perms, y_perms, self.H, lam_rd_max=self.lambda_rd_max, return_unpermed=True
-        )  # type: ignore
+        )
 
         p_val = tf.reduce_mean(tf.cast(lsdd <= lsdd_permuted, float))
         return float(p_val), float(lsdd), lsdd_permuted.numpy()
