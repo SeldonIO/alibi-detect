@@ -89,7 +89,7 @@ class MMDDriftOnlineTF(BaseMMDDriftOnline):
             # Make split
             perm = tf.random.shuffle(tf.range(self.n))
             self.ref_inds, self.init_test_inds = perm[:rw_size], perm[-self.window_size:]
-            self.test_window = self.x_ref[self.init_test_inds]
+            self.test_window = tf.gather(self.x_ref, self.init_test_inds)
             # Compute initial mmd to check for initial detection
             self.k_xx_sub = subset_matrix(self.k_xx, self.ref_inds, self.ref_inds)
             self.k_xx_sub_sum = tf.reduce_sum(zero_diag(self.k_xx_sub))/(rw_size*(rw_size-1))

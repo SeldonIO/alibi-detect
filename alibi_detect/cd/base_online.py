@@ -91,7 +91,7 @@ class BaseMMDDriftOnline(BaseDetector):
         pass
 
     def get_threshold(self, t: int) -> Union[float, None]:
-        return self.thresholds[t] if t < self.window_size else self.thresholds[-1]
+        return self.thresholds[t] if t < self.window_size else self.thresholds[-1]  # type: ignore
 
     def _initialise(self) -> None:
         self.t = 0  # corresponds to a test set of ref data
@@ -234,7 +234,7 @@ class BaseLSDDDriftOnline(BaseDetector):
         pass
 
     def get_threshold(self, t: int) -> Union[float, None]:
-        return self.thresholds[t] if t < self.window_size else self.thresholds[-1]
+        return self.thresholds[t] if t < self.window_size else self.thresholds[-1]  # type: ignore
 
     def _initialise(self) -> None:
         self.t = 0  # corresponds to a test set of ref data
