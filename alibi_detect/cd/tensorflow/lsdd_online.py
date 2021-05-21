@@ -155,7 +155,7 @@ class LSDDDriftOnlineTF(BaseLSDDDriftOnline):
             perm = tf.random.shuffle(tf.range(nkc_size))
             self.ref_inds, self.init_test_inds = perm[:rw_size], perm[-self.window_size:]
             self.c2s = tf.reduce_mean(tf.gather(self.k_xc, self.ref_inds), axis=0)  # (below Eqn 21)
-            self.test_window = tf.gather(self.x_ref, self.init_test_inds)
+            self.test_window = tf.gather(self.x_ref_eff, self.init_test_inds)
             # Compute initial lsdd to check for initial detection
             self.k_xtc = self.kernel(self.test_window, self.kernel_centers)
             h_init = self.c2s - tf.reduce_mean(self.k_xtc, axis=0)  # (Eqn 21)

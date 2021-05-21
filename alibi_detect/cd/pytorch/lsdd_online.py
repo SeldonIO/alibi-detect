@@ -167,7 +167,7 @@ class LSDDDriftOnlineTorch(BaseLSDDDriftOnline):
             # Make split
             perm = torch.randperm(nkc_size)
             self.ref_inds, self.init_test_inds = perm[:rw_size], perm[-self.window_size:]
-            self.test_window = self.x_ref[self.init_test_inds]
+            self.test_window = self.x_ref_eff[self.init_test_inds]
             # Compute initial lsdd to check for initial detection
             self.c2s = self.k_xc[self.ref_inds].mean(0)  # (below Eqn 21)
             self.k_xtc = self.kernel(self.test_window, self.kernel_centers)
