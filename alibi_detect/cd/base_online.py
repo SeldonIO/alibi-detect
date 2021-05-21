@@ -94,7 +94,7 @@ class BaseMMDDriftOnline(BaseDetector):
         return self.thresholds[t] if t < self.window_size else self.thresholds[-1]
 
     def _initialise(self) -> None:
-        self.t = -1  # 0 will correspond to first observation
+        self.t = 0  # corresponds to a test set of ref data
         self.test_stats = np.array([])
         self.drift_preds = np.array([])
         self._configure_ref_subset()
