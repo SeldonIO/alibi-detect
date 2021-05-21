@@ -91,13 +91,7 @@ class BaseMMDDriftOnline(BaseDetector):
         pass
 
     def get_threshold(self, t: int) -> Union[float, None]:
-        if t < self.window_size:
-            threshold = None
-        if self.window_size <= t < 2*self.window_size:
-            threshold = self.thresholds[t-self.window_size]  # type: ignore
-        if t >= 2*self.window_size:
-            threshold = self.thresholds[-1]  # type: ignore
-        return threshold
+        return self.thresholds[t] if t < self.window_size else self.thresholds[-1]
 
     def _initialise(self) -> None:
         self.t = -1  # 0 will correspond to first observation

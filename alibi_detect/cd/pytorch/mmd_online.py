@@ -95,9 +95,23 @@ class MMDDriftOnlineTorch(BaseMMDDriftOnline):
     def _configure_ref_subset(self):
         etw_size = 2*self.window_size-1  # etw = extended test window
         rw_size = self.n - etw_size  # rw = ref-window
-        self.ref_inds = torch.randperm(self.n)[:rw_size]
-        self.k_xx_sub = self.k_xx[self.ref_inds][:, self.ref_inds]
-        self.k_xx_sub_sum = zero_diag(self.k_xx_sub).sum()/(rw_size*(rw_size-1))
+        # Make split and ensure it doesn't cause an initial detection
+        mmd_init = None
+        while mmd_init is None or mmd_init >= self.get_threshold(0):
+            # Make split
+            perm = torch.randperm(self.n)
+            self.ref_inds, self.init_test_inds = perm[:rw_size], perm[-self.window_size:]
+            self.test_window = self.x_ref[self.init_test_inds]
+            # Compute initial mmd to check for initial detection
+            self.k_xx_sub = self.k_xx[self.ref_inds][:, self.ref_inds]
+            self.k_xx_sub_sum = zero_diag(self.k_xx_sub).sum()/(rw_size*(rw_size-1))
+            self.k_xy = self.kernel(self.x_ref[self.ref_inds], self.test_window)
+            k_yy = self.kernel(self.test_window, self.test_window)
+            mmd_init = (
+                self.k_xx_sub_sum +
+                zero_diag(k_yy).sum()/(self.window_size*(self.window_size-1)) -
+                2*self.k_xy.mean()
+            )
 
     def _configure_thresholds(self):
 
@@ -171,21 +185,13 @@ class MMDDriftOnlineTorch(BaseMMDDriftOnline):
         x_t = torch.from_numpy(x_t[None, :]).to(self.device)
         kernel_col = self.kernel(self.x_ref[self.ref_inds], x_t)
 
-        if self.t == 0:
-            self.test_window = x_t
-            self.k_xy = kernel_col
-            return None
-        elif 0 < self.t < self.window_size:
-            self.test_window = torch.cat([self.test_window, x_t], 0)
-            self.k_xy = torch.cat([self.k_xy, kernel_col], 1)
-            return None
-        else:
-            self.test_window = torch.cat([self.test_window[(1-self.window_size):], x_t], 0)
-            self.k_xy = torch.cat([self.k_xy[:, (1-self.window_size):], kernel_col], 1)
-            k_yy = self.kernel(self.test_window, self.test_window)
-            mmd = (
-                self.k_xx_sub_sum +
-                zero_diag(k_yy).sum()/(self.window_size*(self.window_size-1)) -
-                2*self.k_xy.mean()
-            )
-            return float(mmd.detach().cpu())
+        self.test_window = torch.cat([self.test_window[(1-self.window_size):], x_t], 0)
+        self.k_xy = torch.cat([self.k_xy[:, (1-self.window_size):], kernel_col], 1)
+        k_yy = self.kernel(self.test_window, self.test_window)
+        mmd = (
+            self.k_xx_sub_sum +
+            zero_diag(k_yy).sum()/(self.window_size*(self.window_size-1)) -
+            2*self.k_xy.mean()
+        )
+
+        return float(mmd.detach().cpu())

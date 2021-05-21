@@ -88,11 +88,9 @@ def test_mmd_online(mmd_online_params):
         if pred_t['data']['is_drift']:
             detection_times_h0.append(pred_t['data']['time'])
             cd.reset()
-    average_delay_h0 = (np.array(detection_times_h0) - window_size).mean()
+    average_delay_h0 = np.array(detection_times_h0).mean()
     test_stats_h0 = [ts for ts in test_stats_h0 if ts is not None]
-
     assert ert/3 < average_delay_h0 < 3*ert
-    assert min(detection_times_h0) >= window_size
 
     cd.reset()
 
@@ -105,10 +103,8 @@ def test_mmd_online(mmd_online_params):
         if pred_t['data']['is_drift']:
             detection_times_h1.append(pred_t['data']['time'])
             cd.reset()
-    average_delay_h1 = (np.array(detection_times_h1) - window_size).mean()
+    average_delay_h1 = np.array(detection_times_h1).mean()
     test_stats_h1 = [ts for ts in test_stats_h1 if ts is not None]
-
     assert np.abs(average_delay_h1) < ert/2
-    assert min(detection_times_h0) >= window_size
 
     assert np.mean(test_stats_h1) > np.mean(test_stats_h0)
