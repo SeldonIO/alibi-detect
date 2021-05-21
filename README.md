@@ -302,7 +302,7 @@ BibTeX entry:
 
 ```
 @software{alibi-detect,
-  title = {{Alibi-Detect}: Algorithms for outlier and adversarial instance detection, concept drift and metrics.},
+  title = {Alibi Detect: Algorithms for outlier, adversarial and drift detection},
   author = {Van Looveren, Arnaud and Vacanti, Giovanni and Klaise, Janis and Coca, Alexandru and Cobb, Oliver},
   url = {https://github.com/SeldonIO/alibi-detect},
   version = {0.6.2},
