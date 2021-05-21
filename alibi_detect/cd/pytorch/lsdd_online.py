@@ -161,8 +161,18 @@ class LSDDDriftOnlineTorch(BaseLSDDDriftOnline):
         etw_size = 2*self.window_size-1  # etw = extended test window
         nkc_size = self.n - self.n_kernel_centers  # nkc = non-kernel-centers
         rw_size = nkc_size - etw_size  # rw = ref-window
-        self.ref_inds = torch.randperm(nkc_size)[:rw_size]
-        self.c2s = self.k_xc[self.ref_inds].mean(0)  # (below Eqn 21)
+        # Make split and ensure it doesn't cause an initial detection
+        lsdd_init = None
+        while lsdd_init is None or lsdd_init >= self.get_threshold(0):
+            # Make split
+            perm = torch.randperm(nkc_size)
+            self.ref_inds, self.init_test_inds = perm[:rw_size], perm[-self.window_size:]
+            self.c2s = self.k_xc[self.ref_inds].mean(0)  # (below Eqn 21)
+            self.test_window = self.x_ref[self.init_test_inds]
+            # Compute initial lsdd to check for initial detection
+            self.k_xtc = self.kernel(self.test_window, self.kernel_centers)
+            h_init = self.c2s - self.k_xtc.mean(0)  # (Eqn 21)
+            lsdd_init = h_init[None, :] @ self.H_lam_inv @ h_init[:, None]  # (Eqn 11)
 
     def score(self, x_t: np.ndarray) -> Union[float, None]:
         """
@@ -182,17 +192,17 @@ class LSDDDriftOnlineTorch(BaseLSDDDriftOnline):
         x_t = self._normalize(x_t)
         k_xtc = self.kernel(x_t, self.kernel_centers)
 
-        if self.t == 0:
-            self.test_window = x_t
-            self.k_xtc = k_xtc
-            return None
-        elif 0 < self.t < self.window_size:
-            self.test_window = torch.cat([self.test_window, x_t], 0)
-            self.k_xtc = torch.cat([self.k_xtc, k_xtc], 0)
-            return None
-        else:
-            self.test_window = torch.cat([self.test_window[(1-self.window_size):], x_t], 0)
-            self.k_xtc = torch.cat([self.k_xtc[(1-self.window_size):], k_xtc], 0)
-            h = self.c2s - self.k_xtc.mean(0)  # (Eqn 21)
-            lsdd = h[None, :] @ self.H_lam_inv @ h[:, None]  # (Eqn 11)
-            return float(lsdd.detach().cpu())
+        # if self.t == 0:
+        #     self.test_window = x_t
+        #     self.k_xtc = k_xtc
+        #     return None
+        # elif 0 < self.t < self.window_size:
+        #     self.test_window = torch.cat([self.test_window, x_t], 0)
+        #     self.k_xtc = torch.cat([self.k_xtc, k_xtc], 0)
+        #     return None
+        # else:
+        self.test_window = torch.cat([self.test_window[(1-self.window_size):], x_t], 0)
+        self.k_xtc = torch.cat([self.k_xtc[(1-self.window_size):], k_xtc], 0)
+        h = self.c2s - self.k_xtc.mean(0)  # (Eqn 21)
+        lsdd = h[None, :] @ self.H_lam_inv @ h[:, None]  # (Eqn 11)
+        return float(lsdd.detach().cpu())
