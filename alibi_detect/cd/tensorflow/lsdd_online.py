@@ -179,16 +179,6 @@ class LSDDDriftOnlineTF(BaseLSDDDriftOnline):
         x_t = self._normalize(x_t)
         k_xtc = self.kernel(x_t, self.kernel_centers)
 
-        # if self.t == 0:
-        #     self.test_window = x_t
-        #     self.k_xtc = k_xtc
-        #     return None
-        # elif 0 < self.t < self.window_size:
-        #     self.test_window = tf.concat([self.test_window, x_t], axis=0)
-        #     self.k_xtc = tf.concat([self.k_xtc, k_xtc], axis=0)
-        #     return None
-        # else:
-
         self.test_window = tf.concat([self.test_window[(1-self.window_size):], x_t], axis=0)
         self.k_xtc = tf.concat([self.k_xtc[(1-self.window_size):], k_xtc], axis=0)
         h = self.c2s - tf.reduce_mean(self.k_xtc, axis=0)  # (Eqn 21)
