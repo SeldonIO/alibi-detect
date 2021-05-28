@@ -106,10 +106,10 @@ class LSDDDriftTorch(BaseLSDDDrift):
             sigma = torch.from_numpy(self.sigma)
             self.kernel = GaussianRBF(sigma)
 
-    def _configure_normalization(self, x_ref: torch.Tensor):
+    def _configure_normalization(self, x_ref: torch.Tensor, eps: float = 1e-7):
         x_ref_means = x_ref.mean(0)
         x_ref_stds = x_ref.std(0)
-        self._normalize = lambda x: (x - x_ref_means)/(x_ref_stds)
+        self._normalize = lambda x: (x - x_ref_means)/(x_ref_stds + eps)
 
     def _configure_kernel_centers(self, x_ref: torch.Tensor):
         "Set aside reference samples to act as kernel centers"
