@@ -1,4 +1,3 @@
-import logging
 from tqdm import tqdm
 import numpy as np
 import torch
@@ -6,8 +5,6 @@ from typing import Callable, Optional, Union
 from alibi_detect.cd.base_online import BaseMMDDriftOnline
 from alibi_detect.utils.pytorch.kernels import GaussianRBF
 from alibi_detect.cd.pytorch.utils import zero_diag, quantile
-
-logger = logging.getLogger(__name__)
 
 
 class MMDDriftOnlineTorch(BaseMMDDriftOnline):
@@ -88,7 +85,6 @@ class MMDDriftOnlineTorch(BaseMMDDriftOnline):
         # compute kernel matrix for the reference data
         self.x_ref = torch.from_numpy(self.x_ref).to(self.device)
         self.k_xx = self.kernel(self.x_ref, self.x_ref, infer_sigma=(sigma is None))
-        self.infer_sigma = False
 
         self._configure_thresholds()
         self._initialise()

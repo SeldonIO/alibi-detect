@@ -1,4 +1,3 @@
-import logging
 from tqdm import tqdm
 import numpy as np
 import tensorflow as tf
@@ -6,8 +5,6 @@ from typing import Callable, Optional, Union
 from alibi_detect.cd.base_online import BaseMMDDriftOnline
 from alibi_detect.utils.tensorflow.kernels import GaussianRBF
 from alibi_detect.cd.tensorflow.utils import zero_diag, quantile, subset_matrix
-
-logger = logging.getLogger(__name__)
 
 
 class MMDDriftOnlineTF(BaseMMDDriftOnline):
@@ -76,7 +73,6 @@ class MMDDriftOnlineTF(BaseMMDDriftOnline):
 
         # compute kernel matrix for the reference data
         self.k_xx = self.kernel(self.x_ref, self.x_ref, infer_sigma=(sigma is None))
-        self.infer_sigma = False
 
         self._configure_thresholds()
         self._initialise()
