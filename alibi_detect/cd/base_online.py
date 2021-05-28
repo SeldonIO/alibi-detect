@@ -46,7 +46,8 @@ class BaseMMDDriftOnline(BaseDetector):
             Function to preprocess the data before computing the data drift metrics.
         sigma
             Optionally set the GaussianRBF kernel bandwidth. Can also pass multiple bandwidth values as an array.
-            The kernel evaluation is then averaged over those bandwidths.
+            The kernel evaluation is then averaged over those bandwidths. If `sigma` is not specified, the 'median
+            heuristic' is adopted whereby `sigma` is set as the median pairwise distance between reference samples.
         n_bootstraps
             The number of bootstrap simulations used to configure the thresholds. The larger this is the
             more accurately the desired ERT will be targeted. Should ideally be at least an order of magnitude
@@ -180,15 +181,17 @@ class BaseLSDDDriftOnline(BaseDetector):
         preprocess_fn
             Function to preprocess the data before computing the data drift metrics.s
         sigma
-            Optionally set the GaussianRBF kernel bandwidth. Can also pass multiple bandwidth values as an array.
-            The kernel evaluation is then averaged over those bandwidths.
+            Optionally set the bandwidth of the Gaussian kernel used in estimating the LSDD. Can also pass multiple
+            bandwidth values as an array. The kernel evaluation is then averaged over those bandwidths. If `sigma`
+            is not specified, the 'median heuristic' is adopted whereby `sigma` is set as the median pairwise distance
+            between reference samples.
         n_bootstraps
             The number of bootstrap simulations used to configure the thresholds. The larger this is the
             more accurately the desired ERT will be targeted. Should ideally be at least an order of magnitude
             larger than the ert.
         n_kernel_centers
-            Number of reference data points to use kernel centers to use in the estimation of the LSDD.
-            Defaults to 2*window_size.
+            The number of reference samples to use as centers in the Gaussian kernel model used to estimate LSDD.
+            Defaults to 1/20th of the reference data.
         lambda_rd_max
             The maximum relative difference between two estimates of LSDD that the regularization parameter
             lambda is allowed to cause. Defaults to 0.2 as in the paper.

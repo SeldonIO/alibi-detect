@@ -45,7 +45,8 @@ class MMDDriftOnlineTF(BaseMMDDriftOnline):
             Kernel used for the MMD computation, defaults to Gaussian RBF kernel.
         sigma
             Optionally set the GaussianRBF kernel bandwidth. Can also pass multiple bandwidth values as an array.
-            The kernel evaluation is then averaged over those bandwidths.
+            The kernel evaluation is then averaged over those bandwidths. If `sigma` is not specified, the 'median
+            heuristic' is adopted whereby `sigma` is set as the median pairwise distance between reference samples.
         n_bootstraps
             The number of bootstrap simulations used to configure the thresholds. The larger this is the
             more accurately the desired ERT will be targeted. Should ideally be at least an order of magnitude

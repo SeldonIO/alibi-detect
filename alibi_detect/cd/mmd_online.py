@@ -51,7 +51,8 @@ class MMDDriftOnline:
             Kernel used for the MMD computation, defaults to Gaussian RBF kernel.
         sigma
             Optionally set the GaussianRBF kernel bandwidth. Can also pass multiple bandwidth values as an array.
-            The kernel evaluation is then averaged over those bandwidths.
+            The kernel evaluation is then averaged over those bandwidths. If `sigma` is not specified, the 'median
+            heuristic' is adopted whereby `sigma` is set as the median pairwise distance between reference samples.
         n_bootstraps
             The number of bootstrap simulations used to configure the thresholds. The larger this is the
             more accurately the desired ERT will be targeted. Should ideally be at least an order of magnitude
@@ -74,8 +75,8 @@ class MMDDriftOnline:
             raise NotImplementedError(f'{backend} not implemented. Use tensorflow or pytorch instead.')
 
         kwargs = locals()
-        args = [kwargs['x_ref']]
-        pop_kwargs = ['self', 'x_ref', 'backend', '__class__']
+        args = [kwargs['x_ref'], kwargs['ert'], kwargs['window_size']]
+        pop_kwargs = ['self', 'x_ref', 'ert', 'window_size', 'backend', '__class__']
         [kwargs.pop(k, None) for k in pop_kwargs]
 
         if kernel is None:
@@ -102,12 +103,7 @@ class MMDDriftOnline:
 
     @property
     def thresholds(self):
-        thresholds = []
-        for s in range(self.t):
-            threshold_s = self._detector.thresholds[s] if s < self._detector.window_size else \
-                self._detector.thresholds[-1]
-            thresholds.append(threshold_s)
-        return thresholds
+        return [self._detector.thresholds[min(s, self._detector.window_size-1)] for s in range(self.t)]
 
     def reset(self):
         "Resets the detector but does not reconfigure thresholds."
