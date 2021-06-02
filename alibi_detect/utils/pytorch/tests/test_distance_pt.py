@@ -2,7 +2,7 @@ import numpy as np
 from itertools import product
 import pytest
 import torch
-from alibi_detect.utils.pytorch import GaussianRBF, mmd2, mmd2_from_kernel_matrix
+from alibi_detect.utils.pytorch import GaussianRBF, mmd2, mmd2_from_kernel_matrix, permed_lsdds
 from alibi_detect.utils.pytorch import squared_pairwise_distance
 
 n_features = [2, 5]
@@ -85,3 +85,42 @@ def test_mmd_from_kernel_matrix(mmd_from_kernel_matrix_params):
     mmd_2 = mmd2_from_kernel_matrix(kernel_mat_2, m, permute=permute, zero_diag=zero_diag)
     if not permute:
         assert mmd_2.numpy() < mmd.numpy()
+
+
+n = [10]
+m = [10]
+d = [3]
+B = [20]
+n_kcs = [5]
+tests_permed_lsdds = list(product(n, m, d, B, n_kcs))
+n_tests_permed_lsdds = len(tests_permed_lsdds)
+
+
+@pytest.fixture
+def permed_lsdds_params(request):
+    return tests_permed_lsdds[request.param]
+
+
+@pytest.mark.parametrize('permed_lsdds_params',
+                         list(range(n_tests_permed_lsdds)), indirect=True)
+def test_permed_lsdds(permed_lsdds_params):
+    n, m, d, B, n_kcs = permed_lsdds_params
+
+    kcs = torch.randn(n_kcs, d)
+    x_ref = torch.randn(n, d)
+    x_cur = 10 + 0.2*torch.randn(m, d)
+    x_full = torch.cat([x_ref, x_cur], axis=0)
+    sigma = torch.tensor((1.,))
+    k_all_c = GaussianRBF(sigma)(x_full, kcs)
+    H = GaussianRBF(np.sqrt(2.)*sigma)(kcs, kcs)/((np.pi)**(d/2))
+
+    perms = [torch.randperm(n+m) for _ in range(B)]
+    x_perms = [perm[:n] for perm in perms]
+    y_perms = [perm[n:] for perm in perms]
+
+    lsdd_perms, H_lam_inv, lsdd_unpermed = permed_lsdds(
+        k_all_c, x_perms, y_perms, H, return_unpermed=True
+    )
+
+    assert int((lsdd_perms > lsdd_unpermed).sum()) == 0
+    assert H_lam_inv.shape == (n_kcs, n_kcs)

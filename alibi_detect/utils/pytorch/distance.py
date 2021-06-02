@@ -93,7 +93,33 @@ def permed_lsdds(
     lam_rd_max: float = 0.2,
     return_unpermed: bool = False,
 ) -> Union[Tuple[torch.Tensor, torch.Tensor], Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]:
+    """
+    Compute LSDD estimates from kernel matrix across various ref and test window samples
 
+    Parameters
+    ----------
+    k_all_c
+        Kernel matrix of simmilarities between all samples and the kernel centers.
+    x_perms
+        List of B reference window index vectors
+    y_perms
+        List of B test window index vectors
+    H
+        Special (scaled) kernel matrix of simmilarities between kernel centers
+    H_lam_inv
+        Function of H corresponding to a particular regulariation parameter lambda.
+        See Eqn 11 of Bu et al. (2017)
+    lam_rd_max
+        The maximum relative difference between two estimates of LSDD that the regularization parameter
+        lambda is allowed to cause. Defaults to 0.2. Only relavent if H_lam_inv is not supplied.
+    return_unpermed
+        Whether or not to return value corresponding to unpermed order defined by k_all_c
+
+    Returns
+    -------
+    Vector of B LSDD estimates for each permutation, H_lam_inv which may have been inferred, and optionally
+    the unpermed LSDD estimate.
+    """
     # Compute (for each bootstrap) the average distance to each kernel center (Eqn 7)
     k_xc_perms = torch.stack([k_all_c[x_inds] for x_inds in x_perms], 0)
     k_yc_perms = torch.stack([k_all_c[y_inds] for y_inds in y_perms], 0)

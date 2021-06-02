@@ -2,7 +2,7 @@ import numpy as np
 from itertools import product
 import pytest
 import tensorflow as tf
-from alibi_detect.utils.tensorflow import GaussianRBF, mmd2, mmd2_from_kernel_matrix
+from alibi_detect.utils.tensorflow import GaussianRBF, mmd2, mmd2_from_kernel_matrix, permed_lsdds
 from alibi_detect.utils.tensorflow import relative_euclidean_distance, squared_pairwise_distance
 
 n_features = [2, 5]
@@ -94,3 +94,43 @@ def test_relative_euclidean_distance():
     assert (relative_euclidean_distance(x, y).numpy() == relative_euclidean_distance(y, x).numpy()).all()
     assert (relative_euclidean_distance(x, x).numpy() == relative_euclidean_distance(y, y).numpy()).all()
     assert (relative_euclidean_distance(x, y).numpy() >= 0.).all()
+
+
+n = [10]
+m = [10]
+d = [3]
+B = [20]
+n_kcs = [5]
+tests_permed_lsdds = list(product(n, m, d, B, n_kcs))
+n_tests_permed_lsdds = len(tests_permed_lsdds)
+
+
+@pytest.fixture
+def permed_lsdds_params(request):
+    return tests_permed_lsdds[request.param]
+
+
+@pytest.mark.parametrize('permed_lsdds_params',
+                         list(range(n_tests_permed_lsdds)), indirect=True)
+def test_permed_lsdds(permed_lsdds_params):
+    n, m, d, B, n_kcs = permed_lsdds_params
+
+    kcs = tf.random.normal((n_kcs, d))
+    x_ref = tf.random.normal((n, d))
+    x_cur = 10 + 0.2*tf.random.normal((m, d))
+
+    x_full = tf.concat([x_ref, x_cur], axis=0)
+    sigma = tf.constant((1.,))
+    k_all_c = GaussianRBF(sigma)(x_full, kcs)
+    H = GaussianRBF(np.sqrt(2.)*sigma)(kcs, kcs)/((np.pi)**(d/2))
+
+    perms = [tf.random.shuffle(tf.range(n+m)) for _ in range(B)]
+    x_perms = [perm[:n] for perm in perms]
+    y_perms = [perm[n:] for perm in perms]
+
+    lsdd_perms, H_lam_inv, lsdd_unpermed = permed_lsdds(
+        k_all_c, x_perms, y_perms, H, return_unpermed=True
+    )
+
+    assert int(tf.reduce_sum(tf.cast(lsdd_perms > lsdd_unpermed, float))) == 0
+    assert H_lam_inv.shape == (n_kcs, n_kcs)
