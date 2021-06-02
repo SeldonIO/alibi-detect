@@ -139,7 +139,6 @@ def permed_lsdds(
         rds = tf.reduce_mean(1 - (omega_H_omegas/h_omegas), axis=0)
         lambda_index = int(tf.where(rds < lam_rd_max)[0])
         lam = candidate_lambdas[lambda_index]
-        print(f"Using lambda value of {lam:.2g} with RD of {float(rds[lambda_index]):.2g}")
         H_plus_lam_inv = tf.linalg.inv(H+lam*tf.eye(H.shape[0], dtype=H.dtype))
         H_lam_inv = 2*H_plus_lam_inv - (tf.transpose(H_plus_lam_inv, [1, 0]) @ H @ H_plus_lam_inv)  # (blw Eqn 11)
 
