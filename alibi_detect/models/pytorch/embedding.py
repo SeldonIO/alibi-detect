@@ -40,12 +40,12 @@ class TransformerEmbedding(nn.Module):
         self.hs_emb = partial(hidden_state_embedding, layers=layers, use_cls=embedding_type.endswith('cls'))
 
     def forward(self, tokens: Dict[str, torch.Tensor]) -> torch.Tensor:
-        last_hidden_state, pooler_output, hidden_states = self.model(**tokens)
+        output = self.model(**tokens)
         if self.emb_type == 'pooler_output':
-            return pooler_output
+            return output.pooler_output
         elif self.emb_type == 'last_hidden_state':
-            return last_hidden_state.mean(dim=1)
-        attention_hidden_states = hidden_states[1:]
+            return output.last_hidden_state.mean(dim=1)
+        attention_hidden_states = output.hidden_states[1:]
         if self.emb_type.startswith('hidden_state'):
             return self.hs_emb(attention_hidden_states)
         else:
