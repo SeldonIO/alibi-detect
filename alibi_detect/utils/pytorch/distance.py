@@ -1,5 +1,8 @@
+import logging
 import torch
 from typing import Callable, List, Tuple, Optional, Union
+
+logger = logging.getLogger(__name__)
 
 
 @torch.jit.script
@@ -110,6 +113,8 @@ def permed_lsdds(
         omega_H_omegas = torch.einsum('bkl,bkl->bl', torch.einsum('bjl,jk->bkl', omegas, H), omegas)
         rds = (1 - (omega_H_omegas/h_omegas)).mean(0)
         lam_index = (rds < lam_rd_max).nonzero()[0]
+        lam = candidate_lambdas[lam_index]
+        logger.info(f"Using lambda value of {lam:.2g} with RD of {float(rds[lam_index]):.2g}")
         H_plus_lam_inv = H_plus_lam_invs[:, :, lam_index.item()]
         H_lam_inv = 2*H_plus_lam_inv - (H_plus_lam_inv.transpose(0, 1) @ H @ H_plus_lam_inv)  # (below Eqn 11)
 
