@@ -408,7 +408,7 @@ class BaseLSDDDrift(BaseDetector):
             data_type: Optional[str] = None
     ) -> None:
         """
-        Least-squares Desnity Difference (LSDD) base data drift detector using a permutation test.
+        Least-squares Density Difference (LSDD) base data drift detector using a permutation test.
 
         Parameters
         ----------
