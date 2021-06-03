@@ -108,7 +108,7 @@ class BaseDriftOnline(BaseDetector):
         x_t
             A single instance to be added to the test-window.
         return_test_stat
-            Whether to return the test statistic (LSDD) and threshold.
+            Whether to return the test statistic and threshold.
 
         Returns
         -------
