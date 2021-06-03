@@ -115,6 +115,9 @@ class LSDDDriftOnlineTorch(BaseDriftOnline):
         perm = torch.randperm(self.n)
         self.c_inds, self.non_c_inds = perm[:self.n_kernel_centers], perm[self.n_kernel_centers:]
         self.kernel_centers = self.x_ref[self.c_inds]
+        if np.unique(self.kernel_centers.numpy(), axis=0).shape[0] < self.n_kernel_centers:
+            perturbation = torch.randn(self.kernel_centers.shape)*1e-6
+            self.kernel_centers = self.kernel_centers + perturbation
         self.x_ref_eff = self.x_ref[self.non_c_inds]  # the effective reference set
         self.k_xc = self.kernel(self.x_ref_eff, self.kernel_centers)
 

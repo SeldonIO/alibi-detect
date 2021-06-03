@@ -102,6 +102,9 @@ class LSDDDriftOnlineTF(BaseDriftOnline):
         perm = tf.random.shuffle(tf.range(self.n))
         self.c_inds, self.non_c_inds = perm[:self.n_kernel_centers], perm[self.n_kernel_centers:]
         self.kernel_centers = tf.gather(self.x_ref, self.c_inds)
+        if np.unique(self.kernel_centers.numpy(), axis=0).shape[0] < self.n_kernel_centers:
+            perturbation = tf.random.normal(self.kernel_centers.shape, mean=0, stddev=1e-6)
+            self.kernel_centers = self.kernel_centers + perturbation
         self.x_ref_eff = tf.gather(self.x_ref, self.non_c_inds)  # the effective reference set
         self.k_xc = self.kernel(self.x_ref_eff, self.kernel_centers)
 
