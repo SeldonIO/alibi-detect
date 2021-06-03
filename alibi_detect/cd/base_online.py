@@ -22,6 +22,7 @@ class BaseDriftOnline(BaseDetector):
             window_size: int,
             preprocess_fn: Optional[Callable] = None,
             n_bootstraps: int = 1000,
+            verbose: bool = True,
             input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None,
     ) -> None:
@@ -39,11 +40,13 @@ class BaseDriftOnline(BaseDetector):
             Smaller windows focus on responding quickly to severe drift, larger windows focus on
             ability to detect slight drift.
         preprocess_fn
-            Function to preprocess the data before computing the data drift metrics.s
+            Function to preprocess the data before computing the data drift metrics.
         n_bootstraps
             The number of bootstrap simulations used to configure the thresholds. The larger this is the
             more accurately the desired ERT will be targeted. Should ideally be at least an order of magnitude
             larger than the ert.
+        verbose
+            Whether or not to print progress during configuration.
         input_shape
             Shape of input data.
         data_type
@@ -65,6 +68,7 @@ class BaseDriftOnline(BaseDetector):
         self.preprocess_fn = preprocess_fn
         self.n = x_ref.shape[0]  # type: ignore
         self.n_bootstraps = n_bootstraps  # nb of samples used to estimate thresholds
+        self.verbose = verbose
 
         # store input shape for save and load functionality
         self.input_shape = input_shape if isinstance(input_shape, tuple) else x_ref.shape[1:]

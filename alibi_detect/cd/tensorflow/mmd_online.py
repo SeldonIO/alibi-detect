@@ -17,6 +17,7 @@ class MMDDriftOnlineTF(BaseDriftOnline):
             kernel: Callable = GaussianRBF,
             sigma: Optional[np.ndarray] = None,
             n_bootstraps: int = 1000,
+            verbose: bool = True,
             input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None
     ) -> None:
@@ -45,6 +46,8 @@ class MMDDriftOnlineTF(BaseDriftOnline):
             The number of bootstrap simulations used to configure the thresholds. The larger this is the
             more accurately the desired ERT will be targeted. Should ideally be at least an order of magnitude
             larger than the ERT.
+        verbose
+            Whether or not to print progress during configuration.
         input_shape
             Shape of input data.
         data_type
@@ -56,6 +59,7 @@ class MMDDriftOnlineTF(BaseDriftOnline):
             window_size=window_size,
             preprocess_fn=preprocess_fn,
             n_bootstraps=n_bootstraps,
+            verbose=verbose,
             input_shape=input_shape,
             data_type=data_type
         )
@@ -107,7 +111,8 @@ class MMDDriftOnlineTF(BaseDriftOnline):
         x_inds_all = [perm[:-etw_size] for perm in perms]
         y_inds_all = [perm[-etw_size:] for perm in perms]
 
-        print("Generating permutations of kernel matrix..")
+        if self.verbose:
+            print("Generating permutations of kernel matrix..")
         # Need to compute mmd for each bs for each of W overlapping windows
         # Most of the computation can be done once however
         # We avoid summing the rw_size^2 submatrix for each bootstrap sample by instead computing the full
@@ -117,7 +122,8 @@ class MMDDriftOnlineTF(BaseDriftOnline):
         k_full_sum = tf.reduce_sum(zero_diag(self.k_xx))
         k_xy_col_sums_all = [
             tf.reduce_sum(subset_matrix(self.k_xx, x_inds, y_inds), axis=0) for x_inds, y_inds in
-            tqdm(zip(x_inds_all, y_inds_all), total=self.n_bootstraps)
+            (tqdm(zip(x_inds_all, y_inds_all), total=self.n_bootstraps) if self.verbose else
+                zip(x_inds_all, y_inds_all))
         ]
         k_xx_sums_all = [(
             k_full_sum -
@@ -128,7 +134,8 @@ class MMDDriftOnlineTF(BaseDriftOnline):
 
         # Now to iterate through the W overlapping windows
         thresholds = []
-        for w in tqdm(range(w_size), "Computing thresholds"):
+        p_bar = tqdm(range(w_size), "Computing thresholds") if self.verbose else range(w_size)
+        for w in p_bar:
             y_inds_all_w = [y_inds[w:w+w_size] for y_inds in y_inds_all]  # test windows of size W
             mmds = [(
                 k_xx_sum +

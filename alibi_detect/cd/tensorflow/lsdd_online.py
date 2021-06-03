@@ -20,6 +20,7 @@ class LSDDDriftOnlineTF(BaseDriftOnline):
             n_bootstraps: int = 1000,
             n_kernel_centers: Optional[int] = None,
             lambda_rd_max: float = 0.2,
+            verbose: bool = True,
             input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None
     ) -> None:
@@ -55,6 +56,8 @@ class LSDDDriftOnlineTF(BaseDriftOnline):
         lambda_rd_max
             The maximum relative difference between two estimates of LSDD that the regularization parameter
             lambda is allowed to cause. Defaults to 0.2 as in the paper.
+        verbose
+            Whether or not to print progress during configuration.
         input_shape
             Shape of input data.
         data_type
@@ -66,6 +69,7 @@ class LSDDDriftOnlineTF(BaseDriftOnline):
             window_size=window_size,
             preprocess_fn=preprocess_fn,
             n_bootstraps=n_bootstraps,
+            verbose=verbose,
             input_shape=input_shape,
             data_type=data_type
         )
@@ -132,7 +136,8 @@ class LSDDDriftOnlineTF(BaseDriftOnline):
         # Can compute threshold for first window
         thresholds = [quantile(lsdds_0, 1-self.fpr)]
         # And now to iterate through the other W-1 overlapping windows
-        for w in tqdm(range(1, w_size), "Computing thresholds"):
+        p_bar = tqdm(range(1, w_size), "Computing thresholds") if self.verbose else range(1, w_size)
+        for w in p_bar:
             y_inds_all_w = [y_inds[w:(w+w_size)] for y_inds in y_inds_all]
             lsdds_w, _ = permed_lsdds(self.k_xc, x_inds_all, y_inds_all_w, H, H_lam_inv=H_lam_inv)
             thresholds.append(quantile(lsdds_w, 1-self.fpr))

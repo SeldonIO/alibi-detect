@@ -24,6 +24,7 @@ class MMDDriftOnline:
             sigma: Optional[np.ndarray] = None,
             n_bootstraps: int = 1000,
             device: Optional[str] = None,
+            verbose: bool = True,
             input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None
     ) -> None:
@@ -57,6 +58,8 @@ class MMDDriftOnline:
         device
             Device type used. The default None tries to use the GPU and falls back on CPU if needed.
             Can be specified by passing either 'cuda', 'gpu' or 'cpu'. Only relevant for 'pytorch' backend.
+        verbose
+            Whether or not to print progress during configuration.
         input_shape
             Shape of input data.
         data_type
