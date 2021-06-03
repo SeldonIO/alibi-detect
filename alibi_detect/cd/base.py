@@ -459,7 +459,7 @@ class BaseLSDDDrift(BaseDetector):
         self.preprocess_fn = preprocess_fn
         self.n = x_ref.shape[0]  # type: ignore
         self.n_permutations = n_permutations  # nb of iterations through permutation test
-        self.n_kernel_centers = n_kernel_centers or self.n // 20
+        self.n_kernel_centers = n_kernel_centers or max(self.n // 20, 1)
         self.lambda_rd_max = lambda_rd_max
 
         # store input shape for save and load functionality
