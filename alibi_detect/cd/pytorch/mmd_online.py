@@ -13,7 +13,6 @@ class MMDDriftOnlineTorch(BaseMMDDriftOnline):
             x_ref: np.ndarray,
             ert: float,
             window_size: int,
-            preprocess_x_ref: bool = True,
             preprocess_fn: Optional[Callable] = None,
             kernel: Callable = GaussianRBF,
             sigma: Optional[np.ndarray] = None,
@@ -35,8 +34,6 @@ class MMDDriftOnlineTorch(BaseMMDDriftOnline):
             The size of the sliding test-window used to compute the test-statistic.
             Smaller windows focus on responding quickly to severe drift, larger windows focus on
             ability to detect slight drift.
-        preprocess_x_ref
-            Whether to already preprocess and store the reference data.
         preprocess_fn
             Function to preprocess the data before computing the data drift metrics.
         kernel
@@ -61,7 +58,6 @@ class MMDDriftOnlineTorch(BaseMMDDriftOnline):
             x_ref=x_ref,
             ert=ert,
             window_size=window_size,
-            preprocess_x_ref=preprocess_x_ref,
             preprocess_fn=preprocess_fn,
             sigma=sigma,
             n_bootstraps=n_bootstraps,

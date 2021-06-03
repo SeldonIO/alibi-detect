@@ -20,7 +20,6 @@ class BaseMMDDriftOnline(BaseDetector):
             x_ref: np.ndarray,
             ert: float,
             window_size: int,
-            preprocess_x_ref: bool = True,
             preprocess_fn: Optional[Callable] = None,
             sigma: Optional[np.ndarray] = None,
             n_bootstraps: int = 1000,
@@ -40,8 +39,6 @@ class BaseMMDDriftOnline(BaseDetector):
             The size of the sliding test-window used to compute the test-statistic.
             Smaller windows focus on responding quickly to severe drift, larger windows focus on
             ability to detect slight drift.
-        preprocess_x_ref
-            Whether to already preprocess and store the reference data.
         preprocess_fn
             Function to preprocess the data before computing the data drift metrics.
         sigma
@@ -66,11 +63,10 @@ class BaseMMDDriftOnline(BaseDetector):
         self.fpr = 1/ert
         self.window_size = window_size
 
-        if preprocess_x_ref and isinstance(preprocess_fn, Callable):  # type: ignore
+        if isinstance(preprocess_fn, Callable):  # type: ignore
             self.x_ref = preprocess_fn(x_ref)
         else:
             self.x_ref = x_ref
-        self.preprocess_x_ref = preprocess_x_ref
         self.preprocess_fn = preprocess_fn
         self.n = x_ref.shape[0]  # type: ignore
         self.n_bootstraps = n_bootstraps  # nb of samples used to estimate thresholds
@@ -124,7 +120,7 @@ class BaseMMDDriftOnline(BaseDetector):
         self.t += 1
 
         # preprocess if necessary
-        if self.preprocess_x_ref and isinstance(self.preprocess_fn, Callable):  # type: ignore
+        if isinstance(self.preprocess_fn, Callable):  # type: ignore
             x_t = self.preprocess_fn(x_t[None, :])[0]
 
         # update test window and return updated test stat
@@ -154,7 +150,6 @@ class BaseLSDDDriftOnline(BaseDetector):
             x_ref: np.ndarray,
             ert: float,
             window_size: int,
-            preprocess_x_ref: bool = True,
             preprocess_fn: Optional[Callable] = None,
             sigma: Optional[np.ndarray] = None,
             n_bootstraps: int = 1000,
@@ -176,8 +171,6 @@ class BaseLSDDDriftOnline(BaseDetector):
             The size of the sliding test-window used to compute the test-statistic.
             Smaller windows focus on responding quickly to severe drift, larger windows focus on
             ability to detect slight drift.
-        preprocess_x_ref
-            Whether to already preprocess and store the reference data.
         preprocess_fn
             Function to preprocess the data before computing the data drift metrics.s
         sigma
@@ -209,11 +202,10 @@ class BaseLSDDDriftOnline(BaseDetector):
         self.fpr = 1/ert
         self.window_size = window_size
 
-        if preprocess_x_ref and isinstance(preprocess_fn, Callable):  # type: ignore
+        if isinstance(preprocess_fn, Callable):  # type: ignore
             self.x_ref = preprocess_fn(x_ref)
         else:
             self.x_ref = x_ref
-        self.preprocess_x_ref = preprocess_x_ref
         self.preprocess_fn = preprocess_fn
         self.n = x_ref.shape[0]  # type: ignore
         self.n_bootstraps = n_bootstraps  # nb of samples used to estimate thresholds
@@ -270,7 +262,7 @@ class BaseLSDDDriftOnline(BaseDetector):
         self.t += 1
 
         # preprocess if necessary
-        if self.preprocess_x_ref and isinstance(self.preprocess_fn, Callable):  # type: ignore
+        if isinstance(self.preprocess_fn, Callable):  # type: ignore
             x_t = self.preprocess_fn(x_t[None, :])[0]
 
         # update test window and return updated test stat

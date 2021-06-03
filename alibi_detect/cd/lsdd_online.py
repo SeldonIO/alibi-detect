@@ -19,7 +19,6 @@ class LSDDDriftOnline:
             ert: float,
             window_size: int,
             backend: str = 'tensorflow',
-            preprocess_x_ref: bool = True,
             preprocess_fn: Optional[Callable] = None,
             sigma: Optional[np.ndarray] = None,
             n_bootstraps: int = 1000,
@@ -46,8 +45,6 @@ class LSDDDriftOnline:
             ability to detect slight drift.
         backend
             Backend used for the LSDD implementation and configuration.
-        preprocess_x_ref
-            Whether to already preprocess and store the reference data.
         preprocess_fn
             Function to preprocess the data before computing the data drift metrics.s
         sigma

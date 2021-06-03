@@ -29,10 +29,8 @@ preprocess = [
     (preprocess_drift, {'model': HiddenOutput, 'layer': -1}),
     (preprocess_drift, {'model': UAE})
 ]
-preprocess_x_ref = [True, False]
 n_bootstraps = [200]
-tests_mmddriftonline = list(product(n_features, n_enc, ert, window_size, preprocess,
-                                    n_bootstraps, preprocess_x_ref))
+tests_mmddriftonline = list(product(n_features, n_enc, ert, window_size, preprocess, n_bootstraps))
 n_tests = len(tests_mmddriftonline)
 
 
@@ -43,7 +41,7 @@ def mmd_online_params(request):
 
 @pytest.mark.parametrize('mmd_online_params', list(range(n_tests)), indirect=True)
 def test_mmd_online(mmd_online_params):
-    n_features, n_enc, ert, window_size, preprocess, n_bootstraps, preprocess_x_ref = mmd_online_params
+    n_features, n_enc, ert, window_size, preprocess, n_bootstraps = mmd_online_params
 
     np.random.seed(0)
 
@@ -74,7 +72,6 @@ def test_mmd_online(mmd_online_params):
         x_ref=x_ref,
         ert=ert,
         window_size=window_size,
-        preprocess_x_ref=preprocess_x_ref if isinstance(preprocess_fn, Callable) else False,
         preprocess_fn=preprocess_fn,
         n_bootstraps=n_bootstraps
     )
