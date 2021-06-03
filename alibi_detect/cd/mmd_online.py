@@ -1,4 +1,3 @@
-import logging
 import numpy as np
 from typing import Callable, Dict, Optional, Union
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
@@ -8,8 +7,6 @@ if has_pytorch:
 
 if has_tensorflow:
     from alibi_detect.cd.tensorflow.mmd_online import MMDDriftOnlineTF
-
-logger = logging.getLogger(__name__)
 
 
 class MMDDriftOnline:

@@ -1,12 +1,9 @@
-import logging
 from tqdm import tqdm
 import numpy as np
 import torch
 from typing import Callable, Optional, Union
 from alibi_detect.cd.base_online import BaseDriftOnline
 from alibi_detect.utils.pytorch import GaussianRBF, permed_lsdds, quantile
-
-logger = logging.getLogger(__name__)
 
 
 class LSDDDriftOnlineTorch(BaseDriftOnline):

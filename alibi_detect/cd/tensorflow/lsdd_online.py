@@ -1,12 +1,9 @@
-import logging
 from tqdm import tqdm
 import numpy as np
 import tensorflow as tf
 from typing import Callable, Optional, Union
 from alibi_detect.cd.base_online import BaseDriftOnline
 from alibi_detect.utils.tensorflow import GaussianRBF, quantile, permed_lsdds
-
-logger = logging.getLogger(__name__)
 
 
 class LSDDDriftOnlineTF(BaseDriftOnline):

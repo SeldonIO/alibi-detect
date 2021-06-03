@@ -1,12 +1,9 @@
-import logging
 import numpy as np
 import tensorflow as tf
 from typing import Callable, Dict, Optional, Tuple
 from alibi_detect.cd.base import BaseLSDDDrift
 from alibi_detect.utils.tensorflow.kernels import GaussianRBF
 from alibi_detect.utils.tensorflow.distance import permed_lsdds
-
-logger = logging.getLogger(__name__)
 
 
 class LSDDDriftTF(BaseLSDDDrift):
