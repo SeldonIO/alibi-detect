@@ -90,9 +90,9 @@ class LSDDDriftOnlineTorch(BaseDriftOnline):
 
         # initialize kernel
         if sigma is None:
-            self.x_ref = torch.from_numpy(self.x_ref).to(self.device)
+            x_ref = torch.from_numpy(self.x_ref).to(self.device)
             self.kernel = GaussianRBF()
-            _ = self.kernel(self.x_ref, self.x_ref, infer_sigma=True)
+            _ = self.kernel(x_ref, x_ref, infer_sigma=True)
         else:
             sigma = torch.from_numpy(sigma).to(self.device) if isinstance(sigma, np.ndarray) else None
             self.kernel = GaussianRBF(sigma)
@@ -105,20 +105,21 @@ class LSDDDriftOnlineTorch(BaseDriftOnline):
         self._initialise()
 
     def _configure_normalization(self, eps: float = 1e-12):
-        x_ref_means = self.x_ref.mean(axis=0)
-        x_ref_stds = self.x_ref.std(axis=0)
+        x_ref = torch.from_numpy(self.x_ref).to(self.device)
+        x_ref_means = x_ref.mean(axis=0)
+        x_ref_stds = x_ref.std(axis=0)
         self._normalize = lambda x: (x - x_ref_means)/(x_ref_stds + eps)
-        self.x_ref = self._normalize(self.x_ref)
+        self.x_ref = self._normalize(x_ref).cpu().numpy()
 
     def _configure_kernel_centers(self):
         "Set aside reference samples to act as kernel centers"
         perm = torch.randperm(self.n)
         self.c_inds, self.non_c_inds = perm[:self.n_kernel_centers], perm[self.n_kernel_centers:]
-        self.kernel_centers = self.x_ref[self.c_inds]
-        if np.unique(self.kernel_centers.numpy(), axis=0).shape[0] < self.n_kernel_centers:
-            perturbation = torch.randn(self.kernel_centers.shape)*1e-6
+        self.kernel_centers = torch.from_numpy(self.x_ref[self.c_inds]).to(self.device)
+        if np.unique(self.kernel_centers.cpu().numpy(), axis=0).shape[0] < self.n_kernel_centers:
+            perturbation = (torch.randn(self.kernel_centers.shape)*1e-6).to(self.device)
             self.kernel_centers = self.kernel_centers + perturbation
-        self.x_ref_eff = self.x_ref[self.non_c_inds]  # the effective reference set
+        self.x_ref_eff = torch.from_numpy(self.x_ref[self.non_c_inds]).to(self.device)  # the effective reference set
         self.k_xc = self.kernel(self.x_ref_eff, self.kernel_centers)
 
     def _configure_thresholds(self):
