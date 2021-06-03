@@ -66,6 +66,7 @@ def test_lsdd(lsdd_params):
         preprocess_fn=preprocess_fn,
         n_permutations=n_permutations
     )
+
     x = x_ref.copy()
     preds = cd.predict(x, return_p_val=True)
     assert preds['data']['is_drift'] == 0 and preds['data']['p_val'] >= cd.p_val

@@ -84,12 +84,12 @@ class LSDDDriftTorch(BaseLSDDDrift):
             self.device = torch.device('cpu')
 
         if self.preprocess_x_ref or self.preprocess_fn is None:
-            x_ref = torch.as_tensor(self.x_ref)
+            x_ref = torch.as_tensor(self.x_ref).to(self.device)
             self._configure_normalization(x_ref)
             x_ref = self._normalize(x_ref)
             self._initialize_kernel(x_ref)
             self._configure_kernel_centers(x_ref)
-            self.x_ref = x_ref.numpy()
+            self.x_ref = x_ref.cpu().numpy()
 
             d = self.x_ref.shape[-1]
             self.H = GaussianRBF(np.sqrt(2.)*self.kernel.sigma)(self.kernel_centers, self.kernel_centers) * \
@@ -113,8 +113,8 @@ class LSDDDriftTorch(BaseLSDDDrift):
         perm = torch.randperm(self.x_ref.shape[0])
         c_inds, non_c_inds = perm[:self.n_kernel_centers], perm[self.n_kernel_centers:]
         self.kernel_centers = x_ref[c_inds]
-        if np.unique(self.kernel_centers.numpy(), axis=0).shape[0] < self.n_kernel_centers:
-            perturbation = torch.randn(self.kernel_centers.shape)*1e-6
+        if np.unique(self.kernel_centers.cpu().numpy(), axis=0).shape[0] < self.n_kernel_centers:
+            perturbation = (torch.randn(self.kernel_centers.shape)*1e-6).to(self.device)
             self.kernel_centers = self.kernel_centers + perturbation
         x_ref_eff = x_ref[non_c_inds]  # the effective reference set
         self.k_xc = self.kernel(x_ref_eff, self.kernel_centers)
@@ -163,4 +163,4 @@ class LSDDDriftTorch(BaseLSDDDrift):
         )
 
         p_val = (lsdd <= lsdd_permuted).float().mean()
-        return float(p_val.cpu()), float(lsdd.numpy()), lsdd_permuted.numpy()
+        return float(p_val.cpu()), float(lsdd.cpu().numpy()), lsdd_permuted.cpu().numpy()
