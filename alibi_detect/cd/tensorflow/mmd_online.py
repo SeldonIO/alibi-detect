@@ -2,12 +2,12 @@ from tqdm import tqdm
 import numpy as np
 import tensorflow as tf
 from typing import Callable, Optional, Union
-from alibi_detect.cd.base_online import BaseMMDDriftOnline
+from alibi_detect.cd.base_online import BaseDriftOnline
 from alibi_detect.utils.tensorflow.kernels import GaussianRBF
 from alibi_detect.cd.tensorflow.utils import zero_diag, quantile, subset_matrix
 
 
-class MMDDriftOnlineTF(BaseMMDDriftOnline):
+class MMDDriftOnlineTF(BaseDriftOnline):
     def __init__(
             self,
             x_ref: np.ndarray,
@@ -55,7 +55,6 @@ class MMDDriftOnlineTF(BaseMMDDriftOnline):
             ert=ert,
             window_size=window_size,
             preprocess_fn=preprocess_fn,
-            sigma=sigma,
             n_bootstraps=n_bootstraps,
             input_shape=input_shape,
             data_type=data_type

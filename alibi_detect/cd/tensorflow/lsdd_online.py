@@ -3,7 +3,7 @@ from tqdm import tqdm
 import numpy as np
 import tensorflow as tf
 from typing import Callable, Optional, Union
-from alibi_detect.cd.base_online import BaseLSDDDriftOnline
+from alibi_detect.cd.base_online import BaseDriftOnline
 from alibi_detect.utils.tensorflow.kernels import GaussianRBF
 from alibi_detect.cd.tensorflow.utils import quantile
 from alibi_detect.utils.tensorflow.distance import permed_lsdds
@@ -11,7 +11,7 @@ from alibi_detect.utils.tensorflow.distance import permed_lsdds
 logger = logging.getLogger(__name__)
 
 
-class LSDDDriftOnlineTF(BaseLSDDDriftOnline):
+class LSDDDriftOnlineTF(BaseDriftOnline):
     def __init__(
             self,
             x_ref: np.ndarray,
@@ -67,14 +67,13 @@ class LSDDDriftOnlineTF(BaseLSDDDriftOnline):
             ert=ert,
             window_size=window_size,
             preprocess_fn=preprocess_fn,
-            sigma=sigma,
             n_bootstraps=n_bootstraps,
-            n_kernel_centers=n_kernel_centers,
-            lambda_rd_max=lambda_rd_max,
             input_shape=input_shape,
             data_type=data_type
         )
         self.meta.update({'backend': 'tensorflow'})
+        self.n_kernel_centers = n_kernel_centers
+        self.lambda_rd_max = lambda_rd_max
 
         self._configure_normalization()
 
@@ -85,6 +84,9 @@ class LSDDDriftOnlineTF(BaseLSDDDriftOnline):
         else:
             sigma = tf.convert_to_tensor(sigma)
             self.kernel = GaussianRBF(sigma)
+
+        if self.n_kernel_centers is None:
+            self.n_kernel_centers = 2*window_size
 
         self._configure_kernel_centers()
         self._configure_thresholds()
