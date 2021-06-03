@@ -15,21 +15,3 @@ def activate_train_mode_for_dropout_layers(model: Callable) -> Callable:
         raise ValueError("No dropout layers identified.")
 
     return model
-
-
-def quantile(sample: torch.Tensor, p: float, type: int = 7, sorted: bool = False) -> float:
-    """ See https://wikipedia.org/wiki/Quantile#Estimating_quantiles_from_a_sample """
-    N = len(sample)
-    if type == 6:  # With M = k*ert - 1 this one is exact
-        h = (N+1)*p
-    elif type == 7:
-        h = (N-1)*p + 1
-    elif type == 8:
-        h = (N+1/3)*p + 1/3
-    h_floor = int(h)
-    if not sorted:
-        sorted_sample = sample.sort().values
-    quantile = sorted_sample[h_floor-1]
-    if h_floor != h:
-        quantile += (h - h_floor)*(sorted_sample[h_floor]-sorted_sample[h_floor-1])
-    return float(quantile)

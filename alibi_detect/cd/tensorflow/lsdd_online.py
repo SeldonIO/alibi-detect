@@ -4,9 +4,7 @@ import numpy as np
 import tensorflow as tf
 from typing import Callable, Optional, Union
 from alibi_detect.cd.base_online import BaseDriftOnline
-from alibi_detect.utils.tensorflow.kernels import GaussianRBF
-from alibi_detect.cd.tensorflow.utils import quantile
-from alibi_detect.utils.tensorflow.distance import permed_lsdds
+from alibi_detect.utils.tensorflow import GaussianRBF, quantile, permed_lsdds
 
 logger = logging.getLogger(__name__)
 
