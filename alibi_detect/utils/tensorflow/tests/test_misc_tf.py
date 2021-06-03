@@ -2,7 +2,7 @@ from itertools import product
 import pytest
 import tensorflow as tf
 import numpy as np
-from alibi_detect.utils.tensorflow import zero_diag, quantile
+from alibi_detect.utils.tensorflow import zero_diag, quantile, subset_matrix
 
 
 def test_zero_diag():
@@ -40,3 +40,21 @@ def test_quantile(quantile_params):
         quantile(tf.ones((10,)), 0.999, type=type, sorted=sorted)
     with pytest.raises(ValueError):
         quantile(tf.ones((100, 100)), 0.5, type=type, sorted=sorted)
+
+
+def test_subset_matrix():
+
+    mat = tf.range(5)[None, :] * tf.range(5)[:, None]
+    inds_0 = [2, 3]
+    inds_1 = [2, 1, 4]
+
+    sub_mat = subset_matrix(mat, tf.constant(inds_0), tf.constant(inds_1))
+    assert sub_mat.shape == (2, 3)
+    for i, ind_0 in enumerate(inds_0):
+        for j, ind_1 in enumerate(inds_1):
+            assert sub_mat[i, j] == ind_0 * ind_1
+
+    with pytest.raises(ValueError):
+        subset_matrix(tf.ones((10, 10, 10)), inds_0, inds_1)
+    with pytest.raises(ValueError):
+        subset_matrix(tf.ones((10,)), inds_0, inds_1)

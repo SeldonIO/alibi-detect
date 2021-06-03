@@ -59,3 +59,27 @@ def quantile(sample: tf.Tensor, p: float, type: int = 7, sorted: bool = False) -
         quantile += (h - h_floor)*(sorted_sample[h_floor]-sorted_sample[h_floor-1])
 
     return float(quantile)
+
+
+def subset_matrix(mat: tf.Tensor, inds_0: tf.Tensor, inds_1: tf.Tensor) -> tf.Tensor:
+    """
+    Take a matrix and return the submatrix correspond to provided row and column indices
+
+    Parameters
+    ----------
+    mat
+        A 2D matrix
+    inds_0
+        A vector of row indices
+    inds_1
+        A vector of column indices
+
+    Returns
+    -------
+    A submatrix of shape (len(inds_0), len(inds_1))
+    """
+    if len(mat.shape) != 2:
+        raise ValueError("Subsetting only supported for matrices (2D)")
+    subbed_rows = tf.gather(mat, inds_0, axis=0)
+    subbed_rows_cols = tf.gather(subbed_rows, inds_1, axis=1)
+    return subbed_rows_cols
