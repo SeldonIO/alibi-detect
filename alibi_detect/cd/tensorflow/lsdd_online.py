@@ -91,10 +91,10 @@ class LSDDDriftOnlineTF(BaseDriftOnline):
         self._configure_thresholds()
         self._initialise()
 
-    def _configure_normalization(self):
+    def _configure_normalization(self, eps: float = 1e-12):
         x_ref_means = tf.reduce_mean(self.x_ref, axis=0)
         x_ref_stds = tf.math.reduce_std(self.x_ref, axis=0)
-        self._normalize = lambda x: (x - x_ref_means)/(x_ref_stds)
+        self._normalize = lambda x: (x - x_ref_means)/(x_ref_stds + eps)
         self.x_ref = self._normalize(self.x_ref)
 
     def _configure_kernel_centers(self):

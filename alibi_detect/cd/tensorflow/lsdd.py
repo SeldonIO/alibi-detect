@@ -91,10 +91,10 @@ class LSDDDriftTF(BaseLSDDDrift):
             sigma = tf.convert_to_tensor(self.sigma)
             self.kernel = GaussianRBF(sigma)
 
-    def _configure_normalization(self, x_ref: tf.Tensor):
+    def _configure_normalization(self, x_ref: tf.Tensor, eps: float = 1e-12):
         x_ref_means = tf.reduce_mean(x_ref, axis=0)
         x_ref_stds = tf.math.reduce_std(x_ref, axis=0)
-        self._normalize = lambda x: (x - x_ref_means)/(x_ref_stds)
+        self._normalize = lambda x: (x - x_ref_means)/(x_ref_stds + eps)
 
     def _configure_kernel_centers(self, x_ref: tf.Tensor):
         "Set aside reference samples to act as kernel centers"
