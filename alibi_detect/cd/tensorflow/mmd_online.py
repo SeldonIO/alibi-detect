@@ -4,7 +4,8 @@ import tensorflow as tf
 from typing import Callable, Optional, Union
 from alibi_detect.cd.base_online import BaseDriftOnline
 from alibi_detect.utils.tensorflow.kernels import GaussianRBF
-from alibi_detect.cd.tensorflow.utils import zero_diag, quantile, subset_matrix
+from alibi_detect.cd.tensorflow.utils import quantile, subset_matrix
+from alibi_detect.utils.tensorflow import zero_diag
 
 
 class MMDDriftOnlineTF(BaseDriftOnline):

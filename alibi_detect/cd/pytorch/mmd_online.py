@@ -4,7 +4,8 @@ import torch
 from typing import Callable, Optional, Union
 from alibi_detect.cd.base_online import BaseDriftOnline
 from alibi_detect.utils.pytorch.kernels import GaussianRBF
-from alibi_detect.cd.pytorch.utils import zero_diag, quantile
+from alibi_detect.cd.pytorch.utils import quantile
+from alibi_detect.utils.pytorch import zero_diag
 
 
 class MMDDriftOnlineTorch(BaseDriftOnline):
