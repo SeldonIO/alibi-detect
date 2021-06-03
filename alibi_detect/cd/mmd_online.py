@@ -19,7 +19,6 @@ class MMDDriftOnline:
             ert: float,
             window_size: int,
             backend: str = 'tensorflow',
-            preprocess_x_ref: bool = True,
             preprocess_fn: Optional[Callable] = None,
             kernel: Callable = None,
             sigma: Optional[np.ndarray] = None,
@@ -43,8 +42,6 @@ class MMDDriftOnline:
             ability to detect slight drift.
         backend
             Backend used for the MMD implementation and configuration.
-        preprocess_x_ref
-            Whether to already preprocess and store the reference data.
         preprocess_fn
             Function to preprocess the data before computing the data drift metrics.
         kernel
