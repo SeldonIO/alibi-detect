@@ -54,7 +54,10 @@ alibi_detect.cd.__all__
  'ClassifierDrift',
  'ClassifierUncertaintyDrift',
  'KSDrift',
+ 'LSDDDrift',
+ 'LSDDDriftOnline',
  'MMDDrift',
+ 'MMDDriftOnline',
  'RegressorUncertaintyDrift',
  'TabularDrift']
 ```
@@ -93,6 +96,8 @@ And **data drift**:
     
 * [Kolmogorov-Smirnov Drift Detector](../methods/ksdrift.ipynb)
 
+* [Least-Squares Density Difference Drift Detector](../methods/lsdddrift.ipynb)
+
 * [Maximum Mean Discrepancy Drift Detector](../methods/mmddrift.ipynb)
 
 * [Chi-Squared Drift Detector](../methods/chisquaredrift.ipynb)
@@ -102,6 +107,11 @@ And **data drift**:
 * [Classifier Drift Detector](../methods/classifierdrift.ipynb)
 
 * [Classifier and Regressor Drift Detectors](../methods/modeluncdrift.ipynb)
+
+* [Online Maximum Mean Discrepancy Drift Detector](../methods/onlinemmddrift.ipynb)
+
+* [Online Least_Squares Density Difference Drift Detector](../methods/onlinelsdddrift.ipynb)
+
 
 ## Basic Usage
 

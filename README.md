@@ -18,19 +18,24 @@ For more background on the importance of monitoring outliers and distributions i
 ## Table of Contents
 
 
-* [Installation and Usage](#installation-and-usage)
-* [Supported Algorithms](#supported-algorithms)
-  * [Outlier Detection](#outlier-detection)
-  * [Adversarial Detection](#adversarial-detection)
-  * [Drift Detection](#drift-detection)
-  * [Reference List](#reference-list)
-* [Datasets](#datasets)
-  * [Sequential Data and Time Series](#sequential-data-and-time-series)
-  * [Images](#images)
-  * [Tabular](#tabular)
-* [Models](#models)
-* [Integrations](#integrations)
-* [Citations](#citations)
+- [Installation and Usage](#installation-and-usage)
+- [Supported Algorithms](#supported-algorithms)
+  - [Outlier Detection](#outlier-detection)
+  - [Adversarial Detection](#adversarial-detection)
+  - [Drift Detection](#drift-detection)
+    - [TensorFlow and PyTorch support](#tensorflow-and-pytorch-support)
+    - [Built-in preprocessing steps](#built-in-preprocessing-steps)
+  - [Reference List](#reference-list)
+    - [Outlier Detection](#outlier-detection-1)
+    - [Adversarial Detection](#adversarial-detection-1)
+    - [Drift Detection](#drift-detection-1)
+- [Datasets](#datasets)
+  - [Sequential Data and Time Series](#sequential-data-and-time-series)
+  - [Images](#images)
+  - [Tabular](#tabular)
+- [Models](#models)
+- [Integrations](#integrations)
+- [Citations](#citations)
 
 
 
@@ -104,11 +109,12 @@ The following tables show the advised use cases for each algorithm. The column *
 
 | Detector                 | Tabular | Image | Time Series | Text  | Categorical Features | Online | Feature Level |
 | :---                     |  :---:  | :---: |   :---:     | :---: |   :---:              | :---:  | :---:         |
-| Kolmogorov-Smirnov       | ✔       | ✔     |             |  ✔    |  ✔                   |       |  ✔             |
-| Maximum Mean Discrepancy | ✔       | ✔     |             |  ✔    |  ✔                   |       |                |
-| Chi-Squared              | ✔       |       |             |       |  ✔                   |       |  ✔             |
-| Mixed-type tabular data  | ✔       |       |             |       |  ✔                   |       |  ✔             |
-| Classifier               | ✔       | ✔     |  ✔          |  ✔    |  ✔                   |       |                |
+| Kolmogorov-Smirnov       | ✔       | ✔     |            |  ✔    |  ✔                   |       |  ✔            |
+| Maximum Mean Discrepancy | ✔       | ✔     |            |  ✔    |  ✔                   | ✔      |              |
+| Least-Squares Density Difference | ✔       | ✔     |            |  ✔    |  ✔                   | ✔      |              |
+| Chi-Squared              | ✔       |      |            |      |  ✔                   |       |  ✔            |
+| Mixed-type tabular data  | ✔       |      |            |      |  ✔                   |       |  ✔            |
+| Classifier               | ✔       | ✔     |  ✔          |  ✔    |  ✔                   |       |              |
 | Classifier Uncertainty   | ✔       | ✔     |  ✔          |  ✔    |  ✔                   |       |                |
 | Regressor Uncertainty    | ✔       | ✔     |  ✔          |  ✔    |  ✔                   |       |                |
 
@@ -196,6 +202,8 @@ Check the example notebooks (e.g. [CIFAR10](https://docs.seldon.io/projects/alib
 - [Kolmogorov-Smirnov](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/ksdrift.html)
    - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_ks_cifar10.html), [movie reviews](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_text_imdb.html)
    
+- [Least-Squares Density Difference](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/lsdddrift.html) ([Bu et al, 2016](https://alippi.faculty.polimi.it/articoli/A%20Pdf%20free%20Change%20Detection%20Test%20Based%20on%20Density%20Difference%20Estimation.pdf))
+
 - [Maximum Mean Discrepancy](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/mmddrift.html) ([Gretton et al, 2012](http://jmlr.csail.mit.edu/papers/v13/gretton12a.html))
    - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_mmd_cifar10.html), [movie reviews](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_text_imdb.html)
 
@@ -210,6 +218,12 @@ Check the example notebooks (e.g. [CIFAR10](https://docs.seldon.io/projects/alib
 
 - [Classifier and Regressor Uncertainty](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/modeluncdrift.html)
    - Example: [CIFAR10 and Wine](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_model_unc_cifar10_wine.html)
+
+- [Online Maximum Mean Discrepancy](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/onlinemmddrift.html)
+  - Example: [Wine Quality](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_online_wine.html)
+  
+- [Online Least-Squares Density Difference](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/onlinemmddrift.html) ([Bu et al, 2017](https://ieeexplore.ieee.org/abstract/document/7890493))
+  - Example: [Wine Quality](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_online_wine.html)
 
 
 ## Datasets
