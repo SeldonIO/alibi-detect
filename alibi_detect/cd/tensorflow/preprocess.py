@@ -67,7 +67,8 @@ class HiddenOutput(tf.keras.Model):
             self,
             model: tf.keras.Model,
             layer: int = -1,
-            input_shape: tuple = None
+            input_shape: tuple = None,
+            flatten: bool = False
     ) -> None:
         super().__init__()
         if input_shape and not model.inputs:
@@ -76,9 +77,10 @@ class HiddenOutput(tf.keras.Model):
         else:
             inputs = model.inputs
         self.model = Model(inputs=inputs, outputs=model.layers[layer].output)
+        self.flatten = Flatten() if flatten else tf.identity
 
     def call(self, x: Union[np.ndarray, tf.Tensor]) -> tf.Tensor:
-        return self.model(x)
+        return self.flatten(self.model(x))
 
 
 def preprocess_drift(x: np.ndarray, model: tf.keras.Model, tokenizer=None,
