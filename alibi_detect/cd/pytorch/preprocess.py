@@ -9,10 +9,14 @@ class HiddenOutput(nn.Module):
     def __init__(
             self,
             model: Union[nn.Module, nn.Sequential],
-            layer: int = -1
+            layer: int = -1,
+            flatten: bool = False
     ) -> None:
         super().__init__()
-        self.model = nn.Sequential(*list(model.children())[:layer])
+        layers = list(model.children())[:layer]
+        if flatten:
+            layers += [nn.Flatten()]
+        self.model = nn.Sequential(*layers)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.model(x)
