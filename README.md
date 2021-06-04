@@ -18,8 +18,6 @@ For more background on the importance of monitoring outliers and distributions i
 ## Table of Contents
 
 
-- [![Slack channel](https://join.slack.com/t/seldondev/shared_invite/zt-3wr7wfvl-LmRVGcwxsA47P9rPUYWcog)](#)
-- [Table of Contents](#table-of-contents)
 - [Installation and Usage](#installation-and-usage)
 - [Supported Algorithms](#supported-algorithms)
   - [Outlier Detection](#outlier-detection)
