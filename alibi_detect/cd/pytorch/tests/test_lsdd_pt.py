@@ -28,7 +28,7 @@ preprocess = [
     (None, None),
     (preprocess_drift, {'model': HiddenOutput, 'layer': -1})
 ]
-update_x_ref = [{'last': 750}, {'reservoir_sampling': 750}, None]
+update_x_ref = [None]
 preprocess_x_ref = [True, False]
 n_permutations = [10]
 tests_lsdddrift = list(product(n_features, n_enc, preprocess,
