@@ -1,5 +1,16 @@
 # Change Log
 
+## [v0.7.0](https://github.com/SeldonIO/alibi-detect/tree/v0.7.0) (2021-06-07)
+[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.6.2...v0.7.0)
+
+### Added
+- Least squares density difference drift detector `from alibi_detect.cd import LSDDDrift` with TensorFlow and PyTorch support.
+- Online versions of the MMD and LSDD drift detectors: `from alibi_detect.cd import MMDDriftOnline, LSDDDriftOnline` with TensorFlow and PyTorch support.
+- Enable Python 3.9 support.
+
+### Fixed
+- Hidden layer output as preprocessing step for drift detectors for internal layers with higher dimensional shape, e.g. `(B, C, H, W)`.
+
 ## [v0.6.2](https://github.com/SeldonIO/alibi-detect/tree/v0.6.2) (2021-05-06)
 [Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.6.1...v0.6.2)
 
