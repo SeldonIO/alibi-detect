@@ -137,6 +137,8 @@ class LSDDDriftOnlineTorch(BaseDriftOnline):
         x_inds_all = [perm[:rw_size] for perm in perms]
         y_inds_all = [perm[rw_size:] for perm in perms]
 
+        # For stability in high dimensions we don't divide H by (pi*sigma^2)^(d/2)
+        # Results in an alternative test-stat of LSDD*(pi*sigma^2)^(d/2). Same p-vals etc.
         H = GaussianRBF(np.sqrt(2.)*self.kernel.sigma)(self.kernel_centers, self.kernel_centers)
 
         # Compute lsdds for first test-window. We infer regularisation constant lambda here.

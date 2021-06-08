@@ -90,6 +90,8 @@ class LSDDDriftTorch(BaseLSDDDrift):
             self._initialize_kernel(x_ref)
             self._configure_kernel_centers(x_ref)
             self.x_ref = x_ref.cpu().numpy()
+            # For stability in high dimensions we don't divide H by (pi*sigma^2)^(d/2)
+            # Results in an alternative test-stat of LSDD*(pi*sigma^2)^(d/2). Same p-vals etc.
             self.H = GaussianRBF(np.sqrt(2.)*self.kernel.sigma)(self.kernel_centers, self.kernel_centers)
 
     def _initialize_kernel(self, x_ref: torch.Tensor):
