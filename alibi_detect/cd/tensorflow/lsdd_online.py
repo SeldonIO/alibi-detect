@@ -118,7 +118,6 @@ class LSDDDriftOnlineTF(BaseDriftOnline):
         etw_size = 2*w_size-1  # etw = extended test window
         nkc_size = self.n - self.n_kernel_centers  # nkc = non-kernel-centers
         rw_size = nkc_size - etw_size  # rw = ref-window
-        d = self.x_ref_eff.shape[-1]
 
         perms = [tf.random.shuffle(tf.range(nkc_size)) for _ in range(self.n_bootstraps)]
         x_inds_all = [perm[:rw_size] for perm in perms]

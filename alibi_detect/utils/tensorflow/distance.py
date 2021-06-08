@@ -150,12 +150,6 @@ def permed_lsdds(
     the unpermed LSDD estimate.
     """
 
-    # Check for overflow/underflow caused by too high dimensionality
-    if tf.reduce_any(~tf.math.is_finite(H)):
-        raise ValueError(
-            "Overflow or underflow occured. Try reducing dimensionality or trying "
-            "MMD-based detection instead")
-
     # Compute (for each bootstrap) the average distance to each kernel center (Eqn 7)
     k_xc_perms = tf.stack([tf.gather(k_all_c, x_inds) for x_inds in x_perms], axis=0)
     k_yc_perms = tf.stack([tf.gather(k_all_c, y_inds) for y_inds in y_perms], axis=0)

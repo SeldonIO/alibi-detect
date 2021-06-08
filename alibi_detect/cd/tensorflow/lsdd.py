@@ -78,8 +78,6 @@ class LSDDDriftTF(BaseLSDDDrift):
             self._initialize_kernel(x_ref)
             self._configure_kernel_centers(x_ref)
             self.x_ref = x_ref.numpy()
-
-            d = self.x_ref.shape[-1]
             self.H = GaussianRBF(np.sqrt(2.)*self.kernel.sigma)(self.kernel_centers, self.kernel_centers)
 
     def _initialize_kernel(self, x_ref: tf.Tensor):
@@ -128,7 +126,6 @@ class LSDDDriftTF(BaseLSDDDrift):
             x_ref = self._normalize(x_ref)
             self._initialize_kernel(x_ref)
             self._configure_kernel_centers(x_ref)
-            d = x_ref.shape[-1]
             self.H = GaussianRBF(np.sqrt(2.)*self.kernel.sigma)(self.kernel_centers, self.kernel_centers)
 
         x = self._normalize(x)
