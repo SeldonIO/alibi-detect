@@ -153,7 +153,7 @@ def permed_lsdds(
     # Check for overflow/underflow caused by too high dimensionality
     if tf.reduce_any(~tf.math.is_finite(H)):
         raise ValueError(
-            "Overflow or underflow occured. Trying reducing dimensionality or trying "
+            "Overflow or underflow occured. Try reducing dimensionality or trying "
             "MMD-based detection instead")
 
     # Compute (for each bootstrap) the average distance to each kernel center (Eqn 7)
