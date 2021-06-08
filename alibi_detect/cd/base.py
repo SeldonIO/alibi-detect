@@ -519,8 +519,14 @@ class BaseLSDDDrift(BaseDetector):
         distance_threshold = np.sort(dist_permutations)[::-1][idx_threshold]
 
         # update reference dataset
-        if isinstance(self.update_x_ref, dict) and self.preprocess_fn is not None and self.preprocess_x_ref:
-            x = self.preprocess_fn(x)
+        if isinstance(self.update_x_ref, dict):
+            if self.preprocess_fn is not None and self.preprocess_x_ref:
+                x = self.preprocess_fn(x)
+                x = self._normalize(x)
+            elif self.preprocess_fn is None:
+                x = self._normalize(x)
+            else:
+                pass
         self.x_ref = update_reference(self.x_ref, x, self.n, self.update_x_ref)
         # used for reservoir sampling
         self.n += x.shape[0]  # type: ignore
