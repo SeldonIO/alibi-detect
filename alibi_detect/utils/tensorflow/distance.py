@@ -151,7 +151,7 @@ def permed_lsdds(
     """
 
     # Check for overflow/underflow caused by too high dimensionality
-    if (~tf.math.is_finite(H)).sum() > 0:
+    if tf.reduce_any(~tf.math.is_finite(H)):
         raise ValueError(
             "Overflow or underflow occured. Trying reducing dimensionality or trying "
             "MMD-based detection instead")
@@ -168,7 +168,6 @@ def permed_lsdds(
         candidate_lambdas = [1/(4**i) for i in range(10)]  # TODO: More principled selection
         H_plus_lams = tf.stack([H+tf.eye(H.shape[0], dtype=H.dtype)*can_lam for can_lam in candidate_lambdas], axis=0)
         H_plus_lam_invs = tf.transpose(tf.linalg.inv(H_plus_lams), [1, 2, 0])  # lambdas last
-
         omegas = tf.einsum('jkl,bk->bjl', H_plus_lam_invs, h_perms)  # (Eqn 8)
         h_omegas = tf.einsum('bj,bjl->bl', h_perms, omegas)
         omega_H_omegas = tf.einsum('bkl,bkl->bl', tf.einsum('bjl,jk->bkl', omegas, H), omegas)

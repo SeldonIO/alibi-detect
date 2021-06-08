@@ -122,7 +122,7 @@ def permed_lsdds(
     """
 
     # Check for overflow/underflow caused by too high dimensionality
-    if (~torch.isfinite(H)).sum() > 0:
+    if (~torch.isfinite(H)).any():
         raise ValueError(
             "Overflow or underflow occured. Trying reducing dimensionality or trying "
             "MMD-based detection instead")
