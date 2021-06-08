@@ -138,8 +138,7 @@ class LSDDDriftOnlineTorch(BaseDriftOnline):
         x_inds_all = [perm[:rw_size] for perm in perms]
         y_inds_all = [perm[rw_size:] for perm in perms]
 
-        H = GaussianRBF(np.sqrt(2.)*self.kernel.sigma)(self.kernel_centers, self.kernel_centers) * \
-            ((torch.tensor(np.pi)*self.kernel.sigma**2)**(d/2))  # (Eqn 5)
+        H = GaussianRBF(np.sqrt(2.)*self.kernel.sigma)(self.kernel_centers, self.kernel_centers)
 
         # Compute lsdds for first test-window. We infer regularisation constant lambda here.
         y_inds_all_0 = [y_inds[:w_size] for y_inds in y_inds_all]

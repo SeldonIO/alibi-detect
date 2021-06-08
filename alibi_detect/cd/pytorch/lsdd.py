@@ -92,8 +92,7 @@ class LSDDDriftTorch(BaseLSDDDrift):
             self.x_ref = x_ref.cpu().numpy()
 
             d = self.x_ref.shape[-1]
-            self.H = GaussianRBF(np.sqrt(2.)*self.kernel.sigma)(self.kernel_centers, self.kernel_centers) * \
-                ((np.pi*self.kernel.sigma**2)**(d/2))  # (Eqn 5)
+            self.H = GaussianRBF(np.sqrt(2.)*self.kernel.sigma)(self.kernel_centers, self.kernel_centers)
 
     def _initialize_kernel(self, x_ref: torch.Tensor):
         if self.sigma is None:
@@ -144,8 +143,7 @@ class LSDDDriftTorch(BaseLSDDDrift):
             self._initialize_kernel(x_ref)
             self._configure_kernel_centers(x_ref)
             d = x_ref.shape[-1]
-            self.H = GaussianRBF(np.sqrt(2.)*self.kernel.sigma)(self.kernel_centers, self.kernel_centers) * \
-                ((np.pi*self.kernel.sigma**2)**(d/2))  # (Eqn 5)
+            self.H = GaussianRBF(np.sqrt(2.)*self.kernel.sigma)(self.kernel_centers, self.kernel_centers)
 
         x = self._normalize(x)
 
