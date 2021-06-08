@@ -522,9 +522,9 @@ class BaseLSDDDrift(BaseDetector):
         if isinstance(self.update_x_ref, dict):
             if self.preprocess_fn is not None and self.preprocess_x_ref:
                 x = self.preprocess_fn(x)
-                x = self._normalize(x)
+                x = self._normalize(x)  # type: ignore
             elif self.preprocess_fn is None:
-                x = self._normalize(x)
+                x = self._normalize(x)  # type: ignore
             else:
                 pass
         self.x_ref = update_reference(self.x_ref, x, self.n, self.update_x_ref)
