@@ -122,7 +122,7 @@ def test_permed_lsdds(permed_lsdds_params):
     x_full = tf.concat([x_ref, x_cur], axis=0)
     sigma = tf.constant((1.,))
     k_all_c = GaussianRBF(sigma)(x_full, kcs)
-    H = GaussianRBF(np.sqrt(2.)*sigma)(kcs, kcs)/((np.pi)**(d/2))
+    H = GaussianRBF(np.sqrt(2.)*sigma)(kcs, kcs)
 
     perms = [tf.random.shuffle(tf.range(n+m)) for _ in range(B)]
     x_perms = [perm[:n] for perm in perms]

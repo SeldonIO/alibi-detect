@@ -75,7 +75,9 @@ def test_lsdd(lsdd_params):
         preprocess_fn=preprocess_fn,
         n_permutations=n_permutations
     )
-    x = x_ref.copy()
+
+    perturbation = np.random.normal(size=(n, n_features)) / 100  # LSDD struggles with copies/repeats
+    x = x_ref.copy() + perturbation.astype(np.float32)
     preds = cd.predict(x, return_p_val=True)
     assert preds['data']['is_drift'] == 0 and preds['data']['p_val'] >= cd.p_val
     if isinstance(update_x_ref, dict):

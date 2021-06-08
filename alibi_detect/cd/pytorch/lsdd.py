@@ -90,10 +90,9 @@ class LSDDDriftTorch(BaseLSDDDrift):
             self._initialize_kernel(x_ref)
             self._configure_kernel_centers(x_ref)
             self.x_ref = x_ref.cpu().numpy()
-
-            d = self.x_ref.shape[-1]
-            self.H = GaussianRBF(np.sqrt(2.)*self.kernel.sigma)(self.kernel_centers, self.kernel_centers) * \
-                ((np.pi*self.kernel.sigma**2)**(d/2))  # (Eqn 5)
+            # For stability in high dimensions we don't divide H by (pi*sigma^2)^(d/2)
+            # Results in an alternative test-stat of LSDD*(pi*sigma^2)^(d/2). Same p-vals etc.
+            self.H = GaussianRBF(np.sqrt(2.)*self.kernel.sigma)(self.kernel_centers, self.kernel_centers)
 
     def _initialize_kernel(self, x_ref: torch.Tensor):
         if self.sigma is None:
@@ -106,7 +105,7 @@ class LSDDDriftTorch(BaseLSDDDrift):
     def _configure_normalization(self, x_ref: torch.Tensor, eps: float = 1e-12):
         x_ref_means = x_ref.mean(0)
         x_ref_stds = x_ref.std(0)
-        self._normalize = lambda x: (x - x_ref_means)/(x_ref_stds + eps)
+        self._normalize = lambda x: (torch.as_tensor(x) - x_ref_means)/(x_ref_stds + eps)
 
     def _configure_kernel_centers(self, x_ref: torch.Tensor):
         "Set aside reference samples to act as kernel centers"
@@ -143,9 +142,7 @@ class LSDDDriftTorch(BaseLSDDDrift):
             x_ref = self._normalize(x_ref)
             self._initialize_kernel(x_ref)
             self._configure_kernel_centers(x_ref)
-            d = self.x_ref.shape[-1]
-            self.H = GaussianRBF(np.sqrt(2.)*self.kernel.sigma)(self.kernel_centers, self.kernel_centers) * \
-                ((np.pi*self.kernel.sigma**2)**(d/2))  # (Eqn 5)
+            self.H = GaussianRBF(np.sqrt(2.)*self.kernel.sigma)(self.kernel_centers, self.kernel_centers)
 
         x = self._normalize(x)
 

@@ -132,14 +132,14 @@ class LSDDDriftOnlineTorch(BaseDriftOnline):
         etw_size = 2*w_size-1  # etw = extended test window
         nkc_size = self.n - self.n_kernel_centers  # nkc = non-kernel-centers
         rw_size = nkc_size - etw_size  # rw = ref-window
-        d = self.x_ref_eff.shape[-1]
 
         perms = [torch.randperm(nkc_size) for _ in range(self.n_bootstraps)]
         x_inds_all = [perm[:rw_size] for perm in perms]
         y_inds_all = [perm[rw_size:] for perm in perms]
 
-        H = GaussianRBF(np.sqrt(2.)*self.kernel.sigma)(self.kernel_centers, self.kernel_centers) * \
-            ((torch.tensor(np.pi)*self.kernel.sigma**2)**(d/2))  # (Eqn 5)
+        # For stability in high dimensions we don't divide H by (pi*sigma^2)^(d/2)
+        # Results in an alternative test-stat of LSDD*(pi*sigma^2)^(d/2). Same p-vals etc.
+        H = GaussianRBF(np.sqrt(2.)*self.kernel.sigma)(self.kernel_centers, self.kernel_centers)
 
         # Compute lsdds for first test-window. We infer regularisation constant lambda here.
         y_inds_all_0 = [y_inds[:w_size] for y_inds in y_inds_all]
