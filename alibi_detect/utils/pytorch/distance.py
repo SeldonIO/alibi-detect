@@ -120,6 +120,13 @@ def permed_lsdds(
     Vector of B LSDD estimates for each permutation, H_lam_inv which may have been inferred, and optionally
     the unpermed LSDD estimate.
     """
+
+    # Check for overflow/underflow caused by too high dimensionality
+    if (~torch.isfinite(H)).sum() > 0:
+        raise ValueError(
+            "Overflow or underflow occured. Trying reducing dimensionality or trying "
+            "MMD-based detection instead")
+
     # Compute (for each bootstrap) the average distance to each kernel center (Eqn 7)
     k_xc_perms = torch.stack([k_all_c[x_inds] for x_inds in x_perms], 0)
     k_yc_perms = torch.stack([k_all_c[y_inds] for y_inds in y_perms], 0)
