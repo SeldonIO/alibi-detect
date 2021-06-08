@@ -140,7 +140,16 @@ def permed_lsdds(
         h_omegas = torch.einsum('bj,bjl->bl', h_perms, omegas)
         omega_H_omegas = torch.einsum('bkl,bkl->bl', torch.einsum('bjl,jk->bkl', omegas, H), omegas)
         rds = (1 - (omega_H_omegas/h_omegas)).mean(0)
-        lam_index = (rds < lam_rd_max).nonzero()[0]
+        less_than_rd_inds = (rds < lam_rd_max).nonzero()
+        if len(less_than_rd_inds) == 0:
+            repeats = k_all_c.shape[0] - torch.unique(k_all_c, dim=0).shape[0]
+            if repeats > 0:
+                msg = "Too many repeat instances for LSDD-based detection. \
+                Try using MMD-based detection instead"
+            else:
+                msg = "Unknown error. Try using MMD-based detection instead"
+            raise ValueError(msg)
+        lam_index = less_than_rd_inds[0]
         lam = candidate_lambdas[lam_index]
         logger.info(f"Using lambda value of {lam:.2g} with RD of {float(rds[lam_index]):.2g}")
         H_plus_lam_inv = H_plus_lam_invs[:, :, lam_index.item()]

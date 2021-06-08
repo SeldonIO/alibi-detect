@@ -166,7 +166,16 @@ def permed_lsdds(
         h_omegas = tf.einsum('bj,bjl->bl', h_perms, omegas)
         omega_H_omegas = tf.einsum('bkl,bkl->bl', tf.einsum('bjl,jk->bkl', omegas, H), omegas)
         rds = tf.reduce_mean(1 - (omega_H_omegas/h_omegas), axis=0)
-        lambda_index = int(tf.where(rds < lam_rd_max)[0])
+        less_than_rd_inds = tf.where(rds < lam_rd_max)
+        if len(less_than_rd_inds) == 0:
+            repeats = k_all_c.shape[0] - np.unique(k_all_c, dim=0).shape[0]
+            if repeats > 0:
+                msg = "Too many repeat instances for LSDD-based detection. \
+                Try using MMD-based detection instead"
+            else:
+                msg = "Unknown error. Try using MMD-based detection instead"
+            raise ValueError(msg)
+        lambda_index = int(less_than_rd_inds[0])
         lam = candidate_lambdas[lambda_index]
         logger.info(f"Using lambda value of {lam:.2g} with RD of {float(rds[lambda_index]):.2g}")
         H_plus_lam_inv = tf.linalg.inv(H+lam*tf.eye(H.shape[0], dtype=H.dtype))
