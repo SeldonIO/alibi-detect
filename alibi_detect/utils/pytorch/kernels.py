@@ -1,11 +1,11 @@
 import numpy as np
 import torch
 from . import distance
-from typing import Optional
+from typing import Optional, Union
 
 
 class GaussianRBF:
-    def __init__(self, sigma: Optional[torch.Tensor] = None) -> None:
+    def __init__(self, sigma: Optional[Union[np.ndarray, torch.Tensor]] = None) -> None:
         """
         Gaussian RBF kernel: k(x,y) = exp(-(1/(2*sigma^2)||x-y||^2). A forward pass takes
         a batch of instances x [Nx, features] and y [Ny, features] and returns the kernel
