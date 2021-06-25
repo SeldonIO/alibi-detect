@@ -9,7 +9,7 @@ from alibi_detect.utils.tensorflow import GaussianRBF, quantile, permed_lsdds
 class LSDDDriftOnlineTF(BaseDriftOnline):
     def __init__(
             self,
-            x_ref: np.ndarray,
+            x_ref: Union[np.ndarray, list],
             ert: float,
             window_size: int,
             preprocess_fn: Optional[Callable] = None,

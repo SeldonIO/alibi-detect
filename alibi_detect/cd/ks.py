@@ -1,13 +1,13 @@
 import numpy as np
 from scipy.stats import ks_2samp
-from typing import Callable, Dict, Optional, Tuple
+from typing import Callable, Dict, Optional, Tuple, Union
 from alibi_detect.cd.base import BaseUnivariateDrift
 
 
 class KSDrift(BaseUnivariateDrift):
     def __init__(
             self,
-            x_ref: np.ndarray,
+            x_ref: Union[np.ndarray, list],
             p_val: float = .05,
             preprocess_x_ref: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,

@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 class BaseDriftOnline(BaseDetector):
     def __init__(
             self,
-            x_ref: np.ndarray,
+            x_ref: Union[np.ndarray, list],
             ert: float,
             window_size: int,
             preprocess_fn: Optional[Callable] = None,
@@ -66,7 +66,7 @@ class BaseDriftOnline(BaseDetector):
         else:
             self.x_ref = x_ref
         self.preprocess_fn = preprocess_fn
-        self.n = x_ref.shape[0]  # type: ignore
+        self.n = len(x_ref)  # type: ignore
         self.n_bootstraps = n_bootstraps  # nb of samples used to estimate thresholds
         self.verbose = verbose
 
@@ -98,7 +98,7 @@ class BaseDriftOnline(BaseDetector):
         "Resets the detector but does not reconfigure thresholds."
         self._initialise()
 
-    def predict(self, x_t: np.ndarray,  return_test_stat: bool = True,
+    def predict(self, x_t: Union[np.ndarray, list],  return_test_stat: bool = True,
                 ) -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
         """
         Predict whether the most recent window of data has drifted from the reference data.

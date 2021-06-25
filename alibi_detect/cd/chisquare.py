@@ -1,13 +1,13 @@
 import numpy as np
 from scipy.stats import chi2_contingency
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple, Union
 from alibi_detect.cd.base import BaseUnivariateDrift
 
 
 class ChiSquareDrift(BaseUnivariateDrift):
     def __init__(
             self,
-            x_ref: np.ndarray,
+            x_ref: Union[np.ndarray, list],
             p_val: float = .05,
             categories_per_feature: Optional[Dict[int, int]] = None,
             preprocess_x_ref: bool = True,

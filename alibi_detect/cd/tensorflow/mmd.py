@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 class MMDDriftTF(BaseMMDDrift):
     def __init__(
             self,
-            x_ref: np.ndarray,
+            x_ref: Union[np.ndarray, list],
             p_val: float = .05,
             preprocess_x_ref: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
@@ -89,7 +89,7 @@ class MMDDriftTF(BaseMMDDrift):
         kernel_mat = tf.concat([tf.concat([k_xx, k_xy], 1), tf.concat([tf.transpose(k_xy, (1, 0)), k_yy], 1)], 0)
         return kernel_mat
 
-    def score(self, x: np.ndarray) -> Tuple[float, float, np.ndarray]:
+    def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, np.ndarray]:
         """
         Compute the p-value resulting from a permutation test using the maximum mean discrepancy
         as a distance measure between the reference data and the data to be tested.

@@ -9,7 +9,7 @@ from alibi_detect.utils.pytorch import GaussianRBF, permed_lsdds, quantile
 class LSDDDriftOnlineTorch(BaseDriftOnline):
     def __init__(
             self,
-            x_ref: np.ndarray,
+            x_ref: Union[np.ndarray, list],
             ert: float,
             window_size: int,
             preprocess_fn: Optional[Callable] = None,

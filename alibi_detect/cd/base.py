@@ -88,7 +88,7 @@ class BaseClassifierDrift(BaseDetector):
         self.preprocess_x_ref = preprocess_x_ref
         self.update_x_ref = update_x_ref
         self.preprocess_fn = preprocess_fn
-        self.n = x_ref.shape[0]  # type: ignore
+        self.n = len(x_ref)  # type: ignore
 
         # define whether soft preds and optionally the stratified k-fold split
         self.preds_type = preds_type
@@ -139,13 +139,13 @@ class BaseClassifierDrift(BaseDetector):
         List with tuples of train and test indices for optionally different folds.
         """
         # create dataset and labels
-        y = np.concatenate([np.zeros(x_ref.shape[0]), np.ones(x.shape[0])], axis=0).astype(int)
+        y = np.concatenate([np.zeros(len(x_ref)), np.ones(len(x))], axis=0).astype(int)
         x = np.concatenate([x_ref, x], axis=0)
 
         # random shuffle if stratified folds are not used
         if self.skf is None:
-            n_tot = x.shape[0]
-            idx_shuffle = np.random.choice(np.arange(x.shape[0]), size=n_tot, replace=False)
+            n_tot = len(x)
+            idx_shuffle = np.random.choice(np.arange(n_tot), size=n_tot, replace=False)
             n_tr = int(n_tot * self.train_size)
             idx_tr, idx_te = idx_shuffle[:n_tr], idx_shuffle[n_tr:]
             splits = [(idx_tr, idx_te)]
@@ -229,7 +229,7 @@ class BaseClassifierDrift(BaseDetector):
             x = self.preprocess_fn(x)
         self.x_ref = update_reference(self.x_ref, x, self.n, self.update_x_ref)
         # used for reservoir sampling
-        self.n += x.shape[0]  # type: ignore
+        self.n += len(x)  # type: ignore
 
         # populate drift dict
         # TODO: add instance level feedback
@@ -247,7 +247,7 @@ class BaseClassifierDrift(BaseDetector):
 class BaseMMDDrift(BaseDetector):
     def __init__(
             self,
-            x_ref: np.ndarray,
+            x_ref: Union[np.ndarray, list],
             p_val: float = .05,
             preprocess_x_ref: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
@@ -308,7 +308,7 @@ class BaseMMDDrift(BaseDetector):
         self.preprocess_x_ref = preprocess_x_ref
         self.update_x_ref = update_x_ref
         self.preprocess_fn = preprocess_fn
-        self.n = x_ref.shape[0]  # type: ignore
+        self.n = len(x_ref)  # type: ignore
         self.n_permutations = n_permutations  # nb of iterations through permutation test
 
         # store input shape for save and load functionality
@@ -317,7 +317,7 @@ class BaseMMDDrift(BaseDetector):
         # set metadata
         self.meta.update({'detector_type': 'offline', 'data_type': data_type})
 
-    def preprocess(self, x: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def preprocess(self, x: Union[np.ndarray, list]) -> Tuple[np.ndarray, np.ndarray]:
         """
         Data preprocessing before computing the drift scores.
         Parameters
@@ -341,10 +341,10 @@ class BaseMMDDrift(BaseDetector):
         pass
 
     @abstractmethod
-    def score(self, x: np.ndarray) -> Tuple[float, float, np.ndarray]:
+    def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, np.ndarray]:
         pass
 
-    def predict(self, x: np.ndarray, return_p_val: bool = True, return_distance: bool = True) \
+    def predict(self, x: Union[np.ndarray, list], return_p_val: bool = True, return_distance: bool = True) \
             -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
         """
         Predict whether a batch of data has drifted from the reference data.
@@ -377,7 +377,7 @@ class BaseMMDDrift(BaseDetector):
             x = self.preprocess_fn(x)
         self.x_ref = update_reference(self.x_ref, x, self.n, self.update_x_ref)
         # used for reservoir sampling
-        self.n += x.shape[0]  # type: ignore
+        self.n += len(x)  # type: ignore
 
         # populate drift dict
         cd = concept_drift_dict()
@@ -395,7 +395,7 @@ class BaseMMDDrift(BaseDetector):
 class BaseLSDDDrift(BaseDetector):
     def __init__(
             self,
-            x_ref: np.ndarray,
+            x_ref: Union[np.ndarray, list],
             p_val: float = .05,
             preprocess_x_ref: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
@@ -457,7 +457,7 @@ class BaseLSDDDrift(BaseDetector):
         self.preprocess_x_ref = preprocess_x_ref
         self.update_x_ref = update_x_ref
         self.preprocess_fn = preprocess_fn
-        self.n = x_ref.shape[0]  # type: ignore
+        self.n = len(x_ref)  # type: ignore
         self.n_permutations = n_permutations  # nb of iterations through permutation test
         self.n_kernel_centers = n_kernel_centers or max(self.n // 20, 1)
         self.lambda_rd_max = lambda_rd_max
@@ -468,7 +468,7 @@ class BaseLSDDDrift(BaseDetector):
         # set metadata
         self.meta.update({'detector_type': 'offline', 'data_type': data_type})
 
-    def preprocess(self, x: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def preprocess(self, x: Union[np.ndarray, list]) -> Tuple[np.ndarray, np.ndarray]:
         """
         Data preprocessing before computing the drift scores.
         Parameters
@@ -487,10 +487,10 @@ class BaseLSDDDrift(BaseDetector):
             return self.x_ref, x
 
     @abstractmethod
-    def score(self, x: np.ndarray) -> Tuple[float, float, np.ndarray]:
+    def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, np.ndarray]:
         pass
 
-    def predict(self, x: np.ndarray, return_p_val: bool = True, return_distance: bool = True) \
+    def predict(self, x: Union[np.ndarray, list], return_p_val: bool = True, return_distance: bool = True) \
             -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
         """
         Predict whether a batch of data has drifted from the reference data.
@@ -529,7 +529,7 @@ class BaseLSDDDrift(BaseDetector):
                 pass
         self.x_ref = update_reference(self.x_ref, x, self.n, self.update_x_ref)
         # used for reservoir sampling
-        self.n += x.shape[0]  # type: ignore
+        self.n += len(x)  # type: ignore
 
         # populate drift dict
         cd = concept_drift_dict()
@@ -547,7 +547,7 @@ class BaseLSDDDrift(BaseDetector):
 class BaseUnivariateDrift(BaseDetector):
     def __init__(
             self,
-            x_ref: np.ndarray,
+            x_ref: Union[np.ndarray, list],
             p_val: float = .05,
             preprocess_x_ref: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
@@ -603,7 +603,7 @@ class BaseUnivariateDrift(BaseDetector):
         self.update_x_ref = update_x_ref
         self.preprocess_fn = preprocess_fn
         self.correction = correction
-        self.n = x_ref.shape[0]  # type: ignore
+        self.n = len(x_ref)  # type: ignore
 
         # store input shape for save and load functionality
         self.input_shape = input_shape if isinstance(input_shape, tuple) else x_ref.shape[1:]
@@ -625,7 +625,7 @@ class BaseUnivariateDrift(BaseDetector):
         self.meta['detector_type'] = 'offline'  # offline refers to fitting the CDF for K-S
         self.meta['data_type'] = data_type
 
-    def preprocess(self, x: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def preprocess(self, x: Union[np.ndarray, list]) -> Tuple[np.ndarray, np.ndarray]:
         """
         Data preprocessing before computing the drift scores.
 
@@ -649,7 +649,7 @@ class BaseUnivariateDrift(BaseDetector):
     def feature_score(self, x_ref: np.ndarray, x: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         pass
 
-    def score(self, x: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def score(self, x: Union[np.ndarray, list]) -> Tuple[np.ndarray, np.ndarray]:
         """
         Compute the feature-wise drift score which is the p-value of the
         statistical test and the test statistic.
@@ -667,7 +667,7 @@ class BaseUnivariateDrift(BaseDetector):
         score, dist = self.feature_score(x_ref, x)  # feature-wise univariate test
         return score, dist
 
-    def predict(self, x: np.ndarray, drift_type: str = 'batch',
+    def predict(self, x: Union[np.ndarray, list], drift_type: str = 'batch',
                 return_p_val: bool = True, return_distance: bool = True) \
             -> Dict[Dict[str, str], Dict[str, Union[np.ndarray, int, float]]]:
         """
@@ -712,7 +712,7 @@ class BaseUnivariateDrift(BaseDetector):
             x = self.preprocess_fn(x)
         self.x_ref = update_reference(self.x_ref, x, self.n, self.update_x_ref)
         # used for reservoir sampling
-        self.n += x.shape[0]  # type: ignore
+        self.n += len(x)  # type: ignore
 
         # populate drift dict
         cd = concept_drift_dict()

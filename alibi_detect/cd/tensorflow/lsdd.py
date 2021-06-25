@@ -1,6 +1,6 @@
 import numpy as np
 import tensorflow as tf
-from typing import Callable, Dict, Optional, Tuple
+from typing import Callable, Dict, Optional, Tuple, Union
 from alibi_detect.cd.base import BaseLSDDDrift
 from alibi_detect.utils.tensorflow.kernels import GaussianRBF
 from alibi_detect.utils.tensorflow.distance import permed_lsdds
@@ -9,7 +9,7 @@ from alibi_detect.utils.tensorflow.distance import permed_lsdds
 class LSDDDriftTF(BaseLSDDDrift):
     def __init__(
             self,
-            x_ref: np.ndarray,
+            x_ref: Union[np.ndarray, list],
             p_val: float = .05,
             preprocess_x_ref: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
@@ -106,7 +106,7 @@ class LSDDDriftTF(BaseLSDDDrift):
         x_ref_eff = tf.gather(x_ref, non_c_inds)  # the effective reference set
         self.k_xc = self.kernel(x_ref_eff, self.kernel_centers)
 
-    def score(self, x: np.ndarray) -> Tuple[float, float, np.ndarray]:
+    def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, np.ndarray]:
         """
         Compute the p-value resulting from a permutation test using the least-squares density
         difference as a distance measure between the reference data and the data to be tested.
