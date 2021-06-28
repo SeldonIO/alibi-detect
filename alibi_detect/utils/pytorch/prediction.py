@@ -1,7 +1,9 @@
+from functools import partial
 import numpy as np
 import torch
 import torch.nn as nn
 from typing import Callable, Union
+from alibi_detect.utils.prediction import tokenize_transformer
 
 
 def predict_batch(x: Union[np.ndarray, torch.Tensor], model: Union[nn.Module, nn.Sequential],
@@ -85,26 +87,5 @@ def predict_batch_transformer(x: Union[np.ndarray, torch.Tensor], model: Union[n
     -------
     Numpy array or torch tensor with model outputs.
     """
-    if device is None:
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    n = len(x)
-    n_minibatch = int(np.ceil(n / batch_size))
-    return_np = not isinstance(dtype, torch.dtype)
-    preds = []
-    with torch.no_grad():
-        for i in range(n_minibatch):
-            istart, istop = i * batch_size, min((i + 1) * batch_size, n)
-            x_batch =
-            tokens = tokenizer(  # type: ignore
-                list(x[istart:istop]), pad_to_max_length=True, max_length=max_len, return_tensors='pt'
-            ).to(device)
-            preds_tmp = model(tokens)
-            if device.type == 'cuda':
-                preds_tmp = preds_tmp.cpu()
-            if return_np:
-                preds_tmp = preds_tmp.numpy()
-            preds.append(preds_tmp)
-    if return_np:
-        return np.concatenate(preds)
-    else:
-        return torch.cat(preds)
+    preprocess_fn = partial(tokenize_transformer, tokenizer=tokenizer, max_len=max_len, backend='pt')
+    return predict_batch(x, model, device=device, preprocess_fn=preprocess_fn, batch_size=batch_size, dtype=dtype)

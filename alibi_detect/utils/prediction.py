@@ -17,6 +17,29 @@ Data = Union[
 ]
 
 
+def tokenize_transformer(x: Union[np.ndarray, 'torch.Tensor', 'tf.Tensor'], tokenizer: Callable,
+                         max_len: int, backend: str) -> dict:
+    """
+    Batch tokenizer for transformer models.
+
+    Parameters
+    ----------
+    x
+        Batch of instances.
+    tokenizer
+        Tokenizer for model.
+    max_len
+        Max token length.
+    backend
+        PyTorch ('pt') or TensorFlow ('tf') backend.
+
+    Returns
+    -------
+    Dictionary with tokenized instances.
+    """
+    return tokenizer(list(x), pad_to_max_length=True, max_length=max_len, return_tensors=backend)
+
+
 def predict_batch(model: Data,
                   X: np.ndarray,
                   batch_size: int = int(1e10),
