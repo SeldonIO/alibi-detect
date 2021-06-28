@@ -121,7 +121,8 @@ class BaseDriftOnline(BaseDetector):
 
         # preprocess if necessary
         if isinstance(self.preprocess_fn, Callable):  # type: ignore
-            x_t = self.preprocess_fn(x_t[None, :])[0]  # type: ignore
+            x_t = x_t[None, :] if isinstance(x_t, np.ndarray) else [x_t]
+            x_t = self.preprocess_fn(x_t)[0]  # type: ignore
 
         # update test window and return updated test stat
         test_stat = self.score(x_t)
