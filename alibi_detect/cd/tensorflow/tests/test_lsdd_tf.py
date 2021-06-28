@@ -20,6 +20,7 @@ def mymodel(shape):
     return tf.keras.models.Model(inputs=x_in, outputs=x_out)
 
 
+# test List[Any] inputs to the detector
 def preprocess_list(x: List[np.ndarray]) -> np.ndarray:
     return np.concatenate(x, axis=0)
 

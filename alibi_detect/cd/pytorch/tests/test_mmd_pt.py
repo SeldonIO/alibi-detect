@@ -22,6 +22,7 @@ class MyModel(nn.Module):
         return self.dense2(x)
 
 
+# test List[Any] inputs to the detector
 def preprocess_list(x: List[np.ndarray]) -> np.ndarray:
     return np.concatenate(x, axis=0)
 

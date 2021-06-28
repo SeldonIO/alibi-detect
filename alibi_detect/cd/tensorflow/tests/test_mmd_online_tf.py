@@ -21,9 +21,9 @@ def mymodel(shape):
 
 
 def preprocess_list(x: List[np.ndarray]) -> np.ndarray:
-    if len(x) > 1:
+    if len(x) > 1:  # test List[Any] reference data inputs to the detector with Any=np.ndarray
         return np.concatenate(x, axis=0)
-    else:
+    else:  # test Any inputs to the prediction function of the detector with Any=List[np.ndarray]
         return np.array(x)[0]
 
 
