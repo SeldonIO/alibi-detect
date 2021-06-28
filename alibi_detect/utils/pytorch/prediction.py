@@ -5,7 +5,7 @@ from typing import Callable, Union
 
 
 def predict_batch(x: Union[np.ndarray, torch.Tensor], model: Union[nn.Module, nn.Sequential],
-                  device: torch.device = None, batch_size: int = int(1e10),
+                  device: torch.device = None, batch_size: int = int(1e10), preprocess_fn: Callable = None,
                   dtype: Union[np.float32, torch.dtype] = np.float32) -> Union[np.ndarray, torch.Tensor]:
     """
     Make batch predictions on a model.
@@ -21,6 +21,8 @@ def predict_batch(x: Union[np.ndarray, torch.Tensor], model: Union[nn.Module, nn
         Can be specified by passing either torch.device('cuda') or torch.device('cpu').
     batch_size
         Batch size used during prediction.
+    preprocess_fn
+        Optional preprocessing function for each batch.
     dtype
         Model output type, e.g. np.float32 or torch.float32.
 
@@ -32,14 +34,17 @@ def predict_batch(x: Union[np.ndarray, torch.Tensor], model: Union[nn.Module, nn
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     if isinstance(x, np.ndarray):
         x = torch.from_numpy(x)
-    n = x.size(0)
+    n = len(x)
     n_minibatch = int(np.ceil(n / batch_size))
     return_np = not isinstance(dtype, torch.dtype)
     preds = []
     with torch.no_grad():
         for i in range(n_minibatch):
             istart, istop = i * batch_size, min((i + 1) * batch_size, n)
-            preds_tmp = model(x[istart:istop].to(device))
+            x_batch = x[istart:istop]
+            if isinstance(preprocess_fn, Callable):
+                x_batch = preprocess_fn(x_batch)
+            preds_tmp = model(x_batch.to(device))
             if device.type == 'cuda':
                 preds_tmp = preds_tmp.cpu()
             if return_np:
@@ -82,13 +87,14 @@ def predict_batch_transformer(x: Union[np.ndarray, torch.Tensor], model: Union[n
     """
     if device is None:
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    n = x.shape[0]
+    n = len(x)
     n_minibatch = int(np.ceil(n / batch_size))
     return_np = not isinstance(dtype, torch.dtype)
     preds = []
     with torch.no_grad():
         for i in range(n_minibatch):
             istart, istop = i * batch_size, min((i + 1) * batch_size, n)
+            x_batch =
             tokens = tokenizer(  # type: ignore
                 list(x[istart:istop]), pad_to_max_length=True, max_length=max_len, return_tensors='pt'
             ).to(device)
