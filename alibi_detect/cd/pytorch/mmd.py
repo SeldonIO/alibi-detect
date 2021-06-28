@@ -1,7 +1,7 @@
 import logging
 import numpy as np
 import torch
-from typing import Callable, Dict, Optional, Tuple
+from typing import Callable, Dict, Optional, Tuple, Union
 from alibi_detect.cd.base import BaseMMDDrift
 from alibi_detect.utils.pytorch.distance import mmd2_from_kernel_matrix
 from alibi_detect.utils.pytorch.kernels import GaussianRBF
@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 class MMDDriftTorch(BaseMMDDrift):
     def __init__(
             self,
-            x_ref: np.ndarray,
+            x_ref: Union[np.ndarray, list],
             p_val: float = .05,
             preprocess_x_ref: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
@@ -101,7 +101,7 @@ class MMDDriftTorch(BaseMMDDrift):
         kernel_mat = torch.cat([torch.cat([k_xx, k_xy], 1), torch.cat([k_xy.T, k_yy], 1)], 0)
         return kernel_mat
 
-    def score(self, x: np.ndarray) -> Tuple[float, float, np.ndarray]:
+    def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, np.ndarray]:
         """
         Compute the p-value resulting from a permutation test using the maximum mean discrepancy
         as a distance measure between the reference data and the data to be tested.

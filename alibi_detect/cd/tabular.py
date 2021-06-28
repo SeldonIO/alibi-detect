@@ -1,13 +1,13 @@
 import numpy as np
 from scipy.stats import chi2_contingency, ks_2samp
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple, Union
 from alibi_detect.cd.base import BaseUnivariateDrift
 
 
 class TabularDrift(BaseUnivariateDrift):
     def __init__(
             self,
-            x_ref: np.ndarray,
+            x_ref: Union[np.ndarray, list],
             p_val: float = .05,
             categories_per_feature: Dict[int, Optional[int]] = None,
             preprocess_x_ref: bool = True,

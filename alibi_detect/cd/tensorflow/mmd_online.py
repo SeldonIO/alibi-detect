@@ -10,7 +10,7 @@ from alibi_detect.utils.tensorflow import zero_diag, quantile, subset_matrix
 class MMDDriftOnlineTF(BaseDriftOnline):
     def __init__(
             self,
-            x_ref: np.ndarray,
+            x_ref: Union[np.ndarray, list],
             ert: float,
             window_size: int,
             preprocess_fn: Optional[Callable] = None,

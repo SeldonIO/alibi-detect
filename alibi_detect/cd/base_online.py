@@ -1,8 +1,9 @@
 from abc import abstractmethod
 import logging
 import numpy as np
-from typing import Callable, Dict,  Optional, Union
+from typing import Any, Callable, Dict,  Optional, Union
 from alibi_detect.base import BaseDetector, concept_drift_dict
+from alibi_detect.cd.utils import get_input_shape
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
 
 if has_pytorch:
@@ -17,7 +18,7 @@ logger = logging.getLogger(__name__)
 class BaseDriftOnline(BaseDetector):
     def __init__(
             self,
-            x_ref: np.ndarray,
+            x_ref: Union[np.ndarray, list],
             ert: float,
             window_size: int,
             preprocess_fn: Optional[Callable] = None,
@@ -66,12 +67,12 @@ class BaseDriftOnline(BaseDetector):
         else:
             self.x_ref = x_ref
         self.preprocess_fn = preprocess_fn
-        self.n = x_ref.shape[0]  # type: ignore
+        self.n = len(x_ref)  # type: ignore
         self.n_bootstraps = n_bootstraps  # nb of samples used to estimate thresholds
         self.verbose = verbose
 
         # store input shape for save and load functionality
-        self.input_shape = input_shape if isinstance(input_shape, tuple) else x_ref.shape[1:]
+        self.input_shape = get_input_shape(input_shape, x_ref)
 
         # set metadata
         self.meta['detector_type'] = 'online'
@@ -98,7 +99,7 @@ class BaseDriftOnline(BaseDetector):
         "Resets the detector but does not reconfigure thresholds."
         self._initialise()
 
-    def predict(self, x_t: np.ndarray,  return_test_stat: bool = True,
+    def predict(self, x_t: Union[np.ndarray, Any],  return_test_stat: bool = True,
                 ) -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
         """
         Predict whether the most recent window of data has drifted from the reference data.
@@ -120,7 +121,8 @@ class BaseDriftOnline(BaseDetector):
 
         # preprocess if necessary
         if isinstance(self.preprocess_fn, Callable):  # type: ignore
-            x_t = self.preprocess_fn(x_t[None, :])[0]
+            x_t = x_t[None, :] if isinstance(x_t, np.ndarray) else [x_t]
+            x_t = self.preprocess_fn(x_t)[0]  # type: ignore
 
         # update test window and return updated test stat
         test_stat = self.score(x_t)

@@ -10,7 +10,7 @@ from alibi_detect.utils.pytorch import zero_diag, quantile
 class MMDDriftOnlineTorch(BaseDriftOnline):
     def __init__(
             self,
-            x_ref: np.ndarray,
+            x_ref: Union[np.ndarray, list],
             ert: float,
             window_size: int,
             preprocess_fn: Optional[Callable] = None,

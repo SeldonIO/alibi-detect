@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, Input, InputLayer
-from typing import Callable
+from typing import Callable, List
 from alibi_detect.cd.tensorflow.mmd_online import MMDDriftOnlineTF
 from alibi_detect.cd.tensorflow.preprocess import HiddenOutput, UAE, preprocess_drift
 
@@ -20,6 +20,13 @@ def mymodel(shape):
     return tf.keras.models.Model(inputs=x_in, outputs=x_out)
 
 
+def preprocess_list(x: List[np.ndarray]) -> np.ndarray:
+    if len(x) > 1:  # test List[Any] reference data inputs to the detector with Any=np.ndarray
+        return np.concatenate(x, axis=0)
+    else:  # test Any inputs to the prediction function of the detector with Any=List[np.ndarray]
+        return np.array(x)[0]
+
+
 n_features = [10]
 n_enc = [None, 3]
 ert = [25]
@@ -27,7 +34,8 @@ window_size = [5]
 preprocess = [
     (None, None),
     (preprocess_drift, {'model': HiddenOutput, 'layer': -1}),
-    (preprocess_drift, {'model': UAE})
+    (preprocess_drift, {'model': UAE}),
+    (preprocess_list, None)
 ]
 n_bootstraps = [200]
 tests_mmddriftonline = list(product(n_features, n_enc, ert, window_size, preprocess, n_bootstraps))
@@ -47,7 +55,11 @@ def test_mmd_online(mmd_online_params):
 
     x_ref = np.random.randn(n * n_features).reshape(n, n_features).astype(np.float32)
     preprocess_fn, preprocess_kwargs = preprocess
-    if isinstance(preprocess_fn, Callable):
+    to_list = False
+    if hasattr(preprocess_fn, '__name__') and preprocess_fn.__name__ == 'preprocess_list':
+        to_list = True
+        x_ref = [_[None, :] for _ in x_ref]
+    elif isinstance(preprocess_fn, Callable):
         if 'layer' in list(preprocess_kwargs.keys()) \
                 and preprocess_kwargs['model'].__name__ == 'HiddenOutput':
             model = mymodel((n_features,))
@@ -80,6 +92,8 @@ def test_mmd_online(mmd_online_params):
     detection_times_h0 = []
     test_stats_h0 = []
     for x_t in x_h0:
+        if to_list:
+            x_t = [x_t]
         pred_t = cd.predict(x_t, return_test_stat=True)
         test_stats_h0.append(pred_t['data']['test_stat'])
         if pred_t['data']['is_drift']:
@@ -95,6 +109,8 @@ def test_mmd_online(mmd_online_params):
     detection_times_h1 = []
     test_stats_h1 = []
     for x_t in x_h1:
+        if to_list:
+            x_t = [x_t]
         pred_t = cd.predict(x_t, return_test_stat=True)
         test_stats_h1.append(pred_t['data']['test_stat'])
         if pred_t['data']['is_drift']:

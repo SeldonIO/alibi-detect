@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 import torch
 import torch.nn as nn
-from typing import Callable
+from typing import Callable, List
 from alibi_detect.cd.pytorch.lsdd_online import LSDDDriftOnlineTorch
 from alibi_detect.cd.pytorch.preprocess import HiddenOutput, preprocess_drift
 
@@ -22,12 +22,20 @@ class MyModel(nn.Module):
         return self.dense2(x)
 
 
+def preprocess_list(x: List[np.ndarray]) -> np.ndarray:
+    if len(x) > 1:  # test List[Any] reference data inputs to the detector with Any=np.ndarray
+        return np.concatenate(x, axis=0)
+    else:  # test Any inputs to the prediction function of the detector with Any=List[np.ndarray]
+        return np.array(x)[0]
+
+
 n_features = [10]
 ert = [25]
 window_size = [5]
 preprocess = [
     (None, None),
-    (preprocess_drift, {'model': HiddenOutput, 'layer': -1})
+    (preprocess_drift, {'model': HiddenOutput, 'layer': -1}),
+    (preprocess_list, None)
 ]
 n_bootstraps = [200]
 tests_lsdddriftonline = list(product(n_features, ert, window_size, preprocess, n_bootstraps))
@@ -48,7 +56,11 @@ def test_lsdd_online(lsdd_online_params):
 
     x_ref = np.random.randn(n * n_features).reshape(n, n_features).astype(np.float32)
     preprocess_fn, preprocess_kwargs = preprocess
-    if isinstance(preprocess_fn, Callable) and 'layer' in list(preprocess_kwargs.keys()) \
+    to_list = False
+    if hasattr(preprocess_fn, '__name__') and preprocess_fn.__name__ == 'preprocess_list':
+        to_list = True
+        x_ref = [_[None, :] for _ in x_ref]
+    elif isinstance(preprocess_fn, Callable) and 'layer' in list(preprocess_kwargs.keys()) \
             and preprocess_kwargs['model'].__name__ == 'HiddenOutput':
         model = MyModel(n_features)
         layer = preprocess_kwargs['layer']
@@ -68,6 +80,8 @@ def test_lsdd_online(lsdd_online_params):
     detection_times_h0 = []
     test_stats_h0 = []
     for x_t in x_h0:
+        if to_list:
+            x_t = [x_t]
         pred_t = cd.predict(x_t, return_test_stat=True)
         test_stats_h0.append(pred_t['data']['test_stat'])
         if pred_t['data']['is_drift']:
@@ -83,6 +97,8 @@ def test_lsdd_online(lsdd_online_params):
     detection_times_h1 = []
     test_stats_h1 = []
     for x_t in x_h1:
+        if to_list:
+            x_t = [x_t]
         pred_t = cd.predict(x_t, return_test_stat=True)
         test_stats_h1.append(pred_t['data']['test_stat'])
         if pred_t['data']['is_drift']:
