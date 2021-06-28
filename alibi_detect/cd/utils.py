@@ -1,7 +1,10 @@
+import logging
 import numpy as np
 import random
-from typing import Dict, Callable, Optional
+from typing import Dict, Callable, Optional, Tuple, Union
 from alibi_detect.utils.sampling import reservoir_sampling
+
+logger = logging.getLogger(__name__)
 
 
 def update_reference(X_ref: np.ndarray,
@@ -98,3 +101,16 @@ def encompass_shuffling_and_batch_filling(
         return preds
 
     return new_model_fn
+
+
+def get_input_shape(shape: Union[Tuple, None], x_ref: Union[np.ndarray, list]) -> Union[Tuple, None]:
+    """ Optionally infer shape from reference data. """
+    if isinstance(shape, tuple):
+        return shape
+    elif hasattr(x_ref, 'shape'):
+        return x_ref.shape[1:]
+    else:
+        logger.warning('Input shape could not be inferred. '
+                       'If alibi_detect.models.tensorflow.embedding.TransformerEmbedding '
+                       'is used as preprocessing step, a saved detector cannot be reinitialized.')
+        return None

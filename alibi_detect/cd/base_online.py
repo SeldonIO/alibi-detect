@@ -3,6 +3,7 @@ import logging
 import numpy as np
 from typing import Callable, Dict,  Optional, Union
 from alibi_detect.base import BaseDetector, concept_drift_dict
+from alibi_detect.cd.utils import get_input_shape
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
 
 if has_pytorch:
@@ -71,7 +72,7 @@ class BaseDriftOnline(BaseDetector):
         self.verbose = verbose
 
         # store input shape for save and load functionality
-        self.input_shape = input_shape if isinstance(input_shape, tuple) else x_ref.shape[1:]
+        self.input_shape = get_input_shape(input_shape, x_ref)
 
         # set metadata
         self.meta['detector_type'] = 'online'
@@ -120,7 +121,7 @@ class BaseDriftOnline(BaseDetector):
 
         # preprocess if necessary
         if isinstance(self.preprocess_fn, Callable):  # type: ignore
-            x_t = self.preprocess_fn(x_t[None, :])[0]
+            x_t = self.preprocess_fn(x_t[None, :])[0]  # type: ignore
 
         # update test window and return updated test stat
         test_stat = self.score(x_t)

@@ -5,7 +5,7 @@ from sklearn.model_selection import StratifiedKFold
 from scipy.stats import binom_test, ks_2samp
 from typing import Callable, Dict, List, Optional, Tuple, Union
 from alibi_detect.base import BaseDetector, concept_drift_dict
-from alibi_detect.cd.utils import update_reference
+from alibi_detect.cd.utils import get_input_shape, update_reference
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
 from alibi_detect.utils.statstest import fdr
 
@@ -312,7 +312,7 @@ class BaseMMDDrift(BaseDetector):
         self.n_permutations = n_permutations  # nb of iterations through permutation test
 
         # store input shape for save and load functionality
-        self.input_shape = input_shape if isinstance(input_shape, tuple) else x_ref.shape[1:]
+        self.input_shape = get_input_shape(input_shape, x_ref)
 
         # set metadata
         self.meta.update({'detector_type': 'offline', 'data_type': data_type})
@@ -463,7 +463,7 @@ class BaseLSDDDrift(BaseDetector):
         self.lambda_rd_max = lambda_rd_max
 
         # store input shape for save and load functionality
-        self.input_shape = input_shape if isinstance(input_shape, tuple) else x_ref.shape[1:]
+        self.input_shape = get_input_shape(input_shape, x_ref)
 
         # set metadata
         self.meta.update({'detector_type': 'offline', 'data_type': data_type})
@@ -606,7 +606,7 @@ class BaseUnivariateDrift(BaseDetector):
         self.n = len(x_ref)  # type: ignore
 
         # store input shape for save and load functionality
-        self.input_shape = input_shape if isinstance(input_shape, tuple) else x_ref.shape[1:]
+        self.input_shape = get_input_shape(input_shape, x_ref)
 
         # compute number of features for the univariate tests
         if isinstance(n_features, int):
