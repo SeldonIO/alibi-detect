@@ -103,7 +103,7 @@ def encompass_shuffling_and_batch_filling(
     return new_model_fn
 
 
-def get_input_shape(shape: Union[Tuple, None], x_ref: Union[np.ndarray, list]) -> Union[Tuple, None]:
+def get_input_shape(shape: Optional[Tuple], x_ref: Union[np.ndarray, list]) -> Optional[Tuple]:
     """ Optionally infer shape from reference data. """
     if isinstance(shape, tuple):
         return shape
