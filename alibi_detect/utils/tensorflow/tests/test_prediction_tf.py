@@ -2,45 +2,56 @@ import numpy as np
 import pytest
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, InputLayer
-from alibi_detect.models.tensorflow import AE
+from typing import Tuple, Union
 from alibi_detect.utils.tensorflow import predict_batch
 
 n, n_features, n_classes, latent_dim = 100, 10, 5, 2
-X = np.zeros((n, n_features))
+x = np.zeros((n, n_features), dtype=np.float32)
 
 
 class MyModel(tf.keras.Model):
-    def __init__(self):
+    def __init__(self, multi_out: bool = False):
         super(MyModel, self).__init__()
         self.dense = Dense(n_classes, activation='softmax')
+        self.multi_out = multi_out
 
-    def call(self, x: np.ndarray) -> tf.Tensor:
-        return self.dense(x)
+    def call(self, x: np.ndarray) -> Union[tf.Tensor, Tuple[tf.Tensor, tf.Tensor]]:
+        out = self.dense(x)
+        if not self.multi_out:
+            return out
+        else:
+            return out, out
 
 
-model = MyModel()
-
-encoder_net = tf.keras.Sequential(
+AutoEncoder = tf.keras.Sequential(
     [
         InputLayer(input_shape=(n_features,)),
-        Dense(latent_dim)
-    ]
-)
-decoder_net = tf.keras.Sequential(
-    [
-        InputLayer(input_shape=(latent_dim,)),
+        Dense(latent_dim),
         Dense(n_features)
     ]
 )
-AutoEncoder = AE(encoder_net, decoder_net)
 
-# model, batch size, dtype
+
+def id_fn(x: Union[np.ndarray, tf.Tensor, list]) -> Union[np.ndarray, tf.Tensor]:
+    if isinstance(x, list):
+        return np.concatenate(x, axis=0)
+    else:
+        return x
+
+
+# model, batch size, dtype, preprocessing function, list as input
 tests_predict = [
-    (model, 2, np.float32),
-    (model, int(1e10), np.float32),
-    (model, int(1e10), tf.float32),
-    (AutoEncoder, 2, np.float32),
-    (AutoEncoder, int(1e10), np.float32)
+    (MyModel(multi_out=False), 2, np.float32, None, False),
+    (MyModel(multi_out=False), int(1e10), np.float32, None, False),
+    (MyModel(multi_out=False), int(1e10), tf.float32, None, False),
+    (MyModel(multi_out=True), int(1e10), tf.float32, None, False),
+    (MyModel(multi_out=False), int(1e10), np.float32, id_fn, False),
+    (AutoEncoder, 2, np.float32, None, False),
+    (AutoEncoder, int(1e10), np.float32, None, False),
+    (AutoEncoder, int(1e10), tf.float32, None, False),
+    (id_fn, 2, np.float32, None, False),
+    (id_fn, 2, tf.float32, None, False),
+    (id_fn, 2, np.float32, id_fn, True),
 ]
 n_tests = len(tests_predict)
 
@@ -52,10 +63,13 @@ def predict_batch_params(request):
 
 @pytest.mark.parametrize('predict_batch_params', list(range(n_tests)), indirect=True)
 def test_predict_batch(predict_batch_params):
-    model, batch_size, dtype = predict_batch_params
-    preds = predict_batch(X, model, batch_size=batch_size, dtype=dtype)
+    model, batch_size, dtype, preprocess_fn, to_list = predict_batch_params
+    x_batch = [x] if to_list else x
+    preds = predict_batch(x_batch, model, batch_size=batch_size, preprocess_fn=preprocess_fn, dtype=dtype)
+    if isinstance(preds, tuple):
+        preds = preds[0]
     assert preds.dtype == dtype
-    if isinstance(model, AE):
-        assert preds.shape == X.shape
+    if isinstance(model, tf.keras.Sequential) or hasattr(model, '__name__') and model.__name__ == 'id_fn':
+        assert preds.shape == x.shape
     elif isinstance(model, tf.keras.Model):
         assert preds.shape == (n, n_classes)

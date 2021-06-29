@@ -36,7 +36,7 @@ def id_fn(x: Union[np.ndarray, torch.Tensor, list]) -> Union[np.ndarray, torch.T
         return x
 
 
-# model, batch size, dtype
+# model, batch size, dtype, preprocessing function, list as input
 tests_predict = [
     (MyModel(multi_out=False), 2, np.float32, None, False),
     (MyModel(multi_out=False), int(1e10), np.float32, None, False),
