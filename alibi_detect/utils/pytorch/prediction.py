@@ -46,7 +46,7 @@ def predict_batch(x: Union[list, np.ndarray, torch.Tensor], model: Union[nn.Modu
             x_batch = x[istart:istop]
             if isinstance(preprocess_fn, Callable):  # type: ignore
                 x_batch = preprocess_fn(x_batch)
-            preds_tmp = model(x_batch.to(device))
+            preds_tmp = model(x_batch.to(device))  # type: ignore
             if device.type == 'cuda':
                 preds_tmp = preds_tmp.cpu()
             if return_np:
