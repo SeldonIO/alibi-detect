@@ -45,7 +45,7 @@ def predict_batch(x: Union[list, np.ndarray, tf.Tensor], model: Union[Callable, 
                 preds[j].append(p if not return_np or isinstance(p, np.ndarray) else p.numpy())
         else:
             preds.append(preds_tmp if not return_np or isinstance(preds_tmp, np.ndarray)  # type: ignore
-        else preds_tmp.numpy())
+                         else preds_tmp.numpy())
     concat = np.concatenate if return_np else tf.concat
     out = tuple(concat(p, axis=0) for p in preds) if isinstance(preds, tuple) else concat(preds, axis=0)
     return out
