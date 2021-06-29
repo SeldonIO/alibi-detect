@@ -31,7 +31,7 @@ def predict_batch(x: Union[list, np.ndarray, tf.Tensor], model: Union[Callable, 
     n = len(x)
     n_minibatch = int(np.ceil(n / batch_size))
     return_np = isinstance(dtype, type)
-    preds = []
+    preds = []  # type: Union[list, tuple]
     for i in range(n_minibatch):
         istart, istop = i * batch_size, min((i + 1) * batch_size, n)
         x_batch = x[istart:istop]
@@ -44,7 +44,8 @@ def predict_batch(x: Union[list, np.ndarray, tf.Tensor], model: Union[Callable, 
             for j, p in enumerate(preds_tmp):
                 preds[j].append(p if not return_np or isinstance(p, np.ndarray) else p.numpy())
         else:
-            preds.append(preds_tmp if not return_np or isinstance(preds_tmp, np.ndarray) else preds_tmp.numpy())
+            preds.append(preds_tmp if not return_np or isinstance(preds_tmp, np.ndarray)  # type: ignore
+        else preds_tmp.numpy())
     concat = np.concatenate if return_np else tf.concat
     out = tuple(concat(p, axis=0) for p in preds) if isinstance(preds, tuple) else concat(preds, axis=0)
     return out

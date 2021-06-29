@@ -39,7 +39,7 @@ def predict_batch(x: Union[list, np.ndarray, torch.Tensor], model: Union[Callabl
     n = len(x)
     n_minibatch = int(np.ceil(n / batch_size))
     return_np = not isinstance(dtype, torch.dtype)
-    preds = []
+    preds = []  # type: Union[list, tuple]
     with torch.no_grad():
         for i in range(n_minibatch):
             istart, istop = i * batch_size, min((i + 1) * batch_size, n)
@@ -57,7 +57,8 @@ def predict_batch(x: Union[list, np.ndarray, torch.Tensor], model: Union[Callabl
             else:
                 if device.type == 'cuda' and isinstance(preds_tmp, torch.Tensor):
                     preds_tmp = preds_tmp.cpu()
-                preds.append(preds_tmp if not return_np or isinstance(preds_tmp, np.ndarray) else preds_tmp.numpy())
+                preds.append(preds_tmp if not return_np or isinstance(preds_tmp, np.ndarray)  # type: ignore
+                             else preds_tmp.numpy())
     concat = partial(np.concatenate, axis=0) if return_np else partial(torch.cat, dim=0)
     out = tuple(concat(p) for p in preds) if isinstance(preds, tuple) else concat(preds)
     return out
