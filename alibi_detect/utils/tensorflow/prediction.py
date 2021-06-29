@@ -5,7 +5,7 @@ from typing import Callable, Union
 from alibi_detect.utils.prediction import tokenize_transformer
 
 
-def predict_batch(x: Union[np.ndarray, tf.Tensor], model: tf.keras.Model, batch_size: int = int(1e10),
+def predict_batch(x: Union[list, np.ndarray, tf.Tensor], model: tf.keras.Model, batch_size: int = int(1e10),
                   preprocess_fn: Callable = None, dtype: Union[np.float32, tf.DType] = np.float32) \
         -> Union[np.ndarray, tf.Tensor]:
     """
@@ -35,7 +35,7 @@ def predict_batch(x: Union[np.ndarray, tf.Tensor], model: tf.keras.Model, batch_
     for i in range(n_minibatch):
         istart, istop = i * batch_size, min((i + 1) * batch_size, n)
         x_batch = x[istart:istop]
-        if isinstance(preprocess_fn, Callable):
+        if isinstance(preprocess_fn, Callable):  # type: ignore
             x_batch = preprocess_fn(x_batch)
         preds_tmp = model(x_batch)
         if return_np:
@@ -47,7 +47,7 @@ def predict_batch(x: Union[np.ndarray, tf.Tensor], model: tf.keras.Model, batch_
         return tf.concat(preds, axis=0)
 
 
-def predict_batch_transformer(x: np.ndarray, model: tf.keras.Model, tokenizer,
+def predict_batch_transformer(x: Union[list, np.ndarray], model: tf.keras.Model, tokenizer: Callable,
                               max_len: int, batch_size: int = int(1e10),
                               dtype: Union[np.float32, tf.DType] = np.float32) \
         -> Union[np.ndarray, tf.Tensor]:
@@ -66,6 +66,8 @@ def predict_batch_transformer(x: np.ndarray, model: tf.keras.Model, tokenizer,
         Max token length.
     batch_size
         Batch size.
+    dtype
+        Model output type, e.g. np.float32 or tf.float32.
 
     Returns
     -------

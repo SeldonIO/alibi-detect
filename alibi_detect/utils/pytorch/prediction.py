@@ -6,7 +6,7 @@ from typing import Callable, Union
 from alibi_detect.utils.prediction import tokenize_transformer
 
 
-def predict_batch(x: Union[np.ndarray, torch.Tensor], model: Union[nn.Module, nn.Sequential],
+def predict_batch(x: Union[list, np.ndarray, torch.Tensor], model: Union[nn.Module, nn.Sequential],
                   device: torch.device = None, batch_size: int = int(1e10), preprocess_fn: Callable = None,
                   dtype: Union[np.float32, torch.dtype] = np.float32) -> Union[np.ndarray, torch.Tensor]:
     """
@@ -44,7 +44,7 @@ def predict_batch(x: Union[np.ndarray, torch.Tensor], model: Union[nn.Module, nn
         for i in range(n_minibatch):
             istart, istop = i * batch_size, min((i + 1) * batch_size, n)
             x_batch = x[istart:istop]
-            if isinstance(preprocess_fn, Callable):
+            if isinstance(preprocess_fn, Callable):  # type: ignore
                 x_batch = preprocess_fn(x_batch)
             preds_tmp = model(x_batch.to(device))
             if device.type == 'cuda':
@@ -58,7 +58,7 @@ def predict_batch(x: Union[np.ndarray, torch.Tensor], model: Union[nn.Module, nn
         return torch.cat(preds)
 
 
-def predict_batch_transformer(x: Union[np.ndarray, torch.Tensor], model: Union[nn.Module, nn.Sequential],
+def predict_batch_transformer(x: Union[list, np.ndarray], model: Union[nn.Module, nn.Sequential],
                               tokenizer: Callable, max_len: int, device: torch.device = None,
                               batch_size: int = int(1e10), dtype: Union[np.float32, torch.dtype] = np.float32) \
         -> Union[np.ndarray, torch.Tensor]:

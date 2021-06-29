@@ -17,8 +17,7 @@ Data = Union[
 ]
 
 
-def tokenize_transformer(x: Union[np.ndarray, 'torch.Tensor', 'tf.Tensor'], tokenizer: Callable,
-                         max_len: int, backend: str) -> dict:
+def tokenize_transformer(x: Union[list, np.ndarray], tokenizer: Callable, max_len: int, backend: str) -> dict:
     """
     Batch tokenizer for transformer models.
 
