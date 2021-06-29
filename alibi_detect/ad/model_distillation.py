@@ -5,7 +5,7 @@ from tensorflow.keras.losses import kld, categorical_crossentropy
 from typing import Callable, Dict, Tuple, Union
 from alibi_detect.models.tensorflow.trainer import trainer
 from alibi_detect.models.tensorflow.losses import loss_distillation
-from alibi_detect.utils.prediction import predict_batch
+from alibi_detect.utils.tensorflow.prediction import predict_batch
 from alibi_detect.base import (BaseDetector, FitMixin, ThresholdMixin,
                                adversarial_prediction_dict)
 
@@ -165,8 +165,8 @@ class ModelDistillation(BaseDetector, FitMixin, ThresholdMixin):
         """
 
         # model predictions
-        y = predict_batch(self.model, X, batch_size=batch_size, proba=True)
-        y_distilled = predict_batch(self.distilled_model, X, batch_size=batch_size, proba=True)
+        y = predict_batch(X, self.model, batch_size=batch_size)
+        y_distilled = predict_batch(X, self.distilled_model, batch_size=batch_size)
 
         # scale predictions
         if self.temperature != 1.:

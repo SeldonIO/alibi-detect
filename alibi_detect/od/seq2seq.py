@@ -6,7 +6,7 @@ from typing import Dict, Tuple, Union
 from alibi_detect.models.tensorflow.autoencoder import Seq2Seq, EncoderLSTM, DecoderLSTM
 from alibi_detect.models.tensorflow.trainer import trainer
 from alibi_detect.base import BaseDetector, FitMixin, ThresholdMixin, outlier_prediction_dict
-from alibi_detect.utils.prediction import predict_batch
+from alibi_detect.utils.tensorflow.prediction import predict_batch
 
 logger = logging.getLogger(__name__)
 
@@ -260,7 +260,7 @@ class OutlierSeq2Seq(BaseDetector, FitMixin, ThresholdMixin):
         orig_shape = X.shape
         if len(orig_shape) == 2:
             X = X.reshape(self.shape)
-        X_recon, threshold_est = predict_batch(self.seq2seq.decode_seq, X, batch_size=batch_size)
+        X_recon, threshold_est = predict_batch(X, self.seq2seq.decode_seq, batch_size=batch_size)
 
         if len(orig_shape) == 2:  # reshape back to original shape
             X = X.reshape(orig_shape)

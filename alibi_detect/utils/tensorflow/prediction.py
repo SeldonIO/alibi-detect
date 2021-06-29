@@ -5,9 +5,9 @@ from typing import Callable, Union
 from alibi_detect.utils.prediction import tokenize_transformer
 
 
-def predict_batch(x: Union[list, np.ndarray, tf.Tensor], model: tf.keras.Model, batch_size: int = int(1e10),
-                  preprocess_fn: Callable = None, dtype: Union[np.float32, tf.DType] = np.float32) \
-        -> Union[np.ndarray, tf.Tensor]:
+def predict_batch(x: Union[list, np.ndarray, tf.Tensor], model: Union[Callable, tf.keras.Model],
+                  batch_size: int = int(1e10), preprocess_fn: Callable = None,
+                  dtype: Union[np.dtype, tf.DType] = np.dtype) -> Union[np.ndarray, tf.Tensor, tuple]:
     """
     Make batch predictions on a model.
 
@@ -26,7 +26,7 @@ def predict_batch(x: Union[list, np.ndarray, tf.Tensor], model: tf.keras.Model, 
 
     Returns
     -------
-    Numpy array or tensorflow tensor with model outputs.
+    Numpy array, tensorflow tensor or tuples of those with model outputs.
     """
     n = len(x)
     n_minibatch = int(np.ceil(n / batch_size))
@@ -38,13 +38,16 @@ def predict_batch(x: Union[list, np.ndarray, tf.Tensor], model: tf.keras.Model, 
         if isinstance(preprocess_fn, Callable):  # type: ignore
             x_batch = preprocess_fn(x_batch)
         preds_tmp = model(x_batch)
-        if return_np:
-            preds_tmp = preds_tmp.numpy()
-        preds.append(preds_tmp)
-    if return_np:
-        return np.concatenate(preds, axis=0)
-    else:
-        return tf.concat(preds, axis=0)
+        if isinstance(preds_tmp, tuple):
+            if len(preds) == 0:  # init tuple with lists to store predictions
+                preds = tuple([] for _ in range(len(preds_tmp)))
+            for j, p in enumerate(preds_tmp):
+                preds[j].append(p if not return_np or isinstance(p, np.ndarray) else p.numpy())
+        else:
+            preds.append(preds_tmp if not return_np or isinstance(preds_tmp, np.ndarray) else preds_tmp.numpy())
+    concat = np.concatenate if return_np else tf.concat
+    out = tuple(concat(p, axis=0) for p in preds) if isinstance(preds, tuple) else concat(preds, axis=0)
+    return out
 
 
 def predict_batch_transformer(x: Union[list, np.ndarray], model: tf.keras.Model, tokenizer: Callable,

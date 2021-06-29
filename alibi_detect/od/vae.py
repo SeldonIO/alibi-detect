@@ -7,7 +7,7 @@ from alibi_detect.models.tensorflow.autoencoder import VAE
 from alibi_detect.models.tensorflow.trainer import trainer
 from alibi_detect.models.tensorflow.losses import elbo
 from alibi_detect.base import BaseDetector, FitMixin, ThresholdMixin, outlier_prediction_dict
-from alibi_detect.utils.prediction import predict_batch
+from alibi_detect.utils.tensorflow.prediction import predict_batch
 
 logger = logging.getLogger(__name__)
 
@@ -233,7 +233,7 @@ class OutlierVAE(BaseDetector, FitMixin, ThresholdMixin):
         """
         # sample reconstructed instances
         X_samples = np.repeat(X, self.samples, axis=0)
-        X_recon = predict_batch(self.vae, X_samples, batch_size=batch_size)
+        X_recon = predict_batch(X_samples, self.vae, batch_size=batch_size)
 
         # compute feature and instance level scores
         fscore = self.feature_score(X_samples, X_recon)

@@ -8,7 +8,7 @@ from typing import Callable, Dict, List, Tuple, Union
 from alibi_detect.models.tensorflow.autoencoder import AE
 from alibi_detect.models.tensorflow.trainer import trainer
 from alibi_detect.models.tensorflow.losses import loss_adv_ae
-from alibi_detect.utils.prediction import predict_batch
+from alibi_detect.utils.tensorflow.prediction import predict_batch
 from alibi_detect.base import (BaseDetector, FitMixin, ThresholdMixin,
                                adversarial_prediction_dict, adversarial_correction_dict)
 
@@ -242,11 +242,11 @@ class AdversarialAE(BaseDetector, FitMixin, ThresholdMixin):
         Array with adversarial scores for each instance in the batch.
         """
         # reconstructed instances
-        X_recon = predict_batch(self.ae, X, batch_size=batch_size)
+        X_recon = predict_batch(X, self.ae, batch_size=batch_size)
 
         # model predictions
-        y = predict_batch(self.model, X, batch_size=batch_size, proba=True)
-        y_recon = predict_batch(self.model, X_recon, batch_size=batch_size, proba=True)
+        y = predict_batch(X, self.model, batch_size=batch_size)
+        y_recon = predict_batch(X_recon, self.model, batch_size=batch_size)
 
         # scale predictions
         if self.temperature != 1.:
@@ -258,8 +258,8 @@ class AdversarialAE(BaseDetector, FitMixin, ThresholdMixin):
         # hidden layer predictions
         if isinstance(self.model_hl, list):
             for m, w in zip(self.model_hl, self.w_model_hl):
-                h = predict_batch(m, X, batch_size=batch_size, proba=True)
-                h_recon = predict_batch(m, X_recon, batch_size=batch_size, proba=True)
+                h = predict_batch(X, m, batch_size=batch_size)
+                h_recon = predict_batch(X_recon, m, batch_size=batch_size)
                 adv_score += w * kld(h, h_recon).numpy()
 
         if return_predictions:

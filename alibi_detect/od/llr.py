@@ -9,7 +9,7 @@ from typing import Callable, Dict, Tuple, Union
 from alibi_detect.models.tensorflow import PixelCNN
 from alibi_detect.models.tensorflow.trainer import trainer
 from alibi_detect.base import BaseDetector, FitMixin, ThresholdMixin, outlier_prediction_dict
-from alibi_detect.utils.prediction import predict_batch
+from alibi_detect.utils.tensorflow.prediction import predict_batch
 from alibi_detect.utils.perturbation import mutate_categorical
 
 logger = logging.getLogger(__name__)
@@ -150,7 +150,7 @@ class LLR(BaseDetector, FitMixin, ThresholdMixin):
 
         # create background data
         mutate_fn = partial(mutate_fn, **mutate_fn_kwargs)
-        X_back = predict_batch(mutate_fn, X, batch_size=mutate_batch_size, shape=X.shape, dtype=X.dtype)
+        X_back = predict_batch(X, mutate_fn, batch_size=mutate_batch_size, dtype=X.dtype)
 
         # prepare sequential data
         if self.sequential and not self.has_log_prob:
@@ -243,7 +243,7 @@ class LLR(BaseDetector, FitMixin, ThresholdMixin):
         Log probabilities.
         """
         logp_fn = partial(dist.log_prob, return_per_feature=return_per_feature)
-        return predict_batch(logp_fn, X, batch_size=batch_size)
+        return predict_batch(X, logp_fn, batch_size=batch_size)
 
     def logp_alt(self, model: tf.keras.Model, X: np.ndarray, return_per_feature: bool = False,
                  batch_size: int = int(1e10)) -> np.ndarray:
@@ -270,7 +270,7 @@ class LLR(BaseDetector, FitMixin, ThresholdMixin):
             y, X = X[:, 1:], X[:, :-1]
         else:
             y = X.copy()
-        y_preds = predict_batch(model, X, batch_size=batch_size)
+        y_preds = predict_batch(X, model, batch_size=batch_size)
         logp = self.log_prob(y, y_preds).numpy()
         if return_per_feature:
             return logp
