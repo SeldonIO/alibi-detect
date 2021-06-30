@@ -285,7 +285,7 @@ class Seq2Seq(tf.keras.Model):
         self.add_loss(self.beta * threshold_loss)
         return x_recon
 
-    def decode_seq(self, x: np.ndarray):
+    def decode_seq(self, x: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """ Sequence decoding and threshold estimation used for inference. """
         seq_len = np.shape(x)[1]
         n_batch = x.shape[0]

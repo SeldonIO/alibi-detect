@@ -5,7 +5,7 @@ from typing import Dict, Tuple
 from alibi_detect.models.tensorflow.autoencoder import AE
 from alibi_detect.models.tensorflow.trainer import trainer
 from alibi_detect.base import BaseDetector, FitMixin, ThresholdMixin, outlier_prediction_dict
-from alibi_detect.utils.prediction import predict_batch
+from alibi_detect.utils.tensorflow.prediction import predict_batch
 
 logger = logging.getLogger(__name__)
 
@@ -194,7 +194,7 @@ class OutlierAE(BaseDetector, FitMixin, ThresholdMixin):
         Feature and instance level outlier scores.
         """
         # reconstruct instances
-        X_recon = predict_batch(self.ae, X, batch_size=batch_size)
+        X_recon = predict_batch(X, self.ae, batch_size=batch_size)
 
         # compute feature and instance level scores
         fscore = self.feature_score(X, X_recon)

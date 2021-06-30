@@ -8,7 +8,7 @@ from alibi_detect.models.tensorflow.gmm import gmm_energy, gmm_params
 from alibi_detect.models.tensorflow.losses import loss_vaegmm
 from alibi_detect.models.tensorflow.trainer import trainer
 from alibi_detect.base import BaseDetector, FitMixin, ThresholdMixin, outlier_prediction_dict
-from alibi_detect.utils.prediction import predict_batch
+from alibi_detect.utils.tensorflow.prediction import predict_batch
 
 logger = logging.getLogger(__name__)
 
@@ -200,7 +200,7 @@ class OutlierVAEGMM(BaseDetector, FitMixin, ThresholdMixin):
         """
         # draw samples from latent space
         X_samples = np.repeat(X, self.samples, axis=0)
-        _, z, _ = predict_batch(self.vaegmm, X_samples, batch_size=batch_size)
+        _, z, _ = predict_batch(X_samples, self.vaegmm, batch_size=batch_size)
 
         # compute average energy for samples
         energy, _ = gmm_energy(z, self.phi, self.mu, self.cov, self.L, self.log_det_cov, return_mean=False)
