@@ -8,7 +8,7 @@ from alibi_detect.utils.prediction import tokenize_transformer
 
 def predict_batch(x: Union[list, np.ndarray, torch.Tensor], model: Union[Callable, nn.Module, nn.Sequential],
                   device: torch.device = None, batch_size: int = int(1e10), preprocess_fn: Callable = None,
-                  dtype: Union[np.float32, torch.dtype] = np.dtype) -> Union[np.ndarray, torch.Tensor, tuple]:
+                  dtype: Union[np.dtype, torch.dtype] = np.float32) -> Union[np.ndarray, torch.Tensor, tuple]:
     """
     Make batch predictions on a model.
 

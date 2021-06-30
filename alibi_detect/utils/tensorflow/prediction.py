@@ -7,7 +7,7 @@ from alibi_detect.utils.prediction import tokenize_transformer
 
 def predict_batch(x: Union[list, np.ndarray, tf.Tensor], model: Union[Callable, tf.keras.Model],
                   batch_size: int = int(1e10), preprocess_fn: Callable = None,
-                  dtype: Union[np.dtype, tf.DType] = np.dtype) -> Union[np.ndarray, tf.Tensor, tuple]:
+                  dtype: Union[np.dtype, tf.DType] = np.float32) -> Union[np.ndarray, tf.Tensor, tuple]:
     """
     Make batch predictions on a model.
 
@@ -30,7 +30,7 @@ def predict_batch(x: Union[list, np.ndarray, tf.Tensor], model: Union[Callable, 
     """
     n = len(x)
     n_minibatch = int(np.ceil(n / batch_size))
-    return_np = isinstance(dtype, type)
+    return_np = not isinstance(dtype, tf.DType)
     preds = []  # type: Union[list, tuple]
     for i in range(n_minibatch):
         istart, istop = i * batch_size, min((i + 1) * batch_size, n)
