@@ -151,7 +151,7 @@ class ClassifierUncertaintyDrift:
 class RegressorUncertaintyDrift:
     def __init__(
             self,
-            x_ref: np.ndarray,
+            x_ref: Union[np.ndarray, list],
             model: Callable,
             p_val: float = .05,
             backend: Optional[str] = None,
@@ -159,6 +159,7 @@ class RegressorUncertaintyDrift:
             uncertainty_type: str = 'dropout',
             n_evals: int = 25,
             batch_size: int = 32,
+            preprocess_batch_fn: Optional[Callable] = None,
             device: Optional[str] = None,
             tokenizer: Optional[Callable] = None,
             max_len: Optional[int] = None,
@@ -193,6 +194,9 @@ class RegressorUncertaintyDrift:
             the 'mc_dropout' uncertainty type.
         batch_size
             Batch size used to evaluate model. Only relavent when backend has been specified for batch prediction.
+        preprocess_batch_fn
+            Optional batch preprocessing function. For example to convert a list of objects to a batch which can be
+            processed by the model.
         device
             Device type used. The default None tries to use the GPU and falls back on CPU if needed.
             Can be specified by passing either 'cuda', 'gpu' or 'cpu'. Only relevant for 'pytorch' backend.
@@ -228,6 +232,7 @@ class RegressorUncertaintyDrift:
                 backend=backend,
                 batch_size=batch_size,
                 device=device,
+                preprocess_batch_fn=preprocess_batch_fn,
                 tokenizer=tokenizer,
                 max_len=max_len
             )
@@ -255,7 +260,7 @@ class RegressorUncertaintyDrift:
         self.meta = self._detector.meta
         self.meta['name'] = 'RegressorUncertaintyDrift'
 
-    def predict(self, x: np.ndarray,  return_p_val: bool = True,
+    def predict(self, x: Union[np.ndarray, list],  return_p_val: bool = True,
                 return_distance: bool = True) -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
         """
         Predict whether a batch of data has drifted from the reference data.

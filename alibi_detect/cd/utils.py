@@ -79,22 +79,26 @@ def encompass_batching(
 def encompass_shuffling_and_batch_filling(
     model_fn: Callable,
     batch_size: int
-) -> np.ndarray:
+) -> Callable:
     """
     Takes a function that already handles batching but additionally performing shuffling
     and ensures instances are evaluated as part of full batches.
     """
 
-    def new_model_fn(x: np.ndarray) -> np.ndarray:
+    def new_model_fn(x: Union[np.ndarray, list]) -> np.ndarray:
+        is_np = isinstance(x, np.ndarray)
         # shuffle
-        n_x = x.shape[0]
+        n_x = len(x)
         perm = np.random.permutation(n_x)
-        x = x[perm]
+        x = x[perm] if is_np else [x[i] for i in perm]
         # add extras if necessary
         final_batch_size = n_x % batch_size
         if final_batch_size != 0:
             doubles_inds = random.choices([i for i in range(n_x)], k=batch_size - final_batch_size)
-            x = np.concatenate([x, x[doubles_inds]], axis=0)
+            if is_np:
+                x = np.concatenate([x, x[doubles_inds]], axis=0)  # type: ignore
+            else:
+                x += [x[i] for i in doubles_inds]
         # remove any extras and unshuffle
         preds = np.asarray(model_fn(x))[:n_x]
         preds = preds[np.argsort(perm)]
