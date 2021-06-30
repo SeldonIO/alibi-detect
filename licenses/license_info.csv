@@ -8,7 +8,6 @@
 "absl-py","0.13.0","Apache Software License"
 "alibi-detect","0.7.1.dev0","Apache 2.0"
 "astunparse","1.6.3","BSD License"
-"cached-property","1.5.2","BSD License"
 "cachetools","4.2.2","MIT License"
 "certifi","2021.5.30","Mozilla Public License 2.0 (MPL 2.0)"
 "chardet","4.0.0","GNU Library or Lesser General Public License (LGPL)"
