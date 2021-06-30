@@ -39,7 +39,8 @@ def predict_batch(x: Union[list, np.ndarray, torch.Tensor], model: Union[Callabl
     n = len(x)
     n_minibatch = int(np.ceil(n / batch_size))
     return_np = not isinstance(dtype, torch.dtype)
-    preds = []  # type: Union[list, tuple]
+    return_list = False
+    preds = []
     with torch.no_grad():
         for i in range(n_minibatch):
             istart, istop = i * batch_size, min((i + 1) * batch_size, n)
@@ -47,20 +48,26 @@ def predict_batch(x: Union[list, np.ndarray, torch.Tensor], model: Union[Callabl
             if isinstance(preprocess_fn, Callable):  # type: ignore
                 x_batch = preprocess_fn(x_batch)
             preds_tmp = model(x_batch.to(device))  # type: ignore
-            if isinstance(preds_tmp, tuple):
+            if isinstance(preds_tmp, (list, tuple)):
                 if len(preds) == 0:  # init tuple with lists to store predictions
                     preds = tuple([] for _ in range(len(preds_tmp)))
+                    return_list = isinstance(preds_tmp, list)
                 for j, p in enumerate(preds_tmp):
                     if device.type == 'cuda' and isinstance(p, torch.Tensor):
                         p = p.cpu()
                     preds[j].append(p if not return_np or isinstance(p, np.ndarray) else p.numpy())
-            else:
+            elif isinstance(preds_tmp, (np.ndarray, torch.Tensor)):
                 if device.type == 'cuda' and isinstance(preds_tmp, torch.Tensor):
                     preds_tmp = preds_tmp.cpu()
                 preds.append(preds_tmp if not return_np or isinstance(preds_tmp, np.ndarray)  # type: ignore
                              else preds_tmp.numpy())
+            else:
+                raise TypeError(f'Model output type {type(preds_tmp)} not supported. The model output '
+                                f'type needs to be one of list, tuple, np.ndarray or torch.Tensor.')
     concat = partial(np.concatenate, axis=0) if return_np else partial(torch.cat, dim=0)
     out = tuple(concat(p) for p in preds) if isinstance(preds, tuple) else concat(preds)
+    if return_list:
+        out = list(out)
     return out
 
 
