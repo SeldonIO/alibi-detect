@@ -40,7 +40,7 @@ def predict_batch(x: Union[list, np.ndarray, torch.Tensor], model: Union[Callabl
     n_minibatch = int(np.ceil(n / batch_size))
     return_np = not isinstance(dtype, torch.dtype)
     return_list = False
-    preds = []
+    preds = []  # type: Union[list, tuple]
     with torch.no_grad():
         for i in range(n_minibatch):
             istart, istop = i * batch_size, min((i + 1) * batch_size, n)
