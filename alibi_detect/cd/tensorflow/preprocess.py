@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, Flatten, Input, InputLayer
 from tensorflow.keras.models import Model
-from typing import Dict, Optional, Union
+from typing import Callable, Dict, Optional, Union
 from alibi_detect.utils.tensorflow.prediction import predict_batch, predict_batch_transformer
 
 
@@ -83,9 +83,10 @@ class HiddenOutput(tf.keras.Model):
         return self.flatten(self.model(x))
 
 
-def preprocess_drift(x: np.ndarray, model: tf.keras.Model, tokenizer=None,
-                     max_len: int = None, batch_size: int = int(1e10),
-                     dtype: type = np.float32) -> Union[np.ndarray, tf.Tensor]:
+def preprocess_drift(x: Union[np.ndarray, list], model: tf.keras.Model,
+                     preprocess_batch_fn: Callable = None, tokenizer: Callable = None,
+                     max_len: int = None, batch_size: int = int(1e10), dtype: np.dtype = np.float32) \
+        -> Union[np.ndarray, tf.Tensor]:
     """
     Prediction function used for preprocessing step of drift detector.
 
@@ -95,6 +96,9 @@ def preprocess_drift(x: np.ndarray, model: tf.keras.Model, tokenizer=None,
         Batch of instances.
     model
         Model used for preprocessing.
+    preprocess_batch_fn
+        Optional batch preprocessing function. For example to convert a list of objects to a batch which can be
+        processed by the TensorFlow model.
     tokenizer
         Optional tokenizer for text drift.
     max_len
@@ -102,13 +106,13 @@ def preprocess_drift(x: np.ndarray, model: tf.keras.Model, tokenizer=None,
     batch_size
         Batch size.
     dtype
-        Model output type, e.g. np.float32 or torch.float32.
+        Model output type, e.g. np.float32 or tf.float32.
 
     Returns
     -------
     Numpy array with predictions.
     """
     if tokenizer is None:
-        return predict_batch(x, model, batch_size=batch_size, dtype=dtype)
+        return predict_batch(x, model, batch_size=batch_size, preprocess_fn=preprocess_batch_fn, dtype=dtype)
     else:
         return predict_batch_transformer(x, model, tokenizer, max_len, batch_size=batch_size, dtype=dtype)

@@ -22,9 +22,11 @@ class HiddenOutput(nn.Module):
         return self.model(x)
 
 
-def preprocess_drift(x: np.ndarray, model: Union[nn.Module, nn.Sequential], device: Optional[torch.device] = None,
+def preprocess_drift(x: Union[np.ndarray, list], model: Union[nn.Module, nn.Sequential],
+                     device: Optional[torch.device] = None, preprocess_batch_fn: Callable = None,
                      tokenizer: Optional[Callable] = None, max_len: Optional[int] = None,
-                     batch_size: int = int(1e10), dtype: type = np.float32) -> Union[np.ndarray, torch.Tensor]:
+                     batch_size: int = int(1e10), dtype: np.dtype = np.float32) \
+        -> Union[np.ndarray, torch.Tensor]:
     """
     Prediction function used for preprocessing step of drift detector.
 
@@ -37,6 +39,9 @@ def preprocess_drift(x: np.ndarray, model: Union[nn.Module, nn.Sequential], devi
     device
         Device type used. The default None tries to use the GPU and falls back on CPU if needed.
         Can be specified by passing either torch.device('cuda') or torch.device('cpu').
+    preprocess_batch_fn
+        Optional batch preprocessing function. For example to convert a list of objects to a batch which can be
+        processed by the PyTorch model.
     tokenizer
         Optional tokenizer for text drift.
     max_len
@@ -51,7 +56,8 @@ def preprocess_drift(x: np.ndarray, model: Union[nn.Module, nn.Sequential], devi
     Numpy array or torch tensor with predictions.
     """
     if tokenizer is None:
-        return predict_batch(x, model, device=device, batch_size=batch_size, dtype=dtype)
+        return predict_batch(x, model, device=device, batch_size=batch_size,
+                             preprocess_fn=preprocess_batch_fn, dtype=dtype)
     else:
-        return predict_batch_transformer(x, model, tokenizer, max_len,
-                                         device=device, batch_size=batch_size, dtype=dtype)
+        return predict_batch_transformer(x, model, tokenizer, max_len, device=device,
+                                         batch_size=batch_size, dtype=dtype)

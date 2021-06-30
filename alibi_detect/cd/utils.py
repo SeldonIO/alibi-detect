@@ -50,6 +50,7 @@ def encompass_batching(
     backend: str,
     batch_size: int,
     device: Optional[str] = None,
+    preprocess_batch_fn: Optional[Callable] = None,
     tokenizer: Optional[Callable] = None,
     max_len: Optional[int] = None,
 ) -> Callable:
@@ -59,9 +60,8 @@ def encompass_batching(
     """
 
     backend = backend.lower()
-    kwargs = {
-        'batch_size': batch_size, 'tokenizer': tokenizer, 'max_len': max_len
-    }
+    kwargs = {'batch_size': batch_size, 'tokenizer': tokenizer, 'max_len': max_len,
+              'preprocess_batch_fn': preprocess_batch_fn}
     if backend == 'tensorflow':
         from alibi_detect.cd.tensorflow.preprocess import preprocess_drift
     elif backend == 'pytorch':
@@ -70,7 +70,7 @@ def encompass_batching(
     else:
         raise NotImplementedError(f'{backend} not implemented. Use tensorflow or pytorch instead.')
 
-    def model_fn(x: np.ndarray) -> np.ndarray:
+    def model_fn(x: Union[np.ndarray, list]) -> np.ndarray:
         return preprocess_drift(x, model, **kwargs)  # type: ignore
 
     return model_fn
