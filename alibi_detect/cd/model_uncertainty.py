@@ -156,7 +156,7 @@ class RegressorUncertaintyDrift:
             p_val: float = .05,
             backend: Optional[str] = None,
             update_x_ref: Optional[Dict[str, int]] = None,
-            uncertainty_type: str = 'dropout',
+            uncertainty_type: str = 'mc_dropout',
             n_evals: int = 25,
             batch_size: int = 32,
             preprocess_batch_fn: Optional[Callable] = None,
@@ -190,10 +190,10 @@ class RegressorUncertaintyDrift:
             The former should output a scalar per instance. The latter should output a vector of predictions
             per instance.
         n_evals:
-            The number of times to evaluate the model under different dropout configurations. Only relavent when using
+            The number of times to evaluate the model under different dropout configurations. Only relevant when using
             the 'mc_dropout' uncertainty type.
         batch_size
-            Batch size used to evaluate model. Only relavent when backend has been specified for batch prediction.
+            Batch size used to evaluate model. Only relevant when backend has been specified for batch prediction.
         preprocess_batch_fn
             Optional batch preprocessing function. For example to convert a list of objects to a batch which can be
             processed by the model.
