@@ -6,7 +6,7 @@ from typing import Optional, Union
 
 
 class GaussianRBF(nn.Module):
-    def __init__(self, sigma: Optional[torch.tensor] = None, trainable: bool = False) -> None:
+    def __init__(self, sigma: Optional[torch.Tensor] = None, trainable: bool = False) -> None:
         """
         Gaussian RBF kernel: k(x,y) = exp(-(1/(2*sigma^2)||x-y||^2). A forward pass takes
         a batch of instances x [Nx, features] and y [Ny, features] and returns the kernel
@@ -22,28 +22,33 @@ class GaussianRBF(nn.Module):
         """
         super().__init__()
         if trainable:
-            sigma = sigma or torch.tensor(1.)
-        if sigma is not None:
-            sigma = sigma.reshape(-1)  # [Ns,]
-            self.log_sigma = nn.Parameter(sigma.log(), requires_grad=trainable)
+            if sigma is None:
+                self.init_required = True
+            else:
+                self.log_sigma = nn.Parameter(sigma.log(), requires_grad=True)
+        else:
+            if sigma is not None:
+                sigma = sigma.reshape(-1)  # [Ns,]
+                self.log_sigma = nn.Parameter(sigma.log(), requires_grad=False)
         self.trainable = trainable
 
     @property
-    def sigma(self) -> torch.tensor:
+    def sigma(self) -> torch.Tensor:
         return self.log_sigma.exp()
 
     def forward(self, x: torch.Tensor, y: torch.Tensor, infer_sigma: bool = False) -> torch.Tensor:
 
         dist = distance.squared_pairwise_distance(x, y)  # [Nx, Ny]
 
-        if infer_sigma:
-            if self.trainable:
+        if infer_sigma or self.init_required:
+            if self.trainable and not self.init_required:
                 raise ValueError("Gradients cannot be computed w.r.t. an inferred sigma value")
             n = min(x.shape[0], y.shape[0])
             n = n if (x[:n] == y[:n]).all() and x.shape == y.shape else 0
             n_median = n + (np.prod(dist.shape) - n) // 2 - 1
             sigma = (.5 * dist.flatten().sort().values[n_median].unsqueeze(dim=-1)) ** .5
-            self.log_sigma = nn.Parameter(sigma.log(), requires_grad=False)
+            self.log_sigma = nn.Parameter(sigma.log(), requires_grad=self.trainable)
+            self.init_required = False
 
         gamma = 1. / (2. * self.sigma ** 2)   # [Ns,]
         # TODO: do matrix multiplication after all?
@@ -77,8 +82,11 @@ class DeepKernel(nn.Module):
             raise NotImplementedError("eps should be 'trainable' or a float in (0,1)")
 
     @property
-    def eps(self) -> torch.tensor:
+    def eps(self) -> torch.Tensor:
         return self.logit_eps.sigmoid()
 
     def forward(self, x: torch.Tensor, y: torch.Tensor):
-        return (1-self.eps)*self.kernel_a(self.proj(x), self.proj(y)) + self.eps*self.kernel_b(x, y)
+        return (
+            (1-self.eps)*self.kernel_a(self.proj(x), self.proj(y)) +
+            self.eps*self.kernel_b(x.flatten(1), y.flatten(1))
+        )
