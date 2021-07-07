@@ -1,33 +1,7 @@
 import numpy as np
-from sklearn.decomposition import PCA
 from scipy.special import softmax
 from scipy.stats import entropy
 from typing import Callable, Union
-
-
-def pca(x: np.ndarray, n_components: int = 2, svd_solver: str = 'auto') -> np.ndarray:
-    """
-    Apply PCA dimensionality reduction and return the projection of X on
-    the first `n_components` principal components.
-
-    Parameters
-    ----------
-    x
-        Batch of instances.
-    n_components
-        Number of principal component projections to return.
-    svd_solver
-        Solver used for SVD. Options are ‘auto’, ‘full’, ‘arpack’ or ‘randomized’.
-
-    Returns
-    -------
-    Projection of X on first `n_components` principcal components.
-    """
-    x = x.reshape(x.shape[0], -1)
-    pca = PCA(n_components=n_components, svd_solver=svd_solver)
-    pca.fit(x)
-    x_pca = pca.transform(x)
-    return x_pca
 
 
 def classifier_uncertainty(
