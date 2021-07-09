@@ -12,6 +12,7 @@ def trainer(
         device: torch.device,
         optimizer: Callable = torch.optim.Adam,
         learning_rate: float = 1e-3,
+        preprocess_fn: Callable = None,
         epochs: int = 20,
         verbose: int = 1,
 ) -> None:
@@ -20,6 +21,8 @@ def trainer(
     for epoch in range(epochs):
         dl = tqdm(enumerate(dataloader), total=len(dataloader)) if verbose == 1 else enumerate(dataloader)
         for step, (x, y) in dl:
+            if isinstance(preprocess_fn, Callable):  # type: ignore
+                x = preprocess_fn(x)
             x, y = x.to(device), y.to(device)
             y_hat = model(x)
             optimizer.zero_grad()  # type: ignore

@@ -12,7 +12,7 @@ if has_tensorflow:
 class ClassifierDrift:
     def __init__(
             self,
-            x_ref: np.ndarray,
+            x_ref: Union[np.ndarray, list],
             model: Callable,
             backend: str = 'tensorflow',
             p_val: float = .05,
@@ -116,7 +116,7 @@ class ClassifierDrift:
             self._detector = ClassifierDriftTorch(*args, **kwargs)  # type: ignore
         self.meta = self._detector.meta
 
-    def predict(self, x: np.ndarray,  return_p_val: bool = True,
+    def predict(self, x: Union[np.ndarray, list],  return_p_val: bool = True,
                 return_distance: bool = True) -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
         """
         Predict whether a batch of data has drifted from the reference data.

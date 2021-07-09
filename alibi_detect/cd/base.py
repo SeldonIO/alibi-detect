@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 class BaseClassifierDrift(BaseDetector):
     def __init__(
             self,
-            x_ref: np.ndarray,
+            x_ref: Union[np.ndarray, list],
             p_val: float = .05,
             preprocess_x_ref: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
@@ -104,7 +104,7 @@ class BaseClassifierDrift(BaseDetector):
         self.meta['data_type'] = data_type
         self.meta['params'] = {'binarize_preds ': binarize_preds, 'preds_type': preds_type}
 
-    def preprocess(self, x: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def preprocess(self, x: Union[np.ndarray, list]) -> Tuple[Union[np.ndarray, list], Union[np.ndarray, list]]:
         """
         Data preprocessing before computing the drift scores.
         Parameters
@@ -122,8 +122,8 @@ class BaseClassifierDrift(BaseDetector):
         else:
             return self.x_ref, x
 
-    def get_splits(self, x_ref: np.ndarray, x: np.ndarray) \
-            -> Tuple[np.ndarray, np.ndarray, List[Tuple[np.ndarray, np.ndarray]]]:
+    def get_splits(self, x_ref: Union[np.ndarray, list], x: Union[np.ndarray, list]) \
+            -> Tuple[Union[np.ndarray, list], np.ndarray, List[Tuple[np.ndarray, np.ndarray]]]:
         """
         Split reference and test data in train and test folds used by the classifier.
 
@@ -136,21 +136,25 @@ class BaseClassifierDrift(BaseDetector):
 
         Returns
         -------
-        List with tuples of train and test indices for optionally different folds.
+        Combined reference and test instances with labels and a list with tuples of
+        train and test indices for optionally different folds.
         """
         # create dataset and labels
         y = np.concatenate([np.zeros(len(x_ref)), np.ones(len(x))], axis=0).astype(int)
-        x = np.concatenate([x_ref, x], axis=0)
+        if isinstance(x_ref, np.ndarray) and isinstance(x, np.ndarray):
+            x = np.concatenate([x_ref, x], axis=0)
+        else:  # add 2 lists
+            x = x_ref + x
 
         # random shuffle if stratified folds are not used
+        n_tot = len(x)
         if self.skf is None:
-            n_tot = len(x)
             idx_shuffle = np.random.choice(np.arange(n_tot), size=n_tot, replace=False)
             n_tr = int(n_tot * self.train_size)
             idx_tr, idx_te = idx_shuffle[:n_tr], idx_shuffle[n_tr:]
             splits = [(idx_tr, idx_te)]
         else:  # use stratified folds
-            splits = self.skf.split(x, y)
+            splits = self.skf.split(np.zeros(n_tot), y)
         return x, y, splits
 
     def test_probs(
@@ -195,10 +199,10 @@ class BaseClassifierDrift(BaseDetector):
         return p_val, dist
 
     @abstractmethod
-    def score(self, x: np.ndarray) -> Tuple[float, float]:
+    def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float]:
         pass
 
-    def predict(self, x: np.ndarray,  return_p_val: bool = True,
+    def predict(self, x: Union[np.ndarray, list],  return_p_val: bool = True,
                 return_distance: bool = True) -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
         """
         Predict whether a batch of data has drifted from the reference data.
