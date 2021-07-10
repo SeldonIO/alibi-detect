@@ -28,10 +28,13 @@ class ClassifierDrift:
             learning_rate: float = 1e-3,
             compile_kwargs: Optional[dict] = None,
             batch_size: int = 32,
+            preprocess_batch_fn: Optional[Callable] = None,
             epochs: int = 3,
             verbose: int = 0,
             train_kwargs: Optional[dict] = None,
             device: Optional[str] = None,
+            dataset: Optional[Callable] = None,
+            dataloader: Optional[Callable] = None,
             data_type: Optional[str] = None
     ) -> None:
         """
@@ -80,6 +83,9 @@ class ClassifierDrift:
             Optional additional kwargs when compiling the classifier. Only relevant for 'tensorflow' backend.
         batch_size
             Batch size used during training of the classifier.
+        preprocess_batch_fn
+            Optional batch preprocessing function. For example to convert a list of objects to a batch which can be
+            processed by the model.
         epochs
             Number of training epochs for the classifier for each (optional) fold.
         verbose
@@ -89,6 +95,10 @@ class ClassifierDrift:
         device
             Device type used. The default None tries to use the GPU and falls back on CPU if needed.
             Can be specified by passing either 'cuda', 'gpu' or 'cpu'. Only relevant for 'pytorch' backend.
+        dataset
+            Dataset object used during training. Only relevant for 'pytorch' backend.
+        dataloader
+            Dataloader object used during training. Only relevant for 'pytorch' backend.
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
@@ -109,7 +119,8 @@ class ClassifierDrift:
         [kwargs.pop(k, None) for k in pop_kwargs]
 
         if backend == 'tensorflow' and has_tensorflow:
-            kwargs.pop('device', None)
+            pop_kwargs = ['device', 'dataset', 'dataloader']
+            [kwargs.pop(k, None) for k in pop_kwargs]
             self._detector = ClassifierDriftTF(*args, **kwargs)  # type: ignore
         else:
             kwargs.pop('compile_kwargs', None)

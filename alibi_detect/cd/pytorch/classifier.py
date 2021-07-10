@@ -37,7 +37,7 @@ class ClassifierDriftTorch(BaseClassifierDrift):
             verbose: int = 0,
             train_kwargs: Optional[dict] = None,
             device: Optional[str] = None,
-            dataset: Callable = TorchDataset,
+            dataset: Optional[Callable] = TorchDataset,
             dataloader: Callable = DataLoader,
             data_type: Optional[str] = None
     ) -> None:
@@ -95,6 +95,10 @@ class ClassifierDriftTorch(BaseClassifierDrift):
         device
             Device type used. The default None tries to use the GPU and falls back on CPU if needed.
             Can be specified by passing either 'cuda', 'gpu' or 'cpu'.
+        dataset
+            Dataset object used during training.
+        dataloader
+            Dataloader object used during training.
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
@@ -163,6 +167,7 @@ class ClassifierDriftTorch(BaseClassifierDrift):
                 x_tr, x_te = [x[_] for _ in idx_tr], [x[_] for _ in idx_te]
             else:
                 raise TypeError(f'x needs to be of type np.ndarray or list and not {type(x)}.')
+            # TODO: work out case with graphs where x and y in the torch geometric loader are bundled...
             ds_tr = self.dataset(x_tr, y_tr)
             dl_tr = self.dataloader(ds_tr)
             model = deepcopy(self.model)
