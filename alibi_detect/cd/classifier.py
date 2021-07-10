@@ -3,7 +3,9 @@ from typing import Callable, Dict, Optional, Union
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
 
 if has_pytorch:
+    from torch.utils.data import DataLoader
     from alibi_detect.cd.pytorch.classifier import ClassifierDriftTorch
+    from alibi_detect.utils.pytorch.data import TorchDataset
 
 if has_tensorflow:
     from alibi_detect.cd.tensorflow.classifier import ClassifierDriftTF
@@ -124,6 +126,10 @@ class ClassifierDrift:
             self._detector = ClassifierDriftTF(*args, **kwargs)  # type: ignore
         else:
             kwargs.pop('compile_kwargs', None)
+            if dataset is None:
+                kwargs.update({'dataset': TorchDataset})
+            if dataloader is None:
+                kwargs.update({'dataloader': DataLoader})
             self._detector = ClassifierDriftTorch(*args, **kwargs)  # type: ignore
         self.meta = self._detector.meta
 

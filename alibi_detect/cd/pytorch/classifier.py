@@ -37,7 +37,7 @@ class ClassifierDriftTorch(BaseClassifierDrift):
             verbose: int = 0,
             train_kwargs: Optional[dict] = None,
             device: Optional[str] = None,
-            dataset: Optional[Callable] = TorchDataset,
+            dataset: Callable = TorchDataset,
             dataloader: Callable = DataLoader,
             data_type: Optional[str] = None
     ) -> None:
@@ -154,7 +154,6 @@ class ClassifierDriftTorch(BaseClassifierDrift):
         """
         x_ref, x = self.preprocess(x)
         n_ref, n_cur = len(x_ref), len(x)
-
         x, y, splits = self.get_splits(x_ref, x)
 
         # iterate over folds: train a new model for each fold and make out-of-fold (oof) predictions
@@ -167,7 +166,6 @@ class ClassifierDriftTorch(BaseClassifierDrift):
                 x_tr, x_te = [x[_] for _ in idx_tr], [x[_] for _ in idx_te]
             else:
                 raise TypeError(f'x needs to be of type np.ndarray or list and not {type(x)}.')
-            # TODO: work out case with graphs where x and y in the torch geometric loader are bundled...
             ds_tr = self.dataset(x_tr, y_tr)
             dl_tr = self.dataloader(ds_tr)
             model = deepcopy(self.model)
