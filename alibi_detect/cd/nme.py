@@ -23,7 +23,6 @@ class NMEDrift:
             cov_reg: float = 1e-6,
             optimizer: Optional[Callable] = None,
             learning_rate: float = 1e-3,
-            compile_kwargs: Optional[dict] = None,
             batch_size: int = 32,
             epochs: int = 3,
             verbose: int = 0,
@@ -109,7 +108,6 @@ class NMEDrift:
             kwargs.pop('device', None)
             self._detector = NMEDriftTF(*args, **kwargs)  # type: ignore
         else:
-            kwargs.pop('compile_kwargs', None)
             self._detector = NMEDriftTorch(*args, **kwargs)  # type: ignore
         self.meta = self._detector.meta
 

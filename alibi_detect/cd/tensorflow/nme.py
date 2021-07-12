@@ -18,7 +18,6 @@ class NMEDriftTF(BaseNMEDrift):
             cov_reg: float = 1e-6,
             optimizer: tf.keras.optimizers = tf.keras.optimizers.Adam,
             learning_rate: float = 1e-3,
-            compile_kwargs: Optional[dict] = None,
             batch_size: int = 32,
             epochs: int = 3,
             verbose: int = 0,
@@ -92,13 +91,13 @@ class NMEDriftTF(BaseNMEDrift):
         self.meta.update({'backend': 'tensorflow'})
 
         self.kernel = kernel
-        self.compile_kwargs = {
-            'optimizer': optimizer(learning_rate=learning_rate),
-            'loss': lambda y_t, y_p: NMEDriftTF.embedding_to_estimate(y_t, cov_reg=self.cov_reg)
+
+        self.train_kwargs = {
+            'batch_size': batch_size,
+            'epochs': epochs, 'verbose': verbose,
+            'optimizer': optimizer,
+            'learning_rate': learning_rate,
         }
-        if isinstance(compile_kwargs, dict):
-            self.compile_kwargs.update(compile_kwargs)
-        self.train_kwargs = {'batch_size': batch_size, 'epochs': epochs, 'verbose': verbose}
         if isinstance(train_kwargs, dict):
             self.train_kwargs.update(train_kwargs)
 
@@ -135,8 +134,6 @@ class NMEDriftTF(BaseNMEDrift):
         (x_ref_train, x_ref_test), (x_train, x_test) = self.get_splits(x_ref, x)
 
         nme_embedder = NMEDriftTF.NMEEmbedder(self.kernel, init_test_locations)
-        # nme_embedder.compile(**self.compile_kwargs)
-        # nme_embedder.fit(x=[x_ref_train, x_train], **self.train_kwargs)
         train_args = [nme_embedder, self.cov_reg, x_ref_train, x_train]
         self.trainer(*train_args, **self.train_kwargs)
         embeddings = NMEDriftTF.embed_batch(
@@ -182,7 +179,8 @@ class NMEDriftTF(BaseNMEDrift):
         cov_reg: float,
         x_ref_train: tf.Tensor,
         x_train: tf.Tensor,
-        optimizer: tf.keras.optimizers = tf.keras.optimizers.Adam(learning_rate=1e-3),
+        optimizer: tf.keras.optimizers = tf.keras.optimizers.Adam,
+        learning_rate: float=1e-3,
         epochs: int = 20,
         batch_size: int = 64,
         buffer_size: int = 1024,
@@ -192,6 +190,8 @@ class NMEDriftTF(BaseNMEDrift):
         train_data = tf.data.Dataset.from_tensor_slices((x_ref_train, x_train))
         train_data = train_data.shuffle(buffer_size=buffer_size).batch(batch_size, drop_remainder=True)
         n_minibatch = int(np.ceil(x_ref_train.shape[0] / batch_size))
+
+        optim = optimizer(learning_rate)
 
         # iterate over epochs
         est_ma = 0.
@@ -205,7 +205,7 @@ class NMEDriftTF(BaseNMEDrift):
                     embedding = nme_embedder(train_batch)
                     neg_estimate = -NMEDriftTF.embedding_to_estimate(embedding, cov_reg=cov_reg)
                 grads = tape.gradient(neg_estimate, nme_embedder.trainable_weights)
-                optimizer.apply_gradients(zip(grads, nme_embedder.trainable_weights))
+                optim.apply_gradients(zip(grads, nme_embedder.trainable_weights))
                 if verbose:
                     est_ma = est_ma + (-float(neg_estimate) - est_ma) / (step + 1)
                     pbar_values = [('estimate', est_ma)]

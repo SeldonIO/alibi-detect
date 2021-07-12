@@ -149,7 +149,7 @@ class NMEDriftTorch(BaseNMEDrift):
 
         ds_tr = TensorDataset(torch.from_numpy(x_ref_train), torch.from_numpy(x_train))
         dl_tr = DataLoader(ds_tr, **self.dl_kwargs)  # type: ignore
-        nme_embedder = NMEDriftTorch.NMEEmbedder(self.kernel, init_test_locations)
+        nme_embedder = NMEDriftTorch.NMEEmbedder(self.kernel, init_test_locations).to(self.device)
         train_args = [nme_embedder, self.cov_reg, dl_tr, self.device]
         self.trainer(*train_args, **self.train_kwargs)  # type: ignore
 
@@ -167,7 +167,7 @@ class NMEDriftTorch(BaseNMEDrift):
     def embedding_to_estimate(z: torch.Tensor, cov_reg: float = 1e-12) -> torch.Tensor:
         n, J = z.shape
         S = torch.einsum('ij,ik->jk', (z - z.mean(0)), (z - z.mean(0)))/(n-1)
-        S += cov_reg * torch.eye(J)
+        S += cov_reg * torch.eye(J).to(z.device)
         S_inv = torch.inverse(S)
         return n * z.mean(0).reshape(1, J) @ S_inv @ z.mean(0).reshape(J, 1)
 
