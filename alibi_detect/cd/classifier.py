@@ -30,7 +30,7 @@ class ClassifierDrift:
             learning_rate: float = 1e-3,
             compile_kwargs: Optional[dict] = None,
             batch_size: int = 32,
-            preprocess_batch_fn: Optional[Callable] = None,
+            collate_fn: Optional[Callable] = None,
             epochs: int = 3,
             verbose: int = 0,
             train_kwargs: Optional[dict] = None,
@@ -85,7 +85,7 @@ class ClassifierDrift:
             Optional additional kwargs when compiling the classifier. Only relevant for 'tensorflow' backend.
         batch_size
             Batch size used during training of the classifier.
-        preprocess_batch_fn
+        collate_fn
             Optional batch preprocessing function. For example to convert a list of objects to a batch which can be
             processed by the model.
         epochs
