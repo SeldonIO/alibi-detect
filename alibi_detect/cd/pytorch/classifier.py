@@ -136,7 +136,7 @@ class ClassifierDriftTorch(BaseClassifierDrift):
         if isinstance(train_kwargs, dict):
             self.train_kwargs.update(train_kwargs)
 
-    def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float]:
+    def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, np.ndarray, np.ndarray]:
         """
         Compute the out-of-fold drift metric such as the accuracy from a classifier
         trained to distinguish the reference data from the data to be tested.
@@ -148,8 +148,9 @@ class ClassifierDriftTorch(BaseClassifierDrift):
 
         Returns
         -------
-        p-value, and a notion of distance between the trained classifier's out-of-fold performance
-        and that which we'd expect under the null assumption of no drift.
+        p-value, a notion of distance between the trained classifier's out-of-fold performance
+        and that which we'd expect under the null assumption of no drift,
+        the classification labels (0=reference data, 1=test data) and out-of-fold classifier predictions.
         """
         x_ref, x = self.preprocess(x)
         n_ref, n_cur = len(x_ref), len(x)
@@ -178,4 +179,4 @@ class ClassifierDriftTorch(BaseClassifierDrift):
         idx_oof = np.concatenate(idx_oof_list, axis=0)
         y_oof = y[idx_oof]
         p_val, dist = self.test_probs(y_oof, probs_oof, n_ref, n_cur)
-        return p_val, dist
+        return p_val, dist, y_oof, probs_oof

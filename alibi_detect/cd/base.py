@@ -199,11 +199,12 @@ class BaseClassifierDrift(BaseDetector):
         return p_val, dist
 
     @abstractmethod
-    def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float]:
+    def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, np.ndarray, np.ndarray]:
         pass
 
     def predict(self, x: Union[np.ndarray, list],  return_p_val: bool = True,
-                return_distance: bool = True) -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
+                return_distance: bool = True, return_score: bool = True) \
+            -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
         """
         Predict whether a batch of data has drifted from the reference data.
 
@@ -216,16 +217,19 @@ class BaseClassifierDrift(BaseDetector):
         return_distance
             Whether to return a notion of strength of the drift.
             K-S test stat if binarize_preds=False, otherwise relative error reduction.
+        return_score
+            Whether to return the instance level classifier scores and labels (0=reference data, 1=test data).
 
         Returns
         -------
         Dictionary containing 'meta' and 'data' dictionaries.
         'meta' has the model's metadata.
         'data' contains the drift prediction and optionally the performance of the classifier
-            relative to its expectation under the no-change null.
+        relative to its expectation under the no-change null, the out-of-fold classifier model
+        prediction probabilities and the associated labels.
         """
         # compute drift scores
-        p_val, dist = self.score(x)
+        p_val, dist, y, probs = self.score(x)
         drift_pred = int(p_val < self.p_val)
 
         # update reference dataset
@@ -236,7 +240,6 @@ class BaseClassifierDrift(BaseDetector):
         self.n += len(x)  # type: ignore
 
         # populate drift dict
-        # TODO: add instance level feedback
         cd = concept_drift_dict()
         cd['meta'] = self.meta
         cd['data']['is_drift'] = drift_pred
@@ -245,6 +248,9 @@ class BaseClassifierDrift(BaseDetector):
             cd['data']['threshold'] = self.p_val
         if return_distance:
             cd['data']['distance'] = dist
+        if return_score:
+            cd['data']['label'] = y
+            cd['data']['prediction'] = probs
         return cd
 
 
