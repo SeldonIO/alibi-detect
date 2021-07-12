@@ -127,7 +127,7 @@ class ClassifierDriftTF(BaseClassifierDrift):
         the classification labels (0=reference data, 1=test data) and out-of-fold classifier predictions.
         """
         x_ref, x = self.preprocess(x)
-        n_ref, n_cur = x_ref.shape[0], x.shape[0]
+        n_ref, n_cur = len(x_ref), len(x)
         x, y, splits = self.get_splits(x_ref, x)
 
         # iterate over folds: train a new model for each fold and make out-of-fold (oof) predictions
