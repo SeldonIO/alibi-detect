@@ -21,9 +21,13 @@ def trainer(
     for epoch in range(epochs):
         dl = tqdm(enumerate(dataloader), total=len(dataloader)) if verbose == 1 else enumerate(dataloader)
         for step, (x, y) in dl:
+            y = y.to(device)
             if isinstance(preprocess_fn, Callable):  # type: ignore
                 x = preprocess_fn(x)
-            x, y = x.to(device), y.to(device)
+            if not isinstance(x, torch.Tensor):
+                x = {k: v.to(device) for k, v in x.items()}
+            else:
+                x = x.to(device)
             y_hat = model(x)
             optimizer.zero_grad()  # type: ignore
             loss = loss_fn(y_hat, y)
