@@ -32,7 +32,7 @@ class ClassifierDriftTorch(BaseClassifierDrift):
             optimizer: Callable = torch.optim.Adam,
             learning_rate: float = 1e-3,
             batch_size: int = 32,
-            collate_fn: Optional[Callable] = None,
+            preprocess_batch_fn: Optional[Callable] = None,
             epochs: int = 3,
             verbose: int = 0,
             train_kwargs: Optional[dict] = None,
@@ -83,7 +83,7 @@ class ClassifierDriftTorch(BaseClassifierDrift):
             Learning rate used by optimizer.
         batch_size
             Batch size used during training of the classifier.
-        collate_fn
+        preprocess_batch_fn
             Optional batch preprocessing function. For example to convert a list of objects to a batch which can be
             processed by the model.
         epochs
@@ -130,8 +130,9 @@ class ClassifierDriftTorch(BaseClassifierDrift):
         self.loss_fn = nn.CrossEntropyLoss() if (self.preds_type == 'logits') else nn.NLLLoss()
         self.dataset = dataset
         self.dataloader = partial(dataloader, batch_size=batch_size, shuffle=True)
-        self.predict_fn = partial(predict_batch, device=self.device, preprocess_fn=collate_fn, batch_size=batch_size)
-        self.train_kwargs = {'optimizer': optimizer, 'epochs': epochs,
+        self.predict_fn = partial(predict_batch, device=self.device,
+                                  preprocess_fn=preprocess_batch_fn, batch_size=batch_size)
+        self.train_kwargs = {'optimizer': optimizer, 'epochs': epochs,  'preprocess_fn': preprocess_batch_fn,
                              'learning_rate': learning_rate, 'verbose': verbose}
         if isinstance(train_kwargs, dict):
             self.train_kwargs.update(train_kwargs)
