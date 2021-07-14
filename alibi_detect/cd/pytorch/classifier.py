@@ -180,4 +180,4 @@ class ClassifierDriftTorch(BaseClassifierDrift):
         idx_oof = np.concatenate(idx_oof_list, axis=0)
         y_oof = y[idx_oof]
         p_val, dist = self.test_probs(y_oof, probs_oof, n_ref, n_cur)
-        return p_val, dist, y_oof, probs_oof
+        return p_val, dist, y_oof, probs_oof[:, 1]
