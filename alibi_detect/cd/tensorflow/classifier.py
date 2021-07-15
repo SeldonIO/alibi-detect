@@ -5,7 +5,7 @@ from scipy.special import softmax
 from typing import Callable, Dict, Optional, Union, Tuple
 from alibi_detect.cd.base import BaseClassifierDrift
 
-
+# TODO: dataset? dataloader? preprocess_batch_fn?
 class ClassifierDriftTF(BaseClassifierDrift):
     def __init__(
             self,
@@ -24,6 +24,7 @@ class ClassifierDriftTF(BaseClassifierDrift):
             learning_rate: float = 1e-3,
             compile_kwargs: Optional[dict] = None,
             batch_size: int = 32,
+            preprocess_batch_fn: Optional[Callable] = None,
             epochs: int = 3,
             verbose: int = 0,
             train_kwargs: Optional[dict] = None,
@@ -106,7 +107,8 @@ class ClassifierDriftTF(BaseClassifierDrift):
         }
         if isinstance(compile_kwargs, dict):
             self.compile_kwargs.update(compile_kwargs)
-        self.train_kwargs = {'batch_size': batch_size, 'epochs': epochs, 'verbose': verbose}
+        # TODO: custom predict_fn?
+        self.train_kwargs = {'batch_size': batch_size, 'epochs': epochs, 'verbose': verbose}  # TODO: preprocess_batch_fn?
         if isinstance(train_kwargs, dict):
             self.train_kwargs.update(train_kwargs)
 
@@ -133,11 +135,19 @@ class ClassifierDriftTF(BaseClassifierDrift):
         # iterate over folds: train a new model for each fold and make out-of-fold (oof) predictions
         preds_oof_list, idx_oof_list = [], []
         for idx_tr, idx_te in splits:
-            x_tr, y_tr, x_te = x[idx_tr], np.eye(2)[y[idx_tr]], x[idx_te]
+            y_tr = np.eye(2)[y[idx_tr]]
+            if isinstance(x, np.ndarray):
+                x_tr, x_te = x[idx_tr], x[idx_te]
+            elif isinstance(x, list):
+                x_tr, x_te = [x[_] for _ in idx_tr], [x[_] for _ in idx_te]
+            else:
+                raise TypeError(f'x needs to be of type np.ndarray or list and not {type(x)}.')
             clf = tf.keras.models.clone_model(self.model)
+            # TODO
             clf.compile(**self.compile_kwargs)
             clf.fit(x=x_tr, y=y_tr, **self.train_kwargs)
             preds = clf.predict(x_te, batch_size=self.train_kwargs['batch_size'])
+            # end TODO
             preds_oof_list.append(preds)
             idx_oof_list.append(idx_te)
         preds_oof = np.concatenate(preds_oof_list, axis=0)

@@ -71,6 +71,7 @@
    examples/cd_chi2ks_adult
    examples/cd_ks_cifar10
    examples/cd_mmd_cifar10
+   examples/cd_text_amazon
    examples/cd_text_imdb
    examples/cd_clf_cifar10
    examples/cd_model_unc_cifar10_wine
