@@ -19,6 +19,6 @@ def tokenize_transformer(x: Union[list, np.ndarray], tokenizer: Callable, max_le
 
     Returns
     -------
-    Dictionary with tokenized instances.
+    Tokenized instances.
     """
     return tokenizer(list(x), padding=True, truncation=True, max_length=max_len, return_tensors=backend)
