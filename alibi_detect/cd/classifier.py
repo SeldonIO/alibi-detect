@@ -9,6 +9,7 @@ if has_pytorch:
 
 if has_tensorflow:
     from alibi_detect.cd.tensorflow.classifier import ClassifierDriftTF
+    from alibi_detect.utils.tensorflow.data import TFDataset
 
 
 class ClassifierDrift:
@@ -98,7 +99,7 @@ class ClassifierDrift:
             Device type used. The default None tries to use the GPU and falls back on CPU if needed.
             Can be specified by passing either 'cuda', 'gpu' or 'cpu'. Only relevant for 'pytorch' backend.
         dataset
-            Dataset object used during training. Only relevant for 'pytorch' backend.
+            Dataset object used during training.
         dataloader
             Dataloader object used during training. Only relevant for 'pytorch' backend.
         data_type
@@ -121,8 +122,10 @@ class ClassifierDrift:
         [kwargs.pop(k, None) for k in pop_kwargs]
 
         if backend == 'tensorflow' and has_tensorflow:
-            pop_kwargs = ['device', 'dataset', 'dataloader']
+            pop_kwargs = ['device', 'dataloader']
             [kwargs.pop(k, None) for k in pop_kwargs]
+            if dataset is None:
+                kwargs.update({'dataset': TFDataset})
             self._detector = ClassifierDriftTF(*args, **kwargs)  # type: ignore
         else:
             kwargs.pop('compile_kwargs', None)

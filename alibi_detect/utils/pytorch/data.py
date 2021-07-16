@@ -8,7 +8,7 @@ class TorchDataset(torch.utils.data.Dataset):
         self.x = x
         self.y = y
 
-    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor]:
+    def __getitem__(self, idx: int) -> Tuple[Union[torch.Tensor, tuple], torch.Tensor]:
         x = self.x[idx]
         y = self.y[idx]
         return x, y

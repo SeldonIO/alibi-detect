@@ -1,16 +1,20 @@
+from functools import partial
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.losses import BinaryCrossentropy
 from scipy.special import softmax
-from typing import Callable, Dict, Optional, Union, Tuple
+from typing import Callable, Dict, Optional, Tuple
 from alibi_detect.cd.base import BaseClassifierDrift
+from alibi_detect.models.tensorflow.trainer import trainer
+from alibi_detect.utils.tensorflow.data import TFDataset
+from alibi_detect.utils.tensorflow.prediction import predict_batch
 
-# TODO: dataset? dataloader? preprocess_batch_fn?
+
 class ClassifierDriftTF(BaseClassifierDrift):
     def __init__(
             self,
             x_ref: np.ndarray,
-            model: Union[tf.keras.Model, tf.keras.Sequential],
+            model: tf.keras.Model,
             p_val: float = .05,
             preprocess_x_ref: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
@@ -22,12 +26,12 @@ class ClassifierDriftTF(BaseClassifierDrift):
             seed: int = 0,
             optimizer: tf.keras.optimizers = tf.keras.optimizers.Adam,
             learning_rate: float = 1e-3,
-            compile_kwargs: Optional[dict] = None,
             batch_size: int = 32,
             preprocess_batch_fn: Optional[Callable] = None,
             epochs: int = 3,
             verbose: int = 0,
             train_kwargs: Optional[dict] = None,
+            dataset: Callable = TFDataset,
             data_type: Optional[str] = None
     ) -> None:
         """
@@ -70,8 +74,6 @@ class ClassifierDriftTF(BaseClassifierDrift):
             Optimizer used during training of the classifier.
         learning_rate
             Learning rate used by optimizer.
-        compile_kwargs
-            Optional additional kwargs when compiling the classifier.
         batch_size
             Batch size used during training of the classifier.
         epochs
@@ -81,6 +83,8 @@ class ClassifierDriftTF(BaseClassifierDrift):
             0 is silent, 1 a progress bar and 2 prints the statistics after each epoch.
         train_kwargs
             Optional additional kwargs when fitting the classifier.
+        dataset
+            Dataset object used during training.
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
@@ -101,14 +105,11 @@ class ClassifierDriftTF(BaseClassifierDrift):
 
         # define and compile classifier model
         self.model = model
-        self.compile_kwargs = {
-            'optimizer': optimizer(learning_rate=learning_rate),
-            'loss': BinaryCrossentropy(from_logits=(self.preds_type == 'logits'))
-        }
-        if isinstance(compile_kwargs, dict):
-            self.compile_kwargs.update(compile_kwargs)
-        # TODO: custom predict_fn?
-        self.train_kwargs = {'batch_size': batch_size, 'epochs': epochs, 'verbose': verbose}  # TODO: preprocess_batch_fn?
+        self.loss_fn = BinaryCrossentropy(from_logits=(self.preds_type == 'logits'))
+        self.dataset = partial(dataset, batch_size=batch_size, shuffle=True)
+        self.predict_fn = partial(predict_batch, preprocess_fn=preprocess_batch_fn, batch_size=batch_size)
+        self.train_kwargs = {'optimizer': optimizer(learning_rate=learning_rate), 'batch_size': batch_size,
+                             'epochs': epochs, 'preprocess_fn': preprocess_batch_fn, 'verbose': verbose}
         if isinstance(train_kwargs, dict):
             self.train_kwargs.update(train_kwargs)
 
@@ -142,12 +143,11 @@ class ClassifierDriftTF(BaseClassifierDrift):
                 x_tr, x_te = [x[_] for _ in idx_tr], [x[_] for _ in idx_te]
             else:
                 raise TypeError(f'x needs to be of type np.ndarray or list and not {type(x)}.')
-            clf = tf.keras.models.clone_model(self.model)
-            # TODO
-            clf.compile(**self.compile_kwargs)
-            clf.fit(x=x_tr, y=y_tr, **self.train_kwargs)
-            preds = clf.predict(x_te, batch_size=self.train_kwargs['batch_size'])
-            # end TODO
+            ds_tr = self.dataset(x_tr, y_tr)
+            model = tf.keras.models.clone_model(self.model)
+            train_args = [model, self.loss_fn, ds_tr]
+            trainer(*train_args, **self.train_kwargs)  # type: ignore
+            preds = self.predict_fn(x_te, model)
             preds_oof_list.append(preds)
             idx_oof_list.append(idx_te)
         preds_oof = np.concatenate(preds_oof_list, axis=0)
