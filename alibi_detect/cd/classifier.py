@@ -29,7 +29,6 @@ class ClassifierDrift:
             seed: int = 0,
             optimizer: Optional[Callable] = None,
             learning_rate: float = 1e-3,
-            compile_kwargs: Optional[dict] = None,
             batch_size: int = 32,
             preprocess_batch_fn: Optional[Callable] = None,
             epochs: int = 3,
@@ -82,8 +81,6 @@ class ClassifierDrift:
             Optimizer used during training of the classifier.
         learning_rate
             Learning rate used by optimizer.
-        compile_kwargs
-            Optional additional kwargs when compiling the classifier. Only relevant for 'tensorflow' backend.
         batch_size
             Batch size used during training of the classifier.
         preprocess_batch_fn
