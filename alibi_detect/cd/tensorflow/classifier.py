@@ -7,6 +7,7 @@ from typing import Callable, Dict, Optional, Tuple
 from alibi_detect.cd.base import BaseClassifierDrift
 from alibi_detect.models.tensorflow.trainer import trainer
 from alibi_detect.utils.tensorflow.data import TFDataset
+from alibi_detect.utils.tensorflow.misc import clone_model
 from alibi_detect.utils.tensorflow.prediction import predict_batch
 
 
@@ -144,7 +145,7 @@ class ClassifierDriftTF(BaseClassifierDrift):
             else:
                 raise TypeError(f'x needs to be of type np.ndarray or list and not {type(x)}.')
             ds_tr = self.dataset(x_tr, y_tr)
-            model = tf.keras.models.clone_model(self.model)
+            model = clone_model(self.model)
             train_args = [model, self.loss_fn, None]
             self.train_kwargs.update({'dataset': ds_tr})
             trainer(*train_args, **self.train_kwargs)  # type: ignore
