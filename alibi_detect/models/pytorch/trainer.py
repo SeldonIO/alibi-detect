@@ -16,6 +16,28 @@ def trainer(
         epochs: int = 20,
         verbose: int = 1,
 ) -> None:
+    """
+    Train PyTorch model.
+
+    Parameters
+    ----------
+    model
+        Model to train.
+    loss_fn
+        Loss function used for training.
+    dataloader
+        PyTorch dataloader.
+    optimizer
+        Optimizer used for training.
+    learning_rate
+        Optimizer's learning rate.
+    preprocess_fn
+        Preprocessing function applied to each training batch.
+    epochs
+        Number of training epochs.
+    verbose
+        Whether to print training progress.
+    """
     optimizer = optimizer(model.parameters(), lr=learning_rate)
     model.train()
     for epoch in range(epochs):
