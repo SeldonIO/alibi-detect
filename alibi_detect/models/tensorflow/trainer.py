@@ -67,7 +67,7 @@ def trainer(
     for epoch in range(epochs):
         if verbose:
             pbar = tf.keras.utils.Progbar(n_minibatch, 1)
-        for step, data in enumerate(dataset):  # TODO: make sure Sequence shuffling is correct!
+        for step, data in enumerate(dataset):  # TODO: make sure Sequence shuffling is correct! NOT CORRECT NOW
             x, y = data if len(data) == 2 else (data, None)
             if isinstance(preprocess_fn, Callable):  # type: ignore
                 x = preprocess_fn(x)
