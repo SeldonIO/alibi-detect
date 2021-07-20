@@ -205,7 +205,7 @@ Check the example notebooks (e.g. [CIFAR10](https://docs.seldon.io/projects/alib
 - [Least-Squares Density Difference](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/lsdddrift.html) ([Bu et al, 2016](https://alippi.faculty.polimi.it/articoli/A%20Pdf%20free%20Change%20Detection%20Test%20Based%20on%20Density%20Difference%20Estimation.pdf))
 
 - [Maximum Mean Discrepancy](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/mmddrift.html) ([Gretton et al, 2012](http://jmlr.csail.mit.edu/papers/v13/gretton12a.html))
-   - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_mmd_cifar10.html), [movie reviews](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_text_imdb.html)
+   - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_mmd_cifar10.html), [movie reviews](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_text_imdb.html), [Amazon reviews](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_text_amazon.html)
 
 - [Chi-Squared](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/chisquaredrift.html)
    - Example: [Income Prediction](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_chi2ks_adult.html)
@@ -214,7 +214,7 @@ Check the example notebooks (e.g. [CIFAR10](https://docs.seldon.io/projects/alib
    - Example: [Income Prediction](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_chi2ks_adult.html)
 
 - [Classifier](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/classifierdrift.html) ([Lopez-Paz and Oquab, 2017](https://openreview.net/forum?id=SJkXfE5xx))
-   - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_clf_cifar10.html)
+   - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_clf_cifar10.html), [Amazon reviews](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_text_amazon.html)
 
 - [Classifier and Regressor Uncertainty](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/modeluncdrift.html)
    - Example: [CIFAR10 and Wine](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_model_unc_cifar10_wine.html)
