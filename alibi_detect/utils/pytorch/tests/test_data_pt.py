@@ -3,7 +3,7 @@ import pytest
 from alibi_detect.utils.pytorch.data import TorchDataset
 
 # test on numpy array and list
-n, f, bs = 100, 5, 10
+n, f = 100, 5
 shape = (n, f)
 tests_ds = [list, np.ndarray]
 n_tests_ds = len(tests_ds)
