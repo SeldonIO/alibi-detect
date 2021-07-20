@@ -70,8 +70,6 @@ def trainer(
         if hasattr(dataset, 'on_epoch_end'):
             dataset.on_epoch_end()
         for step, data in enumerate(dataset):
-            if step == 0:
-                print(data)
             x, y = data if len(data) == 2 else (data, None)
             if isinstance(preprocess_fn, Callable):  # type: ignore
                 x = preprocess_fn(x)
