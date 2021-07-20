@@ -9,7 +9,6 @@ class TFDataset(tf.keras.utils.Sequence):
         self.y = y
         self.batch_size = batch_size
         self.shuffle = shuffle
-        self.on_epoch_end()
 
     def __getitem__(self, idx: int) -> Tuple[Union[np.ndarray, tuple], np.ndarray]:
         istart, istop = idx * self.batch_size, (idx + 1) * self.batch_size
