@@ -39,7 +39,8 @@ binarize_preds = [True, False]
 n_folds = [None, 2]
 train_size = [.5]
 preprocess_batch = [None, identity_fn]
-update_x_ref = [None, {'last': 1000}, {'reservoir_sampling': 1000}]
+update_x_ref = [None]
+#update_x_ref = [None, {'last': 1000}, {'reservoir_sampling': 1000}]
 tests_clfdrift = list(product(p_val, n_features, preds_type, binarize_preds, n_folds,
                               train_size, preprocess_batch, update_x_ref))
 n_tests = len(tests_clfdrift)
