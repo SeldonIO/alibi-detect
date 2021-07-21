@@ -7,6 +7,7 @@ import tensorflow as tf
 from tensorflow.keras.layers import Dense, Input, Softmax, Dropout
 import torch
 import torch.nn as nn
+from typing import Union
 from alibi_detect.cd import ClassifierUncertaintyDrift, RegressorUncertaintyDrift
 
 n = 500
@@ -40,6 +41,8 @@ class PtModel(nn.Module):
 
 
 def dumb_model(x, n_labels, softmax=False):
+    if isinstance(x, list):
+        x = np.concatenate(x, axis=0)
     x = np.stack([np.mean(x*(i+1), axis=-1) for i in range(n_labels)], axis=-1)
     if softmax:
         x = scipy.special.softmax(x, axis=-1)
@@ -55,6 +58,14 @@ def gen_model(n_features, n_labels, backend, softmax=False, dropout=False):
         return partial(dumb_model, n_labels=n_labels, softmax=softmax)
 
 
+def id_fn(x: list, to_pt: bool = False) -> Union[np.ndarray, torch.Tensor]:
+    x = np.concatenate(x, axis=0)
+    if to_pt:
+        return torch.from_numpy(x)
+    else:
+        return x
+
+
 p_val = [.05]
 backend = ['tensorflow', 'pytorch', None]
 n_features = [16]
@@ -62,7 +73,9 @@ n_labels = [3]
 preds_type = ['probs', 'logits']
 uncertainty_type = ['entropy', 'margin']
 update_x_ref = [None, {'last': 1000}, {'reservoir_sampling': 1000}]
-tests_clfuncdrift = list(product(p_val, backend, n_features, n_labels, preds_type, uncertainty_type, update_x_ref))
+to_list = [True, False]
+tests_clfuncdrift = list(product(p_val, backend, n_features, n_labels, preds_type,
+                                 uncertainty_type, update_x_ref, to_list))
 n_tests = len(tests_clfuncdrift)
 
 
@@ -73,7 +86,7 @@ def clfuncdrift_params(request):
 
 @pytest.mark.parametrize('clfuncdrift_params', list(range(n_tests)), indirect=True)
 def test_clfuncdrift(clfuncdrift_params):
-    p_val, backend, n_features, n_labels, preds_type, uncertainty_type, update_x_ref = clfuncdrift_params
+    p_val, backend, n_features, n_labels, preds_type, uncertainty_type, update_x_ref, to_list = clfuncdrift_params
 
     np.random.seed(0)
     tf.random.set_seed(0)
@@ -82,6 +95,11 @@ def test_clfuncdrift(clfuncdrift_params):
     x_ref = np.random.randn(*(n, n_features)).astype(np.float32)
     x_test0 = x_ref.copy()
     x_test1 = np.ones_like(x_ref)
+
+    if to_list:
+        x_ref = [x[None, :] for x in x_ref]
+        x_test0 = [x[None, :] for x in x_test0]
+        x_test1 = [x[None, :] for x in x_test1]
 
     cd = ClassifierUncertaintyDrift(
         x_ref=x_ref,
@@ -92,19 +110,19 @@ def test_clfuncdrift(clfuncdrift_params):
         preds_type=preds_type,
         uncertainty_type=uncertainty_type,
         margin_width=0.1,
-        batch_size=10
+        batch_size=10,
+        preprocess_batch_fn=partial(id_fn, to_pt=backend == 'pytorch') if to_list else None
     )
 
     preds_0 = cd.predict(x_test0)
-    assert cd._detector.n == x_test0.shape[0] + x_ref.shape[0]
+    assert cd._detector.n == len(x_test0) + len(x_ref)
     assert preds_0['data']['is_drift'] == 0
     assert preds_0['data']['distance'] >= 0
 
     preds_1 = cd.predict(x_test1)
-    assert cd._detector.n == x_test1.shape[0] + x_test0.shape[0] + x_ref.shape[0]
+    assert cd._detector.n == len(x_test1) + len(x_test0) + len(x_ref)
     assert preds_1['data']['is_drift'] == 1
     assert preds_1['data']['distance'] >= 0
-
     assert preds_0['data']['distance'] < preds_1['data']['distance']
 
 
@@ -113,7 +131,8 @@ backend = ['tensorflow', 'pytorch']
 n_features = [16]
 uncertainty_type = ['mc_dropout', 'ensemble']
 update_x_ref = [None, {'last': 1000}, {'reservoir_sampling': 1000}]
-tests_reguncdrift = list(product(p_val, backend, n_features, uncertainty_type, update_x_ref))
+to_list = [True, False]
+tests_reguncdrift = list(product(p_val, backend, n_features, uncertainty_type, update_x_ref, to_list))
 n_tests = len(tests_reguncdrift)
 
 
@@ -124,7 +143,7 @@ def reguncdrift_params(request):
 
 @pytest.mark.parametrize('reguncdrift_params', list(range(n_tests)), indirect=True)
 def test_reguncdrift(reguncdrift_params):
-    p_val, backend, n_features, uncertainty_type, update_x_ref = reguncdrift_params
+    p_val, backend, n_features, uncertainty_type, update_x_ref, to_list = reguncdrift_params
 
     np.random.seed(0)
     tf.random.set_seed(0)
@@ -141,6 +160,11 @@ def test_reguncdrift(reguncdrift_params):
     x_test0 = x_ref.copy()
     x_test1 = np.ones_like(x_ref)
 
+    if to_list:
+        x_ref = [x[None, :] for x in x_ref]
+        x_test0 = [x[None, :] for x in x_test0]
+        x_test1 = [x[None, :] for x in x_test1]
+
     cd = RegressorUncertaintyDrift(
         x_ref=x_ref,
         model=model,
@@ -149,17 +173,17 @@ def test_reguncdrift(reguncdrift_params):
         update_x_ref=update_x_ref,
         uncertainty_type=uncertainty_type,
         n_evals=5,
-        batch_size=10
+        batch_size=10,
+        preprocess_batch_fn=partial(id_fn, to_pt=backend == 'pytorch') if to_list else None
     )
 
     preds_0 = cd.predict(x_test0)
-    assert cd._detector.n == x_test0.shape[0] + x_ref.shape[0]
+    assert cd._detector.n == len(x_test0) + len(x_ref)
     assert preds_0['data']['is_drift'] == 0
     assert preds_0['data']['distance'] >= 0
 
     preds_1 = cd.predict(x_test1)
-    assert cd._detector.n == x_test1.shape[0] + x_test0.shape[0] + x_ref.shape[0]
+    assert cd._detector.n == len(x_test1) + len(x_test0) + len(x_ref)
     assert preds_1['data']['is_drift'] == 1
     assert preds_1['data']['distance'] >= 0
-
     assert preds_0['data']['distance'] < preds_1['data']['distance']
