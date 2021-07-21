@@ -149,7 +149,7 @@ class ClassifierDrift:
             Whether to return a notion of strength of the drift.
             K-S test stat if binarize_preds=False, otherwise relative error reduction.
         return_probs
-            Whether to return the instance level classifier probabilities for the test data
+            Whether to return the instance level classifier probabilities for the reference and test data
             (0=reference data, 1=test data).
 
         Returns
