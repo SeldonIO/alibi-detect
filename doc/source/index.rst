@@ -75,6 +75,7 @@
    examples/cd_clf_cifar10
    examples/cd_model_unc_cifar10_wine
    examples/cd_online_wine
+   examples/cd_mol
 
 .. toctree::
    :maxdepth: 1
