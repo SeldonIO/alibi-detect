@@ -90,7 +90,8 @@ class NMEDriftTF(BaseNMEDrift):
         )
         self.meta.update({'backend': 'tensorflow'})
 
-        self.kernel = kernel
+        init_test_locations = tf.convert_to_tensor(self.init_test_locations(x_ref))
+        self.nme_embedder = NMEDriftTF.NMEEmbedder(kernel, init_test_locations)
 
         self.train_kwargs = {
             'batch_size': batch_size,
@@ -129,20 +130,16 @@ class NMEDriftTF(BaseNMEDrift):
         and that which we'd expect under the null assumption of no drift.
         """
         x_ref, x = self.preprocess(x)
-
-        init_test_locations = tf.convert_to_tensor(self.init_test_locations(x_ref))
         (x_ref_train, x_ref_test), (x_train, x_test) = self.get_splits(x_ref, x)
 
-        nme_embedder = NMEDriftTF.NMEEmbedder(self.kernel, init_test_locations)
-        train_args = [nme_embedder, self.cov_reg, x_ref_train, x_train]
+        train_args = [self.nme_embedder, self.cov_reg, x_ref_train, x_train]
         self.trainer(*train_args, **self.train_kwargs)
         embeddings = NMEDriftTF.embed_batch(
             tf.convert_to_tensor(x_ref_test), tf.convert_to_tensor(x_test), 
-            nme_embedder, self.train_kwargs['batch_size']
+            self.nme_embedder, self.train_kwargs['batch_size']
         )
-
         nme_estimate = NMEDriftTF.embedding_to_estimate(embeddings, cov_reg=self.cov_reg)
-        new_test_locs = nme_embedder.test_locs.numpy()
+        new_test_locs = self.nme_embedder.test_locs.numpy()
 
         p_val = stats.chi2.sf(nme_estimate.numpy(), self.J)
         return p_val, nme_estimate, new_test_locs

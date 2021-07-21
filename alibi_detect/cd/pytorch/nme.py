@@ -107,12 +107,14 @@ class NMEDriftTorch(BaseNMEDrift):
         else:
             self.device = torch.device('cpu')
 
-        self.kernel = kernel
+        init_test_locations = torch.as_tensor(self.init_test_locations(x_ref))
+        self.nme_embedder = NMEDriftTorch.NMEEmbedder(kernel, init_test_locations).to(self.device)
 
         # define kwargs for dataloader and trainer
         self.dl_kwargs = {'batch_size': batch_size, 'shuffle': True}
-        self.train_kwargs = {'optimizer': optimizer, 'epochs': epochs,
-                             'learning_rate': learning_rate, 'verbose': verbose}
+        self.train_kwargs = {
+            'optimizer': optimizer, 'epochs': epochs, 'learning_rate': learning_rate, 'verbose': verbose
+        }
         if isinstance(train_kwargs, dict):
             self.train_kwargs.update(train_kwargs)
 
@@ -120,7 +122,7 @@ class NMEDriftTorch(BaseNMEDrift):
         def __init__(self, kernel: nn.Module, init_locations: torch.Tensor):
             super().__init__()
             self.kernel = kernel
-            self.test_locs = nn.Parameter(init_locations)
+            self.test_locs = nn.Parameter(init_locations, requires_grad=True)
 
         def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
             k_xtl = self.kernel(x, self.test_locs)
@@ -143,22 +145,22 @@ class NMEDriftTorch(BaseNMEDrift):
         and that which we'd expect under the null assumption of no drift.
         """
         x_ref, x = self.preprocess(x)
-
-        init_test_locations = torch.as_tensor(self.init_test_locations(x_ref))
         (x_ref_train, x_ref_test), (x_train, x_test) = self.get_splits(x_ref, x)
-
         ds_tr = TensorDataset(torch.from_numpy(x_ref_train), torch.from_numpy(x_train))
         dl_tr = DataLoader(ds_tr, **self.dl_kwargs)  # type: ignore
-        nme_embedder = NMEDriftTorch.NMEEmbedder(self.kernel, init_test_locations).to(self.device)
-        train_args = [nme_embedder, self.cov_reg, dl_tr, self.device]
+        
+        train_args = [self.nme_embedder, self.cov_reg, dl_tr, self.device]
         self.trainer(*train_args, **self.train_kwargs)  # type: ignore
 
-        nme_embedder.eval()
+        self.nme_embedder.eval()
         embeddings = NMEDriftTorch.embed_batch(
-            torch.as_tensor(x_ref_test), torch.as_tensor(x_test), nme_embedder, self.device, self.dl_kwargs['batch_size']
+            torch.as_tensor(x_ref_test), torch.as_tensor(x_test), 
+            self.nme_embedder, self.device, self.dl_kwargs['batch_size']
         )
-        nme_estimate = NMEDriftTorch.embedding_to_estimate(embeddings, cov_reg=self.cov_reg)
-        new_test_locs = nme_embedder.test_locs.detach().cpu().numpy()
+        nme_estimate = NMEDriftTorch.embedding_to_estimate(
+            embeddings, cov_reg=self.cov_reg
+        )
+        new_test_locs = self.nme_embedder.test_locs.detach().cpu().numpy()
 
         p_val = stats.chi2.sf(nme_estimate.cpu().numpy(), self.J)
         return p_val, nme_estimate, new_test_locs
