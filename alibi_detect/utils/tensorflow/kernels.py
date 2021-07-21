@@ -87,6 +87,5 @@ class DeepKernel(tf.keras.Model):
 
     def call(self, x: tf.Tensor, y: tf.Tensor):
         return (
-            (1-self.eps)*self.kernel_a(self.proj(x), self.proj(y)) +
-            self.eps*self.kernel_b(x, y)
+            (1-self.eps)*self.kernel_a(self.proj(x), self.proj(y)) + self.eps*self.kernel_b(x, y)
         )
