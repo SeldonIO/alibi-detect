@@ -88,7 +88,8 @@ autodoc_mock_imports = [
     "cloudpickle",
     "fbprophet",
     "torch",
-    "transformers"
+    "transformers",
+    "tqdm"
 ]
 
 # Napoleon settings

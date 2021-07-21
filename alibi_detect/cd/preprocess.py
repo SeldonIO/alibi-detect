@@ -1,11 +1,11 @@
 import numpy as np
 from scipy.special import softmax
 from scipy.stats import entropy
-from typing import Callable
+from typing import Callable, Union
 
 
 def classifier_uncertainty(
-    x: np.ndarray,
+    x: Union[np.ndarray, list],
     model_fn: Callable,
     preds_type: str = 'probs',
     uncertainty_type: str = 'entropy',
@@ -57,7 +57,7 @@ def classifier_uncertainty(
 
 
 def regressor_uncertainty(
-    x: np.ndarray,
+    x: Union[np.ndarray, list],
     model_fn: Callable,
     uncertainty_type: str = 'mc_dropout',
     n_evals: int = 25,
@@ -84,7 +84,7 @@ def regressor_uncertainty(
     """
 
     if uncertainty_type == 'mc_dropout':
-        preds = np.concatenate([model_fn(x) for i in range(n_evals)], axis=-1)
+        preds = np.concatenate([model_fn(x) for _ in range(n_evals)], axis=-1)
     elif uncertainty_type == 'ensemble':
         preds = model_fn(x)
     else:
