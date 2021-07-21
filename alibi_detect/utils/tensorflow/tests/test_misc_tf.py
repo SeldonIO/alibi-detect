@@ -1,8 +1,10 @@
 from itertools import product
 import pytest
 import tensorflow as tf
+from tensorflow.keras.layers import Dense, Input, InputLayer
 import numpy as np
 from alibi_detect.utils.tensorflow import zero_diag, quantile, subset_matrix
+from alibi_detect.utils.tensorflow.misc import clone_model
 
 
 def test_zero_diag():
@@ -58,3 +60,41 @@ def test_subset_matrix():
         subset_matrix(tf.ones((10, 10, 10)), inds_0, inds_1)
     with pytest.raises(ValueError):
         subset_matrix(tf.ones((10,)), inds_0, inds_1)
+
+
+n_in, n_out = 10, 5
+# sequential model
+model_seq = tf.keras.Sequential([InputLayer(n_in, ), Dense(n_out)])
+
+# functional model
+inputs = Input(n_in, )
+outputs = Dense(n_out)(inputs)
+model_func = tf.keras.Model(inputs=inputs, outputs=outputs)
+
+
+# subclassed model
+class Model(tf.keras.Model):
+    def __init__(self):
+        super().__init__()
+        self.dense = Dense(5)
+
+    def call(self, x):
+        return self.dense(x)
+
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
+
+
+model_sub = Model()
+
+
+def test_clone_model():
+    model_seq_clone = clone_model(model_seq)
+    assert not (model_seq_clone.weights[0] == model_seq.weights[0]).numpy().any()
+    model_func_clone = clone_model(model_func)
+    assert not (model_func_clone.weights[0] == model_func.weights[0]).numpy().any()
+    model_sub_clone = clone_model(model_sub)
+    _ = model_sub(tf.zeros((1, 10)))
+    _ = model_sub_clone(tf.zeros((1, 10)))
+    assert not (model_sub_clone.weights[0] == model_sub.weights[0]).numpy().any()

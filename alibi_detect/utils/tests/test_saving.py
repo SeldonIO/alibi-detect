@@ -235,7 +235,6 @@ def test_save_load(select_detector):
             assert det_load._detector.p_val == p_val
             assert (det_load._detector.x_ref == X_ref).all()
             assert isinstance(det_load._detector.skf, StratifiedKFold)
-            assert isinstance(det_load._detector.compile_kwargs, dict)
             assert isinstance(det_load._detector.train_kwargs, dict)
             assert isinstance(det_load._detector.model, tf.keras.Model)
         elif type(det_load) == LLR:
