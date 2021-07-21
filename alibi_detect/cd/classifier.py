@@ -134,7 +134,7 @@ class ClassifierDrift:
         self.meta = self._detector.meta
 
     def predict(self, x: Union[np.ndarray, list],  return_p_val: bool = True,
-                return_distance: bool = True, return_score: bool = True) \
+                return_distance: bool = True, return_probs: bool = True) \
             -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
         """
         Predict whether a batch of data has drifted from the reference data.
@@ -148,8 +148,9 @@ class ClassifierDrift:
         return_distance
             Whether to return a notion of strength of the drift.
             K-S test stat if binarize_preds=False, otherwise relative error reduction.
-        return_score
-            Whether to return the instance level classifier scores and labels (0=reference data, 1=test data).
+        return_probs
+            Whether to return the instance level classifier probabilities for the test data
+            (0=reference data, 1=test data).
 
         Returns
         -------
@@ -157,6 +158,6 @@ class ClassifierDrift:
         'meta' has the model's metadata.
         'data' contains the drift prediction and optionally the performance of the classifier
         relative to its expectation under the no-change null, the out-of-fold classifier model
-        prediction probabilities and the associated labels.
+        prediction probabilities on the reference and test data.
         """
-        return self._detector.predict(x, return_p_val, return_distance, return_score)
+        return self._detector.predict(x, return_p_val, return_distance, return_probs)

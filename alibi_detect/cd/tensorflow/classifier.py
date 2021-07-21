@@ -126,9 +126,9 @@ class ClassifierDriftTF(BaseClassifierDrift):
 
         Returns
         -------
-        p-value, and a notion of distance between the trained classifier's out-of-fold performance
+        p-value, a notion of distance between the trained classifier's out-of-fold performance
         and that which we'd expect under the null assumption of no drift,
-        the classification labels (0=reference data, 1=test data) and out-of-fold classifier predictions.
+        and the out-of-fold classifier model prediction probabilities on the reference and test data
         """
         x_ref, x = self.preprocess(x)
         n_ref, n_cur = len(x_ref), len(x)
@@ -157,4 +157,5 @@ class ClassifierDriftTF(BaseClassifierDrift):
         idx_oof = np.concatenate(idx_oof_list, axis=0)
         y_oof = y[idx_oof]
         p_val, dist = self.test_probs(y_oof, probs_oof, n_ref, n_cur)
-        return p_val, dist, y_oof, probs_oof[:, 1]
+        probs_sort = probs_oof[np.argsort(idx_oof)]
+        return p_val, dist, probs_sort[:n_ref, 1], probs_sort[n_ref:, 1]
