@@ -1,4 +1,5 @@
 import tensorflow as tf
+import numpy as np
 from . import distance
 from typing import Optional, Union
 from scipy.special import logit
@@ -13,18 +14,19 @@ class GaussianRBF(tf.keras.Model):
         Parameters
         ----------
         sigma
-            Optional sigma used for the kernel.
+            Bandwidth used for the kernel. Needn't be specified if being inferred or trained.
+            Can pass multiple values to eval kernel with and then average.
+        trainable
+            Whether or not to track gradients w.r.t. sigma to allow it to be trained.
         """
         super().__init__()
-        if trainable:
-            if sigma is None:
-                self.init_required = True
-            else:
-                self.log_sigma = tf.Variable(sigma.log(), trainable=True)
+        if sigma is None:
+            self.log_sigma = tf.Variable(np.empty(1), dtype=tf.float32, trainable=trainable)
+            self.init_required = True
         else:
-            if sigma is not None:
-                sigma = sigma.reshape(-1)  # [Ns,]
-                self.log_sigma = tf.Variable(sigma.log(), trainable=False)
+            sigma = sigma.reshape(-1)  # [Ns,]
+            self.log_sigma = tf.Variable(sigma.log(), trainable=trainable)
+            self.init_required = False
         self.trainable = trainable
 
     @property
@@ -33,17 +35,19 @@ class GaussianRBF(tf.keras.Model):
 
     def call(self, x: tf.Tensor, y: tf.Tensor, infer_sigma: bool = False) -> tf.Tensor:
 
+        x, y = tf.reshape(x, (x.shape[0], -1)), tf.reshape(y, (y.shape[0], -1)) # flatten
         dist = distance.squared_pairwise_distance(x, y)  # [Nx, Ny]
 
         if infer_sigma or self.init_required:
-            if self.trainable and not self.init_required:
+            if self.trainable and infer_sigma:
                 raise ValueError("Gradients cannot be computed w.r.t. an inferred sigma value")
             n = min(x.shape[0], y.shape[0])
             n = n if tf.reduce_all(x[:n] == y[:n]) and x.shape == y.shape else 0
             n_median = n + (tf.math.reduce_prod(dist.shape) - n) // 2 - 1
             sigma = tf.expand_dims((.5 * tf.sort(tf.reshape(dist, (-1,)))[n_median]) ** .5, axis=0)
-            self.log_sigma = tf.Variable(tf.math.log(sigma), trainable=self.trainable)
-            self.init_required = False
+            self.log_sigma.assign(tf.math.log(sigma))
+            if self.trainable:
+                self.init_required = False  # if not trainable will keep inferring sigma anew
 
         gamma = 1. / (2. * self.sigma ** 2)   # [Ns,]
         # TODO: do matrix multiplication after all?
@@ -64,9 +68,9 @@ class DeepKernel(tf.keras.Model):
     ) -> None:
         super().__init__()
 
-        self.proj = proj
         self.kernel_a = kernel_a
         self.kernel_b = kernel_b
+        self.proj = proj
         if isinstance(eps, float):
             if not 0 < eps < 1:
                 raise ValueError("eps should be in (0,1)")
@@ -84,5 +88,5 @@ class DeepKernel(tf.keras.Model):
     def call(self, x: tf.Tensor, y: tf.Tensor):
         return (
             (1-self.eps)*self.kernel_a(self.proj(x), self.proj(y)) +
-            self.eps*self.kernel_b(tf.reshape(x, (x.shape[0], -1)), tf.reshape(y, (y.shape[0], -1)))
+            self.eps*self.kernel_b(x, y)
         )
