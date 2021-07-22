@@ -22,7 +22,7 @@ class GaussianRBF(tf.keras.Model):
         super().__init__()
         if sigma is None:
             self.log_sigma = tf.Variable(np.empty(1), dtype=tf.float32, trainable=trainable)
-            self.init_required = True
+            self.init_required = trainable
         else:
             sigma = tf.reshape(sigma, (-1,))  # [Ns,]
             self.log_sigma = tf.Variable(tf.math.log(sigma), trainable=trainable)
@@ -46,8 +46,7 @@ class GaussianRBF(tf.keras.Model):
             n_median = n + (tf.math.reduce_prod(dist.shape) - n) // 2 - 1
             sigma = tf.expand_dims((.5 * tf.sort(tf.reshape(dist, (-1,)))[n_median]) ** .5, axis=0)
             self.log_sigma.assign(tf.math.log(sigma))
-            if self.trainable:
-                self.init_required = False  # if not trainable will keep inferring sigma anew
+            self.init_required = False
 
         gamma = 1. / (2. * self.sigma ** 2)   # [Ns,]
         # TODO: do matrix multiplication after all?

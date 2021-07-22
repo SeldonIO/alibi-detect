@@ -26,7 +26,7 @@ class GaussianRBF(nn.Module):
         super().__init__()
         if sigma is None:
             self.log_sigma = nn.Parameter(torch.empty(1), requires_grad=trainable)
-            self.init_required = True
+            self.init_required = trainable
         else:
             sigma = sigma.reshape(-1)  # [Ns,]
             self.log_sigma = nn.Parameter(sigma.log(), requires_grad=trainable)
@@ -50,8 +50,7 @@ class GaussianRBF(nn.Module):
             sigma = (.5 * dist.flatten().sort().values[n_median].unsqueeze(dim=-1)) ** .5
             with torch.no_grad():
                 self.log_sigma.copy_(sigma.log().clone())
-            if self.trainable:
-                self.init_required = False  # if not trainable will keep inferring sigma anew
+            self.init_required = False
 
         gamma = 1. / (2. * self.sigma ** 2)   # [Ns,]
         # TODO: do matrix multiplication after all?
