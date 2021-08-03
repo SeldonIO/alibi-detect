@@ -120,8 +120,9 @@ class ClassifierDrift:
             self._detector = ClassifierDriftTorch(*args, **kwargs)  # type: ignore
         self.meta = self._detector.meta
 
-    def predict(self, x: np.ndarray,  return_p_val: bool = True,
-                return_distance: bool = True) -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
+    def predict(
+        self, x: np.ndarray,  return_p_val: bool = True, return_distance: bool = True, return_model: bool = False
+    ) -> Dict[Dict[str, str], Dict[str, Union[int, float, Callable]]]:
         """
         Predict whether a batch of data has drifted from the reference data.
 
@@ -142,4 +143,4 @@ class ClassifierDrift:
         'data' contains the drift prediction and optionally the p-value and performance of
         the classifier relative to its expectation under the no-change null.
         """
-        return self._detector.predict(x, return_p_val, return_distance)
+        return self._detector.predict(x, return_p_val, return_distance, return_model)
