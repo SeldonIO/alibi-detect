@@ -22,7 +22,7 @@ class GaussianRBF(tf.keras.Model):
         super().__init__()
         if sigma is None:
             self.log_sigma = tf.Variable(np.empty(1), dtype=tf.float32, trainable=trainable)
-            self.init_required = trainable
+            self.init_required = trainable  # TODO: Not quite right
         else:
             sigma = tf.reshape(sigma, (-1,))  # [Ns,]
             self.log_sigma = tf.Variable(tf.math.log(sigma), trainable=trainable)
