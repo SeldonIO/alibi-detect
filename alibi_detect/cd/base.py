@@ -31,6 +31,7 @@ class BaseClassifierDrift(BaseDetector):
             binarize_preds: bool = False,
             train_size: Optional[float] = .75,
             n_folds: Optional[int] = None,
+            retrain_from_scratch: bool = True,
             seed: int = 0,
             data_type: Optional[str] = None
     ) -> None:
@@ -64,6 +65,9 @@ class BaseClassifierDrift(BaseDetector):
             on all the out-of-fold predictions. This allows to leverage all the reference and test data
             for drift detection at the expense of longer computation. If both `train_size` and `n_folds`
             are specified, `n_folds` is prioritized.
+        retrain_from_scratch
+            Whether the classifier should be retrained from scratch for each set of test data or whether
+            it should instead continue training from where it left off on the previous set.
         seed
             Optional random seed for fold selection.
         data_type
@@ -99,6 +103,7 @@ class BaseClassifierDrift(BaseDetector):
             self.skf = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=seed)
         else:
             self.train_size, self.skf = train_size, None
+        self.retrain_from_scratch = retrain_from_scratch
 
         # set metadata
         self.meta['detector_type'] = 'offline'
