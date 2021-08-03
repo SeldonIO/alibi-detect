@@ -104,6 +104,7 @@ class ClassifierDriftTF(BaseClassifierDrift):
         self.meta.update({'backend': 'tensorflow'})
 
         # define and compile classifier model
+        self.original_model = model
         self.model = tf.keras.models.clone_model(model)
         self.compile_kwargs = {
             'optimizer': optimizer(learning_rate=learning_rate),
@@ -139,10 +140,11 @@ class ClassifierDriftTF(BaseClassifierDrift):
         preds_oof_list, idx_oof_list = [], []
         for idx_tr, idx_te in splits:
             x_tr, y_tr, x_te = x[idx_tr], np.eye(2)[y[idx_tr]], x[idx_te]
-            clf = tf.keras.models.clone_model(self.model) if self.retrain_from_scratch else self.model
-            clf.compile(**self.compile_kwargs)
-            clf.fit(x=x_tr, y=y_tr, **self.train_kwargs)
-            preds = clf.predict(x_te, batch_size=self.train_kwargs['batch_size'])
+            self.model = tf.keras.models.clone_model(self.original_model) if self.retrain_from_scratch \
+                else self.model
+            self.model.compile(**self.compile_kwargs)
+            self.model.fit(x=x_tr, y=y_tr, **self.train_kwargs)
+            preds = self.model.predict(x_te, batch_size=self.train_kwargs['batch_size'])
             preds_oof_list.append(preds)
             idx_oof_list.append(idx_te)
         preds_oof = np.concatenate(preds_oof_list, axis=0)

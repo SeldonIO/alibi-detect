@@ -117,7 +117,8 @@ class ClassifierDriftTorch(BaseClassifierDrift):
                 logger.warning('No GPU detected, fall back on CPU.')
         else:
             self.device = torch.device('cpu')
-        self.model = deepcopy(model).to(self.device)
+        self.original_model = model
+        self.model = deepcopy(model)
 
         # define kwargs for dataloader and trainer
         self.loss_fn = nn.CrossEntropyLoss() if (self.preds_type == 'logits') else nn.NLLLoss()
@@ -153,10 +154,11 @@ class ClassifierDriftTorch(BaseClassifierDrift):
             x_tr, y_tr, x_te = x[idx_tr], y[idx_tr], x[idx_te]
             ds_tr = TensorDataset(torch.from_numpy(x_tr), torch.from_numpy(y_tr))
             dl_tr = DataLoader(ds_tr, **self.dl_kwargs)  # type: ignore
-            model = deepcopy(self.model) if self.retrain_from_scratch else self.model
-            train_args = [model, self.loss_fn, dl_tr, self.device]
+            self.model = deepcopy(self.original_model) if self.retrain_from_scratch else self.model
+            self.model = self.model.to(self.device)
+            train_args = [self.model, self.loss_fn, dl_tr, self.device]
             trainer(*train_args, **self.train_kwargs)  # type: ignore
-            preds = predict_batch(x_te, model.eval(), device=self.device, batch_size=self.dl_kwargs['batch_size'])
+            preds = predict_batch(x_te, self.model.eval(), device=self.device, batch_size=self.dl_kwargs['batch_size'])
             preds_oof_list.append(preds)
             idx_oof_list.append(idx_te)
         preds_oof = np.concatenate(preds_oof_list, axis=0)
