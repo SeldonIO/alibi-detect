@@ -23,6 +23,7 @@ class ClassifierDrift:
             binarize_preds: bool = False,
             train_size: Optional[float] = .75,
             n_folds: Optional[int] = None,
+            retrain_from_scratch: bool = True,
             seed: int = 0,
             optimizer: Optional[Callable] = None,
             learning_rate: float = 1e-3,
@@ -70,6 +71,9 @@ class ClassifierDrift:
             on all the out-of-fold instances. This allows to leverage all the reference and test data
             for drift detection at the expense of longer computation. If both `train_size` and `n_folds`
             are specified, `n_folds` is prioritized.
+        retrain_from_scratch
+            Whether the classifier should be retrained from scratch for each set of test data or whether
+            it should instead continue training from where it left off on the previous set.
         seed
             Optional random seed for fold selection.
         optimizer

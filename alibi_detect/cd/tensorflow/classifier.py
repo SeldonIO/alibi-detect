@@ -19,6 +19,7 @@ class ClassifierDriftTF(BaseClassifierDrift):
             binarize_preds: bool = False,
             train_size: Optional[float] = .75,
             n_folds: Optional[int] = None,
+            retrain_from_scratch: bool = True,
             seed: int = 0,
             optimizer: tf.keras.optimizers = tf.keras.optimizers.Adam,
             learning_rate: float = 1e-3,
@@ -63,6 +64,9 @@ class ClassifierDriftTF(BaseClassifierDrift):
             on all the out-of-fold predictions. This allows to leverage all the reference and test data
             for drift detection at the expense of longer computation. If both `train_size` and `n_folds`
             are specified, `n_folds` is prioritized.
+        retrain_from_scratch
+            Whether the classifier should be retrained from scratch for each set of test data or whether
+            it should instead continue training from where it left off on the previous set.
         seed
             Optional random seed for fold selection.
         optimizer
@@ -93,13 +97,14 @@ class ClassifierDriftTF(BaseClassifierDrift):
             binarize_preds=binarize_preds,
             train_size=train_size,
             n_folds=n_folds,
+            retrain_from_scratch=retrain_from_scratch,
             seed=seed,
             data_type=data_type
         )
         self.meta.update({'backend': 'tensorflow'})
 
         # define and compile classifier model
-        self.model = model
+        self.model = tf.keras.models.clone_model(model)
         self.compile_kwargs = {
             'optimizer': optimizer(learning_rate=learning_rate),
             'loss': BinaryCrossentropy(from_logits=(self.preds_type == 'logits'))
@@ -134,7 +139,7 @@ class ClassifierDriftTF(BaseClassifierDrift):
         preds_oof_list, idx_oof_list = [], []
         for idx_tr, idx_te in splits:
             x_tr, y_tr, x_te = x[idx_tr], np.eye(2)[y[idx_tr]], x[idx_te]
-            clf = tf.keras.models.clone_model(self.model)
+            clf = tf.keras.models.clone_model(self.model) if self.retrain_from_scratch else self.model
             clf.compile(**self.compile_kwargs)
             clf.fit(x=x_tr, y=y_tr, **self.train_kwargs)
             preds = clf.predict(x_te, batch_size=self.train_kwargs['batch_size'])

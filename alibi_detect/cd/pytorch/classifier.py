@@ -26,6 +26,7 @@ class ClassifierDriftTorch(BaseClassifierDrift):
             binarize_preds: bool = False,
             train_size: Optional[float] = .75,
             n_folds: Optional[int] = None,
+            retrain_from_scratch: bool = True,
             seed: int = 0,
             optimizer: Callable = torch.optim.Adam,
             learning_rate: float = 1e-3,
@@ -70,6 +71,9 @@ class ClassifierDriftTorch(BaseClassifierDrift):
             on all the out-of-fold predictions. This allows to leverage all the reference and test data
             for drift detection at the expense of longer computation. If both `train_size` and `n_folds`
             are specified, `n_folds` is prioritized.
+        retrain_from_scratch
+            Whether the classifier should be retrained from scratch for each set of test data or whether
+            it should instead continue training from where it left off on the previous set.
         seed
             Optional random seed for fold selection.
         optimizer
@@ -100,6 +104,7 @@ class ClassifierDriftTorch(BaseClassifierDrift):
             binarize_preds=binarize_preds,
             train_size=train_size,
             n_folds=n_folds,
+            retrain_from_scratch=retrain_from_scratch,
             seed=seed,
             data_type=data_type
         )
@@ -112,7 +117,7 @@ class ClassifierDriftTorch(BaseClassifierDrift):
                 logger.warning('No GPU detected, fall back on CPU.')
         else:
             self.device = torch.device('cpu')
-        self.model = model.to(self.device)
+        self.model = deepcopy(model).to(self.device)
 
         # define kwargs for dataloader and trainer
         self.loss_fn = nn.CrossEntropyLoss() if (self.preds_type == 'logits') else nn.NLLLoss()
@@ -148,7 +153,7 @@ class ClassifierDriftTorch(BaseClassifierDrift):
             x_tr, y_tr, x_te = x[idx_tr], y[idx_tr], x[idx_te]
             ds_tr = TensorDataset(torch.from_numpy(x_tr), torch.from_numpy(y_tr))
             dl_tr = DataLoader(ds_tr, **self.dl_kwargs)  # type: ignore
-            model = deepcopy(self.model)
+            model = deepcopy(self.model) if self.retrain_from_scratch else self.model
             train_args = [model, self.loss_fn, dl_tr, self.device]
             trainer(*train_args, **self.train_kwargs)  # type: ignore
             preds = predict_batch(x_te, model.eval(), device=self.device, batch_size=self.dl_kwargs['batch_size'])
