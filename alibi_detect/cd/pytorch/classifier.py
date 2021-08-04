@@ -26,6 +26,7 @@ class ClassifierDriftTorch(BaseClassifierDrift):
             preprocess_fn: Optional[Callable] = None,
             preds_type: str = 'probs',
             binarize_preds: bool = False,
+            reg_loss_fn: Callable = (lambda model: 0),
             train_size: Optional[float] = .75,
             n_folds: Optional[int] = None,
             retrain_from_scratch: bool = True,
@@ -68,6 +69,8 @@ class ClassifierDriftTorch(BaseClassifierDrift):
         binarize_preds
             Whether to test for discrepency on soft (e.g. probs/logits) model predictions directly
             with a K-S test or binarise to 0-1 prediction errors and apply a binomial test.
+        reg_loss_fn
+            The regularisation term reg_loss_fn(model) is added to the loss function being optimized.
         train_size
             Optional fraction (float between 0 and 1) of the dataset used to train the classifier.
             The drift is detected on `1 - train_size`. Cannot be used in combination with `n_folds`.
@@ -139,7 +142,7 @@ class ClassifierDriftTorch(BaseClassifierDrift):
         self.predict_fn = partial(predict_batch, device=self.device,
                                   preprocess_fn=preprocess_batch_fn, batch_size=batch_size)
         self.train_kwargs = {'optimizer': optimizer, 'epochs': epochs,  'preprocess_fn': preprocess_batch_fn,
-                             'learning_rate': learning_rate, 'verbose': verbose}
+                             'reg_loss_fn': reg_loss_fn, 'learning_rate': learning_rate, 'verbose': verbose}
         if isinstance(train_kwargs, dict):
             self.train_kwargs.update(train_kwargs)
 
