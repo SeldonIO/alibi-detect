@@ -1,13 +1,15 @@
 from copy import deepcopy
+from functools import partial
 import logging
 import numpy as np
 import torch
 import torch.nn as nn
-from torch.utils.data import TensorDataset, DataLoader
+from torch.utils.data import DataLoader
 from scipy.special import softmax
 from typing import Callable, Dict, Optional, Union, Tuple
 from alibi_detect.cd.base import BaseClassifierDrift
 from alibi_detect.models.pytorch.trainer import trainer
+from alibi_detect.utils.pytorch.data import TorchDataset
 from alibi_detect.utils.pytorch.prediction import predict_batch
 
 logger = logging.getLogger(__name__)
@@ -16,7 +18,7 @@ logger = logging.getLogger(__name__)
 class ClassifierDriftTorch(BaseClassifierDrift):
     def __init__(
             self,
-            x_ref: np.ndarray,
+            x_ref: Union[np.ndarray, list],
             model: Union[nn.Module, nn.Sequential],
             p_val: float = .05,
             preprocess_x_ref: bool = True,
@@ -31,10 +33,13 @@ class ClassifierDriftTorch(BaseClassifierDrift):
             optimizer: Callable = torch.optim.Adam,
             learning_rate: float = 1e-3,
             batch_size: int = 32,
+            preprocess_batch_fn: Optional[Callable] = None,
             epochs: int = 3,
             verbose: int = 0,
             train_kwargs: Optional[dict] = None,
             device: Optional[str] = None,
+            dataset: Callable = TorchDataset,
+            dataloader: Callable = DataLoader,
             data_type: Optional[str] = None
     ) -> None:
         """
@@ -82,6 +87,9 @@ class ClassifierDriftTorch(BaseClassifierDrift):
             Learning rate used by optimizer.
         batch_size
             Batch size used during training of the classifier.
+        preprocess_batch_fn
+            Optional batch preprocessing function. For example to convert a list of objects to a batch which can be
+            processed by the model.
         epochs
             Number of training epochs for the classifier for each (optional) fold.
         verbose
@@ -91,6 +99,10 @@ class ClassifierDriftTorch(BaseClassifierDrift):
         device
             Device type used. The default None tries to use the GPU and falls back on CPU if needed.
             Can be specified by passing either 'cuda', 'gpu' or 'cpu'.
+        dataset
+            Dataset object used during training.
+        dataloader
+            Dataloader object used during training.
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
@@ -122,13 +134,16 @@ class ClassifierDriftTorch(BaseClassifierDrift):
 
         # define kwargs for dataloader and trainer
         self.loss_fn = nn.CrossEntropyLoss() if (self.preds_type == 'logits') else nn.NLLLoss()
-        self.dl_kwargs = {'batch_size': batch_size, 'shuffle': True}
-        self.train_kwargs = {'optimizer': optimizer, 'epochs': epochs,
+        self.dataset = dataset
+        self.dataloader = partial(dataloader, batch_size=batch_size, shuffle=True)
+        self.predict_fn = partial(predict_batch, device=self.device,
+                                  preprocess_fn=preprocess_batch_fn, batch_size=batch_size)
+        self.train_kwargs = {'optimizer': optimizer, 'epochs': epochs,  'preprocess_fn': preprocess_batch_fn,
                              'learning_rate': learning_rate, 'verbose': verbose}
         if isinstance(train_kwargs, dict):
             self.train_kwargs.update(train_kwargs)
 
-    def score(self, x: np.ndarray) -> Tuple[float, float]:
+    def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, np.ndarray, np.ndarray]:
         """
         Compute the out-of-fold drift metric such as the accuracy from a classifier
         trained to distinguish the reference data from the data to be tested.
@@ -140,31 +155,37 @@ class ClassifierDriftTorch(BaseClassifierDrift):
 
         Returns
         -------
-        p-value, and a notion of distance between the trained classifier's out-of-fold performance
-        and that which we'd expect under the null assumption of no drift.
+        p-value, a notion of distance between the trained classifier's out-of-fold performance
+        and that which we'd expect under the null assumption of no drift,
+        and the out-of-fold classifier model prediction probabilities on the reference and test data
         """
         x_ref, x = self.preprocess(x)
-        n_ref, n_cur = x_ref.shape[0], x.shape[0]
-
+        n_ref, n_cur = len(x_ref), len(x)
         x, y, splits = self.get_splits(x_ref, x)
 
         # iterate over folds: train a new model for each fold and make out-of-fold (oof) predictions
         preds_oof_list, idx_oof_list = [], []
         for idx_tr, idx_te in splits:
-            x_tr, y_tr, x_te = x[idx_tr], y[idx_tr], x[idx_te]
-            ds_tr = TensorDataset(torch.from_numpy(x_tr), torch.from_numpy(y_tr))
-            dl_tr = DataLoader(ds_tr, **self.dl_kwargs)  # type: ignore
+            y_tr = y[idx_tr]
+            if isinstance(x, np.ndarray):
+                x_tr, x_te = x[idx_tr], x[idx_te]
+            elif isinstance(x, list):
+                x_tr, x_te = [x[_] for _ in idx_tr], [x[_] for _ in idx_te]
+            else:
+                raise TypeError(f'x needs to be of type np.ndarray or list and not {type(x)}.')
+            ds_tr = self.dataset(x_tr, y_tr)
+            dl_tr = self.dataloader(ds_tr)
             self.model = deepcopy(self.original_model) if self.retrain_from_scratch else self.model
             self.model = self.model.to(self.device)
             train_args = [self.model, self.loss_fn, dl_tr, self.device]
             trainer(*train_args, **self.train_kwargs)  # type: ignore
-            preds = predict_batch(x_te, self.model.eval(), device=self.device, batch_size=self.dl_kwargs['batch_size'])
+            preds = self.predict_fn(x_te, self.model.eval())
             preds_oof_list.append(preds)
             idx_oof_list.append(idx_te)
         preds_oof = np.concatenate(preds_oof_list, axis=0)
         probs_oof = softmax(preds_oof, axis=-1) if self.preds_type == 'logits' else preds_oof
         idx_oof = np.concatenate(idx_oof_list, axis=0)
         y_oof = y[idx_oof]
-
         p_val, dist = self.test_probs(y_oof, probs_oof, n_ref, n_cur)
-        return p_val, dist
+        probs_sort = probs_oof[np.argsort(idx_oof)]
+        return p_val, dist, probs_sort[:n_ref, 1], probs_sort[n_ref:, 1]

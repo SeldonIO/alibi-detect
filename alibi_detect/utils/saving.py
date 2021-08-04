@@ -305,7 +305,7 @@ def state_classifierdrift(cd: ClassifierDrift) -> Tuple[
     """
     preprocess_fn, preprocess_kwargs, model, embed, embed_args, tokenizer, load_emb = \
         preprocess_step_drift(cd._detector)
-    cd._detector.compile_kwargs['optimizer'] = tf.keras.optimizers.serialize(cd._detector.compile_kwargs['optimizer'])
+    cd._detector.train_kwargs['optimizer'] = tf.keras.optimizers.serialize(cd._detector.train_kwargs['optimizer'])
     state_dict = {
         'args':
             {
@@ -320,7 +320,6 @@ def state_classifierdrift(cd: ClassifierDrift) -> Tuple[
                 'binarize_preds': cd._detector.binarize_preds,
                 'train_size': cd._detector.train_size,
                 'train_kwargs': cd._detector.train_kwargs,
-                'compile_kwargs': cd._detector.compile_kwargs
             },
         'other':
             {
@@ -1496,8 +1495,7 @@ def init_preprocess(state_dict: Dict, model: Optional[Union[tf.keras.Model, tf.k
     return preprocess_fn, preprocess_kwargs
 
 
-def init_cd_classifierdrift(clf_drift: Union[tf.keras.Sequential, tf.keras.Model], state_dict: Dict,
-                            model: Optional[Union[tf.keras.Model, tf.keras.Sequential]],
+def init_cd_classifierdrift(clf_drift: tf.keras.Model, state_dict: Dict, model: Optional[tf.keras.Model],
                             emb: Optional[TransformerEmbedding], tokenizer: Optional[Callable], **kwargs) \
         -> ClassifierDrift:
     """
@@ -1525,8 +1523,8 @@ def init_cd_classifierdrift(clf_drift: Union[tf.keras.Sequential, tf.keras.Model
     preprocess_fn, preprocess_kwargs = init_preprocess(state_dict['other'], model, emb, tokenizer, **kwargs)
     if isinstance(preprocess_fn, Callable) and isinstance(preprocess_kwargs, dict):
         state_dict['kwargs'].update({'preprocess_fn': partial(preprocess_fn, **preprocess_kwargs)})
-    state_dict['kwargs']['compile_kwargs']['optimizer'] = \
-        tf.keras.optimizers.get(state_dict['kwargs']['compile_kwargs']['optimizer'])
+    state_dict['kwargs']['train_kwargs']['optimizer'] = \
+        tf.keras.optimizers.get(state_dict['kwargs']['train_kwargs']['optimizer'])
     args = list(state_dict['args'].values()) + [clf_drift]
     cd = ClassifierDrift(*args, **state_dict['kwargs'])
     attrs = state_dict['other']

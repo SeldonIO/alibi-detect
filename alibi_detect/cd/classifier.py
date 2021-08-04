@@ -3,16 +3,19 @@ from typing import Callable, Dict, Optional, Union
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
 
 if has_pytorch:
+    from torch.utils.data import DataLoader
     from alibi_detect.cd.pytorch.classifier import ClassifierDriftTorch
+    from alibi_detect.utils.pytorch.data import TorchDataset
 
 if has_tensorflow:
     from alibi_detect.cd.tensorflow.classifier import ClassifierDriftTF
+    from alibi_detect.utils.tensorflow.data import TFDataset
 
 
 class ClassifierDrift:
     def __init__(
             self,
-            x_ref: np.ndarray,
+            x_ref: Union[np.ndarray, list],
             model: Callable,
             backend: str = 'tensorflow',
             p_val: float = .05,
@@ -27,12 +30,14 @@ class ClassifierDrift:
             seed: int = 0,
             optimizer: Optional[Callable] = None,
             learning_rate: float = 1e-3,
-            compile_kwargs: Optional[dict] = None,
             batch_size: int = 32,
+            preprocess_batch_fn: Optional[Callable] = None,
             epochs: int = 3,
             verbose: int = 0,
             train_kwargs: Optional[dict] = None,
             device: Optional[str] = None,
+            dataset: Optional[Callable] = None,
+            dataloader: Optional[Callable] = None,
             data_type: Optional[str] = None
     ) -> None:
         """
@@ -80,10 +85,11 @@ class ClassifierDrift:
             Optimizer used during training of the classifier.
         learning_rate
             Learning rate used by optimizer.
-        compile_kwargs
-            Optional additional kwargs when compiling the classifier. Only relevant for 'tensorflow' backend.
         batch_size
             Batch size used during training of the classifier.
+        preprocess_batch_fn
+            Optional batch preprocessing function. For example to convert a list of objects to a batch which can be
+            processed by the model.
         epochs
             Number of training epochs for the classifier for each (optional) fold.
         verbose
@@ -93,6 +99,10 @@ class ClassifierDrift:
         device
             Device type used. The default None tries to use the GPU and falls back on CPU if needed.
             Can be specified by passing either 'cuda', 'gpu' or 'cpu'. Only relevant for 'pytorch' backend.
+        dataset
+            Dataset object used during training.
+        dataloader
+            Dataloader object used during training. Only relevant for 'pytorch' backend.
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
@@ -113,16 +123,23 @@ class ClassifierDrift:
         [kwargs.pop(k, None) for k in pop_kwargs]
 
         if backend == 'tensorflow' and has_tensorflow:
-            kwargs.pop('device', None)
+            pop_kwargs = ['device', 'dataloader']
+            [kwargs.pop(k, None) for k in pop_kwargs]
+            if dataset is None:
+                kwargs.update({'dataset': TFDataset})
             self._detector = ClassifierDriftTF(*args, **kwargs)  # type: ignore
         else:
             kwargs.pop('compile_kwargs', None)
+            if dataset is None:
+                kwargs.update({'dataset': TorchDataset})
+            if dataloader is None:
+                kwargs.update({'dataloader': DataLoader})
             self._detector = ClassifierDriftTorch(*args, **kwargs)  # type: ignore
         self.meta = self._detector.meta
 
-    def predict(
-        self, x: np.ndarray,  return_p_val: bool = True, return_distance: bool = True, return_model: bool = False
-    ) -> Dict[Dict[str, str], Dict[str, Union[int, float, Callable]]]:
+    def predict(self, x: Union[np.ndarray, list],  return_p_val: bool = True,
+                return_distance: bool = True, return_probs: bool = True, return_model: bool = True) \
+            -> Dict[Dict[str, str], Dict[str, Union[int, float, Callable]]]:
         """
         Predict whether a batch of data has drifted from the reference data.
 
@@ -135,12 +152,18 @@ class ClassifierDrift:
         return_distance
             Whether to return a notion of strength of the drift.
             K-S test stat if binarize_preds=False, otherwise relative error reduction.
+        return_probs
+            Whether to return the instance level classifier probabilities for the reference and test data
+            (0=reference data, 1=test data).
+        return_model
+            Whether to return the updated model trained to discriminate reference and test instances.
 
         Returns
         -------
         Dictionary containing 'meta' and 'data' dictionaries.
         'meta' has the model's metadata.
-        'data' contains the drift prediction and optionally the p-value and performance of
-        the classifier relative to its expectation under the no-change null.
+        'data' contains the drift prediction and optionally the performance of the classifier
+        relative to its expectation under the no-change null, the out-of-fold classifier model
+        prediction probabilities on the reference and test data.
         """
-        return self._detector.predict(x, return_p_val, return_distance, return_model)
+        return self._detector.predict(x, return_p_val, return_distance, return_probs, return_model)

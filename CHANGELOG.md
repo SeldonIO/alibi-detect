@@ -1,5 +1,19 @@
 # Change Log
 
+## [v0.7.1](https://github.com/SeldonIO/alibi-detect/tree/v0.7.1) (2021-07-22)
+[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.7.0...v0.7.1)
+
+### Added
+- Extend allowed input type for drift detectors to include List[Any] with additional graph and text data examples.
+- Allow custom preprocessing steps within `alibi_detect.utils.pytorch.prediction.predict_batch` and `alibi_detect.utils.tensorflow.prediction.predict_batch`. This makes it possible to take List[Any] as input and combine instances in the list into batches of data in the right format for the model.
+
+### Removed
+- PCA preprocessing step for drift detectors.
+
+### Fixed
+- Improve numerical stability LSDD detectors (offline and online) to avoid overflow/underflow caused by higher dimensionality of the input data.
+- Spectral Residual outlier detector test.
+
 ## [v0.7.0](https://github.com/SeldonIO/alibi-detect/tree/v0.7.0) (2021-06-07)
 [Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.6.2...v0.7.0)
 
