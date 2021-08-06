@@ -98,7 +98,7 @@ class SpotTheDiffDriftTorch:
         """
 
         if kernel is None:
-            kernel = GaussianRBF(trainable=True)  # TODO: Think about
+            kernel = GaussianRBF(trainable=True)
 
         model = SpotTheDiffDriftTorch.InterpretableClf(kernel, x_ref, n_diffs=n_diffs)
         reg_loss_fn = (lambda model: model.diffs.abs().mean() * l1_reg)
@@ -142,7 +142,7 @@ class SpotTheDiffDriftTorch:
 
         def forward(self, x: torch.Tensor) -> torch.Tensor:
             k_xtl = self.kernel(x, self.mean + self.diffs)
-            logits = self.bias + k_xtl @ self.coeffs.exp()[:, None]  # exp ensures coeff>0 for interpretability
+            logits = self.bias + k_xtl @ self.coeffs[:, None]
             return torch.cat([-logits, logits], axis=-1)
 
     def predict(
