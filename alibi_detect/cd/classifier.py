@@ -132,7 +132,6 @@ class ClassifierDrift:
                 kwargs.update({'dataset': TFDataset})
             self._detector = ClassifierDriftTF(*args, **kwargs)  # type: ignore
         else:
-            kwargs.pop('compile_kwargs', None)
             if dataset is None:
                 kwargs.update({'dataset': TorchDataset})
             if dataloader is None:

@@ -23,7 +23,6 @@ class SpotTheDiffDriftTF:
             seed: int = 0,
             optimizer: tf.keras.optimizers = tf.keras.optimizers.Adam,
             learning_rate: float = 1e-3,
-            compile_kwargs: Optional[dict] = None,
             batch_size: int = 32,
             epochs: int = 3,
             verbose: int = 0,
@@ -83,8 +82,6 @@ class SpotTheDiffDriftTF:
             Optimizer used during training of the classifier.
         learning_rate
             Learning rate used by optimizer.
-        compile_kwargs
-            Optional additional kwargs when compiling the classifier.
         batch_size
             Batch size used during training of the classifier.
         epochs
