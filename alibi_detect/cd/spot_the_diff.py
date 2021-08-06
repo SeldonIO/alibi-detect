@@ -20,6 +20,7 @@ class SpotTheDiffDrift:
             preprocess_fn: Optional[Callable] = None,
             kernel: Callable = None,
             n_diffs: int = 1,
+            initial_diffs: Optional[np.ndarray] = None,
             l1_reg: float = 0.01,
             binarize_preds: bool = False,
             train_size: Optional[float] = .75,
@@ -62,8 +63,15 @@ class SpotTheDiffDrift:
             for reservoir sampling {'reservoir_sampling': n} is passed.
         preprocess_fn
             Function to preprocess the data before computing the data drift metrics.
-        preds_type
-            Whether the model outputs 'probs' or 'logits'
+        kernel
+            Kernel used to define simmilarity between instances, defaults to Gaussian RBF
+        n_diffs
+            The number of test locations to use, each corresponding to an interpretable difference.
+        initial_diffs
+            Array used to initialise the diffs that will be learned. Defaults to Gaussian
+            for each feature with equal variance to that of reference data.
+        l1_reg
+            Strength of l1 regularisation to apply to the differences.
         binarize_preds
             Whether to test for discrepency on soft  (e.g. probs/logits) model predictions directly
             with a K-S test or binarise to 0-1 prediction errors and apply a binomial test.

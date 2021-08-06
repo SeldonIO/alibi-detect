@@ -15,6 +15,7 @@ class SpotTheDiffDriftTF:
             preprocess_fn: Optional[Callable] = None,
             kernel: Callable = None,
             n_diffs: int = 1,
+            initial_diffs: Optional[np.ndarray] = None,
             l1_reg: float = 0.01,
             binarize_preds: bool = False,
             train_size: Optional[float] = .75,
@@ -60,6 +61,9 @@ class SpotTheDiffDriftTF:
             Kernel used to define simmilarity between instances, defaults to Gaussian RBF
         n_diffs
             The number of test locations to use, each corresponding to an interpretable difference.
+        initial_diffs
+            Array used to initialise the diffs that will be learned. Defaults to Gaussian
+            for each feature with equal variance to that of reference data.
         l1_reg
             Strength of l1 regularisation to apply to the differences.
         binarize_preds
@@ -97,8 +101,13 @@ class SpotTheDiffDriftTF:
 
         if kernel is None:
             kernel = GaussianRBF(trainable=True)
+        if initial_diffs is None:
+            initial_diffs = np.random.normal(size=(n_diffs,) + x_ref.shape[1:]) * x_ref.std(0)
+        else:
+            if len(initial_diffs) != n_diffs:
+                raise ValueError("Should have initial_diffs.shape[0] == n_diffs")
 
-        model = SpotTheDiffDriftTF.InterpretableClf(kernel, x_ref, n_diffs=n_diffs)
+        model = SpotTheDiffDriftTF.InterpretableClf(kernel, x_ref, initial_diffs)
         reg_loss_fn = (lambda model: tf.reduce_mean(tf.abs(model.diffs)) * l1_reg)
 
         self._detector = ClassifierDriftTF(
@@ -127,18 +136,14 @@ class SpotTheDiffDriftTF:
         self.meta['name'] = 'SpotTheDiffDrift'
 
     class InterpretableClf(tf.keras.Model):
-        def __init__(self, kernel: tf.keras.Model, x_ref: np.ndarray, n_diffs: int = 1):
+        def __init__(self, kernel: tf.keras.Model, x_ref: np.ndarray, initial_diffs: np.ndarray):
             super().__init__()
-            self.config = {'kernel': kernel, 'x_ref': x_ref, 'n_diffs': n_diffs}
-            x_ref = tf.convert_to_tensor(x_ref)
+            self.config = {'kernel': kernel, 'x_ref': x_ref, 'initial_diffs': initial_diffs}
             self.kernel = kernel
-            self.mean = tf.reduce_mean(x_ref, 0)
-            # TODO: Initialisation here is important. What is best way?
-            self.diffs = tf.Variable(
-                tf.random.normal((n_diffs,) + x_ref.shape[1:]) * tf.math.reduce_std(x_ref, 0)
-            )
+            self.mean = tf.convert_to_tensor(x_ref.mean(0))
+            self.diffs = tf.Variable(initial_diffs, dtype=np.float32)
             self.bias = tf.Variable(tf.zeros((1,)))
-            self.coeffs = tf.Variable(tf.zeros((n_diffs,)))
+            self.coeffs = tf.Variable(tf.zeros((len(initial_diffs),)))
 
         def call(self, x: tf.Tensor) -> tf.Tensor:
             k_xtl = self.kernel(x, self.mean + self.diffs)

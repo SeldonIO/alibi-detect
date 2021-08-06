@@ -16,6 +16,7 @@ class SpotTheDiffDriftTorch:
             preprocess_fn: Optional[Callable] = None,
             kernel: Callable = None,
             n_diffs: int = 1,
+            initial_diffs: Optional[np.ndarray] = None,
             l1_reg: float = 0.01,
             binarize_preds: bool = False,
             train_size: Optional[float] = .75,
@@ -60,6 +61,9 @@ class SpotTheDiffDriftTorch:
             Kernel used to define simmilarity between instances, defaults to Gaussian RBF
         n_diffs
             The number of test locations to use, each corresponding to an interpretable difference.
+        initial_diffs
+            Array used to initialise the diffs that will be learned. Defaults to Gaussian
+            for each feature with equal variance to that of reference data.
         l1_reg
             Strength of l1 regularisation to apply to the differences.
         binarize_preds
@@ -99,8 +103,13 @@ class SpotTheDiffDriftTorch:
 
         if kernel is None:
             kernel = GaussianRBF(trainable=True)
+        if initial_diffs is None:
+            initial_diffs = np.random.normal(size=(n_diffs,) + x_ref.shape[1:]) * x_ref.std(0)
+        else:
+            if len(initial_diffs) != n_diffs:
+                raise ValueError("Should have initial_diffs.shape[0] == n_diffs")
 
-        model = SpotTheDiffDriftTorch.InterpretableClf(kernel, x_ref, n_diffs=n_diffs)
+        model = SpotTheDiffDriftTorch.InterpretableClf(kernel, x_ref, initial_diffs)
         reg_loss_fn = (lambda model: model.diffs.abs().mean() * l1_reg)
 
         self._detector = ClassifierDriftTorch(
@@ -130,15 +139,13 @@ class SpotTheDiffDriftTorch:
         self.meta['name'] = 'SpotTheDiffDrift'
 
     class InterpretableClf(nn.Module):
-        def __init__(self, kernel: nn.Module, x_ref: np.ndarray, n_diffs: int = 1):
+        def __init__(self, kernel: nn.Module, x_ref: np.ndarray, initial_diffs: np.ndarray):
             super().__init__()
-            x_ref = torch.as_tensor(x_ref)
             self.kernel = kernel
-            self.mean = x_ref.mean(0)
-            # TODO: Initialisation here is important. What is best way?
-            self.diffs = nn.Parameter(torch.randn((n_diffs,) + x_ref.shape[1:]) * x_ref.std(0))
+            self.mean = torch.as_tensor(x_ref.mean(0))
+            self.diffs = nn.Parameter(torch.as_tensor(initial_diffs, dtype=torch.float32))
             self.bias = nn.Parameter(torch.zeros((1,)))
-            self.coeffs = nn.Parameter(torch.zeros((n_diffs,)))
+            self.coeffs = nn.Parameter(torch.zeros((len(initial_diffs),)))
 
         def forward(self, x: torch.Tensor) -> torch.Tensor:
             k_xtl = self.kernel(x, self.mean + self.diffs)
