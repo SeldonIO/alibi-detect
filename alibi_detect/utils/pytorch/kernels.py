@@ -26,7 +26,7 @@ class GaussianRBF(nn.Module):
         super().__init__()
         if sigma is None:
             self.log_sigma = nn.Parameter(torch.empty(1), requires_grad=trainable)
-            self.init_required = True  # TODO: Not quite right
+            self.init_required = True  # TODO: Is this right now?
         else:
             sigma = sigma.reshape(-1)  # [Ns,]
             self.log_sigma = nn.Parameter(sigma.log(), requires_grad=trainable)

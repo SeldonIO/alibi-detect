@@ -114,7 +114,7 @@ class ClassifierDriftTF(BaseClassifierDrift):
 
         # define and compile classifier model
         self.original_model = model
-        self.model = tf.keras.models.clone_model(model)
+        self.model = clone_model(model)
         self.loss_fn = BinaryCrossentropy(from_logits=(self.preds_type == 'logits'))
         self.dataset = partial(dataset, batch_size=batch_size, shuffle=True)
         self.predict_fn = partial(predict_batch, preprocess_fn=preprocess_batch_fn, batch_size=batch_size)
@@ -154,7 +154,7 @@ class ClassifierDriftTF(BaseClassifierDrift):
             else:
                 raise TypeError(f'x needs to be of type np.ndarray or list and not {type(x)}.')
             ds_tr = self.dataset(x_tr, y_tr)
-            self.model = tf.keras.models.clone_model(self.original_model) if self.retrain_from_scratch \
+            self.model = clone_model(self.original_model) if self.retrain_from_scratch \
                 else self.model
             train_args = [self.model, self.loss_fn, None]
             self.train_kwargs.update({'dataset': ds_tr})

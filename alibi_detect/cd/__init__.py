@@ -3,7 +3,7 @@ from .classifier import ClassifierDrift
 from .ks import KSDrift
 from .lsdd import LSDDDrift
 from .lsdd_online import LSDDDriftOnline
-from .nme import NMEDrift
+from .spot_the_diff import SpotTheDiffDrift
 from .mmd import MMDDrift
 from .mmd_online import MMDDriftOnline
 from .model_uncertainty import ClassifierUncertaintyDrift, RegressorUncertaintyDrift
@@ -15,10 +15,10 @@ __all__ = [
     "KSDrift",
     "LSDDDrift",
     "LSDDDriftOnline",
-    "NMEDrift"
     "MMDDrift",
     "MMDDriftOnline",
     "TabularDrift",
     "ClassifierUncertaintyDrift",
-    "RegressorUncertaintyDrift"
+    "RegressorUncertaintyDrift",
+    "SpotTheDiffDrift"
 ]
