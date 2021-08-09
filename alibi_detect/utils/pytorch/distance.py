@@ -1,5 +1,8 @@
 import logging
+import math
 import torch
+from torch import nn
+import numpy as np
 from typing import Callable, List, Tuple, Optional, Union
 
 logger = logging.getLogger(__name__)
@@ -26,6 +29,67 @@ def squared_pairwise_distance(x: torch.Tensor, y: torch.Tensor, a_min: float = 1
     y2 = y.pow(2).sum(dim=-1, keepdim=True)
     dist = torch.addmm(y2.transpose(-2, -1), x, y.transpose(-2, -1), alpha=-2).add_(x2)
     return dist.clamp_min_(a_min)
+
+
+def batch_compute_kernel_matrix(
+    x: Union[list, np.ndarray, torch.Tensor],
+    y: Union[list, np.ndarray, torch.Tensor],
+    kernel: Union[Callable, nn.Module, nn.Sequential],
+    device: torch.device = None,
+    batch_size: int = int(1e10),
+    preprocess_fn: Callable = None,
+) -> torch.Tensor:
+    """
+    Make batch predictions on a model.
+
+    Parameters
+    ----------
+    x
+        Reference set.
+    y
+        Test set.
+    kernel
+        PyTorch module.
+    device
+        Device type used. The default None tries to use the GPU and falls back on CPU if needed.
+        Can be specified by passing either torch.device('cuda') or torch.device('cpu').
+    batch_size
+        Batch size used during prediction.
+    preprocess_fn
+        Optional preprocessing function for each batch.
+
+    Returns
+    -------
+    Kernel matrix in the form of a torch tensor
+    """
+    if device is None:
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    if isinstance(x, np.ndarray):
+        x = torch.from_numpy(x)
+    if isinstance(y, np.ndarray):
+        y = torch.from_numpy(y)
+    n_x, n_y = len(x), len(y)
+    n_batch_x = int(np.ceil(n_x / batch_size))
+    n_batch_y = int(np.ceil(n_y / batch_size))
+    with torch.no_grad():
+        k_is = []  # type: Union[list, tuple]
+        for i in range(n_batch_x):
+            istart, istop = i * batch_size, min((i + 1) * batch_size, n_x)
+            x_batch = x[istart:istop]
+            if isinstance(preprocess_fn, Callable):  # type: ignore
+                x_batch = preprocess_fn(x_batch)
+            x_batch = x_batch.to(device)
+            k_ijs = []
+            for j in range(n_batch_y):
+                jstart, jstop = j * batch_size, min((j + 1) * batch_size, n_y)
+                y_batch = y[jstart:jstop]
+                if isinstance(preprocess_fn, Callable):  # type: ignore
+                    y_batch = preprocess_fn(y_batch)
+                y_batch = y_batch.to(device)
+                k_ijs.append(kernel(x_batch, y_batch).cpu())  # type: ignore
+            k_is.append(torch.cat(k_ijs, axis=1))
+        k_mat = torch.cat(k_is, axis=0)
+    return k_mat
 
 
 def mmd2_from_kernel_matrix(kernel_mat: torch.Tensor, m: int, permute: bool = False,

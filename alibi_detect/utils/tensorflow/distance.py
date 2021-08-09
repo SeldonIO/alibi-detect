@@ -1,4 +1,5 @@
 import logging
+import math
 import numpy as np
 import tensorflow as tf
 from typing import Callable, Tuple, List, Optional, Union
@@ -29,6 +30,54 @@ def squared_pairwise_distance(x: tf.Tensor, y: tf.Tensor, a_min: float = 1e-30, 
     y2 = tf.reduce_sum(y ** 2, axis=-1, keepdims=True)
     dist = x2 + tf.transpose(y2, (1, 0)) - 2. * x @ tf.transpose(y, (1, 0))
     return tf.clip_by_value(dist, a_min, a_max)
+
+
+def batch_compute_kernel_matrix(
+    x: Union[list, np.ndarray, tf.Tensor],
+    y: Union[list, np.ndarray, tf.Tensor],
+    kernel: Union[Callable, tf.keras.Model],
+    batch_size: int = int(1e10),
+    preprocess_fn: Callable = None,
+) -> tf.Tensor:
+    """
+    Make batch predictions on a model.
+
+    Parameters
+    ----------
+    x
+        Reference set.
+    y
+        Test set.
+    kernel
+        tf.keras model
+    batch_size
+        Batch size used during prediction.
+    preprocess_fn
+        Optional preprocessing function for each batch.
+
+    Returns
+    -------
+    Kernel matrix in the form of a tensorflow tensor
+    """
+    n_x, n_y = len(x), len(y)
+    n_batch_x = int(np.ceil(n_x / batch_size))
+    n_batch_y = int(np.ceil(n_y / batch_size))
+    k_is = []  # type: Union[list, tuple]
+    for i in range(n_batch_x):
+        istart, istop = i * batch_size, min((i + 1) * batch_size, n_x)
+        x_batch = x[istart:istop]
+        if isinstance(preprocess_fn, Callable):  # type: ignore
+            x_batch = preprocess_fn(x_batch)
+        k_ijs = []
+        for j in range(n_batch_y):
+            jstart, jstop = j * batch_size, min((j + 1) * batch_size, n_y)
+            y_batch = y[jstart:jstop]
+            if isinstance(preprocess_fn, Callable):  # type: ignore
+                y_batch = preprocess_fn(y_batch)
+            k_ijs.append(kernel(x_batch, y_batch))  # type: ignore
+        k_is.append(tf.concat(k_ijs, axis=1))
+    k_mat = tf.concat(k_is, axis=0)
+    return k_mat
 
 
 def mmd2_from_kernel_matrix(kernel_mat: tf.Tensor, m: int, permute: bool = False,
