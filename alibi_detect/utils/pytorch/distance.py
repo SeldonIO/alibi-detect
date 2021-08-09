@@ -64,24 +64,26 @@ def batch_compute_kernel_matrix(
     """
     if device is None:
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    if type(x) != type(y):
+        raise ValueError("x and y should be of the same type")
+
     if isinstance(x, np.ndarray):
-        x = torch.from_numpy(x)
-    if isinstance(y, np.ndarray):
-        y = torch.from_numpy(y)
-    n_x, n_y = len(x), len(y)
-    n_batch_x = int(np.ceil(n_x / batch_size))
-    n_batch_y = int(np.ceil(n_y / batch_size))
+        x, y = torch.from_numpy(x), torch.from_numpy(y)
+    z = x + y if isinstance(x, list) else torch.cat([x, y], axis=0)
+
+    n_z = len(z)
+    n_batch = int(np.ceil(n_z / batch_size))
     with torch.no_grad():
         k_is = []  # type: Union[list, tuple]
-        for i in range(n_batch_x):
-            istart, istop = i * batch_size, min((i + 1) * batch_size, n_x)
+        for i in range(n_batch):
+            istart, istop = i * batch_size, min((i + 1) * batch_size, n_z)
             x_batch = x[istart:istop]
             if isinstance(preprocess_fn, Callable):  # type: ignore
                 x_batch = preprocess_fn(x_batch)
             x_batch = x_batch.to(device)
             k_ijs = []
-            for j in range(n_batch_y):
-                jstart, jstop = j * batch_size, min((j + 1) * batch_size, n_y)
+            for j in range(n_batch):
+                jstart, jstop = j * batch_size, min((j + 1) * batch_size, n_z)
                 y_batch = y[jstart:jstop]
                 if isinstance(preprocess_fn, Callable):  # type: ignore
                     y_batch = preprocess_fn(y_batch)

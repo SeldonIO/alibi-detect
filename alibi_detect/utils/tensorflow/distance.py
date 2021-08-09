@@ -59,18 +59,22 @@ def batch_compute_kernel_matrix(
     -------
     Kernel matrix in the form of a tensorflow tensor
     """
-    n_x, n_y = len(x), len(y)
-    n_batch_x = int(np.ceil(n_x / batch_size))
-    n_batch_y = int(np.ceil(n_y / batch_size))
+    if type(x) != type(y):
+        raise ValueError("x and y should be of the same type")
+
+    z = x + y if isinstance(x, list) else tf.concat([x, y], axis=0)
+    n_z = len(z)
+    n_batch = int(np.ceil(n_z / batch_size))
+
     k_is = []  # type: Union[list, tuple]
-    for i in range(n_batch_x):
-        istart, istop = i * batch_size, min((i + 1) * batch_size, n_x)
+    for i in range(n_batch):
+        istart, istop = i * batch_size, min((i + 1) * batch_size, n_z)
         x_batch = x[istart:istop]
         if isinstance(preprocess_fn, Callable):  # type: ignore
             x_batch = preprocess_fn(x_batch)
         k_ijs = []
-        for j in range(n_batch_y):
-            jstart, jstop = j * batch_size, min((j + 1) * batch_size, n_y)
+        for j in range(n_batch):
+            jstart, jstop = j * batch_size, min((j + 1) * batch_size, n_z)
             y_batch = y[jstart:jstop]
             if isinstance(preprocess_fn, Callable):  # type: ignore
                 y_batch = preprocess_fn(y_batch)
