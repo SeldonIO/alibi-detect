@@ -77,18 +77,18 @@ def batch_compute_kernel_matrix(
         k_is = []  # type: Union[list, tuple]
         for i in range(n_batch):
             istart, istop = i * batch_size, min((i + 1) * batch_size, n_z)
-            x_batch = x[istart:istop]
+            i_batch = z[istart:istop]
             if isinstance(preprocess_fn, Callable):  # type: ignore
-                x_batch = preprocess_fn(x_batch)
-            x_batch = x_batch.to(device)
+                i_batch = preprocess_fn(i_batch)
+            i_batch = i_batch.to(device)
             k_ijs = []
             for j in range(n_batch):
                 jstart, jstop = j * batch_size, min((j + 1) * batch_size, n_z)
-                y_batch = y[jstart:jstop]
+                j_batch = z[jstart:jstop]
                 if isinstance(preprocess_fn, Callable):  # type: ignore
-                    y_batch = preprocess_fn(y_batch)
-                y_batch = y_batch.to(device)
-                k_ijs.append(kernel(x_batch, y_batch).cpu())  # type: ignore
+                    j_batch = preprocess_fn(j_batch)
+                j_batch = j_batch.to(device)
+                k_ijs.append(kernel(i_batch, j_batch).cpu())  # type: ignore
             k_is.append(torch.cat(k_ijs, axis=1))
         k_mat = torch.cat(k_is, axis=0)
     return k_mat
