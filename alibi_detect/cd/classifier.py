@@ -164,8 +164,8 @@ class ClassifierDrift:
         -------
         Dictionary containing 'meta' and 'data' dictionaries.
         'meta' has the model's metadata.
-        'data' contains the drift prediction and optionally the performance of the classifier
+        'data' contains the drift prediction and optionally the p-value, performance of the classifier
         relative to its expectation under the no-change null, the out-of-fold classifier model
-        prediction probabilities on the reference and test data.
+        prediction probabilities on the reference and test data, and the trained model.
         """
         return self._detector.predict(x, return_p_val, return_distance, return_probs, return_model)
