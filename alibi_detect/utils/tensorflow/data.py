@@ -4,23 +4,28 @@ from typing import Tuple, Union
 
 
 class TFDataset(tf.keras.utils.Sequence):
-    def __init__(self, x: Union[np.ndarray, list], y: np.ndarray, batch_size: int, shuffle: bool = True) -> None:
-        self.x = x
-        self.y = y
+    def __init__(
+        self,
+        *indexables:  Tuple[Union[np.ndarray, tf.Tensor, list], ...],
+        batch_size: int = int(1e10),
+        shuffle: bool = True,
+    ) -> None:
+        self.indexables = indexables
         self.batch_size = batch_size
         self.shuffle = shuffle
 
-    def __getitem__(self, idx: int) -> Tuple[Union[np.ndarray, tuple], np.ndarray]:
+    def __getitem__(self, idx: int) -> Tuple[Union[np.ndarray, tf.Tensor, list], ...]:
         istart, istop = idx * self.batch_size, (idx + 1) * self.batch_size
-        x = self.x[istart:istop]
-        y = self.y[istart:istop]
-        return x, y
+        output = tuple(indexable[istart:istop] for indexable in self.indexables)
+        return output if len(output) > 1 else output[0]
 
     def __len__(self) -> int:
-        return len(self.x) // self.batch_size
+        return len(self.indexables[0]) // self.batch_size
 
     def on_epoch_end(self) -> None:
         if self.shuffle:
-            perm = np.random.permutation(len(self.x))
-            self.x = [self.x[i] for i in perm] if isinstance(self.x, list) else self.x[perm]
-            self.y = self.y[perm]
+            perm = np.random.permutation(len(self.indexables[0]))
+            self.indexables = tuple(
+                [indexable[i] for i in perm] if isinstance(indexable, list) else indexable[perm]
+                for indexable in self.indexables
+            )

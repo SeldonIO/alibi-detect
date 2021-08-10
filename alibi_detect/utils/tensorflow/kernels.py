@@ -20,6 +20,7 @@ class GaussianRBF(tf.keras.Model):
             Whether or not to track gradients w.r.t. sigma to allow it to be trained.
         """
         super().__init__()
+        self.config = {'sigma': sigma, 'trainable': trainable}
         if sigma is None:
             self.log_sigma = tf.Variable(np.empty(1), dtype=tf.float32, trainable=trainable)
             self.init_required = True  # TODO: Is this right now?
@@ -53,6 +54,13 @@ class GaussianRBF(tf.keras.Model):
         kernel_mat = tf.exp(- tf.concat([(g * dist)[None, :, :] for g in gamma], axis=0))  # [Ns, Nx, Ny]
         return tf.reduce_mean(kernel_mat, axis=0)  # [Nx, Ny]
 
+    def get_config(self):  # not needed for sequential/functional API models
+        return self.config
+
+    @classmethod
+    def from_config(cls, config):  # not needed for sequential/functional API models
+        return cls(**config)
+
 
 class DeepKernel(tf.keras.Model):
     """"
@@ -66,7 +74,7 @@ class DeepKernel(tf.keras.Model):
         eps: Union[float, str] = 'trainable'
     ) -> None:
         super().__init__()
-
+        self.config = {'proj': proj, 'kernel_a': kernel_a, 'kernel_b': kernel_b, 'eps': eps}
         self.kernel_a = kernel_a
         self.kernel_b = kernel_b
         self.proj = proj
@@ -88,3 +96,10 @@ class DeepKernel(tf.keras.Model):
         return (
             (1-self.eps)*self.kernel_a(self.proj(x), self.proj(y)) + self.eps*self.kernel_b(x, y)
         )
+
+    def get_config(self):  # not needed for sequential/functional API models
+        return self.config
+
+    @classmethod
+    def from_config(cls, config):  # not needed for sequential/functional API models
+        return cls(**config)

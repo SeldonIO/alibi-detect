@@ -40,7 +40,8 @@ def batch_compute_kernel_matrix(
     preprocess_fn: Callable = None,
 ) -> torch.Tensor:
     """
-    Make batch predictions on a model.
+    Compute the kernel matrix between x and y by filling in blocks of size
+    batch_size x batch_size at a time.
 
     Parameters
     ----------
