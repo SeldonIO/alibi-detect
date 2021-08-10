@@ -4,15 +4,18 @@ from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
 
 if has_pytorch:
     from alibi_detect.cd.pytorch.spot_the_diff import SpotTheDiffDriftTorch
+    from alibi_detect.utils.pytorch.data import TorchDataset
+    from torch.utils.data import DataLoader
 
 if has_tensorflow:
     from alibi_detect.cd.tensorflow.spot_the_diff import SpotTheDiffDriftTF
+    from alibi_detect.utils.tensorflow.data import TFDataset
 
 
 class SpotTheDiffDrift:
     def __init__(
             self,
-            x_ref: np.ndarray,
+            x_ref: Union[np.ndarray, list],
             backend: str = 'tensorflow',
             p_val: float = .05,
             preprocess_x_ref: bool = True,
@@ -30,17 +33,20 @@ class SpotTheDiffDrift:
             optimizer: Optional[Callable] = None,
             learning_rate: float = 1e-3,
             batch_size: int = 32,
+            preprocess_batch_fn: Optional[Callable] = None,
             epochs: int = 3,
             verbose: int = 0,
             train_kwargs: Optional[dict] = None,
             device: Optional[str] = None,
+            dataset: Optional[Callable] = None,
+            dataloader: Optional[Callable] = None,
             data_type: Optional[str] = None
     ) -> None:
         """
         Classifier-based drift detector with a classifier of form y = a + b_1*k(x,w_1) + ... + b_J*k(x,w_J),
         where k is a kernel and w_1,...,w_J are learnable test locations. If drift has occured the test locations
         learn to be more/less (given by sign of b_i) simmilar to test instances than reference instances.
-        The test locations are regularised to be close to the average reference instance such that the difference
+        The test locations are regularised to be close to the average reference instance such that the **difference**
         is then interpretable as the transformation required to make the average instance more/less like a test instance
         than a reference instance.
 
@@ -94,6 +100,9 @@ class SpotTheDiffDrift:
             Learning rate used by optimizer.
         batch_size
             Batch size used during training of the classifier.
+        preprocess_batch_fn
+            Optional batch preprocessing function. For example to convert a list of objects to a batch which can be
+            processed by the model.
         epochs
             Number of training epochs for the classifier for each (optional) fold.
         verbose
@@ -103,6 +112,10 @@ class SpotTheDiffDrift:
         device
             Device type used. The default None tries to use the GPU and falls back on CPU if needed.
             Can be specified by passing either 'cuda', 'gpu' or 'cpu'. Only relevant for 'pytorch' backend.
+        dataset
+            Dataset object used during training.
+        dataloader
+            Dataloader object used during training. Only relevant for 'pytorch' backend.
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
@@ -123,9 +136,16 @@ class SpotTheDiffDrift:
         [kwargs.pop(k, None) for k in pop_kwargs]
 
         if backend == 'tensorflow' and has_tensorflow:
-            kwargs.pop('device', None)
+            pop_kwargs = ['device', 'dataloader']
+            [kwargs.pop(k, None) for k in pop_kwargs]
+            if dataset is None:
+                kwargs.update({'dataset': TFDataset})
             self._detector = SpotTheDiffDriftTF(*args, **kwargs)  # type: ignore
         else:
+            if dataset is None:
+                kwargs.update({'dataset': TorchDataset})
+            if dataloader is None:
+                kwargs.update({'dataloader': DataLoader})
             self._detector = SpotTheDiffDriftTorch(*args, **kwargs)  # type: ignore
         self.meta = self._detector.meta
 
@@ -154,9 +174,10 @@ class SpotTheDiffDrift:
         Returns
         -------
         Dictionary containing 'meta' and 'data' dictionaries.
-        'meta' has the model's metadata.
+        'meta' has the detector's metadata.
         'data' contains the drift prediction, the diffs used to distinguish reference from test instances,
-        and optionally the p-value and performance of the classifier relative to its expectation under the 
-        no-change null.
+        and optionally the p-value, performance of the classifier relative to its expectation under the
+        no-change null, the out-of-fold classifier model prediction probabilities on the reference and test
+        data, and the trained model.
         """
         return self._detector.predict(x, return_p_val, return_distance, return_probs, return_model)
