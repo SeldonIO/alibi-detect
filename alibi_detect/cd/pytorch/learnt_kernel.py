@@ -136,7 +136,7 @@ class LearntKernelDriftTorch(BaseLearntKernelDrift):
         if isinstance(train_kwargs, dict):
             self.train_kwargs.update(train_kwargs)
 
-        self.j_hat = LearntKernelDriftTorch.JHat(kernel, var_reg).to(self.device)
+        self.j_hat = LearntKernelDriftTorch.JHat(self.kernel, var_reg).to(self.device)
 
     class JHat(nn.Module):
         """

@@ -115,7 +115,7 @@ class LearntKernelDriftTF(BaseLearntKernelDrift):
         if isinstance(train_kwargs, dict):
             self.train_kwargs.update(train_kwargs)
 
-        self.j_hat = LearntKernelDriftTF.JHat(kernel, var_reg)
+        self.j_hat = LearntKernelDriftTF.JHat(self.kernel, var_reg)
 
     class JHat(tf.keras.Model):
         """
