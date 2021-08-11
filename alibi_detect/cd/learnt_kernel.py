@@ -128,7 +128,6 @@ class LearntKernelDrift:
         else:
             if dataset is None:
                 kwargs.update({'dataset': TorchDataset})
-                # kwargs.update({'dataset': TensorDataset})  # TODO: Ok?
             if dataloader is None:
                 kwargs.update({'dataloader': DataLoader})
             self._detector = LearntKernelDriftTorch(*args, **kwargs)  # type: ignore
