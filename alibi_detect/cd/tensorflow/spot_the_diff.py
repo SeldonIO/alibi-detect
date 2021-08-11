@@ -158,12 +158,12 @@ class SpotTheDiffDriftTF:
             logits = self.bias + k_xtl @ self.coeffs[:, None]
             return tf.concat([-logits, logits], axis=-1)
 
-    def get_config(self) -> dict:
-        return self.config
+        def get_config(self) -> dict:
+            return self.config
 
-    @classmethod
-    def from_config(cls, config) -> SpotTheDiffDriftTF:
-        return cls(**config)
+        @classmethod
+        def from_config(cls, config) -> SpotTheDiffDriftTF:
+            return cls(**config)
 
     def predict(
         self, x: np.ndarray,  return_p_val: bool = True, return_distance: bool = True,
