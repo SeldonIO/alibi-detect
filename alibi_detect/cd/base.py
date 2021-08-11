@@ -265,7 +265,7 @@ class BaseClassifierDrift(BaseDetector):
         return cd
 
 
-class BaseLearntKernelDrift(BaseDetector):
+class BaseLearnedKernelDrift(BaseDetector):
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
@@ -279,7 +279,7 @@ class BaseLearntKernelDrift(BaseDetector):
             data_type: Optional[str] = None
     ) -> None:
         """
-        Base class for the learnt kernel-based drift detector.
+        Base class for the learned kernel-based drift detector.
 
         Parameters
         ----------

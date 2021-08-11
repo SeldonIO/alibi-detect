@@ -4,15 +4,15 @@ from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
 
 if has_pytorch:
     from torch.utils.data import DataLoader
-    from alibi_detect.cd.pytorch.learnt_kernel import LearntKernelDriftTorch
+    from alibi_detect.cd.pytorch.learned_kernel import LearnedKernelDriftTorch
     from alibi_detect.utils.pytorch.data import TorchDataset
 
 if has_tensorflow:
-    from alibi_detect.cd.tensorflow.learnt_kernel import LearntKernelDriftTF
+    from alibi_detect.cd.tensorflow.learned_kernel import LearnedKernelDriftTF
     from alibi_detect.utils.tensorflow.data import TFDataset
 
 
-class LearntKernelDrift:
+class LearnedKernelDrift:
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
@@ -108,7 +108,7 @@ class LearntKernelDrift:
         backend = backend.lower()
         if backend == 'tensorflow' and not has_tensorflow or backend == 'pytorch' and not has_pytorch:
             raise ImportError(f'{backend} not installed. Cannot initialize and run the '
-                              f'LearntKernel detector with {backend} backend.')
+                              f'LearnedKernel detector with {backend} backend.')
         elif backend not in ['tensorflow', 'pytorch']:
             raise NotImplementedError(f'{backend} not implemented. Use tensorflow or pytorch instead.')
 
@@ -124,13 +124,13 @@ class LearntKernelDrift:
             [kwargs.pop(k, None) for k in pop_kwargs]
             if dataset is None:
                 kwargs.update({'dataset': TFDataset})
-            self._detector = LearntKernelDriftTF(*args, **kwargs)  # type: ignore
+            self._detector = LearnedKernelDriftTF(*args, **kwargs)  # type: ignore
         else:
             if dataset is None:
                 kwargs.update({'dataset': TorchDataset})
             if dataloader is None:
                 kwargs.update({'dataloader': DataLoader})
-            self._detector = LearntKernelDriftTorch(*args, **kwargs)  # type: ignore
+            self._detector = LearnedKernelDriftTorch(*args, **kwargs)  # type: ignore
         self.meta = self._detector.meta
 
     def predict(self, x: Union[np.ndarray, list],  return_p_val: bool = True,

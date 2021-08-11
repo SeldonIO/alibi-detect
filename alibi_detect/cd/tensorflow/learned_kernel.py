@@ -2,13 +2,13 @@ from functools import partial
 import numpy as np
 import tensorflow as tf
 from typing import Callable, Dict, Optional, Tuple
-from alibi_detect.cd.base import BaseLearntKernelDrift
+from alibi_detect.cd.base import BaseLearnedKernelDrift
 from alibi_detect.utils.tensorflow.data import TFDataset
 from alibi_detect.utils.tensorflow.misc import clone_model
 from alibi_detect.utils.tensorflow.distance import mmd2_from_kernel_matrix, batch_compute_kernel_matrix
 
 
-class LearntKernelDriftTF(BaseLearntKernelDrift):
+class LearnedKernelDriftTF(BaseLearnedKernelDrift):
     def __init__(
             self,
             x_ref: np.ndarray,
@@ -115,7 +115,7 @@ class LearntKernelDriftTF(BaseLearntKernelDrift):
         if isinstance(train_kwargs, dict):
             self.train_kwargs.update(train_kwargs)
 
-        self.j_hat = LearntKernelDriftTF.JHat(self.kernel, var_reg)
+        self.j_hat = LearnedKernelDriftTF.JHat(self.kernel, var_reg)
 
     class JHat(tf.keras.Model):
         """
@@ -163,7 +163,7 @@ class LearntKernelDriftTF(BaseLearntKernelDrift):
         
         self.kernel = clone_model(self.original_kernel) if self.retrain_from_scratch else self.kernel
         train_args = [self.j_hat, (ds_ref_tr, ds_cur_tr)]
-        LearntKernelDriftTF.trainer(*train_args, **self.train_kwargs)  # type: ignore
+        LearnedKernelDriftTF.trainer(*train_args, **self.train_kwargs)  # type: ignore
 
         kernel_mat = self.kernel_mat_fn(x_ref_te, x_cur_te, self.kernel)
         kernel_mat = kernel_mat - tf.linalg.diag(tf.linalg.diag_part(kernel_mat))  # zero diagonal

@@ -7,14 +7,14 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from typing import Callable, Dict, Optional, Union, Tuple
-from alibi_detect.cd.base import BaseLearntKernelDrift
+from alibi_detect.cd.base import BaseLearnedKernelDrift
 from alibi_detect.utils.pytorch.distance import mmd2_from_kernel_matrix, batch_compute_kernel_matrix
 from alibi_detect.utils.pytorch.data import TorchDataset
 
 logger = logging.getLogger(__name__)
 
 
-class LearntKernelDriftTorch(BaseLearntKernelDrift):
+class LearnedKernelDriftTorch(BaseLearnedKernelDrift):
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
@@ -136,7 +136,7 @@ class LearntKernelDriftTorch(BaseLearntKernelDrift):
         if isinstance(train_kwargs, dict):
             self.train_kwargs.update(train_kwargs)
 
-        self.j_hat = LearntKernelDriftTorch.JHat(self.kernel, var_reg).to(self.device)
+        self.j_hat = LearnedKernelDriftTorch.JHat(self.kernel, var_reg).to(self.device)
 
     class JHat(nn.Module):
         """
@@ -183,7 +183,7 @@ class LearntKernelDriftTorch(BaseLearntKernelDrift):
         self.kernel = deepcopy(self.original_kernel) if self.retrain_from_scratch else self.kernel
         self.kernel = self.kernel.to(self.device)
         train_args = [self.j_hat, (dl_ref_tr, dl_cur_tr), self.device]
-        LearntKernelDriftTorch.trainer(*train_args, **self.train_kwargs)  # type: ignore
+        LearnedKernelDriftTorch.trainer(*train_args, **self.train_kwargs)  # type: ignore
 
         kernel_mat = self.kernel_mat_fn(x_ref_te, x_cur_te, self.kernel)
         kernel_mat = kernel_mat - torch.diag(kernel_mat.diag())  # zero diagonal
