@@ -6,6 +6,7 @@ from typing import Callable, Dict, Optional, Union
 from alibi_detect.cd.pytorch.classifier import ClassifierDriftTorch
 from alibi_detect.utils.pytorch.data import TorchDataset
 from alibi_detect.utils.pytorch import GaussianRBF
+from alibi_detect.utils.pytorch.prediction import predict_batch
 
 
 class SpotTheDiffDriftTorch:
@@ -54,12 +55,6 @@ class SpotTheDiffDriftTorch:
             Data used as reference distribution.
         p_val
             p-value used for the significance of the test.
-        preprocess_x_ref
-            Whether to already preprocess and store the reference data.
-        update_x_ref
-            Reference data can optionally be updated to the last n instances seen by the detector
-            or via reservoir sampling with size n. For the former, the parameter equals {'last': n} while
-            for reservoir sampling {'reservoir_sampling': n} is passed.
         preprocess_fn
             Function to preprocess the data before computing the data drift metrics.
         kernel
@@ -112,24 +107,36 @@ class SpotTheDiffDriftTorch:
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
+        if preprocess_fn is not None and preprocess_batch_fn is not None:
+            raise ValueError("SpotTheDiffDrift detector only supports preprocess_fn or preprocess_batch_fn, not both.")
+
+        if preprocess_fn is not None:
+            x_ref_proc = preprocess_fn(x_ref)
+        elif preprocess_batch_fn is not None:
+            x_ref_proc = predict_batch(
+                x_ref, lambda x: x, preprocess_fn=preprocess_batch_fn,
+                device=torch.device('cpu'), batch_size=batch_size
+            )
+        else:
+            x_ref_proc = x_ref
 
         if kernel is None:
             kernel = GaussianRBF(trainable=True)
         if initial_diffs is None:
-            initial_diffs = np.random.normal(size=(n_diffs,) + x_ref.shape[1:]) * x_ref.std(0)
+            initial_diffs = np.random.normal(size=(n_diffs,) + x_ref_proc.shape[1:]) * x_ref_proc.std(0)
         else:
             if len(initial_diffs) != n_diffs:
                 raise ValueError("Should have initial_diffs.shape[0] == n_diffs")
 
-        model = SpotTheDiffDriftTorch.InterpretableClf(kernel, x_ref, initial_diffs)
+        model = SpotTheDiffDriftTorch.InterpretableClf(kernel, x_ref_proc, initial_diffs)
         reg_loss_fn = (lambda model: model.diffs.abs().mean() * l1_reg)
 
         self._detector = ClassifierDriftTorch(
             x_ref=x_ref,
             model=model,
             p_val=p_val,
-            preprocess_x_ref=preprocess_x_ref,
-            update_x_ref=update_x_ref,
+            preprocess_x_ref=True,
+            update_x_ref=False,
             preprocess_fn=preprocess_fn,
             preds_type='logits',
             binarize_preds=binarize_preds,
