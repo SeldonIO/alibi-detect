@@ -1,3 +1,4 @@
+from __future__ import annotations
 import numpy as np
 import tensorflow as tf
 from typing import Callable, Dict, Optional, Union
@@ -157,12 +158,12 @@ class SpotTheDiffDriftTF:
             logits = self.bias + k_xtl @ self.coeffs[:, None]
             return tf.concat([-logits, logits], axis=-1)
 
-        def get_config(self):
-            return self.config
+    def get_config(self) -> dict:
+        return self.config
 
-        @classmethod
-        def from_config(cls, config):
-            return cls(**config)
+    @classmethod
+    def from_config(cls, config) -> SpotTheDiffDriftTF:
+        return cls(**config)
 
     def predict(
         self, x: np.ndarray,  return_p_val: bool = True, return_distance: bool = True,

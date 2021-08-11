@@ -1,8 +1,10 @@
+from __future__ import annotations
 import tensorflow as tf
 import numpy as np
 from . import distance
 from typing import Optional, Union
 from scipy.special import logit
+
 
 class GaussianRBF(tf.keras.Model):
     def __init__(self, sigma: Optional[tf.Tensor] = None, trainable: bool = False) -> None:
@@ -36,7 +38,7 @@ class GaussianRBF(tf.keras.Model):
 
     def call(self, x: tf.Tensor, y: tf.Tensor, infer_sigma: bool = False) -> tf.Tensor:
 
-        x, y = tf.reshape(x, (x.shape[0], -1)), tf.reshape(y, (y.shape[0], -1)) # flatten
+        x, y = tf.reshape(x, (x.shape[0], -1)), tf.reshape(y, (y.shape[0], -1))  # flatten
         dist = distance.squared_pairwise_distance(x, y)  # [Nx, Ny]
 
         if infer_sigma or self.init_required:
@@ -54,11 +56,11 @@ class GaussianRBF(tf.keras.Model):
         kernel_mat = tf.exp(- tf.concat([(g * dist)[None, :, :] for g in gamma], axis=0))  # [Ns, Nx, Ny]
         return tf.reduce_mean(kernel_mat, axis=0)  # [Nx, Ny]
 
-    def get_config(self):  # not needed for sequential/functional API models
+    def get_config(self) -> dict:
         return self.config
 
     @classmethod
-    def from_config(cls, config):  # not needed for sequential/functional API models
+    def from_config(cls, config) -> GaussianRBF:
         return cls(**config)
 
 
@@ -92,14 +94,14 @@ class DeepKernel(tf.keras.Model):
     def eps(self) -> tf.Tensor:
         return tf.math.sigmoid(self.logit_eps)
 
-    def call(self, x: tf.Tensor, y: tf.Tensor):
+    def call(self, x: tf.Tensor, y: tf.Tensor) -> tf.Tensor:
         return (
             (1-self.eps)*self.kernel_a(self.proj(x), self.proj(y)) + self.eps*self.kernel_b(x, y)
         )
 
-    def get_config(self):  # not needed for sequential/functional API models
+    def get_config(self) -> dict:
         return self.config
 
     @classmethod
-    def from_config(cls, config):  # not needed for sequential/functional API models
+    def from_config(cls, config) -> DeepKernel:
         return cls(**config)

@@ -7,9 +7,10 @@ from typing import Optional, Union
 
 class GaussianRBF(nn.Module):
     def __init__(
-        self, 
+        self,
         sigma: Optional[torch.Tensor] = None,
-        trainable: bool = False) -> None:
+        trainable: bool = False
+    ) -> None:
         """
         Gaussian RBF kernel: k(x,y) = exp(-(1/(2*sigma^2)||x-y||^2). A forward pass takes
         a batch of instances x [Nx, features] and y [Ny, features] and returns the kernel
@@ -87,7 +88,7 @@ class DeepKernel(nn.Module):
     def eps(self) -> torch.Tensor:
         return self.logit_eps.sigmoid()
 
-    def forward(self, x: torch.Tensor, y: torch.Tensor):
+    def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         return (
             (1-self.eps)*self.kernel_a(self.proj(x), self.proj(y)) + self.eps*self.kernel_b(x, y)
         )
