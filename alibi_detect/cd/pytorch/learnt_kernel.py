@@ -153,8 +153,9 @@ class LearntKernelDriftTorch(BaseLearntKernelDrift):
             k_xx, k_yy, k_xy = self.kernel(x, x), self.kernel(y, y), self.kernel(x, y)
             h_mat = k_xx + k_yy - k_xy - k_xy.t()
 
-            mmd2_est = (h_mat.sum()-h_mat.trace())/(len(x)*(len(x)-1))
-            var_est = 4*h_mat.sum(-1).square().sum()/(len(x)**3) - 4*h_mat.sum().square()/(len(x)**4)
+            n = len(x)
+            mmd2_est = (h_mat.sum()-h_mat.trace())/(n*(n-1))
+            var_est = 4*h_mat.sum(-1).square().sum()/(n**3) - 4*h_mat.sum().square()/(n**4)
             reg_var_est = var_est + self.var_reg
 
             return mmd2_est/reg_var_est.sqrt()

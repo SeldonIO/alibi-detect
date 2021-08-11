@@ -133,9 +133,10 @@ class LearntKernelDriftTF(BaseLearntKernelDrift):
             k_xx, k_yy, k_xy = self.kernel(x, x), self.kernel(y, y), self.kernel(x, y)
             h_mat = k_xx + k_yy - k_xy - tf.transpose(k_xy)
 
-            mmd2_est = (tf.reduce_sum(h_mat)-tf.linalg.trace(h_mat))/(len(x)*(len(x)-1))
-            var_est = (4*tf.reduce_sum(tf.reduce_sum(h_mat, axis=-1)**2)/(len(x)**3) -
-                       4*tf.reduce_sum(h_mat)**2/(len(x)**4))
+            n = len(x)
+            mmd2_est = (tf.reduce_sum(h_mat)-tf.linalg.trace(h_mat))/(n*(n-1))
+            var_est = (4*tf.reduce_sum(tf.reduce_sum(h_mat, axis=-1)**2)/(n**3) -
+                       4*tf.reduce_sum(h_mat)**2/(n**4))
             reg_var_est = var_est + self.var_reg
 
             return mmd2_est/tf.math.sqrt(reg_var_est)
