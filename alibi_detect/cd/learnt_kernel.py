@@ -53,7 +53,7 @@ class LearntKernelDrift:
         x_ref
             Data used as reference distribution.
         kernel
-            Trainable PyTorch or TensorFlow module that returns a simmilarity between two instances.
+            Trainable PyTorch or TensorFlow module that returns a similarity between two instances.
         backend
             Backend used by the kernel and training loop.
         p_val

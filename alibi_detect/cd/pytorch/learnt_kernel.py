@@ -54,7 +54,7 @@ class LearntKernelDriftTorch(BaseLearntKernelDrift):
         x_ref
             Data used as reference distribution.
         kernel
-            Trainable PyTorch module that returns a simmilarity between two instances.
+            Trainable PyTorch module that returns a similarity between two instances.
         p_val
             p-value used for the significance of the test.
         preprocess_x_ref

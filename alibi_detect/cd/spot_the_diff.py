@@ -45,7 +45,7 @@ class SpotTheDiffDrift:
         """
         Classifier-based drift detector with a classifier of form y = a + b_1*k(x,w_1) + ... + b_J*k(x,w_J),
         where k is a kernel and w_1,...,w_J are learnable test locations. If drift has occured the test locations
-        learn to be more/less (given by sign of b_i) simmilar to test instances than reference instances.
+        learn to be more/less (given by sign of b_i) similar to test instances than reference instances.
         The test locations are regularised to be close to the average reference instance such that the **difference**
         is then interpretable as the transformation required to make the average instance more/less like a test instance
         than a reference instance.
@@ -70,7 +70,7 @@ class SpotTheDiffDrift:
         preprocess_fn
             Function to preprocess the data before computing the data drift metrics.
         kernel
-            Kernel used to define simmilarity between instances, defaults to Gaussian RBF
+            Kernel used to define similarity between instances, defaults to Gaussian RBF
         n_diffs
             The number of test locations to use, each corresponding to an interpretable difference.
         initial_diffs

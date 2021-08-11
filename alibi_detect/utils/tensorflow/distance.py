@@ -182,13 +182,13 @@ def permed_lsdds(
     Parameters
     ----------
     k_all_c
-        Kernel matrix of simmilarities between all samples and the kernel centers.
+        Kernel matrix of similarities between all samples and the kernel centers.
     x_perms
         List of B reference window index vectors
     y_perms
         List of B test window index vectors
     H
-        Special (scaled) kernel matrix of simmilarities between kernel centers
+        Special (scaled) kernel matrix of similarities between kernel centers
     H_lam_inv
         Function of H corresponding to a particular regulariation parameter lambda.
         See Eqn 11 of Bu et al. (2017)

@@ -61,7 +61,7 @@ class GaussianRBF(nn.Module):
 
 class DeepKernel(nn.Module):
     """"
-    Computes simmilarities as k(x,y) = (1-eps)*k_a(proj(x), proj(y)) + eps*k_b(x,y)
+    Computes similarities as k(x,y) = (1-eps)*k_a(proj(x), proj(y)) + eps*k_b(x,y)
     """
     def __init__(
         self,
