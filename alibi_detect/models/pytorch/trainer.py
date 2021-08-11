@@ -36,6 +36,8 @@ def trainer(
         Preprocessing function applied to each training batch.
     epochs
         Number of training epochs.
+    reg_loss_fn
+        The regularisation term reg_loss_fn(model) is added to the loss function being optimized.
     verbose
         Whether to print training progress.
     """
