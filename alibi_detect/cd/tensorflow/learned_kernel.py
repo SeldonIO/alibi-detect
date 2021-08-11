@@ -106,7 +106,7 @@ class LearnedKernelDriftTF(BaseLearnedKernelDrift):
         self.original_kernel = kernel
         self.kernel = clone_model(kernel)
 
-        self.dataset = partial(dataset, batch_size=batch_size, shuffle=True, drop_last=True)
+        self.dataset = partial(dataset, batch_size=batch_size, shuffle=True)
         self.kernel_mat_fn = partial(
             batch_compute_kernel_matrix, preprocess_fn=preprocess_batch_fn, batch_size=batch_size
         )
