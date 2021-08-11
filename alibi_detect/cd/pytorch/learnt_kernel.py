@@ -221,9 +221,9 @@ class LearntKernelDriftTorch(BaseLearntKernelDrift):
             dl = tqdm(enumerate(zip(dl_ref, dl_cur)), total=min(len(dl_ref), len(dl_cur))) if verbose == 1 else \
                 enumerate(zip(dl_ref, dl_cur))
             for step, (x_ref, x_cur) in dl:
-                x_ref, x_cur = x_ref.to(device), x_cur.to(device)
                 if isinstance(preprocess_fn, Callable):  # type: ignore
                     x_ref, x_cur = preprocess_fn(x_ref), preprocess_fn(x_cur)
+                x_ref, x_cur = x_ref.to(device), x_cur.to(device)
                 optimizer.zero_grad()  # type: ignore
                 estimate = j_hat(x_ref, x_cur)
                 loss = -estimate + reg_loss_fn(j_hat.kernel)  # ascent
