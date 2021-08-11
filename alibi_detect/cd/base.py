@@ -348,8 +348,9 @@ class BaseLearntKernelDrift(BaseDetector):
         else:
             return self.x_ref, x
 
-    def get_splits(self, x_ref: np.ndarray, x: np.ndarray) \
-            -> Tuple[np.ndarray, np.ndarray, List[Tuple[np.ndarray, np.ndarray]]]:
+    def get_splits(self, x_ref: Union[np.ndarray, list], x: Union[np.ndarray, list]) \
+            -> Tuple[Tuple[Union[np.ndarray, list], Union[np.ndarray, list]],
+                     Tuple[Union[np.ndarray, list], Union[np.ndarray, list]]]:
         """
         Split reference and test data into two splits -- one of which to learn test locations
         and parameters and one to use for tests.
