@@ -110,7 +110,7 @@ class LearnedKernelDriftTF(BaseLearnedKernelDrift):
         self.kernel_mat_fn = partial(
             batch_compute_kernel_matrix, preprocess_fn=preprocess_batch_fn, batch_size=batch_size
         )
-        self.train_kwargs = {'optimizer': optimizer(learning_rate=learning_rate), 'epochs': epochs,
+        self.train_kwargs = {'optimizer': optimizer, 'epochs': epochs, 'learning_rate': learning_rate,
                              'reg_loss_fn': reg_loss_fn, 'preprocess_fn': preprocess_batch_fn, 'verbose': verbose}
         if isinstance(train_kwargs, dict):
             self.train_kwargs.update(train_kwargs)
@@ -180,6 +180,7 @@ class LearnedKernelDriftTF(BaseLearnedKernelDrift):
         j_hat: JHat,
         datasets: Tuple[tf.keras.utils.Sequence, tf.keras.utils.Sequence],
         optimizer: tf.keras.optimizers = tf.keras.optimizers.Adam,
+        learning_rate: float = 1e-3,
         preprocess_fn: Callable = None,
         epochs: int = 20,
         reg_loss_fn: Callable = (lambda kernel: 0),
@@ -189,6 +190,7 @@ class LearnedKernelDriftTF(BaseLearnedKernelDrift):
         Train the kernel to maximise an estimate of test power using minibatch gradient descent.
         """
         ds_ref, ds_cur = datasets
+        optimizer = optimizer(learning_rate)
         n_minibatch = min(len(ds_ref), len(ds_cur))
         # iterate over epochs
         loss_ma = 0.
