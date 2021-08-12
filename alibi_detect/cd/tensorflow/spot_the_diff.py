@@ -145,10 +145,10 @@ class SpotTheDiffDriftTF:
             data_type=data_type
         )
         self.meta = self._detector.meta
-        self.meta['name'] = 'SpotTheDiffDrift'
-        self.meta['n_diffs'] = n_diffs
-        self.meta['l1_reg'] = l1_reg
-        self.meta['initial_diffs'] = initial_diffs
+        self.meta['params']['name'] = 'SpotTheDiffDrift'
+        self.meta['params']['n_diffs'] = n_diffs
+        self.meta['params']['l1_reg'] = l1_reg
+        self.meta['params']['initial_diffs'] = initial_diffs
 
     class InterpretableClf(tf.keras.Model):
         def __init__(self, kernel: tf.keras.Model, x_ref: np.ndarray, initial_diffs: np.ndarray):
