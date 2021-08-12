@@ -13,8 +13,6 @@ class SpotTheDiffDriftTF:
             self,
             x_ref: np.ndarray,
             p_val: float = .05,
-            preprocess_x_ref: bool = True,
-            update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
             kernel: Optional[tf.keras.Model] = None,
             n_diffs: int = 1,
