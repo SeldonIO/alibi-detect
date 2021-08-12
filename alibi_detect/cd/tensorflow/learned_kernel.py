@@ -1,7 +1,7 @@
 from functools import partial
 import numpy as np
 import tensorflow as tf
-from typing import Callable, Dict, Optional, Tuple
+from typing import Callable, Dict, Optional, Tuple, Union
 from alibi_detect.cd.base import BaseLearnedKernelDrift
 from alibi_detect.utils.tensorflow.data import TFDataset
 from alibi_detect.utils.tensorflow.misc import clone_model
@@ -11,7 +11,7 @@ from alibi_detect.utils.tensorflow.distance import mmd2_from_kernel_matrix, batc
 class LearnedKernelDriftTF(BaseLearnedKernelDrift):
     def __init__(
             self,
-            x_ref: np.ndarray,
+            x_ref: Union[np.ndarray, list],
             kernel: tf.keras.Model,
             p_val: float = .05,
             preprocess_x_ref: bool = True,
@@ -19,7 +19,7 @@ class LearnedKernelDriftTF(BaseLearnedKernelDrift):
             preprocess_fn: Optional[Callable] = None,
             n_permutations: int = 100,
             var_reg: float = 1e-5,
-            reg_loss_fn: Callable = (lambda model: 0),
+            reg_loss_fn: Callable = (lambda kernel: 0),
             train_size: Optional[float] = .75,
             retrain_from_scratch: bool = True,
             optimizer: tf.keras.optimizers = tf.keras.optimizers.Adam,
@@ -141,7 +141,7 @@ class LearnedKernelDriftTF(BaseLearnedKernelDrift):
 
             return mmd2_est/tf.math.sqrt(reg_var_est)
 
-    def score(self, x: np.ndarray) -> Tuple[float, float, np.ndarray]:
+    def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, np.ndarray]:
         """
         Compute the p-value resulting from a permutation test using the maximum mean discrepancy
         as a distance measure between the reference data and the data to be tested. The kernel
