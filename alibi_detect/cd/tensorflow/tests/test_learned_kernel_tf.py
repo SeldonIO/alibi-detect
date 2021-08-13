@@ -1,4 +1,3 @@
-from __future__ import annotations  # type: ignore # noqa: F407
 from itertools import product
 import numpy as np
 import pytest
@@ -23,7 +22,7 @@ class MyKernel(tf.keras.Model):  # TODO: Support then test models using keras fu
         return self.config
 
     @classmethod
-    def from_config(cls, config) -> MyKernel:
+    def from_config(cls, config):
         return cls(**config)
 
 

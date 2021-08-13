@@ -1,4 +1,3 @@
-from __future__ import annotations  # type: ignore # noqa: F407
 import logging
 import numpy as np
 import tensorflow as tf
@@ -174,7 +173,7 @@ class SpotTheDiffDriftTF:
             return self.config
 
         @classmethod
-        def from_config(cls, config) -> SpotTheDiffDriftTF:  # type: ignore
+        def from_config(cls, config):
             return cls(**config)
 
     def predict(

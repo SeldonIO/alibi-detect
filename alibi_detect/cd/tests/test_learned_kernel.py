@@ -1,4 +1,3 @@
-from __future__ import annotations  # type: ignore # noqa: F407
 import numpy as np
 import pytest
 import tensorflow as tf
@@ -25,7 +24,7 @@ class MyKernelTF(tf.keras.Model):  # TODO: Support then test models using keras 
         return self.config
 
     @classmethod
-    def from_config(cls, config) -> MyKernelTF:
+    def from_config(cls, config):
         return cls(**config)
 
 

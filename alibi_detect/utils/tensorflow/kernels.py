@@ -1,4 +1,3 @@
-from __future__ import annotations  # type: ignore # noqa: F407
 import tensorflow as tf
 import numpy as np
 from . import distance
@@ -60,7 +59,7 @@ class GaussianRBF(tf.keras.Model):
         return self.config
 
     @classmethod
-    def from_config(cls, config) -> GaussianRBF:  # type: ignore
+    def from_config(cls, config):
         return cls(**config)
 
 
@@ -118,5 +117,5 @@ class DeepKernel(tf.keras.Model):
         return self.config
 
     @classmethod
-    def from_config(cls, config) -> DeepKernel:  # type: ignore
+    def from_config(cls, config):
         return cls(**config)
