@@ -174,7 +174,7 @@ class SpotTheDiffDriftTF:
             return self.config
 
         @classmethod
-        def from_config(cls, config) -> SpotTheDiffDriftTF:
+        def from_config(cls, config) -> SpotTheDiffDriftTF:  # type: ignore
             return cls(**config)
 
     def predict(

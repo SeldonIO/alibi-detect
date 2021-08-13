@@ -60,7 +60,7 @@ class GaussianRBF(tf.keras.Model):
         return self.config
 
     @classmethod
-    def from_config(cls, config) -> GaussianRBF:
+    def from_config(cls, config) -> GaussianRBF:  # type: ignore
         return cls(**config)
 
 
@@ -118,5 +118,5 @@ class DeepKernel(tf.keras.Model):
         return self.config
 
     @classmethod
-    def from_config(cls, config) -> DeepKernel:
+    def from_config(cls, config) -> DeepKernel:  # type: ignore
         return cls(**config)

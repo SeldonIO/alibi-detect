@@ -23,7 +23,7 @@ class MyKernel(tf.keras.Model):  # TODO: Support then test models using keras fu
         return self.config
 
     @classmethod
-    def from_config(cls, config) -> MyKernel:
+    def from_config(cls, config) -> MyKernel:  # type: ignore
         return cls(**config)
 
 
