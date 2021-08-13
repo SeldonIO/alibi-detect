@@ -185,7 +185,8 @@ class LearnedKernelDriftTorch(BaseLearnedKernelDrift):
         train_args = [self.j_hat, (dl_ref_tr, dl_cur_tr), self.device]
         LearnedKernelDriftTorch.trainer(*train_args, **self.train_kwargs)  # type: ignore
 
-        kernel_mat = self.kernel_mat_fn(x_ref_te, x_cur_te, self.kernel)
+        x_all = np.concatenate([x_ref_te, x_cur_te], axis=0)
+        kernel_mat = self.kernel_mat_fn(x_all, x_all, self.kernel)
         kernel_mat = kernel_mat - torch.diag(kernel_mat.diag())  # zero diagonal
         mmd2 = mmd2_from_kernel_matrix(kernel_mat, len(x_cur_te), permute=False, zero_diag=False)
         mmd2_permuted = torch.Tensor(

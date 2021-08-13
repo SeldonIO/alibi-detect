@@ -160,12 +160,13 @@ class LearnedKernelDriftTF(BaseLearnedKernelDrift):
         x_ref, x_cur = self.preprocess(x)
         (x_ref_tr, x_cur_tr), (x_ref_te, x_cur_te) = self.get_splits(x_ref, x_cur)
         ds_ref_tr, ds_cur_tr = self.dataset(x_ref_tr), self.dataset(x_cur_tr)
-        
+
         self.kernel = clone_model(self.original_kernel) if self.retrain_from_scratch else self.kernel
         train_args = [self.j_hat, (ds_ref_tr, ds_cur_tr)]
         LearnedKernelDriftTF.trainer(*train_args, **self.train_kwargs)  # type: ignore
 
-        kernel_mat = self.kernel_mat_fn(x_ref_te, x_cur_te, self.kernel)
+        x_all = np.concatenate([x_ref_te, x_cur_te], axis=0)
+        kernel_mat = self.kernel_mat_fn(x_all, x_all, self.kernel)
         kernel_mat = kernel_mat - tf.linalg.diag(tf.linalg.diag_part(kernel_mat))  # zero diagonal
         mmd2 = mmd2_from_kernel_matrix(kernel_mat, len(x_cur_te), permute=False, zero_diag=False).numpy()
         mmd2_permuted = np.array(
