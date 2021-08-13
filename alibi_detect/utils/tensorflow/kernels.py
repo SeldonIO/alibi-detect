@@ -24,10 +24,10 @@ class GaussianRBF(tf.keras.Model):
         super().__init__()
         self.config = {'sigma': sigma, 'trainable': trainable}
         if sigma is None:
-            self.log_sigma = tf.Variable(np.empty(1), dtype=tf.float32, trainable=trainable)
+            self.log_sigma = tf.Variable(np.empty(1), dtype=tf.keras.backend.floatx(), trainable=trainable)
             self.init_required = True
         else:
-            sigma = tf.reshape(sigma, (-1,))  # [Ns,]
+            sigma = tf.cast(tf.reshape(sigma, (-1,)), dtype=tf.keras.backend.floatx())  # [Ns,]
             self.log_sigma = tf.Variable(tf.math.log(sigma), trainable=trainable)
             self.init_required = False
         self.trainable = trainable
@@ -51,7 +51,7 @@ class GaussianRBF(tf.keras.Model):
             self.log_sigma.assign(tf.math.log(sigma))
             self.init_required = False
 
-        gamma = 1. / (2. * self.sigma ** 2)   # [Ns,]
+        gamma = tf.constant(1. / (2. * self.sigma ** 2), dtype=x.dtype)   # [Ns,]
         # TODO: do matrix multiplication after all?
         kernel_mat = tf.exp(- tf.concat([(g * dist)[None, :, :] for g in gamma], axis=0))  # [Ns, Nx, Ny]
         return tf.reduce_mean(kernel_mat, axis=0)  # [Nx, Ny]
