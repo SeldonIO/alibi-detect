@@ -1,4 +1,4 @@
-from __future__ import annotations
+from __future__ import annotations  # noqa: F407
 import logging
 import numpy as np
 import tensorflow as tf

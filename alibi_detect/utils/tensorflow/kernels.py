@@ -1,4 +1,4 @@
-from __future__ import annotations
+from __future__ import annotations  # noqa: F407
 import tensorflow as tf
 import numpy as np
 from . import distance
