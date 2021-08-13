@@ -220,7 +220,7 @@ Check the example notebooks (e.g. [CIFAR10](https://docs.seldon.io/projects/alib
    - Example: [CIFAR10 and Wine](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_model_unc_cifar10_wine.html)
 
 - [Online Maximum Mean Discrepancy](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/onlinemmddrift.html)
-  - Example: [Wine Quality](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_online_wine.html)
+  - Example: [Wine Quality](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_online_wine.html), [Camelyon medical imaging](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_online_camelyon.html)
   
 - [Online Least-Squares Density Difference](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/onlinemmddrift.html) ([Bu et al, 2017](https://ieeexplore.ieee.org/abstract/document/7890493))
   - Example: [Wine Quality](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_online_wine.html)
