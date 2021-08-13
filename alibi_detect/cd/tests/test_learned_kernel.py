@@ -1,4 +1,4 @@
-from __future__ import annotations  # noqa: F407
+from __future__ import annotations  # type: ignore # noqa: F407
 import numpy as np
 import pytest
 import tensorflow as tf

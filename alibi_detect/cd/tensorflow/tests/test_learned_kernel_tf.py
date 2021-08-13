@@ -1,4 +1,4 @@
-from __future__ import annotations  # noqa: F407
+from __future__ import annotations  # type: ignore # noqa: F407
 from itertools import product
 import numpy as np
 import pytest
