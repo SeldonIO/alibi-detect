@@ -70,26 +70,25 @@ def batch_compute_kernel_matrix(
 
     if isinstance(x, np.ndarray):
         x, y = torch.from_numpy(x), torch.from_numpy(y)
-    z = x + y if isinstance(x, list) else torch.cat([x, y], axis=0)
 
-    n_z = len(z)
-    n_batch = int(np.ceil(n_z / batch_size))
+    n_x, n_y = len(x), len(y)
+    n_batch_x, n_batch_y = int(np.ceil(n_x / batch_size)), int(np.ceil(n_y / batch_size))
     with torch.no_grad():
         k_is = []  # type: Union[list, tuple]
-        for i in range(n_batch):
-            istart, istop = i * batch_size, min((i + 1) * batch_size, n_z)
-            i_batch = z[istart:istop]
+        for i in range(n_batch_x):
+            istart, istop = i * batch_size, min((i + 1) * batch_size, n_x)
+            x_batch = x[istart:istop]
             if isinstance(preprocess_fn, Callable):  # type: ignore
-                i_batch = preprocess_fn(i_batch)
-            i_batch = i_batch.to(device)
+                x_batch = preprocess_fn(x_batch)
+            x_batch = x_batch.to(device)
             k_ijs = []
-            for j in range(n_batch):
-                jstart, jstop = j * batch_size, min((j + 1) * batch_size, n_z)
-                j_batch = z[jstart:jstop]
+            for j in range(n_batch_y):
+                jstart, jstop = j * batch_size, min((j + 1) * batch_size, n_y)
+                y_batch = y[jstart:jstop]
                 if isinstance(preprocess_fn, Callable):  # type: ignore
-                    j_batch = preprocess_fn(j_batch)
-                j_batch = j_batch.to(device)
-                k_ijs.append(kernel(i_batch, j_batch).cpu())  # type: ignore
+                    y_batch = preprocess_fn(y_batch)
+                y_batch = y_batch.to(device)
+                k_ijs.append(kernel(x_batch, y_batch).cpu())  # type: ignore
             k_is.append(torch.cat(k_ijs, axis=1))
         k_mat = torch.cat(k_is, axis=0)
     return k_mat
