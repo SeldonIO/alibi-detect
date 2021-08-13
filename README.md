@@ -15,6 +15,9 @@
 
 For more background on the importance of monitoring outliers and distributions in a production setting, check out [this talk](https://slideslive.com/38931758/monitoring-and-explainability-of-models-in-production?ref=speaker-37384-latest) from the *Challenges in Deploying and Monitoring Machine Learning Systems* ICML 2020 workshop, based on the paper [Monitoring and explainability of models in production](https://arxiv.org/abs/2007.06299) and referencing Alibi Detect.
 
+For a thorough introduction to drift detection, check out [Drift Detection: An Introduction with Seldon](https://youtu.be/JaPMFf0cKlM?t=1). The talk covers what drift is and why it pays to detect it, the different types of drift, how it can be detected in a principled manner and also describes the anatomy of a drift detector.
+
+
 ## Table of Contents
 
 
@@ -188,24 +191,24 @@ Check the example notebooks (e.g. [CIFAR10](https://docs.seldon.io/projects/alib
 
 - [Sequence-to-Sequence (Seq2Seq) Outlier Detector](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/seq2seq.html) ([Sutskever et al., 2014](https://papers.nips.cc/paper/5346-sequence-to-sequence-learning-with-neural-networks.pdf); [Park et al., 2017](https://arxiv.org/pdf/1711.00614.pdf))
    - Examples: [ECG](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/od_seq2seq_ecg.html), [Synthetic Dataset](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/od_seq2seq_synth.html)
-
-
+  
 #### Adversarial Detection
 
 - [Adversarial Auto-Encoder](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/adversarialae.html) ([Vacanti and Van Looveren, 2020](https://arxiv.org/abs/2002.09364))
    - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/ad_ae_cifar10.html)
+
 - [Model distillation](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/modeldistillation.html) 
    - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_distillation_cifar10.html)
      
 #### Drift Detection
 
 - [Kolmogorov-Smirnov](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/ksdrift.html)
-   - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_ks_cifar10.html), [movie reviews](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_text_imdb.html)
+   - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_ks_cifar10.html), [molecular graphs](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_mol.html), [movie reviews](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_text_imdb.html)
    
 - [Least-Squares Density Difference](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/lsdddrift.html) ([Bu et al, 2016](https://alippi.faculty.polimi.it/articoli/A%20Pdf%20free%20Change%20Detection%20Test%20Based%20on%20Density%20Difference%20Estimation.pdf))
 
 - [Maximum Mean Discrepancy](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/mmddrift.html) ([Gretton et al, 2012](http://jmlr.csail.mit.edu/papers/v13/gretton12a.html))
-   - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_mmd_cifar10.html), [movie reviews](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_text_imdb.html)
+   - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_mmd_cifar10.html), [molecular graphs](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_mol.html), [movie reviews](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_text_imdb.html), [Amazon reviews](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_text_amazon.html)
 
 - [Chi-Squared](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/chisquaredrift.html)
    - Example: [Income Prediction](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_chi2ks_adult.html)
@@ -214,10 +217,10 @@ Check the example notebooks (e.g. [CIFAR10](https://docs.seldon.io/projects/alib
    - Example: [Income Prediction](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_chi2ks_adult.html)
 
 - [Classifier](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/classifierdrift.html) ([Lopez-Paz and Oquab, 2017](https://openreview.net/forum?id=SJkXfE5xx))
-   - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_clf_cifar10.html)
+   - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_clf_cifar10.html), [Amazon reviews](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_text_amazon.html)
 
 - [Classifier and Regressor Uncertainty](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/modeluncdrift.html)
-   - Example: [CIFAR10 and Wine](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_model_unc_cifar10_wine.html)
+   - Example: [CIFAR10 and Wine](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_model_unc_cifar10_wine.html), [molecular graphs](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_mol.html)
 
 - [Online Maximum Mean Discrepancy](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/onlinemmddrift.html)
   - Example: [Wine Quality](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_online_wine.html), [Camelyon medical imaging](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_online_camelyon.html)
@@ -319,8 +322,8 @@ BibTeX entry:
   title = {Alibi Detect: Algorithms for outlier, adversarial and drift detection},
   author = {Van Looveren, Arnaud and Vacanti, Giovanni and Klaise, Janis and Coca, Alexandru and Cobb, Oliver},
   url = {https://github.com/SeldonIO/alibi-detect},
-  version = {0.7.0},
-  date = {2021-06-07},
+  version = {0.7.1},
+  date = {2021-07-22},
   year = {2019}
 }
 ```

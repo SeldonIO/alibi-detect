@@ -50,7 +50,7 @@ def predict_batch(x: Union[list, np.ndarray, tf.Tensor], model: Union[Callable, 
                          else preds_tmp.numpy())
         else:
             raise TypeError(f'Model output type {type(preds_tmp)} not supported. The model output '
-                            f'type needs to be one of list, tuple, np.ndarray or torch.Tensor.')
+                            f'type needs to be one of list, tuple, np.ndarray or tf.Tensor.')
     concat = np.concatenate if return_np else tf.concat
     out = tuple(concat(p, axis=0) for p in preds) if isinstance(preds, tuple) else concat(preds, axis=0)
     if return_list:

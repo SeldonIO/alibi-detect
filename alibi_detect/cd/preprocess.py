@@ -1,37 +1,11 @@
 import numpy as np
-from sklearn.decomposition import PCA
 from scipy.special import softmax
 from scipy.stats import entropy
-from typing import Callable
-
-
-def pca(X: np.ndarray, n_components: int = 2, svd_solver: str = 'auto') -> np.ndarray:
-    """
-    Apply PCA dimensionality reduction and return the projection of X on
-    the first `n_components` principal components.
-
-    Parameters
-    ----------
-    X
-        Batch of instances.
-    n_components
-        Number of principal component projections to return.
-    svd_solver
-        Solver used for SVD. Options are ‘auto’, ‘full’, ‘arpack’ or ‘randomized’.
-
-    Returns
-    -------
-    Projection of X on first `n_components` principcal components.
-    """
-    X = X.reshape(X.shape[0], -1)
-    pca = PCA(n_components=n_components, svd_solver=svd_solver)
-    pca.fit(X)
-    X_pca = pca.transform(X)
-    return X_pca
+from typing import Callable, Union
 
 
 def classifier_uncertainty(
-    x: np.ndarray,
+    x: Union[np.ndarray, list],
     model_fn: Callable,
     preds_type: str = 'probs',
     uncertainty_type: str = 'entropy',
@@ -83,7 +57,7 @@ def classifier_uncertainty(
 
 
 def regressor_uncertainty(
-    x: np.ndarray,
+    x: Union[np.ndarray, list],
     model_fn: Callable,
     uncertainty_type: str = 'mc_dropout',
     n_evals: int = 25,
@@ -110,7 +84,7 @@ def regressor_uncertainty(
     """
 
     if uncertainty_type == 'mc_dropout':
-        preds = np.concatenate([model_fn(x) for i in range(n_evals)], axis=-1)
+        preds = np.concatenate([model_fn(x) for _ in range(n_evals)], axis=-1)
     elif uncertainty_type == 'ensemble':
         preds = model_fn(x)
     else:
