@@ -66,7 +66,22 @@ class GaussianRBF(tf.keras.Model):
 
 class DeepKernel(tf.keras.Model):
     """"
-    Computes similarities as k(x,y) = (1-eps)*k_a(proj(x), proj(y)) + eps*k_b(x,y)
+    Computes similarities as k(x,y) = (1-eps)*k_a(proj(x), proj(y)) + eps*k_b(x,y).
+    A forward pass takes a batch of instances x [Nx, features] and y [Ny, features] and returns
+    the kernel matrix [Nx, Ny].
+
+    Parameters
+    ----------
+    proj
+        The projection to be applied to the inputs before applying kernel_a
+    kernel_a
+        The kernel to apply to the projected inputs. Defaults to a Gaussian RBF with trainable bandwidth.
+    kernel_b
+        The kernel to apply to the raw inputs. Defaults to a Gaussian RBF with trainable bandwidth.
+    eps
+        The proportion (in [0,1]) of weight to assign to the kernel applied to raw inputs. This can be
+        either specified or set to 'trainable'.
+
     """
     def __init__(
         self,
