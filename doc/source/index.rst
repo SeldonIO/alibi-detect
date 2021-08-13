@@ -79,6 +79,7 @@
    examples/cd_spot_the_diff_mnist_wine
    examples/cd_model_unc_cifar10_wine
    examples/cd_online_wine
+   examples/cd_online_camelyon
    examples/cd_mol
 
 .. toctree::
