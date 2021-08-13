@@ -102,7 +102,7 @@ class SpotTheDiffDriftTF:
         """
         if preprocess_fn is not None and preprocess_batch_fn is not None:
             raise ValueError("SpotTheDiffDrift detector only supports preprocess_fn or preprocess_batch_fn, not both.")
-        if n_folds > 1:
+        if n_folds is not None and n_folds > 1:
             logger.warning("When using multiple folds the returned diffs will correspond to the final fold only.")
 
         if preprocess_fn is not None:

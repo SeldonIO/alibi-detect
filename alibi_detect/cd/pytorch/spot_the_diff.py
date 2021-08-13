@@ -110,7 +110,7 @@ class SpotTheDiffDriftTorch:
         """
         if preprocess_fn is not None and preprocess_batch_fn is not None:
             raise ValueError("SpotTheDiffDrift detector only supports preprocess_fn or preprocess_batch_fn, not both.")
-        if n_folds > 1:
+        if n_folds is not None and n_folds > 1:
             logger.warning("When using multiple folds the returned diffs will correspond to the final fold only.")
 
         if preprocess_fn is not None:
@@ -170,7 +170,7 @@ class SpotTheDiffDriftTorch:
         def __init__(self, kernel: nn.Module, x_ref: np.ndarray, initial_diffs: np.ndarray):
             super().__init__()
             self.kernel = kernel
-            self.mean = torch.as_tensor(x_ref.mean(0))
+            self.mean = nn.Parameter(torch.as_tensor(x_ref.mean(0)), requires_grad=False)
             self.diffs = nn.Parameter(torch.as_tensor(initial_diffs, dtype=torch.float32))
             self.bias = nn.Parameter(torch.zeros((1,)))
             self.coeffs = nn.Parameter(torch.zeros((len(initial_diffs),)))
