@@ -1,3 +1,4 @@
+import logging
 import numpy as np
 import torch
 import torch.nn as nn
@@ -7,6 +8,8 @@ from alibi_detect.cd.pytorch.classifier import ClassifierDriftTorch
 from alibi_detect.utils.pytorch.data import TorchDataset
 from alibi_detect.utils.pytorch import GaussianRBF
 from alibi_detect.utils.pytorch.prediction import predict_batch
+
+logger = logging.getLogger(__name__)
 
 
 class SpotTheDiffDriftTorch:
@@ -107,6 +110,8 @@ class SpotTheDiffDriftTorch:
         """
         if preprocess_fn is not None and preprocess_batch_fn is not None:
             raise ValueError("SpotTheDiffDrift detector only supports preprocess_fn or preprocess_batch_fn, not both.")
+        if n_folds > 1:
+            logger.warning("When using multiple folds the returned diffs will correspond to the final fold only.")
 
         if preprocess_fn is not None:
             x_ref_proc = preprocess_fn(x_ref)

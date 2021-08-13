@@ -1,4 +1,5 @@
 from __future__ import annotations
+import logging
 import numpy as np
 import tensorflow as tf
 from typing import Callable, Dict, Optional, Union
@@ -6,6 +7,8 @@ from alibi_detect.cd.tensorflow.classifier import ClassifierDriftTF
 from alibi_detect.utils.tensorflow.data import TFDataset
 from alibi_detect.utils.tensorflow import GaussianRBF
 from alibi_detect.utils.tensorflow.prediction import predict_batch
+
+logger = logging.getLogger(__name__)
 
 
 class SpotTheDiffDriftTF:
@@ -99,6 +102,8 @@ class SpotTheDiffDriftTF:
         """
         if preprocess_fn is not None and preprocess_batch_fn is not None:
             raise ValueError("SpotTheDiffDrift detector only supports preprocess_fn or preprocess_batch_fn, not both.")
+        if n_folds > 1:
+            logger.warning("When using multiple folds the returned diffs will correspond to the final fold only.")
 
         if preprocess_fn is not None:
             x_ref_proc = preprocess_fn(x_ref)
