@@ -56,6 +56,7 @@ eps = [0.5, 'trainable']
 tests_dk = list(product(n_features, n_instances, kernel_a, kernel_b, eps))
 n_tests_dk = len(tests_dk)
 
+
 @pytest.fixture
 def deep_kernel_params(request):
     return tests_dk[request.param]
