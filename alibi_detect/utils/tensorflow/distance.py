@@ -66,7 +66,7 @@ def batch_compute_kernel_matrix(
     n_x, n_y = len(x), len(y)
     n_batch_x, n_batch_y = int(np.ceil(n_x / batch_size)), int(np.ceil(n_y / batch_size))
 
-    k_is = []  # type: Union[list, tuple]
+    k_is = []
     for i in range(n_batch_x):
         istart, istop = i * batch_size, min((i + 1) * batch_size, n_x)
         x_batch = x[istart:istop]

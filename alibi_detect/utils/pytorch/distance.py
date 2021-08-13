@@ -3,7 +3,7 @@ import math
 import torch
 from torch import nn
 import numpy as np
-from typing import Callable, List, Tuple, Optional, Union
+from typing import Callable, List, Tuple, Optional, Union, Any
 
 logger = logging.getLogger(__name__)
 
@@ -34,10 +34,10 @@ def squared_pairwise_distance(x: torch.Tensor, y: torch.Tensor, a_min: float = 1
 def batch_compute_kernel_matrix(
     x: Union[list, np.ndarray, torch.Tensor],
     y: Union[list, np.ndarray, torch.Tensor],
-    kernel: Union[Callable, nn.Module, nn.Sequential],
+    kernel: Union[nn.Module, nn.Sequential],
     device: torch.device = None,
     batch_size: int = int(1e10),
-    preprocess_fn: Callable = None,
+    preprocess_fn: Callable[..., torch.Tensor] = None,
 ) -> torch.Tensor:
     """
     Compute the kernel matrix between x and y by filling in blocks of size
@@ -74,23 +74,23 @@ def batch_compute_kernel_matrix(
     n_x, n_y = len(x), len(y)
     n_batch_x, n_batch_y = int(np.ceil(n_x / batch_size)), int(np.ceil(n_y / batch_size))
     with torch.no_grad():
-        k_is = []  # type: Union[list, tuple]
+        k_is = []  # type: List[torch.Tensor]
         for i in range(n_batch_x):
             istart, istop = i * batch_size, min((i + 1) * batch_size, n_x)
             x_batch = x[istart:istop]
-            if isinstance(preprocess_fn, Callable):  # type: ignore
+            if preprocess_fn is not None:
                 x_batch = preprocess_fn(x_batch)
-            x_batch = x_batch.to(device)
-            k_ijs = []
+            x_batch = x_batch.to(device)  # type: ignore
+            k_ijs = []  # type: List[torch.Tensor]
             for j in range(n_batch_y):
                 jstart, jstop = j * batch_size, min((j + 1) * batch_size, n_y)
                 y_batch = y[jstart:jstop]
-                if isinstance(preprocess_fn, Callable):  # type: ignore
+                if preprocess_fn is not None:
                     y_batch = preprocess_fn(y_batch)
-                y_batch = y_batch.to(device)
+                y_batch = y_batch.to(device)  # type: ignore
                 k_ijs.append(kernel(x_batch, y_batch).cpu())  # type: ignore
-            k_is.append(torch.cat(k_ijs, axis=1))
-        k_mat = torch.cat(k_is, axis=0)
+            k_is.append(torch.cat(k_ijs, 1))
+        k_mat = torch.cat(k_is, 0)
     return k_mat
 
 

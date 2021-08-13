@@ -213,7 +213,7 @@ class BaseClassifierDrift(BaseDetector):
 
     def predict(self, x: Union[np.ndarray, list],  return_p_val: bool = True,
                 return_distance: bool = True, return_probs: bool = True, return_model: bool = True) \
-            -> Dict[Dict[str, str], Dict[str, Union[int, float, Callable]]]:
+            -> Dict[str, Dict[str, Union[str, int, float, Callable]]]:
         """
         Predict whether a batch of data has drifted from the reference data.
 
@@ -264,7 +264,7 @@ class BaseClassifierDrift(BaseDetector):
             cd['data']['probs_ref'] = probs_ref
             cd['data']['probs_test'] = probs_test
         if return_model:
-            cd['data']['model'] = self.model
+            cd['data']['model'] = self.model  # type: ignore
         return cd
 
 
@@ -385,7 +385,7 @@ class BaseLearnedKernelDrift(BaseDetector):
         return (x_ref_tr, x_cur_tr), (x_ref_te, x_cur_te)
 
     @abstractmethod
-    def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, np.ndarray, np.ndarray]:
+    def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, np.ndarray]:
         pass
 
     def predict(self, x: Union[np.ndarray, list],  return_p_val: bool = True,
@@ -438,7 +438,7 @@ class BaseLearnedKernelDrift(BaseDetector):
             cd['data']['distance'] = dist
             cd['data']['distance_threshold'] = distance_threshold
         if return_kernel:
-            cd['data']['kernel'] = self.kernel
+            cd['data']['kernel'] = self.kernel  # type: ignore
         return cd
 
 

@@ -141,7 +141,7 @@ class ClassifierDrift:
 
     def predict(self, x: Union[np.ndarray, list],  return_p_val: bool = True,
                 return_distance: bool = True, return_probs: bool = True, return_model: bool = True) \
-            -> Dict[Dict[str, str], Dict[str, Union[int, float, Callable]]]:
+            -> Dict[str, Dict[str, Union[str, int, float, Callable]]]:
         """
         Predict whether a batch of data has drifted from the reference data.
 

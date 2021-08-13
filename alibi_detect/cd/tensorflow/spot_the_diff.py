@@ -130,7 +130,7 @@ class SpotTheDiffDriftTF:
             model=model,
             p_val=p_val,
             preprocess_x_ref=True,
-            update_x_ref=False,
+            update_x_ref=None,
             preprocess_fn=preprocess_fn,
             preds_type='logits',
             binarize_preds=binarize_preds,
@@ -180,7 +180,7 @@ class SpotTheDiffDriftTF:
     def predict(
         self, x: np.ndarray,  return_p_val: bool = True, return_distance: bool = True,
         return_probs: bool = True, return_model: bool = False
-    ) -> Dict[Dict[str, str], Dict[str, Union[int, float, Callable]]]:
+    ) -> Dict[str, Dict[str, Union[str, int, float, Callable]]]:
         """
         Predict whether a batch of data has drifted from the reference data.
 
@@ -209,8 +209,8 @@ class SpotTheDiffDriftTF:
         data, and the trained model.
         """
         preds = self._detector.predict(x, return_p_val, return_distance, return_probs, return_model=True)
-        preds['data']['diffs'] = preds['data']['model'].diffs.numpy()
-        preds['data']['diff_coeffs'] = preds['data']['model'].coeffs.numpy()
+        preds['data']['diffs'] = preds['data']['model'].diffs.numpy()  # type: ignore
+        preds['data']['diff_coeffs'] = preds['data']['model'].coeffs.numpy()  # type: ignore
         if not return_model:
             del preds['data']['model']
         return preds

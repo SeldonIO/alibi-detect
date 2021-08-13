@@ -28,7 +28,7 @@ class LearnedKernelDriftTorch(BaseLearnedKernelDrift):
             reg_loss_fn: Callable = (lambda kernel: 0),
             train_size: Optional[float] = .75,
             retrain_from_scratch: bool = True,
-            optimizer: torch.optim.Optimizer = torch.optim.Adam,
+            optimizer: torch.optim.Optimizer = torch.optim.Adam,  # type: ignore
             learning_rate: float = 1e-3,
             batch_size: int = 32,
             preprocess_batch_fn: Optional[Callable] = None,
