@@ -37,7 +37,7 @@ class GaussianRBF(tf.keras.Model):
         return tf.math.exp(self.log_sigma)
 
     def call(self, x: tf.Tensor, y: tf.Tensor, infer_sigma: bool = False) -> tf.Tensor:
-
+        y = tf.cast(y, x.dtype)
         x, y = tf.reshape(x, (x.shape[0], -1)), tf.reshape(y, (y.shape[0], -1))  # flatten
         dist = distance.squared_pairwise_distance(x, y)  # [Nx, Ny]
 
