@@ -39,6 +39,7 @@ setup(
         "tensorflow>=2.0.0, <2.6.0",
         "tensorflow_probability>=0.8.0, <0.13.0",
         "transformers>=4.0.0, <5.0.0",
+        "dill>=0.3.0, <0.4.0",
         "tqdm>=4.28.1, <5.0.0"
     ],
     extras_require=extras_require,
