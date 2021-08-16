@@ -114,10 +114,12 @@ The following tables show the advised use cases for each algorithm. The column *
 | :---                     |  :---:  | :---: |   :---:     | :---: |   :---:              | :---:  | :---:         |
 | Kolmogorov-Smirnov       | ✔       | ✔     |            |  ✔    |  ✔                   |       |  ✔            |
 | Maximum Mean Discrepancy | ✔       | ✔     |            |  ✔    |  ✔                   | ✔      |              |
+| Learned Kernel MMD          | ✔       | ✔     |            |  ✔    |  ✔                   |       |              |
 | Least-Squares Density Difference | ✔       | ✔     |            |  ✔    |  ✔                   | ✔      |              |
 | Chi-Squared              | ✔       |      |            |      |  ✔                   |       |  ✔            |
 | Mixed-type tabular data  | ✔       |      |            |      |  ✔                   |       |  ✔            |
 | Classifier               | ✔       | ✔     |  ✔          |  ✔    |  ✔                   |       |              |
+| Spot-the-diff            | ✔       | ✔     |  ✔          |  ✔    |  ✔                   |       |  ✔            |
 | Classifier Uncertainty   | ✔       | ✔     |  ✔          |  ✔    |  ✔                   |       |                |
 | Regressor Uncertainty    | ✔       | ✔     |  ✔          |  ✔    |  ✔                   |       |                |
 
@@ -210,6 +212,9 @@ Check the example notebooks (e.g. [CIFAR10](https://docs.seldon.io/projects/alib
 - [Maximum Mean Discrepancy](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/mmddrift.html) ([Gretton et al, 2012](http://jmlr.csail.mit.edu/papers/v13/gretton12a.html))
    - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_mmd_cifar10.html), [molecular graphs](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_mol.html), [movie reviews](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_text_imdb.html), [Amazon reviews](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_text_amazon.html)
 
+- [Learned Kernel MMD](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/learnedkernel.html)([Liu et al, 2020](https://arxiv.org/abs/2002.09116))
+  - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_clf_cifar10.html)
+
 - [Chi-Squared](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/chisquaredrift.html)
    - Example: [Income Prediction](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_chi2ks_adult.html)
 
@@ -218,6 +223,9 @@ Check the example notebooks (e.g. [CIFAR10](https://docs.seldon.io/projects/alib
 
 - [Classifier](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/classifierdrift.html) ([Lopez-Paz and Oquab, 2017](https://openreview.net/forum?id=SJkXfE5xx))
    - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_clf_cifar10.html), [Amazon reviews](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_text_amazon.html)
+
+- [Spot-the-diff](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/spotthediffdrift.html) (adaptation of [Jitkrittum et al, 2016](https://arxiv.org/abs/1605.06796))
+  - Example [MNIST and Wine quality](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/spot_the_diff_mnist_win.html)
 
 - [Classifier and Regressor Uncertainty](https://docs.seldon.io/projects/alibi-detect/en/latest/methods/modeluncdrift.html)
    - Example: [CIFAR10 and Wine](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_model_unc_cifar10_wine.html), [molecular graphs](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_mol.html)

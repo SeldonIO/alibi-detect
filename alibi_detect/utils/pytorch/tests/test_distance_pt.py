@@ -3,7 +3,7 @@ from itertools import product
 import pytest
 import torch
 from alibi_detect.utils.pytorch import GaussianRBF, mmd2, mmd2_from_kernel_matrix, permed_lsdds
-from alibi_detect.utils.pytorch import squared_pairwise_distance
+from alibi_detect.utils.pytorch import squared_pairwise_distance, batch_compute_kernel_matrix
 
 n_features = [2, 5]
 n_instances = [(100, 100), (100, 75)]
@@ -51,6 +51,32 @@ def test_mmd(mmd_params):
     mmd_xx = mmd2(x, x, kernel=GaussianRBF(sigma=torch.ones(1)))
     mmd_xy = mmd2(x, y, kernel=GaussianRBF(sigma=torch.ones(1)))
     assert mmd_xy > mmd_xx
+
+
+n_features = [2, 5]
+n_instances = [(100, 100), (100, 75)]
+batch_size = [1, 5]
+tests_bckm = list(product(n_features, n_instances, batch_size))
+n_tests_bckm = len(tests_bckm)
+
+
+@pytest.fixture
+def bckm_params(request):
+    return tests_bckm[request.param]
+
+
+@pytest.mark.parametrize('bckm_params', list(range(n_tests_bckm)), indirect=True)
+def test_bckm(bckm_params):
+    n_features, n_instances, batch_size = bckm_params
+    xshape, yshape = (n_instances[0], n_features), (n_instances[1], n_features)
+    np.random.seed(0)
+    x = torch.from_numpy(np.random.random(xshape).astype('float32'))
+    y = torch.from_numpy(np.random.random(yshape).astype('float32'))
+
+    kernel = GaussianRBF(sigma=torch.tensor(1.))
+    kernel_mat = kernel(x, y).detach().numpy()
+    bc_kernel_mat = batch_compute_kernel_matrix(x, y, kernel, batch_size=batch_size).detach().numpy()
+    np.testing.assert_almost_equal(kernel_mat, bc_kernel_mat, decimal=6)
 
 
 n = [10, 100]

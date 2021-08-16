@@ -31,6 +31,58 @@ def squared_pairwise_distance(x: tf.Tensor, y: tf.Tensor, a_min: float = 1e-30, 
     return tf.clip_by_value(dist, a_min, a_max)
 
 
+def batch_compute_kernel_matrix(
+    x: Union[list, np.ndarray, tf.Tensor],
+    y: Union[list, np.ndarray, tf.Tensor],
+    kernel: Union[Callable, tf.keras.Model],
+    batch_size: int = int(1e10),
+    preprocess_fn: Callable = None,
+) -> tf.Tensor:
+    """
+    Compute the kernel matrix between x and y by filling in blocks of size
+    batch_size x batch_size at a time.
+
+    Parameters
+    ----------
+    x
+        Reference set.
+    y
+        Test set.
+    kernel
+        tf.keras model
+    batch_size
+        Batch size used during prediction.
+    preprocess_fn
+        Optional preprocessing function for each batch.
+
+    Returns
+    -------
+    Kernel matrix in the form of a tensorflow tensor
+    """
+    if type(x) != type(y):
+        raise ValueError("x and y should be of the same type")
+
+    n_x, n_y = len(x), len(y)
+    n_batch_x, n_batch_y = int(np.ceil(n_x / batch_size)), int(np.ceil(n_y / batch_size))
+
+    k_is = []
+    for i in range(n_batch_x):
+        istart, istop = i * batch_size, min((i + 1) * batch_size, n_x)
+        x_batch = x[istart:istop]
+        if isinstance(preprocess_fn, Callable):  # type: ignore
+            x_batch = preprocess_fn(x_batch)
+        k_ijs = []
+        for j in range(n_batch_y):
+            jstart, jstop = j * batch_size, min((j + 1) * batch_size, n_y)
+            y_batch = y[jstart:jstop]
+            if isinstance(preprocess_fn, Callable):  # type: ignore
+                y_batch = preprocess_fn(y_batch)
+            k_ijs.append(kernel(x_batch, y_batch))  # type: ignore
+        k_is.append(tf.concat(k_ijs, axis=1))
+    k_mat = tf.concat(k_is, axis=0)
+    return k_mat
+
+
 def mmd2_from_kernel_matrix(kernel_mat: tf.Tensor, m: int, permute: bool = False,
                             zero_diag: bool = True) -> tf.Tensor:
     """
@@ -128,13 +180,13 @@ def permed_lsdds(
     Parameters
     ----------
     k_all_c
-        Kernel matrix of simmilarities between all samples and the kernel centers.
+        Kernel matrix of similarities between all samples and the kernel centers.
     x_perms
         List of B reference window index vectors
     y_perms
         List of B test window index vectors
     H
-        Special (scaled) kernel matrix of simmilarities between kernel centers
+        Special (scaled) kernel matrix of similarities between kernel centers
     H_lam_inv
         Function of H corresponding to a particular regulariation parameter lambda.
         See Eqn 11 of Bu et al. (2017)
