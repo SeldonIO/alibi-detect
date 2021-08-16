@@ -73,8 +73,6 @@ def test_deep_kernel(deep_kernel_params):
     kernel_a = GaussianRBF(trainable=True) if kernel_a is None else kernel_a(n_features)
     kernel_b = GaussianRBF(trainable=True) if kernel_b is None else kernel_b(n_features)
 
-    print(eps, torch.__version__)
-
     kernel = DeepKernel(proj, kernel_a=kernel_a, kernel_b=kernel_b, eps=eps)
 
     k_xy = kernel(x, y).detach().numpy()
