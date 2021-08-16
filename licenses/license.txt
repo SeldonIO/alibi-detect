@@ -1460,6 +1460,11 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 
 
+dill
+0.3.4
+BSD License
+UNKNOWN
+
 dm-tree
 0.1.6
 Apache Software License

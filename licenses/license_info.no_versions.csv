@@ -17,6 +17,7 @@
 "cycler","BSD"
 "dataclasses","Apache Software License"
 "decorator","BSD License"
+"dill","BSD License"
 "dm-tree","Apache Software License"
 "filelock","Public Domain"
 "flatbuffers","Apache Software License"
