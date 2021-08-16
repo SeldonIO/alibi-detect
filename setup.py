@@ -11,7 +11,7 @@ exec(open("alibi_detect/version.py").read())
 
 extras_require = {"examples": ["seaborn>=0.9.0", "nlp>=0.3.0"],
                   "prophet": ["fbprophet>=0.5, <0.7", "holidays==0.9.11", "pystan<3.0"],
-                  "torch": ["torch>=1.0"]}
+                  "torch": ["torch>=1.7.0"]}
 
 setup(
     name="alibi-detect",
