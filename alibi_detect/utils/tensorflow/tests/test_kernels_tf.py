@@ -79,4 +79,4 @@ def test_deep_kernel(deep_kernel_params):
     k_xx = kernel(x, x).numpy()
     assert k_xy.shape == n_instances and k_xx.shape == (xshape[0], xshape[0])
     assert (np.diag(k_xx) > 0.).all()
-    np.testing.assert_almost_equal(k_xy, np.transpose(k_yx), decimal=6)
+    np.testing.assert_almost_equal(k_xy, np.transpose(k_yx), decimal=5)

@@ -100,7 +100,7 @@ And **data drift**:
 
 * [Least-Squares Density Difference Drift Detector](../methods/lsdddrift.ipynb)
 
-* [Maximum Mean Discrepancy Drift Detector](../methods/mmddrift.ipynb)
+* [Maximum Mean Discrepancy (MMD) Drift Detector](../methods/mmddrift.ipynb)
 
 * [Learned Kernel MMD Drift Detector](../methods/learnedkerneldrift.ipynb)
 
@@ -110,13 +110,13 @@ And **data drift**:
 
 * [Classifier Drift Detector](../methods/classifierdrift.ipynb)
 
-* [Spot-the-diff Drift Detector](../methods/classifierdrift.ipynb)
+* [Spot-the-diff Drift Detector](../methods/spotthediffdrift.ipynb)
 
 * [Classifier and Regressor Uncertainty Drift Detectors](../methods/modeluncdrift.ipynb)
 
 * [Online Maximum Mean Discrepancy Drift Detector](../methods/onlinemmddrift.ipynb)
 
-* [Online Least_Squares Density Difference Drift Detector](../methods/onlinelsdddrift.ipynb)
+* [Online Least-Squares Density Difference Drift Detector](../methods/onlinelsdddrift.ipynb)
 
 
 ## Basic Usage
