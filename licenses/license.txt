@@ -982,7 +982,7 @@ Apache Software License
 
 
 alibi-detect
-0.7.1.dev0
+0.7.2.dev0
 Apache 2.0
                                  Apache License
                            Version 2.0, January 2004
@@ -1308,7 +1308,7 @@ one at http://mozilla.org/MPL/2.0/.
 
 
 charset-normalizer
-2.0.1
+2.0.4
 MIT License
 MIT License
 
@@ -1413,7 +1413,7 @@ Apache Software License
 UNKNOWN
 
 decorator
-4.4.2
+5.0.9
 BSD License
 Copyright (c) 2005-2018, Michele Simionato
 All rights reserved.
@@ -1442,6 +1442,11 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 
+
+dill
+0.3.4
+BSD License
+UNKNOWN
 
 dm-tree
 0.1.6
@@ -1753,7 +1758,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 google-auth
-1.32.1
+1.34.0
 Apache Software License
                                  Apache License
                            Version 2.0, January 2004
@@ -1959,11 +1964,12 @@ Apache Software License
 
 
 google-auth-oauthlib
-0.4.4
+0.4.5
 Apache Software License
-                            Apache License
+
+                                 Apache License
                            Version 2.0, January 2004
-                        https://www.apache.org/licenses/
+                        http://www.apache.org/licenses/
 
    TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
 
@@ -2155,7 +2161,7 @@ Apache Software License
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       https://www.apache.org/licenses/LICENSE-2.0
+       http://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -2909,7 +2915,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 importlib-metadata
-4.6.1
+4.6.4
 Apache Software License
 Copyright 2017-2019 Jason R. Coombs, Barry Warsaw
 
@@ -3069,7 +3075,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 matplotlib
-3.4.2
+3.4.3
 Python Software Foundation License
 License agreement for matplotlib versions 1.3.0 and later
 =========================================================
@@ -3172,16 +3178,13 @@ Licensee agrees to be bound by the terms and conditions of this License
 Agreement.
 
 networkx
-2.5.1
+2.6.2
 BSD License
-License
-=======
-
 NetworkX is distributed with the 3-clause BSD license.
 
 ::
 
-   Copyright (C) 2004-2020, NetworkX Developers
+   Copyright (C) 2004-2021, NetworkX Developers
    Aric Hagberg <hagberg@lanl.gov>
    Dan Schult <dschult@colgate.edu>
    Pieter Swart <swart@lanl.gov>
@@ -6641,7 +6644,7 @@ under the terms of *both* these licenses.
 
 
 pandas
-1.3.0
+1.3.2
 BSD License
 BSD 3-Clause License
 
@@ -6878,7 +6881,7 @@ DEALINGS IN THE SOFTWARE.
 
 
 regex
-2021.7.6
+2021.8.3
 Apache Software License
 This work was derived from the 're' module of CPython 2.6 and CPython 3.1,
 copyright (c) 1998-2001 by Secret Labs AB and licensed under CNRI's Python 1.6
@@ -7455,7 +7458,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 scipy
-1.7.0
+1.7.1
 BSD License
 Copyright (c) 2001-2002 Enthought, Inc.  2003-2019, SciPy Developers.
 All rights reserved.
@@ -8393,7 +8396,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 tensorboard
-2.5.0
+2.6.0
 Apache Software License
 # TensorBoard License
 
@@ -8975,7 +8978,7 @@ Apache 2.0
 UNKNOWN
 
 tensorflow
-2.5.0
+2.5.1
 Apache Software License
 Copyright 2019 The TensorFlow Authors.  All rights reserved.
 
@@ -9291,7 +9294,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 tifffile
-2021.7.2
+2021.8.8
 BSD License
 BSD 3-Clause License
 
@@ -9364,7 +9367,7 @@ DAMAGE.
 
 
 tqdm
-4.61.2
+4.62.1
 MIT License; Mozilla Public License 2.0 (MPL 2.0)
 `tqdm` is a product of collaborative work.
 Unless otherwise stated, all authors (see commit logs) retain copyright
@@ -9418,7 +9421,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 transformers
-4.8.2
+4.9.2
 Apache Software License
 Copyright 2018- The Hugging Face team. All rights reserved.
 
