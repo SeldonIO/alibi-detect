@@ -8,6 +8,7 @@
 "absl-py","Apache Software License"
 "alibi-detect","Apache 2.0"
 "astunparse","BSD License"
+"cached-property","BSD License"
 "cachetools","MIT License"
 "certifi","Mozilla Public License 2.0 (MPL 2.0)"
 "charset-normalizer","MIT License"
