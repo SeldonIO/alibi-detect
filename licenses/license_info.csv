@@ -38,7 +38,7 @@
 "locket","0.2.1","BSD License"
 "matplotlib","3.4.3","Python Software Foundation License"
 "networkx","2.6.2","BSD License"
-"numpy","1.19.5","BSD"
+"numpy","1.21.2","BSD License"
 "oauthlib","3.1.1","BSD License"
 "opencv-python","4.5.3.56","MIT License"
 "opt-einsum","3.3.0","MIT"
