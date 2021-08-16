@@ -3232,9 +3232,9 @@ NetworkX is distributed with the 3-clause BSD license.
 
 
 numpy
-1.19.5
-BSD
-Copyright (c) 2005-2020, NumPy Developers.
+1.21.2
+BSD License
+Copyright (c) 2005-2021, NumPy Developers.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
