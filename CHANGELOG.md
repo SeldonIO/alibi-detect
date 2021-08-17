@@ -1,5 +1,13 @@
 # Change Log
 
+## [v0.7.2](https://github.com/SeldonIO/alibi-detect/tree/v0.7.2) (2021-08-17)
+[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.7.1...v0.7.2)
+
+### Added
+- Learned kernels drift detector with TensorFlow and PyTorch support: `from alibi_detect.cd import LearnedKernelDrift`
+- Spot-the-diff drift detector with TensorFlow and PyTorch support: `from alibi_detect.cd import SpotTheDiffDrift`
+- Online drift detection example on medical imaging data: `https://github.com/SeldonIO/alibi-detect/blob/master/examples/cd_online_camelyon.ipynb`
+
 ## [v0.7.1](https://github.com/SeldonIO/alibi-detect/tree/v0.7.1) (2021-07-22)
 [Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.7.0...v0.7.1)
 
