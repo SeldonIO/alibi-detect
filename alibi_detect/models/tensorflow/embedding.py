@@ -49,6 +49,7 @@ class TransformerEmbedding(tf.keras.Model):
             last_hidden_state, hidden_state or hidden_state_cls.
 
             From the HuggingFace documentation:
+
             - pooler_output
                 Last layer hidden-state of the first token of the sequence
                 (classification token) further processed by a Linear layer and a Tanh

@@ -173,11 +173,15 @@ class Shift(bijector.Bijector):
                  name='shift'):
         """Instantiates the `Shift` bijector which computes `Y = g(X; shift) = X + shift`
         where `shift` is a numeric `Tensor`.
-        Args:
-          shift: Floating-point `Tensor`.
-          validate_args: Python `bool` indicating whether arguments should be
-            checked for correctness.
-          name: Python `str` name given to ops managed by this object.
+
+        Parameters
+        ----------
+        shift
+            Floating-point `Tensor`.
+        validate_args
+            Python `bool` indicating whether arguments should be checked for correctness.
+        name
+            Python `str` name given to ops managed by this object.
         """
         with tf.name_scope(name) as name:
             dtype = dtype_util.common_dtype([shift], dtype_hint=tf.float32)
