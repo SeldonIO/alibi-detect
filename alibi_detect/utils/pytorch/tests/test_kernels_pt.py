@@ -50,8 +50,8 @@ class MyKernel(nn.Module):  # TODO: Support then test models using keras functio
 
 n_features = [5, 10]
 n_instances = [(100, 100), (100, 75)]
-kernel_a = [None, MyKernel]
-kernel_b = [None, MyKernel]
+kernel_a = [GaussianRBF(trainable=True), MyKernel]
+kernel_b = [GaussianRBF(trainable=True), MyKernel, None]
 eps = [0.5, 'trainable']
 tests_dk = list(product(n_features, n_instances, kernel_a, kernel_b, eps))
 n_tests_dk = len(tests_dk)
@@ -70,8 +70,8 @@ def test_deep_kernel(deep_kernel_params):
     y = torch.as_tensor(np.random.random(yshape).astype('float32'))
 
     proj = nn.Linear(n_features, n_features)
-    kernel_a = GaussianRBF(trainable=True) if kernel_a is None else kernel_a(n_features)
-    kernel_b = GaussianRBF(trainable=True) if kernel_b is None else kernel_b(n_features)
+    kernel_a = kernel_a(n_features) if kernel_a == MyKernel else kernel_a
+    kernel_b = kernel_b(n_features) if kernel_b == MyKernel else kernel_b
 
     kernel = DeepKernel(proj, kernel_a=kernel_a, kernel_b=kernel_b, eps=eps)
 

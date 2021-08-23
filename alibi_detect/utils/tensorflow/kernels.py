@@ -77,9 +77,10 @@ class DeepKernel(tf.keras.Model):
         The kernel to apply to the projected inputs. Defaults to a Gaussian RBF with trainable bandwidth.
     kernel_b
         The kernel to apply to the raw inputs. Defaults to a Gaussian RBF with trainable bandwidth.
+        Set to None in order to use only the deep component (i.e. eps=0).
     eps
         The proportion (in [0,1]) of weight to assign to the kernel applied to raw inputs. This can be
-        either specified or set to 'trainable'.
+        either specified or set to 'trainable'. Only relavent is kernel_b is not None.
 
     """
     def __init__(
@@ -94,6 +95,10 @@ class DeepKernel(tf.keras.Model):
         self.kernel_a = kernel_a
         self.kernel_b = kernel_b
         self.proj = proj
+        if kernel_b is not None:
+            self._init_eps(eps)
+
+    def _init_eps(self, eps: Union[float, str]) -> None:
         if isinstance(eps, float):
             if not 0 < eps < 1:
                 raise ValueError("eps should be in (0,1)")
@@ -106,12 +111,13 @@ class DeepKernel(tf.keras.Model):
 
     @property
     def eps(self) -> tf.Tensor:
-        return tf.math.sigmoid(self.logit_eps)
+        return tf.math.sigmoid(self.logit_eps) if self.kernel_b is not None else tf.constant(0.)
 
     def call(self, x: tf.Tensor, y: tf.Tensor) -> tf.Tensor:
-        return (
-            (1-self.eps)*self.kernel_a(self.proj(x), self.proj(y)) + self.eps*self.kernel_b(x, y)
-        )
+        similarity = self.kernel_a(self.proj(x), self.proj(y))
+        if self.kernel_b is not None:
+            similarity = (1-self.eps)*similarity + self.eps*self.kernel_b(x, y)
+        return similarity
 
     def get_config(self) -> dict:
         return self.config

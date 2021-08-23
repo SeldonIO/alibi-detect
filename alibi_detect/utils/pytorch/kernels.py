@@ -73,16 +73,17 @@ class DeepKernel(nn.Module):
         The kernel to apply to the projected inputs. Defaults to a Gaussian RBF with trainable bandwidth.
     kernel_b
         The kernel to apply to the raw inputs. Defaults to a Gaussian RBF with trainable bandwidth.
+        Set to None in order to use only the deep component (i.e. eps=0).
     eps
         The proportion (in [0,1]) of weight to assign to the kernel applied to raw inputs. This can be
-        either specified or set to 'trainable'.
+        either specified or set to 'trainable'. Only relavent if kernel_b is not None.
 
     """
     def __init__(
         self,
         proj: nn.Module,
         kernel_a: nn.Module = GaussianRBF(trainable=True),
-        kernel_b: nn.Module = GaussianRBF(trainable=True),
+        kernel_b: Optional[nn.Module] = GaussianRBF(trainable=True),
         eps: Union[float, str] = 'trainable'
     ) -> None:
         super().__init__()
@@ -90,6 +91,10 @@ class DeepKernel(nn.Module):
         self.kernel_a = kernel_a
         self.kernel_b = kernel_b
         self.proj = proj
+        if kernel_b is not None:
+            self._init_eps(eps)
+
+    def _init_eps(self, eps: Union[float, str]) -> None:
         if isinstance(eps, float):
             if not 0 < eps < 1:
                 raise ValueError("eps should be in (0,1)")
@@ -101,9 +106,10 @@ class DeepKernel(nn.Module):
 
     @property
     def eps(self) -> torch.Tensor:
-        return self.logit_eps.sigmoid()
+        return self.logit_eps.sigmoid() if self.kernel_b is not None else torch.tensor(0.)
 
     def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-        return (
-            (1-self.eps)*self.kernel_a(self.proj(x), self.proj(y)) + self.eps*self.kernel_b(x, y)
-        )
+        similarity = self.kernel_a(self.proj(x), self.proj(y))
+        if self.kernel_b is not None:
+            similarity = (1-self.eps)*similarity + self.eps*self.kernel_b(x, y)
+        return similarity
