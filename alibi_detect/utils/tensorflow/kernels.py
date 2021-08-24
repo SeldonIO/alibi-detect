@@ -87,7 +87,7 @@ class DeepKernel(tf.keras.Model):
         self,
         proj: tf.keras.Model,
         kernel_a: tf.keras.Model = GaussianRBF(trainable=True),
-        kernel_b: tf.keras.Model = GaussianRBF(trainable=True),
+        kernel_b: Optional[tf.keras.Model] = GaussianRBF(trainable=True),
         eps: Union[float, str] = 'trainable'
     ) -> None:
         super().__init__()
