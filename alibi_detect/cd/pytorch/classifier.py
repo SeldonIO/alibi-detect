@@ -26,8 +26,10 @@ class ClassifierDriftTorch(BaseClassifierDrift):
             preprocess_fn: Optional[Callable] = None,
             preds_type: str = 'probs',
             binarize_preds: bool = False,
+            reg_loss_fn: Callable = (lambda model: 0),
             train_size: Optional[float] = .75,
             n_folds: Optional[int] = None,
+            retrain_from_scratch: bool = True,
             seed: int = 0,
             optimizer: Callable = torch.optim.Adam,
             learning_rate: float = 1e-3,
@@ -67,6 +69,8 @@ class ClassifierDriftTorch(BaseClassifierDrift):
         binarize_preds
             Whether to test for discrepency on soft (e.g. probs/logits) model predictions directly
             with a K-S test or binarise to 0-1 prediction errors and apply a binomial test.
+        reg_loss_fn
+            The regularisation term reg_loss_fn(model) is added to the loss function being optimized.
         train_size
             Optional fraction (float between 0 and 1) of the dataset used to train the classifier.
             The drift is detected on `1 - train_size`. Cannot be used in combination with `n_folds`.
@@ -75,6 +79,9 @@ class ClassifierDriftTorch(BaseClassifierDrift):
             on all the out-of-fold predictions. This allows to leverage all the reference and test data
             for drift detection at the expense of longer computation. If both `train_size` and `n_folds`
             are specified, `n_folds` is prioritized.
+        retrain_from_scratch
+            Whether the classifier should be retrained from scratch for each set of test data or whether
+            it should instead continue training from where it left off on the previous set.
         seed
             Optional random seed for fold selection.
         optimizer
@@ -112,6 +119,7 @@ class ClassifierDriftTorch(BaseClassifierDrift):
             binarize_preds=binarize_preds,
             train_size=train_size,
             n_folds=n_folds,
+            retrain_from_scratch=retrain_from_scratch,
             seed=seed,
             data_type=data_type
         )
@@ -124,7 +132,8 @@ class ClassifierDriftTorch(BaseClassifierDrift):
                 logger.warning('No GPU detected, fall back on CPU.')
         else:
             self.device = torch.device('cpu')
-        self.model = model.to(self.device)
+        self.original_model = model
+        self.model = deepcopy(model)
 
         # define kwargs for dataloader and trainer
         self.loss_fn = nn.CrossEntropyLoss() if (self.preds_type == 'logits') else nn.NLLLoss()
@@ -133,7 +142,7 @@ class ClassifierDriftTorch(BaseClassifierDrift):
         self.predict_fn = partial(predict_batch, device=self.device,
                                   preprocess_fn=preprocess_batch_fn, batch_size=batch_size)
         self.train_kwargs = {'optimizer': optimizer, 'epochs': epochs,  'preprocess_fn': preprocess_batch_fn,
-                             'learning_rate': learning_rate, 'verbose': verbose}
+                             'reg_loss_fn': reg_loss_fn, 'learning_rate': learning_rate, 'verbose': verbose}
         if isinstance(train_kwargs, dict):
             self.train_kwargs.update(train_kwargs)
 
@@ -169,10 +178,11 @@ class ClassifierDriftTorch(BaseClassifierDrift):
                 raise TypeError(f'x needs to be of type np.ndarray or list and not {type(x)}.')
             ds_tr = self.dataset(x_tr, y_tr)
             dl_tr = self.dataloader(ds_tr)
-            model = deepcopy(self.model)
-            train_args = [model, self.loss_fn, dl_tr, self.device]
+            self.model = deepcopy(self.original_model) if self.retrain_from_scratch else self.model
+            self.model = self.model.to(self.device)
+            train_args = [self.model, self.loss_fn, dl_tr, self.device]
             trainer(*train_args, **self.train_kwargs)  # type: ignore
-            preds = self.predict_fn(x_te, model.eval())
+            preds = self.predict_fn(x_te, self.model.eval())
             preds_oof_list.append(preds)
             idx_oof_list.append(idx_te)
         preds_oof = np.concatenate(preds_oof_list, axis=0)

@@ -41,9 +41,11 @@
 
    methods/chisquaredrift.ipynb
    methods/classifierdrift.ipynb
+   methods/spotthediffdrift.ipynb
    methods/ksdrift.ipynb
    methods/lsdddrift.ipynb
    methods/mmddrift.ipynb
+   methods/learnedkerneldrift.ipynb
    methods/tabulardrift.ipynb
    methods/modeluncdrift.ipynb
    methods/onlinemmddrift.ipynb
@@ -74,8 +76,10 @@
    examples/cd_text_amazon
    examples/cd_text_imdb
    examples/cd_clf_cifar10
+   examples/cd_spot_the_diff_mnist_wine
    examples/cd_model_unc_cifar10_wine
    examples/cd_online_wine
+   examples/cd_online_camelyon
    examples/cd_mol
 
 .. toctree::

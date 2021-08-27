@@ -14,6 +14,7 @@ def trainer(
         loss_fn_kwargs: dict = None,
         preprocess_fn: Callable = None,
         epochs: int = 20,
+        reg_loss_fn: Callable = (lambda model: 0),
         batch_size: int = 64,
         buffer_size: int = 1024,
         verbose: bool = True,
@@ -43,6 +44,8 @@ def trainer(
         Preprocessing function applied to each training batch.
     epochs
         Number of training epochs.
+    reg_loss_fn
+        Allows an additional regularisation term to be defined as reg_loss_fn(model)
     batch_size
         Batch size used for training.
     buffer_size
@@ -69,6 +72,7 @@ def trainer(
             pbar = tf.keras.utils.Progbar(n_minibatch, 1)
         if hasattr(dataset, 'on_epoch_end'):
             dataset.on_epoch_end()
+        loss_val_ma = 0.
         for step, data in enumerate(dataset):
             x, y = data if len(data) == 2 else (data, None)
             if isinstance(preprocess_fn, Callable):  # type: ignore
@@ -83,6 +87,8 @@ def trainer(
                     loss = 0.
                 if model.losses:  # additional model losses
                     loss += sum(model.losses)
+                loss += reg_loss_fn(model)  # alternative way they might be specified
+
             grads = tape.gradient(loss, model.trainable_weights)
             optimizer.apply_gradients(zip(grads, model.trainable_weights))
             if verbose:
@@ -95,7 +101,8 @@ def trainer(
                             shape = (batch_size - loss_val.shape[0], loss_val.shape[1])  # type: ignore
                         add_mean = np.ones(shape) * loss_val.mean()
                         loss_val = np.r_[loss_val, add_mean]
-                pbar_values = [('loss', loss_val)]
+                loss_val_ma = loss_val_ma + (loss_val - loss_val_ma) / (step + 1)
+                pbar_values = [('loss_ma', loss_val_ma)]
                 if log_metric is not None:
                     log_metric[1](y, y_hat)
                     pbar_values.append((log_metric[0], log_metric[1].result().numpy()))

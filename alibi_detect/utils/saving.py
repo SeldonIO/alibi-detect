@@ -1,9 +1,9 @@
 # type: ignore
 # TODO: need to rewrite utilities using isinstance or @singledispatch for type checking to work properly
+import dill
 from functools import partial
 import logging
 import os
-import pickle
 import tensorflow as tf
 from tensorflow.keras.layers import Input, InputLayer
 from tensorflow_probability.python.distributions.distribution import Distribution
@@ -95,8 +95,8 @@ def save_detector(detector: Data, filepath: str) -> None:
         os.mkdir(filepath)
 
     # save metadata
-    with open(os.path.join(filepath, 'meta.pickle'), 'wb') as f:
-        pickle.dump(detector.meta, f)
+    with open(os.path.join(filepath, 'meta.dill'), 'wb') as f:
+        dill.dump(detector.meta, f)
 
     # save outlier detector specific parameters
     if detector_name == 'OutlierAE':
@@ -134,8 +134,8 @@ def save_detector(detector: Data, filepath: str) -> None:
     elif detector_name == 'LLR':
         state_dict = state_llr(detector)
 
-    with open(os.path.join(filepath, detector_name + '.pickle'), 'wb') as f:
-        pickle.dump(state_dict, f)
+    with open(os.path.join(filepath, detector_name + '.dill'), 'wb') as f:
+        dill.dump(state_dict, f)
 
     # save outlier detector specific TensorFlow models
     if detector_name == 'OutlierAE':
@@ -197,8 +197,8 @@ def save_embedding(embed: tf.keras.Model,
     if not os.path.isdir(model_dir):
         os.mkdir(model_dir)
     embed.save_pretrained(model_dir)
-    with open(os.path.join(filepath, save_dir, model_name + '.pickle'), 'wb') as f:
-        pickle.dump(embed_args, f)
+    with open(os.path.join(filepath, save_dir, model_name + '.dill'), 'wb') as f:
+        dill.dump(embed_args, f)
 
 
 def preprocess_step_drift(cd: Union[ChiSquareDrift, ClassifierDriftTF, KSDrift, MMDDriftTF, TabularDrift]) \
@@ -206,7 +206,7 @@ def preprocess_step_drift(cd: Union[ChiSquareDrift, ClassifierDriftTF, KSDrift, 
             Optional[Callable], Dict, Optional[Union[tf.keras.Model, tf.keras.Sequential]],
             Optional[TransformerEmbedding], Dict, Optional[Callable], bool
         ]:
-    # note: need to be able to pickle tokenizers other than transformers
+    # note: need to be able to dill tokenizers other than transformers
     preprocess_fn, preprocess_kwargs = None, {}
     model, embed, embed_args, tokenizer, load_emb = None, None, {}, None, False
     if isinstance(cd.preprocess_fn, partial):
@@ -964,7 +964,7 @@ def load_detector(filepath: str, **kwargs) -> Data:
         raise ValueError('{} does not exist.'.format(filepath))
 
     # load metadata
-    meta_dict = pickle.load(open(os.path.join(filepath, 'meta.pickle'), 'rb'))
+    meta_dict = dill.load(open(os.path.join(filepath, 'meta.dill'), 'rb'))
 
     if 'backend' in list(meta_dict.keys()) and meta_dict['backend'] == 'pytorch':
         raise NotImplementedError('Detectors with PyTorch backend are not yet supported.')
@@ -974,7 +974,7 @@ def load_detector(filepath: str, **kwargs) -> Data:
         raise ValueError('{} is not supported by `load_detector`.'.format(detector_name))
 
     # load outlier detector specific parameters
-    state_dict = pickle.load(open(os.path.join(filepath, detector_name + '.pickle'), 'rb'))
+    state_dict = dill.load(open(os.path.join(filepath, detector_name + '.dill'), 'rb'))
 
     # initialize outlier detector
     if detector_name == 'OutlierAE':
@@ -1456,7 +1456,7 @@ def load_text_embed(filepath: str, load_dir: str = 'model') \
         -> Tuple[TransformerEmbedding, Callable]:
     model_dir = os.path.join(filepath, load_dir)
     tokenizer = AutoTokenizer.from_pretrained(model_dir)
-    args = pickle.load(open(os.path.join(model_dir, 'embedding.pickle'), 'rb'))
+    args = dill.load(open(os.path.join(model_dir, 'embedding.dill'), 'rb'))
     emb = TransformerEmbedding(
         model_dir, embedding_type=args['embedding_type'], layers=args['layers']
     )

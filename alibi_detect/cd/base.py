@@ -30,6 +30,7 @@ class BaseClassifierDrift(BaseDetector):
             binarize_preds: bool = False,
             train_size: Optional[float] = .75,
             n_folds: Optional[int] = None,
+            retrain_from_scratch: bool = True,
             seed: int = 0,
             data_type: Optional[str] = None
     ) -> None:
@@ -63,6 +64,9 @@ class BaseClassifierDrift(BaseDetector):
             on all the out-of-fold predictions. This allows to leverage all the reference and test data
             for drift detection at the expense of longer computation. If both `train_size` and `n_folds`
             are specified, `n_folds` is prioritized.
+        retrain_from_scratch
+            Whether the classifier should be retrained from scratch for each set of test data or whether
+            it should instead continue training from where it left off on the previous set.
         seed
             Optional random seed for fold selection.
         data_type
@@ -78,6 +82,9 @@ class BaseClassifierDrift(BaseDetector):
 
         if preds_type not in ['probs', 'logits']:
             raise ValueError("'preds_type' should be 'probs' or 'logits'")
+
+        if n_folds is not None and n_folds > 1 and not retrain_from_scratch:
+            raise ValueError("If using multiple folds the model must be retrained from scratch for each fold.")
 
         # optionally already preprocess reference data
         self.p_val = p_val
@@ -98,6 +105,7 @@ class BaseClassifierDrift(BaseDetector):
             self.skf = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=seed)
         else:
             self.train_size, self.skf = train_size, None
+        self.retrain_from_scratch = retrain_from_scratch
 
         # set metadata
         self.meta['detector_type'] = 'offline'
@@ -203,8 +211,8 @@ class BaseClassifierDrift(BaseDetector):
         pass
 
     def predict(self, x: Union[np.ndarray, list],  return_p_val: bool = True,
-                return_distance: bool = True, return_probs: bool = True) \
-            -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
+                return_distance: bool = True, return_probs: bool = True, return_model: bool = True) \
+            -> Dict[str, Dict[str, Union[str, int, float, Callable]]]:
         """
         Predict whether a batch of data has drifted from the reference data.
 
@@ -220,14 +228,16 @@ class BaseClassifierDrift(BaseDetector):
         return_probs
             Whether to return the instance level classifier probabilities for the reference and test data
             (0=reference data, 1=test data).
+        return_model
+            Whether to return the updated model trained to discriminate reference and test instances.
 
         Returns
         -------
         Dictionary containing 'meta' and 'data' dictionaries.
         'meta' has the model's metadata.
-        'data' contains the drift prediction and optionally the performance of the classifier
+        'data' contains the drift prediction and optionally the p-value, performance of the classifier
         relative to its expectation under the no-change null, the out-of-fold classifier model
-        prediction probabilities on the reference and test data.
+        prediction probabilities on the reference and test data, and the trained model.
         """
         # compute drift scores
         p_val, dist, probs_ref, probs_test = self.score(x)
@@ -252,6 +262,182 @@ class BaseClassifierDrift(BaseDetector):
         if return_probs:
             cd['data']['probs_ref'] = probs_ref
             cd['data']['probs_test'] = probs_test
+        if return_model:
+            cd['data']['model'] = self.model  # type: ignore
+        return cd
+
+
+class BaseLearnedKernelDrift(BaseDetector):
+    def __init__(
+            self,
+            x_ref: Union[np.ndarray, list],
+            p_val: float = .05,
+            preprocess_x_ref: bool = True,
+            update_x_ref: Optional[Dict[str, int]] = None,
+            preprocess_fn: Optional[Callable] = None,
+            n_permutations: int = 100,
+            train_size: Optional[float] = .75,
+            retrain_from_scratch: bool = True,
+            data_type: Optional[str] = None
+    ) -> None:
+        """
+        Base class for the learned kernel-based drift detector.
+
+        Parameters
+        ----------
+        x_ref
+            Data used as reference distribution.
+        p_val
+            p-value used for the significance of the test.
+        preprocess_x_ref
+            Whether to already preprocess and store the reference data.
+        update_x_ref
+            Reference data can optionally be updated to the last n instances seen by the detector
+            or via reservoir sampling with size n. For the former, the parameter equals {'last': n} while
+            for reservoir sampling {'reservoir_sampling': n} is passed.
+        preprocess_fn
+            Function to preprocess the data before computing the data drift metrics.
+        n_permutations
+            The number of permutations to use in the permutation test once the MMD has been computed.
+        train_size
+            Optional fraction (float between 0 and 1) of the dataset used to train the kernel.
+            The drift is detected on `1 - train_size`. Cannot be used in combination with `n_folds`.
+        retrain_from_scratch
+            Whether the kernel should be retrained from scratch for each set of test data or whether
+            it should instead continue training from where it left off on the previous set.
+        data_type
+            Optionally specify the data type (tabular, image or time-series). Added to metadata.
+        """
+        super().__init__()
+
+        if p_val is None:
+            logger.warning('No p-value set for the drift threshold. Need to set it to detect data drift.')
+
+        # optionally already preprocess reference data
+        self.p_val = p_val
+        if preprocess_x_ref and isinstance(preprocess_fn, Callable):  # type: ignore
+            self.x_ref = preprocess_fn(x_ref)
+        else:
+            self.x_ref = x_ref
+        self.preprocess_x_ref = preprocess_x_ref
+        self.update_x_ref = update_x_ref
+        self.preprocess_fn = preprocess_fn
+        self.n = len(x_ref)  # type: ignore
+
+        self.n_permutations = n_permutations
+        self.train_size = train_size
+        self.retrain_from_scratch = retrain_from_scratch
+
+        # set metadata
+        self.meta['detector_type'] = 'offline'
+        self.meta['data_type'] = data_type
+
+    def preprocess(self, x: Union[np.ndarray, list]) -> Tuple[Union[np.ndarray, list], Union[np.ndarray, list]]:
+        """
+        Data preprocessing before computing the drift scores.
+        Parameters
+        ----------
+        x
+            Batch of instances.
+        Returns
+        -------
+        Preprocessed reference data and new instances.
+        """
+        if isinstance(self.preprocess_fn, Callable):  # type: ignore
+            x = self.preprocess_fn(x)
+            x_ref = self.x_ref if self.preprocess_x_ref else self.preprocess_fn(self.x_ref)
+            return x_ref, x
+        else:
+            return self.x_ref, x
+
+    def get_splits(self, x_ref: Union[np.ndarray, list], x: Union[np.ndarray, list]) \
+            -> Tuple[Tuple[Union[np.ndarray, list], Union[np.ndarray, list]],
+                     Tuple[Union[np.ndarray, list], Union[np.ndarray, list]]]:
+        """
+        Split reference and test data into two splits -- one of which to learn test locations
+        and parameters and one to use for tests.
+        Parameters
+        ----------
+        x_ref
+            Data used as reference distribution.
+        x
+            Batch of instances.
+        Returns
+        -------
+        Tuple containing split train data and tuple containing split test data
+        """
+
+        n_ref, n_cur = len(x_ref), len(x)
+        perm_ref, perm_cur = np.random.permutation(n_ref), np.random.permutation(n_cur)
+        idx_ref_tr, idx_ref_te = perm_ref[:int(n_ref*self.train_size)], perm_ref[int(n_ref*self.train_size):]
+        idx_cur_tr, idx_cur_te = perm_cur[:int(n_cur*self.train_size)], perm_cur[int(n_cur*self.train_size):]
+
+        if isinstance(x_ref, np.ndarray):
+            x_ref_tr, x_ref_te = x_ref[idx_ref_tr], x_ref[idx_ref_te]
+            x_cur_tr, x_cur_te = x[idx_cur_tr], x[idx_cur_te]
+        elif isinstance(x, list):
+            x_ref_tr, x_ref_te = [x_ref[_] for _ in idx_ref_tr], [x_ref[_] for _ in idx_ref_te]
+            x_cur_tr, x_cur_te = [x[_] for _ in idx_cur_tr], [x[_] for _ in idx_cur_te]
+        else:
+            raise TypeError(f'x needs to be of type np.ndarray or list and not {type(x)}.')
+
+        return (x_ref_tr, x_cur_tr), (x_ref_te, x_cur_te)
+
+    @abstractmethod
+    def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, np.ndarray]:
+        pass
+
+    def predict(self, x: Union[np.ndarray, list],  return_p_val: bool = True,
+                return_distance: bool = True, return_kernel: bool = True) \
+            -> Dict[Dict[str, str], Dict[str, Union[int, float, Callable]]]:
+        """
+        Predict whether a batch of data has drifted from the reference data.
+
+        Parameters
+        ----------
+        x
+            Batch of instances.
+        return_p_val
+            Whether to return the p-value of the permutation test.
+        return_distance
+            Whether to return the MMD metric between the new batch and reference data.
+        return_kernel
+            Whether to return the updated kernel trained to discriminate reference and test instances.
+
+        Returns
+        -------
+        Dictionary containing 'meta' and 'data' dictionaries.
+        'meta' has the detector's metadata.
+        'data' contains the drift prediction and optionally the p-value, threshold, MMD metric and
+            trained kernel.
+        """
+        # compute drift scores
+        p_val, dist, dist_permutations = self.score(x)
+        drift_pred = int(p_val < self.p_val)
+
+        # compute distance threshold
+        idx_threshold = int(self.p_val * len(dist_permutations))
+        distance_threshold = np.sort(dist_permutations)[::-1][idx_threshold]
+
+        # update reference dataset
+        if isinstance(self.update_x_ref, dict) and self.preprocess_fn is not None and self.preprocess_x_ref:
+            x = self.preprocess_fn(x)
+        self.x_ref = update_reference(self.x_ref, x, self.n, self.update_x_ref)
+        # used for reservoir sampling
+        self.n += len(x)  # type: ignore
+
+        # populate drift dict
+        cd = concept_drift_dict()
+        cd['meta'] = self.meta
+        cd['data']['is_drift'] = drift_pred
+        if return_p_val:
+            cd['data']['p_val'] = p_val
+            cd['data']['threshold'] = self.p_val
+        if return_distance:
+            cd['data']['distance'] = dist
+            cd['data']['distance_threshold'] = distance_threshold
+        if return_kernel:
+            cd['data']['kernel'] = self.kernel  # type: ignore
         return cd
 
 

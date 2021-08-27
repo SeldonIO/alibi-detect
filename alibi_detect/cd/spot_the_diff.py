@@ -3,28 +3,27 @@ from typing import Callable, Dict, Optional, Union
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
 
 if has_pytorch:
-    from torch.utils.data import DataLoader
-    from alibi_detect.cd.pytorch.classifier import ClassifierDriftTorch
+    from alibi_detect.cd.pytorch.spot_the_diff import SpotTheDiffDriftTorch
     from alibi_detect.utils.pytorch.data import TorchDataset
+    from torch.utils.data import DataLoader
 
 if has_tensorflow:
-    from alibi_detect.cd.tensorflow.classifier import ClassifierDriftTF
+    from alibi_detect.cd.tensorflow.spot_the_diff import SpotTheDiffDriftTF
     from alibi_detect.utils.tensorflow.data import TFDataset
 
 
-class ClassifierDrift:
+class SpotTheDiffDrift:
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
-            model: Callable,
             backend: str = 'tensorflow',
             p_val: float = .05,
-            preprocess_x_ref: bool = True,
-            update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
-            preds_type: str = 'probs',
+            kernel: Callable = None,
+            n_diffs: int = 1,
+            initial_diffs: Optional[np.ndarray] = None,
+            l1_reg: float = 0.01,
             binarize_preds: bool = False,
-            reg_loss_fn: Callable = (lambda model: 0),
             train_size: Optional[float] = .75,
             n_folds: Optional[int] = None,
             retrain_from_scratch: bool = True,
@@ -42,35 +41,38 @@ class ClassifierDrift:
             data_type: Optional[str] = None
     ) -> None:
         """
-        Classifier-based drift detector. The classifier is trained on a fraction of the combined
-        reference and test data and drift is detected on the remaining data. To use all the data
-        to detect drift, a stratified cross-validation scheme can be chosen.
+        Classifier-based drift detector with a classifier of form y = a + b_1*k(x,w_1) + ... + b_J*k(x,w_J),
+        where k is a kernel and w_1,...,w_J are learnable test locations. If drift has occured the test locations
+        learn to be more/less (given by sign of b_i) similar to test instances than reference instances.
+        The test locations are regularised to be close to the average reference instance such that the **difference**
+        is then interpretable as the transformation required for each feature to make the average instance more/less
+        like a test instance than a reference instance.
+
+        The classifier is trained on a fraction of the combined reference and test data and drift is detected on
+        the remaining data. To use all the data to detect drift, a stratified cross-validation scheme can be chosen.
 
         Parameters
         ----------
         x_ref
             Data used as reference distribution.
-        model
-            PyTorch or TensorFlow classification model used for drift detection.
         backend
             Backend used for the training loop implementation.
         p_val
             p-value used for the significance of the test.
-        preprocess_x_ref
-            Whether to already preprocess and store the reference data.
-        update_x_ref
-            Reference data can optionally be updated to the last n instances seen by the detector
-            or via reservoir sampling with size n. For the former, the parameter equals {'last': n} while
-            for reservoir sampling {'reservoir_sampling': n} is passed.
         preprocess_fn
             Function to preprocess the data before computing the data drift metrics.
-        preds_type
-            Whether the model outputs 'probs' or 'logits'
+        kernel
+            Kernel used to define similarity between instances, defaults to Gaussian RBF
+        n_diffs
+            The number of test locations to use, each corresponding to an interpretable difference.
+        initial_diffs
+            Array used to initialise the diffs that will be learned. Defaults to Gaussian
+            for each feature with equal variance to that of reference data.
+        l1_reg
+            Strength of l1 regularisation to apply to the differences.
         binarize_preds
             Whether to test for discrepency on soft  (e.g. probs/logits) model predictions directly
             with a K-S test or binarise to 0-1 prediction errors and apply a binomial test.
-        reg_loss_fn
-            The regularisation term reg_loss_fn(model) is added to the loss function being optimized.
         train_size
             Optional fraction (float between 0 and 1) of the dataset used to train the classifier.
             The drift is detected on `1 - train_size`. Cannot be used in combination with `n_folds`.
@@ -114,13 +116,13 @@ class ClassifierDrift:
         backend = backend.lower()
         if backend == 'tensorflow' and not has_tensorflow or backend == 'pytorch' and not has_pytorch:
             raise ImportError(f'{backend} not installed. Cannot initialize and run the '
-                              f'ClassifierDrift detector with {backend} backend.')
+                              f'SpotTheDiffDrift detector with {backend} backend.')
         elif backend not in ['tensorflow', 'pytorch']:
             raise NotImplementedError(f'{backend} not implemented. Use tensorflow or pytorch instead.')
 
         kwargs = locals()
-        args = [kwargs['x_ref'], kwargs['model']]
-        pop_kwargs = ['self', 'x_ref', 'model', 'backend', '__class__']
+        args = [kwargs['x_ref']]
+        pop_kwargs = ['self', 'x_ref',  'backend', '__class__']
         if kwargs['optimizer'] is None:
             pop_kwargs += ['optimizer']
         [kwargs.pop(k, None) for k in pop_kwargs]
@@ -130,18 +132,19 @@ class ClassifierDrift:
             [kwargs.pop(k, None) for k in pop_kwargs]
             if dataset is None:
                 kwargs.update({'dataset': TFDataset})
-            self._detector = ClassifierDriftTF(*args, **kwargs)  # type: ignore
+            self._detector = SpotTheDiffDriftTF(*args, **kwargs)  # type: ignore
         else:
             if dataset is None:
                 kwargs.update({'dataset': TorchDataset})
             if dataloader is None:
                 kwargs.update({'dataloader': DataLoader})
-            self._detector = ClassifierDriftTorch(*args, **kwargs)  # type: ignore
+            self._detector = SpotTheDiffDriftTorch(*args, **kwargs)  # type: ignore
         self.meta = self._detector.meta
 
-    def predict(self, x: Union[np.ndarray, list],  return_p_val: bool = True,
-                return_distance: bool = True, return_probs: bool = True, return_model: bool = True) \
-            -> Dict[str, Dict[str, Union[str, int, float, Callable]]]:
+    def predict(
+        self, x: np.ndarray,  return_p_val: bool = True, return_distance: bool = True,
+        return_probs: bool = True, return_model: bool = True
+    ) -> Dict[str, Dict[str, Union[int, str, float, Callable]]]:
         """
         Predict whether a batch of data has drifted from the reference data.
 
@@ -163,9 +166,10 @@ class ClassifierDrift:
         Returns
         -------
         Dictionary containing 'meta' and 'data' dictionaries.
-        'meta' has the model's metadata.
-        'data' contains the drift prediction and optionally the p-value, performance of the classifier
-        relative to its expectation under the no-change null, the out-of-fold classifier model
-        prediction probabilities on the reference and test data, and the trained model.
+        'meta' has the detector's metadata.
+        'data' contains the drift prediction, the diffs used to distinguish reference from test instances,
+        and optionally the p-value, performance of the classifier relative to its expectation under the
+        no-change null, the out-of-fold classifier model prediction probabilities on the reference and test
+        data, and the trained model.
         """
         return self._detector.predict(x, return_p_val, return_distance, return_probs, return_model)
