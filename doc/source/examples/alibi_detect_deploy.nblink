@@ -1,3 +1,6 @@
 {
-  "path": "../../../examples/alibi_detect_deploy.ipynb"
+  "path": "../../../examples/alibi_detect_deploy.ipynb",
+  "extra-media": [
+    "../../../examples/image/"
+  ]
 }

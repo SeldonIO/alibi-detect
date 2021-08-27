@@ -182,7 +182,12 @@ latex_elements = {
     # 'pointsize': '10pt',
     # Additional stuff for the LaTeX preamble.
     #
-    # 'preamble': '',
+    # Replace unicode characters with utf8. 
+    # - U+2588 and U+258E are used in tqdm progress bars
+    'preamble': r''' 
+        \DeclareUnicodeCharacter{2588}{=}
+        \DeclareUnicodeCharacter{258E}{|} 
+        ''',
     # Latex figure (float) alignment
     #
     # 'figure_align': 'htbp',
