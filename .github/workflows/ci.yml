@@ -64,9 +64,14 @@ jobs:
           pip install -r requirements/docs.txt
           pip install -e .
           pip freeze
-      - name: Build documentation
+      - name: Build documentation to html
         run: |
           make build_docs
+      - name: Install latex
+        run: |
+          sudo apt-get install latexmk texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended
+      - name: Build documentation to pdf via latex
+        run: |
           make build_latex
 
   licenses:
