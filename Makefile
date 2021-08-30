@@ -18,6 +18,10 @@ mypy: ## Run typeckecking according to mypy configuration in setup.cfg
 build_docs: ## Build the documentation
 	$(MAKE) -C doc html
 
+.PHONY: build_latex
+build_latex: ## Build the documentation into a pdf
+	$(MAKE) -C doc latexpdf
+
 .PHONY: clean_docs
 clean_docs: ## Clean the documentation build
 	$(MAKE) -C doc clean

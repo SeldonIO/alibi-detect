@@ -175,21 +175,24 @@ htmlhelp_basename = "alibi-detectdoc"
 
 latex_elements = {
     # The paper size ('letterpaper' or 'a4paper').
-    #
     # 'papersize': 'letterpaper',
+    #
     # The font size ('10pt', '11pt' or '12pt').
-    #
     # 'pointsize': '10pt',
-    # Additional stuff for the LaTeX preamble.
     #
-    # Replace unicode characters with utf8. 
-    # - U+2588 and U+258E are used in tqdm progress bars
+    # Additional stuff for the LaTeX preamble.
+    # - Replace unicode characters with utf8. 
+    #   (U+2588 and U+258E are used in tqdm progress bars)
+    # - Use enumitem for lists to prevent "too deeply nested" latex error
     'preamble': r''' 
         \DeclareUnicodeCharacter{2588}{=}
         \DeclareUnicodeCharacter{258E}{|} 
+
+        \usepackage{enumitem}
+        \setlistdepth{99}
         ''',
-    # Latex figure (float) alignment
     #
+    # Latex figure (float) alignment
     # 'figure_align': 'htbp',
 }
 

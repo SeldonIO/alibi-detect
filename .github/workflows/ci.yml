@@ -65,6 +65,8 @@ jobs:
           pip freeze
       - name: Build documentation
         run: |
+          make build_docs
+          make build_latex
 
   licenses:
 
