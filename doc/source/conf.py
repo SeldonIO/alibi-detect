@@ -89,7 +89,8 @@ autodoc_mock_imports = [
     "fbprophet",
     "torch",
     "transformers",
-    "tqdm"
+    "tqdm",
+    "dill"
 ]
 
 # Napoleon settings

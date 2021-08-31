@@ -62,7 +62,6 @@ jobs:
         run: |
           sudo apt-get install pandoc
           pip install -r requirements/docs.txt
-          pip install -e .
           pip freeze
       - name: Build documentation to html
         run: |
