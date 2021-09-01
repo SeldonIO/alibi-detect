@@ -4,6 +4,7 @@ import dill
 from functools import partial
 import logging
 import os
+from pathlib import Path
 import tensorflow as tf
 from tensorflow.keras.layers import Input, InputLayer
 from tensorflow_probability.python.distributions.distribution import Distribution
@@ -941,7 +942,7 @@ def save_tf_s2s(od: OutlierSeq2Seq,
         logger.warning('No `tf.keras.Model` Seq2Seq detected. No Seq2Seq model saved.')
 
 
-def load_detector(filepath: str, **kwargs) -> Data:
+def load_detector(filepath: Union[str, os.PathLike], **kwargs) -> Data:
     """
     Load outlier, drift or adversarial detector.
 
@@ -960,11 +961,19 @@ def load_detector(filepath: str, **kwargs) -> Data:
         k = []
 
     # check if path exists
-    if not os.path.isdir(filepath):
+    filepath = Path(filepath)
+    if not filepath.is_dir():
         raise ValueError('{} does not exist.'.format(filepath))
 
+    # Check if dill files exist, otherwise read pickle files
+    files = list(filepath.glob('*.dill'))
+    if len(files)==2:
+        suffix = '.dill'
+    else:
+        suffix = '.pickle'
+
     # load metadata
-    meta_dict = dill.load(open(os.path.join(filepath, 'meta.dill'), 'rb'))
+    meta_dict = dill.load(open(filepath.joinpath('meta' + suffix), 'rb'))
 
     if 'backend' in list(meta_dict.keys()) and meta_dict['backend'] == 'pytorch':
         raise NotImplementedError('Detectors with PyTorch backend are not yet supported.')
@@ -974,7 +983,11 @@ def load_detector(filepath: str, **kwargs) -> Data:
         raise ValueError('{} is not supported by `load_detector`.'.format(detector_name))
 
     # load outlier detector specific parameters
-    state_dict = dill.load(open(os.path.join(filepath, detector_name + '.dill'), 'rb'))
+    state_dict = dill.load(open(filepath.joinpath(detector_name + suffix), 'rb'))
+
+    # Convert filepath from pathlib.Path() to str, to avoid needing to refactor all load methods below
+    # TODO - Replace os.path methods with pathlib methods in load methods
+    filepath = str(filepath)
 
     # initialize outlier detector
     if detector_name == 'OutlierAE':

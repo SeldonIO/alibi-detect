@@ -1,7 +1,7 @@
-import cloudpickle as cp
 import logging
 import os
-import pickle
+from pathlib import Path
+import dill
 import tensorflow as tf
 from tensorflow.python.keras import backend
 from typing import Tuple, Union
@@ -53,6 +53,7 @@ def get_pixelcnn_default_kwargs():
 
 
 def fetch_tf_model(dataset: str, model: str) -> tf.keras.Model:
+    # TODO - check this
     """
     Fetch pretrained tensorflow models from the google cloud bucket.
 
@@ -78,7 +79,7 @@ def fetch_tf_model(dataset: str, model: str) -> tf.keras.Model:
     return clf
 
 
-def fetch_enc_dec(url: str, filepath: str) -> None:
+def fetch_enc_dec(url: str, filepath: Union[str, os.PathLike]) -> None:
     """
     Download encoder and decoder networks.
 
@@ -90,21 +91,23 @@ def fetch_enc_dec(url: str, filepath: str) -> None:
         Local directory to save detector to.
     """
     url_models = os.path.join(url, 'model')
-    model_path = os.path.join(filepath, 'model')
-    if not os.path.isdir(model_path):
-        os.mkdir(model_path)
+    model_path = Path(filepath).joinpath('model')
+    if not model_path.is_dir():
+        model_path.mkdir(parents=True, exist_ok=True)
     # encoder and decoder
     tf.keras.utils.get_file(
-        os.path.join(model_path, 'encoder_net.h5'),
-        os.path.join(url_models, 'encoder_net.h5')
+        fname = model_path.joinpath('encoder_net.h5'),
+        cache_subdir = '',
+        origin = os.path.join(url_models, 'encoder_net.h5')
     )
     tf.keras.utils.get_file(
-        os.path.join(model_path, 'decoder_net.h5'),
-        os.path.join(url_models, 'decoder_net.h5')
+        fname = model_path.joinpath('decoder_net.h5'),
+        cache_subdir = '',
+        origin = os.path.join(url_models, 'decoder_net.h5')
     )
 
 
-def fetch_ae(url: str, filepath: str) -> None:
+def fetch_ae(url: str, filepath: Union[str, os.PathLike]) -> None:
     """
     Download AE outlier detector.
 
@@ -117,23 +120,26 @@ def fetch_ae(url: str, filepath: str) -> None:
     """
     fetch_enc_dec(url, filepath)
     url_models = os.path.join(url, 'model')
-    model_path = os.path.join(filepath, 'model')
+    model_path = Path(filepath).joinpath('model')
     # encoder and decoder
     tf.keras.utils.get_file(
-        os.path.join(model_path, 'checkpoint'),
-        os.path.join(url_models, 'checkpoint')
+        fname = model_path.joinlib('checkpoint'),
+        cache_subdir = '',
+        origin = os.path.join(url_models, 'checkpoint')
     )
     tf.keras.utils.get_file(
-        os.path.join(model_path, 'ae.ckpt.index'),
-        os.path.join(url_models, 'ae.ckpt.index')
+        fname = model_path.joinpath('ae.ckpt.index'),
+        cache_subdir = '',
+        origin = os.path.join(url_models, 'ae.ckpt.index')
     )
     tf.keras.utils.get_file(
-        os.path.join(model_path, 'ae.ckpt.data-00000-of-00001'),
-        os.path.join(url_models, 'ae.ckpt.data-00000-of-00001')
+        fname = model_path.joinpath('ae.ckpt.data-00000-of-00001'),
+        cache_subdir = '',
+        origin = os.path.join(url_models, 'ae.ckpt.data-00000-of-00001')
     )
 
 
-def fetch_ad_ae(url: str, filepath: str, state_dict: dict) -> None:
+def fetch_ad_ae(url: str, filepath: Union[str, os.PathLike], state_dict: dict) -> None:
     """
     Download AE adversarial detector.
 
@@ -187,7 +193,7 @@ def fetch_ad_ae(url: str, filepath: str, state_dict: dict) -> None:
             )
 
 
-def fetch_ad_md(url: str, filepath: str) -> None:
+def fetch_ad_md(url: str, filepath: Union[str, os.PathLike]) -> None:
     """
     Download model and distilled model.
 
@@ -213,7 +219,7 @@ def fetch_ad_md(url: str, filepath: str) -> None:
     )
 
 
-def fetch_aegmm(url: str, filepath: str) -> None:
+def fetch_aegmm(url: str, filepath: Union[str, os.PathLike]) -> None:
     """
     Download AEGMM outlier detector.
 
@@ -247,7 +253,7 @@ def fetch_aegmm(url: str, filepath: str) -> None:
     )
 
 
-def fetch_vae(url: str, filepath: str) -> None:
+def fetch_vae(url: str, filepath: Union[str, os.PathLike]) -> None:
     """
     Download VAE outlier detector.
 
@@ -261,22 +267,25 @@ def fetch_vae(url: str, filepath: str) -> None:
     fetch_enc_dec(url, filepath)
     # save VAE weights
     url_models = os.path.join(url, 'model')
-    model_path = os.path.join(filepath, 'model')
+    model_path = Path(filepath).joinpath('model')
     tf.keras.utils.get_file(
-        os.path.join(model_path, 'checkpoint'),
-        os.path.join(url_models, 'checkpoint')
+        fname = model_path.joinpath('checkpoint'),
+        cache_subdir = '',
+        origin = os.path.join(url_models, 'checkpoint')
     )
     tf.keras.utils.get_file(
-        os.path.join(model_path, 'vae.ckpt.index'),
-        os.path.join(url_models, 'vae.ckpt.index')
+        fname = model_path.joinpath('vae.ckpt.index'),
+        cache_subdir = '',
+        origin = os.path.join(url_models, 'vae.ckpt.index')
     )
     tf.keras.utils.get_file(
-        os.path.join(model_path, 'vae.ckpt.data-00000-of-00001'),
-        os.path.join(url_models, 'vae.ckpt.data-00000-of-00001')
+        fname = model_path.joinpath('vae.ckpt.data-00000-of-00001'),
+        cache_subdir = '',
+        origin = os.path.join(url_models, 'vae.ckpt.data-00000-of-00001')
     )
 
 
-def fetch_vaegmm(url: str, filepath: str) -> None:
+def fetch_vaegmm(url: str, filepath: Union[str, os.PathLike]) -> None:
     """
     Download VAEGMM outlier detector.
 
@@ -310,7 +319,7 @@ def fetch_vaegmm(url: str, filepath: str) -> None:
     )
 
 
-def fetch_seq2seq(url: str, filepath: str) -> None:
+def fetch_seq2seq(url: str, filepath: Union[str, os.PathLike]) -> None:
     """
     Download sequence-to-sequence outlier detector.
 
@@ -345,7 +354,7 @@ def fetch_seq2seq(url: str, filepath: str) -> None:
     )
 
 
-def fetch_llr(url: str, filepath: str) -> str:
+def fetch_llr(url: str, filepath: Union[str, os.PathLike]) -> str:
     """
     Download Likelihood Ratio outlier detector.
 
@@ -383,7 +392,8 @@ def fetch_llr(url: str, filepath: str) -> str:
         return 'model'
 
 
-def fetch_state_dict(url: str, filepath: str, save_state_dict: bool = True) -> Tuple[dict, dict]:
+def fetch_state_dict(url: str, filepath: Union[str, os.PathLike],
+                     save_state_dict: bool = True) -> Tuple[dict, dict]:
     """
     Fetch the metadata and state/hyperparameter values of pre-trained detectors.
 
@@ -401,19 +411,20 @@ def fetch_state_dict(url: str, filepath: str, save_state_dict: bool = True) -> T
     Detector metadata and state.
     """
     # fetch and save metadata and state dict
+    # TODO - Currently load pickle from bucket and save locally as dill. Convert to dill on bucket?
     path_meta = os.path.join(url, 'meta.pickle')
-    meta = cp.load(urlopen(path_meta))
+    meta = dill.load(urlopen(path_meta))
     path_state = os.path.join(url, meta['name'] + '.pickle')
-    state_dict = cp.load(urlopen(path_state))
+    state_dict = dill.load(urlopen(path_state))
     if save_state_dict:
-        with open(os.path.join(filepath, 'meta.pickle'), 'wb') as f:
-            pickle.dump(meta, f)
-        with open(os.path.join(filepath, meta['name'] + '.pickle'), 'wb') as f:
-            pickle.dump(state_dict, f)
+        with open(filepath.joinpath('meta.dill'), 'wb') as f:
+            dill.dump(meta, f)
+        with open(filepath.joinpath(meta['name'] + '.dill'), 'wb') as f:
+            dill.dump(state_dict, f)
     return meta, state_dict
 
 
-def fetch_detector(filepath: str,
+def fetch_detector(filepath: Union[str, os.PathLike],
                    detector_type: str,
                    dataset: str,
                    detector_name: str,
@@ -439,11 +450,12 @@ def fetch_detector(filepath: str,
     -------
     Initialised pre-trained detector.
     """
-    # create url of detector
-    filepath = os.path.join(filepath, detector_name)
-    if not os.path.isdir(filepath):
+    # create path (if needed)
+    filepath = Path(filepath).joinpath(detector_name)
+    if not filepath.is_dir():
+        filepath.mkdir(parents=True, exist_ok=True)
         logger.warning('Directory {} does not exist and is now created.'.format(filepath))
-        os.mkdir(filepath)
+    # create url of detector
     url = 'https://storage.googleapis.com/seldon-models/alibi-detect/'
     if detector_type == 'adversarial':
         url = os.path.join(url, 'ad', dataset, model, detector_name)
