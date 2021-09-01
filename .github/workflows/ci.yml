@@ -54,7 +54,7 @@ jobs:
 
     container:
       image: readthedocs/build:latest
-      options: --user 1000
+      options: --user root
 
     steps:
       - uses: actions/checkout@v2
