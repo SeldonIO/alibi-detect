@@ -50,13 +50,13 @@ jobs:
 
   docs:
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
+
+    container:
+      image: readthedocs/build:latest
 
     steps:
       - uses: actions/checkout@v2
-      - name: Set up with readthedocs docker image
-        run: |
-          docker pull readthedocs/build:5.0
       - name: Install dependencies
         run: |
           pip install -r requirements/docs.txt
