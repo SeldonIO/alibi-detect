@@ -55,7 +55,8 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Set up with readthedocs docker image
-        uses: docker:readthedocs/build:latest 
+        run: |
+          docker pull readthedocs/build:6.0
       - name: Install dependencies
         run: |
           pip install -r requirements/docs.txt
