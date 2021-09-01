@@ -54,20 +54,16 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Set up Python 3.x
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.8'
+      - name: Set up with readthedocs docker image
+        uses: docker:readthedocs/build:latest 
       - name: Install dependencies
         run: |
-          sudo apt-get install pandoc
           pip install -r requirements/docs.txt
           pip freeze
       - name: Build documentation to html
         run: |
           make build_docs
       - name: Build documentation to pdf via latex
-        uses: docker:readthedocs/build:latest 
         run: |
           make build_latex
 
