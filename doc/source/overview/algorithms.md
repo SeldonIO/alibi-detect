@@ -31,9 +31,11 @@ The following tables summarize the advised use cases for the current algorithms.
 |[Kolmogorov-Smirnov](../cd/methods/ksdrift.ipynb)|✔|✔| |✔|✔| |✔|
 |[Least-Squares Density Difference](../cd/methods/mmddrift.ipynb)|✔|✔| |✔|✔|✔| |
 |[Maximum Mean Discrepancy](../cd/methods/mmddrift.ipynb)|✔|✔| |✔|✔|✔| |
+|[Learned Kernel MMD](../cd/methods/learnedkerneldrift.ipynb)|✔|✔| |✔|✔| | |
 |[Chi-Squared](../cd/methods/chisquaredrift.ipynb)|✔| | | |✔| |✔|
 |[Mixed-type tabular](../cd/methods/tabulardrift.ipynb)|✔| | | |✔| |✔|
 |[Classifier](../cd/methods/classifierdrift.ipynb)|✔|✔|✔|✔|✔| | |
+|[Spot-the-diff](../cd/methods/spotthediffdrift.ipynb)|✔|✔|✔|✔|✔| |✔|
 |[Classifier Uncertainty](../cd/methods/modeluncdrift.ipynb)|✔|✔|✔|✔|✔| | |
 |[Regressor Uncertainty](../cd/methods/modeluncdrift.ipynb)|✔|✔|✔|✔|✔| | | |
 

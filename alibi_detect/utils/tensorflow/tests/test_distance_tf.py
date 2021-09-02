@@ -4,6 +4,7 @@ import pytest
 import tensorflow as tf
 from alibi_detect.utils.tensorflow import GaussianRBF, mmd2, mmd2_from_kernel_matrix, permed_lsdds
 from alibi_detect.utils.tensorflow import relative_euclidean_distance, squared_pairwise_distance
+from alibi_detect.utils.tensorflow import batch_compute_kernel_matrix
 
 n_features = [2, 5]
 n_instances = [(100, 100), (100, 75)]
@@ -30,6 +31,32 @@ def test_pairwise(pairwise_params):
     assert dist_xx.shape == (xshape[0], xshape[0])
     assert dist_xy.shape == n_instances
     np.testing.assert_almost_equal(dist_xx.trace(), 0., decimal=5)
+
+
+n_features = [2, 5]
+n_instances = [(20, 20), (20, 15)]
+batch_size = [1, 5]
+tests_bckm = list(product(n_features, n_instances, batch_size))
+n_tests_bckm = len(tests_bckm)
+
+
+@pytest.fixture
+def bckm_params(request):
+    return tests_bckm[request.param]
+
+
+@pytest.mark.parametrize('bckm_params', list(range(n_tests_bckm)), indirect=True)
+def test_bckm(bckm_params):
+    n_features, n_instances, batch_size = bckm_params
+    xshape, yshape = (n_instances[0], n_features), (n_instances[1], n_features)
+    np.random.seed(0)
+    x = tf.convert_to_tensor(np.random.random(xshape).astype('float32'))
+    y = tf.convert_to_tensor(np.random.random(yshape).astype('float32'))
+
+    kernel = GaussianRBF(sigma=tf.constant(1.))
+    kernel_mat = kernel(x, y).numpy()
+    bc_kernel_mat = batch_compute_kernel_matrix(x, y, kernel, batch_size=batch_size).numpy()
+    np.testing.assert_almost_equal(kernel_mat, bc_kernel_mat, decimal=6)
 
 
 tests_mmd = tests_pairwise

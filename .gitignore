@@ -115,3 +115,6 @@ venv.bak/
 # mypy
 .mypy_cache/
 
+# temp scripts for debugging
+examples/temp_*
+

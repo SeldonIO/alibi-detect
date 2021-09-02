@@ -54,11 +54,13 @@ alibi_detect.cd.__all__
  'ClassifierDrift',
  'ClassifierUncertaintyDrift',
  'KSDrift',
+ 'LearnedKernelDrift',
  'LSDDDrift',
  'LSDDDriftOnline',
  'MMDDrift',
  'MMDDriftOnline',
  'RegressorUncertaintyDrift',
+ 'SpotTheDiffDrift',
  'TabularDrift']
 ```
 
@@ -98,7 +100,9 @@ And **data drift**:
 
 * [Least-Squares Density Difference Drift Detector](../cd/methods/lsdddrift.ipynb)
 
-* [Maximum Mean Discrepancy Drift Detector](../cd/methods/mmddrift.ipynb)
+* [Maximum Mean Discrepancy (MMD) Drift Detector](../cd/methods/mmddrift.ipynb)
+
+* [Learned Kernel MMD Drift Detector](../cd/methods/learnedkerneldrift.ipynb)
 
 * [Chi-Squared Drift Detector](../cd/methods/chisquaredrift.ipynb)
 
@@ -106,11 +110,13 @@ And **data drift**:
 
 * [Classifier Drift Detector](../cd/methods/classifierdrift.ipynb)
 
-* [Classifier and Regressor Drift Detectors](../cd/methods/modeluncdrift.ipynb)
+* [Spot-the-diff Drift Detector](../cd/methods/spotthediffdrift.ipynb)
+
+* [Classifier and Regressor Uncertainty Drift Detectors](../cd/methods/modeluncdrift.ipynb)
 
 * [Online Maximum Mean Discrepancy Drift Detector](../cd/methods/onlinemmddrift.ipynb)
 
-* [Online Least_Squares Density Difference Drift Detector](../cd/methods/onlinelsdddrift.ipynb)
+* [Online Least-Squares Density Difference Drift Detector](../cd/methods/onlinelsdddrift.ipynb)
 
 
 ## Basic Usage
