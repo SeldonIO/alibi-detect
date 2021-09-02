@@ -967,7 +967,7 @@ def load_detector(filepath: Union[str, os.PathLike], **kwargs) -> Data:
 
     # Check if dill files exist, otherwise read pickle files
     files = list(filepath.glob('*.dill'))
-    if len(files)==2:
+    if len(files) == 2:
         suffix = '.dill'
     else:
         suffix = '.pickle'

@@ -70,7 +70,7 @@ def fetch_tf_model(dataset: str, model: str) -> tf.keras.Model:
     """
     url = 'https://storage.googleapis.com/seldon-models/alibi-detect/classifier/'
     path_model = os.path.join(url, dataset, model, 'model.h5')
-    save_path = tf.keras.utils.get_file(model, path_model)
+    save_path = tf.keras.utils.get_file(Path(model + '.h5').resolve(), path_model)
     if dataset == 'cifar10' and model == 'resnet56':
         custom_objects = {'backend': backend}
     else:
@@ -91,19 +91,17 @@ def fetch_enc_dec(url: str, filepath: Union[str, os.PathLike]) -> None:
         Local directory to save detector to.
     """
     url_models = os.path.join(url, 'model')
-    model_path = Path(filepath).joinpath('model')
+    model_path = Path(filepath).joinpath('model').resolve()
     if not model_path.is_dir():
         model_path.mkdir(parents=True, exist_ok=True)
     # encoder and decoder
     tf.keras.utils.get_file(
-        fname = model_path.joinpath('encoder_net.h5'),
-        cache_subdir = '',
-        origin = os.path.join(url_models, 'encoder_net.h5')
+        model_path.joinpath('encoder_net.h5'),
+        os.path.join(url_models, 'encoder_net.h5')
     )
     tf.keras.utils.get_file(
-        fname = model_path.joinpath('decoder_net.h5'),
-        cache_subdir = '',
-        origin = os.path.join(url_models, 'decoder_net.h5')
+        model_path.joinpath('decoder_net.h5'),
+        os.path.join(url_models, 'decoder_net.h5')
     )
 
 
@@ -120,22 +118,19 @@ def fetch_ae(url: str, filepath: Union[str, os.PathLike]) -> None:
     """
     fetch_enc_dec(url, filepath)
     url_models = os.path.join(url, 'model')
-    model_path = Path(filepath).joinpath('model')
+    model_path = Path(filepath).joinpath('model').resolve()
     # encoder and decoder
     tf.keras.utils.get_file(
-        fname = model_path.joinlib('checkpoint'),
-        cache_subdir = '',
-        origin = os.path.join(url_models, 'checkpoint')
+        model_path.joinpath('checkpoint'),
+        os.path.join(url_models, 'checkpoint')
     )
     tf.keras.utils.get_file(
-        fname = model_path.joinpath('ae.ckpt.index'),
-        cache_subdir = '',
-        origin = os.path.join(url_models, 'ae.ckpt.index')
+        model_path.joinpath('ae.ckpt.index'),
+        os.path.join(url_models, 'ae.ckpt.index')
     )
     tf.keras.utils.get_file(
-        fname = model_path.joinpath('ae.ckpt.data-00000-of-00001'),
-        cache_subdir = '',
-        origin = os.path.join(url_models, 'ae.ckpt.data-00000-of-00001')
+        model_path.joinpath('ae.ckpt.data-00000-of-00001'),
+        os.path.join(url_models, 'ae.ckpt.data-00000-of-00001')
     )
 
 
@@ -154,25 +149,25 @@ def fetch_ad_ae(url: str, filepath: Union[str, os.PathLike], state_dict: dict) -
     """
     fetch_enc_dec(url, filepath)
     url_models = os.path.join(url, 'model')
-    model_path = os.path.join(filepath, 'model')
+    model_path = Path(filepath).joinpath('model').resolve()
     tf.keras.utils.get_file(
-        os.path.join(model_path, 'model.h5'),
+        model_path.joinpath('model.h5'),
         os.path.join(url_models, 'model.h5')
     )
     tf.keras.utils.get_file(
-        os.path.join(model_path, 'checkpoint'),
+        model_path.joinpath('checkpoint'),
         os.path.join(url_models, 'checkpoint')
     )
     tf.keras.utils.get_file(
-        os.path.join(model_path, 'ae.ckpt.index'),
+        model_path.joinpath('ae.ckpt.index'),
         os.path.join(url_models, 'ae.ckpt.index')
     )
     tf.keras.utils.get_file(
-        os.path.join(model_path, 'ae.ckpt.data-00000-of-00002'),
+        model_path.joinpath('ae.ckpt.data-00000-of-00002'),
         os.path.join(url_models, 'ae.ckpt.data-00000-of-00002')
     )
     tf.keras.utils.get_file(
-        os.path.join(model_path, 'ae.ckpt.data-00001-of-00002'),
+        model_path.joinpath('ae.ckpt.data-00001-of-00002'),
         os.path.join(url_models, 'ae.ckpt.data-00001-of-00002')
     )
     hidden_layer_kld = state_dict['hidden_layer_kld']
@@ -180,15 +175,15 @@ def fetch_ad_ae(url: str, filepath: Union[str, os.PathLike], state_dict: dict) -
         for i, (_, _) in enumerate(hidden_layer_kld.items()):
             hl = 'model_hl_' + str(i)
             tf.keras.utils.get_file(
-                os.path.join(model_path, hl + '.ckpt.index'),
+                model_path.joinpath(hl + '.ckpt.index'),
                 os.path.join(url_models, hl + '.ckpt.index')
             )
             tf.keras.utils.get_file(
-                os.path.join(model_path, hl + '.ckpt.data-00000-of-00002'),
+                model_path.joinpath(hl + '.ckpt.data-00000-of-00002'),
                 os.path.join(url_models, hl + '.ckpt.data-00000-of-00002')
             )
             tf.keras.utils.get_file(
-                os.path.join(model_path, hl + '.ckpt.data-00001-of-00002'),
+                model_path.joinpath(hl + '.ckpt.data-00001-of-00002'),
                 os.path.join(url_models, hl + '.ckpt.data-00001-of-00002')
             )
 
@@ -205,16 +200,16 @@ def fetch_ad_md(url: str, filepath: Union[str, os.PathLike]) -> None:
         Local directory to save detector to.
     """
     url_models = os.path.join(url, 'model')
-    model_path = os.path.join(filepath, 'model')
-    if not os.path.isdir(model_path):
-        os.mkdir(model_path)
+    model_path = Path(filepath).joinpath('model').resolve()
+    if not model_path.is_dir():
+        model_path.mkdir(parents=True, exist_ok=True)
     # encoder and decoder
     tf.keras.utils.get_file(
-        os.path.join(model_path, 'model.h5'),
+        model_path.joinpath('model.h5'),
         os.path.join(url_models, 'model.h5')
     )
     tf.keras.utils.get_file(
-        os.path.join(model_path, 'distilled_model.h5'),
+        model_path.joinpath('distilled_model.h5'),
         os.path.join(url_models, 'distilled_model.h5')
     )
 
@@ -234,21 +229,21 @@ def fetch_aegmm(url: str, filepath: Union[str, os.PathLike]) -> None:
     fetch_enc_dec(url, filepath)
     # save GMM network
     url_models = os.path.join(url, 'model')
-    model_path = os.path.join(filepath, 'model')
+    model_path = Path(filepath).joinpath('model').resolve()
     tf.keras.utils.get_file(
-        os.path.join(model_path, 'gmm_density_net.h5'),
+        model_path.joinpath('gmm_density_net.h5'),
         os.path.join(url_models, 'gmm_density_net.h5')
     )
     tf.keras.utils.get_file(
-        os.path.join(model_path, 'checkpoint'),
+        model_path.joinpath('checkpoint'),
         os.path.join(url_models, 'checkpoint')
     )
     tf.keras.utils.get_file(
-        os.path.join(model_path, 'aegmm.ckpt.index'),
+        model_path.joinpath('aegmm.ckpt.index'),
         os.path.join(url_models, 'aegmm.ckpt.index')
     )
     tf.keras.utils.get_file(
-        os.path.join(model_path, 'aegmm.ckpt.data-00000-of-00001'),
+        model_path.joinpath('aegmm.ckpt.data-00000-of-00001'),
         os.path.join(url_models, 'aegmm.ckpt.data-00000-of-00001')
     )
 
@@ -267,21 +262,18 @@ def fetch_vae(url: str, filepath: Union[str, os.PathLike]) -> None:
     fetch_enc_dec(url, filepath)
     # save VAE weights
     url_models = os.path.join(url, 'model')
-    model_path = Path(filepath).joinpath('model')
+    model_path = Path(filepath).joinpath('model').resolve()
     tf.keras.utils.get_file(
-        fname = model_path.joinpath('checkpoint'),
-        cache_subdir = '',
-        origin = os.path.join(url_models, 'checkpoint')
+        model_path.joinpath('checkpoint'),
+        os.path.join(url_models, 'checkpoint')
     )
     tf.keras.utils.get_file(
-        fname = model_path.joinpath('vae.ckpt.index'),
-        cache_subdir = '',
-        origin = os.path.join(url_models, 'vae.ckpt.index')
+        model_path.joinpath('vae.ckpt.index'),
+        os.path.join(url_models, 'vae.ckpt.index')
     )
     tf.keras.utils.get_file(
-        fname = model_path.joinpath('vae.ckpt.data-00000-of-00001'),
-        cache_subdir = '',
-        origin = os.path.join(url_models, 'vae.ckpt.data-00000-of-00001')
+        model_path.joinpath('vae.ckpt.data-00000-of-00001'),
+        os.path.join(url_models, 'vae.ckpt.data-00000-of-00001')
     )
 
 
@@ -300,21 +292,21 @@ def fetch_vaegmm(url: str, filepath: Union[str, os.PathLike]) -> None:
     fetch_enc_dec(url, filepath)
     # save GMM network
     url_models = os.path.join(url, 'model')
-    model_path = os.path.join(filepath, 'model')
+    model_path = Path(filepath).joinpath('model').resolve()
     tf.keras.utils.get_file(
-        os.path.join(model_path, 'gmm_density_net.h5'),
+        model_path.joinpath('gmm_density_net.h5'),
         os.path.join(url_models, 'gmm_density_net.h5')
     )
     tf.keras.utils.get_file(
-        os.path.join(model_path, 'checkpoint'),
+        model_path.joinpath('checkpoint'),
         os.path.join(url_models, 'checkpoint')
     )
     tf.keras.utils.get_file(
-        os.path.join(model_path, 'vaegmm.ckpt.index'),
+        model_path.joinpath('vaegmm.ckpt.index'),
         os.path.join(url_models, 'vaegmm.ckpt.index')
     )
     tf.keras.utils.get_file(
-        os.path.join(model_path, 'vaegmm.ckpt.data-00000-of-00001'),
+        model_path.joinpath('vaegmm.ckpt.data-00000-of-00001'),
         os.path.join(url_models, 'vaegmm.ckpt.data-00000-of-00001')
     )
 
@@ -331,25 +323,25 @@ def fetch_seq2seq(url: str, filepath: Union[str, os.PathLike]) -> None:
         Local directory to save detector to.
     """
     url_models = os.path.join(url, 'model')
-    model_path = os.path.join(filepath, 'model')
+    model_path = Path(filepath).joinpath('model').resolve()
     if not os.path.isdir(model_path):
         os.mkdir(model_path)
     # save seq2seq
     tf.keras.utils.get_file(
-        os.path.join(model_path, 'checkpoint'),
+        model_path.joinpath('checkpoint'),
         os.path.join(url_models, 'checkpoint')
     )
     tf.keras.utils.get_file(
-        os.path.join(model_path, 'seq2seq.ckpt.index'),
+        model_path.joinpath('seq2seq.ckpt.index'),
         os.path.join(url_models, 'seq2seq.ckpt.index')
     )
     tf.keras.utils.get_file(
-        os.path.join(model_path, 'seq2seq.ckpt.data-00000-of-00001'),
+        model_path.joinpath('seq2seq.ckpt.data-00000-of-00001'),
         os.path.join(url_models, 'seq2seq.ckpt.data-00000-of-00001')
     )
     # save threshold network
     tf.keras.utils.get_file(
-        os.path.join(model_path, 'threshold_net.h5'),
+        model_path.joinpath('threshold_net.h5'),
         os.path.join(url_models, 'threshold_net.h5')
     )
 
@@ -366,27 +358,27 @@ def fetch_llr(url: str, filepath: Union[str, os.PathLike]) -> str:
         Local directory to save detector to.
     """
     url_models = os.path.join(url, 'model')
-    model_path = os.path.join(filepath, 'model')
-    if not os.path.isdir(model_path):
-        os.mkdir(model_path)
+    model_path = Path(filepath).joinpath('model').resolve()
+    if not model_path.is_dir():
+        model_path.mkdir(parents=True, exist_ok=True)
     try:
         tf.keras.utils.get_file(
-            os.path.join(model_path, 'model_s.h5'),
+            model_path.joinpath('model_s.h5'),
             os.path.join(url_models, 'model_s.h5')
         )
         tf.keras.utils.get_file(
-            os.path.join(model_path, 'model_b.h5'),
+            model_path.joinpath('model_b.h5'),
             os.path.join(url_models, 'model_b.h5')
         )
         model_type = 'weights'
         return model_type
     except Exception:
         tf.keras.utils.get_file(
-            os.path.join(model_path, 'model.h5'),
+            model_path.joinpath('model.h5'),
             os.path.join(url_models, 'model.h5')
         )
         tf.keras.utils.get_file(
-            os.path.join(model_path, 'model_background.h5'),
+            model_path.joinpath('model_background.h5'),
             os.path.join(url_models, 'model_background.h5')
         )
         return 'model'
@@ -412,6 +404,7 @@ def fetch_state_dict(url: str, filepath: Union[str, os.PathLike],
     """
     # fetch and save metadata and state dict
     # TODO - Currently load pickle from bucket and save locally as dill. Convert to dill on bucket?
+    filepath = Path(filepath)
     path_meta = os.path.join(url, 'meta.pickle')
     meta = dill.load(urlopen(path_meta))
     path_state = os.path.join(url, meta['name'] + '.pickle')
