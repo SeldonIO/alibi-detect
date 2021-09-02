@@ -1,6 +1,5 @@
 Methods
 =======
-blah blah blah
 
 .. toctree::
    :maxdepth: 1
