@@ -966,11 +966,14 @@ def load_detector(filepath: Union[str, os.PathLike], **kwargs) -> Data:
         raise ValueError('{} does not exist.'.format(filepath))
 
     # Check if dill files exist, otherwise read pickle files
-    files = list(filepath.glob('*.dill'))
-    if len(files) == 2:
+    files = [str(f.name) for f in filepath.iterdir() if f.is_file()]
+    if 'meta.dill' in files:
         suffix = '.dill'
-    else:
+    elif 'meta.pickle' in files:
         suffix = '.pickle'
+    else:
+        print(files)
+        raise ValueError('Neither meta.dill or meta.pickle exist in {}.'.format(filepath))
 
     # load metadata
     meta_dict = dill.load(open(filepath.joinpath('meta' + suffix), 'rb'))
