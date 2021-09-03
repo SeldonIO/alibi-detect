@@ -1,4 +1,4 @@
-import cloudpickle as cp
+import dill
 import io
 from io import BytesIO
 import logging
@@ -307,7 +307,7 @@ def fetch_attack(dataset: str, model: str, attack: str, return_X_y: bool = False
         return (X_train, y_train), (X_test, y_test)
 
     # get metadata
-    meta = cp.load(urlopen(path_meta))
+    meta = dill.load(urlopen(path_meta))
     return Bunch(data_train=X_train,
                  data_test=X_test,
                  target_train=y_train,
