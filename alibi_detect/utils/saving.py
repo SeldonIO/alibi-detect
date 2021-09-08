@@ -25,6 +25,9 @@ from alibi_detect.od import (IForest, LLR, Mahalanobis, OutlierAE, OutlierAEGMM,
 from alibi_detect.od.llr import build_model
 from alibi_detect.utils.tensorflow.kernels import GaussianRBF
 
+# do not extend pickle dispatch table so as not to change pickle behaviour
+dill.extend(use_dill=False)
+
 logger = logging.getLogger(__name__)
 
 Data = Union[
