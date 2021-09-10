@@ -165,7 +165,10 @@ class LearnedKernelDriftTF(BaseLearnedKernelDrift):
         train_args = [self.j_hat, (ds_ref_tr, ds_cur_tr)]
         LearnedKernelDriftTF.trainer(*train_args, **self.train_kwargs)  # type: ignore
 
-        x_all = np.concatenate([x_ref_te, x_cur_te], axis=0)
+        if isinstance(x_ref_te, np.ndarray) and isinstance(x_cur_te, np.ndarray):
+            x_all = np.concatenate([x_ref_te, x_cur_te], axis=0)
+        else:
+            x_all = x_ref_te + x_cur_te
         kernel_mat = self.kernel_mat_fn(x_all, x_all, self.kernel)
         kernel_mat = kernel_mat - tf.linalg.diag(tf.linalg.diag_part(kernel_mat))  # zero diagonal
         mmd2 = mmd2_from_kernel_matrix(kernel_mat, len(x_cur_te), permute=False, zero_diag=False).numpy()
