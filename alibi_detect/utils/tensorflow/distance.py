@@ -111,7 +111,14 @@ def mmd2_from_kernel_matrix(kernel_mat: tf.Tensor, m: int, permute: bool = False
         idx = np.random.permutation(kernel_mat.shape[0])
         kernel_mat = tf.gather(tf.gather(kernel_mat, indices=idx, axis=0), indices=idx, axis=1)
     k_xx, k_yy, k_xy = kernel_mat[:-m, :-m], kernel_mat[-m:, -m:], kernel_mat[-m:, :-m]
-    c_xx, c_yy = 1 / (n * (n - 1)), 1 / (m * (m - 1))
+    try:
+        c_xx = 1 / ((n * (n - 1)))
+    except ZeroDivisionError:
+        c_xx = 0
+    try:
+        c_yy = 1 / ((m * (m - 1)))
+    except ZeroDivisionError:
+        c_yy = 0
     mmd2 = c_xx * tf.reduce_sum(k_xx) + c_yy * tf.reduce_sum(k_yy) - 2. * tf.reduce_mean(k_xy)
     return mmd2
 
@@ -134,7 +141,14 @@ def mmd2(x: tf.Tensor, y: tf.Tensor, kernel: Callable) -> float:
     MMD^2 between the samples x and y.
     """
     n, m = x.shape[0], y.shape[0]
-    c_xx, c_yy = 1 / (n * (n - 1)), 1 / (m * (m - 1))
+    try:
+        c_xx = 1 / ((n * (n - 1)))
+    except ZeroDivisionError:
+        c_xx = 0
+    try:
+        c_yy = 1 / ((m * (m - 1)))
+    except ZeroDivisionError:
+        c_yy = 0
     k_xx, k_yy, k_xy = kernel(x, x), kernel(y, y), kernel(x, y)  # type: ignore
     return (c_xx * (tf.reduce_sum(k_xx) - tf.linalg.trace(k_xx)) +
             c_yy * (tf.reduce_sum(k_yy) - tf.linalg.trace(k_yy)) - 2. * tf.reduce_mean(k_xy))

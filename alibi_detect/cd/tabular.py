@@ -76,8 +76,8 @@ class TabularDrift(BaseUnivariateDrift):
             data_type=data_type
         )
         self.alternative = alternative
-
-        self.x_ref_categories, self.cat_vars = {}, []  # no categorical features assumed present
+        # no categorical features assumed present
+        self.x_ref_categories, self.cat_vars = {}, []  # type: ignore
         if isinstance(categories_per_feature, dict):
             vals = list(categories_per_feature.values())
             int_types = (int, np.int16, np.int32, np.int64)

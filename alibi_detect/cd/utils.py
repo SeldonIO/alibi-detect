@@ -66,7 +66,7 @@ def encompass_batching(
         from alibi_detect.cd.tensorflow.preprocess import preprocess_drift
     elif backend == 'pytorch':
         from alibi_detect.cd.pytorch.preprocess import preprocess_drift  # type: ignore
-        kwargs['device'] = device
+        kwargs['device'] = device  # type: ignore
     else:
         raise NotImplementedError(f'{backend} not implemented. Use tensorflow or pytorch instead.')
 

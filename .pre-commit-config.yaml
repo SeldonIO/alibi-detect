@@ -1,4 +1,4 @@
-repos:
+ repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v2.4.0
     hooks:
@@ -7,3 +7,4 @@ repos:
     rev: v0.740
     hooks:
       - id: mypy
+        args: [--no-strict-optional, --ignore-missing-imports]

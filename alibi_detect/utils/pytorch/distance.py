@@ -121,7 +121,14 @@ def mmd2_from_kernel_matrix(kernel_mat: torch.Tensor, m: int, permute: bool = Fa
         idx = torch.randperm(kernel_mat.shape[0])
         kernel_mat = kernel_mat[idx][:, idx]
     k_xx, k_yy, k_xy = kernel_mat[:-m, :-m], kernel_mat[-m:, -m:], kernel_mat[-m:, :-m]
-    c_xx, c_yy = 1 / (n * (n - 1)), 1 / (m * (m - 1))
+    try:
+        c_xx = 1 / ((n * (n - 1)))
+    except ZeroDivisionError:
+        c_xx = 0
+    try:
+        c_yy = 1 / ((m * (m - 1)))
+    except ZeroDivisionError:
+        c_yy = 0
     mmd2 = c_xx * k_xx.sum() + c_yy * k_yy.sum() - 2. * k_xy.mean()
     return mmd2
 
@@ -144,7 +151,14 @@ def mmd2(x: torch.Tensor, y: torch.Tensor, kernel: Callable) -> float:
     MMD^2 between the samples x and y.
     """
     n, m = x.shape[0], y.shape[0]
-    c_xx, c_yy = 1 / (n * (n - 1)), 1 / (m * (m - 1))
+    try:
+        c_xx = 1 / ((n * (n - 1)))
+    except ZeroDivisionError:
+        c_xx = 0
+    try:
+        c_yy = 1 / ((m * (m - 1)))
+    except ZeroDivisionError:
+        c_yy = 0
     k_xx, k_yy, k_xy = kernel(x, x), kernel(y, y), kernel(x, y)  # type: ignore
     return c_xx * (k_xx.sum() - k_xx.trace()) + c_yy * (k_yy.sum() - k_yy.trace()) - 2. * k_xy.mean()
 
