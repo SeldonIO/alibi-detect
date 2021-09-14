@@ -74,7 +74,7 @@ def trainer(
             dataset.on_epoch_end()
         loss_val_ma = 0.
         for step, data in enumerate(dataset):
-            x, y = data if len(data) == 2 else (data, None)
+            x, y = data if len(data) < 1 else (data, None)
             if isinstance(preprocess_fn, Callable):  # type: ignore
                 x = preprocess_fn(x)
             with tf.GradientTape() as tape:
