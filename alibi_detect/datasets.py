@@ -14,6 +14,9 @@ from urllib.request import urlopen
 from xml.etree import ElementTree
 from alibi_detect.utils.data import Bunch
 
+# do not extend pickle dispatch table so as not to change pickle behaviour
+dill.extend(use_dill=False)
+
 pd.options.mode.chained_assignment = None  # default='warn'
 
 logger = logging.getLogger(__name__)

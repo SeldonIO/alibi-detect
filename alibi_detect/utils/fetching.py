@@ -13,6 +13,9 @@ from alibi_detect.od import (IForest, LLR, Mahalanobis, OutlierAE, OutlierAEGMM,
                              OutlierSeq2Seq, OutlierVAE, OutlierVAEGMM, SpectralResidual)
 from alibi_detect.utils.saving import load_detector  # type: ignore
 
+# do not extend pickle dispatch table so as not to change pickle behaviour
+dill.extend(use_dill=False)
+
 logger = logging.getLogger(__name__)
 
 Data = Union[
