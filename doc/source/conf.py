@@ -290,3 +290,13 @@ nbsphinx_prolog = (
     + git_rev
     + r"{{ docpath }}"
 )
+
+# -- Override order of preference for image formats --------------------------
+# Need to set gif above png so that it is chosen over png if present
+from sphinx.builders.html import StandaloneHTMLBuilder
+StandaloneHTMLBuilder.supported_image_types = [
+    'image/svg+xml',
+    'image/gif',
+    'image/png',
+    'image/jpeg'
+]

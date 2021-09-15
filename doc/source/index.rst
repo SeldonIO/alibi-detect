@@ -23,7 +23,7 @@
 .. toctree::
    :maxdepth: 2
    :caption: Drift Detection
-
+        
    cd/background
    cd/methods
    cd/examples

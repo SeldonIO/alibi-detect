@@ -162,7 +162,7 @@ Finally, we can make predictions on test data and detect outliers or adversarial
 preds = od.predict(X_test)
 ```
 
-The predictions are returned in a dictionary with as keys `meta` and `data`. `meta` contains the detector's metadata while `data` is in itself a dictionary with the actual predictions. It has either `is_outlier`, `is_adversarial` or `is_drift` (filled with 0's and 1's) as well as optional `instance_score`, `feature_score` or `p_value` as keys with numpy arrays as values.
+The predictions are returned in a dictionary with as keys `meta` and `data`. `meta` contains the detector's metadata while `data` is in itself a dictionary with the actual predictions (and other relevant values). It has either `is_outlier`, `is_adversarial` or `is_drift` (filled with 0's and 1's) as well as optional `instance_score`, `feature_score` or `p_value` as keys with numpy arrays as values.
 
 The exact details will vary slightly from method to method, so we encourage the reader to become
 familiar with the [types of algorithms supported](../overview/algorithms.md) in alibi-detect.

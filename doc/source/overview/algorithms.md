@@ -1,6 +1,6 @@
 # Algorithm Overview
 
-The following tables summarize the advised use cases for the current algorithms. Please consult the method specific pages for a more detailed breakdown of each method. The column *Feature Level* indicates whether the outlier scoring and detection can be done and returned at the feature level, e.g. per pixel for an image.
+The following tables summarize the advised use cases for the current algorithms. Please consult the method specific pages for a more detailed breakdown of each method. The column *Feature Level* indicates whether the detection can be done and returned at the feature level, e.g. per pixel for an image.
 
 ## Outlier Detection
 
