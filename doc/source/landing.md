@@ -1,8 +1,12 @@
-:orphan:
+---
+orphan: true
+---
 
 <p align="center">
   <img src="_static/Alibi_Detect_Logo.png" alt="Alibi Detect Logo" width="50%">
 </p>
+
+# Alibi Detect
 
 [Alibi Detect](https://github.com/SeldonIO/alibi-detect) is an open source Python library focused on **outlier**, **adversarial** and **drift** detection. The package aims to cover both online and offline detectors for tabular data, text, images and time series. Both **TensorFlow** and **PyTorch** backends are supported for drift detection.
 
