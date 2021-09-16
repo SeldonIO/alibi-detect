@@ -4,6 +4,7 @@ import dill
 from functools import partial
 import logging
 import os
+from pathlib import Path
 import tensorflow as tf
 from tensorflow.keras.layers import Input, InputLayer
 from tensorflow_probability.python.distributions.distribution import Distribution
@@ -23,6 +24,9 @@ from alibi_detect.od import (IForest, LLR, Mahalanobis, OutlierAE, OutlierAEGMM,
                              OutlierSeq2Seq, OutlierVAE, OutlierVAEGMM, SpectralResidual)
 from alibi_detect.od.llr import build_model
 from alibi_detect.utils.tensorflow.kernels import GaussianRBF
+
+# do not extend pickle dispatch table so as not to change pickle behaviour
+dill.extend(use_dill=False)
 
 logger = logging.getLogger(__name__)
 
@@ -941,7 +945,7 @@ def save_tf_s2s(od: OutlierSeq2Seq,
         logger.warning('No `tf.keras.Model` Seq2Seq detected. No Seq2Seq model saved.')
 
 
-def load_detector(filepath: str, **kwargs) -> Data:
+def load_detector(filepath: Union[str, os.PathLike], **kwargs) -> Data:
     """
     Load outlier, drift or adversarial detector.
 
@@ -960,11 +964,21 @@ def load_detector(filepath: str, **kwargs) -> Data:
         k = []
 
     # check if path exists
-    if not os.path.isdir(filepath):
+    filepath = Path(filepath)
+    if not filepath.is_dir():
         raise ValueError('{} does not exist.'.format(filepath))
 
+    # Check if dill files exist, otherwise check for pickle files, otherwise raise error
+    files = [str(f.name) for f in filepath.iterdir() if f.is_file()]
+    if 'meta.dill' in files:
+        suffix = '.dill'
+    elif 'meta.pickle' in files:
+        suffix = '.pickle'
+    else:
+        raise ValueError('Neither meta.dill or meta.pickle exist in {}.'.format(filepath))
+
     # load metadata
-    meta_dict = dill.load(open(os.path.join(filepath, 'meta.dill'), 'rb'))
+    meta_dict = dill.load(open(filepath.joinpath('meta' + suffix), 'rb'))
 
     if 'backend' in list(meta_dict.keys()) and meta_dict['backend'] == 'pytorch':
         raise NotImplementedError('Detectors with PyTorch backend are not yet supported.')
@@ -974,7 +988,11 @@ def load_detector(filepath: str, **kwargs) -> Data:
         raise ValueError('{} is not supported by `load_detector`.'.format(detector_name))
 
     # load outlier detector specific parameters
-    state_dict = dill.load(open(os.path.join(filepath, detector_name + '.dill'), 'rb'))
+    state_dict = dill.load(open(filepath.joinpath(detector_name + suffix), 'rb'))
+
+    # Convert filepath from pathlib.Path() to str, to avoid needing to refactor all load methods below
+    # TODO - Replace os.path methods with pathlib methods in load methods
+    filepath = str(filepath)
 
     # initialize outlier detector
     if detector_name == 'OutlierAE':

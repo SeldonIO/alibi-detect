@@ -1,4 +1,4 @@
-import cloudpickle as cp
+import dill
 import io
 from io import BytesIO
 import logging
@@ -13,6 +13,9 @@ import urllib.request
 from urllib.request import urlopen
 from xml.etree import ElementTree
 from alibi_detect.utils.data import Bunch
+
+# do not extend pickle dispatch table so as not to change pickle behaviour
+dill.extend(use_dill=False)
 
 pd.options.mode.chained_assignment = None  # default='warn'
 
@@ -307,7 +310,7 @@ def fetch_attack(dataset: str, model: str, attack: str, return_X_y: bool = False
         return (X_train, y_train), (X_test, y_test)
 
     # get metadata
-    meta = cp.load(urlopen(path_meta))
+    meta = dill.load(urlopen(path_meta))
     return Bunch(data_train=X_train,
                  data_test=X_test,
                  target_train=y_train,
