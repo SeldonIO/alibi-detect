@@ -5,7 +5,7 @@
 :local: true
 ```
 
-## 0. What is drift?
+## 1. What is drift?
 
 Although powerful, modern machine learning models can be sensitive.
 Seemingly subtle changes in a data distribution can destroy the
@@ -94,7 +94,7 @@ also difficult to detect without access to ground truths. As a
 workaround proxies are required, for example a model’s predictions can
 be monitored to check for prior drift.
 
-## 1. Detecting drift
+## 2. Detecting drift
 
 [Alibi Detect](https://github.com/SeldonIO/alibi-detect) offers a
 wide array of methods for detecting drift (see
@@ -319,7 +319,7 @@ set and a held-out reference set. **The training data is used to
 train any input preprocessing steps, and the detector is then
 initialised on the reference set**, and used to detect drift between
 the reference and test set. This also applies to the [learned drift
-detectors](#2-learned-drift-detection), which should be trained
+detectors](#3-learned-drift-detection), which should be trained
 on the training set not the reference set.
 :::
 
@@ -616,7 +616,7 @@ y_pred = clf.predict(X_test)
 label_detector.predict(y_pred.reshape(-1,1))
 ```
 
-## 2. Learned drift detection
+## 3. Learned drift detection
 
 The detectors discussed elsewhere in this page can be considered as
 *unlearned detectors*, in the sense that they don’t need to *learn* by
@@ -742,7 +742,7 @@ For a regressor with dropout layers, [dropout Monte
 Carlo](http://proceedings.mlr.press/v48/gal16.pdf) can be used to
 provide a notion of uncertainty.
 
-## 3. Online drift detection
+## 4. Online drift detection
 
 So far, we have discussed drift detection in an *offline* context, with
 the entire test set $\{\mathbf{X}_i\}_{i=1}^{N}$ compared to the
