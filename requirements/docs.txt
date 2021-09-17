@@ -1,9 +1,9 @@
 # dependencies for building docs, separate from dev.txt as this is also used for builds on readthedocs.org
 # core dependencies
-sphinx>=4.0.0, <=4.2.0
-sphinx-autodoc-typehints>=1.6.0, <=1.12.0
+sphinx>=2.1.2, <3.0.0 # pin to <3.x due to issue documenting classes which inherit mocked classes
+sphinx-autodoc-typehints>=1.10.0, <=1.12.0
 sphinx-rtd-theme==1.0.0
-myst-parser==0.15.2
+myst-parser>=0.14, <=0.15.2
 sphinxcontrib-apidoc>=0.3.0, <0.4.0
 nbsphinx>=0.8.5, <0.9.0
 nbsphinx-link>=1.2.0, <2.0.0

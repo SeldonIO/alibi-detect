@@ -60,7 +60,7 @@ class GaussianRBF(nn.Module):
 
 
 class DeepKernel(nn.Module):
-    """"
+    """
     Computes similarities as k(x,y) = (1-eps)*k_a(proj(x), proj(y)) + eps*k_b(x,y).
     A forward pass takes a batch of instances x [Nx, features] and y [Ny, features] and returns
     the kernel matrix [Nx, Ny].
