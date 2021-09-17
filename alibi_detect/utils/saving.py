@@ -5,6 +5,7 @@ from functools import partial
 import logging
 import os
 from pathlib import Path
+import warnings
 import tensorflow as tf
 from tensorflow.keras.layers import Input, InputLayer
 from tensorflow_probability.python.distributions.distribution import Distribution
@@ -24,6 +25,7 @@ from alibi_detect.od import (IForest, LLR, Mahalanobis, OutlierAE, OutlierAEGMM,
                              OutlierSeq2Seq, OutlierVAE, OutlierVAEGMM, SpectralResidual)
 from alibi_detect.od.llr import build_model
 from alibi_detect.utils.tensorflow.kernels import GaussianRBF
+from alibi_detect.version import __version__
 
 # do not extend pickle dispatch table so as not to change pickle behaviour
 dill.extend(use_dill=False)
@@ -979,6 +981,11 @@ def load_detector(filepath: Union[str, os.PathLike], **kwargs) -> Data:
 
     # load metadata
     meta_dict = dill.load(open(filepath.joinpath('meta' + suffix), 'rb'))
+
+    # check version
+    if meta_dict['version'] != __version__:
+        warnings.warn(f'Trying to load detector from version {meta_dict["version"]} when using version {__version__}. '
+                      f'This may lead to breaking code or invalid results.')
 
     if 'backend' in list(meta_dict.keys()) and meta_dict['backend'] == 'pytorch':
         raise NotImplementedError('Detectors with PyTorch backend are not yet supported.')
