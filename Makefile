@@ -27,10 +27,6 @@ build_latex: ## Build the documentation into a pdf
 	cd doc/_build/latex && \
 	latexmk -pdf -f -dvi- -ps- -jobname=alibi-detect -interaction=nonstopmode
 
-.PHONY: build_latex
-build_latex: ## Build the documentation into a pdf
-	$(MAKE) -C doc latexpdf
-
 .PHONY: clean_docs
 clean_docs: ## Clean the documentation build
 	$(MAKE) -C doc clean
