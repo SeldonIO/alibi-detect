@@ -381,7 +381,8 @@ graphs](../examples/cd_mol.nblink) example.
 
 For a simple example, we’ll use the [MMD
 detector](methods/mmddrift.ipynb) to check for drift on the
-two-dimensional binary classification problem shown previously. The MMD
+two-dimensional binary classification problem shown previously
+(see [notebook](../examples/simple_2d_drift.ipynb)). The MMD
 detector is a kernel-based method for multivariate two sample testing.
 Since the number of dimensions is already low, dimension reduction step
 is not necessary here here. For a more advanced example using the [MMD
@@ -417,9 +418,12 @@ with the standard deviation set at $\sigma=0.8$, and the weights
 set to $\phi_1=\phi_2=0.5$.
 
 ```ipython3
+import numpy as np
+from scipy.stats import multivariate_normal
+
 sigma = 0.8
-ref_norm_0 = stats.multivariate_normal([-1,-1], np.eye(2)*sigma**2)
-ref_norm_1 = stats.multivariate_normal([ 1, 1], np.eye(2)*sigma**2)
+ref_norm_0 = multivariate_normal([-1,-1], np.eye(2)*sigma**2)
+ref_norm_1 = multivariate_normal([ 1, 1], np.eye(2)*sigma**2)
 
 X_0 = ref_norm_0.rvs(size=120,random_state=1)
 X_1 = ref_norm_1.rvs(size=120,random_state=1)
@@ -566,7 +570,7 @@ $$
 ```ipython3
 slope = -1.0
 
-shift_norm_0 = stats.multivariate_normal([2, -4], np.eye(2)*sigma**2)
+shift_norm_0 = multivariate_normal([2, -4], np.eye(2)*sigma**2)
 X_0 = shift_norm_0.rvs(size=60,random_state=2)
 X_1 = ref_norm_1.rvs(size=60,random_state=2)
 X_test = np.vstack([X_0, X_1])
