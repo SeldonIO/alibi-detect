@@ -26,7 +26,7 @@ def mahalanobis_params(request):
 @pytest.mark.parametrize('mahalanobis_params', list(range(n_tests)), indirect=True)
 def test_mahalanobis(mahalanobis_params):
     threshold, n_components, std_clip, start_clip, max_n, \
-    threshold_perc, return_instance_score = mahalanobis_params
+        threshold_perc, return_instance_score = mahalanobis_params
     X, y = load_iris(return_X_y=True)
     mh = Mahalanobis(threshold, n_components=n_components, std_clip=std_clip,
                      start_clip=start_clip, max_n=max_n)
