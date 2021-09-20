@@ -2,9 +2,11 @@
 orphan: true
 ---
 
-<p align="center">
-  <img src="_static/Alibi_Detect_Logo_rgb.png" alt="Alibi Detect Logo" width="50%">
-</p>
+```{image} _static/Alibi_Detect_Logo_rgb.png
+:align: center
+:alt: Alibi Detect Logo
+:width: 50%
+```
 
 # Alibi Detect
 

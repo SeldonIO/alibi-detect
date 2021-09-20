@@ -302,7 +302,7 @@ StandaloneHTMLBuilder.supported_image_types = [
     'image/jpeg'
 ]
 
-# -- myst configuration-------------------------------------------------------
+# -- myst-parser configuration -----------------------------------------------
 # See https://myst-parser.readthedocs.io/en/latest/syntax/optional.html for 
 # details of available extensions.
 myst_enable_extensions = [
@@ -315,17 +315,18 @@ myst_enable_extensions = [
 # Create heading anchors for h1 to h3 (useful for local toc's)
 myst_heading_anchors = 3
 
-# Below code fixes a problem with sphinx>=3.2.0 processing functions with
-# torch.jit.script decorator. Probably occuring because torch is being mocked
-# (see https://github.com/sphinx-doc/sphinx/issues/6709).
-# Strangely should be fixed by sphinx #6719 (>=v2.3.0), but doesn't appear to
-# be for us...
-def call_mock(self, *args, **kw):
-    from types import FunctionType, MethodType
-    if args and type(args[0]) in [type, FunctionType, MethodType]:
-        # Appears to be a decorator, pass through unchanged
-        return args[0]
-    return self
-
-from sphinx.ext.autodoc.mock import _MockObject
-_MockObject.__call__ = call_mock
+## -- Decorators patch --------------------------------------------------------
+## Below code fixes a problem with sphinx>=3.2.0 processing functions with
+## torch.jit.script decorator. Probably occuring because torch is being mocked
+## (see https://github.com/sphinx-doc/sphinx/issues/6709).
+## Strangely should be fixed by sphinx #6719 (>=v2.3.0), but doesn't appear to
+## be for us...
+#def call_mock(self, *args, **kw):
+#    from types import FunctionType, MethodType
+#    if args and type(args[0]) in [type, FunctionType, MethodType]:
+#        # Appears to be a decorator, pass through unchanged
+#        return args[0]
+#    return self
+#
+#from sphinx.ext.autodoc.mock import _MockObject
+#_MockObject.__call__ = call_mock
