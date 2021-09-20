@@ -3,6 +3,7 @@ import numpy as np
 import pytest
 from alibi_detect.od import OutlierSeq2Seq
 from alibi_detect.utils.perturbation import inject_outlier_ts
+from alibi_detect.version import __version__
 
 n_features = [1, 2]
 seq_len = [20, 50]
@@ -29,14 +30,14 @@ def seq2seq_params(request):
 def test_seq2seq(seq2seq_params):
     # OutlierSeq2Seq parameters
     n_features, seq_len, threshold, threshold_perc, return_instance_score, \
-        return_feature_score, outlier_perc, outlier_type = seq2seq_params
+    return_feature_score, outlier_perc, outlier_type = seq2seq_params
 
     # create artificial sine time series
     X = np.sin(np.linspace(-50, 50, 10000)).astype(np.float32).reshape((-1, n_features))
 
     # create outliers for threshold and detection
-    X_threshold = inject_outlier_ts(X, perc_outlier=100-threshold_perc, perc_window=10, n_std=10., min_std=9.).data
-    X_outlier = inject_outlier_ts(X, perc_outlier=100-threshold_perc, perc_window=10, n_std=10., min_std=9.).data
+    X_threshold = inject_outlier_ts(X, perc_outlier=100 - threshold_perc, perc_window=10, n_std=10., min_std=9.).data
+    X_outlier = inject_outlier_ts(X, perc_outlier=100 - threshold_perc, perc_window=10, n_std=10., min_std=9.).data
 
     # define architecture
     od = OutlierSeq2Seq(n_features, seq_len, threshold=threshold, latent_dim=latent_dim)
@@ -45,7 +46,8 @@ def test_seq2seq(seq2seq_params):
         assert od.threshold == 0.
     else:
         assert od.threshold == threshold
-    assert od.meta == {'name': 'OutlierSeq2Seq', 'detector_type': 'offline', 'data_type': 'time-series'}
+    assert od.meta == {'name': 'OutlierSeq2Seq', 'detector_type': 'offline', 'data_type': 'time-series',
+                       'version': __version__}
 
     # fit OutlierSeq2Seq
     od.fit(X, epochs=2, verbose=False)

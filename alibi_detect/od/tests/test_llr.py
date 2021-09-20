@@ -4,6 +4,7 @@ import pytest
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, Input, LSTM
 from alibi_detect.od import LLR
+from alibi_detect.version import __version__
 
 input_dim = 5
 hidden_dim = 20
@@ -55,7 +56,7 @@ def test_llr(llr_params):
     od = LLR(threshold=threshold, sequential=True, model=model, log_prob=likelihood_fn)
 
     assert od.threshold == threshold
-    assert od.meta == {'name': 'LLR', 'detector_type': 'offline', 'data_type': None}
+    assert od.meta == {'name': 'LLR', 'detector_type': 'offline', 'data_type': None, 'version': __version__}
 
     od.fit(
         X_train,

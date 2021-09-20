@@ -6,6 +6,7 @@ import tensorflow as tf
 from tensorflow.keras.layers import Dense, InputLayer
 from alibi_detect.od import OutlierVAE
 from alibi_detect.models.tensorflow.losses import elbo
+from alibi_detect.version import __version__
 
 threshold = [None, 5.]
 score_type = ['mse']
@@ -38,7 +39,7 @@ def vae_params(request):
 def test_vae(vae_params):
     # OutlierVAE parameters
     threshold, score_type, samples, loss_fn, threshold_perc, return_instance_score, \
-        return_feature_score, outlier_perc, outlier_type = vae_params
+    return_feature_score, outlier_perc, outlier_type = vae_params
 
     # define encoder and decoder
     encoder_net = tf.keras.Sequential(
@@ -68,7 +69,7 @@ def test_vae(vae_params):
     )
 
     assert vae.threshold == threshold
-    assert vae.meta == {'name': 'OutlierVAE', 'detector_type': 'offline', 'data_type': None}
+    assert vae.meta == {'name': 'OutlierVAE', 'detector_type': 'offline', 'data_type': None, 'version': __version__}
 
     # fit OutlierVAE, infer threshold and compute scores
     vae.fit(X, loss_fn=loss_fn, epochs=5, verbose=False)

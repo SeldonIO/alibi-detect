@@ -5,6 +5,7 @@ from sklearn.datasets import load_iris
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, InputLayer
 from alibi_detect.od import OutlierAE
+from alibi_detect.version import __version__
 
 threshold = [None, 5.]
 threshold_perc = [90.]
@@ -60,7 +61,7 @@ def test_ae(ae_params):
     )
 
     assert ae.threshold == threshold
-    assert ae.meta == {'name': 'OutlierAE', 'detector_type': 'offline', 'data_type': None}
+    assert ae.meta == {'name': 'OutlierAE', 'detector_type': 'offline', 'data_type': None, 'version': __version__}
 
     # fit OutlierAE, infer threshold and compute scores
     ae.fit(X, epochs=5, verbose=False)
