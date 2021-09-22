@@ -26,6 +26,8 @@ def build_model(dist: Union[Distribution, PixelCNN], input_shape: tuple = None, 
         TensorFlow distribution.
     input_shape
         Input shape of the model.
+    filepath
+        File to load model weights from.
 
     Returns
     -------

@@ -78,7 +78,7 @@ DEFAULT_DETECTORS = [
 ]
 
 
-def save_detector(detector: Data, filepath: str) -> None:
+def save_detector(detector: Data, filepath: Union[str, os.PathLike]) -> None:
     """
     Save outlier, drift or adversarial detector.
 
@@ -96,12 +96,14 @@ def save_detector(detector: Data, filepath: str) -> None:
     if detector_name not in DEFAULT_DETECTORS:
         raise ValueError('{} is not supported by `save_detector`.'.format(detector_name))
 
-    if not os.path.isdir(filepath):
+    # check if path exists
+    filepath = Path(filepath)
+    if not filepath.is_dir():
         logger.warning('Directory {} does not exist and is now created.'.format(filepath))
-        os.mkdir(filepath)
+        filepath.mkdir(parents=True, exist_ok=True)
 
     # save metadata
-    with open(os.path.join(filepath, 'meta.dill'), 'wb') as f:
+    with open(filepath.joinpath('meta.dill'), 'wb') as f:
         dill.dump(detector.meta, f)
 
     # save outlier detector specific parameters
@@ -140,7 +142,7 @@ def save_detector(detector: Data, filepath: str) -> None:
     elif detector_name == 'LLR':
         state_dict = state_llr(detector)
 
-    with open(os.path.join(filepath, detector_name + '.dill'), 'wb') as f:
+    with open(filepath.joinpath(detector_name + '.dill'), 'wb') as f:
         dill.dump(state_dict, f)
 
     # save outlier detector specific TensorFlow models
@@ -154,7 +156,7 @@ def save_detector(detector: Data, filepath: str) -> None:
         if embed is not None:
             save_embedding(embed, embed_args, filepath)
         if tokenizer is not None:
-            tokenizer.save_pretrained(os.path.join(filepath, 'model'))
+            tokenizer.save_pretrained(filepath.joinpath('model'))
         if detector_name == 'ClassifierDriftTF':
             save_tf_model(clf_drift, filepath, model_name='clf_drift')
     elif detector_name == 'OutlierAEGMM':
@@ -176,7 +178,7 @@ def save_detector(detector: Data, filepath: str) -> None:
 
 def save_embedding(embed: tf.keras.Model,
                    embed_args: dict,
-                   filepath: str,
+                   filepath: Union[str, os.PathLike],
                    save_dir: str = 'model',
                    model_name: str = 'embedding') -> None:
     """
@@ -191,19 +193,19 @@ def save_embedding(embed: tf.keras.Model,
     filepath
         Save directory.
     save_dir
-        Save folder.
+        Name of folder to save to within the filepath directory.
     model_name
         Name of saved model.
     """
-    # create folder for model weights
-    if not os.path.isdir(filepath):
-        logger.warning('Directory {} does not exist and is now created.'.format(filepath))
-        os.mkdir(filepath)
-    model_dir = os.path.join(filepath, save_dir)
-    if not os.path.isdir(model_dir):
-        os.mkdir(model_dir)
+    # create folder to save model in
+    model_dir = Path(filepath).joinpath(save_dir)
+    if not model_dir.is_dir():
+        logger.warning('Directory {} does not exist and is now created.'.format(model_dir))
+        model_dir.mkdir(parents=True, exist_ok=True)
+
+    # Save embedding model
     embed.save_pretrained(model_dir)
-    with open(os.path.join(filepath, save_dir, model_name + '.dill'), 'wb') as f:
+    with open(model_dir.joinpath(model_name + '.dill'), 'wb') as f:
         dill.dump(embed_args, f)
 
 
@@ -683,7 +685,7 @@ def state_llr(od: LLR) -> Dict:
 
 
 def save_tf_ae(detector: Union[OutlierAE, AdversarialAE],
-               filepath: str) -> None:
+               filepath: Union[str, os.PathLike]) -> None:
     """
     Save TensorFlow components of OutlierAE
 
@@ -694,30 +696,29 @@ def save_tf_ae(detector: Union[OutlierAE, AdversarialAE],
     filepath
         Save directory.
     """
-    # create folder for model weights
-    if not os.path.isdir(filepath):
-        logger.warning('Directory {} does not exist and is now created.'.format(filepath))
-        os.mkdir(filepath)
-    model_dir = os.path.join(filepath, 'model')
-    if not os.path.isdir(model_dir):
-        os.mkdir(model_dir)
+    # create folder to save model in
+    model_dir = Path(filepath).joinpath('model')
+    if not model_dir.is_dir():
+        logger.warning('Directory {} does not exist and is now created.'.format(model_dir))
+        model_dir.mkdir(parents=True, exist_ok=True)
+
     # save encoder, decoder and vae weights
     if isinstance(detector.ae.encoder.encoder_net, tf.keras.Sequential):
-        detector.ae.encoder.encoder_net.save(os.path.join(model_dir, 'encoder_net.h5'))
+        detector.ae.encoder.encoder_net.save(model_dir.joinpath('encoder_net.h5'))
     else:
         logger.warning('No `tf.keras.Sequential` encoder detected. No encoder saved.')
     if isinstance(detector.ae.decoder.decoder_net, tf.keras.Sequential):
-        detector.ae.decoder.decoder_net.save(os.path.join(model_dir, 'decoder_net.h5'))
+        detector.ae.decoder.decoder_net.save(model_dir.joinpath('decoder_net.h5'))
     else:
         logger.warning('No `tf.keras.Sequential` decoder detected. No decoder saved.')
     if isinstance(detector.ae, tf.keras.Model):
-        detector.ae.save_weights(os.path.join(model_dir, 'ae.ckpt'))
+        detector.ae.save_weights(model_dir.joinpath('ae.ckpt'))
     else:
         logger.warning('No `tf.keras.Model` ae detected. No ae saved.')
 
 
 def save_tf_vae(detector: OutlierVAE,
-                filepath: str) -> None:
+                filepath: Union[str, os.PathLike]) -> None:
     """
     Save TensorFlow components of OutlierVAE.
 
@@ -728,31 +729,29 @@ def save_tf_vae(detector: OutlierVAE,
     filepath
         Save directory.
     """
-    # create folder for model weights
-    if not os.path.isdir(filepath):
-        logger.warning('Directory {} does not exist and is now created.'.format(filepath))
-        os.mkdir(filepath)
-    model_dir = os.path.join(filepath, 'model')
-    if not os.path.isdir(model_dir):
-        os.mkdir(model_dir)
+    # create folder to save model in
+    model_dir = Path(filepath).joinpath('model')
+    if not model_dir.is_dir():
+        logger.warning('Directory {} does not exist and is now created.'.format(model_dir))
+        model_dir.mkdir(parents=True, exist_ok=True)
     # save encoder, decoder and vae weights
     if isinstance(detector.vae.encoder.encoder_net, tf.keras.Sequential):
-        detector.vae.encoder.encoder_net.save(os.path.join(model_dir, 'encoder_net.h5'))
+        detector.vae.encoder.encoder_net.save(model_dir.joinpath('encoder_net.h5'))
     else:
         logger.warning('No `tf.keras.Sequential` encoder detected. No encoder saved.')
     if isinstance(detector.vae.decoder.decoder_net, tf.keras.Sequential):
-        detector.vae.decoder.decoder_net.save(os.path.join(model_dir, 'decoder_net.h5'))
+        detector.vae.decoder.decoder_net.save(model_dir.joinpath('decoder_net.h5'))
     else:
         logger.warning('No `tf.keras.Sequential` decoder detected. No decoder saved.')
     if isinstance(detector.vae, tf.keras.Model):
-        detector.vae.save_weights(os.path.join(model_dir, 'vae.ckpt'))
+        detector.vae.save_weights(model_dir.joinpath('vae.ckpt'))
     else:
         logger.warning('No `tf.keras.Model` vae detected. No vae saved.')
 
 
 def save_tf_model(model: tf.keras.Model,
-                  filepath: str,
-                  save_dir: str = None,
+                  filepath: Union[str, os.PathLike],
+                  save_dir: str = 'model',
                   model_name: str = 'model') -> None:
     """
     Save TensorFlow model.
@@ -764,29 +763,24 @@ def save_tf_model(model: tf.keras.Model,
     filepath
         Save directory.
     save_dir
-        Save folder.
+        Name of folder to save to within the filepath directory.
     model_name
         Name of saved model.
     """
-    # create folder for model weights
-    if not os.path.isdir(filepath):
-        logger.warning('Directory {} does not exist and is now created.'.format(filepath))
-        os.mkdir(filepath)
-    if not save_dir:
-        model_dir = os.path.join(filepath, 'model')
-    else:
-        model_dir = os.path.join(filepath, save_dir)
-    if not os.path.isdir(model_dir):
-        os.mkdir(model_dir)
+    # create folder to save model in
+    model_dir = Path(filepath).joinpath(save_dir)
+    if not model_dir.is_dir():
+        logger.warning('Directory {} does not exist and is now created.'.format(model_dir))
+        model_dir.mkdir(parents=True, exist_ok=True)
 
     # save classification model
     if isinstance(model, tf.keras.Model) or isinstance(model, tf.keras.Sequential):
-        model.save(os.path.join(model_dir, model_name + '.h5'))
+        model.save(model_dir.joinpath(model_name + '.h5'))
     else:
         logger.warning('No `tf.keras.Model` or `tf.keras.Sequential` detected. No model saved.')
 
 
-def save_tf_llr(detector: LLR, filepath: str) -> None:
+def save_tf_llr(detector: LLR, filepath: Union[str, os.PathLike]) -> None:
     """
     Save LLR TensorFlow models or distributions.
 
@@ -797,25 +791,24 @@ def save_tf_llr(detector: LLR, filepath: str) -> None:
     filepath
         Save directory.
     """
-    if not os.path.isdir(filepath):
-        logger.warning('Directory {} does not exist and is now created.'.format(filepath))
-        os.mkdir(filepath)
-    model_dir = os.path.join(filepath, 'model')
-    if not os.path.isdir(model_dir):
-        os.mkdir(model_dir)
+    # create folder to save model in
+    model_dir = Path(filepath).joinpath('model')
+    if not model_dir.is_dir():
+        logger.warning('Directory {} does not exist and is now created.'.format(model_dir))
+        model_dir.mkdir(parents=True, exist_ok=True)
+
+    # Save LLR model
     if hasattr(detector, 'model_s') and hasattr(detector, 'model_b'):
-        if not os.path.isdir(model_dir):
-            os.mkdir(model_dir)
-        detector.model_s.save_weights(os.path.join(model_dir, 'model_s.h5'))
-        detector.model_b.save_weights(os.path.join(model_dir, 'model_b.h5'))
+        detector.model_s.save_weights(model_dir.joinpath('model_s.h5'))
+        detector.model_b.save_weights(model_dir.joinpath('model_b.h5'))
     else:
-        detector.dist_s.save(os.path.join(model_dir, 'model.h5'))
+        detector.dist_s.save(model_dir.joinpath('model.h5'))
         if detector.dist_b is not None:
-            detector.dist_b.save(os.path.join(model_dir, 'model_background.h5'))
+            detector.dist_b.save(model_dir.joinpath('model_background.h5'))
 
 
 def save_tf_hl(models: List[tf.keras.Model],
-               filepath: str) -> None:
+               filepath: Union[str, os.PathLike]) -> None:
     """
     Save TensorFlow model weights.
 
@@ -827,22 +820,20 @@ def save_tf_hl(models: List[tf.keras.Model],
         Save directory.
     """
     if isinstance(models, list):
+        # create folder to save model in
+        model_dir = Path(filepath).joinpath('model')
+        if not model_dir.is_dir():
+            logger.warning('Directory {} does not exist and is now created.'.format(model_dir))
+            model_dir.mkdir(parents=True, exist_ok=True)
 
-        # create folder for model weights
-        if not os.path.isdir(filepath):
-            logger.warning('Directory {} does not exist and is now created.'.format(filepath))
-            os.mkdir(filepath)
-        model_dir = os.path.join(filepath, 'model')
-        if not os.path.isdir(model_dir):
-            os.mkdir(model_dir)
-
+        # Save model
         for i, m in enumerate(models):
-            model_path = os.path.join(model_dir, 'model_hl_' + str(i) + '.ckpt')
+            model_path = model_dir.joinpath('model_hl_' + str(i) + '.ckpt')
             m.save_weights(model_path)
 
 
 def save_tf_aegmm(od: OutlierAEGMM,
-                  filepath: str) -> None:
+                  filepath: Union[str, os.PathLike]) -> None:
     """
     Save TensorFlow components of OutlierAEGMM.
 
@@ -853,34 +844,33 @@ def save_tf_aegmm(od: OutlierAEGMM,
     filepath
         Save directory.
     """
-    # create folder for model weights
-    if not os.path.isdir(filepath):
-        logger.warning('Directory {} does not exist and is now created.'.format(filepath))
-        os.mkdir(filepath)
-    model_dir = os.path.join(filepath, 'model')
-    if not os.path.isdir(model_dir):
-        os.mkdir(model_dir)
+    # create folder to save model in
+    model_dir = Path(filepath).joinpath('model')
+    if not model_dir.is_dir():
+        logger.warning('Directory {} does not exist and is now created.'.format(model_dir))
+        model_dir.mkdir(parents=True, exist_ok=True)
+
     # save encoder, decoder, gmm density model and aegmm weights
     if isinstance(od.aegmm.encoder, tf.keras.Sequential):
-        od.aegmm.encoder.save(os.path.join(model_dir, 'encoder_net.h5'))
+        od.aegmm.encoder.save(model_dir.joinpath('encoder_net.h5'))
     else:
         logger.warning('No `tf.keras.Sequential` encoder detected. No encoder saved.')
     if isinstance(od.aegmm.decoder, tf.keras.Sequential):
-        od.aegmm.decoder.save(os.path.join(model_dir, 'decoder_net.h5'))
+        od.aegmm.decoder.save(model_dir.joinpath('decoder_net.h5'))
     else:
         logger.warning('No `tf.keras.Sequential` decoder detected. No decoder saved.')
     if isinstance(od.aegmm.gmm_density, tf.keras.Sequential):
-        od.aegmm.gmm_density.save(os.path.join(model_dir, 'gmm_density_net.h5'))
+        od.aegmm.gmm_density.save(model_dir.joinpath('gmm_density_net.h5'))
     else:
         logger.warning('No `tf.keras.Sequential` GMM density net detected. No GMM density net saved.')
     if isinstance(od.aegmm, tf.keras.Model):
-        od.aegmm.save_weights(os.path.join(model_dir, 'aegmm.ckpt'))
+        od.aegmm.save_weights(model_dir.joinpath('aegmm.ckpt'))
     else:
         logger.warning('No `tf.keras.Model` AEGMM detected. No AEGMM saved.')
 
 
 def save_tf_vaegmm(od: OutlierVAEGMM,
-                   filepath: str) -> None:
+                   filepath: Union[str, os.PathLike]) -> None:
     """
     Save TensorFlow components of OutlierVAEGMM.
 
@@ -891,34 +881,33 @@ def save_tf_vaegmm(od: OutlierVAEGMM,
     filepath
         Save directory.
     """
-    # create folder for model weights
-    if not os.path.isdir(filepath):
-        logger.warning('Directory {} does not exist and is now created.'.format(filepath))
-        os.mkdir(filepath)
-    model_dir = os.path.join(filepath, 'model')
-    if not os.path.isdir(model_dir):
-        os.mkdir(model_dir)
+    # create folder to save model in
+    model_dir = Path(filepath).joinpath('model')
+    if not model_dir.is_dir():
+        logger.warning('Directory {} does not exist and is now created.'.format(model_dir))
+        model_dir.mkdir(parents=True, exist_ok=True)
+
     # save encoder, decoder, gmm density model and vaegmm weights
     if isinstance(od.vaegmm.encoder.encoder_net, tf.keras.Sequential):
-        od.vaegmm.encoder.encoder_net.save(os.path.join(model_dir, 'encoder_net.h5'))
+        od.vaegmm.encoder.encoder_net.save(model_dir.joinpath('encoder_net.h5'))
     else:
         logger.warning('No `tf.keras.Sequential` encoder detected. No encoder saved.')
     if isinstance(od.vaegmm.decoder, tf.keras.Sequential):
-        od.vaegmm.decoder.save(os.path.join(model_dir, 'decoder_net.h5'))
+        od.vaegmm.decoder.save(model_dir.joinpath('decoder_net.h5'))
     else:
         logger.warning('No `tf.keras.Sequential` decoder detected. No decoder saved.')
     if isinstance(od.vaegmm.gmm_density, tf.keras.Sequential):
-        od.vaegmm.gmm_density.save(os.path.join(model_dir, 'gmm_density_net.h5'))
+        od.vaegmm.gmm_density.save(model_dir.joinpath('gmm_density_net.h5'))
     else:
         logger.warning('No `tf.keras.Sequential` GMM density net detected. No GMM density net saved.')
     if isinstance(od.vaegmm, tf.keras.Model):
-        od.vaegmm.save_weights(os.path.join(model_dir, 'vaegmm.ckpt'))
+        od.vaegmm.save_weights(model_dir.joinpath('vaegmm.ckpt'))
     else:
         logger.warning('No `tf.keras.Model` VAEGMM detected. No VAEGMM saved.')
 
 
 def save_tf_s2s(od: OutlierSeq2Seq,
-                filepath: str) -> None:
+                filepath: Union[str, os.PathLike]) -> None:
     """
     Save TensorFlow components of OutlierSeq2Seq.
 
@@ -929,20 +918,19 @@ def save_tf_s2s(od: OutlierSeq2Seq,
     filepath
         Save directory.
     """
-    # create folder for model weights
-    if not os.path.isdir(filepath):
-        logger.warning('Directory {} does not exist and is now created.'.format(filepath))
-        os.mkdir(filepath)
-    model_dir = os.path.join(filepath, 'model')
-    if not os.path.isdir(model_dir):
-        os.mkdir(model_dir)
+    # create folder to save model in
+    model_dir = Path(filepath).joinpath('model')
+    if not model_dir.is_dir():
+        logger.warning('Directory {} does not exist and is now created.'.format(model_dir))
+        model_dir.mkdir(parents=True, exist_ok=True)
+
     # save seq2seq model weights and threshold estimation network
     if isinstance(od.seq2seq.threshold_net, tf.keras.Sequential):
-        od.seq2seq.threshold_net.save(os.path.join(model_dir, 'threshold_net.h5'))
+        od.seq2seq.threshold_net.save(model_dir.joinpath('threshold_net.h5'))
     else:
         logger.warning('No `tf.keras.Sequential` threshold estimation net detected. No threshold net saved.')
     if isinstance(od.seq2seq, tf.keras.Model):
-        od.seq2seq.save_weights(os.path.join(model_dir, 'seq2seq.ckpt'))
+        od.seq2seq.save_weights(model_dir.joinpath('seq2seq.ckpt'))
     else:
         logger.warning('No `tf.keras.Model` Seq2Seq detected. No Seq2Seq model saved.')
 
@@ -1000,10 +988,6 @@ def load_detector(filepath: Union[str, os.PathLike], **kwargs) -> Data:
 
     # load outlier detector specific parameters
     state_dict = dill.load(open(filepath.joinpath(detector_name + suffix), 'rb'))
-
-    # Convert filepath from pathlib.Path() to str, to avoid needing to refactor all load methods below
-    # TODO - Replace os.path methods with pathlib methods in load methods
-    filepath = str(filepath)
 
     # initialize outlier detector
     if detector_name == 'OutlierAE':
@@ -1067,8 +1051,8 @@ def load_detector(filepath: Union[str, os.PathLike], **kwargs) -> Data:
     return detector
 
 
-def load_tf_model(filepath: str,
-                  load_dir: str = None,
+def load_tf_model(filepath: Union[str, os.PathLike],
+                  load_dir: str = 'model',
                   custom_objects: dict = None,
                   model_name: str = 'model') -> tf.keras.Model:
     """
@@ -1079,7 +1063,7 @@ def load_tf_model(filepath: str,
     filepath
         Saved model directory.
     load_dir
-        Saved model folder.
+            Name of saved model folder within the filepath directory.
     custom_objects
         Optional custom objects when loading the TensorFlow model.
     model_name
@@ -1089,21 +1073,20 @@ def load_tf_model(filepath: str,
     -------
     Loaded model.
     """
-    if not load_dir:
-        model_dir = os.path.join(filepath, 'model')
-    else:
-        model_dir = os.path.join(filepath, load_dir)
-    if not os.path.isdir(model_dir):
+    model_dir = Path(filepath).joinpath(load_dir)
+    # Check if path exists
+    if not model_dir.is_dir():
         logger.warning('Directory {} does not exist.'.format(model_dir))
         return None
-    if model_name + '.h5' not in [f for f in os.listdir(model_dir) if not f.startswith('.')]:
+    # Check if model exists
+    if model_name + '.h5' not in [f.name for f in model_dir.glob('[!.]*.h5')]:
         logger.warning('No model found in {}.'.format(model_dir))
         return None
-    model = tf.keras.models.load_model(os.path.join(model_dir, model_name + '.h5'), custom_objects=custom_objects)
+    model = tf.keras.models.load_model(model_dir.joinpath(model_name + '.h5'), custom_objects=custom_objects)
     return model
 
 
-def load_tf_hl(filepath: str, model: tf.keras.Model, state_dict: dict) -> List[tf.keras.Model]:
+def load_tf_hl(filepath: Union[str, os.PathLike], model: tf.keras.Model, state_dict: dict) -> List[tf.keras.Model]:
     """
     Load hidden layer models for AdversarialAE.
 
@@ -1120,43 +1103,43 @@ def load_tf_hl(filepath: str, model: tf.keras.Model, state_dict: dict) -> List[t
     -------
     List with loaded tf.keras models.
     """
-    model_dir = os.path.join(filepath, 'model')
+    model_dir = Path(filepath).joinpath('model')
     hidden_layer_kld = state_dict['hidden_layer_kld']
     if not hidden_layer_kld:
-        return None
+        return [None]
     model_hl = []
     for i, (hidden_layer, output_dim) in enumerate(hidden_layer_kld.items()):
         m = DenseHidden(model, hidden_layer, output_dim)
-        m.load_weights(os.path.join(model_dir, 'model_hl_' + str(i) + '.ckpt'))
+        m.load_weights(model_dir.joinpath('model_hl_' + str(i) + '.ckpt'))
         model_hl.append(m)
     return model_hl
 
 
-def load_tf_ae(filepath: str) -> tf.keras.Model:
+def load_tf_ae(filepath: Union[str, os.PathLike]) -> tf.keras.Model:
     """
     Load AE.
 
     Parameters
     ----------
     filepath
-        Save directory.
+        Saved model directory.
 
     Returns
     -------
     Loaded AE.
     """
-    model_dir = os.path.join(filepath, 'model')
-    if not [f for f in os.listdir(model_dir) if not f.startswith('.')]:
+    model_dir = Path(filepath).joinpath('model')
+    if not [f.name for f in model_dir.glob('[!.]*.h5')]:
         logger.warning('No encoder, decoder or ae found in {}.'.format(model_dir))
         return None
-    encoder_net = tf.keras.models.load_model(os.path.join(model_dir, 'encoder_net.h5'))
-    decoder_net = tf.keras.models.load_model(os.path.join(model_dir, 'decoder_net.h5'))
+    encoder_net = tf.keras.models.load_model(model_dir.joinpath('encoder_net.h5'))
+    decoder_net = tf.keras.models.load_model(model_dir.joinpath('decoder_net.h5'))
     ae = AE(encoder_net, decoder_net)
-    ae.load_weights(os.path.join(model_dir, 'ae.ckpt'))
+    ae.load_weights(model_dir.joinpath('ae.ckpt'))
     return ae
 
 
-def load_tf_vae(filepath: str,
+def load_tf_vae(filepath: Union[str, os.PathLike],
                 state_dict: Dict) -> tf.keras.Model:
     """
     Load VAE.
@@ -1164,7 +1147,7 @@ def load_tf_vae(filepath: str,
     Parameters
     ----------
     filepath
-        Save directory.
+        Saved model directory.
     state_dict
         Dictionary containing the latent dimension and beta parameters.
 
@@ -1172,18 +1155,18 @@ def load_tf_vae(filepath: str,
     -------
     Loaded VAE.
     """
-    model_dir = os.path.join(filepath, 'model')
-    if not [f for f in os.listdir(model_dir) if not f.startswith('.')]:
+    model_dir = Path(filepath).joinpath('model')
+    if not [f.name for f in model_dir.glob('[!.]*.h5')]:
         logger.warning('No encoder, decoder or vae found in {}.'.format(model_dir))
         return None
-    encoder_net = tf.keras.models.load_model(os.path.join(model_dir, 'encoder_net.h5'))
-    decoder_net = tf.keras.models.load_model(os.path.join(model_dir, 'decoder_net.h5'))
+    encoder_net = tf.keras.models.load_model(model_dir.joinpath('encoder_net.h5'))
+    decoder_net = tf.keras.models.load_model(model_dir.joinpath('decoder_net.h5'))
     vae = VAE(encoder_net, decoder_net, state_dict['latent_dim'], beta=state_dict['beta'])
-    vae.load_weights(os.path.join(model_dir, 'vae.ckpt'))
+    vae.load_weights(model_dir.joinpath('vae.ckpt'))
     return vae
 
 
-def load_tf_aegmm(filepath: str,
+def load_tf_aegmm(filepath: Union[str, os.PathLike],
                   state_dict: Dict) -> tf.keras.Model:
     """
     Load AEGMM.
@@ -1191,7 +1174,7 @@ def load_tf_aegmm(filepath: str,
     Parameters
     ----------
     filepath
-        Save directory.
+        Saved model directory.
     state_dict
         Dictionary containing the `n_gmm` and `recon_features` parameters.
 
@@ -1199,19 +1182,20 @@ def load_tf_aegmm(filepath: str,
     -------
     Loaded AEGMM.
     """
-    model_dir = os.path.join(filepath, 'model')
-    if not [f for f in os.listdir(model_dir) if not f.startswith('.')]:
+    model_dir = Path(filepath).joinpath('model')
+
+    if not [f.name for f in model_dir.glob('[!.]*.h5')]:
         logger.warning('No encoder, decoder, gmm density net or aegmm found in {}.'.format(model_dir))
         return None
-    encoder_net = tf.keras.models.load_model(os.path.join(model_dir, 'encoder_net.h5'))
-    decoder_net = tf.keras.models.load_model(os.path.join(model_dir, 'decoder_net.h5'))
-    gmm_density_net = tf.keras.models.load_model(os.path.join(model_dir, 'gmm_density_net.h5'))
+    encoder_net = tf.keras.models.load_model(model_dir.joinpath('encoder_net.h5'))
+    decoder_net = tf.keras.models.load_model(model_dir.joinpath('decoder_net.h5'))
+    gmm_density_net = tf.keras.models.load_model(model_dir.joinpath('gmm_density_net.h5'))
     aegmm = AEGMM(encoder_net, decoder_net, gmm_density_net, state_dict['n_gmm'], state_dict['recon_features'])
-    aegmm.load_weights(os.path.join(model_dir, 'aegmm.ckpt'))
+    aegmm.load_weights(model_dir.joinpath('aegmm.ckpt'))
     return aegmm
 
 
-def load_tf_vaegmm(filepath: str,
+def load_tf_vaegmm(filepath: Union[str, os.PathLike],
                    state_dict: Dict) -> tf.keras.Model:
     """
     Load VAEGMM.
@@ -1219,7 +1203,7 @@ def load_tf_vaegmm(filepath: str,
     Parameters
     ----------
     filepath
-        Save directory.
+        Saved model directory.
     state_dict
         Dictionary containing the `n_gmm`, `latent_dim` and `recon_features` parameters.
 
@@ -1227,37 +1211,51 @@ def load_tf_vaegmm(filepath: str,
     -------
     Loaded VAEGMM.
     """
-    model_dir = os.path.join(filepath, 'model')
-    if not [f for f in os.listdir(model_dir) if not f.startswith('.')]:
+    model_dir = Path(filepath).joinpath('model')
+    if not [f.name for f in model_dir.glob('[!.]*.h5')]:
         logger.warning('No encoder, decoder, gmm density net or vaegmm found in {}.'.format(model_dir))
         return None
-    encoder_net = tf.keras.models.load_model(os.path.join(model_dir, 'encoder_net.h5'))
-    decoder_net = tf.keras.models.load_model(os.path.join(model_dir, 'decoder_net.h5'))
-    gmm_density_net = tf.keras.models.load_model(os.path.join(model_dir, 'gmm_density_net.h5'))
+    encoder_net = tf.keras.models.load_model(model_dir.joinpath('encoder_net.h5'))
+    decoder_net = tf.keras.models.load_model(model_dir.joinpath('decoder_net.h5'))
+    gmm_density_net = tf.keras.models.load_model(model_dir.joinpath('gmm_density_net.h5'))
     vaegmm = VAEGMM(encoder_net, decoder_net, gmm_density_net, state_dict['n_gmm'],
                     state_dict['latent_dim'], state_dict['recon_features'], state_dict['beta'])
-    vaegmm.load_weights(os.path.join(model_dir, 'vaegmm.ckpt'))
+    vaegmm.load_weights(model_dir.joinpath('vaegmm.ckpt'))
     return vaegmm
 
 
-def load_tf_s2s(filepath: str,
+def load_tf_s2s(filepath: Union[str, os.PathLike],
                 state_dict: Dict) -> tf.keras.Model:
-    model_dir = os.path.join(filepath, 'model')
-    if not [f for f in os.listdir(model_dir) if not f.startswith('.')]:
+    """
+    Load seq2seq TensorFlow model.
+
+    Parameters
+    ----------
+    filepath
+        Saved model directory.
+    state_dict
+        Dictionary containing the `latent_dim`, `shape`, `output_activation` and `beta` parameters.
+
+    Returns
+    -------
+    Loaded seq2seq model.
+    """
+    model_dir = Path(filepath).joinpath('model')
+    if not [f.name for f in model_dir.glob('[!.]*.h5')]:
         logger.warning('No seq2seq or threshold estimation net found in {}.'.format(model_dir))
         return None
     # load threshold estimator net, initialize encoder and decoder and load seq2seq weights
-    threshold_net = tf.keras.models.load_model(os.path.join(model_dir, 'threshold_net.h5'), compile=False)
+    threshold_net = tf.keras.models.load_model(model_dir.joinpath('threshold_net.h5'), compile=False)
     latent_dim = state_dict['latent_dim']
     n_features = state_dict['shape'][-1]
     encoder_net = EncoderLSTM(latent_dim)
     decoder_net = DecoderLSTM(latent_dim, n_features, state_dict['output_activation'])
     seq2seq = Seq2Seq(encoder_net, decoder_net, threshold_net, n_features, beta=state_dict['beta'])
-    seq2seq.load_weights(os.path.join(model_dir, 'seq2seq.ckpt'))
+    seq2seq.load_weights(model_dir.joinpath('seq2seq.ckpt'))
     return seq2seq
 
 
-def load_tf_llr(filepath: str, dist_s: Union[Distribution, PixelCNN] = None,
+def load_tf_llr(filepath: Union[str, os.PathLike], dist_s: Union[Distribution, PixelCNN] = None,
                 dist_b: Union[Distribution, PixelCNN] = None, input_shape: tuple = None):
     """
     Load LLR TensorFlow models or distributions.
@@ -1267,7 +1265,7 @@ def load_tf_llr(filepath: str, dist_s: Union[Distribution, PixelCNN] = None,
     detector
         Likelihood ratio detector.
     filepath
-        Save directory.
+        Saved model directory.
     dist_s
         TensorFlow distribution for semantic model.
     dist_b
@@ -1279,15 +1277,16 @@ def load_tf_llr(filepath: str, dist_s: Union[Distribution, PixelCNN] = None,
     -------
     Detector with loaded models.
     """
-    model_dir = os.path.join(filepath, 'model')
-    if 'model_s.h5' in os.listdir(model_dir) and 'model_b.h5' in os.listdir(model_dir):
-        model_s, dist_s = build_model(dist_s, input_shape, os.path.join(model_dir, 'model_s.h5'))
-        model_b, dist_b = build_model(dist_b, input_shape, os.path.join(model_dir, 'model_b.h5'))
+    model_dir = Path(filepath).joinpath('model')
+    h5files = [f.name for f in model_dir.glob('[!.]*.h5')]
+    if 'model_s.h5' in h5files and 'model_b.h5' in h5files:
+        model_s, dist_s = build_model(dist_s, input_shape, str(model_dir.joinpath('model_s.h5').resolve()))
+        model_b, dist_b = build_model(dist_b, input_shape, str(model_dir.joinpath('model_b.h5').resolve()))
         return dist_s, dist_b, model_s, model_b
     else:
-        dist_s = tf.keras.models.load_model(os.path.join(model_dir, 'model.h5'), compile=False)
-        if 'model_background.h5' in os.listdir(model_dir):
-            dist_b = tf.keras.models.load_model(os.path.join(model_dir, 'model_background.h5'), compile=False)
+        dist_s = tf.keras.models.load_model(model_dir.joinpath('model.h5'), compile=False)
+        if 'model_background.h5' in h5files:
+            dist_b = tf.keras.models.load_model(model_dir.joinpath('model_background.h5'), compile=False)
         else:
             dist_b = None
         return dist_s, dist_b, None, None
@@ -1481,13 +1480,13 @@ def init_od_s2s(state_dict: Dict,
     return od
 
 
-def load_text_embed(filepath: str, load_dir: str = 'model') \
+def load_text_embed(filepath: Union[str, os.PathLike], load_dir: str = 'model') \
         -> Tuple[TransformerEmbedding, Callable]:
-    model_dir = os.path.join(filepath, load_dir)
-    tokenizer = AutoTokenizer.from_pretrained(model_dir)
-    args = dill.load(open(os.path.join(model_dir, 'embedding.dill'), 'rb'))
+    model_dir = Path(filepath).joinpath(load_dir)
+    tokenizer = AutoTokenizer.from_pretrained(str(model_dir.resolve()))
+    args = dill.load(open(model_dir.joinpath('embedding.dill'), 'rb'))
     emb = TransformerEmbedding(
-        model_dir, embedding_type=args['embedding_type'], layers=args['layers']
+        str(model_dir.resolve()), embedding_type=args['embedding_type'], layers=args['layers']
     )
     return emb, tokenizer
 
