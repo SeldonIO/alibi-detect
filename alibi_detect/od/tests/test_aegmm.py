@@ -4,6 +4,7 @@ import pytest
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, InputLayer
 from alibi_detect.od import OutlierAEGMM
+from alibi_detect.version import __version__
 
 threshold = [None, 5.]
 n_gmm = [1, 2]
@@ -69,7 +70,7 @@ def test_aegmm(aegmm_params):
     )
 
     assert aegmm.threshold == threshold
-    assert aegmm.meta == {'name': 'OutlierAEGMM', 'detector_type': 'offline', 'data_type': None}
+    assert aegmm.meta == {'name': 'OutlierAEGMM', 'detector_type': 'offline', 'data_type': None, 'version': __version__}
 
     # fit OutlierAEGMM, infer threshold and compute scores
     aegmm.fit(X, w_energy=w_energy, epochs=5, batch_size=1000, verbose=False)

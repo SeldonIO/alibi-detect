@@ -4,10 +4,13 @@ import json
 import numpy as np
 from typing import Dict
 
+from alibi_detect.version import __version__
+
 DEFAULT_META = {
     "name": None,
     "detector_type": None,  # online or offline
-    "data_type": None  # tabular, image or time-series
+    "data_type": None,  # tabular, image or time-series
+    "version": None,
 }  # type: Dict
 
 
@@ -55,6 +58,7 @@ class BaseDetector(ABC):
     def __init__(self):
         self.meta = copy.deepcopy(DEFAULT_META)
         self.meta['name'] = self.__class__.__name__
+        self.meta['version'] = __version__
 
     def __repr__(self):
         return self.__class__.__name__

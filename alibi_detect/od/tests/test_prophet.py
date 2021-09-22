@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from alibi_detect.od import OutlierProphet
+from alibi_detect.version import __version__
 
 growth = ['linear', 'logistic']
 return_instance_score = [True, False]
@@ -36,7 +37,8 @@ def test_prophet(prophet_params):
     growth, return_instance_score, return_forecast = prophet_params
     od = OutlierProphet(growth=growth)
     assert isinstance(od.model, fbprophet.forecaster.Prophet)
-    assert od.meta == {'name': 'OutlierProphet', 'detector_type': 'offline', 'data_type': 'time-series'}
+    assert od.meta == {'name': 'OutlierProphet', 'detector_type': 'offline', 'data_type': 'time-series',
+                       'version': __version__}
     if growth == 'logistic':
         df_fit['cap'] = 10.
         df_test['cap'] = 10.

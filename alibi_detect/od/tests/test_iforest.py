@@ -2,6 +2,7 @@ from itertools import product
 import pytest
 from sklearn.datasets import load_iris
 from alibi_detect.od import IForest
+from alibi_detect.version import __version__
 
 threshold = [None, 0.]
 threshold_perc = [75., 95.]
@@ -23,7 +24,8 @@ def test_isolation_forest(iforest_params):
     X, y = load_iris(return_X_y=True)
     iforest = IForest(threshold)
     assert iforest.threshold == threshold
-    assert iforest.meta == {'name': 'IForest', 'detector_type': 'offline', 'data_type': 'tabular'}
+    assert iforest.meta == {'name': 'IForest', 'detector_type': 'offline', 'data_type': 'tabular',
+                            'version': __version__}
     iforest.fit(X)
     iforest.infer_threshold(X, threshold_perc=threshold_perc)
     iscore = iforest.score(X)

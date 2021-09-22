@@ -4,6 +4,7 @@ import pytest
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, InputLayer
 from alibi_detect.od import OutlierVAEGMM
+from alibi_detect.version import __version__
 
 threshold = [None, 5.]
 n_gmm = [1, 2]
@@ -73,7 +74,8 @@ def test_vaegmm(vaegmm_params):
     )
 
     assert vaegmm.threshold == threshold
-    assert vaegmm.meta == {'name': 'OutlierVAEGMM', 'detector_type': 'offline', 'data_type': None}
+    assert vaegmm.meta == {'name': 'OutlierVAEGMM', 'detector_type': 'offline', 'data_type': None,
+                           'version': __version__}
 
     # fit OutlierAEGMM, infer threshold and compute scores
     vaegmm.fit(X, w_recon=w_recon, w_energy=w_energy, epochs=5, batch_size=1000, verbose=False)
