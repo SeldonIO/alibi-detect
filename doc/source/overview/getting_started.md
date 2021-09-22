@@ -146,16 +146,7 @@ Some detectors require an additional `.fit` step using training data:
 od.fit(X_train)
 ```
 
-The detectors can be saved or loaded as follows:
-
-```python
-from alibi_detect.utils.saving import save_detector, load_detector
-
-filepath = './my_detector/'
-save_detector(od, filepath)
-od = load_detector(filepath)
-```
-
+The detectors can be saved or loaded as described in [Saving and loading](saving.md). 
 Finally, we can make predictions on test data and detect outliers or adversarial examples.
 
 ```python
