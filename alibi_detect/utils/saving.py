@@ -983,9 +983,13 @@ def load_detector(filepath: Union[str, os.PathLike], **kwargs) -> Data:
     meta_dict = dill.load(open(filepath.joinpath('meta' + suffix), 'rb'))
 
     # check version
-    if meta_dict['version'] != __version__:
-        warnings.warn(f'Trying to load detector from version {meta_dict["version"]} when using version {__version__}. '
-                      f'This may lead to breaking code or invalid results.')
+    try:
+        if meta_dict['version'] != __version__:
+            warnings.warn(f'Trying to load detector from version {meta_dict["version"]} when using version {__version__}. '
+                          f'This may lead to breaking code or invalid results.')
+    except KeyError:
+        warnings.warn('Trying to load detector from an older version.'
+                      'This may lead to breaking code or invalid results.')
 
     if 'backend' in list(meta_dict.keys()) and meta_dict['backend'] == 'pytorch':
         raise NotImplementedError('Detectors with PyTorch backend are not yet supported.')
