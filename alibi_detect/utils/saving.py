@@ -985,8 +985,8 @@ def load_detector(filepath: Union[str, os.PathLike], **kwargs) -> Data:
     # check version
     try:
         if meta_dict['version'] != __version__:
-            warnings.warn(f'Trying to load detector from version {meta_dict["version"]} when using version {__version__}. '
-                          f'This may lead to breaking code or invalid results.')
+            warnings.warn(f'Trying to load detector from version {meta_dict["version"]} when using version '
+                          f'{__version__}. This may lead to breaking code or invalid results.')
     except KeyError:
         warnings.warn('Trying to load detector from an older version.'
                       'This may lead to breaking code or invalid results.')
