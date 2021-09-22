@@ -307,11 +307,13 @@ StandaloneHTMLBuilder.supported_image_types = [
 # details of available extensions.
 myst_enable_extensions = [
     "dollarmath",
+    "amsmath",
     "colon_fence",
     "smartquotes",
     "tasklist",
     "html_image",
 ]
+
 # Create heading anchors for h1 to h3 (useful for local toc's)
 myst_heading_anchors = 3
 
