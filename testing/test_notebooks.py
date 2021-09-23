@@ -21,7 +21,14 @@ ALL_NOTEBOOKS = {Path(x).name for x in glob.glob('examples/*.ipynb')}
 # These are typically those that would take too long to run in a CI environment or impractical
 # due to other dependencies (e.g. downloading large datasets
 EXCLUDE_NOTEBOOKS = {
-    'test-exclude.ipynb'
+    # the following are all long-running
+    'cd_distillation_cifar10.ipynb',
+    'cd_ks_cifar10.ipynb',
+    'cd_mmd_cifar10.ipynb',
+    'od_llr_mnist.ipynb',
+    'od_seq2seq_synth.ipynb',
+    # the following requires a k8s cluster
+    'alibi_detect_deploy.ipynb',
 }
 
 EXECUTE_NOTEBOOKS = ALL_NOTEBOOKS - EXCLUDE_NOTEBOOKS
