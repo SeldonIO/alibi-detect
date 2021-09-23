@@ -3,6 +3,7 @@
 import argparse
 import numpy as np
 import os
+from pathlib import Path
 import tensorflow as tf
 from tensorflow.keras.callbacks import Callback, ModelCheckpoint
 from tensorflow.keras.initializers import RandomNormal
@@ -438,7 +439,7 @@ def scale_by_instance(x: np.ndarray, eps: float = 1e-12) -> np.ndarray:
 def run(num_blocks: int,
         epochs: int,
         batch_size: int,
-        model_dir: str,
+        model_dir: Union[str, os.PathLike],
         num_classes: int = 10,
         input_shape: Tuple[int, int, int] = (32, 32, 3),
         validation_freq: int = 10,
@@ -465,7 +466,7 @@ def run(num_blocks: int,
 
     # set up callbacks
     steps_per_epoch = X_train.shape[0] // batch_size
-    ckpt_path = os.path.join(model_dir, 'model.h5')
+    ckpt_path = Path(model_dir).joinpath('model.h5')
     callbacks = [
         ModelCheckpoint(
             ckpt_path,

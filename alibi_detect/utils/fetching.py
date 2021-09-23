@@ -56,7 +56,6 @@ def get_pixelcnn_default_kwargs():
 
 
 def fetch_tf_model(dataset: str, model: str) -> tf.keras.Model:
-    # TODO - check this
     """
     Fetch pretrained tensorflow models from the google cloud bucket.
 
@@ -327,8 +326,8 @@ def fetch_seq2seq(url: str, filepath: Union[str, os.PathLike]) -> None:
     """
     url_models = os.path.join(url, 'model')
     model_path = Path(filepath).joinpath('model').resolve()
-    if not os.path.isdir(model_path):
-        os.mkdir(model_path)
+    if not model_path.is_dir():
+        model_path.mkdir(parents=True, exist_ok=True)
     # save seq2seq
     tf.keras.utils.get_file(
         model_path.joinpath('checkpoint'),
