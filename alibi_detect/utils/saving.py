@@ -1106,7 +1106,7 @@ def load_tf_hl(filepath: Union[str, os.PathLike], model: tf.keras.Model, state_d
     model_dir = Path(filepath).joinpath('model')
     hidden_layer_kld = state_dict['hidden_layer_kld']
     if not hidden_layer_kld:
-        return [None]
+        return []
     model_hl = []
     for i, (hidden_layer, output_dim) in enumerate(hidden_layer_kld.items()):
         m = DenseHidden(model, hidden_layer, output_dim)
