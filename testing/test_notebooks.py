@@ -29,6 +29,11 @@ EXCLUDE_NOTEBOOKS = {
     'od_seq2seq_synth.ipynb',
     # the following requires a k8s cluster
     'alibi_detect_deploy.ipynb',
+    # the following require downloading large datasets
+    'cd_online_camelyon.ipynb',
+    'cd_text_amazon.ipynb',
+    # the following require complex dependencies
+    'cd_mol.ipynb',  # complex to install pytorch-geometric
 }
 
 EXECUTE_NOTEBOOKS = ALL_NOTEBOOKS - EXCLUDE_NOTEBOOKS
