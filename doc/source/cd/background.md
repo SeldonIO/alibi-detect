@@ -57,10 +57,8 @@ we can classify drift under a number of types:
 - **Prior drift**: Also referred to as label drift, this occurs when
   the distribution of the outputs has shifted
   $P(\mathbf{Y}) \ne P_{ref}(\mathbf{Y})$, whilst
-  $P(\mathbf{X}|\mathbf{Y})=P_{ref}(\mathbf{X}|\mathbf{Y})$. The
-  model could still be accurate, but accuracy metrics might be
-  affected. Additionally, it is common for the optimal decision 
-  boundary to change under prior drift.
+  $P(\mathbf{X}|\mathbf{Y})=P_{ref}(\mathbf{X}|\mathbf{Y})$. This can affect the model's decision
+  boundary, as well as the model's performance metrics.
 - **Concept drift**: This occurs when the process generating $y$
   from $x$ has changed, such that
   $P(\mathbf{Y}|\mathbf{X}) \ne P_{ref}(\mathbf{Y}|\mathbf{X})$.
@@ -94,7 +92,7 @@ It is relatively easy to spot drift by eyeballing these figures here.
 However, the task becomes considerably harder for high-dimensional real
 problems, especially since real-time ground truths are not typically
 available. Some types of drift, such as prior and concept drift, are
-also difficult to detect without access to ground truths. As a
+especially difficult to detect without access to ground truths. As a
 workaround proxies are required, for example a model’s predictions can
 be monitored to check for prior drift.
 
@@ -179,12 +177,14 @@ Rate](http://www.math.tau.ac.il/~ybenja/MyPapers/benjamini_hochberg1995.pdf)
 (FDR) correction. The Bonferroni correction is more conservative and
 controls for the probability of at least one false positive. The FDR
 correction on the other hand allows for an expected fraction of false
-positives to occur. The univariate tests assume each test (i.e. each 
-feature dimension in this case) are independent. Usually this is not 
-the case, resulting in false positive rates (FPR's) up to $d$-times 
+positives to occur. If the tests (i.e. each feature dimension) are 
+independent, these corrections preserve the desired false positive rate (FPR). 
+However, usually this is not the case, resulting in FPR's up to $d$-times 
 lower than desired, which becomes especially problematic when $d$ is 
-large. On the other hand, the multivariate tests allow us to keep our 
-false positive rates known, at the cost of greater complexity.
+large. Additionally, since the univariate tests examine the feature-wise marginal
+distributions, they may miss drift in cases where the joint distribution
+over all $d$ features has changed, but the marginals have not.
+The multivariate tests avoid these problems, at the cost of greater complexity.
 
 ### Dimension reduction
 
