@@ -25,6 +25,7 @@ EXCLUDE_NOTEBOOKS = {
     'cd_distillation_cifar10.ipynb',
     'cd_ks_cifar10.ipynb',
     'cd_mmd_cifar10.ipynb',
+    'od_llr_genome.ipynb',
     'od_llr_mnist.ipynb',
     'od_seq2seq_synth.ipynb',
     # the following requires a k8s cluster
