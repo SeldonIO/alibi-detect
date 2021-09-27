@@ -23,7 +23,7 @@ these hooks will be run to verify that the linting and type checking is correct.
 errors, the commit will fail and you will see the changes that need to be made.
 
 ## Testing
-We use `pytest` to run tests. To run all tests just call `pytest` from the root of the project.
+We use `pytest` to run tests. To run all tests just call `pytest alibi_detect` from the root of the project.
 Test files live together with the library files under `tests` folders.
 
 ## Linter
