@@ -52,8 +52,8 @@ we can classify drift under a number of types:
   when the distribution of the input data has shifted
   $P(\mathbf{X}) \ne P_{ref}(\mathbf{X})$, whilst
   $P(\mathbf{Y}|\mathbf{X})$ =
-  $P_{ref}(\mathbf{Y}|\mathbf{X})$. The model may now be
-  extrapolating, potentially resulting in unreliable predictions.
+  $P_{ref}(\mathbf{Y}|\mathbf{X})$. This may result in the model
+  giving unreliable predictions.
 - **Prior drift**: Also referred to as label drift, this occurs when
   the distribution of the outputs has shifted
   $P(\mathbf{Y}) \ne P_{ref}(\mathbf{Y})$, whilst
