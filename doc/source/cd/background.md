@@ -804,17 +804,18 @@ windows of test data, leading to miscalibrated detectors operating at an
 unknown False Positive Rate (FPR). Well-calibrated FPR’s are crucial for
 judging the significance of a drift detection. In the absence of
 calibration, drift detection can be useless since there is no way of
-knowing what fraction of detections are false positives. [Alibi
+knowing what fraction of detections are false positives. To tackle this problem, [Alibi
 Detect](https://github.com/SeldonIO/alibi-detect) offers specialist
-online drift detectors, which are designed to be well-calibrated when
-used sequentially:
+online drift detectors: 
 
 - [Online Maximum Mean Discrepancy](methods/onlinemmddrift.ipynb)
 - [Online Least-Squares Density
   Difference](methods/onlinelsdddrift.ipynb)
 
-The detectors compute a test statistic $S(\mathbf{z})$
-during the configuration phase. Then, at test time, the test statistic
+These detectors leverage the calibration method introduced by 
+[Cobb et al. (2021)](https://arxiv.org/abs/2108.00883) in order to ensure they are well 
+well-calibrated when used in a sequential manner. The detectors compute a test statistic 
+$S(\mathbf{z})$ during the configuration phase. Then, at test time, the test statistic
 is updated sequentially at a low cost. When no drift has occurred the
 test statistic fluctuates around its expected value, and once drift
 occurs the test statistic starts to drift upwards. When it exceeds some
