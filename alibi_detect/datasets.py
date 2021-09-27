@@ -6,11 +6,10 @@ import numpy as np
 import os
 import pandas as pd
 import requests
+from requests import RequestException
 from scipy.io import arff
 from sklearn.datasets import fetch_kddcup99
 from typing import List, Tuple, Union
-import urllib.request
-from urllib.request import urlopen
 from xml.etree import ElementTree
 from alibi_detect.utils.data import Bunch
 
@@ -126,8 +125,13 @@ def load_url_arff(url: str, dtype: Union[str, np.dtype] = np.float32) -> np.ndar
     -------
     Arrays with data and labels.
     """
-    resp = urllib.request.urlopen(url)
-    data = arff.loadarff(io.StringIO(resp.read().decode('utf-8')))[0]
+    try:
+        resp = requests.get(url, timeout=2)
+        resp.raise_for_status()
+    except RequestException:
+        logger.exception("Could not connect, URL may be out of service")
+        raise
+    data = arff.loadarff(io.StringIO(resp.text))[0]
     return np.array(data.tolist(), dtype=dtype)
 
 
@@ -204,13 +208,23 @@ def fetch_cifar10c(corruption: Union[str, List[str]], severity: int, return_X_y:
     X = np.zeros(shape)
     for i, corr in enumerate(corruption):
         url_corruption = os.path.join(url, corr + '.npy')
-        resp = requests.get(url_corruption)
+        try:
+            resp = requests.get(url_corruption, timeout=2)
+            resp.raise_for_status()
+        except RequestException:
+            logger.exception("Could not connect, URL may be out of service")
+            raise
         X_corr = np.load(BytesIO(resp.content))[istart:iend].astype('float32')
         X[i * n:(i + 1) * n] = X_corr
 
     # get labels
     url_labels = os.path.join(url, 'labels.npy')
-    resp = requests.get(url_labels)
+    try:
+        resp = requests.get(url_labels, timeout=2)
+        resp.raise_for_status()
+    except RequestException:
+        logger.exception("Could not connect, URL may be out of service")
+        raise
     y = np.load(BytesIO(resp.content))[istart:iend].astype('int64')
     if X.shape[0] != y.shape[0]:
         repeat = X.shape[0] // y.shape[0]
@@ -239,8 +253,13 @@ def google_bucket_list(url: str, folder: str, filetype: str = None, full_path: b
     -------
     List with items in the folder of the google bucket.
     """
-    req = requests.get(url)
-    root = ElementTree.fromstring(req.content)
+    try:
+        resp = requests.get(url, timeout=2)
+        resp.raise_for_status()
+    except RequestException:
+        logger.exception("Could not connect, URL may be out of service")
+        raise
+    root = ElementTree.fromstring(resp.content)
     bucket_list = []
     for r in root:
         if list(r):
@@ -301,7 +320,12 @@ def fetch_attack(dataset: str, model: str, attack: str, return_X_y: bool = False
     path_data = path_attack + '.npz'
     path_meta = path_attack + '_meta.pickle'
     # get adversarial instances and labels
-    resp = requests.get(path_data)
+    try:
+        resp = requests.get(path_data, timeout=2)
+        resp.raise_for_status()
+    except RequestException:
+        logger.exception("Could not connect, URL may be out of service")
+        raise
     data = np.load(BytesIO(resp.content))
     X_train, X_test = data['X_train_adv'], data['X_test_adv']
     y_train, y_test = data['y_train'], data['y_test']
@@ -310,7 +334,13 @@ def fetch_attack(dataset: str, model: str, attack: str, return_X_y: bool = False
         return (X_train, y_train), (X_test, y_test)
 
     # get metadata
-    meta = dill.load(urlopen(path_meta))
+    try:
+        resp = requests.get(path_meta, timeout=2)
+        resp.raise_for_status()
+    except RequestException:
+        logger.exception("Could not connect, URL may be out of service")
+        raise
+    meta = dill.load(BytesIO(resp.content))
     return Bunch(data_train=X_train,
                  data_test=X_test,
                  target_train=y_train,
@@ -339,8 +369,13 @@ def fetch_nab(ts: str,
         Tuple if 'return_X_y' equals True.
     """
     url_labels = 'https://raw.githubusercontent.com/numenta/NAB/master/labels/combined_labels.json'
-    r = requests.get(url_labels)
-    labels_json = r.json()
+    try:
+        resp = requests.get(url_labels, timeout=2)
+        resp.raise_for_status()
+    except RequestException:
+        logger.exception("Could not connect, URL may be out of service")
+        raise
+    labels_json = resp.json()
     outliers = labels_json[ts + '.csv']
     if not outliers:
         logger.warning('The dataset does not contain any outliers.')
@@ -370,8 +405,13 @@ def get_list_nab() -> list:
     List with time series names.
     """
     url_labels = 'https://raw.githubusercontent.com/numenta/NAB/master/labels/combined_labels.json'
-    r = requests.get(url_labels)
-    labels_json = r.json()
+    try:
+        resp = requests.get(url_labels, timeout=2)
+        resp.raise_for_status()
+    except RequestException:
+        logger.exception("Could not connect, URL may be out of service")
+        raise
+    labels_json = resp.json()
     files = [k[:-4] for k, v in labels_json.items()]
     return files
 
@@ -380,7 +420,12 @@ def load_genome_npz(fold: str, return_labels: bool = False) \
         -> Union[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray, np.ndarray]]:
     url = 'https://storage.googleapis.com/seldon-datasets/genome/'
     path_data = os.path.join(url, fold + '.npz')
-    resp = requests.get(path_data)
+    try:
+        resp = requests.get(path_data, timeout=2)
+        resp.raise_for_status()
+    except RequestException:
+        logger.exception("Could not connect, URL may be out of service")
+        raise
     data = np.load(BytesIO(resp.content))
     if return_labels:
         return data['x'], data['is_outlier'], data['y']
@@ -429,7 +474,13 @@ def fetch_genome(return_X_y: bool = False, return_labels: bool = False) -> Union
         data_test += (np.concatenate([data_test_in[2], data_test_ood[2]]),)  # type: ignore
     if return_X_y:
         return data_train, data_val, data_test
-    resp = requests.get('https://storage.googleapis.com/seldon-datasets/genome/label_dict.json')
+    try:
+        resp = requests.get('https://storage.googleapis.com/seldon-datasets/genome/label_dict.json', timeout=2)
+        resp.raise_for_status()
+    except RequestException:
+        logger.exception("Could not connect, URL may be out of service")
+        raise
+
     label_dict = resp.json()
     bunch = Bunch(
         data_train=data_train[0],
