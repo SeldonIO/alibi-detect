@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="doc/source/_static/Alibi_Detect_Logo.png" alt="Alibi Detect Logo" width="50%">
+  <img src="doc/source/_static/Alibi_Detect_Logo_rgb.png" alt="Alibi Detect Logo" width="50%">
 </p>
 
 [![Build Status](https://github.com/SeldonIO/alibi-detect/workflows/CI/badge.svg?branch=master)](https://github.com/SeldonIO/alibi-detect/actions?query=workflow%3A%22CI%22)

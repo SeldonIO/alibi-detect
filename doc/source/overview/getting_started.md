@@ -68,60 +68,60 @@ Summary tables highlighting the practical use cases for all the algorithms can b
 
 For detailed information on the **outlier detectors**:
 
-* [Isolation Forest](../methods/iforest.ipynb)
+* [Isolation Forest](../od/methods/iforest.ipynb)
 
-* [Mahalanobis Distance](../methods/mahalanobis.ipynb)
+* [Mahalanobis Distance](../od/methods/mahalanobis.ipynb)
     
-* [Auto-Encoder (AE)](../methods/ae.ipynb)
+* [Auto-Encoder (AE)](../od/methods/ae.ipynb)
 
-* [Variational Auto-Encoder (VAE)](../methods/vae.ipynb)
+* [Variational Auto-Encoder (VAE)](../od/methods/vae.ipynb)
 
-* [Auto-Encoding Gaussian Mixture Model (AEGMM)](../methods/aegmm.ipynb)
+* [Auto-Encoding Gaussian Mixture Model (AEGMM)](../od/methods/aegmm.ipynb)
 
-* [Variational Auto-Encoding Gaussian Mixture Model (VAEGMM)](../methods/vaegmm.ipynb)
+* [Variational Auto-Encoding Gaussian Mixture Model (VAEGMM)](../od/methods/vaegmm.ipynb)
 
-* [Likelihood Ratios](../methods/llr.ipynb)
+* [Likelihood Ratios](../od/methods/llr.ipynb)
     
-* [Prophet Detector](../methods/prophet.ipynb)
+* [Prophet Detector](../od/methods/prophet.ipynb)
     
-* [Spectral Residual Detector](../methods/sr.ipynb)
+* [Spectral Residual Detector](../od/methods/sr.ipynb)
     
-* [Sequence-to-Sequence (Seq2Seq) Detector](../methods/seq2seq.ipynb)
+* [Sequence-to-Sequence (Seq2Seq) Detector](../od/methods/seq2seq.ipynb)
 
 Similar for **adversarial detection**:
 
-* [Adversarial AE Detector](../methods/adversarialae.ipynb)
+* [Adversarial AE Detector](../ad/methods/adversarialae.ipynb)
   
-* [Model Distillation Detector](../methods/modeldistillation.ipynb)
+* [Model Distillation Detector](../ad/methods/modeldistillation.ipynb)
 
 And **data drift**:
     
-* [Kolmogorov-Smirnov Drift Detector](../methods/ksdrift.ipynb)
+* [Kolmogorov-Smirnov Drift Detector](../cd/methods/ksdrift.ipynb)
 
-* [Least-Squares Density Difference Drift Detector](../methods/lsdddrift.ipynb)
+* [Least-Squares Density Difference Drift Detector](../cd/methods/lsdddrift.ipynb)
 
-* [Maximum Mean Discrepancy (MMD) Drift Detector](../methods/mmddrift.ipynb)
+* [Maximum Mean Discrepancy (MMD) Drift Detector](../cd/methods/mmddrift.ipynb)
 
-* [Learned Kernel MMD Drift Detector](../methods/learnedkerneldrift.ipynb)
+* [Learned Kernel MMD Drift Detector](../cd/methods/learnedkerneldrift.ipynb)
 
-* [Chi-Squared Drift Detector](../methods/chisquaredrift.ipynb)
+* [Chi-Squared Drift Detector](../cd/methods/chisquaredrift.ipynb)
 
-* [Mixed-type Tabular Data Drift Detector](../methods/tabulardrift.ipynb)
+* [Mixed-type Tabular Data Drift Detector](../cd/methods/tabulardrift.ipynb)
 
-* [Classifier Drift Detector](../methods/classifierdrift.ipynb)
+* [Classifier Drift Detector](../cd/methods/classifierdrift.ipynb)
 
-* [Spot-the-diff Drift Detector](../methods/spotthediffdrift.ipynb)
+* [Spot-the-diff Drift Detector](../cd/methods/spotthediffdrift.ipynb)
 
-* [Classifier and Regressor Uncertainty Drift Detectors](../methods/modeluncdrift.ipynb)
+* [Classifier and Regressor Uncertainty Drift Detectors](../cd/methods/modeluncdrift.ipynb)
 
-* [Online Maximum Mean Discrepancy Drift Detector](../methods/onlinemmddrift.ipynb)
+* [Online Maximum Mean Discrepancy Drift Detector](../cd/methods/onlinemmddrift.ipynb)
 
-* [Online Least-Squares Density Difference Drift Detector](../methods/onlinelsdddrift.ipynb)
+* [Online Least-Squares Density Difference Drift Detector](../cd/methods/onlinelsdddrift.ipynb)
 
 
 ## Basic Usage
 
-We will use the [VAE outlier detector](../methods/vae.ipynb) to illustrate the usage of outlier and adversarial detectors in alibi-detect.
+We will use the [VAE outlier detector](../od/methods/vae.ipynb) to illustrate the usage of outlier and adversarial detectors in alibi-detect.
 
 First, we import the detector:
 
@@ -146,23 +146,14 @@ Some detectors require an additional `.fit` step using training data:
 od.fit(X_train)
 ```
 
-The detectors can be saved or loaded as follows:
-
-```python
-from alibi_detect.utils.saving import save_detector, load_detector
-
-filepath = './my_detector/'
-save_detector(od, filepath)
-od = load_detector(filepath)
-```
-
+The detectors can be saved or loaded as described in [Saving and loading](saving.md). 
 Finally, we can make predictions on test data and detect outliers or adversarial examples.
 
 ```python
 preds = od.predict(X_test)
 ```
 
-The predictions are returned in a dictionary with as keys `meta` and `data`. `meta` contains the detector's metadata while `data` is in itself a dictionary with the actual predictions. It has either `is_outlier`, `is_adversarial` or `is_drift` (filled with 0's and 1's) as well as optional `instance_score`, `feature_score` or `p_value` as keys with numpy arrays as values.
+The predictions are returned in a dictionary with as keys `meta` and `data`. `meta` contains the detector's metadata while `data` is in itself a dictionary with the actual predictions (and other relevant values). It has either `is_outlier`, `is_adversarial` or `is_drift` (filled with 0's and 1's) as well as optional `instance_score`, `feature_score` or `p_value` as keys with numpy arrays as values.
 
 The exact details will vary slightly from method to method, so we encourage the reader to become
 familiar with the [types of algorithms supported](../overview/algorithms.md) in alibi-detect.
