@@ -6,6 +6,7 @@ import tensorflow as tf
 from tensorflow.python.keras import backend
 from typing import Tuple, Union
 from urllib.request import urlopen
+from urllib.error import HTTPError
 from alibi_detect.base import BaseDetector
 from alibi_detect.ad import AdversarialAE, ModelDistillation
 from alibi_detect.models.tensorflow import PixelCNN
@@ -404,14 +405,24 @@ def fetch_state_dict(url: str, filepath: Union[str, os.PathLike],
     -------
     Detector metadata and state.
     """
-    # fetch and save metadata and state dict
-    # TODO - Currently load pickle from bucket and save locally as dill. Convert to dill on bucket?
-    filepath = Path(filepath)
-    path_meta = os.path.join(url, 'meta.pickle')
-    meta = dill.load(urlopen(path_meta))
-    path_state = os.path.join(url, meta['name'] + '.pickle')
-    state_dict = dill.load(urlopen(path_state))
+    # fetch metadata and state dict
+    try:
+        path_meta = os.path.join(url, 'meta.dill')
+        meta = dill.load(urlopen(path_meta))
+        path_state = os.path.join(url, meta['name'] + '.dill')
+        state_dict = dill.load(urlopen(path_state))
+    except HTTPError:
+        try:
+            path_meta = os.path.join(url, 'meta.pickle')
+            meta = dill.load(urlopen(path_meta))
+            path_state = os.path.join(url, meta['name'] + '.pickle')
+            state_dict = dill.load(urlopen(path_state))
+        except HTTPError:
+            raise HTTPError('Neither .dill or .pickle files exist in {}.'.format(url))
+
+    # Save state
     if save_state_dict:
+        filepath = Path(filepath)
         with open(filepath.joinpath('meta.dill'), 'wb') as f:
             dill.dump(meta, f)
         with open(filepath.joinpath(meta['name'] + '.dill'), 'wb') as f:
