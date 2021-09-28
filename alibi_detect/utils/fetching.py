@@ -5,7 +5,9 @@ import dill
 import tensorflow as tf
 from tensorflow.python.keras import backend
 from typing import Tuple, Union
-from urllib.request import urlopen
+from io import BytesIO
+import requests
+from requests import RequestException
 from alibi_detect.base import BaseDetector
 from alibi_detect.ad import AdversarialAE, ModelDistillation
 from alibi_detect.models.tensorflow import PixelCNN
@@ -404,14 +406,36 @@ def fetch_state_dict(url: str, filepath: Union[str, os.PathLike],
     -------
     Detector metadata and state.
     """
-    # fetch and save metadata and state dict
-    # TODO - Currently load pickle from bucket and save locally as dill. Convert to dill on bucket?
-    filepath = Path(filepath)
-    path_meta = os.path.join(url, 'meta.pickle')
-    meta = dill.load(urlopen(path_meta))
-    path_state = os.path.join(url, meta['name'] + '.pickle')
-    state_dict = dill.load(urlopen(path_state))
+    # Check if metadata stored as dill or pickle
+    try:
+        url_meta = os.path.join(url, 'meta.dill')
+        resp = requests.get(url_meta, timeout=2)
+        resp.raise_for_status()
+        suffix = '.dill'
+    except RequestException:
+        try:
+            url_meta = os.path.join(url, 'meta.pickle')
+            resp = requests.get(url_meta, timeout=2)
+            resp.raise_for_status()
+            suffix = '.pickle'
+        except RequestException:
+            logger.exception('Timed out while searching for meta.dill or meta.pickle files at %s.', url)
+            raise
+
+    # Load metadata and state_dict
+    meta = dill.load(BytesIO(resp.content))
+    try:
+        url_state = os.path.join(url, meta['name'] + suffix)
+        resp = requests.get(url_state)
+        resp.raise_for_status()
+    except RequestException:
+        logger.exception('Timed out while searching for corresponding state file at %s.', url)
+        raise
+    state_dict = dill.load(BytesIO(resp.content))
+
+    # Save state
     if save_state_dict:
+        filepath = Path(filepath)
         with open(filepath.joinpath('meta.dill'), 'wb') as f:
             dill.dump(meta, f)
         with open(filepath.joinpath(meta['name'] + '.dill'), 'wb') as f:
