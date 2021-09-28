@@ -419,7 +419,7 @@ def fetch_state_dict(url: str, filepath: Union[str, os.PathLike],
             resp.raise_for_status()
             suffix = '.pickle'
         except RequestException:
-            logger.exception('Timed out which searching for meta.dill or meta.pickle files at {}.'.format(url))
+            logger.exception('Timed out while searching for meta.dill or meta.pickle files at %s.', url)
             raise
 
     # Load metadata and state_dict
@@ -429,7 +429,7 @@ def fetch_state_dict(url: str, filepath: Union[str, os.PathLike],
         resp = requests.get(url_state)
         resp.raise_for_status()
     except RequestException:
-        logger.exception('Timed out which searching for corresponding state file at {}.'.format(url))
+        logger.exception('Timed out while searching for corresponding state file at %s.', url)
         raise
     state_dict = dill.load(BytesIO(resp.content))
 
