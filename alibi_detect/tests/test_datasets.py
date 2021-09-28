@@ -3,7 +3,7 @@ import pandas as pd
 import pytest
 from requests import RequestException
 from alibi_detect.datasets import fetch_kdd, fetch_ecg, corruption_types_cifar10c, fetch_cifar10c, \
-    fetch_attack, fetch_nab, get_list_nab, fetch_genome
+    fetch_attack, fetch_nab, get_list_nab
 from alibi_detect.utils.data import Bunch
 
 # KDD cup dataset
@@ -82,7 +82,7 @@ attacks = ['cw', 'slide']
 
 
 @pytest.mark.parametrize('return_X_y', [True, False])
-def test_fetch_cifar10c(return_X_y):
+def test_fetch_attack(return_X_y):
     dataset = list(np.random.choice(datasets, 1))[0]
     model = list(np.random.choice(models, 1))[0]
     attack = list(np.random.choice(attacks, 1))[0]
