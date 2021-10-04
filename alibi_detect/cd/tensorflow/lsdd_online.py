@@ -147,7 +147,7 @@ class LSDDDriftOnlineTF(BaseDriftOnline):
         self.thresholds = thresholds
         self.H_lam_inv = H_lam_inv
 
-    def _configure_ref_subset(self):
+    def _configure_ref(self):
         etw_size = 2*self.window_size-1  # etw = extended test window
         nkc_size = self.n - self.n_kernel_centers  # nkc = non-kernel-centers
         rw_size = nkc_size - etw_size  # rw = ref-window

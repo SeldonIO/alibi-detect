@@ -76,7 +76,7 @@ class MMDDriftOnlineTF(BaseDriftOnline):
         self._configure_thresholds()
         self._initialise()
 
-    def _configure_ref_subset(self):
+    def _configure_ref(self):
         etw_size = 2*self.window_size-1  # etw = extended test window
         rw_size = self.n - etw_size  # rw = ref window#
         # Make split and ensure it doesn't cause an initial detection

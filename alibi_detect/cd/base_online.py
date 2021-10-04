@@ -1,7 +1,7 @@
 from abc import abstractmethod
 import logging
 import numpy as np
-from typing import Any, Callable, Dict,  Optional, Union
+from typing import Any, Callable, Dict, Optional, Union
 from alibi_detect.base import BaseDetector, concept_drift_dict
 from alibi_detect.cd.utils import get_input_shape
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
@@ -83,7 +83,7 @@ class BaseDriftOnline(BaseDetector):
         pass
 
     @abstractmethod
-    def _configure_ref_subset(self):
+    def _configure_ref(self):
         pass
 
     def get_threshold(self, t: int) -> Union[float, None]:
@@ -93,7 +93,7 @@ class BaseDriftOnline(BaseDetector):
         self.t = 0  # corresponds to a test set of ref data
         self.test_stats = np.array([])
         self.drift_preds = np.array([])
-        self._configure_ref_subset()
+        self._configure_ref()
 
     def reset(self) -> None:
         "Resets the detector but does not reconfigure thresholds."
