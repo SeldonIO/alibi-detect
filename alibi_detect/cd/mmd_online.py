@@ -103,7 +103,7 @@ class MMDDriftOnline:
         return [self._detector.thresholds[min(s, self._detector.window_size-1)] for s in range(self.t)]
 
     def reset(self):
-        "Resets the detector but does not reconfigure thresholds."
+        """Resets the detector but does not reconfigure thresholds."""
         self._detector.reset()
 
     def predict(self, x_t: Union[np.ndarray, list], return_test_stat: bool = True) \

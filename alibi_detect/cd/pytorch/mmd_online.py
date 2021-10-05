@@ -109,6 +109,9 @@ class MMDDriftOnlineTorch(BaseDriftOnline):
                 2*self.k_xy.mean()
             )
 
+    def _update_state(self) -> None:
+        self.t += 1
+
     def _configure_thresholds(self):
 
         # Each bootstrap sample splits the reference samples into a sub-reference sample (x)
@@ -171,7 +174,7 @@ class MMDDriftOnlineTorch(BaseDriftOnline):
         """
         Compute the test-statistic (squared MMD) between the reference window and test window.
         If the test-window is not yet full then a test-statistic of None is returned.
-
+        # TODO - does this actually return None as above?
         Parameters
         ----------
         x_t

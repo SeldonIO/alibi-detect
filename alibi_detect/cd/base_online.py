@@ -5,6 +5,7 @@ from typing import Any, Callable, Dict, Optional, Union
 from alibi_detect.base import BaseDetector, concept_drift_dict
 from alibi_detect.cd.utils import get_input_shape
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
+import warnings
 
 if has_pytorch:
     import torch  # noqa F401
@@ -87,11 +88,13 @@ class BaseDriftOnline(BaseDetector):
         pass
 
     def get_threshold(self, t: int) -> Union[float, None]:
-        return self.thresholds[t] if t < self.window_size else self.thresholds[-1]  # type: ignore
+        # return self.thresholds[t] if t < self.window_size else self.thresholds[-1]  # type: ignore
+        return self.thresholds[min(t, len(self.thresholds) - 1)]  # type: ignore
+        # TODO - Above is from cvm, check still OK for other online detectors
 
     def _initialise(self) -> None:
         self.t = 0  # corresponds to a test set of ref data
-        self.test_stats = np.array([])
+        self.test_stats = np.empty([0, len(self.window_size)])  # TODO - this only works for cvm atm
         self.drift_preds = np.array([])
         self._configure_ref()
 
@@ -127,9 +130,14 @@ class BaseDriftOnline(BaseDetector):
         # update test window and return updated test stat
         test_stat = self.score(x_t)
         threshold = self.get_threshold(self.t)
-        drift_pred = 0 if test_stat is None else int(test_stat > threshold)
 
-        self.test_stats = np.concatenate([self.test_stats, np.array([test_stat])])
+        # Check for drift
+        with warnings.catch_warnings():
+            warnings.filterwarnings(action='ignore', message='All-NaN slice encountered')
+            max_stat = np.nanmax(test_stat)
+        drift_pred = 0 if max_stat is None else int(max_stat > threshold)
+
+        self.test_stats = np.concatenate([self.test_stats, test_stat[None, :]])
         self.drift_preds = np.concatenate([self.drift_preds, np.array([drift_pred])])
 
         # populate drift dict

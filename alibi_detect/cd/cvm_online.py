@@ -4,6 +4,7 @@ from alibi_detect.cd.base_online import BaseDriftOnline
 import numba as nb
 from numba.np.ufunc.decorators import guvectorize
 import warnings
+import time
 
 
 class CVMDriftOnline(BaseDriftOnline):
@@ -14,7 +15,7 @@ class CVMDriftOnline(BaseDriftOnline):
             window_size: Union[int, List[int]],  # TODO - this type hint conflicts with parent class
             preprocess_fn: Optional[Callable] = None,
             n_bootstraps: int = 10000,
-            device='cpu',
+            device='parallel',
             verbose: bool = True,
             input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None
@@ -74,14 +75,16 @@ class CVMDriftOnline(BaseDriftOnline):
         self.min_ws = np.min(self.window_size)
 
         # Configure thresholds and initialise detector
+        t0 = time.time()
         self._configure_thresholds()
+        print('Threshold config time = %.3f' % (time.time()-t0))
         self._initialise()
 
-    def _configure_ref(self):
+    def _configure_ref(self):  # TODO - type hints
         ids_ref_ref = self.x_ref[None, :] >= self.x_ref[:, None]
         self.ref_cdf_ref = np.sum(ids_ref_ref, axis=0)/self.n
 
-    def _configure_thresholds(self):
+    def _configure_thresholds(self):  # TODO - type hints
         """
         Private method to simulate trajectories of the Cramer Von-Mises statistic for the desired reference set
         size and window sizes under the null distribution, where both the reference set and deployment stream
@@ -98,7 +101,7 @@ class CVMDriftOnline(BaseDriftOnline):
 
         # Compute test statistic at each T number of t's, for each of the n_bootstrap number of streams
         T = 2 * np.max(self.window_size) - 1  # Should be constant after T*max_ws-1. #TODO - option to set manually?
-        stats = self._compute_stats(self.n, T, self.n_bootstraps, self.window_size)
+        stats = self._simulate_streams(self.n, T, self.n_bootstraps, self.window_size)
         # At each t for each stream, find max stats. over window sizes
         with warnings.catch_warnings():
             warnings.filterwarnings(action='ignore', message='All-NaN slice encountered')
@@ -119,8 +122,8 @@ class CVMDriftOnline(BaseDriftOnline):
         self.thresholds = thresholds
 
     @staticmethod
-    def _compute_stats(
-            N: int, T: int, B: int, window_sizes: np.ndarray, zs: Optional[np.ndarray] = None
+    def _simulate_streams(
+            N: int, T: int, B: int, window_sizes: np.ndarray, xs: Optional[np.ndarray] = None
     ) -> np.ndarray:
         """
         Important that we guvectorise over the parallel streams. Not sufficient just to write a
@@ -129,21 +132,50 @@ class CVMDriftOnline(BaseDriftOnline):
         it faster to compute this way (and 64x smaller).
         """
         K = len(window_sizes)
-        zs = np.random.randn(B, N + T) if zs is None else zs
-        ids = zs[:, None, :] >= zs[:, :, None]
+        xs = np.random.randn(B, N + T) if xs is None else xs
+        ids = xs[:, None, :] >= xs[:, :, None]
         # guvectorise from here to vectorise over first dim of ids
         # works by filling in the entries of the last arg it is passed
         stats = np.zeros((B, T, K))
+#        _ids_to_stats_nb = guvectorize( # TODO - this allows us to set self.device at runtime, but a little slower. cache=True speeds up subsequent runs
+#                                    [(nb.boolean[:, :], nb.boolean[:, :], nb.int64[:], nb.float64[:, :])],
+#                                    '(N,N_ALL), (T,N_ALL), (K) -> (T,K)',
+#                                    nopython=True, target=self.device, cache=True,
+#                                    )(_ids_to_stats)
+#        _ids_to_stats_nb(ids[:, :N, :], ids[:, N:, :], window_sizes, stats)
         _ids_to_stats(ids[:, :N, :], ids[:, N:, :], window_sizes, stats)
         # Remove stats prior to windows being full
         for k, ws in enumerate(window_sizes):
             stats[:ws, k] = np.nan
         return stats
 
-    def score(self, x_t: np.ndarray) -> Union[float, None]:
+    def _update_state(self, x_t: Optional[np.ndarray] = None) -> None:
+        if self.t == 1:
+            # Initialise stream
+            self.xs = x_t
+            self.ids_ref_wins = (x_t >= self.x_ref)[:, None]
+            self.ids_wins_ref = (x_t <= self.x_ref)[None, :]
+            self.ids_wins_wins = np.array(1).reshape(1, 1)
+        else:
+            # Update stream
+            self.xs = np.concatenate([self.xs, x_t])
+            self.ids_ref_wins = np.concatenate(
+                [self.ids_ref_wins[:, -(self.max_ws-1):], (x_t >= self.x_ref)[:,None]], 1
+            )
+            self.ids_wins_ref = np.concatenate(
+                [self.ids_wins_ref[-(self.max_ws-1):], (x_t <= self.x_ref)[None,:]], 0
+            )
+            self.ids_wins_wins = np.concatenate(
+                [self.ids_wins_wins[-(self.max_ws-1):,-(self.max_ws-1):], (x_t >= self.xs[-self.max_ws:-1])[:,None]], 1
+            )
+            self.ids_wins_wins = np.concatenate(
+                [self.ids_wins_wins, (x_t <= self.xs[-self.max_ws:])[None,:]], 0
+            )
+
+    def score(self, x_t: np.ndarray) -> np.ndarray:
         """
-        Compute the test-statistic (squared MMD) between the reference window and test window.
-        If the test-window is not yet full then a test-statistic of None is returned.
+        Compute the test-statistic (CVM) between the reference window(s) and test window.
+        If a given test-window is not yet full then a test-statistic of NaN is returned for that window.
 
         Parameters
         ----------
@@ -152,12 +184,30 @@ class CVMDriftOnline(BaseDriftOnline):
 
         Returns
         -------
-        Squared MMD estimate between reference window and test window.
+        Estimated CVM test statistics between reference window and test window(s).
         """
-        # TODO
-        pass
+        # TODO - how should score be used? atm won't work if called before predict() as self.t==0 then
+        if isinstance(x_t, int) or isinstance(x_t, float):  # we expect ndarray but convert these for convenience
+            x_t = np.array([x_t])
+        if x_t.ndim != 1:
+            raise ValueError("The `x_t` passed to score() data must be 1D ndarray of length 1.")
+        self._update_state(x_t)
 
-    # TODO - Override predict from base_online.py
+        stats = np.zeros_like(self.window_size, dtype=np.float32)
+        for k, ws in enumerate(self.window_size):
+            if self.t >= ws:
+                ref_cdf_win = np.sum(self.ids_ref_wins[:,-ws:], axis=0)/self.n
+                win_cdf_ref = np.sum(self.ids_wins_ref[-ws:], axis=0)/ws
+                win_cdf_win = np.sum(self.ids_wins_wins[-ws:,-ws:], axis=0)/ws
+                ref_cdf_diffs = self.ref_cdf_ref - win_cdf_ref
+                win_cdf_diffs = ref_cdf_win - win_cdf_win
+                sum_diffs_2 = np.sum(ref_cdf_diffs*ref_cdf_diffs) + np.sum(win_cdf_diffs*win_cdf_diffs)
+                stats[k] = _normalise_stats(sum_diffs_2, self.n, ws)
+            else:
+                stats[k] = np.nan
+        return stats
+#        self.stats = stats[None,:] if self.stats is None else np.concatenate([self.stats, stats[None,:]], 0)
+# TODO - save in self.test_stats. Probs need above in predict Line 136 instead of current
 
 
 @nb.njit
@@ -176,23 +226,23 @@ def _normalise_stats(stats: np.ndarray, N: int, ws: int) -> np.ndarray:
     [(nb.boolean[:, :], nb.boolean[:, :], nb.int64[:], nb.float64[:, :])],
     '(N,N_ALL), (T,N_ALL), (K) -> (T,K)',
     nopython=True,
-    target="parallel"   # TODO - Always parallel? or switch to cpu for small data and cuda for big?
-                        # TODO - cuda>parallel>cuda for speed, but opposite for overhead
-                        # TODO - Need to set this from self.device
+    target="parallel"  # TODO - Always parallel? or switch to cpu for small data and cuda for big?
+    # TODO - cuda>parallel>cuda for speed, but opposite for overhead
+    # TODO - Need to set this from self.device (would mean putting back in as class method)
 )
 def _ids_to_stats(
         ids_ref_all: np.ndarray,
         ids_stream_all: np.ndarray,
         window_sizes: np.ndarray,
         stats: np.ndarray,
-) -> np.ndarray:
+) -> np.ndarray:  # type: ignore
     N = ids_ref_all.shape[0]
     T = ids_stream_all.shape[0]
     N_ALL = ids_ref_all.shape[-1]
     K = window_sizes.shape[0]
     ref_cdf_all = np.sum(ids_ref_all, axis=0) / N
 
-    cumsums = np.zeros((T, N_ALL))   # TODO - how to get progress bar?
+    cumsums = np.zeros((T, N_ALL))  # TODO - how to get progress bar?
     for i in range(N_ALL):
         cumsums[:, i] = np.cumsum(ids_stream_all[:, i])
 
