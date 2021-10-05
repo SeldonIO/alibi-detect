@@ -77,6 +77,7 @@ class LSDDDriftOnlineTorch(BaseDriftOnline):
         self.meta.update({'backend': 'pytorch'})
         self.n_kernel_centers = n_kernel_centers
         self.lambda_rd_max = lambda_rd_max
+        self.window_size = window_size  # type: int
 
         # set backend
         if device is None or device.lower() in ['gpu', 'cuda']:
@@ -181,7 +182,6 @@ class LSDDDriftOnlineTorch(BaseDriftOnline):
     def score(self, x_t: np.ndarray) -> Union[float, None]:
         """
         Compute the test-statistic (LSDD) between the reference window and test window.
-        If the test-window is not yet full then a test-statistic of None is returned.
 
         Parameters
         ----------

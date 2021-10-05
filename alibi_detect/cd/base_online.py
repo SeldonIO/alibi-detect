@@ -1,7 +1,7 @@
 from abc import abstractmethod
 import logging
 import numpy as np
-from typing import Any, Callable, Dict, Optional, Union
+from typing import Any, Callable, Dict, Optional, Union, List
 from alibi_detect.base import BaseDetector, concept_drift_dict
 from alibi_detect.cd.utils import get_input_shape
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
@@ -21,7 +21,7 @@ class BaseDriftOnline(BaseDetector):
             self,
             x_ref: Union[np.ndarray, list],
             ert: float,
-            window_size: int,
+            window_size: Union[int, List[int]],
             preprocess_fn: Optional[Callable] = None,
             n_bootstraps: int = 1000,
             verbose: bool = True,
@@ -63,11 +63,16 @@ class BaseDriftOnline(BaseDetector):
         self.fpr = 1/ert
         self.window_size = window_size
 
+        # Pre-process reference data
         if isinstance(preprocess_fn, Callable):  # type: ignore
-            self.x_ref = preprocess_fn(x_ref)
-        else:
-            self.x_ref = x_ref
+            x_ref = preprocess_fn(x_ref)
+        if isinstance(x_ref, list):
+            x_ref = np.array(x_ref)
+        if x_ref.ndim == 1:
+            x_ref = x_ref.reshape(-1, 1)
+        self.x_ref = x_ref
         self.preprocess_fn = preprocess_fn
+
         self.n = len(x_ref)  # type: ignore
         self.n_bootstraps = n_bootstraps  # nb of samples used to estimate thresholds
         self.verbose = verbose
@@ -94,7 +99,10 @@ class BaseDriftOnline(BaseDetector):
 
     def _initialise(self) -> None:
         self.t = 0  # corresponds to a test set of ref data
-        self.test_stats = np.empty([0, len(self.window_size)])  # TODO - this only works for cvm atm
+        if isinstance(self.window_size, list):
+            self.test_stats = np.empty([0, len(self.window_size)])
+        else:
+            self.test_stats = np.empty([0, 1])
         self.drift_preds = np.array([])
         self._configure_ref()
 
@@ -129,6 +137,8 @@ class BaseDriftOnline(BaseDetector):
 
         # update test window and return updated test stat
         test_stat = self.score(x_t)
+        if not isinstance(test_stat, np.ndarray):
+            test_stat = np.asarray([test_stat])
         threshold = self.get_threshold(self.t)
 
         # Check for drift

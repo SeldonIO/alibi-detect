@@ -3,7 +3,7 @@ import time
 from alibi_detect.cd import CVMDriftOnline
 
 nfolds = 3
-#Brange = np.logspace(4,5.0,6, dtype=int) # Number of bootstrap simulations for threshold estimation.
+# Brange = np.logspace(4,5.0,6, dtype=int) # Number of bootstrap simulations for threshold estimation.
 Brange = [50000]
 devices = ['parallel','cpu']
 

@@ -64,6 +64,7 @@ class MMDDriftOnlineTF(BaseDriftOnline):
             data_type=data_type
         )
         self.meta.update({'backend': 'tensorflow'})
+        self.window_size = window_size  # type: int
 
         # initialize kernel
         if isinstance(sigma, np.ndarray):
@@ -157,10 +158,9 @@ class MMDDriftOnlineTF(BaseDriftOnline):
 
         self.thresholds = thresholds
 
-    def score(self, x_t: np.ndarray) -> Union[float, None]:
+    def score(self, x_t: np.ndarray) -> Union[float, None]:  # TODO - does this actually ever return None?
         """
         Compute the test-statistic (squared MMD) between the reference window and test window.
-        If the test-window is not yet full then a test-statistic of None is returned.
 
         Parameters
         ----------

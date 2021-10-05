@@ -68,6 +68,7 @@ class MMDDriftOnlineTorch(BaseDriftOnline):
             data_type=data_type
         )
         self.meta.update({'backend': 'pytorch'})
+        self.window_size = window_size  # type: int
 
         # set backend
         if device is None or device.lower() in ['gpu', 'cuda']:
@@ -173,8 +174,7 @@ class MMDDriftOnlineTorch(BaseDriftOnline):
     def score(self, x_t: np.ndarray) -> Union[float, None]:
         """
         Compute the test-statistic (squared MMD) between the reference window and test window.
-        If the test-window is not yet full then a test-statistic of None is returned.
-        # TODO - does this actually return None as above?
+
         Parameters
         ----------
         x_t

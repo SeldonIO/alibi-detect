@@ -73,6 +73,7 @@ class LSDDDriftOnlineTF(BaseDriftOnline):
         self.meta.update({'backend': 'tensorflow'})
         self.n_kernel_centers = n_kernel_centers
         self.lambda_rd_max = lambda_rd_max
+        self.window_size = window_size  # type: int
 
         self._configure_normalization()
 
@@ -176,7 +177,6 @@ class LSDDDriftOnlineTF(BaseDriftOnline):
         Returns
         -------
         LSDD estimate between reference window and test window.
-        If the test-window is not yet full then a test-statistic of None is returned.
         """
         x_t = tf.convert_to_tensor(x_t[None, :])
         x_t = self._normalize(x_t)
