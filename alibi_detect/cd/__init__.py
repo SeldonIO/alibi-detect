@@ -11,6 +11,7 @@ from .model_uncertainty import ClassifierUncertaintyDrift, RegressorUncertaintyD
 from .tabular import TabularDrift
 from .cvm import CVMDrift
 from .cvm_online import CVMDriftOnline
+from .fet import FETDrift
 
 __all__ = [
     "ChiSquareDrift",
@@ -26,5 +27,6 @@ __all__ = [
     "RegressorUncertaintyDrift",
     "SpotTheDiffDrift",
     "CVMDrift",
-    "CVMDriftOnline"
+    "CVMDriftOnline",
+    "FETDrift"
 ]
