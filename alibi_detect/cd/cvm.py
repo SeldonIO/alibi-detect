@@ -19,7 +19,7 @@ class CVMDrift(BaseUnivariateDrift):
             data_type: Optional[str] = None
     ) -> None:
         """
-        Cramer Von-Mises (CVM) data drift detector.
+        Cramer-von Mises (CVM) data drift detector.
 
         Parameters
         ----------

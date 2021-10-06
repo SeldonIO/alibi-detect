@@ -65,7 +65,6 @@ class FETDrift(BaseUnivariateDrift):
         # Check data is only [False, True] or [0, 1]
         values = set(np.unique(x_ref))
         if values != {True, False} and values != {0, 1}:
-            print(values)
             raise ValueError("The `x_ref` data must consist of only [0,1]'s or [False,True]'s for the "
                              "FETDrift detector.")
 

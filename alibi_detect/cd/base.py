@@ -923,5 +923,5 @@ class BaseUnivariateDrift(BaseDetector):
             cd['data']['p_val'] = p_vals
             cd['data']['threshold'] = self.p_val if drift_type == 'feature' else threshold
         if return_distance:
-            cd['data']['distance'] = dist
+            cd['data']['distance'] = dist  # TODO - can we rename 'distance' to  'test_stat' to match BaseDriftOnline?
         return cd

@@ -14,13 +14,14 @@ class CVMDriftOnline(BaseDriftOnline):
             window_size: Union[int, List[int]],
             preprocess_fn: Optional[Callable] = None,
             n_bootstraps: int = 10000,
+            t_max: Optional[int] = None,
             device='parallel',
             verbose: bool = True,
             input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None
     ) -> None:
         """
-        Online Cramer Von-Mises (CVM) data drift detector using preconfigured thresholds.
+        Online Cramer-von Mises (CVM) data drift detector using preconfigured thresholds.
 
         Parameters
         ----------
@@ -38,6 +39,8 @@ class CVMDriftOnline(BaseDriftOnline):
             The number of bootstrap simulations used to configure the thresholds. The larger this is the
             more accurately the desired ERT will be targeted. Should ideally be at least an order of magnitude
             larger than the ERT.
+        t_max
+            Length of streams to simulate. If `None`, this is set to 2 * max(`window_size`) - 1.
         device
             Device type used. The default None tries to use the GPU and falls back on CPU if needed.
             Can be specified by passing either 'cuda', 'gpu' or 'cpu'. TODO: decide on default
@@ -61,17 +64,22 @@ class CVMDriftOnline(BaseDriftOnline):
 
         self.device = device
 
+        # Window sizes
         if isinstance(window_size, int):
             self.window_size = [window_size]  # type: list
+        self.max_ws = np.max(self.window_size)
+        self.min_ws = np.min(self.window_size)
+
+        # Stream length
+        if t_max is not None:
+            if t_max <= self.max_ws:  # TODO - check this logic
+                raise ValueError("`t_max` must be greater than max(`window_size`) for the CVMDriftOnline detector.")
+        self.t_max = t_max
 
         # Preprocess reference data
         self.x_ref = self.x_ref.squeeze()  # squeeze in case of (n,1) array
         if self.x_ref.ndim != 1:
             raise ValueError("The `x_ref` data must be 1D for the CVMDriftOnline detector.")
-
-        # Get max and min window sizes
-        self.max_ws = np.max(self.window_size)
-        self.min_ws = np.min(self.window_size)
 
         # Configure thresholds and initialise detector
         self._configure_thresholds()
@@ -83,7 +91,7 @@ class CVMDriftOnline(BaseDriftOnline):
 
     def _configure_thresholds(self) -> None:
         """
-        Private method to simulate trajectories of the Cramer Von-Mises statistic for the desired reference set
+        Private method to simulate trajectories of the Cramer-von Mises statistic for the desired reference set
         size and window sizes under the null distribution, where both the reference set and deployment stream
         follow the same distribution. It then uses these simulated trajectories to estimate thresholds.
 
@@ -94,10 +102,10 @@ class CVMDriftOnline(BaseDriftOnline):
         trajectories and estimate thresholds up to this point.
         """
         if self.verbose:
-            print("Using %d boostrap simulations to configure thresholds..." % self.n_bootstraps)
+            print("Using %d bootstrap simulations to configure thresholds..." % self.n_bootstraps)
 
         # Compute test statistic at each t_max number of t's, for each of the n_bootstrap number of streams
-        t_max = 2 * np.max(self.window_size) - 1  # Should be constant after t_max*max_ws-1.
+        t_max = 2 * self.max_ws - 1 if self.t_max is None else self.t_max
         stats = self._simulate_streams(self.n, t_max, self.n_bootstraps, self.window_size)
         # At each t for each stream, find max stats. over window sizes
         with warnings.catch_warnings():
@@ -147,7 +155,7 @@ class CVMDriftOnline(BaseDriftOnline):
             stats[:ws, k] = np.nan
         return stats
 
-    def _update_state(self, x_t: Optional[np.ndarray] = None) -> None:
+    def _update_state(self, x_t: np.ndarray) -> None:
         # if self.t == 1:  # TODO - this doesn't work if score() called before predict(), as self.t==0. Hence do below.
         if not hasattr(self, 'xs'):
             # Initialise stream
@@ -223,9 +231,10 @@ def _normalise_stats(stats: np.ndarray, n: int, ws: int) -> np.ndarray:
     [(nb.boolean[:, :], nb.boolean[:, :], nb.int64[:], nb.float64[:, :])],
     '(n,n_all), (t_max,n_all), (n_windows) -> (t_max,n_windows)',
     nopython=True,
-    target="parallel"  # TODO - Always parallel? or switch to cpu for small data and cuda for big?
-    # TODO - cuda>parallel>cuda for speed, but opposite for overhead
-    # TODO - Need to set this from self.device (would mean putting back in as class method, which adds runtime ops)
+    target="parallel"
+    # TODO - Always parallel? or switch to cpu for small data and cuda for big?
+    #  cuda>parallel>cuda for speed, but opposite for overhead
+    #  Need to set this from self.device (would mean putting back in as class method, which adds runtime ops)
 )
 def _ids_to_stats(
         ids_ref_all: np.ndarray,

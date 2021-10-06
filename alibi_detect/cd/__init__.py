@@ -12,6 +12,7 @@ from .tabular import TabularDrift
 from .cvm import CVMDrift
 from .cvm_online import CVMDriftOnline
 from .fet import FETDrift
+from .fet_online import FETDriftOnline
 
 __all__ = [
     "ChiSquareDrift",
@@ -28,5 +29,6 @@ __all__ = [
     "SpotTheDiffDrift",
     "CVMDrift",
     "CVMDriftOnline",
-    "FETDrift"
+    "FETDrift",
+    "FETDriftOnline"
 ]
