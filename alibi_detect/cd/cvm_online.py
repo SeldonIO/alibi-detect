@@ -4,7 +4,6 @@ from alibi_detect.cd.base_online import BaseDriftOnline
 import numba as nb
 from numba.np.ufunc.decorators import guvectorize
 import warnings
-import time
 
 
 class CVMDriftOnline(BaseDriftOnline):
@@ -75,9 +74,7 @@ class CVMDriftOnline(BaseDriftOnline):
         self.min_ws = np.min(self.window_size)
 
         # Configure thresholds and initialise detector
-        t0 = time.time()
         self._configure_thresholds()
-        print('Threshold config time = %.3f' % (time.time()-t0))
         self._initialise()
 
     def _configure_ref(self) -> None:

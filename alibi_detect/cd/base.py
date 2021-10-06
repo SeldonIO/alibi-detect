@@ -756,7 +756,7 @@ class BaseUnivariateDrift(BaseDetector):
     ) -> None:
         """
         Generic drift detector component which serves as a base class for methods using
-        univariate tests with multivariate correction.
+        univariate tests. Multivariate corrections are applied if n_features>1.
 
         Parameters
         ----------
@@ -796,6 +796,8 @@ class BaseUnivariateDrift(BaseDetector):
             self.x_ref = preprocess_fn(x_ref)
         else:
             self.x_ref = x_ref
+        if isinstance(self.x_ref, list):
+            self.x_ref = np.array(self.x_ref)
         self.preprocess_x_ref = preprocess_x_ref
         self.update_x_ref = update_x_ref
         self.preprocess_fn = preprocess_fn
@@ -876,7 +878,7 @@ class BaseUnivariateDrift(BaseDetector):
             Batch of instances.
         drift_type
             Predict drift at the 'feature' or 'batch' level. For 'batch', the test statistics for
-            each feature are aggregated using the Bonferroni or False Discovery Rate correction.
+            each feature are aggregated using the Bonferroni or False Discovery Rate correction (if n_features>1).
         return_p_val
             Whether to return feature level p-values.
         return_distance
@@ -894,6 +896,8 @@ class BaseUnivariateDrift(BaseDetector):
 
         # TODO: return both feature-level and batch-level drift predictions by default
         # values below p-value threshold are drift
+        if self.n_features == 1:
+            drift_type = 'feature'
         if drift_type == 'feature':
             drift_pred = (p_vals < self.p_val).astype(int)
         elif drift_type == 'batch' and self.correction == 'bonferroni':

@@ -9,6 +9,7 @@ from .mmd import MMDDrift
 from .mmd_online import MMDDriftOnline
 from .model_uncertainty import ClassifierUncertaintyDrift, RegressorUncertaintyDrift
 from .tabular import TabularDrift
+from .cvm import CVMDrift
 from .cvm_online import CVMDriftOnline
 
 __all__ = [
@@ -24,5 +25,6 @@ __all__ = [
     "ClassifierUncertaintyDrift",
     "RegressorUncertaintyDrift",
     "SpotTheDiffDrift",
+    "CVMDrift",
     "CVMDriftOnline"
 ]

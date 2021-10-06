@@ -65,12 +65,13 @@ class BaseDriftOnline(BaseDetector):
 
         # Pre-process reference data
         if isinstance(preprocess_fn, Callable):  # type: ignore
-            x_ref = preprocess_fn(x_ref)
-        if isinstance(x_ref, list):
-            x_ref = np.array(x_ref)
-        if x_ref.ndim == 1:
-            x_ref = x_ref.reshape(-1, 1)
-        self.x_ref = x_ref
+            self.x_ref = preprocess_fn(x_ref)
+        else:
+            self.x_ref = x_ref
+        if isinstance(self.x_ref, list):
+            self.x_ref = np.array(self.x_ref)
+        if self.x_ref.ndim == 1:
+            self.x_ref = self.x_ref.reshape(-1, 1)
         self.preprocess_fn = preprocess_fn
 
         self.n = len(x_ref)  # type: ignore
