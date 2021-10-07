@@ -188,7 +188,7 @@ class FETDriftOnline(BaseDriftOnline):
         -------
         Estimated FET test statistics between reference window and test window(s).
         """
-        if isinstance(x_t, int) or isinstance(x_t, float):  # we expect ndarray but convert these for convenience
+        if isinstance(x_t, (int, float)):  # we expect ndarray but convert these for convenience
             x_t = np.array([x_t])
         if x_t.ndim != 1:
             raise ValueError("The `x_t` passed to score() data must be 1D ndarray of length 1.")
