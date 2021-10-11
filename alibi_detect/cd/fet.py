@@ -1,7 +1,7 @@
 import logging
 import numpy as np
 from scipy.stats import fisher_exact
-from typing import Callable, Dict, List, Tuple, Optional, Union
+from typing import Callable, Dict, Tuple, Optional, Union
 from alibi_detect.cd.base import BaseUnivariateDrift
 
 logger = logging.getLogger(__name__)
@@ -12,7 +12,6 @@ class FETDrift(BaseUnivariateDrift):
             self,
             x_ref: Union[np.ndarray, list],
             p_val: float = .05,
-            categories: Optional[Union[int, List[int]]] = None,
             preprocess_x_ref: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
