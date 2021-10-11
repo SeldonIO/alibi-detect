@@ -5,7 +5,7 @@ https://github.com/SeldonIO/seldon-research/tree/master/alibi-explain-factory-co
 import logging
 import os
 from pathlib import Path
-from typing import Callable, Optional, Union, Tuple
+from typing import Callable, Optional, Union, Tuple, Type
 from ruamel.yaml import YAML
 from importlib import import_module
 
@@ -15,7 +15,7 @@ from importlib import import_module
 logger = logging.getLogger(__name__)
 
 
-def instantiate_class(module: str, name: str, *args, **kwargs) -> Callable:
+def instantiate_class(module: str, name: str, *args, **kwargs) -> Type[Callable]:
     klass = getattr(import_module(module), name)
     if hasattr(klass, 'validate'):
         klass.validate(*args, **kwargs)

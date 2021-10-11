@@ -1,6 +1,7 @@
 from alibi_detect.base import BaseDetector
 from .utils import read_detector_config
 from .detectors import init_detector
+from .preprocessors import init_preprocessor
 from typing import Union, Type
 import numpy as np
 import logging
@@ -15,15 +16,22 @@ def DetectorFactory(x_ref: Union[np.ndarray, list], config_file: str) -> BaseDet
     # Load the config file
     cfg = read_detector_config(config_file)
 
-# Load preprocessor if specified
-#    if 'preprocess' in cfg:
-#        preprocessor_cfg = cfg.pop('preprocess')
-#        preprocessor_fn = init_preprocessor(preprocessor_cfg)
+    # Get backend
+    if 'backend' in cfg:
+        backend = cfg.pop('backend')
+
+    # Load preprocessor if specified
+    if 'preprocess' in cfg:
+        preprocessor_cfg = cfg.pop('preprocess')
+        preprocessor_fn = init_preprocessor(preprocessor_cfg, backend=backend)
+        # NOTE - init methods take dict, which allows for direct use in future, i.e. not through cfg file
+    else:
+        preprocessor_fn = None
 
     # Load detector
     if 'detector' in cfg:
         detector_cfg = cfg.pop('detector')
-        detector = init_detector(x_ref, detector_cfg)
+        detector = init_detector(x_ref, detector_cfg, preprocessor_fn=preprocessor_fn, backend=backend)
     else:
         raise ValueError("Config file must contain a 'detector' key.")
 

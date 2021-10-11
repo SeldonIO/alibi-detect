@@ -10,13 +10,13 @@ from typing import Callable, Optional, Union
 MODEL_KWARGS = ['pretrained', 'load_path', 'model_kwargs']
 
 
-def get_model(model_name: str, n_classes: Optional[int], pretrained: Optional[bool] = True,
+def load_model(model_name: str, n_classes: Optional[int], pretrained: Optional[bool] = True,
               load_path: Optional[str] = None, **kwargs) -> Union[nn.Module, nn.Sequential]:
 
     # TODO - what do we want the "model" to be? Just use load_tf_model here with given filepath?
     try:
         model = instantiate_class(model_name)(**kwargs['model_kwargs'])
-    except:  # TODO
+    except:  # TODO - make more specific
         raise ValueError(f'{model_name} not supported.')
 
 #    # TODO - below
@@ -35,6 +35,7 @@ def get_model_kwargs(model_kwargs: dict) -> dict:
     return kwargs
 
 
+# TODO - Need mods for tensorflow?
 def get_tokenizer(model_name: str, max_length: int) -> Callable:
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     return partial(tokenizer, padding=True, truncation=True, max_length=max_length, return_tensors='pt')
