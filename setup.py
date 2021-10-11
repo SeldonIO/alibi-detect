@@ -42,6 +42,8 @@ setup(
         "dill>=0.3.0, <0.4.0",
         "tqdm>=4.28.1, <5.0.0",
         "requests>=2.21.0, <3.0.0",
+        "ruamel.yaml>=0.16.0, <0.17.17",
+        "pydantic>=1.6, <1.83"
     ],
     extras_require=extras_require,
     test_suite="tests",

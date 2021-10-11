@@ -1,0 +1,28 @@
+---
+name: 'mmd image'                    # Name/id of detector spec file
+
+# The drift detector (required)
+detector:
+  name: 'MMDDrift'                 # one of alibi_detect.cd.__all__
+  p_val: .05                       # optionally specify detector kwargs
+  configure_kernel_from_x_ref: False
+  n_permutations: 1000
+
+# Preprocessing step for drift detector (optional) 
+preprocess:
+  type: 'hidden'                   # 'hidden', 'flatten', 'encoder', 'model', 'transformerembedding' or a custom step
+  layer: -1                        # classification model ('resnet50') layer to extract features from
+  model: 
+    name: 'resnet50'
+    load_path: 'models/iwildcam'
+    model_kwargs:
+      in_channels: [3, 8, 16]
+      out_channels: [8, 16, 32]
+      kernel_size: [7, 7, 7]
+      stride: [3, 3, 3]
+      padding: [0, 0, 0]
+      in_features: 1568
+      out_features: 128
+
+other:
+  log_path: 'logs'              # directory to log to (optional) TODO - might be nice to output to log file if we are also using config files...
