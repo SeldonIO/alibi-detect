@@ -470,7 +470,7 @@ def fetch_detector(filepath: Union[str, os.PathLike],
     Initialised pre-trained detector.
     """
     # create path (if needed)
-    filepath = Path(filepath).joinpath(detector_name)
+    filepath = Path(filepath)
     if not filepath.is_dir():
         filepath.mkdir(parents=True, exist_ok=True)
         logger.warning('Directory {} does not exist and is now created.'.format(filepath))
