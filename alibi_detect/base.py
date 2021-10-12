@@ -6,10 +6,6 @@ from typing import Dict
 
 from alibi_detect.version import __version__
 
-# TODO - Shall we move some of this file around to be more consistent with alibi? i.e. default dict in defaults.py?
-#  Could move base detector class into interfaces.py, but I think having this in base.py works too. New factory class
-#  can go in factory.py (or interfaces.py)
-
 DEFAULT_META = {
     "name": None,
     "detector_type": None,  # online or offline

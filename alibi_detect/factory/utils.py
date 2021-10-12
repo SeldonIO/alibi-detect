@@ -1,7 +1,3 @@
-"""
-This submodule is based on utils.py from
-https://github.com/SeldonIO/seldon-research/tree/master/alibi-explain-factory-config.
-"""
 from alibi_detect.models import custom_models
 import logging
 import os

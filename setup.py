@@ -43,7 +43,7 @@ setup(
         "tqdm>=4.28.1, <5.0.0",
         "requests>=2.21.0, <3.0.0",
         "ruamel.yaml>=0.16.0, <0.17.17",
-        "pydantic>=1.6, <1.83"
+        "catalogue>=2.0.0, <2.0.7"
     ],
     extras_require=extras_require,
     test_suite="tests",
