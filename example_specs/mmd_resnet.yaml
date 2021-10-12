@@ -15,7 +15,8 @@ preprocess:
     source: 'https://storage.googleapis.com/seldon-models/alibi-detect/classifier/cifar10/resnet32/model.h5'
     type: 'hidden'              # 'hidden', 'encoder' # TODO - what else?
     layer: -1                   # Layer index to extract layer from. Only relevent for type='hidden'.
-    flatten: True               # True or false. Only relevent for type='hidden'.
+    flatten: False              # True or false. Only relevent for type='hidden'.
+    batch_size: 128
 
 other:
   log_path: 'logs'              # directory to log to (optional) TODO - might be nice to output to log file if we are also using config files...

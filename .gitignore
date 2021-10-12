@@ -119,3 +119,5 @@ venv.bak/
 # temp scripts for debugging
 examples/temp_*
 
+# TEMP TODO - remove for final PR
+*models/

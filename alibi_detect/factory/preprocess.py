@@ -10,14 +10,12 @@ from torch import device as torch_device
 # import torch.nn as nn
 # from transformers.tokenization_utils_base import BatchEncoding
 from typing import Callable, Optional
-from copy import deepcopy
 
 logger = logging.getLogger(__name__)
 
 
 # TODO - pytorch, graphs, text etc
-def load_preprocessor(orig_cfg: dict, backend: Optional[str] = 'tensorflow') -> Optional[Callable]:
-    cfg = deepcopy(orig_cfg)
+def load_preprocessor(cfg: dict, backend: Optional[str] = 'tensorflow') -> Optional[Callable]:
     if 'type' in cfg:
         preprocessor_type = cfg.pop('type')
     else:

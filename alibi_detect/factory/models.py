@@ -6,39 +6,30 @@ import tensorflow as tf
 from transformers import AutoTokenizer
 from typing import Callable, Optional, Union
 import logging
-from copy import deepcopy
 
 logger = logging.getLogger(__name__)
 
 
 # TODO - Add pytorch functionality, and tokenizer etc
-def load_model(orig_cfg: dict) \
+def load_model(cfg: dict) \
         -> Union[nn.Module, nn.Sequential, tf.keras.Model]:
 
-    cfg = deepcopy(orig_cfg)
     if 'source' in cfg:
         model_src = cfg.pop('source')
     else:
         raise ValueError('Model `source` not specified')
 
-    # Custom registered models
-    if model_src.startswith('@'):
-        model_src = model_src[1:]
-        if model_src in custom_models.get_all():
-            model = custom_models.get(model_src)
-        else:
-            raise ValueError("Can't find %s in the custom model registry" % model_src)
-    # Download model from uri
-    elif model_src.startswith('http'):
-        tf.keras.utils.get_file('tmp.h5', model_src, cache_dir='.')
-        model = tf.keras.models.load_model('datasets/tmp.h5')
-    # Model loaded from local filepath
-    elif Path(model_src).is_file():
-        model = tf.keras.models.load_model(model_src)
+    # Check if model is still wrapped within a function (i.e. a resolved registry function)
+    if callable(model_src) and not isinstance(model_src, (nn.Module, nn.Sequential, tf.keras.Model)):
+        model = model_src()
     else:
-        raise ValueError('No valid model source found')
+        model = model_src
 
-    # Extract layers if needed
+    # Check if model is compatible now
+    if not isinstance(model, (nn.Module, nn.Sequential, tf.keras.Model)):
+        raise ValueError('The specified model is not a compatible tensorflow or pytorch model.')
+
+    # Extract layers if needed #TODO - capability to define custom layers
     if 'type' in cfg:
         model_type = cfg.pop('type')
     else:

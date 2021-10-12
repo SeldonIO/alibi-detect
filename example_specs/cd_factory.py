@@ -73,12 +73,7 @@ def random_encoder(X: np.ndarray) -> np.ndarray:
 # Check we've succesfully registered this model
 print(custom_models.find("random_encoder.v1"))
 
-# Build a drift detector from yaml file (which specs the above random encoder)
-cd = DetectorFactory(X_ref, 'mmd_random_encoder.yaml')
-
-# Test the detector
 labels = ['No!', 'Yes!']
-
 def make_predictions(cd, x_h0, x_corr, corruption):
     t = timer()
     preds = cd.predict(x_h0)
@@ -99,4 +94,16 @@ def make_predictions(cd, x_h0, x_corr, corruption):
             print(f'p-value: {preds["data"]["p_val"]:.3f}')
             print(f'Time (s) {dt:.3f}')
 
-make_predictions(cd, X_h0, X_c, corruption)
+# Registry test
+########################################################
+#cd = DetectorFactory(X_ref, 'mmd_random_encoder.yaml')
+#make_predictions(cd, X_h0, X_c, corruption)
+
+# BBSD test
+########################################################
+X_ref_bbsds = scale_by_instance(X_ref)
+X_h0_bbsds = scale_by_instance(X_h0)
+X_c_bbsds = [scale_by_instance(X_c[i]) for i in range(n_corr)]
+
+cd_bbsd = DetectorFactory(X_ref_bbsds, 'mmd_resnet.yaml')
+make_predictions(cd_bbsd, X_h0_bbsds, X_c_bbsds, corruption)

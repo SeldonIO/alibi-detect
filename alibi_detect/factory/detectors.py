@@ -8,7 +8,6 @@ from alibi_detect.factory.utils import instantiate_class
 from typing import Tuple, Union, Optional, Callable
 import numpy as np
 import logging
-from copy import deepcopy
 
 logger = logging.getLogger(__name__)
 
@@ -57,12 +56,11 @@ LEARNED_DETECTOR = [
 
 
 def load_detector(x_ref: Union[np.ndarray, list],
-                  orig_cfg: dict,
+                  cfg: dict,
                   preprocess_fn: Optional[Callable] = None,
                   backend: Optional[str] = 'tensorflow') -> Detector:
     # Note: This is setup for drift detectors only atm, but could be modified for od and ad.
 
-    cfg = deepcopy(orig_cfg)
     if 'name' in cfg:
         detector_name = cfg.pop('name')
     else:
