@@ -8,6 +8,7 @@ from alibi_detect.factory.utils import instantiate_class
 from typing import Tuple, Union, Optional, Callable
 import numpy as np
 import logging
+from copy import deepcopy
 
 logger = logging.getLogger(__name__)
 
@@ -55,11 +56,13 @@ LEARNED_DETECTOR = [
 ]
 
 
-def init_detector(x_ref: Union[np.ndarray, list],
-                  cfg: dict,
-                  preprocessor_fn: Optional[Callable] = None,
-                  backend: Optional[str] = 'tensorflow') -> BaseDetector:
+def load_detector(x_ref: Union[np.ndarray, list],
+                  orig_cfg: dict,
+                  preprocess_fn: Optional[Callable] = None,
+                  backend: Optional[str] = 'tensorflow') -> Detector:
     # Note: This is setup for drift detectors only atm, but could be modified for od and ad.
+
+    cfg = deepcopy(orig_cfg)
     if 'name' in cfg:
         detector_name = cfg.pop('name')
     else:
@@ -79,9 +82,11 @@ def init_detector(x_ref: Union[np.ndarray, list],
 
     # Process kwargs
     kwargs = {}
+    if detector_name in REQUIRES_BACKEND:
+        kwargs.update({'backend': backend})
     if detector_name in OPTIONAL_PREPROCESS:
-        if preprocessor_fn is not None:
-            kwargs.update({'preprocessor_fn': preprocessor_fn})
+        if preprocess_fn is not None:
+            kwargs.update({'preprocess_fn': preprocess_fn})
     # Anything remaining in cfg.items() is assumed to be a kwarg
     for k, v in cfg.items():
         kwargs.update({k: v})
@@ -92,6 +97,7 @@ def init_detector(x_ref: Union[np.ndarray, list],
     return detector
 
 
+# TODO - init learned detectors, see below
 #def init_learned_drift(data_type: str, args: list, kwargs: dict, device: str = None) -> Tuple[list, dict]:
 #    args_tmp, kwargs_tmp = args.copy(), kwargs.copy()  # need fresh models each iteration
 #    # get the binary classification model or learnable kernel
@@ -117,4 +123,3 @@ def init_detector(x_ref: Union[np.ndarray, list],
 #    if name in LEARNED_DETECTOR:
 #        args, kwargs = init_learned_drift(data_type, args, kwargs, device=device)
 #    return globals()[name](*args, **kwargs)
-#

@@ -1,0 +1,21 @@
+---
+name: 'mmd cifar10 resnet'                    # Name/id of detector spec file
+
+# The drift detector (required)
+detector:
+  name: 'MMDDrift'                 # one of alibi_detect.cd.__all__
+  p_val: .05                       # optionally specify detector kwargs
+  configure_kernel_from_x_ref: False
+  n_permutations: 1000
+
+# Preprocessing step for drift detector (optional) 
+preprocess:
+  type: 'model'                 # 'model', 'transformerembedding' or ... TODO - custom helper options such as build_conv
+  model: 
+    source: 'https://storage.googleapis.com/seldon-models/alibi-detect/classifier/cifar10/resnet32/model.h5'
+    type: 'hidden'              # 'hidden', 'encoder' # TODO - what else?
+    layer: -1                   # Layer index to extract layer from. Only relevent for type='hidden'.
+    flatten: True               # True or false. Only relevent for type='hidden'.
+
+other:
+  log_path: 'logs'              # directory to log to (optional) TODO - might be nice to output to log file if we are also using config files...
