@@ -28,12 +28,12 @@ def DetectorFactory(x_ref: Union[np.ndarray, list],
     cfg = resolve_cfg(cfg, verbose=verbose)
     cfg_orig = deepcopy(cfg)
 
-    backend = cfg.pop('backend', 'tensorflow')
+    backend = cfg.pop('backend', 'tensorflow')  # TODO - check that backend==tensorflow or pytorch
 
     # Load preprocessor if specified
     if 'preprocess' in cfg:
         preprocessor_cfg = cfg.pop('preprocess')
-        preprocess_fn = load_preprocessor(preprocessor_cfg, backend=backend)
+        preprocess_fn = load_preprocessor(preprocessor_cfg, backend=backend, verbose=verbose)
     else:
         preprocess_fn = None
 
@@ -46,9 +46,5 @@ def DetectorFactory(x_ref: Union[np.ndarray, list],
 
     # Update metadata
     detector.meta.update({'config': cfg_orig, 'config_file': config_file})
-
-    # Warn about unused fields
-    if verbose and len(cfg) > 0:
-        logger.warning("DetectorFactory: some `config_file` fields were unused: %s" % cfg.keys())
 
     return detector

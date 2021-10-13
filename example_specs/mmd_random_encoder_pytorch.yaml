@@ -11,9 +11,11 @@ detector:
 preprocess:
   type: 'model'                 # 'model', 'transformerembedding' or ... TODO - custom helper options such as build_conv
   model: 
-    source: '@random_encoder.tf'
+    source: '@random_encoder.pytorch'
     type: 'encoder'              # 'hidden', 'encoder' # TODO - what else?
   batch_size: 512     
+
+backend: 'pytorch'
 
 other:
   log_path: 'logs'              # directory to log to (optional) TODO - might be nice to output to log file if we are also using config files...

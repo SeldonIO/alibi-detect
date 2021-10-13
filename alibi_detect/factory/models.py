@@ -1,6 +1,5 @@
-from alibi_detect.models import custom_models
-from alibi_detect.cd.tensorflow import HiddenOutput
-from pathlib import Path
+from alibi_detect.cd.tensorflow import HiddenOutput as HiddenOutput_tf
+from alibi_detect.cd.pytorch import HiddenOutput as HiddenOutput_torch
 import torch.nn as nn
 import tensorflow as tf
 from transformers import AutoTokenizer
@@ -10,8 +9,10 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-# TODO - Add pytorch functionality, and tokenizer etc
-def load_model(cfg: dict) \
+# TODO - tokenizer etc
+def load_model(cfg: dict,
+               backend: Optional[str] = 'tensorflow',
+               verbose: Optional[bool] = False) \
         -> Union[nn.Module, nn.Sequential, tf.keras.Model]:
 
     if 'source' in cfg:
@@ -35,15 +36,19 @@ def load_model(cfg: dict) \
     else:
         raise ValueError('`model_type` must be specified along with any model')
     if model_type == 'hidden':
+        if backend == 'tensorflow':
+            HiddenOutput = HiddenOutput_tf
+        else:
+            HiddenOutput = HiddenOutput_torch
         model = HiddenOutput(model,
                              layer=cfg.pop('layer', -1),
-                             flatten=cfg.pop('flatten', False)
-                             )
+                             flatten=cfg.pop('flatten', False))
     elif model_type == 'encoder':
         try:
             model = model.encoder
         except AttributeError:
-            logger.warning('No encoder attribute found in model, assuming the model is already an encoder...')
+            if verbose:
+                logger.warning('No encoder attribute found in model, assuming the model is already an encoder...')
     return model
 
 # TODO

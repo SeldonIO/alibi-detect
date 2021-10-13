@@ -15,7 +15,9 @@ logger = logging.getLogger(__name__)
 
 
 # TODO - pytorch, graphs, text etc
-def load_preprocessor(cfg: dict, backend: Optional[str] = 'tensorflow') -> Optional[Callable]:
+def load_preprocessor(cfg: dict,
+                      backend: Optional[str] = 'tensorflow',
+                      verbose: Optional[bool] = False) -> Optional[Callable]:
     if 'type' in cfg:
         preprocessor_type = cfg.pop('type')
     else:
@@ -25,7 +27,7 @@ def load_preprocessor(cfg: dict, backend: Optional[str] = 'tensorflow') -> Optio
     if preprocessor_type == 'model':
         if 'model' in cfg:
             model_cfg = cfg.pop('model')
-            model = load_model(model_cfg)
+            model = load_model(model_cfg, backend=backend, verbose=verbose)
         else:
             raise ValueError("A `model` must be specified when `preprocessor_type='model'`")
     elif preprocessor_type == 'transformer_embedding':
@@ -45,8 +47,6 @@ def load_preprocessor(cfg: dict, backend: Optional[str] = 'tensorflow') -> Optio
             device = cfg.pop('device')
             device = torch_device(device)
             kwargs.update({'device': device})
-    else:
-        raise ValueError("`Backend` should be 'tensorflow' or 'pytorch'")
     # kwarg: preprocess_batch_fn
     if 'preprocess_batch_fn' in cfg:
         preprocess_batch_fn = cfg.pop('preprocess_batch_fn')

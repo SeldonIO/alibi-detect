@@ -55,6 +55,7 @@ LEARNED_DETECTOR = [
 ]
 
 
+# TODO - need to set device in here too (for pytorch)
 def load_detector(x_ref: Union[np.ndarray, list],
                   cfg: dict,
                   preprocess_fn: Optional[Callable] = None,
