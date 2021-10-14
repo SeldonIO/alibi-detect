@@ -5,6 +5,8 @@ from typing import Callable, Dict, Optional, Tuple, Union
 from alibi_detect.cd.base import BaseMMDDrift
 from alibi_detect.utils.tensorflow.distance import mmd2_from_kernel_matrix
 from alibi_detect.utils.tensorflow.kernels import GaussianRBF
+from alibi_detect.utils.saving import preprocess_step_drift
+from alibi_detect.models.tensorflow import PixelCNN, TransformerEmbedding
 
 logger = logging.getLogger(__name__)
 
@@ -116,3 +118,47 @@ class MMDDriftTF(BaseMMDDrift):
         )
         p_val = (mmd2 <= mmd2_permuted).mean()
         return p_val, mmd2, mmd2_permuted
+
+    def get_state(self) -> Tuple[
+        Dict, Optional[Union[tf.keras.Model, tf.keras.Sequential]],
+        Optional[TransformerEmbedding], Optional[Dict], Optional[Callable]
+    ]:
+        """
+        MMD drift detector parameters to save.
+        Note: only GaussianRBF kernel supported.
+
+        Parameters
+        ----------
+        cd
+            Drift detection object.
+        """
+        preprocess_fn, preprocess_kwargs, model, embed, embed_args, tokenizer, load_emb = \
+            preprocess_step_drift(self._detector)
+        if not isinstance(self._detector.kernel, GaussianRBF):
+            logger.warning('Currently only the default GaussianRBF kernel is supported.')
+        sigma = self._detector.kernel.sigma.numpy() if not self._detector.infer_sigma else None
+        state_dict = {
+            'args':
+                {
+                    'x_ref': self._detector.x_ref,
+                },
+            'kwargs':
+                {
+                    'p_val': self._detector.p_val,
+                    'preprocess_x_ref': False,
+                    'update_x_ref': self._detector.update_x_ref,
+                    'sigma': sigma,
+                    'configure_kernel_from_x_ref': not self._detector.infer_sigma,
+                    'n_permutations': self._detector.n_permutations,
+                    'input_shape': self._detector.input_shape,
+                },
+            'other':
+                {
+                    'n': self._detector.n,
+                    'preprocess_x_ref': self._detector.preprocess_x_ref,
+                    'load_text_embedding': load_emb,
+                    'preprocess_fn': preprocess_fn,
+                    'preprocess_kwargs': preprocess_kwargs
+                }
+        }
+        return state_dict, model, embed, embed_args, tokenizer

@@ -114,3 +114,9 @@ class MMDDrift:
         'data' contains the drift prediction and optionally the p-value, threshold and MMD metric.
         """
         return self._detector.predict(x, return_p_val, return_distance)
+
+    def get_state(self) -> Tuple[
+        Dict, Optional[Union[tf.keras.Model, tf.keras.Sequential]],
+        Optional[TransformerEmbedding], Optional[Dict], Optional[Callable]
+    ]:
+        return self._detector.get_state()

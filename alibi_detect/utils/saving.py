@@ -124,7 +124,8 @@ def save_detector(detector: Data, filepath: Union[str, os.PathLike]) -> None:
     elif detector_name == 'KSDrift':
         state_dict, model, embed, embed_args, tokenizer = state_ksdrift(detector)
     elif detector_name == 'MMDDriftTF':
-        state_dict, model, embed, embed_args, tokenizer = state_mmddrift(detector)
+#        state_dict, model, embed, embed_args, tokenizer = state_mmddrift(detector)
+        state_dict, model, embed, embed_args, tokenizer = detector.get_state()
     elif detector_name == 'OutlierAEGMM':
         state_dict = state_aegmm(detector)
     elif detector_name == 'OutlierVAEGMM':
