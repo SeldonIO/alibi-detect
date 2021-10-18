@@ -1,6 +1,9 @@
 import logging
 import numpy as np
 from typing import Callable, Dict, Optional, Union
+from ruamel.yaml import YAML
+import os  # TODO - this will be moved to base
+from pathlib import Path
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
 
 if has_pytorch:
@@ -115,8 +118,15 @@ class MMDDrift:
         """
         return self._detector.predict(x, return_p_val, return_distance)
 
-    def get_state(self) -> Tuple[
-        Dict, Optional[Union[tf.keras.Model, tf.keras.Sequential]],
-        Optional[TransformerEmbedding], Optional[Dict], Optional[Callable]
-    ]:
-        return self._detector.get_state()
+    def get_config(self, filepath: Union[str, os.PathLike]) -> dict:
+        # TODO - need abstract class in base
+        # TODO - could have option to get resolved or unresolved config dict (filepath not needed if resolved)
+        return self._detector.get_config(filepath)
+
+    def save_config(self, filepath: Union[str, os.PathLike], filename: str = 'config.yaml'):
+        # TODO - this should be moved to base
+        filepath = Path(filepath)  # TODO - need to mkdir if doesn't exist
+        cfg = self.get_config(filepath)
+        yaml = YAML()
+        filename = filepath.joinpath(filename)
+        yaml.dump(cfg, Path(filename))

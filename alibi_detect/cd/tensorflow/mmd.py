@@ -1,12 +1,13 @@
 import logging
+import os
+from pathlib import Path
 import numpy as np
 import tensorflow as tf
 from typing import Callable, Dict, Optional, Tuple, Union
 from alibi_detect.cd.base import BaseMMDDrift
 from alibi_detect.utils.tensorflow.distance import mmd2_from_kernel_matrix
 from alibi_detect.utils.tensorflow.kernels import GaussianRBF
-from alibi_detect.utils.saving import preprocess_step_drift
-from alibi_detect.models.tensorflow import PixelCNN, TransformerEmbedding
+from alibi_detect.utils.saving import serialize_preprocess
 
 logger = logging.getLogger(__name__)
 
@@ -119,46 +120,51 @@ class MMDDriftTF(BaseMMDDrift):
         p_val = (mmd2 <= mmd2_permuted).mean()
         return p_val, mmd2, mmd2_permuted
 
-    def get_state(self) -> Tuple[
-        Dict, Optional[Union[tf.keras.Model, tf.keras.Sequential]],
-        Optional[TransformerEmbedding], Optional[Dict], Optional[Callable]
-    ]:
+    def get_config(self, filepath: Union[str, os.PathLike]) -> dict:
         """
-        MMD drift detector parameters to save.
+        TODO
         Note: only GaussianRBF kernel supported.
 
         Parameters
         ----------
-        cd
-            Drift detection object.
+        filepath
+            Directory to save serialized artefacts to.
         """
-        preprocess_fn, preprocess_kwargs, model, embed, embed_args, tokenizer, load_emb = \
-            preprocess_step_drift(self._detector)
-        if not isinstance(self._detector.kernel, GaussianRBF):
+        filepath = Path(filepath)
+        x_ref_file = str(filepath.joinpath('x_ref.npy'))
+        np.save(x_ref_file, self.x_ref)
+        cfg = {'x_ref': x_ref_file}
+
+        # backend
+        cfg.update({'backend': 'tensorflow'})
+
+        # Preprocess function
+        if self.preprocess_fn is not None:
+            preprocess_cfg = serialize_preprocess(self.preprocess_fn, filepath)
+            cfg.update({'preprocess': preprocess_cfg})
+
+        # Kernel
+        if not isinstance(self.kernel, GaussianRBF):
             logger.warning('Currently only the default GaussianRBF kernel is supported.')
-        sigma = self._detector.kernel.sigma.numpy() if not self._detector.infer_sigma else None
-        state_dict = {
-            'args':
-                {
-                    'x_ref': self._detector.x_ref,
-                },
-            'kwargs':
-                {
-                    'p_val': self._detector.p_val,
-                    'preprocess_x_ref': False,
-                    'update_x_ref': self._detector.update_x_ref,
-                    'sigma': sigma,
-                    'configure_kernel_from_x_ref': not self._detector.infer_sigma,
-                    'n_permutations': self._detector.n_permutations,
-                    'input_shape': self._detector.input_shape,
-                },
-            'other':
-                {
-                    'n': self._detector.n,
-                    'preprocess_x_ref': self._detector.preprocess_x_ref,
-                    'load_text_embedding': load_emb,
-                    'preprocess_fn': preprocess_fn,
-                    'preprocess_kwargs': preprocess_kwargs
-                }
-        }
-        return state_dict, model, embed, embed_args, tokenizer
+        sigma = self.kernel.sigma.numpy() if not self.infer_sigma else None
+
+        # Detector class
+        cd_cfg = {'detector_type': self.__class__.__name__} # TODO - could move this (and preprocess bit) to Base
+
+        # Detector kwargs
+        cd_cfg.update(
+            {
+                'p_val': self.p_val,
+                'preprocess_x_ref': False,
+                'update_x_ref': self.update_x_ref,
+                'sigma': float(sigma),
+                'configure_kernel_from_x_ref': not self.infer_sigma,
+                'n_permutations': self.n_permutations,
+                'input_shape': list(self.input_shape),
+            }
+        )
+        cfg.update({'detector': cd_cfg})
+
+        cfg.update({'meta': self.meta})
+
+        return cfg

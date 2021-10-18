@@ -1,0 +1,22 @@
+x_ref: test/x_ref.npy
+
+backend: tensorflow
+
+# In this format, preprocess_fn is always constructed by passing preprocess_batch through `partial`. Hence 
+# we always expect a model field, with optional batch_size, device etc.
+preprocess:
+  model: test/model/encoder.h5 
+  batch_size: 512
+
+detector:
+  detector_type: MMDDriftTF
+  p_val: 0.05
+  preprocess_x_ref: false
+  update_x_ref:
+  sigma: 0.07835352420806885
+  configure_kernel_from_x_ref: true
+  n_permutations: 100
+  input_shape:
+  - 32
+  - 32
+  - 3

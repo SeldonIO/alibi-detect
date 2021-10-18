@@ -1,0 +1,25 @@
+x_ref: test/x_ref.npy
+
+backend: tensorflow
+
+# In this case we pass in actual function to use as preprocess_fn. If preprocess_kwargs are supplied, preprocess_fn will be passed through `partial` with these kwargs (and the model). If only model is given, with no preprocess_fn or preprocess_kwargs, then the model will be passed directly as preprocess_fn. 
+preprocess:
+  preprocess_fn: preprocess_batch
+  preprocess_kwargs:
+    model: test/model/encoder.h5
+    batch_size: 512
+
+# Difference with below and option 2 is largely cosmetic, i.e. nest kwargs in detector_kwargs or not?
+detector:
+  detector_type: MMDDriftTF
+  detector_kwargs:
+    p_val: 0.05
+    preprocess_x_ref: false
+    update_x_ref:
+    sigma: 0.07835352420806885
+    configure_kernel_from_x_ref: true
+    n_permutations: 100
+    input_shape:
+    - 32
+    - 32
+    - 3
