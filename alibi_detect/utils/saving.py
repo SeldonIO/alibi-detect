@@ -240,35 +240,62 @@ def serialize_preprocess(preprocess_fn: Callable,
 
     cfg = {}
     if isinstance(preprocess_fn, partial):
-#        preprocess_fn = preprocess_fn.func  # TODO - do we need to serialize this? Or can we assume preprocess_drift always used
-        partial_dict = deepcopy(preprocess_fn.keywords)
+        # If the func is preprocess_drift, just save string, otherwise, serialize
+        func = preprocess_fn.func
+        if func.__name__ == 'preprocess_drift':
+            func = 'preprocess_drift'
+        else:
+            save_path = filepath.joinpath('func.dill')
+            dill.dump(func, save_path)
+            func = str(save_path)
+        cfg.update({'preprocess_fn': func})
 
         # Extract model and serialize
+        partial_dict = deepcopy(preprocess_fn.keywords)
+        kwargs = {}
         model = partial_dict.pop('model')
         save_tf_model(model, filepath, model_name='encoder')  # TODO consider pytorch
-        model = str(filepath.joinpath('model', 'encoder.h5'))
-        cfg.update({'model': model})
+        save_path = filepath.joinpath('model', 'encoder.h5')
+        kwargs.update({'model': save_path})
         # TODO - consider embedding case
 
         # Serialize preprocess_batch_fn
         preprocess_batch_fn = partial_dict.pop('preprocess_batch_fn', None)
-        if preprocess_batch_fn is not None:
-            # TODO - serialize to dill
-            cfg.update({'preprocess_batch_fn': preprocess_batch_fn})
+        if preprocess_batch_fn is not None:  # TODO - test this
+            save_path = filepath.joinpath('preprocess_batch_fn.dill')
+            dill.dump(preprocess_batch_fn, save_path)
+            kwargs.update({'preprocess_batch_fn': save_path})
 
         # Serialize tokenizer
         tokenizer = partial_dict.pop('tokenizer', None)
         if tokenizer is not None:
-            tokenizer.save_pretrained(filepath.joinpath('model'))
-            tokenizer = str(filepath.joinpath('model'))
-            cfg.update({'tokenizer': tokenizer})
+            save_path = filepath.joinpath('model')
+            tokenizer.save_pretrained(save_path)
+            kwargs.update({'tokenizer': save_path})
 
         # Process remaining kwargs
         for k, v in partial_dict.items():
-            cfg.update({k: v})
+            kwargs.update({k: v})
 
-#    elif isinstance(preprocess_fn, Callable): # TODO - add support for serializing generic python function
-#        preprocess_fn = preprocess_fn
+    elif isinstance(preprocess_fn, Callable):  # TODO - test if this works
+        func = preprocess_fn
+        save_path = filepath.joinpath('func.dill')
+        dill.dump(func, save_path)
+        cfg.update({'preprocess_fn': save_path})
+
+    cfg.update({'kwargs': kwargs})
+
+    return cfg
+
+
+def resolve_paths(cfg: dict, rel_path: Path) -> dict:
+    for k, v in cfg.items():
+        if isinstance(v, dict):
+            resolve_paths(v, rel_path)
+        elif isinstance(v, Path):
+            print(v,rel_path)
+            print(v.relative_to(rel_path))
+            cfg.update({k: str(v.relative_to(rel_path))})
     return cfg
 
 

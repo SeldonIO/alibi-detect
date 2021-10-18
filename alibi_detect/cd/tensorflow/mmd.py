@@ -1,13 +1,11 @@
 import logging
 import os
-from pathlib import Path
 import numpy as np
 import tensorflow as tf
 from typing import Callable, Dict, Optional, Tuple, Union
 from alibi_detect.cd.base import BaseMMDDrift
 from alibi_detect.utils.tensorflow.distance import mmd2_from_kernel_matrix
 from alibi_detect.utils.tensorflow.kernels import GaussianRBF
-from alibi_detect.utils.saving import serialize_preprocess
 
 logger = logging.getLogger(__name__)
 
@@ -129,42 +127,29 @@ class MMDDriftTF(BaseMMDDrift):
         ----------
         filepath
             Directory to save serialized artefacts to.
+        relative_paths
+            If true... TODO
         """
-        filepath = Path(filepath)
-        x_ref_file = str(filepath.joinpath('x_ref.npy'))
-        np.save(x_ref_file, self.x_ref)
-        cfg = {'x_ref': x_ref_file}
+        cfg = super().get_config(filepath)
 
         # backend
         cfg.update({'backend': 'tensorflow'})
-
-        # Preprocess function
-        if self.preprocess_fn is not None:
-            preprocess_cfg = serialize_preprocess(self.preprocess_fn, filepath)
-            cfg.update({'preprocess': preprocess_cfg})
 
         # Kernel
         if not isinstance(self.kernel, GaussianRBF):
             logger.warning('Currently only the default GaussianRBF kernel is supported.')
         sigma = self.kernel.sigma.numpy() if not self.infer_sigma else None
 
-        # Detector class
-        cd_cfg = {'detector_type': self.__class__.__name__} # TODO - could move this (and preprocess bit) to Base
+        # Detector
+        cd_cfg = cfg['detector']
+        # cd_cfg.update({'detector_type': self.__class__.__name__})
+        cd_cfg.update({'detector_type': 'MMDDrift'})
 
         # Detector kwargs
-        cd_cfg.update(
-            {
-                'p_val': self.p_val,
-                'preprocess_x_ref': False,
-                'update_x_ref': self.update_x_ref,
+        kwargs = {
                 'sigma': float(sigma),
-                'configure_kernel_from_x_ref': not self.infer_sigma,
-                'n_permutations': self.n_permutations,
-                'input_shape': list(self.input_shape),
-            }
-        )
+        }
+        cd_cfg['kwargs'].update(kwargs)
         cfg.update({'detector': cd_cfg})
-
-        cfg.update({'meta': self.meta})
 
         return cfg

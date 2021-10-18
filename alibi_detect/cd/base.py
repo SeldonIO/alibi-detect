@@ -8,6 +8,10 @@ from alibi_detect.base import BaseDetector, concept_drift_dict
 from alibi_detect.cd.utils import get_input_shape, update_reference
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
 from alibi_detect.utils.statstest import fdr
+from alibi_detect.utils.saving import serialize_preprocess, resolve_paths
+from ruamel.yaml import YAML
+import os
+from pathlib import Path
 
 if has_pytorch:
     import torch  # noqa F401
@@ -587,6 +591,47 @@ class BaseMMDDrift(BaseDetector):
             cd['data']['distance'] = dist
             cd['data']['distance_threshold'] = distance_threshold
         return cd
+
+    @abstractmethod
+    def get_config(self, filepath: Union[str, os.PathLike]) -> dict:
+        # TODO - could have option to get resolved or unresolved config dict (filepath not needed if resolved)
+        cfg = {'meta': self.meta}
+
+        # x_ref
+        filepath = Path(filepath)
+        save_path = filepath.joinpath('x_ref.npy')
+        np.save(str(save_path), self.x_ref)
+        cfg.update({'x_ref': save_path})
+
+        # Preprocess field
+        if self.preprocess_fn is not None:
+            preprocess_cfg = serialize_preprocess(self.preprocess_fn, filepath)
+            cfg.update({'preprocess': preprocess_cfg})
+
+        # Detector field
+        kwargs = {
+                'p_val': self.p_val,
+                'preprocess_x_ref': False,
+                'update_x_ref': self.update_x_ref,
+                'configure_kernel_from_x_ref': not self.infer_sigma,
+                'n_permutations': self.n_permutations,
+                'input_shape': self.input_shape,
+        }
+        cfg.update({'detector': {'kwargs': kwargs}})
+
+#        if resolve: # TODO
+#            cfg = resolve_paths(cfg, Path('.'))
+
+        return cfg
+
+    def save_config(self, filepath: Union[str, os.PathLike], filename: str = 'config.yaml'):
+        # TODO - can move this to BaseDetector once all methods have a get_config method (including ad and od)
+        filepath = Path(filepath)
+        if not filepath.is_dir():
+            logger.warning('Directory {} does not exist and is now created.'.format(filepath))
+            filepath.mkdir(parents=True, exist_ok=True)
+        cfg = self.get_config(filepath)
+        YAML().dump(resolve_paths(cfg, filepath), filepath.joinpath(filename))
 
 
 class BaseLSDDDrift(BaseDetector):
