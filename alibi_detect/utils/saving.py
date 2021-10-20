@@ -24,9 +24,14 @@ from alibi_detect.models.tensorflow import PixelCNN, TransformerEmbedding
 from alibi_detect.od import (IForest, LLR, Mahalanobis, OutlierAE, OutlierAEGMM, OutlierProphet,
                              OutlierSeq2Seq, OutlierVAE, OutlierVAEGMM, SpectralResidual)
 from alibi_detect.od.llr import build_model
-from alibi_detect.utils.tensorflow.kernels import GaussianRBF
 from alibi_detect.version import __version__
 from copy import deepcopy
+import torch.nn as nn
+
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from alibi_detect.cd.base import DriftDetector
+
 
 # do not extend pickle dispatch table so as not to change pickle behaviour
 dill.extend(use_dill=False)
@@ -151,7 +156,7 @@ def save_detector(detector: Data, filepath: Union[str, os.PathLike]) -> None:
         save_tf_ae(detector, filepath)
     elif detector_name == 'OutlierVAE':
         save_tf_vae(detector, filepath)
-#    elif detector_name in ['ChiSquareDrift', 'ClassifierDriftTF', 'KSDrift', 'TabularDrift']: #TODO: MMDDriftTF removed
+#    elif detector_name in ['ChiSquareDrift', 'ClassifierDriftTF', 'KSDrift', 'MMDDriftTF', 'TabularDrift']:
 #        if model is not None:
 #            save_tf_model(model, filepath, model_name='encoder')
 #        if embed is not None:
@@ -210,7 +215,7 @@ def save_embedding(embed: tf.keras.Model,
         dill.dump(embed_args, f)
 
 
-def serialize_preprocess(preprocess_fn: Callable,
+def serialize_preprocess(detector: 'DriftDetector',
                          filepath: Union[str, os.PathLike],
                          verbose: Optional[bool] = False) -> dict:
     """
@@ -219,8 +224,8 @@ def serialize_preprocess(preprocess_fn: Callable,
 
     Parameters
     ----------
-    preprocess_fn
-        The preprocessing function to be serialized.
+    detector
+        The drift detector containing a preprocessing function to be serialized.
     filepath
         Directory to save serialized artefacts to.
     verbose
@@ -232,13 +237,11 @@ def serialize_preprocess(preprocess_fn: Callable,
     of the `preprocess` field in the drift detector specification.
     """
     # TODO - add return_resolved=True option to return resolved objects/artefacts.
-    # TODO - how to deal with cd.input_shape? pass in cd instead of preprocess_fn, or input_shape as kwarg?
-    filepath = Path(filepath)
-    if not filepath.is_dir():
-        logger.warning('Directory {} does not exist and is now created.'.format(filepath))
-        filepath.mkdir(parents=True, exist_ok=True)
+    preprocess_fn = detector.preprocess_fn
+    backend = detector.meta.get('backend', 'tensorflow')  # TODO - how do we infer backend for backend agnostic detector (where it still matters due to preprocessing model)
 
     cfg = {}
+    kwargs = {}
     if isinstance(preprocess_fn, partial):
         # If the func is preprocess_drift, just save string, otherwise, serialize
         func = preprocess_fn.func
@@ -250,14 +253,11 @@ def serialize_preprocess(preprocess_fn: Callable,
             func = str(save_path)
         cfg.update({'preprocess_fn': func})
 
-        # Extract model and serialize
+        # Extract model/embedding and serialize
         partial_dict = deepcopy(preprocess_fn.keywords)
-        kwargs = {}
         model = partial_dict.pop('model')
-        save_tf_model(model, filepath, model_name='encoder')  # TODO consider pytorch
-        save_path = filepath.joinpath('model', 'encoder.h5')
-        kwargs.update({'model': save_path})
-        # TODO - consider embedding case
+        cfg_model, cfg_embed = save_model(model, filepath, detector.input_shape, backend, verbose)
+        kwargs.update({'model': cfg_model, 'embedding': cfg_embed})
 
         # Serialize preprocess_batch_fn
         preprocess_batch_fn = partial_dict.pop('preprocess_batch_fn', None)
@@ -270,14 +270,14 @@ def serialize_preprocess(preprocess_fn: Callable,
         tokenizer = partial_dict.pop('tokenizer', None)
         if tokenizer is not None:
             save_path = filepath.joinpath('model')
-            tokenizer.save_pretrained(save_path)
+            tokenizer.save_pretrained(save_path)  #TODO
             kwargs.update({'tokenizer': save_path})
 
         # Process remaining kwargs
         for k, v in partial_dict.items():
             kwargs.update({k: v})
 
-    elif isinstance(preprocess_fn, Callable):  # TODO - test if this works
+    else:  # TODO - test if this works
         func = preprocess_fn
         save_path = filepath.joinpath('func.dill')
         dill.dump(func, save_path)
@@ -288,56 +288,61 @@ def serialize_preprocess(preprocess_fn: Callable,
     return cfg
 
 
-def resolve_paths(cfg: dict, rel_path: Path) -> dict:
+# TODO - Might be useful to add option to resolve to absolute paths in cfg
+def resolve_paths(cfg: dict, absolute: Optional[bool] = False) -> dict:
     for k, v in cfg.items():
         if isinstance(v, dict):
-            resolve_paths(v, rel_path)
+            resolve_paths(v, absolute)
         elif isinstance(v, Path):
-            print(v,rel_path)
-            print(v.relative_to(rel_path))
-            cfg.update({k: str(v.relative_to(rel_path))})
+            if absolute:
+                v = v.resolve()
+            cfg.update({k: str(v)})
     return cfg
 
 
-## TODO -MMDDrift removed
-#def preprocess_step_drift(cd: Union[ChiSquareDrift, ClassifierDriftTF, KSDrift, TabularDrift]) \
-#        -> Tuple[
-#            Optional[Callable], Dict, Optional[Union[tf.keras.Model, tf.keras.Sequential]],
-#            Optional[TransformerEmbedding], Dict, Optional[Callable], bool
-#        ]:
-#    # TODO - eventually this functionality can be integrated into serialize_preprocess (under return_resolved=True)
-#    # note: need to be able to dill tokenizers other than transformers
-#    preprocess_fn, preprocess_kwargs = None, {}
-#    model, embed, embed_args, tokenizer, load_emb = None, None, {}, None, False
-#    if isinstance(cd.preprocess_fn, partial):
-#        preprocess_fn = cd.preprocess_fn.func
-#        for k, v in cd.preprocess_fn.keywords.items():
-#            if isinstance(v, UAE):
-#                if isinstance(v.encoder.layers[0], TransformerEmbedding):  # text drift
-#                    # embedding
-#                    embed = v.encoder.layers[0].model
-#                    embed_args = dict(
-#                        embedding_type=v.encoder.layers[0].emb_type,
-#                        layers=v.encoder.layers[0].hs_emb.keywords['layers']
-#                    )
-#                    load_emb = True
-#
-#                    # preprocessing encoder
-#                    inputs = Input(shape=cd.input_shape, dtype=tf.int64)
-#                    v.encoder.call(inputs)
-#                    shape_enc = (v.encoder.layers[0].output.shape[-1],)
-#                    layers = [InputLayer(input_shape=shape_enc)] + v.encoder.layers[1:]
-#                    model = tf.keras.Sequential(layers)
-#                    _ = model(tf.zeros((1,) + shape_enc))
-#                else:
-#                    model = v.encoder
-#                preprocess_kwargs['model'] = 'UAE'
-#            elif isinstance(v, HiddenOutput):
-#                model = v.model
-#                preprocess_kwargs['model'] = 'HiddenOutput'
-#            elif isinstance(v, (tf.keras.Sequential, tf.keras.Model)):
-#                model = v
-#                preprocess_kwargs['model'] = 'custom'
+def save_model(model: Union[UAE, HiddenOutput, tf.keras.Sequential, tf.keras.Model],
+               filepath: Path,
+               input_shape: tuple,
+               backend: str,
+               verbose: Optional[bool] = False) -> Tuple[dict, dict]:
+    # TODO: need to be able to dill tokenizers other than transformers
+
+    cfg_model, cfg_embed = {}, None
+    if isinstance(model, UAE):
+        if isinstance(model.encoder.layers[0], TransformerEmbedding):  # text drift
+            # embedding
+            cfg_embed = {}
+            embed = model.encoder.layers[0].model
+            cfg_embed.update({'type': model.encoder.layers[0].emb_type})
+            cfg_embed.update({'layers': model.encoder.layers[0].hs_emb.keywords['layers']})
+            save_embedding(embed, embed_args=cfg_embed, filepath=filepath, save_dir='embedding')
+            cfg_embed.update({'src': filepath.joinpath('embedding')})
+            # preprocessing encoder
+            inputs = Input(shape=input_shape, dtype=tf.int64)
+            model.encoder.call(inputs)
+            shape_enc = (model.encoder.layers[0].output.shape[-1],)
+            layers = [InputLayer(input_shape=shape_enc)] + model.encoder.layers[1:]
+            model = tf.keras.Sequential(layers)
+            _ = model(tf.zeros((1,) + shape_enc))
+        else:
+            model = model.encoder
+        cfg_model.update({'type': 'UAE'})
+
+    elif isinstance(model, HiddenOutput):
+        model = model.model
+        cfg_model.update({'type': 'HiddenOutput'})
+    elif isinstance(model, (tf.keras.Sequential, tf.keras.Model)):
+        model = model
+        cfg_model.update({'type': 'custom'})
+
+    save_tf_model(model, filepath=filepath, save_dir='model')
+    cfg_model.update({'src': filepath.joinpath('model')})
+
+    return cfg_model, cfg_embed
+
+
+#def save_tokenizer()
+# TODO: tokenizer stuff below
 #            elif hasattr(v, '__module__'):
 #                if 'transformers' in v.__module__:  # transformers tokenizer
 #                    tokenizer = v
@@ -1142,6 +1147,56 @@ def load_detector(filepath: Union[str, os.PathLike], **kwargs) -> Data:
 
     detector.meta = meta_dict
     return detector
+
+
+def load_model(cfg: dict,
+               detector_name: str,
+               backend: str,
+               verbose: bool) -> Union[tf.keras.Model, nn.Module, nn.Sequential]:
+    # TODO - anything detector specific enough to warrant incorporating into detector methods?
+    cfg = deepcopy(cfg)
+    src = cfg.pop('src', None)
+    typ = cfg.pop('type', 'custom')
+    custom_obj = cfg.pop('custom_objects', None)
+    if src is None:
+        raise ValueError("Model 'src' field must be specified.")
+    else:
+        src = Path(src)
+
+    if backend == 'tensorflow':
+        if detector_name in ['ChiSquareDrift', 'ClassifierDrift', 'KSDrift', 'TabularDrift', 'MMDDrift']:
+            model = load_tf_model(src, load_dir='.', custom_objects=custom_obj)
+            if typ == 'UAE':
+                model = UAE(encoder_net=model)
+            elif typ == 'HiddenOutput' or typ == 'custom':
+                pass
+            else:
+                raise ValueError("Model 'type' not recognised.")
+        else:
+            raise ValueError('Loading of model(s) for %s not currently supported' % detector_name)
+    else:
+        raise ValueError('Loading of pytorch models not currently supported')
+
+    return model
+
+
+def load_embedding(filepath: Path,
+               backend: str,
+               verbose: bool) -> TransformerEmbedding:
+    # TODO - check backend
+    args = dill.load(open(filepath.joinpath('embedding.dill'), 'rb'))
+    emb = TransformerEmbedding(
+        str(filepath.resolve()), embedding_type=args['embedding_type'], layers=args['layers']
+    )
+    return emb
+
+
+def load_tokenizer(filepath: Path,
+               backend: str,
+               verbose: bool) -> Callable:
+    # TODO - check backend
+    tokenizer = AutoTokenizer.from_pretrained(str(filepath.resolve()))
+    return tokenizer
 
 
 def load_tf_model(filepath: Union[str, os.PathLike],

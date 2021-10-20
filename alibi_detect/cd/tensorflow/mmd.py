@@ -118,7 +118,7 @@ class MMDDriftTF(BaseMMDDrift):
         p_val = (mmd2 <= mmd2_permuted).mean()
         return p_val, mmd2, mmd2_permuted
 
-    def get_config(self, filepath: Union[str, os.PathLike]) -> dict:
+    def get_config(self, filepath: Optional[Union[str, os.PathLike]] = None) -> dict:
         """
         TODO
         Note: only GaussianRBF kernel supported.
@@ -127,8 +127,6 @@ class MMDDriftTF(BaseMMDDrift):
         ----------
         filepath
             Directory to save serialized artefacts to.
-        relative_paths
-            If true... TODO
         """
         cfg = super().get_config(filepath)
 
@@ -143,7 +141,7 @@ class MMDDriftTF(BaseMMDDrift):
         # Detector
         cd_cfg = cfg['detector']
         # cd_cfg.update({'detector_type': self.__class__.__name__})
-        cd_cfg.update({'detector_type': 'MMDDrift'})
+        cd_cfg.update({'type': 'MMDDrift'})
 
         # Detector kwargs
         kwargs = {

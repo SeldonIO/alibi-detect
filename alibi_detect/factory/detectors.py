@@ -3,7 +3,6 @@ from alibi_detect.cd import ChiSquareDrift, KSDrift, MMDDrift, TabularDrift, LSD
 from alibi_detect.cd import ClassifierUncertaintyDrift, RegressorUncertaintyDrift
 from alibi_detect.cd import ClassifierDrift, LearnedKernelDrift, SpotTheDiffDrift
 from alibi_detect.utils.pytorch.kernels import DeepKernel, GaussianRBF
-from alibi_detect.factory.models import load_model
 from alibi_detect.factory.utils import instantiate_class
 from typing import Tuple, Union, Optional, Callable
 import numpy as np
@@ -62,33 +61,29 @@ def load_detector(x_ref: Union[np.ndarray, list],
                   backend: Optional[str] = 'tensorflow') -> Detector:
     # Note: This is setup for drift detectors only atm, but could be modified for od and ad.
 
-    if 'name' in cfg:
-        detector_name = cfg.pop('name')
-    else:
-        raise ValueError('The detector `name` must be specified.')
+    detector_name = cfg.get('type', None)
+    if detector_name is None:
+        raise ValueError('The detector `type` must be specified.')
 
     # Process args
     args = [x_ref]
-    if detector_name in REQUIRES_MODEL:
-        if 'model' in cfg:
-            model_cfg = cfg.pop('model')
-            model = load_model(model_cfg)
-            args.append(model)
-        else:
-            raise ValueError('A `model` must be specified for the %s detector' % detector_name)
+#    if detector_name in REQUIRES_MODEL:
+#        if 'model' in cfg:
+#            model_cfg = cfg.pop('model')
+#            model = load_model(model_cfg)  # TODO
+#            args.append(model)
+#        else:
+#            raise ValueError('A `model` must be specified for the %s detector' % detector_name)
     if detector_name in LEARNED_DETECTOR:
         pass  # TODO
 
     # Process kwargs
-    kwargs = {}
+    kwargs = cfg.get('kwargs', {})
     if detector_name in REQUIRES_BACKEND:
         kwargs.update({'backend': backend})
     if detector_name in OPTIONAL_PREPROCESS:
         if preprocess_fn is not None:
             kwargs.update({'preprocess_fn': preprocess_fn})
-    # Anything remaining in cfg.items() is assumed to be a kwarg
-    for k, v in cfg.items():
-        kwargs.update({k: v})
 
     # Instantiate the detector
     detector = instantiate_class('alibi_detect.cd', detector_name, *args, **kwargs)

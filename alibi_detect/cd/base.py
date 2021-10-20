@@ -593,20 +593,26 @@ class BaseMMDDrift(BaseDetector):
         return cd
 
     @abstractmethod
-    def get_config(self, filepath: Union[str, os.PathLike]) -> dict:
+    def get_config(self, filepath: Optional[Union[str, os.PathLike]] = None) -> dict:
         # TODO - could have option to get resolved or unresolved config dict (filepath not needed if resolved)
         cfg = {'meta': self.meta}
 
         # x_ref
-        filepath = Path(filepath)
-        save_path = filepath.joinpath('x_ref.npy')
-        np.save(str(save_path), self.x_ref)
-        cfg.update({'x_ref': save_path})
+        if filepath is None:
+            cfg.update({'x_ref': self.x_ref})
+        else:
+            filepath = Path(filepath)
+            save_path = filepath.joinpath('x_ref.npy')
+            np.save(str(save_path), self.x_ref)
+            cfg.update({'x_ref': save_path})
 
         # Preprocess field
         if self.preprocess_fn is not None:
-            preprocess_cfg = serialize_preprocess(self.preprocess_fn, filepath)
-            cfg.update({'preprocess': preprocess_cfg})
+            if filepath is None:
+                cfg.update({'preprocess': {'preprocess_fn': self.preprocess_fn}})
+            else:
+                preprocess_cfg = serialize_preprocess(self, filepath)
+                cfg.update({'preprocess': preprocess_cfg})
 
         # Detector field
         kwargs = {
@@ -619,19 +625,15 @@ class BaseMMDDrift(BaseDetector):
         }
         cfg.update({'detector': {'kwargs': kwargs}})
 
-#        if resolve: # TODO
-#            cfg = resolve_paths(cfg, Path('.'))
+        return resolve_paths(cfg)
 
-        return cfg
-
-    def save_config(self, filepath: Union[str, os.PathLike], filename: str = 'config.yaml'):
+    def save_config(self, filepath: Optional[Union[str, os.PathLike]], filename: Optional[str] = 'config.yaml'):
         # TODO - can move this to BaseDetector once all methods have a get_config method (including ad and od)
         filepath = Path(filepath)
-        if not filepath.is_dir():
-            logger.warning('Directory {} does not exist and is now created.'.format(filepath))
-            filepath.mkdir(parents=True, exist_ok=True)
+        filename = Path(filename)
         cfg = self.get_config(filepath)
-        YAML().dump(resolve_paths(cfg, filepath), filepath.joinpath(filename))
+        absolute = True if Path('test').resolve() == Path.cwd() else False
+        YAML().dump(resolve_paths(cfg, absolute=absolute), filename)
 
 
 class BaseLSDDDrift(BaseDetector):
@@ -966,3 +968,60 @@ class BaseUnivariateDrift(BaseDetector):
         if return_distance:
             cd['data']['distance'] = dist
         return cd
+
+    def get_config(self, filepath: Optional[Union[str, os.PathLike]] = None) -> dict:
+        cfg = {'meta': self.meta}
+
+        # x_ref
+        if filepath is None:
+            cfg.update({'x_ref': self.x_ref})
+        else:
+            filepath = Path(filepath) # TODO - get_config in BaseDetector would avoid this duplication.
+            if not filepath.is_dir():
+                logger.warning('Directory {} does not exist and is now created.'.format(filepath))
+                filepath.mkdir(parents=True, exist_ok=True)
+            save_path = filepath.joinpath('x_ref.npy')
+            np.save(str(save_path), self.x_ref)
+            cfg.update({'x_ref': save_path})
+
+        # Preprocess field
+        if self.preprocess_fn is not None:
+            if filepath is None:
+                cfg.update({'preprocess': {'preprocess_fn': self.preprocess_fn}})
+            else:
+                preprocess_cfg = serialize_preprocess(self, filepath)
+                cfg.update({'preprocess': preprocess_cfg})
+
+        # Detector field
+        kwargs = {
+                'p_val': self.p_val,
+                'preprocess_x_ref': False,
+                'update_x_ref': self.update_x_ref,
+                'input_shape': self.input_shape,
+                'correction': self.correction,
+                'n_features': self.n_features
+        }
+        cd_cfg = {
+            'detector_type': self.__class__.__name__,
+            'kwargs': kwargs
+        }
+        cfg.update({'detector': cd_cfg})
+
+        return resolve_paths(cfg)
+
+    def save_config(self, filepath: Optional[Union[str, os.PathLike]], filename: Optional[str] = 'config.yaml'):
+        # TODO - can move this to BaseDetector once all methods have a get_config method (including ad and od)
+        filepath = Path(filepath)
+        filename = Path(filename)
+        cfg = self.get_config(filepath)
+        absolute = True if Path('test').resolve() == Path.cwd() else False
+        YAML().dump(resolve_paths(cfg, absolute=absolute), filename)
+
+
+DriftDetector = Union[
+    BaseClassifierDrift,
+    BaseLearnedKernelDrift,
+    BaseMMDDrift,
+    BaseLSDDDrift,
+    BaseUnivariateDrift,
+]

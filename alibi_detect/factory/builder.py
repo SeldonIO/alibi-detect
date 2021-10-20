@@ -10,11 +10,7 @@ from copy import deepcopy
 logger = logging.getLogger(__name__)
 
 
-# TODO - could have this integrated into a class as a .from_config() method? Can't think of many reasons for this
-#  unless we want to do stuff like combine multiple detectors into one? i.e. give DetectorFactory a list of yaml files,
-#  specifying multiple detectors. DetectorFactory would have predict() method etc to call all detectors at once...
-def DetectorFactory(x_ref: Union[np.ndarray, list],
-                    cfg: Union[str, dict],
+def DetectorFactory(cfg: Union[str, dict],
                     verbose: Optional[bool] = False) -> BaseDetector:
     # Parse yaml if needed
     if isinstance(cfg, str):
@@ -23,28 +19,32 @@ def DetectorFactory(x_ref: Union[np.ndarray, list],
     else:
         config_file = None
 
-    # Resolve and validate cfg
+    # Resolve cfg
     cfg.update({'registries': {}})
     cfg = resolve_cfg(cfg, verbose=verbose)
-    cfg_orig = deepcopy(cfg)
 
-    backend = cfg.pop('backend', 'tensorflow')  # TODO - check that backend==tensorflow or pytorch
+    backend = cfg.setdefault('backend', 'tensorflow')
+
+    # x_ref
+    x_ref = cfg['x_ref']
+    # TODO - if x_ref is still a str raise ValueError
 
     # Load preprocessor if specified
     if 'preprocess' in cfg:
-        preprocessor_cfg = cfg.pop('preprocess')
+        preprocessor_cfg = cfg['preprocess']
         preprocess_fn = load_preprocessor(preprocessor_cfg, backend=backend, verbose=verbose)
     else:
         preprocess_fn = None
 
     # Load detector
     if 'detector' in cfg:
-        detector_cfg = cfg.pop('detector')
+        detector_cfg = cfg['detector']
         detector = load_detector(x_ref, detector_cfg, preprocess_fn=preprocess_fn, backend=backend)
     else:
         raise ValueError("Config file must contain a 'detector' key.")
 
     # Update metadata
-    detector.meta.update({'config': cfg_orig, 'config_file': config_file})
+#    detector.meta.update({'config': cfg, 'config_file': config_file})
+    detector.meta.update({'config_file': config_file, 'registries': cfg['registries']})
 
     return detector

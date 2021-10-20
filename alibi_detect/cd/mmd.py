@@ -93,6 +93,7 @@ class MMDDrift:
         else:
             self._detector = MMDDriftTorch(*args, **kwargs)  # type: ignore
         self.meta = self._detector.meta
+        self._detector.backend = backend
 
     def predict(self, x: Union[np.ndarray, list], return_p_val: bool = True, return_distance: bool = True) \
             -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
@@ -116,8 +117,8 @@ class MMDDrift:
         """
         return self._detector.predict(x, return_p_val, return_distance)
 
-    def get_config(self, filepath: Union[str, os.PathLike]) -> dict:
+    def get_config(self, filepath: Optional[Union[str, os.PathLike]] = None) -> dict:
         return self._detector.get_config(filepath)
 
-    def save_config(self, filepath: Union[str, os.PathLike], filename: str = 'config.yaml'):
+    def save_config(self, filepath: Optional[Union[str, os.PathLike]], filename: Optional[str] = 'config.yaml'):
         return self._detector.save_config(filepath, filename)

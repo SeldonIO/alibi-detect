@@ -2,7 +2,7 @@ import numpy as np
 from scipy.stats import ks_2samp
 from typing import Callable, Dict, Optional, Tuple, Union
 from alibi_detect.cd.base import BaseUnivariateDrift
-
+import os
 
 class KSDrift(BaseUnivariateDrift):
     def __init__(
@@ -87,3 +87,23 @@ class KSDrift(BaseUnivariateDrift):
             # TODO: update to 'exact' when bug fix is released in scipy 1.5
             dist[f], p_val[f] = ks_2samp(x_ref[:, f], x[:, f], alternative=self.alternative, mode='asymp')
         return p_val, dist
+
+    def get_config(self, filepath: Optional[Union[str, os.PathLike]] = None) -> dict:
+        """
+        TODO
+        Note: only GaussianRBF kernel supported.
+
+        Parameters
+        ----------
+        filepath
+            Directory to save serialized artefacts to.
+        """
+        cfg = super().get_config(filepath)
+
+        # Detector kwargs
+        kwargs = {
+            'alternative': self.alternative,
+        }
+        cfg['detector']['kwargs'].update(kwargs)
+
+        return cfg
