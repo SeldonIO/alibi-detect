@@ -3,7 +3,6 @@ from .utils import read_detector_config, resolve_cfg
 from .detectors import load_detector
 from .preprocess import load_preprocessor
 from typing import Union, Optional
-import numpy as np
 import logging
 from copy import deepcopy
 

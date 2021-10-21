@@ -1002,7 +1002,7 @@ class BaseUnivariateDrift(BaseDetector):
                 'n_features': self.n_features
         }
         cd_cfg = {
-            'detector_type': self.__class__.__name__,
+            'type': self.__class__.__name__,
             'kwargs': kwargs
         }
         cfg.update({'detector': cd_cfg})

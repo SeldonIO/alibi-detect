@@ -3,15 +3,9 @@ from alibi_detect.cd.tensorflow import preprocess_drift as preprocess_drift_tf
 from functools import partial
 import logging
 from torch import device as torch_device
-# from alibi_detect.cd.pytorch import HiddenOutput  # TODO - add tensorflow support
-# from alibi_detect.models.pytorch import TransformerEmbedding
 import torch.nn as nn
 from tensorflow.keras import Model as KerasModel
-# from transformers.tokenization_utils_base import BatchEncoding
 from typing import Callable, Optional
-from copy import deepcopy
-from pathlib import Path
-import dill
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +25,7 @@ def load_preprocessor(cfg: dict,
     # TODO - Deal with embeddings i.e. model=embedding if no model. If both model = model(input_layer=embedding)
     # If string...
     if isinstance(preprocess_fn, str):
-        # If preprocess_fn=='preprocess_drift', use in-built preprocess_drift function
+        # If still a str, check if this refers to in-built preprocess_drift function
         if preprocess_fn == 'preprocess_drift':
             if 'model' not in kwargs:
                 raise ValueError("The 'model' field must be specified when 'preprocess_fn'='preprocess_drift'")
@@ -49,6 +43,7 @@ def load_preprocessor(cfg: dict,
                     kwargs.update({'device': device})
 
         else:
+            # If still a str, but not 'preprocess_drift', resolution of local filepath must have failed
             raise ValueError("If preprocess_fn is a str, it must either be a filepath to a .dill file, "
                              "or 'preprocess_drift'")
 

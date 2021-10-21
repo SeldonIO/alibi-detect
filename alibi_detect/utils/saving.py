@@ -25,7 +25,6 @@ from alibi_detect.od import (IForest, LLR, Mahalanobis, OutlierAE, OutlierAEGMM,
                              OutlierSeq2Seq, OutlierVAE, OutlierVAEGMM, SpectralResidual)
 from alibi_detect.od.llr import build_model
 from alibi_detect.version import __version__
-from copy import deepcopy
 import torch.nn as nn
 
 from typing import TYPE_CHECKING
@@ -216,7 +215,7 @@ def save_embedding(embed: tf.keras.Model,
 
 
 def serialize_preprocess(detector: 'DriftDetector',
-                         filepath: Union[str, os.PathLike],
+                         filepath: Path,
                          verbose: Optional[bool] = False) -> dict:
     """
     Serializes a drift detectors preprocess_fn. Artefacts are saved to disk, and a config dict containing filepaths
@@ -248,13 +247,22 @@ def serialize_preprocess(detector: 'DriftDetector',
         if func.__name__ == 'preprocess_drift':
             func = 'preprocess_drift'
         else:
+            # TODO - current BuilderFactory loading doesn't support below. load_preprocess assumes we either want to
+            #  preprocess_fn = partial(preprocess_drift, ...), or preprocess_fn is a .dill ready to be called after
+            #  loading. Need to support loading and passing arbitrary funcs through partial with kwargs when
+            #  ['preprocess_fn']['kwargs'] not empty.
             save_path = filepath.joinpath('func.dill')
             dill.dump(func, save_path)
             func = str(save_path)
         cfg.update({'preprocess_fn': func})
 
+        # NOTE: below approach is designed for serializing preprocess_fn = partial(preprocess_drift, ...) i.e.
+        #  artefacts contained in `model`, `tokenizer` fields etc. If we want proper support for saving detectors
+        #  with more generic preprocess_fn, probs need to go back to old method in preprocess_step_drift, where
+        #  all items in preprocess_fn.keywords are looped through, and saving logic is based on artefact type.
+        # TODO - think about whether any reason not to go back to above...
         # Extract model/embedding and serialize
-        partial_dict = deepcopy(preprocess_fn.keywords)
+        partial_dict = preprocess_fn.keywords.copy()
         model = partial_dict.pop('model')
         cfg_model, cfg_embed = save_model(model, filepath, detector.input_shape, backend, verbose)
         kwargs.update({'model': cfg_model, 'embedding': cfg_embed})
@@ -266,7 +274,6 @@ def serialize_preprocess(detector: 'DriftDetector',
             dill.dump(preprocess_batch_fn, save_path)
             kwargs.update({'preprocess_batch_fn': save_path})
 
-        # Serialize tokenizer
         tokenizer = partial_dict.pop('tokenizer', None)
         if tokenizer is not None:
             save_path = filepath.joinpath('model')
@@ -288,7 +295,6 @@ def serialize_preprocess(detector: 'DriftDetector',
     return cfg
 
 
-# TODO - Might be useful to add option to resolve to absolute paths in cfg
 def resolve_paths(cfg: dict, absolute: Optional[bool] = False) -> dict:
     for k, v in cfg.items():
         if isinstance(v, dict):
@@ -313,7 +319,7 @@ def save_model(model: Union[UAE, HiddenOutput, tf.keras.Sequential, tf.keras.Mod
             # embedding
             cfg_embed = {}
             embed = model.encoder.layers[0].model
-            cfg_embed.update({'type': model.encoder.layers[0].emb_type})
+            cfg_embed.update({'embedding_type': model.encoder.layers[0].emb_type})
             cfg_embed.update({'layers': model.encoder.layers[0].hs_emb.keywords['layers']})
             save_embedding(embed, embed_args=cfg_embed, filepath=filepath, save_dir='embedding')
             cfg_embed.update({'src': filepath.joinpath('embedding')})
@@ -339,19 +345,6 @@ def save_model(model: Union[UAE, HiddenOutput, tf.keras.Sequential, tf.keras.Mod
     cfg_model.update({'src': filepath.joinpath('model')})
 
     return cfg_model, cfg_embed
-
-
-#def save_tokenizer()
-# TODO: tokenizer stuff below
-#            elif hasattr(v, '__module__'):
-#                if 'transformers' in v.__module__:  # transformers tokenizer
-#                    tokenizer = v
-#                    preprocess_kwargs[k] = v.__module__
-#            else:
-#                preprocess_kwargs[k] = v
-#    elif isinstance(cd.preprocess_fn, Callable):
-#        preprocess_fn = cd.preprocess_fn
-#    return preprocess_fn, preprocess_kwargs, model, embed, embed_args, tokenizer, load_emb
 
 
 #def state_chisquaredrift(cd: ChiSquareDrift) -> Tuple[
@@ -1154,7 +1147,7 @@ def load_model(cfg: dict,
                backend: str,
                verbose: bool) -> Union[tf.keras.Model, nn.Module, nn.Sequential]:
     # TODO - anything detector specific enough to warrant incorporating into detector methods?
-    cfg = deepcopy(cfg)
+    cfg = cfg.copy()
     src = cfg.pop('src', None)
     typ = cfg.pop('type', 'custom')
     custom_obj = cfg.pop('custom_objects', None)
@@ -1180,21 +1173,22 @@ def load_model(cfg: dict,
     return model
 
 
-def load_embedding(filepath: Path,
+def load_embedding(cfg: dict,
                backend: str,
                verbose: bool) -> TransformerEmbedding:
     # TODO - check backend
-    args = dill.load(open(filepath.joinpath('embedding.dill'), 'rb'))
-    emb = TransformerEmbedding(
-        str(filepath.resolve()), embedding_type=args['embedding_type'], layers=args['layers']
-    )
+    cfg = cfg.copy()
+    filepath = cfg.pop('src')
+    emb = TransformerEmbedding(filepath, **cfg)
     return emb
 
 
-def load_tokenizer(filepath: Path,
+def load_tokenizer(filepath: dict,
                backend: str,
                verbose: bool) -> Callable:
     # TODO - check backend
+    cfg = cfg.copy()
+
     tokenizer = AutoTokenizer.from_pretrained(str(filepath.resolve()))
     return tokenizer
 

@@ -95,7 +95,7 @@ def resolve_cfg(cfg: dict, verbose: Optional[bool] = False) -> dict:
 
         # Resolve dict spec
         elif isinstance(src, dict):
-            backend = cfg.get('backend')
+            backend = cfg.get('backend', 'tensorflow')
             if key[-1] == 'model':
                 obj = load_model(src, detector_name=cfg['detector']['type'],
                                  backend=backend, verbose=verbose)
