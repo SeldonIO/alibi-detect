@@ -1,4 +1,4 @@
-from alibi_detect.utils.saving import load_model, load_tokenizer, load_embedding
+from alibi_detect.utils.saving import load_model, load_tokenizer
 import numpy as np
 import logging
 import os
@@ -97,12 +97,9 @@ def resolve_cfg(cfg: dict, verbose: Optional[bool] = False) -> dict:
         elif isinstance(src, dict):
             backend = cfg.get('backend', 'tensorflow')
             if key[-1] == 'model':
-                obj = load_model(src, detector_name=cfg['detector']['type'],
-                                 backend=backend, verbose=verbose)
-            elif key[-1] == 'embedding':
-                obj = load_embedding(src, backend=backend, verbose=verbose)  # TODO
+                obj = load_model(src, backend=backend, verbose=verbose)
             elif key[-1] == 'tokenizer':
-                obj = load_tokenizer(src, backend=backend, verbose=verbose)  # TODO
+                obj = load_tokenizer(src, verbose=verbose)
             if obj is None:
                 raise ValueError('Failed to process %s dict' % key[-1])
 

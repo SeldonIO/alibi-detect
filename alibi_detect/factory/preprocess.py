@@ -10,7 +10,7 @@ from typing import Callable, Optional
 logger = logging.getLogger(__name__)
 
 
-# TODO - pytorch, embedding, tokenizer etc
+# TODO - pytorch
 def load_preprocessor(cfg: dict,
                       backend: Optional[str] = 'tensorflow',
                       verbose: Optional[bool] = False) -> Optional[Callable]:
@@ -22,7 +22,6 @@ def load_preprocessor(cfg: dict,
     kwargs = cfg.get('kwargs', {})
     preprocess_fn = cfg.get('preprocess_fn')
 
-    # TODO - Deal with embeddings i.e. model=embedding if no model. If both model = model(input_layer=embedding)
     # If string...
     if isinstance(preprocess_fn, str):
         # If still a str, check if this refers to in-built preprocess_drift function

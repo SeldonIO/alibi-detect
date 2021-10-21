@@ -503,6 +503,7 @@ class BaseMMDDrift(BaseDetector):
         # optionally already preprocess reference data
         self.p_val = p_val
         if preprocess_x_ref and isinstance(preprocess_fn, Callable):  # type: ignore
+            self.x_ref_orig = x_ref
             self.x_ref = preprocess_fn(x_ref)
         else:
             self.x_ref = x_ref
@@ -599,11 +600,11 @@ class BaseMMDDrift(BaseDetector):
 
         # x_ref
         if filepath is None:
-            cfg.update({'x_ref': self.x_ref})
+            cfg.update({'x_ref': self.x_ref_orig})
         else:
             filepath = Path(filepath)
             save_path = filepath.joinpath('x_ref.npy')
-            np.save(str(save_path), self.x_ref)
+            np.save(str(save_path), self.x_ref_orig)
             cfg.update({'x_ref': save_path})
 
         # Preprocess field
@@ -617,7 +618,7 @@ class BaseMMDDrift(BaseDetector):
         # Detector field
         kwargs = {
                 'p_val': self.p_val,
-                'preprocess_x_ref': False,
+                'preprocess_x_ref': self.preprocess_x_ref,
                 'update_x_ref': self.update_x_ref,
                 'configure_kernel_from_x_ref': not self.infer_sigma,
                 'n_permutations': self.n_permutations,
@@ -840,6 +841,7 @@ class BaseUnivariateDrift(BaseDetector):
         # optionally already preprocess reference data
         self.p_val = p_val
         if preprocess_x_ref and isinstance(preprocess_fn, Callable):  # type: ignore
+            self.x_ref_orig = x_ref
             self.x_ref = preprocess_fn(x_ref)
         else:
             self.x_ref = x_ref
@@ -974,14 +976,14 @@ class BaseUnivariateDrift(BaseDetector):
 
         # x_ref
         if filepath is None:
-            cfg.update({'x_ref': self.x_ref})
+            cfg.update({'x_ref': self.x_ref_orig})
         else:
             filepath = Path(filepath) # TODO - get_config in BaseDetector would avoid this duplication.
             if not filepath.is_dir():
                 logger.warning('Directory {} does not exist and is now created.'.format(filepath))
                 filepath.mkdir(parents=True, exist_ok=True)
             save_path = filepath.joinpath('x_ref.npy')
-            np.save(str(save_path), self.x_ref)
+            np.save(str(save_path), self.x_ref_orig)
             cfg.update({'x_ref': save_path})
 
         # Preprocess field
@@ -995,7 +997,7 @@ class BaseUnivariateDrift(BaseDetector):
         # Detector field
         kwargs = {
                 'p_val': self.p_val,
-                'preprocess_x_ref': False,
+                'preprocess_x_ref': self.preprocess_x_ref,
                 'update_x_ref': self.update_x_ref,
                 'input_shape': self.input_shape,
                 'correction': self.correction,
