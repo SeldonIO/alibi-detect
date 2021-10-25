@@ -3,6 +3,7 @@ from scipy.stats import ks_2samp
 from typing import Callable, Dict, Optional, Tuple, Union
 from alibi_detect.cd.base import BaseUnivariateDrift
 
+
 class KSDrift(BaseUnivariateDrift):
     def __init__(
             self,
