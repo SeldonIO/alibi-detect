@@ -76,7 +76,8 @@ instance/
 .scrapy
 
 # Sphinx documentation
-docs/_build/
+doc/_build/
+doc/source/api/
 doc/source/examples/image/
 
 # PyBuilder
@@ -118,4 +119,3 @@ venv.bak/
 
 # temp scripts for debugging
 examples/temp_*
-
