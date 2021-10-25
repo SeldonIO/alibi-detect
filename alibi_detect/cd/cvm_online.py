@@ -1,6 +1,7 @@
 import numpy as np
 from typing import Callable, List, Optional, Union
 from alibi_detect.cd.base_online import BaseDriftOnline
+from alibi_detect.utils.misc import quantile
 import numba as nb
 from numba.np.ufunc.decorators import guvectorize
 import warnings
@@ -14,7 +15,6 @@ class CVMDriftOnline(BaseDriftOnline):
             window_size: Union[int, List[int]],
             preprocess_fn: Optional[Callable] = None,
             n_bootstraps: int = 10000,
-            t_max: Optional[int] = None,
             device='parallel',
             verbose: bool = True,
             input_shape: Optional[tuple] = None,
@@ -39,8 +39,6 @@ class CVMDriftOnline(BaseDriftOnline):
             The number of bootstrap simulations used to configure the thresholds. The larger this is the
             more accurately the desired ERT will be targeted. Should ideally be at least an order of magnitude
             larger than the ERT.
-        t_max
-            Length of streams to simulate. If `None`, this is set to 2 * max(`window_size`) - 1.
         device
             Device type used. The default None tries to use the GPU and falls back on CPU if needed.
             Can be specified by passing either 'cuda', 'gpu' or 'cpu'. TODO: decide on default
@@ -69,12 +67,6 @@ class CVMDriftOnline(BaseDriftOnline):
             self.window_size = [window_size]  # type: list
         self.max_ws = np.max(self.window_size)
         self.min_ws = np.min(self.window_size)
-
-        # Stream length
-        if t_max is not None:
-            if t_max <= self.max_ws:  # TODO - check this logic
-                raise ValueError("`t_max` must be greater than max(`window_size`) for the CVMDriftOnline detector.")
-        self.t_max = t_max
 
         # Preprocess reference data
         self.x_ref = self.x_ref.squeeze()  # squeeze in case of (n,1) array
@@ -105,7 +97,7 @@ class CVMDriftOnline(BaseDriftOnline):
             print("Using %d bootstrap simulations to configure thresholds..." % self.n_bootstraps)
 
         # Compute test statistic at each t_max number of t's, for each of the n_bootstrap number of streams
-        t_max = 2 * self.max_ws - 1 if self.t_max is None else self.t_max
+        t_max = 2 * self.max_ws - 1
         stats = self._simulate_streams(self.n, t_max, self.n_bootstraps, self.window_size)
         # At each t for each stream, find max stats. over window sizes
         with warnings.catch_warnings():
@@ -117,9 +109,8 @@ class CVMDriftOnline(BaseDriftOnline):
             if t < np.min(self.window_size):
                 thresholds[t] = np.nan  # Set to NaN prior to window being full
             else:
-                # TODO - Next two lines need more careful thought
                 # Compute (1-fpr) quantile of max_stats at a given t, over all streams
-                threshold = np.quantile(max_stats[:, t], 1 - self.fpr)
+                threshold = quantile(max_stats[:, t], 1 - self.fpr)
                 # Remove streams for which a change point has already been detected
                 max_stats = max_stats[max_stats[:, t] <= threshold]
                 thresholds[t] = threshold
@@ -156,7 +147,7 @@ class CVMDriftOnline(BaseDriftOnline):
         return stats
 
     def _update_state(self, x_t: np.ndarray) -> None:
-        # if self.t == 1:  # TODO - this doesn't work if score() called before predict(), as self.t==0. Hence do below.
+        # if self.t == 1:  # NOTE - this doesn't work if score() called before predict(), as self.t==0. Hence do below.
         if not hasattr(self, 'xs'):
             # Initialise stream
             self.xs = x_t

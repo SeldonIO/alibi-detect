@@ -3,6 +3,7 @@ import numpy as np
 from scipy.stats import hypergeom
 from typing import Callable, List, Optional, Union
 from alibi_detect.cd.base_online import BaseDriftOnline
+from alibi_detect.utils.misc import quantile
 from numba import njit
 import warnings
 
@@ -65,17 +66,14 @@ class FETDriftOnline(BaseDriftOnline):
 
         # Window sizes
         if isinstance(window_size, int):
-            self.window_size = [window_size]  # type: list
+            self.window_size: list = [window_size]
         self.max_ws = np.max(self.window_size)
         self.min_ws = np.min(self.window_size)
 
         # Stream length
         if t_max is not None:
-            if t_max <= self.max_ws:
-                # TODO - check this logic. Could have t_max <= self.min_ws as check instead, but some windows would be
-                #  inactive when t_max < self.max_ws. Thresholds also not converged until 2*self.max_ws so do we want to
-                #  limit to that, and only allow larger t_max? Or get rid of t_max option entirely?
-                raise ValueError("`t_max` must be greater than max(`window_size`) for the CVMDriftOnline detector.")
+            if t_max < 2 * self.max_ws - 1:
+                raise ValueError("`t_max` must be >= 2 * max(`window_size`) for the FETDriftOnline detector.")
         self.t_max = t_max
 
         # Preprocess reference data
@@ -114,7 +112,7 @@ class FETDriftOnline(BaseDriftOnline):
         # Compute test statistic at each t_max number of t's, for each of the n_bootstrap number of streams
         t_max = 2 * self.max_ws - 1 if self.t_max is None else self.t_max
         stats = self._simulate_streams(self.n, t_max, self.n_bootstraps, self.window_size,
-                                       np.mean(self.x_ref), self.lam)
+                                       float(np.mean(self.x_ref)), self.lam)
         # At each t for each stream, find max stats. over window sizes
         with warnings.catch_warnings():
             warnings.filterwarnings(action='ignore', message='All-NaN slice encountered')
@@ -125,9 +123,8 @@ class FETDriftOnline(BaseDriftOnline):
             if t < np.min(self.window_size):
                 thresholds[t] = np.nan
             else:
-                # TODO - Next two lines need more careful thought
                 # Compute (1-fpr) quantile of max_stats at a given t, over all streams
-                threshold = np.quantile(max_stats[:, t], 1 - self.fpr)
+                threshold = quantile(max_stats[:, t], 1 - self.fpr)
                 # Remove streams for which a change point has already been detected
                 max_stats = max_stats[max_stats[:, t] <= threshold]
                 thresholds[t] = threshold
