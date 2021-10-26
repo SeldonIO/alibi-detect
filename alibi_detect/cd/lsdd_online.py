@@ -126,3 +126,18 @@ class LSDDDriftOnline:
         'data' contains the drift prediction and optionally the test-statistic and threshold.
         """
         return self._detector.predict(x_t, return_test_stat)
+
+    def score(self, x_t: Union[np.ndarray, list]) -> float:
+        """
+        Compute the test-statistic (LSDD) between the reference window and test window.
+
+        Parameters
+        ----------
+        x_t
+            A single instance to be added to the test-window.
+
+        Returns
+        -------
+        LSDD estimate between reference window and test window.
+        """
+        return self._detector.score(x_t)
