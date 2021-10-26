@@ -165,16 +165,9 @@ class LSDDDriftOnlineTF(BaseDriftOnline):
             lsdd_init = h_init[None, :] @ self.H_lam_inv @ h_init[:, None]  # (Eqn 11)
 
     def _update_state(self, x_t: Union[np.ndarray, list]):
-        self.t += 1
-        if isinstance(x_t, list):
-            x_t = np.array(x_t)
+        x_t = super()._update_state(x_t)
 
-        # preprocess if necessary
-        if isinstance(self.preprocess_fn, Callable):  # type: ignore
-            x_t = x_t[None, :] if isinstance(x_t, np.ndarray) else [x_t]
-            x_t = self.preprocess_fn(x_t)[0]  # type: ignore
-
-        x_t = tf.convert_to_tensor(x_t[None, :])
+        x_t = tf.convert_to_tensor(x_t)
         x_t = self._normalize(x_t)
         k_xtc = self.kernel(x_t, self.kernel_centers)
         self.test_window = tf.concat([self.test_window[(1-self.window_size):], x_t], axis=0)

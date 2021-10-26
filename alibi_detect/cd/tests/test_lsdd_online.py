@@ -31,3 +31,15 @@ def test_lsdddriftonline(lsdddriftonline_params):
         assert isinstance(cd._detector, LSDDDriftOnlineTF)
     else:
         assert cd is None
+        return None
+
+    # Test predict
+    x_t = np.random.randn(n_features)
+    t0 = cd.t
+    cd.predict(x_t)
+    assert cd.t - t0 == 1  # This checks state updated (self.t at least)
+
+    # Test score
+    t0 = cd.t
+    cd.score(x_t)
+    assert cd.t - t0 == 1

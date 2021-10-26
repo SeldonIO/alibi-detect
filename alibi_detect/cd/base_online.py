@@ -1,7 +1,7 @@
 from abc import abstractmethod
 import logging
 import numpy as np
-from typing import Any, Callable, Dict,  Optional, Union
+from typing import Callable, Dict,  Optional, Union
 from alibi_detect.base import BaseDetector, concept_drift_dict
 from alibi_detect.cd.utils import get_input_shape
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
@@ -90,6 +90,19 @@ class BaseDriftOnline(BaseDetector):
     def _configure_ref_subset(self):
         pass
 
+    def _update_state(self, x_t: Union[np.ndarray, list]) -> np.ndarray:
+        self.t += 1
+
+        # preprocess if necessary
+        if isinstance(self.preprocess_fn, Callable):  # type: ignore
+            x_t = x_t[None, :] if isinstance(x_t, np.ndarray) else [x_t]
+            x_t = self.preprocess_fn(x_t)[0]  # type: ignore
+
+        if isinstance(x_t, list):
+            x_t = np.array(x_t)
+
+        return x_t[None, :]
+
     def get_threshold(self, t: int) -> Union[float, None]:
         return self.thresholds[t] if t < self.window_size else self.thresholds[-1]  # type: ignore
 
@@ -103,8 +116,7 @@ class BaseDriftOnline(BaseDetector):
         "Resets the detector but does not reconfigure thresholds."
         self._initialise()
 
-    # TODO - change Any to list?
-    def predict(self, x_t: Union[np.ndarray, Any],  return_test_stat: bool = True,
+    def predict(self, x_t: Union[np.ndarray, list],  return_test_stat: bool = True,
                 ) -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
         """
         Predict whether the most recent window of data has drifted from the reference data.
