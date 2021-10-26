@@ -29,7 +29,7 @@ The following tables summarize the advised use cases for the current algorithms.
 |Detector|Tabular|Image|Time Series|Text|Categorical Features|Online|Feature Level|
 |:---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
 |[Kolmogorov-Smirnov](../cd/methods/ksdrift.ipynb)|✔|✔| |✔|✔| |✔|
-|[Least-Squares Density Difference](../cd/methods/mmddrift.ipynb)|✔|✔| |✔|✔|✔| |
+|[Least-Squares Density Difference](../cd/methods/lsdddrift.ipynb)|✔|✔| |✔|✔|✔| |
 |[Maximum Mean Discrepancy](../cd/methods/mmddrift.ipynb)|✔|✔| |✔|✔|✔| |
 |[Learned Kernel MMD](../cd/methods/learnedkerneldrift.ipynb)|✔|✔| |✔|✔| | |
 |[Chi-Squared](../cd/methods/chisquaredrift.ipynb)|✔| | | |✔| |✔|
