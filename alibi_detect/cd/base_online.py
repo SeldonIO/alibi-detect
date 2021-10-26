@@ -74,6 +74,10 @@ class BaseDriftOnline(BaseDetector):
         # store input shape for save and load functionality
         self.input_shape = get_input_shape(input_shape, x_ref)
 
+        # Init results attributes
+        self.test_stats = None
+        self.drift_preds = None
+
         # set metadata
         self.meta['detector_type'] = 'online'
         self.meta['data_type'] = data_type
@@ -99,6 +103,7 @@ class BaseDriftOnline(BaseDetector):
         "Resets the detector but does not reconfigure thresholds."
         self._initialise()
 
+    # TODO - change Any to list?
     def predict(self, x_t: Union[np.ndarray, Any],  return_test_stat: bool = True,
                 ) -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
         """
@@ -117,14 +122,7 @@ class BaseDriftOnline(BaseDetector):
         'meta' has the model's metadata.
         'data' contains the drift prediction and optionally the test-statistic and threshold.
         """
-        self.t += 1
-
-        # preprocess if necessary
-        if isinstance(self.preprocess_fn, Callable):  # type: ignore
-            x_t = x_t[None, :] if isinstance(x_t, np.ndarray) else [x_t]
-            x_t = self.preprocess_fn(x_t)[0]  # type: ignore
-
-        # update test window and return updated test stat
+        # Compute test stat and check for drift
         test_stat = self.score(x_t)
         threshold = self.get_threshold(self.t)
         drift_pred = 0 if test_stat is None else int(test_stat > threshold)

@@ -164,27 +164,36 @@ class LSDDDriftOnlineTF(BaseDriftOnline):
             h_init = self.c2s - tf.reduce_mean(self.k_xtc, axis=0)  # (Eqn 21)
             lsdd_init = h_init[None, :] @ self.H_lam_inv @ h_init[:, None]  # (Eqn 11)
 
-    def score(self, x_t: np.ndarray) -> Union[float, None]:
+    def _update_state(self, x_t: Union[np.ndarray, list]):
+        self.t += 1
+        if isinstance(x_t, list):
+            x_t = np.array(x_t)
+
+        # preprocess if necessary
+        if isinstance(self.preprocess_fn, Callable):  # type: ignore
+            x_t = x_t[None, :] if isinstance(x_t, np.ndarray) else [x_t]
+            x_t = self.preprocess_fn(x_t)[0]  # type: ignore
+
+        x_t = tf.convert_to_tensor(x_t[None, :])
+        x_t = self._normalize(x_t)
+        k_xtc = self.kernel(x_t, self.kernel_centers)
+        self.test_window = tf.concat([self.test_window[(1-self.window_size):], x_t], axis=0)
+        self.k_xtc = tf.concat([self.k_xtc[(1-self.window_size):], k_xtc], axis=0)
+
+    def score(self, x_t: Union[np.ndarray, list]) -> float:
         """
         Compute the test-statistic (LSDD) between the reference window and test window.
 
         Parameters
         ----------
         x_t
-            A single instance.
+            A single instance to be added to the test-window.
 
         Returns
         -------
         LSDD estimate between reference window and test window.
-        If the test-window is not yet full then a test-statistic of None is returned.
         """
-        x_t = tf.convert_to_tensor(x_t[None, :])
-        x_t = self._normalize(x_t)
-        k_xtc = self.kernel(x_t, self.kernel_centers)
-
-        self.test_window = tf.concat([self.test_window[(1-self.window_size):], x_t], axis=0)
-        self.k_xtc = tf.concat([self.k_xtc[(1-self.window_size):], k_xtc], axis=0)
+        self._update_state(x_t)
         h = self.c2s - tf.reduce_mean(self.k_xtc, axis=0)  # (Eqn 21)
         lsdd = h[None, :] @ self.H_lam_inv @ h[:, None]  # (Eqn 11)
-
         return float(lsdd)
