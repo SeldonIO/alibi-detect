@@ -68,12 +68,6 @@ class BaseDriftOnline(BaseDetector):
         else:
             self.x_ref = x_ref
 
-        # Convert reference data if necessary
-        if isinstance(self.x_ref, list):
-            self.x_ref = np.array(self.x_ref)
-        if self.x_ref.ndim == 1:
-            self.x_ref = self.x_ref[:, None]
-
         # Other attributes
         self.preprocess_fn = preprocess_fn
         self.n = len(x_ref)  # type: ignore
@@ -120,9 +114,7 @@ class BaseDriftOnline(BaseDetector):
         if isinstance(self.preprocess_fn, Callable):  # type: ignore
             x_t = x_t[None, :] if isinstance(x_t, np.ndarray) else [x_t]
             x_t = self.preprocess_fn(x_t)[0]  # type: ignore
-        if isinstance(x_t, list):
-            x_t = np.array(x_t)
-        return x_t[None, :]
+        return x_t[None, :]  # type: ignore
 
     def get_threshold(self, t: int) -> Union[float, None]:
         return self.thresholds[t] if t < self.window_size else self.thresholds[-1]  # type: ignore
