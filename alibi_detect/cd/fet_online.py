@@ -16,6 +16,7 @@ class FETDriftOnline(BaseDriftOnline):
             window_size: Union[int, List[int]],
             preprocess_fn: Optional[Callable] = None,
             n_bootstraps: int = 10000,
+            alternative: str = 'less',
             lam: float = 0.99,
             t_max: Optional[int] = None,
             verbose: bool = True,
@@ -41,6 +42,8 @@ class FETDriftOnline(BaseDriftOnline):
             The number of bootstrap simulations used to configure the thresholds. The larger this is the
             more accurately the desired ERT will be targeted. Should ideally be at least an order of magnitude
             larger than the ERT.
+        alternative
+            Defines the alternative hypothesis. Options are 'less' or 'greater'.
         lam
             Smoothing coefficient used for exponential moving average.
         t_max
@@ -63,6 +66,9 @@ class FETDriftOnline(BaseDriftOnline):
             data_type=data_type
         )
         self.lam = lam
+        if alternative.lower() not in ['less', 'greater']:
+            raise ValueError("`alternative` must be either 'less' or 'greater'.")
+        self.alternative = alternative.lower()
 
         # Window sizes
         if isinstance(window_size, int):
@@ -148,8 +154,13 @@ class FETDriftOnline(BaseDriftOnline):
         for k in tqdm(range(n_windows)):
             ws = window_sizes[k]
             cumsums_last_ws = cumsums_stream[:, ws:] - cumsums_stream[:, :-ws]
-            rv = hypergeom(n + ws, (sum_ref[:, None] + cumsums_last_ws), n)
-            p_val = rv.cdf(sum_ref[:, None])
+
+            if self.alternative == 'less':
+                p_val = hypergeom.cdf(sum_ref[:, None], n+ws, sum_ref[:, None] + cumsums_last_ws, n)
+            elif self.alternative == 'greater':
+                p_val = hypergeom.cdf(cumsums_last_ws, n+ws, sum_ref[:, None] + cumsums_last_ws, ws)
+            else:
+                raise ValueError("'alternative' not yet implemented.")
             stats[:, ws:, k] = self._exp_moving_avg(1 - p_val, lam)
         return stats
 
@@ -199,8 +210,11 @@ class FETDriftOnline(BaseDriftOnline):
         for k, ws in enumerate(self.window_size):
             if self.t >= ws:
                 sum_last_ws = np.sum(self.xs[-ws:])
-                rv = hypergeom(self.n+ws, self.sum_ref + sum_last_ws, self.n)
-                p_val = rv.cdf(self.sum_ref)
+                if self.alternative == 'less':
+                    p_val = hypergeom.cdf(self.sum_ref, self.n+ws, self.sum_ref + sum_last_ws, self.n)
+                else:
+                    p_val = hypergeom.cdf(sum_last_ws, self.n+ws, self.sum_ref + sum_last_ws, ws)
+
                 stat = 1 - p_val
                 if len(self.test_stats) != 0 and not np.isnan(self.test_stats[-1, k]):
                     stat = (1-self.lam)*self.test_stats[-1, k] + self.lam*stat

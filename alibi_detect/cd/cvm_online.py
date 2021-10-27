@@ -15,7 +15,7 @@ class CVMDriftOnline(BaseDriftOnline):
             window_size: Union[int, List[int]],
             preprocess_fn: Optional[Callable] = None,
             n_bootstraps: int = 10000,
-            device='parallel',
+            device: str = 'parallel',
             verbose: bool = True,
             input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None
@@ -79,7 +79,7 @@ class CVMDriftOnline(BaseDriftOnline):
 
     def _configure_ref(self) -> None:
         ids_ref_ref = self.x_ref[None, :] >= self.x_ref[:, None]
-        self.ref_cdf_ref = np.sum(ids_ref_ref, axis=0)/self.n
+        self.ref_cdf_ref = np.sum(ids_ref_ref, axis=0) / self.n
 
     def _configure_thresholds(self) -> None:
         """
@@ -134,12 +134,12 @@ class CVMDriftOnline(BaseDriftOnline):
         # works by filling in the entries of the last arg it is passed
         stats = np.zeros((n_bootstraps, t_max, n_windows))
         # TODO - Allows us to set self.device at runtime, but a little slower. cache=True speeds up subsequent runs.
-#        _ids_to_stats_nb = guvectorize(
-#                                    [(nb.boolean[:, :], nb.boolean[:, :], nb.int64[:], nb.float64[:, :])],
-#                                    '(n,n_all), (t_max,n_all), (n_windows) -> (t_max,n_windows)',
-#                                    nopython=True, target=self.device, cache=True,
-#                                    )(_ids_to_stats)
-#        _ids_to_stats_nb(ids[:, :n, :], ids[:, n:, :], window_sizes, stats)
+        #        _ids_to_stats_nb = guvectorize(
+        #                                    [(nb.boolean[:, :], nb.boolean[:, :], nb.int64[:], nb.float64[:, :])],
+        #                                    '(n,n_all), (t_max,n_all), (n_windows) -> (t_max,n_windows)',
+        #                                    nopython=True, target=self.device, cache=True,
+        #                                    )(_ids_to_stats)
+        #        _ids_to_stats_nb(ids[:, :n, :], ids[:, n:, :], window_sizes, stats)
         _ids_to_stats(ids[:, :n, :], ids[:, n:, :], np.asarray(window_sizes), stats)
         # Remove stats prior to windows being full
         for k, ws in enumerate(window_sizes):
@@ -165,13 +165,13 @@ class CVMDriftOnline(BaseDriftOnline):
             # Update stream
             self.xs = np.concatenate([self.xs, x_t])
             self.ids_ref_wins = np.concatenate(
-                [self.ids_ref_wins[:, -(self.max_ws-1):], (x_t >= self.x_ref)[:, None]], 1
+                [self.ids_ref_wins[:, -(self.max_ws - 1):], (x_t >= self.x_ref)[:, None]], 1
             )
             self.ids_wins_ref = np.concatenate(
-                [self.ids_wins_ref[-(self.max_ws-1):], (x_t <= self.x_ref)[None, :]], 0
+                [self.ids_wins_ref[-(self.max_ws - 1):], (x_t <= self.x_ref)[None, :]], 0
             )
             self.ids_wins_wins = np.concatenate(
-                [self.ids_wins_wins[-(self.max_ws-1):, -(self.max_ws-1):],
+                [self.ids_wins_wins[-(self.max_ws - 1):, -(self.max_ws - 1):],
                  (x_t >= self.xs[-self.max_ws:-1])[:, None]], 1
             )
             self.ids_wins_wins = np.concatenate(
@@ -197,12 +197,12 @@ class CVMDriftOnline(BaseDriftOnline):
         stats = np.zeros_like(self.window_size, dtype=np.float32)
         for k, ws in enumerate(self.window_size):
             if self.t >= ws:
-                ref_cdf_win = np.sum(self.ids_ref_wins[:, -ws:], axis=0)/self.n
-                win_cdf_ref = np.sum(self.ids_wins_ref[-ws:], axis=0)/ws
-                win_cdf_win = np.sum(self.ids_wins_wins[-ws:, -ws:], axis=0)/ws
+                ref_cdf_win = np.sum(self.ids_ref_wins[:, -ws:], axis=0) / self.n
+                win_cdf_ref = np.sum(self.ids_wins_ref[-ws:], axis=0) / ws
+                win_cdf_win = np.sum(self.ids_wins_wins[-ws:, -ws:], axis=0) / ws
                 ref_cdf_diffs = self.ref_cdf_ref - win_cdf_ref
                 win_cdf_diffs = ref_cdf_win - win_cdf_win
-                sum_diffs_2 = np.sum(ref_cdf_diffs*ref_cdf_diffs) + np.sum(win_cdf_diffs*win_cdf_diffs)
+                sum_diffs_2 = np.sum(ref_cdf_diffs * ref_cdf_diffs) + np.sum(win_cdf_diffs * win_cdf_diffs)
                 stats[k] = _normalise_stats(sum_diffs_2, self.n, ws)
             else:
                 stats[k] = np.nan

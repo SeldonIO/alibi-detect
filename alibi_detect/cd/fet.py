@@ -1,6 +1,6 @@
 import logging
 import numpy as np
-from scipy.stats import fisher_exact
+from scipy.stats import hypergeom
 from typing import Callable, Dict, Tuple, Optional, Union
 from alibi_detect.cd.base import BaseUnivariateDrift
 
@@ -15,7 +15,7 @@ class FETDrift(BaseUnivariateDrift):
             preprocess_x_ref: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
-            alternative: str = 'two-sided',
+            alternative: str = 'less',
             input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None
     ) -> None:
@@ -37,7 +37,7 @@ class FETDrift(BaseUnivariateDrift):
         preprocess_fn
             Function to preprocess the data before computing the data drift metrics.
         alternative
-            Defines the alternative hypothesis. Options are 'two-sided', 'less' or 'greater'.
+            Defines the alternative hypothesis. Options are 'less' or 'greater'.
         input_shape
             Shape of input data.
         data_type
@@ -54,7 +54,9 @@ class FETDrift(BaseUnivariateDrift):
             input_shape=input_shape,
             data_type=data_type
         )
-        self.alternative = alternative
+        if alternative.lower() not in ['less', 'greater']:
+            raise ValueError("`alternative` must be either 'less' or 'greater'.")
+        self.alternative = alternative.lower()
 
         # Preprocess reference data
         self.x_ref = self.x_ref.squeeze()  # squeeze in case of (n,1) array
@@ -82,6 +84,9 @@ class FETDrift(BaseUnivariateDrift):
         -------
         The p-value and prior odds ratio.
         """
+        x_ref = x_ref.astype(dtype=np.int64)
+        x = x.astype(dtype=np.int64)
+
         # Preprocess data
         x = x.squeeze()  # squeeze in case of (n,1) array
         if x.ndim != 1:
@@ -92,13 +97,14 @@ class FETDrift(BaseUnivariateDrift):
         if values != {True, False} and values != {0, 1}:
             raise ValueError("The `x` data must consist of only [0,1]'s or [False,True]'s for the FETDrift detector.")
 
-        # Construct contingency table
-        a = np.sum(x_ref)
-        b = len(x_ref) - a
-        c = np.sum(x)
-        d = len(x) - c
-        contingency_table = np.array([[a, b], [c, d]])
-
         # Apply test
-        odds_ratio, p_val = fisher_exact(contingency_table, alternative=self.alternative)
-        return p_val, odds_ratio  # type: ignore
+        sum_ref = np.sum(x_ref)
+        sum_test = np.sum(x)
+        n_ref = len(x_ref)
+        n = len(x)
+        if self.alternative == 'less':
+            p_val = hypergeom.cdf(sum_ref, n_ref + n, sum_ref + sum_test, n_ref)
+        else:
+            p_val = hypergeom.cdf(sum_test, n_ref + n, sum_ref + sum_test, n)
+
+        return p_val, None  # type: ignore
