@@ -165,26 +165,29 @@ class LSDDDriftOnlineTF(BaseDriftOnline):
             h_init = self.c2s - tf.reduce_mean(self.k_xtc, axis=0)  # (Eqn 21)
             lsdd_init = h_init[None, :] @ self.H_lam_inv @ h_init[:, None]  # (Eqn 11)
 
-    def score(self, x_t: np.ndarray) -> Union[float, None]:
+    def _update_state(self, x_t: Union[np.ndarray, list]):
+        self.t += 1
+        x_t = super()._preprocess_xt(x_t)
+        x_t = tf.convert_to_tensor(x_t)
+        x_t = self._normalize(x_t)
+        k_xtc = self.kernel(x_t, self.kernel_centers)
+        self.test_window = tf.concat([self.test_window[(1-self.window_size):], x_t], axis=0)
+        self.k_xtc = tf.concat([self.k_xtc[(1-self.window_size):], k_xtc], axis=0)
+
+    def score(self, x_t: Union[np.ndarray, list]) -> float:
         """
         Compute the test-statistic (LSDD) between the reference window and test window.
 
         Parameters
         ----------
         x_t
-            A single instance.
+            A single instance to be added to the test-window.
 
         Returns
         -------
         LSDD estimate between reference window and test window.
         """
-        x_t = tf.convert_to_tensor(x_t[None, :])
-        x_t = self._normalize(x_t)
-        k_xtc = self.kernel(x_t, self.kernel_centers)
-
-        self.test_window = tf.concat([self.test_window[(1-self.window_size):], x_t], axis=0)
-        self.k_xtc = tf.concat([self.k_xtc[(1-self.window_size):], k_xtc], axis=0)
+        self._update_state(x_t)
         h = self.c2s - tf.reduce_mean(self.k_xtc, axis=0)  # (Eqn 21)
         lsdd = h[None, :] @ self.H_lam_inv @ h[:, None]  # (Eqn 11)
-
         return float(lsdd)

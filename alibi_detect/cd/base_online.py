@@ -1,7 +1,7 @@
 from abc import abstractmethod
 import logging
 import numpy as np
-from typing import Any, Callable, Dict, Optional, Union, List
+from typing import Callable, Dict,  Optional, Union, List
 from alibi_detect.base import BaseDetector, concept_drift_dict
 from alibi_detect.cd.utils import get_input_shape
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
@@ -63,23 +63,24 @@ class BaseDriftOnline(BaseDetector):
         self.fpr = 1/ert
         self.window_size = window_size
 
-        # Pre-process reference data
+        # Preprocess reference data
         if isinstance(preprocess_fn, Callable):  # type: ignore
             self.x_ref = preprocess_fn(x_ref)
         else:
             self.x_ref = x_ref
-        if isinstance(self.x_ref, list):
-            self.x_ref = np.array(self.x_ref)
-        if self.x_ref.ndim == 1:
-            self.x_ref = self.x_ref.reshape(-1, 1)
-        self.preprocess_fn = preprocess_fn
 
+        # Other attributes
+        self.preprocess_fn = preprocess_fn
         self.n = len(x_ref)  # type: ignore
         self.n_bootstraps = n_bootstraps  # nb of samples used to estimate thresholds
         self.verbose = verbose
 
         # store input shape for save and load functionality
         self.input_shape = get_input_shape(input_shape, x_ref)
+
+        # Init results attributes
+        self.test_stats = None
+        self.drift_preds = None
 
         # set metadata
         self.meta['detector_type'] = 'online'
@@ -92,6 +93,29 @@ class BaseDriftOnline(BaseDetector):
     @abstractmethod
     def _configure_ref(self):
         pass
+
+    @abstractmethod
+    def _update_state(self, x_t: Union[np.ndarray, list]):
+        pass
+
+    def _preprocess_xt(self, x_t: Union[np.ndarray, list]) -> np.ndarray:
+        """
+        Private method to preprocess a single test instance ready for _update_state.
+
+        Parameters
+        ----------
+        x_t
+            A single test instance to be preprocessed.
+
+        Returns
+        -------
+        The preprocessed test instance `x_t`.
+        """
+        # preprocess if necessary
+        if isinstance(self.preprocess_fn, Callable):  # type: ignore
+            x_t = x_t[None, :] if isinstance(x_t, np.ndarray) else [x_t]
+            x_t = self.preprocess_fn(x_t)[0]  # type: ignore
+        return x_t[None, :]  # type: ignore
 
     def get_threshold(self, t: int) -> Union[float, None]:
         # return self.thresholds[t] if t < self.window_size else self.thresholds[-1]  # type: ignore
@@ -111,7 +135,7 @@ class BaseDriftOnline(BaseDetector):
         "Resets the detector but does not reconfigure thresholds."
         self._initialise()
 
-    def predict(self, x_t: Union[np.ndarray, Any],  return_test_stat: bool = True,
+    def predict(self, x_t: Union[np.ndarray, list],  return_test_stat: bool = True,
                 ) -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
         """
         Predict whether the most recent window of data has drifted from the reference data.
@@ -129,14 +153,7 @@ class BaseDriftOnline(BaseDetector):
         'meta' has the model's metadata.
         'data' contains the drift prediction and optionally the test-statistic and threshold.
         """
-        self.t += 1
-
-        # preprocess if necessary
-        if isinstance(self.preprocess_fn, Callable):  # type: ignore
-            x_t = x_t[None, :] if isinstance(x_t, np.ndarray) else [x_t]
-            x_t = self.preprocess_fn(x_t)[0]  # type: ignore
-
-        # update test window and return updated test stat
+        # Compute test stat and check for drift
         test_stat = self.score(x_t)
         if not isinstance(test_stat, np.ndarray):
             test_stat = np.asarray([test_stat])
