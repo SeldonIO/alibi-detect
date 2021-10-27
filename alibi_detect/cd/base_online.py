@@ -77,10 +77,6 @@ class BaseDriftOnline(BaseDetector):
         # store input shape for save and load functionality
         self.input_shape = get_input_shape(input_shape, x_ref)
 
-        # Init results attributes
-        self.test_stats = None
-        self.drift_preds = None
-
         # set metadata
         self.meta['detector_type'] = 'online'
         self.meta['data_type'] = data_type
