@@ -165,8 +165,8 @@ class LSDDDriftOnlineTF(BaseDriftOnline):
             lsdd_init = h_init[None, :] @ self.H_lam_inv @ h_init[:, None]  # (Eqn 11)
 
     def _update_state(self, x_t: Union[np.ndarray, list]):
-        x_t = super()._update_state(x_t)
-
+        self.t += 1
+        x_t = super()._preprocess_xt(x_t)
         x_t = tf.convert_to_tensor(x_t)
         x_t = self._normalize(x_t)
         k_xtc = self.kernel(x_t, self.kernel_centers)

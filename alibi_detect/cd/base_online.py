@@ -62,10 +62,19 @@ class BaseDriftOnline(BaseDetector):
         self.fpr = 1/ert
         self.window_size = window_size
 
+        # Preprocess reference data
         if isinstance(preprocess_fn, Callable):  # type: ignore
             self.x_ref = preprocess_fn(x_ref)
         else:
             self.x_ref = x_ref
+
+        # Convert reference data if necessary
+        if isinstance(self.x_ref, list):
+            self.x_ref = np.array(self.x_ref)
+        if self.x_ref.ndim == 1:
+            self.x_ref = self.x_ref[:, None]
+
+        # Other attributes
         self.preprocess_fn = preprocess_fn
         self.n = len(x_ref)  # type: ignore
         self.n_bootstraps = n_bootstraps  # nb of samples used to estimate thresholds
@@ -90,17 +99,29 @@ class BaseDriftOnline(BaseDetector):
     def _configure_ref_subset(self):
         pass
 
-    def _update_state(self, x_t: Union[np.ndarray, list]) -> np.ndarray:
-        self.t += 1
+    @abstractmethod
+    def _update_state(self, x_t: Union[np.ndarray, list]):
+        pass
 
+    def _preprocess_xt(self, x_t: Union[np.ndarray, list]) -> np.ndarray:
+        """
+        Private method to preprocess a single test instance ready for _update_state.
+
+        Parameters
+        ----------
+        x_t
+            A single test instance to be preprocessed.
+
+        Returns
+        -------
+        The preprocessed test instance `x_t`.
+        """
         # preprocess if necessary
         if isinstance(self.preprocess_fn, Callable):  # type: ignore
             x_t = x_t[None, :] if isinstance(x_t, np.ndarray) else [x_t]
             x_t = self.preprocess_fn(x_t)[0]  # type: ignore
-
         if isinstance(x_t, list):
             x_t = np.array(x_t)
-
         return x_t[None, :]
 
     def get_threshold(self, t: int) -> Union[float, None]:

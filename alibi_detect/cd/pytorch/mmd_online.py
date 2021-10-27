@@ -168,8 +168,8 @@ class MMDDriftOnlineTorch(BaseDriftOnline):
         self.thresholds = thresholds
 
     def _update_state(self, x_t: Union[np.ndarray, list]):
-        x_t = super()._update_state(x_t)
-
+        self.t += 1
+        x_t = super()._preprocess_xt(x_t)
         x_t = torch.from_numpy(x_t).to(self.device)
         kernel_col = self.kernel(self.x_ref[self.ref_inds], x_t)
         self.test_window = torch.cat([self.test_window[(1-self.window_size):], x_t], 0)
