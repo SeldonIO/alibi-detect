@@ -146,9 +146,16 @@ class CVMDriftOnline(BaseDriftOnline):
             stats[:ws, k] = np.nan
         return stats
 
-    def _update_state(self, x_t: np.ndarray) -> None:
-        # if self.t == 1:  # NOTE - this doesn't work if score() called before predict(), as self.t==0. Hence do below.
-        if not hasattr(self, 'xs'):
+    def _update_state(self, x_t: np.ndarray):
+        self.t += 1
+
+        # Preprocess x_t
+        x_t = super()._preprocess_xt(x_t)
+        if x_t.ndim != 1:
+            raise ValueError("The `x_t` passed to score() data must be 1D ndarray of length 1.")
+
+        # Init or update state
+        if self.t == 1:
             # Initialise stream
             self.xs = x_t
             self.ids_ref_wins = (x_t >= self.x_ref)[:, None]
@@ -174,7 +181,7 @@ class CVMDriftOnline(BaseDriftOnline):
     def score(self, x_t: np.ndarray) -> np.ndarray:
         """
         Compute the test-statistic (CVM) between the reference window(s) and test window.
-        If a given test-window is not yet full then a test-statistic of NaN is returned for that window.
+        If a given test-window is not yet full then a test-statistic of np.nan is returned for that window.
 
         Parameters
         ----------
@@ -185,10 +192,6 @@ class CVMDriftOnline(BaseDriftOnline):
         -------
         Estimated CVM test statistics between reference window and test window(s).
         """
-        if isinstance(x_t, (int, float)):  # we expect ndarray but convert these for convenience
-            x_t = np.array([x_t])
-        if x_t.ndim != 1:
-            raise ValueError("The `x_t` passed to score() data must be 1D ndarray of length 1.")
         self._update_state(x_t)
 
         stats = np.zeros_like(self.window_size, dtype=np.float32)

@@ -167,7 +167,7 @@ class LSDDDriftOnlineTF(BaseDriftOnline):
 
     def _update_state(self, x_t: Union[np.ndarray, list]):
         self.t += 1
-        x_t = super()._preprocess_xt(x_t)
+        x_t = super()._preprocess_xt(x_t)[None, :]
         x_t = tf.convert_to_tensor(x_t)
         x_t = self._normalize(x_t)
         k_xtc = self.kernel(x_t, self.kernel_centers)

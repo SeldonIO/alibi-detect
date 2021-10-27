@@ -110,9 +110,6 @@ class MMDDriftOnlineTorch(BaseDriftOnline):
                 2*self.k_xy.mean()
             )
 
-    def _update_state(self) -> None:
-        self.t += 1
-
     def _configure_thresholds(self):
 
         # Each bootstrap sample splits the reference samples into a sub-reference sample (x)
@@ -173,7 +170,7 @@ class MMDDriftOnlineTorch(BaseDriftOnline):
 
     def _update_state(self, x_t: Union[np.ndarray, list]):
         self.t += 1
-        x_t = super()._preprocess_xt(x_t)
+        x_t = super()._preprocess_xt(x_t)[None, :]
         x_t = torch.from_numpy(x_t).to(self.device)
         kernel_col = self.kernel(self.x_ref[self.ref_inds], x_t)
         self.test_window = torch.cat([self.test_window[(1-self.window_size):], x_t], 0)
