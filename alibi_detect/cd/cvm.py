@@ -1,8 +1,11 @@
 import logging
 import numpy as np
-from scipy.stats import cramervonmises_2samp
 from typing import Callable, Dict, Tuple, Optional, Union
 from alibi_detect.cd.base import BaseUnivariateDrift
+try:
+    from scipy.stats import cramervonmises_2samp
+except ImportError:
+    cramervonmises_2samp = None
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +43,8 @@ class CVMDrift(BaseUnivariateDrift):
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
+        if cramervonmises_2samp is None:
+            raise UserWarning("CVMDrift is only available if scipy version >= 1.7.0 installed.")
         super().__init__(
             x_ref=x_ref,
             p_val=p_val,
