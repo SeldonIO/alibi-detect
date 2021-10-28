@@ -1,9 +1,15 @@
 import numpy as np
-from alibi_detect.cd import CVMDrift
+import pytest
+import scipy
+from packaging import version
+if version.parse(scipy.__version__) >= version.parse('1.7.0'):
+    from alibi_detect.cd import CVMDrift
 
 n, n_features = 100, 1
 
 
+@pytest.mark.skipif(version.parse(scipy.__version__) < version.parse('1.7.0'),
+                    reason="Requires scipy version >= 1.7.0")
 def test_cvmdrift():
     # Reference data
     np.random.seed(0)

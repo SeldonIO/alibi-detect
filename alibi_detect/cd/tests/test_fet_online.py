@@ -7,7 +7,7 @@ n, n_features = 100, 1
 n_bootstraps = 1000
 
 window_size = [10, [10, 20]]
-alternative = ['two-sided']  # , 'less', 'greater']  # TODO - not implemented yet
+alternative = ['less', 'greater']
 
 tests_fetdriftonline = list(product(window_size, alternative))
 n_tests = len(tests_fetdriftonline)
@@ -30,7 +30,8 @@ def test_fetdriftonline(fetdriftonline_params):
     stream_h1 = (np.random.choice(2, p=[1 - p_h1, p_h1]) for _ in range(int(1e4)))
 
     # Instantiate detector
-    cd = FETDriftOnline(x_ref=x_ref, ert=25, window_size=window_size, n_bootstraps=n_bootstraps)  # TODO - alternative
+    cd = FETDriftOnline(x_ref=x_ref, ert=25, window_size=window_size,
+                        n_bootstraps=n_bootstraps, alternative=alternative)
 
     # Test predict
     x_t = np.array([next(stream_h1)])
