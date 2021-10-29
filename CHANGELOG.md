@@ -1,5 +1,18 @@
 # Change Log
 
+## [v0.7.3](https://github.com/SeldonIO/alibi-detect/tree/v0.7.3) (2021-10-29)
+[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.7.2...v0.7.3)
+
+### Added
+- `DeepKernel` is allowed without the `kernel_b` component, giving a kernel consisting of only a deep kernel component (`kernel_a`). 
+- Documentation layout refreshed, and a new "Background to drift detection" added.
+
+### Fixed
+- Model fetching methods now correctly handle nested filepaths.
+- For backward compatibility, fetch and load methods now attept to fetch/load `dill` files, but fall back to `pickle` files. 
+- Prevent `dill` from extending `pickle` dispatch table. This prevents undesirable behaviour if using `pickle`/`joblib` without `dill` imported later on (see #326).
+- For consistency between `save_detector` and `load_detector`, `fetch_detector` will no longer append `detector_name` to `filepath`.
+
 ## [v0.7.2](https://github.com/SeldonIO/alibi-detect/tree/v0.7.2) (2021-08-17)
 [Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.7.1...v0.7.2)
 
