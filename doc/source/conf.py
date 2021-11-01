@@ -313,6 +313,7 @@ myst_enable_extensions = [
     "tasklist",
     "html_image",
 ]
+
 # Create heading anchors for h1 to h3 (useful for local toc's)
 myst_heading_anchors = 3
 
