@@ -29,7 +29,7 @@ class FETDrift(BaseUnivariateDrift):
         x_ref
             Data used as reference distribution. Data must consist of either [True, False]'s, or [0, 1]'s.
         p_val
-            p-value used for significance of the FET test for each feature. If the FDR correction method
+            p-value used for significance of the FET test. If the FDR correction method
             is used, this corresponds to the acceptable q-value.
         preprocess_x_ref
             Whether to already preprocess and store the reference data.
