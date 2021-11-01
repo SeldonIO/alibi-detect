@@ -18,18 +18,22 @@ class CVMDrift(BaseUnivariateDrift):
             preprocess_x_ref: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
+            correction: str = 'bonferroni',
+            n_features: Optional[int] = None,
             input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None
     ) -> None:
         """
-        Cramer-von Mises (CVM) data drift detector.
+        Cramer-von Mises (CVM) data drift detector, with Bonferroni or False Discovery Rate (FDR)
+        correction for multivariate data.
 
         Parameters
         ----------
         x_ref
             Data used as reference distribution.
         p_val
-            p-value used for the significance of the permutation test.
+            p-value used for significance of the CVM test for each feature. If the FDR correction method
+            is used, this corresponds to the acceptable q-value.
         preprocess_x_ref
             Whether to already preprocess and store the reference data.
         update_x_ref
@@ -38,6 +42,12 @@ class CVMDrift(BaseUnivariateDrift):
             for reservoir sampling {'reservoir_sampling': n} is passed.
         preprocess_fn
             Function to preprocess the data before computing the data drift metrics.
+        correction
+            Correction type for multivariate data. Either 'bonferroni' or 'fdr' (False Discovery Rate).
+        n_features
+            Number of features used in the CVM test. No need to pass it if no preprocessing takes place.
+            In case of a preprocessing step, this can also be inferred automatically but could be more
+            expensive to compute.
         input_shape
             Shape of input data.
         data_type
@@ -51,20 +61,15 @@ class CVMDrift(BaseUnivariateDrift):
             preprocess_x_ref=preprocess_x_ref,
             update_x_ref=update_x_ref,
             preprocess_fn=preprocess_fn,
-            correction='None',
-            n_features=1,
+            correction=correction,
+            n_features=n_features,
             input_shape=input_shape,
             data_type=data_type
         )
 
-        # Preprocess reference data
-        self.x_ref = self.x_ref.squeeze()  # squeeze in case of (n,1) array
-        if self.x_ref.ndim != 1:
-            raise ValueError("The `x_ref` data must be 1D for the CVMDrift detector.")
-
     def feature_score(self, x_ref: np.ndarray, x: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
-        Performs the two-sample Cramer-von Mises test, computing the p-value and test statistic.
+        Performs the two-sample Cramer-von Mises test(s), computing the p-value and test statistic per feature.
 
         Parameters
         ----------
@@ -75,12 +80,13 @@ class CVMDrift(BaseUnivariateDrift):
 
         Returns
         -------
-        The p-value and test statistic.
+        Feature level p-values and CVM statistics.
         """
-        # Preprocess data
-        x = x.squeeze()  # squeeze in case of (n,1) array
-        if x.ndim != 1:
-            raise ValueError("The `x` data must be 1D for the CVMDrift detector.")
-
-        result = cramervonmises_2samp(x_ref, x, method='auto')
-        return result.pvalue, result.statistic
+        x = x.reshape(x.shape[0], -1)
+        x_ref = x_ref.reshape(x_ref.shape[0], -1)
+        p_val = np.zeros(self.n_features, dtype=np.float32)
+        dist = np.zeros_like(p_val)
+        for f in range(self.n_features):
+            result = cramervonmises_2samp(x_ref[:, f], x[:, f], method='auto')
+            p_val[f], dist[f] = result.pvalue, result.statistic
+        return p_val, dist

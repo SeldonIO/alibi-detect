@@ -796,8 +796,6 @@ class BaseUnivariateDrift(BaseDetector):
             self.x_ref = preprocess_fn(x_ref)
         else:
             self.x_ref = x_ref
-        if isinstance(self.x_ref, list):
-            self.x_ref = np.array(self.x_ref)
         self.preprocess_x_ref = preprocess_x_ref
         self.update_x_ref = update_x_ref
         self.preprocess_fn = preprocess_fn
@@ -896,8 +894,6 @@ class BaseUnivariateDrift(BaseDetector):
 
         # TODO: return both feature-level and batch-level drift predictions by default
         # values below p-value threshold are drift
-        if self.n_features == 1:
-            drift_type = 'feature'
         if drift_type == 'feature':
             drift_pred = (p_vals < self.p_val).astype(int)
         elif drift_type == 'batch' and self.correction == 'bonferroni':
@@ -923,5 +919,5 @@ class BaseUnivariateDrift(BaseDetector):
             cd['data']['p_val'] = p_vals
             cd['data']['threshold'] = self.p_val if drift_type == 'feature' else threshold
         if return_distance:
-            cd['data']['distance'] = dist  # TODO - can we rename 'distance' to  'test_stat' to match BaseDriftOnline?
+            cd['data']['distance'] = dist
         return cd

@@ -92,7 +92,8 @@ autodoc_mock_imports = [
     "torch",
     "transformers",
     "tqdm",
-    "dill"
+    "dill",
+    "numba"
 ]
 
 # Napoleon settings

@@ -65,7 +65,7 @@ class CVMDriftOnline(BaseDriftOnline):
 
         # Window sizes
         if isinstance(window_size, int):
-            self.window_size = [window_size]  # type: list
+            self.window_size: list = [window_size]
         self.max_ws = np.max(self.window_size)
         self.min_ws = np.min(self.window_size)
 

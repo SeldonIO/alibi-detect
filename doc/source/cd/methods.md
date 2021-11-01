@@ -1,17 +1,30 @@
 # Methods
 
+
+## Offline
+
 ```{toctree}
 :maxdepth: 1
 
 methods/chisquaredrift.ipynb
+methods/ksdrift.ipynb
+methods/cvmdrift.ipynb
+methods/fetdrift.ipynb
+methods/mmddrift.ipynb
+methods/lsdddrift.ipynb
+methods/learnedkerneldrift.ipynb
 methods/classifierdrift.ipynb
 methods/spotthediffdrift.ipynb
-methods/ksdrift.ipynb
-methods/lsdddrift.ipynb
-methods/mmddrift.ipynb
-methods/learnedkerneldrift.ipynb
-methods/tabulardrift.ipynb
 methods/modeluncdrift.ipynb
+methods/tabulardrift.ipynb
+```
+
+## Online
+```{toctree}
+:maxdepth: 1
+
 methods/onlinemmddrift.ipynb
 methods/onlinelsdddrift.ipynb
+methods/onlinecvmdrift.ipynb
+methods/onlinefetdrift.ipynb
 ```
