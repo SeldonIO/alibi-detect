@@ -5,6 +5,7 @@ from sklearn.datasets import load_iris
 import tensorflow as tf
 from tensorflow.keras.utils import to_categorical
 from alibi_detect.ad import ModelDistillation
+from alibi_detect.version import __version__
 
 threshold = [None, 5.]
 loss_type = ['kld', 'xent']
@@ -54,7 +55,8 @@ def test_adv_md(adv_md_params):
     )
 
     assert admd.threshold == threshold
-    assert admd.meta == {'name': 'ModelDistillation', 'detector_type': 'offline', 'data_type': None}
+    assert admd.meta == {'name': 'ModelDistillation', 'detector_type': 'offline', 'data_type': None,
+                         'version': __version__}
     for layer in admd.model.layers:
         assert not layer.trainable
 

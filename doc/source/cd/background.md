@@ -5,7 +5,7 @@
 :local: true
 ```
 
-## 0. What is drift?
+## 1. What is drift?
 
 Although powerful, modern machine learning models can be sensitive.
 Seemingly subtle changes in a data distribution can destroy the
@@ -20,10 +20,12 @@ $\mathbf{Y}$ remains constant.
 and $\mathbf{Y}$ at test time differs from the process that
 generated the training data. In this case, we can no longer expect the
 model’s performance on test data to match that observed on held out
-training data. If a *ground truth* is available at test time,
+training data. At test time we always observe features $\mathbf{X}$,
+and the *ground truth* then refers to a corresponding label $\mathbf{Y}$. 
+If ground truths are available at test time,
 *supervised drift detection* can be performed, with the model’s
 predictive performance monitored directly. However, in many scenarios,
-such as the binary classification example below, a ground truth is not
+such as the binary classification example below, ground truths are not
 available and *unsupervised drift detection* methods are required.
 
 ```{image} images/drift_deployment.png
@@ -32,10 +34,9 @@ available and *unsupervised drift detection* methods are required.
 ```
 
 To explore the different types of drift, consider the common scenario
-where we have input data $\mathbf{X}$ and output data
-$\mathbf{Y}$, jointly distributed according to
-$P(\mathbf{X},\mathbf{Y})$, and a model
-$f: \boldsymbol{x} \mapsto y$ trained on training data drawn from
+where we deploy a model $f: \boldsymbol{x} \mapsto y$ on input data 
+$\mathbf{X}$ and output data $\mathbf{Y}$, jointly distributed according to
+$P(\mathbf{X},\mathbf{Y})$. The model is trained on training data drawn from
 a distribution $P_{ref}(\mathbf{X},\mathbf{Y})$. *Drift* is said
 to have occurred when
 $P(\mathbf{X},\mathbf{Y}) \ne P_{ref}(\mathbf{X},\mathbf{Y})$.
@@ -51,14 +52,13 @@ we can classify drift under a number of types:
   when the distribution of the input data has shifted
   $P(\mathbf{X}) \ne P_{ref}(\mathbf{X})$, whilst
   $P(\mathbf{Y}|\mathbf{X})$ =
-  $P_{ref}(\mathbf{Y}|\mathbf{X})$. The model may now be
-  extrapolating, potentially resulting in unreliable predictions.
+  $P_{ref}(\mathbf{Y}|\mathbf{X})$. This may result in the model
+  giving unreliable predictions.
 - **Prior drift**: Also referred to as label drift, this occurs when
   the distribution of the outputs has shifted
   $P(\mathbf{Y}) \ne P_{ref}(\mathbf{Y})$, whilst
-  $P(\mathbf{X}|\mathbf{Y})=P_{ref}(\mathbf{X}|\mathbf{Y})$. The
-  model could still be accurate, but accuracy metrics might be
-  affected.
+  $P(\mathbf{X}|\mathbf{Y})=P_{ref}(\mathbf{X}|\mathbf{Y})$. This can affect the model's decision
+  boundary, as well as the model's performance metrics.
 - **Concept drift**: This occurs when the process generating $y$
   from $x$ has changed, such that
   $P(\mathbf{Y}|\mathbf{X}) \ne P_{ref}(\mathbf{Y}|\mathbf{X})$.
@@ -74,7 +74,9 @@ model $f$ is trained to predict $y$, the occurrence (or not)
 of pneumonia, given a list of symptoms $\boldsymbol{x}$. During a
 pneumonia outbreak, $P(\mathbf{Y}|\mathbf{X})$ (e.g. pneumonia
 given cough) might rise, but the manifestations of the disease
-$P(\mathbf{X}|\mathbf{Y})$ might not change.
+$P(\mathbf{X}|\mathbf{Y})$ might not change. In many cases,
+knowledge of underlying causal structure of the problem can be used to 
+deduce that one of the conditionals will remain unchanged.
 
 Below, the different types of drift are visualised for a simple
 two-dimensional classification problem. It is possible for a drift to
@@ -90,11 +92,11 @@ It is relatively easy to spot drift by eyeballing these figures here.
 However, the task becomes considerably harder for high-dimensional real
 problems, especially since real-time ground truths are not typically
 available. Some types of drift, such as prior and concept drift, are
-also difficult to detect without access to ground truths. As a
+especially difficult to detect without access to ground truths. As a
 workaround proxies are required, for example a model’s predictions can
 be monitored to check for prior drift.
 
-## 1. Detecting drift
+## 2. Detecting drift
 
 [Alibi Detect](https://github.com/SeldonIO/alibi-detect) offers a
 wide array of methods for detecting drift (see
@@ -102,26 +104,26 @@ wide array of methods for detecting drift (see
 NeurIPS 2019 paper [Failing Loudly: An Empirical Study of Methods for
 Detecting Dataset Shift](https://arxiv.org/abs/1810.11953).
 Generally, these aim to determine whether the distribution
-$P(\mathbf{x})$ has drifted from a reference distribution
-$P_{ref}(\mathbf{x})$, where $\mathbf{x}$ may represent
+$P(\mathbf{z})$ has drifted from a reference distribution
+$P_{ref}(\mathbf{z})$, where $\mathbf{z}$ may represent
 input data $\mathbf{X}$, true output data $\mathbf{Y}$, or
 some form of model output, depending on what type of drift we wish to
 detect.
 
 Due to natural randomness in the process being modelled, we don’t
-necessarily expect observations $\mathbf{x}_1,\dots,\mathbf{x}_N$
-drawn from $P(\mathbf{x})$ to be identical to
-$\mathbf{x}^{ref}_1,\dots,\mathbf{x}^{ref}_M$ drawn from
-$P_{ref}(\mathbf{x})$. To decide whether differences between
-$P(\mathbf{x})$ and $P_{ref}(\mathbf{x})$ are due to drift
+necessarily expect observations $\mathbf{z}_1,\dots,\mathbf{z}_N$
+drawn from $P(\mathbf{z})$ to be identical to
+$\mathbf{z}^{ref}_1,\dots,\mathbf{z}^{ref}_M$ drawn from
+$P_{ref}(\mathbf{z})$. To decide whether differences between
+$P(\mathbf{z})$ and $P_{ref}(\mathbf{z})$ are due to drift
 or just natural randomness in the data, *statistical two-sample
 hypothesis* testing is used, with the null hypothesis
-$P(\mathbf{x})=P_{ref}(\mathbf{x})$. If the $p$-value
+$P(\mathbf{z})=P_{ref}(\mathbf{z})$. If the $p$-value
 obtained is below a given threshold, the null is rejected and the
-alternative hypothesis $P(\mathbf{x}) \ne P_{ref}(\mathbf{x})$ is
+alternative hypothesis $P(\mathbf{z}) \ne P_{ref}(\mathbf{z})$ is
 accepted, suggesting drift is occurring.
 
-Since $\mathbf{x}$ is often high-dimensional (even a 200 x 200
+Since $\mathbf{z}$ is often high-dimensional (even a 200 x 200
 greyscale image has 40k dimensions!), performing hypothesis testing in
 the full-space is often either computationally intractable, or
 unsuitable for the chosen statistical test. Instead, the pipeline below
@@ -138,19 +140,21 @@ of Methods for Detecting Dataset Shift.*
 ### Hypothesis testing
 
 Hypothesis testing involves first choosing a *test statistic*
-$S(\mathbf{x})$, which is expected to be small if the null
+$S(\mathbf{z})$, which is expected to be small if the null
 hypothesis $H_0$ is true, and large if the alternative $H_a$
-is true. For observed data $\mathbf{x}$, $S(\mathbf{x})$ is
+is true. For observed data $\mathbf{z}$, $S(\mathbf{z})$ is
 computed, followed by a $p$-value
-$\hat{p} = P(\text{such an extreme } S(\mathbf{x}) | H_0)$. In
+$\hat{p} = P(\text{such an extreme } S(\mathbf{z}) | H_0)$. In
 other words, $\hat{p}$ represents the probability of such an
-extreme value of $S(\mathbf{x})$ occurring given that $H_0$
-is true. Typically results are said to be *statistically significant*,
-and the null $P(\mathbf{x})=P_{ref}(\mathbf{x})$ is rejected, when
-$\hat{p}\le \alpha$. Conveniently, the threshold $\alpha$
-represents the desired false positive rate. The *test statistics* available
-in [Alibi Detect](https://github.com/SeldonIO/alibi-detect) can be
-broadly split into two categories; univariate and multivariate tests.
+extreme value of $S(\mathbf{z})$ occurring given that $H_0$
+is true. When $\hat{p}\le \alpha$, results are said to be 
+*statistically significant*, and the null 
+$P(\mathbf{z})=P_{ref}(\mathbf{z})$ is rejected. Conveniently, the 
+threshold $\alpha$ represents the desired false positive rate. 
+
+The *test statistics* available in 
+[Alibi Detect](https://github.com/SeldonIO/alibi-detect) can be
+broadly split into two categories; univariate and multivariate tests:
 
 - Univariate:
 
@@ -173,30 +177,30 @@ Rate](http://www.math.tau.ac.il/~ybenja/MyPapers/benjamini_hochberg1995.pdf)
 (FDR) correction. The Bonferroni correction is more conservative and
 controls for the probability of at least one false positive. The FDR
 correction on the other hand allows for an expected fraction of false
-positives to occur.
-
-Since the univariate tests examine the feature-wise marginal
+positives to occur. If the tests (i.e. each feature dimension) are 
+independent, these corrections preserve the desired false positive rate (FPR). 
+However, usually this is not the case, resulting in FPR's up to $d$-times 
+lower than desired, which becomes especially problematic when $d$ is 
+large. Additionally, since the univariate tests examine the feature-wise marginal
 distributions, they may miss drift in cases where the joint distribution
-over all $d$ features has changed, but the marginals have not. The
-multivariate tests, which use permutation testing to extract
-$p$-values, offer a more powerful alternative at the cost of
-greater complexity.
+over all $d$ features has changed, but the marginals have not.
+The multivariate tests avoid these problems, at the cost of greater complexity.
 
 ### Dimension reduction
 
 Given an input dataset $\mathbf{X}\in \mathbb{R}^{N\times d}$,
 where $N$ is the number of observations and $d$ the number
 of dimensions, the aim is to reduce the data dimensionality from
-$d$ to $K$, where $K\ll d$. The lower dimensional data
-$\hat{\mathbf{X}}\in \mathbb{R}^{N\times K}$ is then monitored by
-the drift detector. The paper [Failing Loudly: An Empirical Study of
-Methods for Detecting Dataset
-Shift](https://arxiv.org/abs/1810.11953) presents a number of
-dimension reduction approaches, which can be broadly categorised under:
+$d$ to $K$, where $K\ll d$. A drift detector can then be applied to 
+the lower dimensional data
+$\hat{\mathbf{X}}\in \mathbb{R}^{N\times K}$, where distances more 
+meaningfully capture notions of similarity/dissimilarity between instances.
+Dimension reduction approaches can be broadly categorised under:
 
 1. Linear projections
 2. Non-linear projections
 3. Feature maps (from ML model)
+4. Model uncertainty
 
 [Alibi Detect](https://github.com/SeldonIO/alibi-detect) allows for a
 high degree of flexibility here, with a user’s chosen dimension
@@ -207,7 +211,7 @@ detector). In the following sections, the three categories of techniques
 are briefly introduced. Alibi Detect offers the following functionality
 using either [TensorFlow](https://www.tensorflow.org/) or
 [PyTorch](https://pytorch.org/) backends and preprocessing utilities.
-For more details, see the [examples](examples.rst).
+For more details, see the [examples](examples.md).
 
 #### Linear projections
 
@@ -228,6 +232,28 @@ pca = PCA(2)
 pca.fit(X_train)
 detector = MMDDrift(X_ref, backend='tensorflow', p_val=.05, preprocess_fn=pca.transform)
 ```
+
+:::{admonition} **Note 1: Disjoint training and reference data sets**
+
+Astute readers may have noticed that in the code snippet above, 
+the data `X_train` is used to “train” the `PCA` model, but
+the `MMDDrift` detector is initialised with `X_ref`. This is a
+subtle yet important point. If a detector’s preprocessor (a
+[dimension reduction](#dimension-reduction) or other [input
+preprocessing](#input-preprocessing) step) is trained on the
+reference data (`X_ref`), any over-fitting to this data may make
+the resulting detector overly sensitive to differences between the
+reference and test data sets.
+
+To avoid an overly discriminative detector, it is customary to draw
+two disjoint datasets from $P_{ref}(\mathbf{z})$, a training
+set and a held-out reference set. **The training data is used to
+train any input preprocessing steps, and the detector is then
+initialised on the reference set**, and used to detect drift between
+the reference and test set. This also applies to the [learned drift
+detectors](#3-learned-drift-detection), which should be trained
+on the training set not the reference set.
+:::
 
 #### Non-linear projections
 
@@ -290,7 +316,7 @@ or
 [alibi_detect.cd.pytorch.preprocess](../api/alibi_detect.cd.pytorch.preprocess.rst))
 to select the model’s network layer to extract outputs from. The code
 snippet below is borrowed from [Maximum Mean Discrepancy drift detector
-on CIFAR-10](../examples/cd_mmd_cifar10.ipynb), where the softmax
+on CIFAR-10](../examples/cd_mmd_cifar10.nblink), where the softmax
 layer of the well-known
 [ResNet-32](https://arxiv.org/pdf/1512.03385.pdf) model is fed into
 an `MMDDrift` detector.
@@ -301,27 +327,36 @@ preprocess_fn = partial(preprocess_drift, model=HiddenOutput(clf, layer=-1), bat
 detector = MMDDrift(X_ref, backend='tensorflow', p_val=.05,preprocess_fn=preprocess_fn)
 ```
 
-:::{admonition} **Note 1: Disjoint training and reference data sets**
+#### Model uncertainty
 
-Astute readers may have noticed that in the linear projection example
-above, the data `X_train` is used to “train” the `PCA` model, but
-the `MMDDrift` detector is initialised with `X_ref`. This is a
-subtle yet important point. If a detector’s preprocessor (a
-[dimension reduction](#dimension-reduction) or other [input
-preprocessing](#input-preprocessing) step) is trained on the
-reference data (`X_ref`), any over-fitting to this data may make
-the resulting detector overly sensitive to differences between the
-reference and test data sets.
+The [model uncertainty](methods/modeluncdrift.ipynb)-based drift
+detector uses the ML model of interest itself to detect drift. 
+These detectors aim to directly detect drift that’s
+likely to affect the performance of a model of interest. The approach is
+to test for change in the number of instances falling into regions of
+the input space on which the model is uncertain in its predictions. For
+each instance in the reference set the detector obtains the model’s
+prediction and some associated notion of uncertainty. The same is done
+for the test set and if significant differences in uncertainty are
+detected (via a Kolmogorov-Smirnoff test) then drift is flagged. The
+model’s notion of uncertainty depends on the type of model. For a
+classifier this may be the entropy of the predicted label probabilities.
+For a regressor with dropout layers, [dropout Monte
+Carlo](http://proceedings.mlr.press/v48/gal16.pdf) can be used to
+provide a notion of uncertainty.
 
-To avoid an overly discriminative detector, it is customary to draw
-two disjoint datasets from $P_{ref}(\mathbf{x})$, a training
-set and a held-out reference set. **The training data is used to
-train any input preprocessing steps, and the detector is then
-initialised on the reference set**, and used to detect drift between
-the reference and test set. This also applies to the [learned drift
-detectors](#2-learned-drift-detection), which should be trained
-on the training set not the reference set.
-:::
+The model uncertainty-based detectors are classed under the dimension 
+reduction category since a model's uncertainty is by definition one-dimensional.
+However, the syntax for the uncertainty-based detectors is different to the
+other detectors. Instead of passing a pre-processing step to a detector via 
+a `preprocess_fn` (or similar) argument, the dimension reduction (in this case 
+computing a notion of uncertainty) is performed internally by these detectors. 
+
+```python
+reg =  # pytorch regression model with at least 1 dropout layer
+detector = RegressorUncertaintyDrift(x_ref, reg, backend='pytorch', 
+                                     p_val=.05, uncertainty_type='mc_dropout')
+```
 
 ### Input preprocessing
 
@@ -381,7 +416,8 @@ graphs](../examples/cd_mol.nblink) example.
 
 For a simple example, we’ll use the [MMD
 detector](methods/mmddrift.ipynb) to check for drift on the
-two-dimensional binary classification problem shown previously. The MMD
+two-dimensional binary classification problem shown previously
+(see [notebook](../examples/simple_2d_drift.ipynb)). The MMD
 detector is a kernel-based method for multivariate two sample testing.
 Since the number of dimensions is already low, dimension reduction step
 is not necessary here here. For a more advanced example using the [MMD
@@ -404,51 +440,58 @@ def true_model(X,slope=-1):
     y = np.zeros(X.shape[0])
     y[idx] = 1
     return y
+    
+true_slope = -1 
 ```
 
-The 2D input data $\mathbf{x}=(x_1,x_2)$ is generated by sampling
-from a mixture of two Normal distributions:
+The reference distribution is defined as a mixture of two Normal distributions:
 
 $$
-\mathbf{x} = \phi_1 \mathcal{N}\left(\left[-1,-1\right]^T, \sigma^2\mathbf{I} \right) + \phi_2 \mathcal{N}\left(\left[1,1\right]^T, \sigma^2\mathbf{I} \right)
+P_{ref}(\mathbf{X}) = \phi_1 \mathcal{N}\left(\left[-1,-1\right]^T, \sigma^2\mathbf{I} \right) + \phi_2 \mathcal{N}\left(\left[1,1\right]^T, \sigma^2\mathbf{I} \right)
 $$
 
 with the standard deviation set at $\sigma=0.8$, and the weights
-set to $\phi_1=\phi_2=0.5$.
+set to $\phi_1=\phi_2=0.5$. Reference data $\mathbf{X}^{ref}$ and training 
+data $\mathbf{X}^{train}$ (see Note 1) can be generated by sampling from 
+this distribution. The corresponding labels $\mathbf{Y}^{ref}$ and $\mathbf{Y}^{train}$ are obtained 
+by evaluating `true_model()`.
 
 ```ipython3
+# Reference distribution
 sigma = 0.8
-ref_norm_0 = stats.multivariate_normal([-1,-1], np.eye(2)*sigma**2)
-ref_norm_1 = stats.multivariate_normal([ 1, 1], np.eye(2)*sigma**2)
+phi1 = 0.5
+phi2 = 0.5
+ref_norm_0 = multivariate_normal([-1,-1], np.eye(2)*sigma**2)
+ref_norm_1 = multivariate_normal([ 1, 1], np.eye(2)*sigma**2)
 
-X_0 = ref_norm_0.rvs(size=120,random_state=1)
-X_1 = ref_norm_1.rvs(size=120,random_state=1)
+# Reference data (to initialise the detectors)
+N_ref = 240
+X_0 = ref_norm_0.rvs(size=int(N_ref*phi1),random_state=1)
+X_1 = ref_norm_1.rvs(size=int(N_ref*phi2),random_state=1)
 X_ref = np.vstack([X_0, X_1])
-
-true_slope = -1
 y_ref = true_model(X_ref,true_slope)
-```
 
-For our model, we choose the well-known, but simple, decision tree
-classifier. As well as training the model, this is a good time to
-initialise the MMD detector with held-out reference data (see Note 1) by
-calling:
-
-```python
-detector = MMDDrift(X_ref, backend='tensorflow', p_val=.05)
-```
-
-The significance threshold is set at $\alpha=0.05$, meaning the
-detector will flag results as drift detected when the computed
-$p$-value is less than this i.e. $\hat{p}< \alpha$.
-
-```ipython3
-# Generate training data for the classifier.
-X_0 = ref_norm_0.rvs(size=120,random_state=0)
-X_1 = ref_norm_1.rvs(size=120,random_state=0)
+# Training data (to train the classifer)
+N_train = 240
+X_0 = ref_norm_0.rvs(size=int(N_train*phi1),random_state=0)
+X_1 = ref_norm_1.rvs(size=int(N_train*phi2),random_state=0)
 X_train = np.vstack([X_0, X_1])
 y_train = true_model(X_train,true_slope)
+```
 
+For a model, we choose the well-known decision tree classifier. As well
+as training the model, this is a good time to initialise the MMD detector
+with the held-out reference data $\mathbf{X}^{ref}$ by calling:
+
+```python
+detector = MMDDrift(X_ref, backend='pytorch', p_val=.05)
+```
+
+The significance threshold is set at $\alpha=0.05$, meaning the detector will 
+flag results as drift detected when the computed $p$-value is less than this 
+i.e. $\hat{p}< \alpha$. 
+
+```ipython3
 # Fit decision tree classifier
 from sklearn.tree import DecisionTreeClassifier
 clf = DecisionTreeClassifier(max_depth=20)
@@ -477,22 +520,21 @@ detector = MMDDrift(X_ref, backend='pytorch', p_val=.05)
 
 #### No drift
 
-Before introducing drift, we first examine the case where no drift is
-present. We resample from the same mixture of Gaussian distributions to
-generate test data. The individual data observations are different, but
-the underlying distributions are unchanged, hence no true drift is
-present.
+Before introducing drift, we first examine the case where no drift is 
+present. We resample from the same mixture of Gaussian distributions 
+to generate test data $\mathbf{X}$. The individual data observations 
+are different, but the underlying distributions are unchanged, hence 
+no true drift is present. 
 
 ```ipython3
-slope = true_slope
-
-X_0 = ref_norm_0.rvs(size=60,random_state=2)
-X_1 = ref_norm_1.rvs(size=60,random_state=2)
+N_test = 120
+X_0 = ref_norm_0.rvs(size=int(N_test*phi1),random_state=2)
+X_1 = ref_norm_1.rvs(size=int(N_test*phi2),random_state=2)
 X_test = np.vstack([X_0, X_1])
 
 # Plot
-y_test = true_model(X_test,slope)
-plot(X_test,y_test,slope,clf=clf)
+y_test = true_model(X_test,true_slope)
+plot(X_test,y_test,true_slope,clf=clf)
 
 # Classifier accuracy
 print('Mean test accuracy %.2f%%' %(100*clf.score(X_test,y_test)))
@@ -528,8 +570,9 @@ detector.predict(X_test)
       'backend': 'pytorch'}}
 ```
 
-For the test statistic $S(\mathbf{x})$, the MMD detector uses the
-[kernel trick](https://en.wikipedia.org/wiki/Kernel_method) to
+For the test statistic $S(\mathbf{X})$ (we write $S(\mathbf{X})$ instead of $S(\mathbf{z})$
+since the detector is operating on input data), the MMD detector 
+uses the [kernel trick](https://en.wikipedia.org/wiki/Kernel_method) to
 compute unbiased estimates of $\text{MMD}^2$. The
 $\text{MMD}$ is a distance-based measure between the two
 distributions $P$ and $P_{ref}$, based on the mean
@@ -542,16 +585,16 @@ $$
 
 A $p$-value is then obtained via a [permutation
 test](<https://en.wikipedia.org/wiki/Resampling_(statistics)>) on the
-values of $\text{MMD}^2$. As expected, since we are sampling from
-the reference distribution $P_{ref}(\mathbf{x})$, the detector’s
+estimates of $\text{MMD}^2$. As expected, since we are sampling from
+the reference distribution $P_{ref}(\mathbf{X})$, the detector’s
 prediction is `'is_drift':0` here, indicating that drift is not
 detected. More specifically, the detector’s $p$-value (`p_val`)
 is above the threshold of $\alpha=0.05$ (`threshold`),
 indicating that no statistically significant drift has been detected.
-The `.predict()` method also returns $\hat{S}(\mathbf{x})$
+The `.predict()` method also returns $\hat{S}(\mathbf{X})$
 (`distance_threshold`), which is the threshold in terms of the test
-statistic $S(\mathbf{x})$ i.e. when
-$S(\mathbf{x})\ge \hat{S}(\mathbf{x})$ statistically significant
+statistic $S(\mathbf{X})$ i.e. when
+$S(\mathbf{X})\ge \hat{S}(\mathbf{X})$ statistically significant
 drift has been detected.
 
 #### Covariate and prior drift
@@ -560,15 +603,13 @@ To impose covariate drift, we apply a shift to the mean of one of the
 normal distributions:
 
 $$
-\mathbf{x}^* = \phi_1 \mathcal{N}\left(\left[-1\color{red}{+3},-1\color{red}{-3}\right]^T, \sigma^2\mathbf{I} \right) + \phi_2 \mathcal{N}\left(\left[1,1\right]^T, \sigma^2\mathbf{I} \right)
+P(\mathbf{X}) = \phi_1 \mathcal{N}\left(\left[-1\color{red}{+3},-1\color{red}{-3}\right]^T, \sigma^2\mathbf{I} \right) + \phi_2 \mathcal{N}\left(\left[1,1\right]^T, \sigma^2\mathbf{I} \right)
 $$
 
 ```ipython3
-slope = -1.0
-
-shift_norm_0 = stats.multivariate_normal([2, -4], np.eye(2)*sigma**2)
-X_0 = shift_norm_0.rvs(size=60,random_state=2)
-X_1 = ref_norm_1.rvs(size=60,random_state=2)
+shift_norm_0 = multivariate_normal([2, -4], np.eye(2)*sigma**2)
+X_0 = shift_norm_0.rvs(size=N_test*phi1,random_state=2)
+X_1 = ref_norm_1.rvs(size=N_test*phi2,random_state=2)
 X_test = np.vstack([X_0, X_1])
 
 # Plot
@@ -612,18 +653,16 @@ y_pred = clf.predict(X_test)
 label_detector.predict(y_pred.reshape(-1,1))
 ```
 
-## 2. Learned drift detection
+## 3. Learned drift detection
 
-The detectors discussed elsewhere in this page can be considered as
-*unlearned detectors*, in the sense that they don’t need to *learn* by
-training against a training data set (they are only
-calibrated/configured against a reference set). However, Alibi Detect
-also offers a number of learned detectors:
+It can often be challenging to specify a test statistic $S(\mathbf{z})$
+that is large when drift is present and small otherwise. Alibi Detect 
+offers a number of *learned detectors*, which try to explicitly learn 
+a test statistic which satisfies this property:
 
 - [Learned kernel](methods/learnedkerneldrift.ipynb)
 - [Classifier](methods/classifierdrift.ipynb)
 - [Spot-the-diff](methods/spotthediffdrift.ipynb)(erence)
-- [Model uncertainty](methods/modeluncdrift.ipynb)
 
 These detectors can be highly effective, but require training hence
 potentially increasing data requirements and set-up time. Similarly to
@@ -635,7 +674,7 @@ is given below. For more details, see the detectors’ respective pages.
 ### Learned kernel
 
 The [MMD detector](methods/mmddrift.ipynb) uses a kernel
-$k(\mathbf{x},\mathbf{x}')$ to compute unbiased estimates of
+$k(\mathbf{z},\mathbf{z}^{ref})$ to compute unbiased estimates of
 $\text{MMD}^2$. The user is free to provide their own kernel, but by default a [Gaussian
 RBF kernel](https://en.wikipedia.org/wiki/Radial_basis_function_kernel)
 is used. The [Learned kernel](methods/learnedkerneldrift.ipynb) drift
@@ -644,7 +683,7 @@ extends this approach by training a kernel to maximise an estimate of
 the resulting test power. The learned kernel is defined as
 
 $$
-k(\mathbf{x},\mathbf{x}') = \left(1-\epsilon\right)\, k_a\!\left(\Phi(\mathbf{x}),\Phi(\mathbf{x}') \right) + \epsilon \, k_b\!\left(\mathbf{x},\mathbf{x}'\right),
+k(\mathbf{z},\mathbf{z}^{ref}) = \left(1-\epsilon\right)\, k_a\!\left(\Phi(\mathbf{z}),\Phi(\mathbf{z}^{ref}) \right) + \epsilon \, k_b\!\left(\mathbf{z},\mathbf{z}^{ref}\right),
 $$
 
 where $\Phi$ is a learnable projection, $k_a$ and
@@ -655,11 +694,11 @@ very flexible we can learn powerful kernels in this manner.
 The figure below compares the use of a Gaussian and a learned kernel for
 identifying differences between two distributions $P$ and
 $P_{ref}$. The distributions are each equal mixtures of nine
-Gaussians with the same modes,but each component of $P_{ref}$ is
+Gaussians with the same modes, but each component of $P_{ref}$ is
 an isotropic Gaussian, whereas the covariance of $P$ differs in
 each component. The Gaussian kernel (c) treats points isotropically
 throughout the space, based upon
-$\lVert \mathbf{x} - \mathbf{x}^{ref} \rVert$ only. The learned
+$\lVert \mathbf{z} - \mathbf{z}^{ref} \rVert$ only. The learned
 kernel (d) behaves differently in different regions of the space,
 adapting to local structure and therefore allowing better detection of
 differences between $P$ and $P_{ref}$.
@@ -713,38 +752,14 @@ spot-the-diff detector on MNIST and Wine-Quality
 datasets](../examples/cd_spot_the_diff_mnist_wine.nblink) example
 demonstrates this capability.
 
-### Model uncertainty
-
-The [model uncertainty](methods/modeluncdrift.ipynb)-based drift
-detector uses the ML model of interest itself to detect drift. It
-doesn’t fit as neatly under the category of *learned detectors*, since
-unlike the others, it does not require an additional detector/model to be
-trained. Nevertheless, it is included in this category since, like the
-other learned detectors, it is important that the reference data set
-given to the detector is disjoint from the training set used to train
-the model of interest.
-
-Model-uncertainty drift detectors aim to directly detect drift that’s
-likely to effect the performance of a model of interest. The approach is
-to test for change in the number of instances falling into regions of
-the input space on which the model is uncertain in its predictions. For
-each instance in the reference set the detector obtains the model’s
-prediction and some associated notion of uncertainty. The same is done
-for the test set and if significant differences in uncertainty are
-detected (via a Kolmogorov-Smirnoff test) then drift is flagged. The
-model’s notion of uncertainty depends on the type of model. For a
-classifier this may be the entropy of the predicted label probabilities.
-For a regressor with dropout layers, [dropout Monte
-Carlo](http://proceedings.mlr.press/v48/gal16.pdf) can be used to
-provide a notion of uncertainty.
-
-## 3. Online drift detection
+## 4. Online drift detection
 
 So far, we have discussed drift detection in an *offline* context, with
-the entire test set $\{\mathbf{X}_i\}_{i=1}^{N}$ compared to the
-reference dataset $\{\mathbf{X}^{ref}_i\}_{i=1}^{M}$. However, at
-test time data sometimes arrives sequentially, meaning drift detection
-must be performed in an *online* fashion.
+the entire test set $\{\mathbf{z}_i\}_{i=1}^{N}$ compared to the
+reference dataset $\{\mathbf{z}^{ref}_i\}_{i=1}^{M}$. However, at
+test time, data sometimes arrives sequentially. Here it is desirable to 
+detect drift in an online fashion, allowing us to respond as quickly as possible
+and limit the damage it might cause.
 
 ```{image} images/online.*
 :align: center
@@ -754,17 +769,17 @@ must be performed in an *online* fashion.
 
 One approach is to perform a test for drift every $W$ time-steps,
 using the $W$ samples that have arrived since the last test. In
-other words, that is to compare $\{\mathbf{X}_i\}_{i=t}^{t+W}$ to
-$\{\mathbf{X}^{ref}_i\}_{i=1}^{M}$. Such a strategy could be
+other words, that is to compare $\{\mathbf{z}_i\}_{i=t-W+1}^{t}$ to
+$\{\mathbf{z}^{ref}_i\}_{i=1}^{M}$. Such a strategy could be
 implemented using any of the offline detectors implemented in
 alibi-detect, but being both sensitive to slight drift and responsive to
 severe drift is difficult. If the window size $W$ is too large the
 delay between consecutive statistical tests hampers responsiveness to
 severe drift, but an overly small window is unreliable. This is
 demonstrated below, where the offline [MMD
-detector](methods/mmddrift.ipynb) is used to monitor drift in data
+detector](methods/mmddrift.ipynb) is used to monitor drift in data $\mathbf{X}$
 sampled from a normal distribution
-$\mathcal{N}\left(\mu,\sigma^2 \right)$, with the mean starting to
+$\mathcal{N}\left(\mu,\sigma^2 \right)$ over time $t$, with the mean starting to
 drift from $\mu=0$ to $\mu=0.5$ at $t=40$.
 
 ```{image} images/offline_drift_W2.*
@@ -787,23 +802,20 @@ for computing $p$-values is too expensive. Additionally, they
 don’t account for correlated test outcomes when using overlapping
 windows of test data, leading to miscalibrated detectors operating at an
 unknown False Positive Rate (FPR). Well-calibrated FPR’s are crucial for
-judging the severity of a drift detection. In the absence of
+judging the significance of a drift detection. In the absence of
 calibration, drift detection can be useless since there is no way of
-knowing what fraction of detections are false positives. [Alibi
+knowing what fraction of detections are false positives. To tackle this problem, [Alibi
 Detect](https://github.com/SeldonIO/alibi-detect) offers specialist
-online drift detectors, which are designed to be well-calibrated when
-used sequentially:
+online drift detectors: 
 
 - [Online Maximum Mean Discrepancy](methods/onlinemmddrift.ipynb)
 - [Online Least-Squares Density
   Difference](methods/onlinelsdddrift.ipynb)
 
-Thoughtful structuring of the computations reduces the cost of these
-detectors from $O(N^2B)$ to $O(N^2 + NB)$ during
-configuration (where $B$ is the number of bootstrap samples used
-for calibration), and from $O(N^2)$ to $O(N)$ during
-operation. The detectors compute a test statistic $S(\mathbf{x})$
-during the configuration phase. Then, at test time, the test statistic
+These detectors leverage the calibration method introduced by 
+[Cobb et al. (2021)](https://arxiv.org/abs/2108.00883) in order to ensure they are well 
+well-calibrated when used in a sequential manner. The detectors compute a test statistic 
+$S(\mathbf{z})$ during the configuration phase. Then, at test time, the test statistic
 is updated sequentially at a low cost. When no drift has occurred the
 test statistic fluctuates around its expected value, and once drift
 occurs the test statistic starts to drift upwards. When it exceeds some

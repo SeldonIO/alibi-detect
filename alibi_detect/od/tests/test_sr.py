@@ -2,6 +2,7 @@ from itertools import product
 import numpy as np
 import pytest
 from alibi_detect.od import SpectralResidual
+from alibi_detect.version import __version__
 
 # create normal time series and one with perturbations
 t = np.linspace(0, 0.5, 1000)
@@ -35,7 +36,8 @@ def test_sr(sr_params):
     assert od.threshold == threshold
     assert od.meta == {'name': 'SpectralResidual',
                        'detector_type': 'online',
-                       'data_type': 'time-series'}
+                       'data_type': 'time-series',
+                       'version': __version__}
     preds_in = od.predict(X, t, return_instance_score=return_instance_score)
     assert preds_in['data']['is_outlier'].sum() <= 2.
     if return_instance_score:

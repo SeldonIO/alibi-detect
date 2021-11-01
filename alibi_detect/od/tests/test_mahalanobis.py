@@ -3,6 +3,7 @@ import numpy as np
 import pytest
 from sklearn.datasets import load_iris
 from alibi_detect.od import Mahalanobis
+from alibi_detect.version import __version__
 
 threshold = [None, 5.]
 n_components = [2, 3]
@@ -31,7 +32,7 @@ def test_mahalanobis(mahalanobis_params):
                      start_clip=start_clip, max_n=max_n)
     assert mh.threshold == threshold
     assert mh.n == 0
-    assert mh.meta == {'name': 'Mahalanobis', 'detector_type': 'online', 'data_type': 'tabular'}
+    assert mh.meta == {'name': 'Mahalanobis', 'detector_type': 'online', 'data_type': 'tabular', 'version': __version__}
     mh.infer_threshold(X, threshold_perc=threshold_perc)
     assert mh.n == X.shape[0]
     iscore = mh.score(X)  # noqa

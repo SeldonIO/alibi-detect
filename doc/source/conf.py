@@ -141,8 +141,7 @@ pygments_style = None
 # a list of builtin themes.
 #
 html_theme = "sphinx_rtd_theme"
-#html_logo = "_static/Alibi_Logo_White.png"
-
+html_logo = '_static/Alibi_Detect_Logo_white.png'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -303,11 +302,12 @@ StandaloneHTMLBuilder.supported_image_types = [
     'image/jpeg'
 ]
 
-# -- myst configuration-------------------------------------------------------
+# -- myst-parser configuration -----------------------------------------------
 # See https://myst-parser.readthedocs.io/en/latest/syntax/optional.html for 
 # details of available extensions.
 myst_enable_extensions = [
     "dollarmath",
+    "amsmath",
     "colon_fence",
     "smartquotes",
     "tasklist",
@@ -319,8 +319,6 @@ myst_heading_anchors = 3
 # Below code fixes a problem with sphinx>=3.2.0 processing functions with
 # torch.jit.script decorator. Probably occuring because torch is being mocked
 # (see https://github.com/sphinx-doc/sphinx/issues/6709).
-# Strangely should be fixed by sphinx #6719 (>=v2.3.0), but doesn't appear to
-# be for us...
 def call_mock(self, *args, **kw):
     from types import FunctionType, MethodType
     if args and type(args[0]) in [type, FunctionType, MethodType]:
@@ -330,3 +328,4 @@ def call_mock(self, *args, **kw):
 
 from sphinx.ext.autodoc.mock import _MockObject
 _MockObject.__call__ = call_mock
+

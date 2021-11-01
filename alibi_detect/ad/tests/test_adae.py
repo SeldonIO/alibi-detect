@@ -6,6 +6,7 @@ import tensorflow as tf
 from tensorflow.keras.layers import Dense, InputLayer
 from tensorflow.keras.utils import to_categorical
 from alibi_detect.ad import AdversarialAE
+from alibi_detect.version import __version__
 
 threshold = [None, 5.]
 w_model = [1., .5]
@@ -68,7 +69,8 @@ def test_adv_vae(adv_ae_params):
     )
 
     assert advae.threshold == threshold
-    assert advae.meta == {'name': 'AdversarialAE', 'detector_type': 'offline', 'data_type': None}
+    assert advae.meta == {'name': 'AdversarialAE', 'detector_type': 'offline', 'data_type': None,
+                          'version': __version__}
     for layer in advae.model.layers:
         assert not layer.trainable
 
