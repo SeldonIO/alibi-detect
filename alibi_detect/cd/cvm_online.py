@@ -2,7 +2,7 @@ import numpy as np
 from typing import Callable, List, Optional, Union
 from alibi_detect.cd.base_online import BaseDriftOnline
 from alibi_detect.utils.misc import quantile
-import numba as nb
+from numba import njit, boolean, int64, float64
 from numba.np.ufunc.decorators import guvectorize
 import warnings
 
@@ -15,7 +15,7 @@ class CVMDriftOnline(BaseDriftOnline):
             window_size: Union[int, List[int]],
             preprocess_fn: Optional[Callable] = None,
             n_bootstraps: int = 10000,
-            device: str = 'parallel',
+            batch_size: Optional[int] = None,
             verbose: bool = True,
             input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None
@@ -39,9 +39,10 @@ class CVMDriftOnline(BaseDriftOnline):
             The number of bootstrap simulations used to configure the thresholds. The larger this is the
             more accurately the desired ERT will be targeted. Should ideally be at least an order of magnitude
             larger than the ERT.
-        device
-            Device type used. The default None tries to use the GPU and falls back on CPU if needed.
-            Can be specified by passing either 'cuda', 'gpu' or 'cpu'. TODO: decide on default
+        batch_size
+            The maximum number of bootstrap simulations to compute in each batch when configuring thresholds. If
+            `n_bootstraps <= batch_size` or `batch_size=None`, all the simulations are computed in one go.
+            A smaller batch size reduces memory requirements, but can result in a longer configuration run time.
         verbose
             Whether or not to print progress during configuration.
         input_shape
@@ -60,7 +61,7 @@ class CVMDriftOnline(BaseDriftOnline):
             data_type=data_type
         )
 
-        self.device = device
+        self.batch_size = n_bootstraps if batch_size is None else batch_size
 
         # Window sizes
         if isinstance(window_size, int):
@@ -98,7 +99,7 @@ class CVMDriftOnline(BaseDriftOnline):
 
         # Compute test statistic at each t_max number of t's, for each of the n_bootstrap number of streams
         t_max = 2 * self.max_ws - 1
-        stats = self._simulate_streams(self.n, t_max, self.n_bootstraps, self.window_size)
+        stats = self._simulate_streams(self.n, t_max, self.n_bootstraps, self.window_size, self.batch_size)
         # At each t for each stream, find max stats. over window sizes
         with warnings.catch_warnings():
             warnings.filterwarnings(action='ignore', message='All-NaN slice encountered')
@@ -119,28 +120,27 @@ class CVMDriftOnline(BaseDriftOnline):
 
     @staticmethod
     def _simulate_streams(
-            n: int, t_max: int, n_bootstraps: int, window_sizes: list, xs: Optional[np.ndarray] = None
-    ) -> np.ndarray:
+            n: int, t_max: int, n_bootstraps: int, window_sizes: list, batch_size: int) -> np.ndarray:
         """
-        Important that we guvectorise over the parallel streams. Not sufficient just to write a
-        normal vectorised numpy implementation as this can lead to OOM errors (when trying to store
-        (n+t_max) x (n+t_max) x n_bootstraps matrices of floats). However we will store the boolean
-        matrix of this size as it faster to compute this way (and 64x smaller).
+        Private method to simulate streams. _ids_to_stats is a numba generated numpy ufunc, that is vectorised
+        over the parallel streams. Not sufficient just to write a normal vectorised numpy implementation as this
+        can lead to OOM errors (when trying to store (n+t_max) x (n+t_max) x n_bootstraps matrices of floats).
+        However, we will store the boolean matrix of this size as it faster to compute this way (and 64x smaller).
+        To further reduce memory requirements, _ids_to_stats can be called for batches of streams, so that
+        the ids array is of shape batch_size x (n+t_max) x (n+t_max).
         """
         n_windows = len(window_sizes)
-        xs = np.random.randn(n_bootstraps, n + t_max) if xs is None else xs
-        ids = xs[:, None, :] >= xs[:, :, None]
-        # guvectorise from here to vectorise over first dim of ids
-        # works by filling in the entries of the last arg it is passed
         stats = np.zeros((n_bootstraps, t_max, n_windows))
-        # TODO - Allows us to set self.device at runtime, but a little slower. cache=True speeds up subsequent runs.
-        #        _ids_to_stats_nb = guvectorize(
-        #                                    [(nb.boolean[:, :], nb.boolean[:, :], nb.int64[:], nb.float64[:, :])],
-        #                                    '(n,n_all), (t_max,n_all), (n_windows) -> (t_max,n_windows)',
-        #                                    nopython=True, target=self.device, cache=True,
-        #                                    )(_ids_to_stats)
-        #        _ids_to_stats_nb(ids[:, :n, :], ids[:, n:, :], window_sizes, stats)
-        _ids_to_stats(ids[:, :n, :], ids[:, n:, :], np.asarray(window_sizes), stats)
+
+        n_batches = int(np.ceil(n_bootstraps / batch_size))
+        idxs = np.array_split(np.arange(n_bootstraps), n_batches)
+        for b, idx in enumerate(idxs):
+            xs = np.random.randn(len(idx), n + t_max)
+            ids = xs[:, None, :] >= xs[:, :, None]
+            tmp = np.zeros((len(idx), t_max, n_windows)) if n_batches > 1 else stats
+            _ids_to_stats(ids[:, :n, :], ids[:, n:, :], np.asarray(window_sizes), tmp)
+            stats[idx, :, :] = tmp
+
         # Remove stats prior to windows being full
         for k, ws in enumerate(window_sizes):
             stats[:ws, k] = np.nan
@@ -209,7 +209,7 @@ class CVMDriftOnline(BaseDriftOnline):
         return stats
 
 
-@nb.njit
+@njit(parallel=False)
 def _normalise_stats(stats: np.ndarray, n: int, ws: int) -> np.ndarray:
     """
     See Eqns 3 & 14 of https://www.projecteuclid.org/euclid.aoms/1177704477.
@@ -222,13 +222,11 @@ def _normalise_stats(stats: np.ndarray, n: int, ws: int) -> np.ndarray:
 
 
 @guvectorize(
-    [(nb.boolean[:, :], nb.boolean[:, :], nb.int64[:], nb.float64[:, :])],
+    [(boolean[:, :], boolean[:, :], int64[:], float64[:, :])],
     '(n,n_all), (t_max,n_all), (n_windows) -> (t_max,n_windows)',
     nopython=True,
-    target="parallel"
-    # TODO - Always parallel? or switch to cpu for small data and cuda for big?
-    #  cuda>parallel>cuda for speed, but opposite for overhead
-    #  Need to set this from self.device (would mean putting back in as class method, which adds runtime ops)
+    target="cpu",  # TODO - parallel not working as expected within class method
+    cache=True
 )
 def _ids_to_stats(
         ids_ref_all: np.ndarray,
@@ -242,7 +240,7 @@ def _ids_to_stats(
     n_windows = window_sizes.shape[0]
     ref_cdf_all = np.sum(ids_ref_all, axis=0) / n
 
-    cumsums = np.zeros((t_max, n_all))  # TODO - how to get progress bar?
+    cumsums = np.zeros((t_max, n_all))
     for i in range(n_all):
         cumsums[:, i] = np.cumsum(ids_stream_all[:, i])
 
