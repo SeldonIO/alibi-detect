@@ -2,9 +2,57 @@ import numpy as np
 from typing import Callable, List, Optional, Union
 from alibi_detect.cd.base_online import BaseDriftOnline
 from alibi_detect.utils.misc import quantile
-from numba import njit, boolean, int64, float64
-from numba.np.ufunc.decorators import guvectorize
+import numba as nb
+from tqdm import tqdm
 import warnings
+
+
+@nb.njit(parallel=False, cache=True)
+def _normalise_stats(stats: np.ndarray, n: int, ws: int) -> np.ndarray:
+    """
+    See Eqns 3 & 14 of https://www.projecteuclid.org/euclid.aoms/1177704477.
+    """
+    mu = 1 / 6 + 1 / (6 * (n + ws))
+    var_num = (n + ws + 1) * (4 * n * ws * (n + ws) - 3 * (n * n + ws * ws) - 2 * n * ws)
+    var_denom = 45 * (n + ws) * (n + ws) * 4 * n * ws
+    prod = n * ws / ((n + ws) * (n + ws))
+    return (stats * prod - mu) / np.sqrt(var_num / var_denom)
+
+
+@nb.njit(parallel=True, cache=True)
+def _ids_to_stats(
+        ids_ref_all: np.ndarray,
+        ids_stream_all: np.ndarray,
+        window_sizes: np.ndarray
+) -> np.ndarray:
+    n_bootstraps = ids_ref_all.shape[0]
+    n = ids_ref_all.shape[1]
+    t_max = ids_stream_all.shape[1]
+    n_all = ids_ref_all.shape[-1]
+    n_windows = window_sizes.shape[0]
+
+    stats = np.zeros((n_bootstraps, t_max, n_windows))
+
+    for b in nb.prange(n_bootstraps):
+        ref_cdf_all = np.sum(ids_ref_all[b], axis=0) / n
+
+        cumsums = np.zeros((t_max, n_all))
+        for i in range(n_all):
+            cumsums[:, i] = np.cumsum(ids_stream_all[b, :, i])
+
+        for k in range(n_windows):
+            ws = window_sizes[k]
+            win_cdf_ref = (cumsums[ws:, :n] - cumsums[:-ws, :n]) / ws
+            cdf_diffs_on_ref = np.empty_like(win_cdf_ref)
+            for j in range(win_cdf_ref.shape[0]):  # Need to loop through as can't broadcast in njit parallel
+                cdf_diffs_on_ref[j, :] = ref_cdf_all[:n] - win_cdf_ref[j, :]
+            stats[b, ws:, k] = np.sum(cdf_diffs_on_ref * cdf_diffs_on_ref, axis=-1)
+            for t in range(ws, t_max):
+                win_cdf_win = (cumsums[t, n + t - ws:n + t] - cumsums[t - ws, n + t - ws:n + t]) / ws
+                cdf_diffs_on_win = ref_cdf_all[n + t - ws:n + t] - win_cdf_win
+                stats[b, t, k] += np.sum(cdf_diffs_on_win * cdf_diffs_on_win)
+            stats[b, :, k] = _normalise_stats(stats[b, :, k], n, ws)
+    return stats
 
 
 class CVMDriftOnline(BaseDriftOnline):
@@ -15,7 +63,7 @@ class CVMDriftOnline(BaseDriftOnline):
             window_size: Union[int, List[int]],
             preprocess_fn: Optional[Callable] = None,
             n_bootstraps: int = 10000,
-            batch_size: Optional[int] = None,
+            batch_size: int = 64,
             verbose: bool = True,
             input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None
@@ -40,8 +88,7 @@ class CVMDriftOnline(BaseDriftOnline):
             more accurately the desired ERT will be targeted. Should ideally be at least an order of magnitude
             larger than the ERT.
         batch_size
-            The maximum number of bootstrap simulations to compute in each batch when configuring thresholds. If
-            `n_bootstraps <= batch_size` or `batch_size=None`, all the simulations are computed in one go.
+            The maximum number of bootstrap simulations to compute in each batch when configuring thresholds.
             A smaller batch size reduces memory requirements, but can result in a longer configuration run time.
         verbose
             Whether or not to print progress during configuration.
@@ -99,7 +146,7 @@ class CVMDriftOnline(BaseDriftOnline):
 
         # Compute test statistic at each t_max number of t's, for each of the n_bootstrap number of streams
         t_max = 2 * self.max_ws - 1
-        stats = self._simulate_streams(self.n, t_max, self.n_bootstraps, self.window_size, self.batch_size)
+        stats = self._simulate_streams(t_max)
         # At each t for each stream, find max stats. over window sizes
         with warnings.catch_warnings():
             warnings.filterwarnings(action='ignore', message='All-NaN slice encountered')
@@ -118,31 +165,28 @@ class CVMDriftOnline(BaseDriftOnline):
 
         self.thresholds = thresholds
 
-    @staticmethod
-    def _simulate_streams(
-            n: int, t_max: int, n_bootstraps: int, window_sizes: list, batch_size: int) -> np.ndarray:
+    def _simulate_streams(self, t_max: int) -> np.ndarray:
         """
-        Private method to simulate streams. _ids_to_stats is a numba generated numpy ufunc, that is vectorised
+        Private method to simulate streams. _ids_to_stats is a decorated function that is vectorised
         over the parallel streams. Not sufficient just to write a normal vectorised numpy implementation as this
         can lead to OOM errors (when trying to store (n+t_max) x (n+t_max) x n_bootstraps matrices of floats).
         However, we will store the boolean matrix of this size as it faster to compute this way (and 64x smaller).
         To further reduce memory requirements, _ids_to_stats can be called for batches of streams, so that
         the ids array is of shape batch_size x (n+t_max) x (n+t_max).
         """
-        n_windows = len(window_sizes)
-        stats = np.zeros((n_bootstraps, t_max, n_windows))
-
-        n_batches = int(np.ceil(n_bootstraps / batch_size))
-        idxs = np.array_split(np.arange(n_bootstraps), n_batches)
-        for b, idx in enumerate(idxs):
-            xs = np.random.randn(len(idx), n + t_max)
+        n_windows = len(self.window_size)
+        stats = np.zeros((self.n_bootstraps, t_max, n_windows))
+        n_batches = int(np.ceil(self.n_bootstraps / self.batch_size))
+        idxs = np.array_split(np.arange(self.n_bootstraps), n_batches)
+        batches = tqdm(enumerate(tqdm(idxs)), "Computing thresholds over %d batches" % n_batches) if self.verbose \
+            else enumerate(idxs)
+        for b, idx in batches:
+            xs = np.random.randn(len(idx), self.n + t_max)
             ids = xs[:, None, :] >= xs[:, :, None]
-            tmp = np.zeros((len(idx), t_max, n_windows)) if n_batches > 1 else stats
-            _ids_to_stats(ids[:, :n, :], ids[:, n:, :], np.asarray(window_sizes), tmp)
-            stats[idx, :, :] = tmp
+            stats[idx, :, :] = _ids_to_stats(ids[:, :self.n, :], ids[:, self.n:, :], np.asarray(self.window_size))
 
         # Remove stats prior to windows being full
-        for k, ws in enumerate(window_sizes):
+        for k, ws in enumerate(self.window_size):
             stats[:ws, k] = np.nan
         return stats
 
@@ -207,50 +251,3 @@ class CVMDriftOnline(BaseDriftOnline):
             else:
                 stats[k] = np.nan
         return stats
-
-
-@njit(parallel=False)
-def _normalise_stats(stats: np.ndarray, n: int, ws: int) -> np.ndarray:
-    """
-    See Eqns 3 & 14 of https://www.projecteuclid.org/euclid.aoms/1177704477.
-    """
-    mu = 1 / 6 + 1 / (6 * (n + ws))
-    var_num = (n + ws + 1) * (4 * n * ws * (n + ws) - 3 * (n * n + ws * ws) - 2 * n * ws)
-    var_denom = 45 * (n + ws) * (n + ws) * 4 * n * ws
-    prod = n * ws / ((n + ws) * (n + ws))
-    return (stats * prod - mu) / np.sqrt(var_num / var_denom)
-
-
-@guvectorize(
-    [(boolean[:, :], boolean[:, :], int64[:], float64[:, :])],
-    '(n,n_all), (t_max,n_all), (n_windows) -> (t_max,n_windows)',
-    nopython=True,
-    target="cpu",  # TODO - parallel not working as expected within class method
-    cache=True
-)
-def _ids_to_stats(
-        ids_ref_all: np.ndarray,
-        ids_stream_all: np.ndarray,
-        window_sizes: np.ndarray,
-        stats: np.ndarray,
-) -> np.ndarray:  # type: ignore
-    n = ids_ref_all.shape[0]
-    t_max = ids_stream_all.shape[0]
-    n_all = ids_ref_all.shape[-1]
-    n_windows = window_sizes.shape[0]
-    ref_cdf_all = np.sum(ids_ref_all, axis=0) / n
-
-    cumsums = np.zeros((t_max, n_all))
-    for i in range(n_all):
-        cumsums[:, i] = np.cumsum(ids_stream_all[:, i])
-
-    for k in range(n_windows):
-        ws = window_sizes[k]
-        win_cdf_ref = (cumsums[ws:, :n] - cumsums[:-ws, :n]) / ws
-        cdf_diffs_on_ref = np.expand_dims(ref_cdf_all[:n], 0) - win_cdf_ref
-        stats[ws:, k] = np.sum(cdf_diffs_on_ref * cdf_diffs_on_ref, axis=-1)
-        for t in range(ws, t_max):
-            win_cdf_win = (cumsums[t, n + t - ws:n + t] - cumsums[t - ws, n + t - ws:n + t]) / ws
-            cdf_diffs_on_win = np.expand_dims(ref_cdf_all[n + t - ws:n + t], 0) - win_cdf_win
-            stats[t, k] += np.sum(cdf_diffs_on_win * cdf_diffs_on_win)
-        stats[:, k] = _normalise_stats(stats[:, k], n, ws)
