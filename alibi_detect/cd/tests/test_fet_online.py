@@ -6,10 +6,10 @@ from alibi_detect.cd import FETDriftOnline
 n, n_features = 100, 1
 n_bootstraps = 1000
 
-window_size = [10, [10, 20]]
+window_sizes = [[10], [10, 20]]
 alternative = ['less', 'greater']
 
-tests_fetdriftonline = list(product(window_size, alternative))
+tests_fetdriftonline = list(product(window_sizes, alternative))
 n_tests = len(tests_fetdriftonline)
 
 
@@ -20,17 +20,17 @@ def fetdriftonline_params(request):
 
 @pytest.mark.parametrize('fetdriftonline_params', list(range(n_tests)), indirect=True)
 def test_fetdriftonline(fetdriftonline_params):
-    window_size, alternative = fetdriftonline_params
+    window_sizes, alternative = fetdriftonline_params
 
     # Reference data
     np.random.seed(0)
     p_h0 = 0.5
     p_h1 = 0.3
-    x_ref = np.random.choice(2, n, p=[1 - p_h0, p_h0])
-    stream_h1 = (np.random.choice(2, p=[1 - p_h1, p_h1]) for _ in range(int(1e4)))
+    x_ref = np.random.choice(2, (n, n_features), p=[1 - p_h0, p_h0])
+    stream_h1 = (np.random.choice(2, (1, n_features), p=[1 - p_h1, p_h1]) for _ in range(int(1e4)))
 
     # Instantiate detector
-    cd = FETDriftOnline(x_ref=x_ref, ert=25, window_size=window_size,
+    cd = FETDriftOnline(x_ref=x_ref, ert=25, window_sizes=window_sizes,
                         n_bootstraps=n_bootstraps, alternative=alternative)
 
     # Test predict
