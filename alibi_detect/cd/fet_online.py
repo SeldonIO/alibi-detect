@@ -2,23 +2,24 @@ from tqdm import tqdm
 import numpy as np
 from scipy.stats import hypergeom
 from typing import Callable, List, Optional, Union
-from alibi_detect.cd.base_online import BaseDriftOnline
+from alibi_detect.cd.base_online import BaseUniDriftOnline
 from alibi_detect.utils.misc import quantile
 from numba import njit
 import warnings
 
 
-class FETDriftOnline(BaseDriftOnline):
+class FETDriftOnline(BaseUniDriftOnline):
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
             ert: float,
-            window_size: Union[int, List[int]],
+            window_sizes: List[int],
             preprocess_fn: Optional[Callable] = None,
             n_bootstraps: int = 10000,
             alternative: str = 'less',
             lam: float = 0.99,
             t_max: Optional[int] = None,
+            n_features: Optional[int] = None,
             verbose: bool = True,
             input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None
@@ -32,8 +33,8 @@ class FETDriftOnline(BaseDriftOnline):
             Data used as reference distribution.
         ert
             The expected run-time (ERT) in the absence of drift.
-        window_size
-            window size(s) for the sliding test-window(s) used to compute the test-statistic.
+        window_sizes
+            window sizes for the sliding test-windows used to compute the test-statistic.
             Smaller windows focus on responding quickly to severe drift, larger windows focus on
             ability to detect slight drift.
         preprocess_fn
@@ -47,7 +48,11 @@ class FETDriftOnline(BaseDriftOnline):
         lam
             Smoothing coefficient used for exponential moving average.
         t_max
-            Length of streams to simulate. If `None`, this is set to 2 * max(`window_size`) - 1.
+            Length of streams to simulate. If `None`, this is set to 2 * max(`window_sizes`) - 1.
+        n_features
+            Number of features used in the statistical test. No need to pass it if no preprocessing takes place.
+            In case of a preprocessing step, this can also be inferred automatically but could be more
+            expensive to compute.
         verbose
             Whether or not to print progress during configuration.
         input_shape
@@ -58,9 +63,10 @@ class FETDriftOnline(BaseDriftOnline):
         super().__init__(
             x_ref=x_ref,
             ert=ert,
-            window_size=window_size,
+            window_sizes=window_sizes,
             preprocess_fn=preprocess_fn,
             n_bootstraps=n_bootstraps,
+            n_features=n_features,
             verbose=verbose,
             input_shape=input_shape,
             data_type=data_type
@@ -70,22 +76,11 @@ class FETDriftOnline(BaseDriftOnline):
             raise ValueError("`alternative` must be either 'less' or 'greater'.")
         self.alternative = alternative.lower()
 
-        # Window sizes
-        if isinstance(window_size, int):
-            self.window_size: list = [window_size]
-        self.max_ws = np.max(self.window_size)
-        self.min_ws = np.min(self.window_size)
-
         # Stream length
         if t_max is not None:
             if t_max < 2 * self.max_ws - 1:
-                raise ValueError("`t_max` must be >= 2 * max(`window_size`) for the FETDriftOnline detector.")
+                raise ValueError("`t_max` must be >= 2 * max(`window_sizes`) for the FETDriftOnline detector.")
         self.t_max = t_max
-
-        # Preprocess reference data
-        self.x_ref = self.x_ref.squeeze()  # squeeze in case of (n,1) array
-        if self.x_ref.ndim != 1:
-            raise ValueError("The `x_ref` data must be 1D for the FETDriftOnline detector.")
 
         # Check data is only [False, True] or [0, 1]
         values = set(np.unique(x_ref))
@@ -98,7 +93,7 @@ class FETDriftOnline(BaseDriftOnline):
         self._initialise()
 
     def _configure_ref(self) -> None:
-        self.sum_ref = np.sum(self.x_ref)
+        self.sum_ref = np.sum(self.x_ref, axis=0)
 
     def _configure_thresholds(self) -> None:
         """
@@ -114,26 +109,35 @@ class FETDriftOnline(BaseDriftOnline):
         """
         if self.verbose:
             print("Using %d bootstrap simulations to configure thresholds..." % self.n_bootstraps)
-
-        # Compute test statistic at each t_max number of t's, for each of the n_bootstrap number of streams
         t_max = 2 * self.max_ws - 1 if self.t_max is None else self.t_max
-        stats = self._simulate_streams(self.n, t_max, self.n_bootstraps, self.window_size,
-                                       float(np.mean(self.x_ref)), self.lam)
-        # At each t for each stream, find max stats. over window sizes
-        with warnings.catch_warnings():
-            warnings.filterwarnings(action='ignore', message='All-NaN slice encountered')
-            max_stats = np.nanmax(stats, -1)
-        # Now loop through each t and find threshold (at each t) that satisfies eqn. (2) in Ross et al.
-        thresholds = np.zeros(t_max)
-        for t in range(t_max):
-            if t < np.min(self.window_size):
-                thresholds[t] = np.nan
-            else:
-                # Compute (1-fpr) quantile of max_stats at a given t, over all streams
-                threshold = quantile(max_stats[:, t], 1 - self.fpr)
-                # Remove streams for which a change point has already been detected
-                max_stats = max_stats[max_stats[:, t] <= threshold]
-                thresholds[t] = threshold
+
+        # Assuming independent features, calibrate to lamda = 1 - (1-FPR)^(1/n_features)
+        lamda = 1 - (1-self.fpr)**(1/self.n_features)
+
+        # Compute test statistic at each t_max number of t's, for each stream and each feature
+        # NOTE - below could likely be sped up with numba, but would need to rewrite scipy hypergeom.
+        #  Probably wouln't offer significant speedup since hypergeom already vectorised over streams.
+        thresholds = np.zeros((t_max, self.n_features))
+        features = tqdm(range(self.n_features), "Simulating streams for %d features" % self.n_features) \
+            if self.verbose else range(self.n_features)
+        for f in features:
+            # Compute stats for given feature (for each stream)
+            stats = self._simulate_streams(self.n, t_max, self.n_bootstraps, self.window_sizes,
+                                           float(np.mean(self.x_ref[:, f])), self.lam)
+            # At each t for each stream, find max stats. over window sizes
+            with warnings.catch_warnings():
+                warnings.filterwarnings(action='ignore', message='All-NaN slice encountered')
+                max_stats = np.nanmax(stats, -1)
+            # Find threshold (at each t) that satisfies eqn. (2) in Ross et al.
+            for t in range(t_max):
+                if t < np.min(self.window_sizes):
+                    thresholds[t, f] = np.nan
+                else:
+                    # Compute (1-lamda) quantile of max_stats at a given t, over all streams
+                    threshold = quantile(max_stats[:, t], 1 - lamda)
+                    # Remove streams for which a change point has already been detected
+                    max_stats = max_stats[max_stats[:, t] <= threshold]
+                    thresholds[t, f] = threshold
         self.thresholds = thresholds
 
     def _simulate_streams(
@@ -151,7 +155,7 @@ class FETDriftOnline(BaseDriftOnline):
         z_stream = np.random.choice([False, True], (n_bootstraps, t_max), p=[p, 1 - p])
         sum_ref = np.sum(z_ref, axis=-1)
         cumsums_stream = np.cumsum(z_stream, axis=-1)
-        for k in tqdm(range(n_windows)):
+        for k in range(n_windows):
             ws = window_sizes[k]
             cumsums_last_ws = cumsums_stream[:, ws:] - cumsums_stream[:, :-ws]
 
@@ -179,8 +183,6 @@ class FETDriftOnline(BaseDriftOnline):
 
         # Preprocess x_t
         x_t = super()._preprocess_xt(x_t)
-        if x_t.ndim != 1:
-            raise ValueError("The `x_t` passed to score() data must be 1D ndarray of length 1.")
 
         # Init or update state
         if self.t == 1:
@@ -206,18 +208,19 @@ class FETDriftOnline(BaseDriftOnline):
         """
         self._update_state(x_t)
 
-        stats = np.zeros_like(self.window_size, dtype=np.float32)
-        for k, ws in enumerate(self.window_size):
+        stats = np.zeros((len(self.window_sizes), self.n_features), dtype=np.float32)
+        for k, ws in enumerate(self.window_sizes):
             if self.t >= ws:
-                sum_last_ws = np.sum(self.xs[-ws:])
+                sum_last_ws = np.sum(self.xs[-ws:, :], axis=0)
                 if self.alternative == 'less':
                     p_val = hypergeom.cdf(self.sum_ref, self.n+ws, self.sum_ref + sum_last_ws, self.n)
                 else:
                     p_val = hypergeom.cdf(sum_last_ws, self.n+ws, self.sum_ref + sum_last_ws, ws)
 
                 stat = 1 - p_val
-                if len(self.test_stats) != 0 and not np.isnan(self.test_stats[-1, k]):
-                    stat = (1-self.lam)*self.test_stats[-1, k] + self.lam*stat
+                if len(self.test_stats) != 0:
+                    tmp_stats = np.nan_to_num(self.test_stats[-1, k], nan=0.0)
+                    stat = (1-self.lam)*tmp_stats + self.lam*stat
                 stats[k] = stat
             else:
                 stats[k] = np.nan

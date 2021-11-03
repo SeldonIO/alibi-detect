@@ -2,12 +2,12 @@ from tqdm import tqdm
 import numpy as np
 import torch
 from typing import Callable, Optional, Union
-from alibi_detect.cd.base_online import BaseDriftOnline
+from alibi_detect.cd.base_online import BaseMultiDriftOnline
 from alibi_detect.utils.pytorch.kernels import GaussianRBF
 from alibi_detect.utils.pytorch import zero_diag, quantile
 
 
-class MMDDriftOnlineTorch(BaseDriftOnline):
+class MMDDriftOnlineTorch(BaseMultiDriftOnline):
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
@@ -68,7 +68,6 @@ class MMDDriftOnlineTorch(BaseDriftOnline):
             data_type=data_type
         )
         self.meta.update({'backend': 'pytorch'})
-        self.window_size = window_size  # type: int
 
         # set backend
         if device is None or device.lower() in ['gpu', 'cuda']:
@@ -89,7 +88,7 @@ class MMDDriftOnlineTorch(BaseDriftOnline):
         self._configure_thresholds()
         self._initialise()
 
-    def _configure_ref(self):
+    def _configure_ref_subset(self):
         etw_size = 2*self.window_size-1  # etw = extended test window
         rw_size = self.n - etw_size  # rw = ref-window
         # Make split and ensure it doesn't cause an initial detection
@@ -170,7 +169,7 @@ class MMDDriftOnlineTorch(BaseDriftOnline):
 
     def _update_state(self, x_t: Union[np.ndarray, list]):
         self.t += 1
-        x_t = super()._preprocess_xt(x_t)[None, :]
+        x_t = super()._preprocess_xt(x_t)
         x_t = torch.from_numpy(x_t).to(self.device)
         kernel_col = self.kernel(self.x_ref[self.ref_inds], x_t)
         self.test_window = torch.cat([self.test_window[(1-self.window_size):], x_t], 0)

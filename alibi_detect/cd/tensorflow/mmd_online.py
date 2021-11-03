@@ -2,12 +2,12 @@ from tqdm import tqdm
 import numpy as np
 import tensorflow as tf
 from typing import Callable, Optional, Union
-from alibi_detect.cd.base_online import BaseDriftOnline
+from alibi_detect.cd.base_online import BaseMultiDriftOnline
 from alibi_detect.utils.tensorflow.kernels import GaussianRBF
 from alibi_detect.utils.tensorflow import zero_diag, quantile, subset_matrix
 
 
-class MMDDriftOnlineTF(BaseDriftOnline):
+class MMDDriftOnlineTF(BaseMultiDriftOnline):
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
@@ -64,7 +64,6 @@ class MMDDriftOnlineTF(BaseDriftOnline):
             data_type=data_type
         )
         self.meta.update({'backend': 'tensorflow'})
-        self.window_size = window_size  # type: int
 
         # initialize kernel
         if isinstance(sigma, np.ndarray):
@@ -77,7 +76,7 @@ class MMDDriftOnlineTF(BaseDriftOnline):
         self._configure_thresholds()
         self._initialise()
 
-    def _configure_ref(self):
+    def _configure_ref_subset(self):
         etw_size = 2*self.window_size-1  # etw = extended test window
         rw_size = self.n - etw_size  # rw = ref window#
         # Make split and ensure it doesn't cause an initial detection
@@ -160,7 +159,7 @@ class MMDDriftOnlineTF(BaseDriftOnline):
 
     def _update_state(self, x_t: Union[np.ndarray, list]):
         self.t += 1
-        x_t = super()._preprocess_xt(x_t)[None, :]
+        x_t = super()._preprocess_xt(x_t)
         kernel_col = self.kernel(self.x_ref[self.ref_inds], x_t)
         self.test_window = tf.concat([self.test_window[(1-self.window_size):], x_t], axis=0)
         self.k_xy = tf.concat([self.k_xy[:, (1-self.window_size):], kernel_col], axis=1)

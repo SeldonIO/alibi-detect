@@ -2,11 +2,11 @@ from tqdm import tqdm
 import numpy as np
 import tensorflow as tf
 from typing import Callable, Optional, Union
-from alibi_detect.cd.base_online import BaseDriftOnline
+from alibi_detect.cd.base_online import BaseMultiDriftOnline
 from alibi_detect.utils.tensorflow import GaussianRBF, quantile, permed_lsdds
 
 
-class LSDDDriftOnlineTF(BaseDriftOnline):
+class LSDDDriftOnlineTF(BaseMultiDriftOnline):
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
@@ -73,7 +73,6 @@ class LSDDDriftOnlineTF(BaseDriftOnline):
         self.meta.update({'backend': 'tensorflow'})
         self.n_kernel_centers = n_kernel_centers
         self.lambda_rd_max = lambda_rd_max
-        self.window_size = window_size  # type: int
 
         self._configure_normalization()
 
@@ -148,7 +147,7 @@ class LSDDDriftOnlineTF(BaseDriftOnline):
         self.thresholds = thresholds
         self.H_lam_inv = H_lam_inv
 
-    def _configure_ref(self):
+    def _configure_ref_subset(self):
         etw_size = 2*self.window_size-1  # etw = extended test window
         nkc_size = self.n - self.n_kernel_centers  # nkc = non-kernel-centers
         rw_size = nkc_size - etw_size  # rw = ref-window
@@ -167,7 +166,7 @@ class LSDDDriftOnlineTF(BaseDriftOnline):
 
     def _update_state(self, x_t: Union[np.ndarray, list]):
         self.t += 1
-        x_t = super()._preprocess_xt(x_t)[None, :]
+        x_t = super()._preprocess_xt(x_t)
         x_t = tf.convert_to_tensor(x_t)
         x_t = self._normalize(x_t)
         k_xtc = self.kernel(x_t, self.kernel_centers)
