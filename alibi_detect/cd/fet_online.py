@@ -118,12 +118,14 @@ class FETDriftOnline(BaseUniDriftOnline):
         # NOTE - below could likely be sped up with numba, but would need to rewrite scipy hypergeom.
         #  Probably wouln't offer significant speedup since hypergeom already vectorised over streams.
         thresholds = np.zeros((t_max, self.n_features))
-        features = tqdm(range(self.n_features), "Simulating streams for %d features" % self.n_features) \
-            if self.verbose else range(self.n_features)
-        for f in features:
+        if self.verbose:
+            pbar = tqdm(total=int(self.n_features*len(self.window_sizes)),
+                        desc="Simulating %d streams for %d features" % (self.n_bootstraps, self.n_features))
+        else:
+            pbar = None
+        for f in range(self.n_features):
             # Compute stats for given feature (for each stream)
-            stats = self._simulate_streams(self.n, t_max, self.n_bootstraps, self.window_sizes,
-                                           float(np.mean(self.x_ref[:, f])), self.lam)
+            stats = self._simulate_streams(t_max, float(np.mean(self.x_ref[:, f])), pbar)
             # At each t for each stream, find max stats. over window sizes
             with warnings.catch_warnings():
                 warnings.filterwarnings(action='ignore', message='All-NaN slice encountered')
@@ -140,32 +142,32 @@ class FETDriftOnline(BaseUniDriftOnline):
                     thresholds[t, f] = threshold
         self.thresholds = thresholds
 
-    def _simulate_streams(
-            self, n: int, t_max: int, n_bootstraps: int, window_sizes: list, p: float, lam: float
-    ) -> np.ndarray:
+    def _simulate_streams(self, t_max: int, p: float, pbar: Optional[tqdm]) -> np.ndarray:
         """
         Computes test statistic for each stream.
 
         Almost all of the work done here is done in a call to scipy's hypergeom for each window size.
         """
-        n_windows = len(window_sizes)
-        stats = np.full((n_bootstraps, t_max, n_windows), np.nan)
+        n_windows = len(self.window_sizes)
+        stats = np.full((self.n_bootstraps, t_max, n_windows), np.nan)
 
-        z_ref = np.random.choice([False, True], (n_bootstraps, n), p=[p, 1 - p])
-        z_stream = np.random.choice([False, True], (n_bootstraps, t_max), p=[p, 1 - p])
+        z_ref = np.random.choice([False, True], (self.n_bootstraps, self.n), p=[p, 1 - p])
+        z_stream = np.random.choice([False, True], (self.n_bootstraps, t_max), p=[p, 1 - p])
         sum_ref = np.sum(z_ref, axis=-1)
         cumsums_stream = np.cumsum(z_stream, axis=-1)
         for k in range(n_windows):
-            ws = window_sizes[k]
+            if pbar is not None:
+                pbar.update(1)
+            ws = self.window_sizes[k]
             cumsums_last_ws = cumsums_stream[:, ws:] - cumsums_stream[:, :-ws]
 
             if self.alternative == 'less':
-                p_val = hypergeom.cdf(sum_ref[:, None], n+ws, sum_ref[:, None] + cumsums_last_ws, n)
+                p_val = hypergeom.cdf(sum_ref[:, None], self.n+ws, sum_ref[:, None] + cumsums_last_ws, self.n)
             elif self.alternative == 'greater':
-                p_val = hypergeom.cdf(cumsums_last_ws, n+ws, sum_ref[:, None] + cumsums_last_ws, ws)
+                p_val = hypergeom.cdf(cumsums_last_ws, self.n+ws, sum_ref[:, None] + cumsums_last_ws, ws)
             else:
                 raise ValueError("'alternative' not yet implemented.")
-            stats[:, ws:, k] = self._exp_moving_avg(1 - p_val, lam)
+            stats[:, ws:, k] = self._exp_moving_avg(1 - p_val, self.lam)
         return stats
 
     @staticmethod
