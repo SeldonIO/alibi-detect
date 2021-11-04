@@ -70,7 +70,7 @@ class FETDrift(BaseUnivariateDrift):
         # Check data is only [False, True] or [0, 1]
         values = set(np.unique(x_ref))
         if values != {True, False} and values != {0, 1}:
-            raise ValueError("The `x_ref` data must consist of only [0,1]'s or [False,True]'s for the "
+            raise ValueError("The `x_ref` data must consist of only (0,1)'s or (False,True)'s for the "
                              "FETDrift detector.")
 
     def feature_score(self, x_ref: np.ndarray, x: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
@@ -86,12 +86,12 @@ class FETDrift(BaseUnivariateDrift):
 
         Returns
         -------
-        Feature level p-values (The second element of the tuple is `None` since this detector doesn't
-        return test statistics).
+        Feature level p-values and odds ratios.
         """
         x = x.reshape(x.shape[0], -1).astype(dtype=np.int64)
         x_ref = x_ref.reshape(x_ref.shape[0], -1).astype(dtype=np.int64)
         p_val = np.zeros(self.n_features, dtype=np.float32)
+        odds_ratio = np.zeros_like(p_val)
 
         # Check data is only [False, True] or [0, 1]
         values = set(np.unique(x))
@@ -104,9 +104,11 @@ class FETDrift(BaseUnivariateDrift):
         for f in range(self.n_features):
             sum_ref = np.sum(x_ref[:, f])
             sum_test = np.sum(x[:, f])
-            if self.alternative == 'less':
+            if self.alternative == 'greater':
                 p_val[f] = hypergeom.cdf(sum_ref, n_ref + n, sum_ref + sum_test, n_ref)
             else:
                 p_val[f] = hypergeom.cdf(sum_test, n_ref + n, sum_ref + sum_test, n)
 
-        return p_val, None  # type: ignore
+            odds_ratio[f] = (sum_test/(n-sum_test))/(sum_ref/(n_ref-sum_ref))
+
+        return p_val, odds_ratio

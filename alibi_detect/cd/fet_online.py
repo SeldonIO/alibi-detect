@@ -85,7 +85,7 @@ class FETDriftOnline(BaseUniDriftOnline):
         # Check data is only [False, True] or [0, 1]
         values = set(np.unique(x_ref))
         if values != {True, False} and values != {0, 1}:
-            raise ValueError("The `x_ref` data must consist of only [0,1]'s or [False,True]'s for the "
+            raise ValueError("The `x_ref` data must consist of only (0,1)'s or (False,True)'s for the "
                              "FETDriftOnline detector.")
 
         # Configure thresholds and initialise detector
@@ -161,12 +161,10 @@ class FETDriftOnline(BaseUniDriftOnline):
             ws = self.window_sizes[k]
             cumsums_last_ws = cumsums_stream[:, ws:] - cumsums_stream[:, :-ws]
 
-            if self.alternative == 'less':
+            if self.alternative == 'greater':
                 p_val = hypergeom.cdf(sum_ref[:, None], self.n+ws, sum_ref[:, None] + cumsums_last_ws, self.n)
-            elif self.alternative == 'greater':
-                p_val = hypergeom.cdf(cumsums_last_ws, self.n+ws, sum_ref[:, None] + cumsums_last_ws, ws)
             else:
-                raise ValueError("'alternative' not yet implemented.")
+                p_val = hypergeom.cdf(cumsums_last_ws, self.n+ws, sum_ref[:, None] + cumsums_last_ws, ws)
             stats[:, ws:, k] = self._exp_moving_avg(1 - p_val, self.lam)
         return stats
 
