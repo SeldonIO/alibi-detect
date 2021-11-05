@@ -799,7 +799,7 @@ drift from $\mu=0$ to $\mu=0.5$ at $t=40$.
 ### Online drift detectors
 
 An alternative strategy is to perform a test each time data arrives.
-However the usual offline methods are not applicable because the process
+https://github.com/SeldonIO/alibi-detect/pullsHowever the usual offline methods are not applicable because the process
 for computing $p$-values is too expensive. Additionally, they
 don’t account for correlated test outcomes when using overlapping
 windows of test data, leading to miscalibrated detectors operating at an

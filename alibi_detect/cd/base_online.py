@@ -287,7 +287,6 @@ class BaseUniDriftOnline(BaseDetector):
     def _initialise(self) -> None:
         self.t = 0
         self.test_stats = np.empty([0, len(self.window_sizes), self.n_features])
-        # TODO - do we want to store test_stats for all features?
         self.drift_preds = np.array([])
         self._configure_ref()
 
