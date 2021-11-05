@@ -161,6 +161,8 @@ broadly split into two categories; univariate and multivariate tests:
   - [Chi-Squared](methods/chisquaredrift.ipynb) (for categorical
     data)
   - [Kolmogorov-Smirnov](methods/ksdrift.ipynb)
+  - [Cramér-von Mises](../cd/methods/cvmdrift.ipynb)
+  - [Fisher's Exact Test](../cd/methods/fetdrift.ipynb) (for binary data)
 
 - Multivariate:
 
@@ -811,6 +813,8 @@ online drift detectors:
 - [Online Maximum Mean Discrepancy](methods/onlinemmddrift.ipynb)
 - [Online Least-Squares Density
   Difference](methods/onlinelsdddrift.ipynb)
+- [Online Cramér-von Mises](methods/onlinecvmdrift.ipynb)
+- [Online Fisher's Exact Test](methods/onlinefetdrift.ipynb)
 
 These detectors leverage the calibration method introduced by 
 [Cobb et al. (2021)](https://arxiv.org/abs/2108.00883) in order to ensure they are well 

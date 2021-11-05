@@ -24,6 +24,7 @@ class FETDrift(BaseUnivariateDrift):
         """
         Fisher exact test (FET) data drift detector, with Bonferroni or False Discovery Rate (FDR)
         correction for multivariate data.
+
         Parameters
         ----------
         x_ref
@@ -43,7 +44,7 @@ class FETDrift(BaseUnivariateDrift):
             Correction type for multivariate data. Either 'bonferroni' or 'fdr' (False Discovery Rate).
         alternative
             Defines the alternative hypothesis. Options are 'less' or 'greater'.
-         n_features
+        n_features
             Number of features used in the FET test. No need to pass it if no preprocessing takes place.
             In case of a preprocessing step, this can also be inferred automatically but could be more
             expensive to compute.

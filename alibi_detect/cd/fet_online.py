@@ -111,8 +111,8 @@ class FETDriftOnline(BaseUniDriftOnline):
             print("Using %d bootstrap simulations to configure thresholds..." % self.n_bootstraps)
         t_max = 2 * self.max_ws - 1 if self.t_max is None else self.t_max
 
-        # Assuming independent features, calibrate to lamda = 1 - (1-FPR)^(1/n_features)
-        lamda = 1 - (1-self.fpr)**(1/self.n_features)
+        # Assuming independent features, calibrate to beta = 1 - (1-FPR)^(1/n_features)
+        beta = 1 - (1-self.fpr)**(1/self.n_features)
 
         # Compute test statistic at each t_max number of t's, for each stream and each feature
         # NOTE - below could likely be sped up with numba, but would need to rewrite scipy hypergeom.
@@ -135,8 +135,8 @@ class FETDriftOnline(BaseUniDriftOnline):
                 if t < np.min(self.window_sizes):
                     thresholds[t, f] = np.nan
                 else:
-                    # Compute (1-lamda) quantile of max_stats at a given t, over all streams
-                    threshold = quantile(max_stats[:, t], 1 - lamda)
+                    # Compute (1-beta) quantile of max_stats at a given t, over all streams
+                    threshold = quantile(max_stats[:, t], 1 - beta)
                     # Remove streams for which a change point has already been detected
                     max_stats = max_stats[max_stats[:, t] <= threshold]
                     thresholds[t, f] = threshold
@@ -169,7 +169,7 @@ class FETDriftOnline(BaseUniDriftOnline):
         return stats
 
     @staticmethod
-    @njit
+    @njit(cache=True)
     def _exp_moving_avg(arr: np.ndarray, lam: float) -> np.ndarray:
         """ Apply exponential moving average over the final axis."""
         output = np.zeros_like(arr)
@@ -204,7 +204,7 @@ class FETDriftOnline(BaseUniDriftOnline):
 
         Returns
         -------
-        Estimated FET test statistics between reference window and test window(s).
+        Estimated FET test statistics (1-p_val) between reference window and test windows.
         """
         self._update_state(x_t)
 

@@ -90,8 +90,8 @@ class CVMDriftOnline(BaseUniDriftOnline):
         if self.verbose:
             print("Using %d bootstrap simulations to configure thresholds..." % self.n_bootstraps)
 
-        # Assuming independent features, calibrate to lamda = 1 - (1-FPR)^(1/n_features)
-        lamda = 1 - (1 - self.fpr) ** (1 / self.n_features)
+        # Assuming independent features, calibrate to beta = 1 - (1-FPR)^(1/n_features)
+        beta = 1 - (1 - self.fpr) ** (1 / self.n_features)
 
         # Compute test statistic at each t_max number of t's, for each of the n_bootstrap number of streams
         # Only need to simulate streams for a single feature here.
@@ -107,8 +107,8 @@ class CVMDriftOnline(BaseUniDriftOnline):
             if t < np.min(self.window_sizes):
                 thresholds[t, 0] = np.nan  # Set to NaN prior to window being full
             else:
-                # Compute (1-lamda) quantile of max_stats at a given t, over all streams
-                threshold = quantile(max_stats[:, t], 1 - lamda)
+                # Compute (1-beta) quantile of max_stats at a given t, over all streams
+                threshold = quantile(max_stats[:, t], 1 - beta)
                 # Remove streams for which a change point has already been detected
                 max_stats = max_stats[max_stats[:, t] <= threshold]
                 thresholds[t, 0] = threshold
