@@ -212,7 +212,7 @@ class FETDriftOnline(BaseUniDriftOnline):
         for k, ws in enumerate(self.window_sizes):
             if self.t >= ws:
                 sum_last_ws = np.sum(self.xs[-ws:, :], axis=0)
-                if self.alternative == 'less':
+                if self.alternative == 'greater':
                     p_val = hypergeom.cdf(self.sum_ref, self.n+ws, self.sum_ref + sum_last_ws, self.n)
                 else:
                     p_val = hypergeom.cdf(sum_last_ws, self.n+ws, self.sum_ref + sum_last_ws, ws)
