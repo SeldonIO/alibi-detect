@@ -1,7 +1,7 @@
 from tqdm import tqdm
 import numpy as np
 import torch
-from typing import Callable, Optional, Union
+from typing import Any, Callable, Optional, Union
 from alibi_detect.cd.base_online import BaseDriftOnline
 from alibi_detect.utils.pytorch import GaussianRBF, permed_lsdds, quantile
 
@@ -178,7 +178,7 @@ class LSDDDriftOnlineTorch(BaseDriftOnline):
             h_init = self.c2s - self.k_xtc.mean(0)  # (Eqn 21)
             lsdd_init = h_init[None, :] @ self.H_lam_inv @ h_init[:, None]  # (Eqn 11)
 
-    def _update_state(self, x_t: Union[np.ndarray, list]):
+    def _update_state(self, x_t: Union[np.ndarray, Any]):
         self.t += 1
         x_t = super()._preprocess_xt(x_t)
         x_t = torch.from_numpy(x_t).to(self.device)
@@ -187,7 +187,7 @@ class LSDDDriftOnlineTorch(BaseDriftOnline):
         self.test_window = torch.cat([self.test_window[(1-self.window_size):], x_t], 0)
         self.k_xtc = torch.cat([self.k_xtc[(1-self.window_size):], k_xtc], 0)
 
-    def score(self, x_t: Union[np.ndarray, list]) -> float:
+    def score(self, x_t: Union[np.ndarray, Any]) -> float:
         """
         Compute the test-statistic (LSDD) between the reference window and test window.
 

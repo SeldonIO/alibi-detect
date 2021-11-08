@@ -1,7 +1,7 @@
 from tqdm import tqdm
 import numpy as np
 import torch
-from typing import Callable, Optional, Union
+from typing import Any, Callable, Optional, Union
 from alibi_detect.cd.base_online import BaseDriftOnline
 from alibi_detect.utils.pytorch.kernels import GaussianRBF
 from alibi_detect.utils.pytorch import zero_diag, quantile
@@ -167,7 +167,7 @@ class MMDDriftOnlineTorch(BaseDriftOnline):
 
         self.thresholds = thresholds
 
-    def _update_state(self, x_t: Union[np.ndarray, list]):
+    def _update_state(self, x_t: Union[np.ndarray, Any]):
         self.t += 1
         x_t = super()._preprocess_xt(x_t)
         x_t = torch.from_numpy(x_t).to(self.device)
@@ -175,7 +175,7 @@ class MMDDriftOnlineTorch(BaseDriftOnline):
         self.test_window = torch.cat([self.test_window[(1-self.window_size):], x_t], 0)
         self.k_xy = torch.cat([self.k_xy[:, (1-self.window_size):], kernel_col], 1)
 
-    def score(self, x_t: Union[np.ndarray, list]) -> float:
+    def score(self, x_t: Union[np.ndarray, Any]) -> float:
         """
         Compute the test-statistic (squared MMD) between the reference window and test window.
 

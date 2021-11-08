@@ -1,7 +1,7 @@
 from tqdm import tqdm
 import numpy as np
 import tensorflow as tf
-from typing import Callable, Optional, Union
+from typing import Any, Callable, Optional, Union
 from alibi_detect.cd.base_online import BaseDriftOnline
 from alibi_detect.utils.tensorflow.kernels import GaussianRBF
 from alibi_detect.utils.tensorflow import zero_diag, quantile, subset_matrix
@@ -157,14 +157,14 @@ class MMDDriftOnlineTF(BaseDriftOnline):
 
         self.thresholds = thresholds
 
-    def _update_state(self, x_t: Union[np.ndarray, list]):
+    def _update_state(self, x_t: Union[np.ndarray, Any]):
         self.t += 1
         x_t = super()._preprocess_xt(x_t)
         kernel_col = self.kernel(self.x_ref[self.ref_inds], x_t)
         self.test_window = tf.concat([self.test_window[(1-self.window_size):], x_t], axis=0)
         self.k_xy = tf.concat([self.k_xy[:, (1-self.window_size):], kernel_col], axis=1)
 
-    def score(self, x_t: Union[np.ndarray, list]) -> float:
+    def score(self, x_t: Union[np.ndarray, Any]) -> float:
         """
         Compute the test-statistic (squared MMD) between the reference window and test window.
 

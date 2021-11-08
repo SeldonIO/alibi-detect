@@ -90,10 +90,10 @@ class BaseDriftOnline(BaseDetector):
         pass
 
     @abstractmethod
-    def _update_state(self, x_t: Union[np.ndarray, list]):
+    def _update_state(self, x_t: Union[np.ndarray, Any]):
         pass
 
-    def _preprocess_xt(self, x_t: Union[np.ndarray, list]) -> np.ndarray:
+    def _preprocess_xt(self, x_t: Union[np.ndarray, Any]) -> np.ndarray:
         """
         Private method to preprocess a single test instance ready for _update_state.
 
