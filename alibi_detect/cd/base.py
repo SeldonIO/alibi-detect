@@ -796,12 +796,14 @@ class BaseUnivariateDrift(BaseDetector):
         if p_val is None:
             logger.warning('No p-value set for the drift threshold. Need to set it to detect data drift.')
 
-        # Check if preprocess_fn is valid
-        if not x_ref_preprocessed and not isinstance(preprocess_fn, Callable):  # type: ignore
-            raise ValueError("`preprocess_fn` is not a valid Callable.")
         # x_ref preprocessing logic
-        self.preprocess_at_pred = not preprocess_at_init and not x_ref_preprocessed
-        self.preprocess_at_init = preprocess_at_init and not x_ref_preprocessed
+        self.preprocess_at_pred = not preprocess_at_init and not x_ref_preprocessed and preprocess_fn is not None
+        self.preprocess_at_init = preprocess_at_init and not x_ref_preprocessed and preprocess_fn is not None
+        # Check if preprocess_fn is valid
+        if (self.preprocess_at_init or self.preprocess_at_pred) \
+                and not isinstance(preprocess_fn, Callable):  # type: ignore
+            raise ValueError("`preprocess_fn` is not a valid Callable.")
+
         # optionally preprocess reference data (now instead of at predict)
         if self.preprocess_at_init:
             self.x_ref = preprocess_fn(x_ref)
