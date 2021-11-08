@@ -20,6 +20,7 @@ def test_mmddriftonline(mmddriftonline_params):
     backend = mmddriftonline_params
     x_ref = np.random.randn(*(n, n_features))
 
+    # Instantiate and check detector class
     try:
         cd = MMDDriftOnline(x_ref=x_ref, ert=25, window_size=5, backend=backend, n_bootstraps=100)
     except NotImplementedError:
@@ -31,3 +32,15 @@ def test_mmddriftonline(mmddriftonline_params):
         assert isinstance(cd._detector, MMDDriftOnlineTF)
     else:
         assert cd is None
+        return
+
+    # Test predict
+    x_t = np.random.randn(n_features)
+    t0 = cd.t
+    cd.predict(x_t)
+    assert cd.t - t0 == 1  # This checks state updated (self.t at least)
+
+    # Test score
+    t0 = cd.t
+    cd.score(x_t)
+    assert cd.t - t0 == 1
