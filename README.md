@@ -110,18 +110,20 @@ The following tables show the advised use cases for each algorithm. The column *
 
 ### Drift Detection
 
-| Detector                 | Tabular | Image | Time Series | Text  | Categorical Features | Online | Feature Level |
-| :---                     |  :---:  | :---: |   :---:     | :---: |   :---:              | :---:  | :---:         |
-| Kolmogorov-Smirnov       | ✔       | ✔     |            |  ✔    |  ✔                   |       |  ✔            |
-| Maximum Mean Discrepancy | ✔       | ✔     |            |  ✔    |  ✔                   | ✔      |              |
-| Learned Kernel MMD          | ✔       | ✔     |            |  ✔    |  ✔                   |       |              |
-| Least-Squares Density Difference | ✔       | ✔     |            |  ✔    |  ✔                   | ✔      |              |
-| Chi-Squared              | ✔       |      |            |      |  ✔                   |       |  ✔            |
-| Mixed-type tabular data  | ✔       |      |            |      |  ✔                   |       |  ✔            |
-| Classifier               | ✔       | ✔     |  ✔          |  ✔    |  ✔                   |       |              |
-| Spot-the-diff            | ✔       | ✔     |  ✔          |  ✔    |  ✔                   |       |  ✔            |
-| Classifier Uncertainty   | ✔       | ✔     |  ✔          |  ✔    |  ✔                   |       |                |
-| Regressor Uncertainty    | ✔       | ✔     |  ✔          |  ✔    |  ✔                   |       |                |
+| Detector                         | Tabular | Image | Time Series | Text  | Categorical Features | Online | Feature Level |
+| :---                             |  :---:  | :---: |   :---:     | :---: |   :---:              | :---:  | :---:         |
+| Kolmogorov-Smirnov               | ✔       | ✔     |             | ✔     | ✔                    |        | ✔             |
+| Cramér-von Mises                 | ✔       | ✔     |             | ✔     | ✔                    | ✔      | ✔             |
+| Fisher's Exact Test              | ✔       | ✔     |             | ✔     | ✔                    | ✔      | ✔             |
+| Maximum Mean Discrepancy         | ✔       | ✔     |             | ✔     | ✔                    | ✔      |               |
+| Learned Kernel MMD               | ✔       | ✔     |             | ✔     | ✔                    |        |               |
+| Least-Squares Density Difference | ✔       | ✔     |             | ✔     | ✔                    | ✔      |               |
+| Chi-Squared                      | ✔       |       |             |       | ✔                    |        | ✔             |
+| Mixed-type tabular data          | ✔       |       |             |       | ✔                    |        | ✔             |
+| Classifier                       | ✔       | ✔     |  ✔          | ✔     | ✔                    |        |               |
+| Spot-the-diff                    | ✔       | ✔     |  ✔          | ✔     | ✔                    |        | ✔             |
+| Classifier Uncertainty           | ✔       | ✔     |  ✔          | ✔     | ✔                    |        |               |
+| Regressor Uncertainty            | ✔       | ✔     |  ✔          | ✔     | ✔                    |        |               |
 
 #### TensorFlow and PyTorch support
 
@@ -206,7 +208,11 @@ Check the example notebooks (e.g. [CIFAR10](https://docs.seldon.io/projects/alib
 
 - [Kolmogorov-Smirnov](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/ksdrift.html)
    - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_ks_cifar10.html), [molecular graphs](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_mol.html), [movie reviews](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_text_imdb.html)
-   
+
+- [Cramér-von Mises](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/cvmdrift.html)
+
+- [Fisher's Exact Test](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/fetdrift.html)
+
 - [Least-Squares Density Difference](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/lsdddrift.html) ([Bu et al, 2016](https://alippi.faculty.polimi.it/articoli/A%20Pdf%20free%20Change%20Detection%20Test%20Based%20on%20Density%20Difference%20Estimation.pdf))
 
 - [Maximum Mean Discrepancy](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/mmddrift.html) ([Gretton et al, 2012](http://jmlr.csail.mit.edu/papers/v13/gretton12a.html))
