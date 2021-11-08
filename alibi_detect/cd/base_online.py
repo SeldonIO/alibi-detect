@@ -90,7 +90,7 @@ class BaseDriftOnline(BaseDetector):
         pass
 
     @abstractmethod
-    def _update_state(self, x_t: Union[np.ndarray, Any]):
+    def _update_state(self, x_t: Union[np.ndarray, 'tf.Tensor', 'torch.Tensor']):
         pass
 
     def _preprocess_xt(self, x_t: Union[np.ndarray, Any]) -> np.ndarray:

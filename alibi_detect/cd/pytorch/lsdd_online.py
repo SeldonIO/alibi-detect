@@ -178,11 +178,8 @@ class LSDDDriftOnlineTorch(BaseDriftOnline):
             h_init = self.c2s - self.k_xtc.mean(0)  # (Eqn 21)
             lsdd_init = h_init[None, :] @ self.H_lam_inv @ h_init[:, None]  # (Eqn 11)
 
-    def _update_state(self, x_t: Union[np.ndarray, Any]):
+    def _update_state(self, x_t: torch.Tensor):
         self.t += 1
-        x_t = super()._preprocess_xt(x_t)
-        x_t = torch.from_numpy(x_t).to(self.device)
-        x_t = self._normalize(x_t)
         k_xtc = self.kernel(x_t, self.kernel_centers)
         self.test_window = torch.cat([self.test_window[(1-self.window_size):], x_t], 0)
         self.k_xtc = torch.cat([self.k_xtc[(1-self.window_size):], k_xtc], 0)
@@ -200,6 +197,9 @@ class LSDDDriftOnlineTorch(BaseDriftOnline):
         -------
         LSDD estimate between reference window and test window.
         """
+        x_t = super()._preprocess_xt(x_t)
+        x_t = torch.from_numpy(x_t).to(self.device)
+        x_t = self._normalize(x_t)
         self._update_state(x_t)
         h = self.c2s - self.k_xtc.mean(0)  # (Eqn 21)
         lsdd = h[None, :] @ self.H_lam_inv @ h[:, None]  # (Eqn 11)

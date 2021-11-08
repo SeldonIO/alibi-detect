@@ -167,10 +167,8 @@ class MMDDriftOnlineTorch(BaseDriftOnline):
 
         self.thresholds = thresholds
 
-    def _update_state(self, x_t: Union[np.ndarray, Any]):
+    def _update_state(self, x_t: torch.Tensor):
         self.t += 1
-        x_t = super()._preprocess_xt(x_t)
-        x_t = torch.from_numpy(x_t).to(self.device)
         kernel_col = self.kernel(self.x_ref[self.ref_inds], x_t)
         self.test_window = torch.cat([self.test_window[(1-self.window_size):], x_t], 0)
         self.k_xy = torch.cat([self.k_xy[:, (1-self.window_size):], kernel_col], 1)
@@ -188,6 +186,8 @@ class MMDDriftOnlineTorch(BaseDriftOnline):
         -------
         Squared MMD estimate between reference window and test window.
         """
+        x_t = super()._preprocess_xt(x_t)
+        x_t = torch.from_numpy(x_t).to(self.device)
         self._update_state(x_t)
         k_yy = self.kernel(self.test_window, self.test_window)
         mmd = (
