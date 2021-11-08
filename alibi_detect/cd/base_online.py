@@ -110,7 +110,7 @@ class BaseDriftOnline(BaseDetector):
         if isinstance(self.preprocess_fn, Callable):  # type: ignore
             x_t = x_t[None, :] if isinstance(x_t, np.ndarray) else [x_t]
             x_t = self.preprocess_fn(x_t)[0]  # type: ignore
-        return x_t[None, :]  # type: ignore
+        return x_t[None, :]
 
     def get_threshold(self, t: int) -> Union[float, None]:
         return self.thresholds[t] if t < self.window_size else self.thresholds[-1]  # type: ignore
