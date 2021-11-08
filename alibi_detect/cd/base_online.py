@@ -259,10 +259,10 @@ class BaseUniDriftOnline(BaseDetector):
         pass
 
     @abstractmethod
-    def _update_state(self, x_t: Union[np.ndarray, list]):
+    def _update_state(self, x_t: np.ndarray):
         pass
 
-    def _preprocess_xt(self, x_t: Union[np.ndarray, list]) -> np.ndarray:
+    def _preprocess_xt(self, x_t: Union[np.ndarray, Any]) -> np.ndarray:
         """
         Private method to preprocess a single test instance ready for _update_state.
 
@@ -294,7 +294,7 @@ class BaseUniDriftOnline(BaseDetector):
         "Resets the detector but does not reconfigure thresholds."
         self._initialise()
 
-    def predict(self, x_t: Union[np.ndarray, list],  return_test_stat: bool = True,
+    def predict(self, x_t: Union[np.ndarray, Any],  return_test_stat: bool = True,
                 ) -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
         """
         Predict whether the most recent window of data has drifted from the reference data.

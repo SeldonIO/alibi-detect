@@ -1,7 +1,7 @@
 from tqdm import tqdm
 import numpy as np
 from scipy.stats import hypergeom
-from typing import Callable, List, Optional, Union
+from typing import Any, Callable, List, Optional, Union
 from alibi_detect.cd.base_online import BaseUniDriftOnline
 from alibi_detect.utils.misc import quantile
 from numba import njit
@@ -180,11 +180,6 @@ class FETDriftOnline(BaseUniDriftOnline):
 
     def _update_state(self, x_t: np.ndarray):
         self.t += 1
-
-        # Preprocess x_t
-        x_t = super()._preprocess_xt(x_t)
-
-        # Init or update state
         if self.t == 1:
             # Initialise stream
             self.xs = x_t
@@ -192,7 +187,7 @@ class FETDriftOnline(BaseUniDriftOnline):
             # Update stream
             self.xs = np.concatenate([self.xs, x_t])
 
-    def score(self, x_t: np.ndarray) -> np.ndarray:
+    def score(self, x_t: Union[np.ndarray, Any]) -> np.ndarray:
         """
         Compute the test-statistic (FET) between the reference window(s) and test window.
         If a given test-window is not yet full then a test-statistic of np.nan is returned for that window.
@@ -206,6 +201,7 @@ class FETDriftOnline(BaseUniDriftOnline):
         -------
         Estimated FET test statistics (1-p_val) between reference window and test windows.
         """
+        x_t = super()._preprocess_xt(x_t)
         self._update_state(x_t)
 
         stats = np.zeros((len(self.window_sizes), self.n_features), dtype=np.float32)
