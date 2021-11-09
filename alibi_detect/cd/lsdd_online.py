@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Callable, Dict, Optional, Union
+from typing import Any, Callable, Dict, Optional, Union
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
 
 if has_pytorch:
@@ -107,7 +107,7 @@ class LSDDDriftOnline:
         "Resets the detector but does not reconfigure thresholds."
         self._detector.reset()
 
-    def predict(self, x_t: Union[np.ndarray, list], return_test_stat: bool = True) \
+    def predict(self, x_t: Union[np.ndarray, Any], return_test_stat: bool = True) \
             -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
         """
         Predict whether the most recent window of data has drifted from the reference data.
@@ -126,3 +126,18 @@ class LSDDDriftOnline:
         'data' contains the drift prediction and optionally the test-statistic and threshold.
         """
         return self._detector.predict(x_t, return_test_stat)
+
+    def score(self, x_t: Union[np.ndarray, Any]) -> float:
+        """
+        Compute the test-statistic (LSDD) between the reference window and test window.
+
+        Parameters
+        ----------
+        x_t
+            A single instance to be added to the test-window.
+
+        Returns
+        -------
+        LSDD estimate between reference window and test window.
+        """
+        return self._detector.score(x_t)

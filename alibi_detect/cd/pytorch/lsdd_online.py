@@ -1,7 +1,7 @@
 from tqdm import tqdm
 import numpy as np
 import torch
-from typing import Callable, Optional, Union
+from typing import Any, Callable, Optional, Union
 from alibi_detect.cd.base_online import BaseDriftOnline
 from alibi_detect.utils.pytorch import GaussianRBF, permed_lsdds, quantile
 
@@ -178,26 +178,29 @@ class LSDDDriftOnlineTorch(BaseDriftOnline):
             h_init = self.c2s - self.k_xtc.mean(0)  # (Eqn 21)
             lsdd_init = h_init[None, :] @ self.H_lam_inv @ h_init[:, None]  # (Eqn 11)
 
-    def score(self, x_t: np.ndarray) -> Union[float, None]:
+    def _update_state(self, x_t: torch.Tensor):
+        self.t += 1
+        k_xtc = self.kernel(x_t, self.kernel_centers)
+        self.test_window = torch.cat([self.test_window[(1-self.window_size):], x_t], 0)
+        self.k_xtc = torch.cat([self.k_xtc[(1-self.window_size):], k_xtc], 0)
+
+    def score(self, x_t: Union[np.ndarray, Any]) -> float:
         """
         Compute the test-statistic (LSDD) between the reference window and test window.
-        If the test-window is not yet full then a test-statistic of None is returned.
 
         Parameters
         ----------
         x_t
-            A single instance.
+            A single instance to be added to the test-window.
 
         Returns
         -------
         LSDD estimate between reference window and test window.
         """
-        x_t = torch.from_numpy(x_t[None, :]).to(self.device)
+        x_t = super()._preprocess_xt(x_t)
+        x_t = torch.from_numpy(x_t).to(self.device)
         x_t = self._normalize(x_t)
-        k_xtc = self.kernel(x_t, self.kernel_centers)
-
-        self.test_window = torch.cat([self.test_window[(1-self.window_size):], x_t], 0)
-        self.k_xtc = torch.cat([self.k_xtc[(1-self.window_size):], k_xtc], 0)
+        self._update_state(x_t)
         h = self.c2s - self.k_xtc.mean(0)  # (Eqn 21)
         lsdd = h[None, :] @ self.H_lam_inv @ h[:, None]  # (Eqn 11)
         return float(lsdd.detach().cpu())

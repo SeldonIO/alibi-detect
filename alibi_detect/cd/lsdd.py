@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Callable, Dict, Optional, Union
+from typing import Callable, Dict, Optional, Union, Tuple
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
 
 if has_pytorch:
@@ -108,3 +108,20 @@ class LSDDDrift:
         'data' contains the drift prediction and optionally the p-value, threshold and LSDD metric.
         """
         return self._detector.predict(x, return_p_val, return_distance)
+
+    def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, np.ndarray]:
+        """
+        Compute the p-value resulting from a permutation test using the least-squares density
+        difference as a distance measure between the reference data and the data to be tested.
+
+        Parameters
+        ----------
+        x
+            Batch of instances.
+
+        Returns
+        -------
+        p-value obtained from the permutation test, the LSDD between the reference and test set
+        and the LSDD values from the permutation test.
+        """
+        return self._detector.score(x)

@@ -62,10 +62,13 @@ class BaseDriftOnline(BaseDetector):
         self.fpr = 1/ert
         self.window_size = window_size
 
+        # Preprocess reference data
         if isinstance(preprocess_fn, Callable):  # type: ignore
             self.x_ref = preprocess_fn(x_ref)
         else:
             self.x_ref = x_ref
+
+        # Other attributes
         self.preprocess_fn = preprocess_fn
         self.n = len(x_ref)  # type: ignore
         self.n_bootstraps = n_bootstraps  # nb of samples used to estimate thresholds
@@ -85,6 +88,29 @@ class BaseDriftOnline(BaseDetector):
     @abstractmethod
     def _configure_ref_subset(self):
         pass
+
+    @abstractmethod
+    def _update_state(self, x_t: Union[np.ndarray, 'tf.Tensor', 'torch.Tensor']):
+        pass
+
+    def _preprocess_xt(self, x_t: Union[np.ndarray, Any]) -> np.ndarray:
+        """
+        Private method to preprocess a single test instance ready for _update_state.
+
+        Parameters
+        ----------
+        x_t
+            A single test instance to be preprocessed.
+
+        Returns
+        -------
+        The preprocessed test instance `x_t`.
+        """
+        # preprocess if necessary
+        if isinstance(self.preprocess_fn, Callable):  # type: ignore
+            x_t = x_t[None, :] if isinstance(x_t, np.ndarray) else [x_t]
+            x_t = self.preprocess_fn(x_t)[0]  # type: ignore
+        return x_t[None, :]
 
     def get_threshold(self, t: int) -> Union[float, None]:
         return self.thresholds[t] if t < self.window_size else self.thresholds[-1]  # type: ignore
@@ -117,14 +143,7 @@ class BaseDriftOnline(BaseDetector):
         'meta' has the model's metadata.
         'data' contains the drift prediction and optionally the test-statistic and threshold.
         """
-        self.t += 1
-
-        # preprocess if necessary
-        if isinstance(self.preprocess_fn, Callable):  # type: ignore
-            x_t = x_t[None, :] if isinstance(x_t, np.ndarray) else [x_t]
-            x_t = self.preprocess_fn(x_t)[0]  # type: ignore
-
-        # update test window and return updated test stat
+        # Compute test stat and check for drift
         test_stat = self.score(x_t)
         threshold = self.get_threshold(self.t)
         drift_pred = 0 if test_stat is None else int(test_stat > threshold)
