@@ -1,6 +1,8 @@
 # type: ignore
 # TODO: need to rewrite utilities using isinstance or @singledispatch for type checking to work properly
 import dill
+from ruamel.yaml import YAML
+import numpy as np
 from functools import partial
 import logging
 import os
@@ -13,10 +15,6 @@ from transformers import AutoTokenizer, PreTrainedTokenizerBase
 from typing import Callable, Dict, List, Optional, Tuple, Union
 from alibi_detect.ad import AdversarialAE, ModelDistillation
 from alibi_detect.ad.adversarialae import DenseHidden
-from alibi_detect.base import BaseDetector
-# from alibi_detect.cd import ChiSquareDrift, ClassifierDrift, KSDrift, TabularDrift #, MMDDrift # TODO
-# from alibi_detect.cd.tensorflow.classifier import ClassifierDriftTF
-# from alibi_detect.cd.tensorflow.mmd import MMDDriftTF # TODO
 from alibi_detect.cd.tensorflow import HiddenOutput, UAE
 from alibi_detect.cd.tensorflow.preprocess import _Encoder
 from alibi_detect.models.tensorflow.autoencoder import AE, AEGMM, DecoderLSTM, EncoderLSTM, Seq2Seq, VAE, VAEGMM
@@ -27,41 +25,13 @@ from alibi_detect.od.llr import build_model
 from alibi_detect.version import __version__
 import torch.nn as nn
 
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from alibi_detect.cd.base import DriftDetector
-
-SUPPORTED_MODELS = Union[UAE, HiddenOutput, tf.keras.Sequential, tf.keras.Model]
-SupportedModels = (UAE, HiddenOutput, tf.keras.Sequential, tf.keras.Model)
-
 # do not extend pickle dispatch table so as not to change pickle behaviour
 dill.extend(use_dill=False)
 
 logger = logging.getLogger(__name__)
 
-Data = Union[
-    AdversarialAE,
-    BaseDetector,
-    # TODO    ChiSquareDrift,
-    # TODO    ClassifierDrift,
-    # TODO    ClassifierDriftTF,
-    # TODO    IForest,
-    # TODO    KSDrift,
-    LLR,
-    Mahalanobis,
-    # TODO    MMDDrift,
-    # TODO    MMDDriftTF,
-    ModelDistillation,
-    OutlierAE,
-    OutlierAEGMM,
-    OutlierProphet,
-    OutlierSeq2Seq,
-    OutlierVAE,
-    OutlierVAEGMM,
-    SpectralResidual,
-    # TODO    TabularDrift
-]
+SUPPORTED_MODELS = Union[UAE, HiddenOutput, tf.keras.Sequential, tf.keras.Model]
+SupportedModels = (UAE, HiddenOutput, tf.keras.Sequential, tf.keras.Model)
 
 DEFAULT_DETECTORS = [
     'AdversarialAE',
@@ -72,8 +42,8 @@ DEFAULT_DETECTORS = [
     'KSDrift',
     'LLR',
     'Mahalanobis',
-    # TODO    'MMDDrift',
-    # TODO    'MMDDriftTF',
+    'MMDDrift',
+    'MMDDriftTF',
     'ModelDistillation',
     'OutlierAE',
     'OutlierAEGMM',
@@ -83,6 +53,38 @@ DEFAULT_DETECTORS = [
     'OutlierVAEGMM',
     'SpectralResidual',
     'TabularDrift'
+]
+
+Data = Union[
+    'AdversarialAE',
+    'ChiSquareDrift',
+    'ClassifierDrift',
+    'ClassifierDriftTF',
+    'IForest',
+    'KSDrift',
+    'LLR',
+    'Mahalanobis',
+    'MMDDrift',
+    'MMDDriftTF',
+    'ModelDistillation',
+    'OutlierAE',
+    'OutlierAEGMM',
+    'OutlierProphet',
+    'OutlierSeq2Seq',
+    'OutlierVAE',
+    'OutlierVAEGMM',
+    'SpectralResidual',
+    'TabularDrift'
+]
+
+DRIFT_DETECTORS = [  # Drift detectors separated out as they now have their own save methods
+    'MMDDrift',
+    'MMDDriftTF',
+#    'ChiSquareDrift',  # TODO - add all drift methods in once .save() methods are complete
+#    'TabularDrift',
+    'KSDrift',
+#    'ClassifierDrift',
+#    'ClassifierDriftTF',
 ]
 
 
@@ -110,246 +112,117 @@ def save_detector(detector: Data, filepath: Union[str, os.PathLike]) -> None:
         logger.warning('Directory {} does not exist and is now created.'.format(filepath))
         filepath.mkdir(parents=True, exist_ok=True)
 
-    # save metadata
-    with open(filepath.joinpath('meta.dill'), 'wb') as f:
-        dill.dump(detector.meta, f)
+    # If a drift detector, wrap drift detector save method
+    if detector_name in DRIFT_DETECTORS:
+        save_drift_detector(detector, filepath)
 
-    # save outlier detector specific parameters
-    if detector_name == 'OutlierAE':
-        state_dict = state_ae(detector)
-    elif detector_name == 'OutlierVAE':
-        state_dict = state_vae(detector)
-    elif detector_name == 'Mahalanobis':
-        state_dict = state_mahalanobis(detector)
-    elif detector_name == 'IForest':
-        state_dict = state_iforest(detector)
-    #    elif detector_name == 'ChiSquareDrift':
-    #        state_dict, model, embed, embed_args, tokenizer = state_chisquaredrift(detector)
-    #    elif detector_name == 'ClassifierDriftTF':
-    #        state_dict, clf_drift, model, embed, embed_args, tokenizer = state_classifierdrift(detector)
-    #    elif detector_name == 'TabularDrift':
-    #        state_dict, model, embed, embed_args, tokenizer = state_tabulardrift(detector)
-    #    elif detector_name == 'KSDrift':
-    #        state_dict, model, embed, embed_args, tokenizer = state_ksdrift(detector)
-    #    elif detector_name == 'MMDDriftTF':  # TODO: delete as saving moved to method of detector.
-    #        state_dict, model, embed, embed_args, tokenizer = state_mmddrift(detector)
-    elif detector_name == 'OutlierAEGMM':
-        state_dict = state_aegmm(detector)
-    elif detector_name == 'OutlierVAEGMM':
-        state_dict = state_vaegmm(detector)
-    elif detector_name == 'AdversarialAE':
-        state_dict = state_adv_ae(detector)
-    elif detector_name == 'ModelDistillation':
-        state_dict = state_adv_md(detector)
-    elif detector_name == 'OutlierProphet':
-        state_dict = state_prophet(detector)
-    elif detector_name == 'SpectralResidual':
-        state_dict = state_sr(detector)
-    elif detector_name == 'OutlierSeq2Seq':
-        state_dict = state_s2s(detector)
-    elif detector_name == 'LLR':
-        state_dict = state_llr(detector)
+    # Otherwise, save via the previous meta and state_dict approach
+    else:
+        # save metadata
+        with open(filepath.joinpath('meta.dill'), 'wb') as f:
+            dill.dump(detector.meta, f)
 
-    with open(filepath.joinpath(detector_name + '.dill'), 'wb') as f:
-        dill.dump(state_dict, f)
+        # save outlier detector specific parameters
+        if detector_name == 'OutlierAE':
+            state_dict = state_ae(detector)
+        elif detector_name == 'OutlierVAE':
+            state_dict = state_vae(detector)
+        elif detector_name == 'Mahalanobis':
+            state_dict = state_mahalanobis(detector)
+        elif detector_name == 'IForest':
+            state_dict = state_iforest(detector)
+        elif detector_name == 'OutlierAEGMM':
+            state_dict = state_aegmm(detector)
+        elif detector_name == 'OutlierVAEGMM':
+            state_dict = state_vaegmm(detector)
+        elif detector_name == 'AdversarialAE':
+            state_dict = state_adv_ae(detector)
+        elif detector_name == 'ModelDistillation':
+            state_dict = state_adv_md(detector)
+        elif detector_name == 'OutlierProphet':
+            state_dict = state_prophet(detector)
+        elif detector_name == 'SpectralResidual':
+            state_dict = state_sr(detector)
+        elif detector_name == 'OutlierSeq2Seq':
+            state_dict = state_s2s(detector)
+        elif detector_name == 'LLR':
+            state_dict = state_llr(detector)
 
-    # save outlier detector specific TensorFlow models
-    if detector_name == 'OutlierAE':
-        save_tf_ae(detector, filepath)
-    elif detector_name == 'OutlierVAE':
-        save_tf_vae(detector, filepath)
-    #    elif detector_name in ['ChiSquareDrift', 'ClassifierDriftTF', 'KSDrift', 'MMDDriftTF', 'TabularDrift']:
-    #        if model is not None:
-    #            save_tf_model(model, filepath, model_name='encoder')
-    #        if embed is not None:
-    #            save_embedding(embed, embed_args, filepath)
-    #        if tokenizer is not None:
-    #            tokenizer.save_pretrained(filepath.joinpath('model'))
-    #        if detector_name == 'ClassifierDriftTF':
-    #            save_tf_model(clf_drift, filepath, model_name='clf_drift')
-    elif detector_name == 'OutlierAEGMM':
-        save_tf_aegmm(detector, filepath)
-    elif detector_name == 'OutlierVAEGMM':
-        save_tf_vaegmm(detector, filepath)
-    elif detector_name == 'AdversarialAE':
-        save_tf_ae(detector, filepath)
-        save_tf_model(detector.model, filepath)
-        save_tf_hl(detector.model_hl, filepath)
-    elif detector_name == 'ModelDistillation':
-        save_tf_model(detector.distilled_model, filepath, model_name='distilled_model')
-        save_tf_model(detector.model, filepath, model_name='model')
-    elif detector_name == 'OutlierSeq2Seq':
-        save_tf_s2s(detector, filepath)
-    elif detector_name == 'LLR':
-        save_tf_llr(detector, filepath)
+        with open(filepath.joinpath(detector_name + '.dill'), 'wb') as f:
+            dill.dump(state_dict, f)
+
+        # save outlier detector specific TensorFlow models
+        if detector_name == 'OutlierAE':
+            save_tf_ae(detector, filepath)
+        elif detector_name == 'OutlierVAE':
+            save_tf_vae(detector, filepath)
+        elif detector_name == 'OutlierAEGMM':
+            save_tf_aegmm(detector, filepath)
+        elif detector_name == 'OutlierVAEGMM':
+            save_tf_vaegmm(detector, filepath)
+        elif detector_name == 'AdversarialAE':
+            save_tf_ae(detector, filepath)
+            save_tf_model(detector.model, filepath)
+            save_tf_hl(detector.model_hl, filepath)
+        elif detector_name == 'ModelDistillation':
+            save_tf_model(detector.distilled_model, filepath, model_name='distilled_model')
+            save_tf_model(detector.model, filepath, model_name='model')
+        elif detector_name == 'OutlierSeq2Seq':
+            save_tf_s2s(detector, filepath)
+        elif detector_name == 'LLR':
+            save_tf_llr(detector, filepath)
 
 
-def save_embedding(embed: tf.keras.Model,
-                   embed_args: dict,
-                   filepath: Union[str, os.PathLike],
-                   save_dir: str = 'model',
-                   model_name: str = 'embedding') -> None:
+# TODO - eventually this will become save_detector
+def save_drift_detector(detector: Data, filepath: Union[str, os.PathLike], filename: str = 'config.yaml'):
     """
-    Save embeddings for text drift models.
+    Save a drift detector. The detector is saved as a yaml config file. Artefacts such as
+    `preprocess_fn`, models, embeddings, tokenizers etc are serialized, and their filepaths are
+    added to the config file.
 
-    Parameters
-    ----------
-    embed
-        Embedding model.
-    embed_args
-        Arguments for TransformerEmbedding module.
-    filepath
-        Save directory.
-    save_dir
-        Name of folder to save to within the filepath directory.
-    model_name
-        Name of saved model.
-    """
-    # create folder to save model in
-    model_dir = Path(filepath).joinpath(save_dir)
-    if not model_dir.is_dir():
-        logger.warning('Directory {} does not exist and is now created.'.format(model_dir))
-        model_dir.mkdir(parents=True, exist_ok=True)
-
-    # Save embedding model
-    embed.save_pretrained(model_dir)
-    with open(model_dir.joinpath(model_name + '.dill'), 'wb') as f:
-        dill.dump(embed_args, f)
-
-
-def serialize_preprocess(detector: 'DriftDetector',
-                         filepath: Path,
-                         verbose: Optional[bool] = False) -> dict:
-    """
-    Serializes a drift detectors preprocess_fn. Artefacts are saved to disk, and a config dict containing filepaths
-    to the saved artefacts is returned.
+    The detector can be loaded again by passing the resulting config file `load_detector`.
 
     Parameters
     ----------
     detector
-        The drift detector containing a preprocessing function to be serialized.
+        The detector to save.
     filepath
-        Directory to save serialized artefacts to.
-    verbose
-        Verbose logging.
-
-    Returns
-    -------
-    The config dictionary, containing references to the serialized artefacts. The format if this dict matches that
-    of the `preprocess` field in the drift detector specification.
+        File path to save serialized artefacts to.
+    filename
+        YAML file to save config in.
     """
-    preprocess_fn = detector.preprocess_fn
-    backend = detector.meta.get('backend', 'tensorflow')
+    # Get backend and detector name
+    backend = detector.meta.get('backend')
+    if backend == 'pytorch':
+        raise NotImplementedError('Detectors with PyTorch backend are not yet supported.')
+    detector_name = detector.meta['name']
+    if detector_name not in DRIFT_DETECTORS:
+        raise ValueError('{} is not supported by `save_drift_detector`.'.format(detector_name))
 
-    cfg = {}
-    kwargs = {}
-    if isinstance(preprocess_fn, partial):
-        # If the func is preprocess_drift, just save string, otherwise, serialize
-        func = preprocess_fn.func
-        if func.__name__ == 'preprocess_drift':
-            func = 'preprocess_drift'
-        else:
-            save_path = filepath.joinpath('func.dill')
-            dill.dump(func, save_path)
-            func = str(save_path)
-        cfg.update({'preprocess_fn': func})
+    # Process file paths
+    filepath = Path(filepath)
+    if not filepath.is_dir():
+        logger.warning('Directory {} does not exist and is now created.'.format(filepath))
+        filepath.mkdir(parents=True, exist_ok=True)
+    absolute = True if Path('test').resolve() == Path.cwd() else False  # TODO - what should 'test' be...
 
-        # Process partial function args
-        partial_dict = preprocess_fn.keywords
-        for k, v in partial_dict.items():
-            # Model/embedding
-            if isinstance(v, SupportedModels):
-                cfg_model = save_model(v, filepath, detector.input_shape, backend, verbose)
-                kwargs.update({k: cfg_model})
+    # Get the detector config (with artefacts still within it)
+    cfg = detector.get_config()
 
-            # Tokenizer
-            elif isinstance(v, PreTrainedTokenizerBase):
-                cfg_token = save_tokenizer(v, filepath, verbose)
-                kwargs.update({k: cfg_token})
+    # Save x_ref
+    save_path = filepath.joinpath('x_ref.npy')
+    np.save(str(save_path), detector.x_ref)
+    cfg.update({'x_ref': save_path})
 
-            # Arbitrary function e.g. preprocess_batch_fn
-            elif callable(v):  # TODO - is this enough? other non-serializable callables might sneak in
-                save_path = filepath.joinpath(k + '.dill')
-                dill.dump(v, save_path)
-                kwargs.update({k: save_path})
+    # Save preprocess_fn
+    if isinstance(detector.preprocess_fn, Callable):
+        preprocess_cfg = serialize_preprocess(detector.preprocess_fn, backend, detector.input_shape, filepath)
+        # TODO - verbose option
+        cfg['preprocess'] = preprocess_cfg
 
-            # Put remaining kwargs directly into cfg
-            else:
-                kwargs.update({k: v})
-
-    else:
-        func = preprocess_fn
-        save_path = filepath.joinpath('func.dill')
-        dill.dump(func, save_path)
-        cfg.update({'preprocess_fn': save_path})
-
-    cfg.update({'kwargs': kwargs})
-
-    return cfg
-
-
-def resolve_paths(cfg: dict, absolute: Optional[bool] = False) -> dict:
-    for k, v in cfg.items():
-        if isinstance(v, dict):
-            resolve_paths(v, absolute)
-        elif isinstance(v, Path):
-            if absolute:
-                v = v.resolve()
-            cfg.update({k: str(v)})
-    return cfg
-
-
-def save_model(model: SUPPORTED_MODELS,
-               filepath: Path,
-               input_shape: tuple,
-               backend: str,
-               verbose: Optional[bool] = False) -> dict:
-    cfg_model, cfg_embed = {}, None
-    if isinstance(model, UAE):
-        if isinstance(model.encoder.layers[0], TransformerEmbedding):  # text drift
-            # embedding
-            cfg_embed = {}
-            embed = model.encoder.layers[0].model
-            cfg_embed.update({'embedding_type': model.encoder.layers[0].emb_type})
-            cfg_embed.update({'layers': model.encoder.layers[0].hs_emb.keywords['layers']})
-            save_embedding(embed, embed_args=cfg_embed, filepath=filepath, save_dir='embedding')
-            cfg_embed.update({'src': filepath.joinpath('embedding')})
-            # preprocessing encoder
-            inputs = Input(shape=input_shape, dtype=tf.int64)
-            model.encoder.call(inputs)
-            shape_enc = (model.encoder.layers[0].output.shape[-1],)
-            layers = [InputLayer(input_shape=shape_enc)] + model.encoder.layers[1:]
-            model = tf.keras.Sequential(layers)
-            _ = model(tf.zeros((1,) + shape_enc))
-        else:
-            model = model.encoder
-        cfg_model.update({'type': 'UAE'})
-
-    elif isinstance(model, HiddenOutput):
-        model = model.model
-        cfg_model.update({'type': 'HiddenOutput'})
-    elif isinstance(model, (tf.keras.Sequential, tf.keras.Model)):
-        model = model
-        cfg_model.update({'type': 'custom'})
-
-    save_tf_model(model, filepath=filepath, save_dir='model')
-    cfg_model.update(
-        {
-            'src': filepath.joinpath('model'),
-            'embedding': cfg_embed
-        }
-    )
-    return cfg_model
-
-
-def save_tokenizer(tokenizer: PreTrainedTokenizerBase,
-                   filepath: Path,
-                   verbose: Optional[bool] = False) -> dict:
-    cfg_token = {}
-    save_path = filepath.joinpath('tokenizer')
-    tokenizer.save_pretrained(save_path)
-    cfg_token.update({'src': save_path})
-    return cfg_token
+    # Save config
+    cfg = resolve_paths(cfg, absolute=absolute)
+    YAML().dump(cfg, Path(filename))
 
 
 # def state_chisquaredrift(cd: ChiSquareDrift) -> Tuple[
@@ -1954,3 +1827,175 @@ def init_od_llr(state_dict: Dict, models: tuple) -> LLR:
         od.model_s = models[2]
         od.model_b = models[3]
     return od
+
+
+def serialize_preprocess(preprocess_fn: Callable,
+                         backend: Optional[str],
+                         input_shape: Optional[tuple],
+                         filepath: Path,
+                         verbose: Optional[bool] = False) -> dict:
+    """
+    Serializes a drift detectors preprocess_fn. Artefacts are saved to disk, and a config dict containing filepaths
+    to the saved artefacts is returned.
+
+    Parameters
+    ----------
+    preprocess_fn
+        The preprocess function to be serialized.
+    backend
+        Specifies the detectors backend (if it has one). Either `'tensorflow'`, `'pytorch'` or `None`.
+    input_shape
+        Input shape for a model (if a model exists).
+    filepath
+        Directory to save serialized artefacts to.
+    verbose
+        Verbose logging.
+
+    Returns
+    -------
+    The config dictionary, containing references to the serialized artefacts. The format if this dict matches that
+    of the `preprocess` field in the drift detector specification.
+    """
+    preprocess_cfg = {}
+    kwargs = {}
+    if isinstance(preprocess_fn, partial):
+        # If the func is preprocess_drift, just save string, otherwise, serialize
+        func = preprocess_fn.func
+        if func.__name__ == 'preprocess_drift':
+            func = 'preprocess_drift'
+        else:
+            save_path = filepath.joinpath('func.dill')
+            dill.dump(func, save_path)
+            func = str(save_path)
+        preprocess_cfg.update({'preprocess_fn': func})
+
+        # Process partial function args
+        partial_dict = preprocess_fn.keywords
+        for k, v in partial_dict.items():
+            # Model/embedding
+            if isinstance(v, SupportedModels):
+                cfg_model = save_model(v, filepath, input_shape, backend, verbose)
+                kwargs.update({k: cfg_model})
+
+            # Tokenizer
+            elif isinstance(v, PreTrainedTokenizerBase):
+                cfg_token = save_tokenizer(v, filepath, verbose)
+                kwargs.update({k: cfg_token})
+
+            # Arbitrary function e.g. preprocess_batch_fn
+            elif callable(v):  # TODO - is this enough? other non-serializable callables might sneak in
+                save_path = filepath.joinpath(k + '.dill')
+                dill.dump(v, save_path)
+                kwargs.update({k: save_path})
+
+            # Put remaining kwargs directly into cfg
+            else:
+                kwargs.update({k: v})
+
+    else:
+        func = preprocess_fn
+        save_path = filepath.joinpath('func.dill')
+        dill.dump(func, save_path)
+        preprocess_cfg.update({'preprocess_fn': save_path})
+
+    preprocess_cfg.update({'kwargs': kwargs})
+
+    return preprocess_cfg
+
+
+def save_embedding(embed: tf.keras.Model,
+                   embed_args: dict,
+                   filepath: Union[str, os.PathLike],
+                   save_dir: str = 'model',
+                   model_name: str = 'embedding') -> None:
+    """
+    Save embeddings for text drift models.
+
+    Parameters
+    ----------
+    embed
+        Embedding model.
+    embed_args
+        Arguments for TransformerEmbedding module.
+    filepath
+        Save directory.
+    save_dir
+        Name of folder to save to within the filepath directory.
+    model_name
+        Name of saved model.
+    """
+    # create folder to save model in
+    model_dir = Path(filepath).joinpath(save_dir)
+    if not model_dir.is_dir():
+        logger.warning('Directory {} does not exist and is now created.'.format(model_dir))
+        model_dir.mkdir(parents=True, exist_ok=True)
+
+    # Save embedding model
+    embed.save_pretrained(model_dir)
+    with open(model_dir.joinpath(model_name + '.dill'), 'wb') as f:
+        dill.dump(embed_args, f)
+
+
+def resolve_paths(cfg: dict, absolute: Optional[bool] = False) -> dict:
+    for k, v in cfg.items():
+        if isinstance(v, dict):
+            resolve_paths(v, absolute)
+        elif isinstance(v, Path):
+            if absolute:
+                v = v.resolve()
+            cfg.update({k: str(v)})
+    return cfg
+
+
+def save_model(model: SUPPORTED_MODELS,
+               filepath: Path,
+               input_shape: tuple,
+               backend: str,
+               verbose: Optional[bool] = False) -> dict:
+    # TODO - need to check for appropriate backend and input_shape here
+    cfg_model, cfg_embed = {}, None
+    if isinstance(model, UAE):
+        if isinstance(model.encoder.layers[0], TransformerEmbedding):  # text drift
+            # embedding
+            cfg_embed = {}
+            embed = model.encoder.layers[0].model
+            cfg_embed.update({'embedding_type': model.encoder.layers[0].emb_type})
+            cfg_embed.update({'layers': model.encoder.layers[0].hs_emb.keywords['layers']})
+            save_embedding(embed, embed_args=cfg_embed, filepath=filepath, save_dir='embedding')
+            cfg_embed.update({'src': filepath.joinpath('embedding')})
+            # preprocessing encoder
+            inputs = Input(shape=input_shape, dtype=tf.int64)
+            model.encoder.call(inputs)
+            shape_enc = (model.encoder.layers[0].output.shape[-1],)
+            layers = [InputLayer(input_shape=shape_enc)] + model.encoder.layers[1:]
+            model = tf.keras.Sequential(layers)
+            _ = model(tf.zeros((1,) + shape_enc))
+        else:
+            model = model.encoder
+        cfg_model.update({'type': 'UAE'})
+
+    elif isinstance(model, HiddenOutput):
+        model = model.model
+        cfg_model.update({'type': 'HiddenOutput'})
+    elif isinstance(model, (tf.keras.Sequential, tf.keras.Model)):
+        model = model
+        cfg_model.update({'type': 'custom'})
+
+    save_tf_model(model, filepath=filepath, save_dir='model')
+    cfg_model.update(
+        {
+            'src': filepath.joinpath('model'),
+            'embedding': cfg_embed
+        }
+    )
+    return cfg_model
+
+
+def save_tokenizer(tokenizer: PreTrainedTokenizerBase,
+                   filepath: Path,
+                   verbose: Optional[bool] = False) -> dict:
+    cfg_token = {}
+    save_path = filepath.joinpath('tokenizer')
+    tokenizer.save_pretrained(save_path)
+    cfg_token.update({'src': save_path})
+    return cfg_token

@@ -1,5 +1,4 @@
 import logging
-import os
 import numpy as np
 import tensorflow as tf
 from typing import Callable, Dict, Optional, Tuple, Union
@@ -118,17 +117,15 @@ class MMDDriftTF(BaseMMDDrift):
         p_val = (mmd2 <= mmd2_permuted).mean()
         return p_val, mmd2, mmd2_permuted
 
-    def get_config(self, filepath: Optional[Union[str, os.PathLike]] = None) -> dict:
+    def get_config(self) -> dict:
         """
-        TODO
-        Note: only GaussianRBF kernel supported.
+        Get the detector's configuration dictionary.
 
-        Parameters
-        ----------
-        filepath
-            Directory to save serialized artefacts to.
+        Returns
+        -------
+        The detector's configuration dictionary.
         """
-        cfg = super().get_config(filepath)
+        cfg = super().get_config()
 
         # backend
         cfg.update({'backend': 'tensorflow'})

@@ -2,15 +2,17 @@ import numpy as np
 from scipy.stats import ks_2samp
 from typing import Callable, Dict, Optional, Tuple, Union
 from alibi_detect.cd.base import BaseUnivariateDrift
-import os
+from alibi_detect.utils.warnings import deprecated_alias
+
 
 class KSDrift(BaseUnivariateDrift):
+    @deprecated_alias(preprocess_x_ref='preprocess_at_init')
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
             p_val: float = .05,
-            x_ref_preprocessed: Optional[bool] = False,
-            preprocess_at_init: Optional[bool] = True,
+            x_ref_preprocessed: bool = False,
+            preprocess_at_init: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
             correction: str = 'bonferroni',
@@ -95,17 +97,15 @@ class KSDrift(BaseUnivariateDrift):
             dist[f], p_val[f] = ks_2samp(x_ref[:, f], x[:, f], alternative=self.alternative, mode='asymp')
         return p_val, dist
 
-    def get_config(self, filepath: Optional[Union[str, os.PathLike]] = None) -> dict:
+    def get_config(self) -> dict:
         """
-        TODO
-        Note: only GaussianRBF kernel supported.
+        Get the detector's configuration dictionary.
 
-        Parameters
-        ----------
-        filepath
-            Directory to save serialized artefacts to.
+        Returns
+        -------
+        The detector's configuration dictionary.
         """
-        cfg = super().get_config(filepath)
+        cfg = super().get_config()
 
         # Detector kwargs
         kwargs = {

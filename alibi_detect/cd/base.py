@@ -8,10 +8,6 @@ from alibi_detect.base import BaseDetector, concept_drift_dict
 from alibi_detect.cd.utils import get_input_shape, update_reference
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
 from alibi_detect.utils.statstest import fdr
-from alibi_detect.utils.saving import serialize_preprocess, resolve_paths
-from ruamel.yaml import YAML
-import os
-from pathlib import Path
 
 if has_pytorch:
     import torch  # noqa F401
@@ -594,31 +590,28 @@ class BaseMMDDrift(BaseDetector):
         return cd
 
     @abstractmethod
-    def get_config(self, filepath: Optional[Union[str, os.PathLike]] = None) -> dict:
-        # TODO - could have option to get resolved or unresolved config dict (filepath not needed if resolved)
+    def get_config(self) -> dict:
+        """
+        Get the detector's configuration dictionary.
+
+        Returns
+        -------
+        The detector's configuration dictionary.
+        """
         cfg = {'meta': self.meta}
 
         # x_ref
-        if filepath is None:
-            cfg.update({'x_ref': self.x_ref_orig})
-        else:
-            filepath = Path(filepath)
-            save_path = filepath.joinpath('x_ref.npy')
-            np.save(str(save_path), self.x_ref_orig)
-            cfg.update({'x_ref': save_path})
+        cfg.update({'x_ref': self.x_ref_orig})
 
         # Preprocess field
         if self.preprocess_fn is not None:
-            if filepath is None:
-                cfg.update({'preprocess': {'preprocess_fn': self.preprocess_fn}})
-            else:
-                preprocess_cfg = serialize_preprocess(self, filepath)
-                cfg.update({'preprocess': preprocess_cfg})
+            cfg.update({'preprocess': {'preprocess_fn': self.preprocess_fn}})
 
         # Detector field
         kwargs = {
                 'p_val': self.p_val,
-                'preprocess_x_ref': self.preprocess_x_ref,
+                'x_ref_preprocessed': self.preprocess_at_init,  # if preprocess_at_init, preprocessed x_ref saved
+                'preprocess_at_init': self.preprocess_at_init,
                 'update_x_ref': self.update_x_ref,
                 'configure_kernel_from_x_ref': not self.infer_sigma,
                 'n_permutations': self.n_permutations,
@@ -626,15 +619,7 @@ class BaseMMDDrift(BaseDetector):
         }
         cfg.update({'detector': {'kwargs': kwargs}})
 
-        return resolve_paths(cfg)
-
-    def save_config(self, filepath: Optional[Union[str, os.PathLike]], filename: Optional[str] = 'config.yaml'):
-        # TODO - can move this to BaseDetector once all methods have a get_config method (including ad and od)
-        filepath = Path(filepath)
-        filename = Path(filename)
-        cfg = self.get_config(filepath)
-        absolute = True if Path('test').resolve() == Path.cwd() else False
-        YAML().dump(resolve_paths(cfg, absolute=absolute), filename)
+        return cfg
 
 
 class BaseLSDDDrift(BaseDetector):
@@ -794,8 +779,8 @@ class BaseUnivariateDrift(BaseDetector):
             self,
             x_ref: Union[np.ndarray, list],
             p_val: float = .05,
-            x_ref_preprocessed: Optional[bool] = False,
-            preprocess_at_init: Optional[bool] = True,
+            x_ref_preprocessed: bool = False,
+            preprocess_at_init: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
             correction: str = 'bonferroni',
@@ -844,12 +829,14 @@ class BaseUnivariateDrift(BaseDetector):
         if p_val is None:
             logger.warning('No p-value set for the drift threshold. Need to set it to detect data drift.')
 
-        # Check if preprocess_fn is valid
-        if not x_ref_preprocessed and not isinstance(preprocess_fn, Callable):  # type: ignore
-            raise ValueError("`preprocess_fn` is not a valid Callable.")
         # x_ref preprocessing logic
-        self.preprocess_at_pred = not preprocess_at_init and not x_ref_preprocessed
-        self.preprocess_at_init = preprocess_at_init and not x_ref_preprocessed
+        self.preprocess_at_pred = not preprocess_at_init and not x_ref_preprocessed and preprocess_fn is not None
+        self.preprocess_at_init = preprocess_at_init and not x_ref_preprocessed and preprocess_fn is not None
+        # Check if preprocess_fn is valid
+        if (self.preprocess_at_init or self.preprocess_at_pred) \
+                and not isinstance(preprocess_fn, Callable):  # type: ignore
+            raise ValueError("`preprocess_fn` is not a valid Callable.")
+
         # optionally preprocess reference data (now instead of at predict)
         if self.preprocess_at_init:
             self.x_ref = preprocess_fn(x_ref)
@@ -984,28 +971,22 @@ class BaseUnivariateDrift(BaseDetector):
             cd['data']['distance'] = dist
         return cd
 
-    def get_config(self, filepath: Optional[Union[str, os.PathLike]] = None) -> dict:
+    def get_config(self) -> dict:
+        """
+        Get the detector's configuration dictionary.
+
+        Returns
+        -------
+        The detector's configuration dictionary.
+        """
         cfg = {'meta': self.meta}
 
         # x_ref
-        if filepath is None:
-            cfg.update({'x_ref': self.x_ref})
-        else:
-            filepath = Path(filepath)  # TODO - get_config in BaseDetector would avoid this duplication.
-            if not filepath.is_dir():
-                logger.warning('Directory {} does not exist and is now created.'.format(filepath))
-                filepath.mkdir(parents=True, exist_ok=True)
-            save_path = filepath.joinpath('x_ref.npy')
-            np.save(str(save_path), self.x_ref)
-            cfg.update({'x_ref': save_path})
+        cfg.update({'x_ref': self.x_ref})
 
         # Preprocess field
-        if self.preprocess_fn is not None:
-            if filepath is None:
-                cfg.update({'preprocess': {'preprocess_fn': self.preprocess_fn}})
-            else:
-                preprocess_cfg = serialize_preprocess(self, filepath)
-                cfg.update({'preprocess': preprocess_cfg})
+        if isinstance(self.preprocess_fn, Callable):
+            cfg.update({'preprocess': {'preprocess_fn': self.preprocess_fn}})
 
         # Detector field
         kwargs = {
@@ -1023,21 +1004,4 @@ class BaseUnivariateDrift(BaseDetector):
         }
         cfg.update({'detector': cd_cfg})
 
-        return resolve_paths(cfg)
-
-    def save_config(self, filepath: Optional[Union[str, os.PathLike]], filename: Optional[str] = 'config.yaml'):
-        # TODO - can move this to BaseDetector once all methods have a get_config method (including ad and od)
-        filepath = Path(filepath)
-        filename = Path(filename)
-        cfg = self.get_config(filepath)
-        absolute = True if Path('test').resolve() == Path.cwd() else False
-        YAML().dump(resolve_paths(cfg, absolute=absolute), filename)
-
-
-DriftDetector = Union[
-    BaseClassifierDrift,
-    BaseLearnedKernelDrift,
-    BaseMMDDrift,
-    BaseLSDDDrift,
-    BaseUnivariateDrift,
-]
+        return cfg

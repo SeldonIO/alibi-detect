@@ -1,7 +1,6 @@
 import logging
 import numpy as np
 from typing import Callable, Dict, Optional, Union, Tuple
-import os
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
 
 if has_pytorch:
@@ -134,8 +133,12 @@ class MMDDrift:
         """
         return self._detector.score(x)
 
-    def get_config(self, filepath: Optional[Union[str, os.PathLike]] = None) -> dict:
-        return self._detector.get_config(filepath)
+    def get_config(self) -> dict:
+        """
+        Get the detector's configuration dictionary.
 
-    def save_config(self, filepath: Optional[Union[str, os.PathLike]], filename: Optional[str] = 'config.yaml'):
-        return self._detector.save_config(filepath, filename)
+        Returns
+        -------
+        The detector's configuration dictionary.
+        """
+        return self._detector.get_config()
