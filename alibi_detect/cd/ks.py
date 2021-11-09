@@ -1,11 +1,12 @@
 import numpy as np
-import warnings
 from scipy.stats import ks_2samp
 from typing import Callable, Dict, Optional, Tuple, Union
 from alibi_detect.cd.base import BaseUnivariateDrift
+from alibi_detect.utils.warnings import deprecated_alias
 
 
 class KSDrift(BaseUnivariateDrift):
+    @deprecated_alias(preprocess_x_ref='preprocess_at_init')
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
@@ -18,8 +19,7 @@ class KSDrift(BaseUnivariateDrift):
             alternative: str = 'two-sided',
             n_features: Optional[int] = None,
             input_shape: Optional[tuple] = None,
-            data_type: Optional[str] = None,
-            **kwargs
+            data_type: Optional[str] = None
     ) -> None:
         """
         Kolmogorov-Smirnov (K-S) data drift detector with Bonferroni or False Discovery Rate (FDR)
@@ -59,11 +59,6 @@ class KSDrift(BaseUnivariateDrift):
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
-        if 'preprocess_x_ref' in kwargs:  # Note - to be removed in the future
-            preprocess_at_init = kwargs['preprocess_x_ref']
-            warning_msg = "The `preprocess_x_ref` kwarg has ben replaced by `preprocess_at_init`, and " \
-                          "will be removed in a future version."
-            warnings.warn(warning_msg, DeprecationWarning)
         super().__init__(
             x_ref=x_ref,
             p_val=p_val,
