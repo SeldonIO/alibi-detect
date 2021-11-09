@@ -9,14 +9,14 @@ import warnings
 import tensorflow as tf
 from tensorflow.keras.layers import Input, InputLayer
 from tensorflow_probability.python.distributions.distribution import Distribution
-from transformers import AutoTokenizer
+from transformers import AutoTokenizer, PreTrainedTokenizerBase
 from typing import Callable, Dict, List, Optional, Tuple, Union
 from alibi_detect.ad import AdversarialAE, ModelDistillation
 from alibi_detect.ad.adversarialae import DenseHidden
 from alibi_detect.base import BaseDetector
-from alibi_detect.cd import ChiSquareDrift, ClassifierDrift, KSDrift, MMDDrift, TabularDrift
-from alibi_detect.cd.tensorflow.classifier import ClassifierDriftTF
-from alibi_detect.cd.tensorflow.mmd import MMDDriftTF
+# from alibi_detect.cd import ChiSquareDrift, ClassifierDrift, KSDrift, TabularDrift #, MMDDrift # TODO
+# from alibi_detect.cd.tensorflow.classifier import ClassifierDriftTF
+# from alibi_detect.cd.tensorflow.mmd import MMDDriftTF # TODO
 from alibi_detect.cd.tensorflow import HiddenOutput, UAE
 from alibi_detect.cd.tensorflow.preprocess import _Encoder
 from alibi_detect.models.tensorflow.autoencoder import AE, AEGMM, DecoderLSTM, EncoderLSTM, Seq2Seq, VAE, VAEGMM
@@ -24,8 +24,16 @@ from alibi_detect.models.tensorflow import PixelCNN, TransformerEmbedding
 from alibi_detect.od import (IForest, LLR, Mahalanobis, OutlierAE, OutlierAEGMM, OutlierProphet,
                              OutlierSeq2Seq, OutlierVAE, OutlierVAEGMM, SpectralResidual)
 from alibi_detect.od.llr import build_model
-from alibi_detect.utils.tensorflow.kernels import GaussianRBF
 from alibi_detect.version import __version__
+import torch.nn as nn
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from alibi_detect.cd.base import DriftDetector
+
+SUPPORTED_MODELS = Union[UAE, HiddenOutput, tf.keras.Sequential, tf.keras.Model]
+SupportedModels = (UAE, HiddenOutput, tf.keras.Sequential, tf.keras.Model)
 
 # do not extend pickle dispatch table so as not to change pickle behaviour
 dill.extend(use_dill=False)
@@ -35,15 +43,15 @@ logger = logging.getLogger(__name__)
 Data = Union[
     AdversarialAE,
     BaseDetector,
-    ChiSquareDrift,
-    ClassifierDrift,
-    ClassifierDriftTF,
-    IForest,
-    KSDrift,
+    # TODO    ChiSquareDrift,
+    # TODO    ClassifierDrift,
+    # TODO    ClassifierDriftTF,
+    # TODO    IForest,
+    # TODO    KSDrift,
     LLR,
     Mahalanobis,
-    MMDDrift,
-    MMDDriftTF,
+    # TODO    MMDDrift,
+    # TODO    MMDDriftTF,
     ModelDistillation,
     OutlierAE,
     OutlierAEGMM,
@@ -52,7 +60,7 @@ Data = Union[
     OutlierVAE,
     OutlierVAEGMM,
     SpectralResidual,
-    TabularDrift
+    # TODO    TabularDrift
 ]
 
 DEFAULT_DETECTORS = [
@@ -64,8 +72,8 @@ DEFAULT_DETECTORS = [
     'KSDrift',
     'LLR',
     'Mahalanobis',
-    'MMDDrift',
-    'MMDDriftTF',
+    # TODO    'MMDDrift',
+    # TODO    'MMDDriftTF',
     'ModelDistillation',
     'OutlierAE',
     'OutlierAEGMM',
@@ -115,16 +123,16 @@ def save_detector(detector: Data, filepath: Union[str, os.PathLike]) -> None:
         state_dict = state_mahalanobis(detector)
     elif detector_name == 'IForest':
         state_dict = state_iforest(detector)
-    elif detector_name == 'ChiSquareDrift':
-        state_dict, model, embed, embed_args, tokenizer = state_chisquaredrift(detector)
-    elif detector_name == 'ClassifierDriftTF':
-        state_dict, clf_drift, model, embed, embed_args, tokenizer = state_classifierdrift(detector)
-    elif detector_name == 'TabularDrift':
-        state_dict, model, embed, embed_args, tokenizer = state_tabulardrift(detector)
-    elif detector_name == 'KSDrift':
-        state_dict, model, embed, embed_args, tokenizer = state_ksdrift(detector)
-    elif detector_name == 'MMDDriftTF':
-        state_dict, model, embed, embed_args, tokenizer = state_mmddrift(detector)
+    #    elif detector_name == 'ChiSquareDrift':
+    #        state_dict, model, embed, embed_args, tokenizer = state_chisquaredrift(detector)
+    #    elif detector_name == 'ClassifierDriftTF':
+    #        state_dict, clf_drift, model, embed, embed_args, tokenizer = state_classifierdrift(detector)
+    #    elif detector_name == 'TabularDrift':
+    #        state_dict, model, embed, embed_args, tokenizer = state_tabulardrift(detector)
+    #    elif detector_name == 'KSDrift':
+    #        state_dict, model, embed, embed_args, tokenizer = state_ksdrift(detector)
+    #    elif detector_name == 'MMDDriftTF':  # TODO: delete as saving moved to method of detector.
+    #        state_dict, model, embed, embed_args, tokenizer = state_mmddrift(detector)
     elif detector_name == 'OutlierAEGMM':
         state_dict = state_aegmm(detector)
     elif detector_name == 'OutlierVAEGMM':
@@ -150,15 +158,15 @@ def save_detector(detector: Data, filepath: Union[str, os.PathLike]) -> None:
         save_tf_ae(detector, filepath)
     elif detector_name == 'OutlierVAE':
         save_tf_vae(detector, filepath)
-    elif detector_name in ['ChiSquareDrift', 'ClassifierDriftTF', 'KSDrift', 'MMDDriftTF', 'TabularDrift']:
-        if model is not None:
-            save_tf_model(model, filepath, model_name='encoder')
-        if embed is not None:
-            save_embedding(embed, embed_args, filepath)
-        if tokenizer is not None:
-            tokenizer.save_pretrained(filepath.joinpath('model'))
-        if detector_name == 'ClassifierDriftTF':
-            save_tf_model(clf_drift, filepath, model_name='clf_drift')
+    #    elif detector_name in ['ChiSquareDrift', 'ClassifierDriftTF', 'KSDrift', 'MMDDriftTF', 'TabularDrift']:
+    #        if model is not None:
+    #            save_tf_model(model, filepath, model_name='encoder')
+    #        if embed is not None:
+    #            save_embedding(embed, embed_args, filepath)
+    #        if tokenizer is not None:
+    #            tokenizer.save_pretrained(filepath.joinpath('model'))
+    #        if detector_name == 'ClassifierDriftTF':
+    #            save_tf_model(clf_drift, filepath, model_name='clf_drift')
     elif detector_name == 'OutlierAEGMM':
         save_tf_aegmm(detector, filepath)
     elif detector_name == 'OutlierVAEGMM':
@@ -209,265 +217,353 @@ def save_embedding(embed: tf.keras.Model,
         dill.dump(embed_args, f)
 
 
-def preprocess_step_drift(cd: Union[ChiSquareDrift, ClassifierDriftTF, KSDrift, MMDDriftTF, TabularDrift]) \
-        -> Tuple[
-            Optional[Callable], Dict, Optional[Union[tf.keras.Model, tf.keras.Sequential]],
-            Optional[TransformerEmbedding], Dict, Optional[Callable], bool
-        ]:
-    # note: need to be able to dill tokenizers other than transformers
-    preprocess_fn, preprocess_kwargs = None, {}
-    model, embed, embed_args, tokenizer, load_emb = None, None, {}, None, False
-    if isinstance(cd.preprocess_fn, partial):
-        preprocess_fn = cd.preprocess_fn.func
-        for k, v in cd.preprocess_fn.keywords.items():
-            if isinstance(v, UAE):
-                if isinstance(v.encoder.layers[0], TransformerEmbedding):  # text drift
-                    # embedding
-                    embed = v.encoder.layers[0].model
-                    embed_args = dict(
-                        embedding_type=v.encoder.layers[0].emb_type,
-                        layers=v.encoder.layers[0].hs_emb.keywords['layers']
-                    )
-                    load_emb = True
+def serialize_preprocess(detector: 'DriftDetector',
+                         filepath: Path,
+                         verbose: Optional[bool] = False) -> dict:
+    """
+    Serializes a drift detectors preprocess_fn. Artefacts are saved to disk, and a config dict containing filepaths
+    to the saved artefacts is returned.
 
-                    # preprocessing encoder
-                    inputs = Input(shape=cd.input_shape, dtype=tf.int64)
-                    v.encoder.call(inputs)
-                    shape_enc = (v.encoder.layers[0].output.shape[-1],)
-                    layers = [InputLayer(input_shape=shape_enc)] + v.encoder.layers[1:]
-                    model = tf.keras.Sequential(layers)
-                    _ = model(tf.zeros((1,) + shape_enc))
-                else:
-                    model = v.encoder
-                preprocess_kwargs['model'] = 'UAE'
-            elif isinstance(v, HiddenOutput):
-                model = v.model
-                preprocess_kwargs['model'] = 'HiddenOutput'
-            elif isinstance(v, (tf.keras.Sequential, tf.keras.Model)):
-                model = v
-                preprocess_kwargs['model'] = 'custom'
-            elif hasattr(v, '__module__'):
-                if 'transformers' in v.__module__:  # transformers tokenizer
-                    tokenizer = v
-                    preprocess_kwargs[k] = v.__module__
+    Parameters
+    ----------
+    detector
+        The drift detector containing a preprocessing function to be serialized.
+    filepath
+        Directory to save serialized artefacts to.
+    verbose
+        Verbose logging.
+
+    Returns
+    -------
+    The config dictionary, containing references to the serialized artefacts. The format if this dict matches that
+    of the `preprocess` field in the drift detector specification.
+    """
+    preprocess_fn = detector.preprocess_fn
+    backend = detector.meta.get('backend', 'tensorflow')
+
+    cfg = {}
+    kwargs = {}
+    if isinstance(preprocess_fn, partial):
+        # If the func is preprocess_drift, just save string, otherwise, serialize
+        func = preprocess_fn.func
+        if func.__name__ == 'preprocess_drift':
+            func = 'preprocess_drift'
+        else:
+            save_path = filepath.joinpath('func.dill')
+            dill.dump(func, save_path)
+            func = str(save_path)
+        cfg.update({'preprocess_fn': func})
+
+        # Process partial function args
+        partial_dict = preprocess_fn.keywords
+        for k, v in partial_dict.items():
+            # Model/embedding
+            if isinstance(v, SupportedModels):
+                cfg_model = save_model(v, filepath, detector.input_shape, backend, verbose)
+                kwargs.update({k: cfg_model})
+
+            # Tokenizer
+            elif isinstance(v, PreTrainedTokenizerBase):
+                cfg_token = save_tokenizer(v, filepath, verbose)
+                kwargs.update({k: cfg_token})
+
+            # Arbitrary function e.g. preprocess_batch_fn
+            elif callable(v):  # TODO - is this enough? other non-serializable callables might sneak in
+                save_path = filepath.joinpath(k + '.dill')
+                dill.dump(v, save_path)
+                kwargs.update({k: save_path})
+
+            # Put remaining kwargs directly into cfg
             else:
-                preprocess_kwargs[k] = v
-    elif isinstance(cd.preprocess_fn, Callable):
-        preprocess_fn = cd.preprocess_fn
-    return preprocess_fn, preprocess_kwargs, model, embed, embed_args, tokenizer, load_emb
+                kwargs.update({k: v})
+
+    else:
+        func = preprocess_fn
+        save_path = filepath.joinpath('func.dill')
+        dill.dump(func, save_path)
+        cfg.update({'preprocess_fn': save_path})
+
+    cfg.update({'kwargs': kwargs})
+
+    return cfg
 
 
-def state_chisquaredrift(cd: ChiSquareDrift) -> Tuple[
-            Dict, Optional[Union[tf.keras.Model, tf.keras.Sequential]],
-            Optional[TransformerEmbedding], Optional[Dict], Optional[Callable]
-        ]:
-    """
-    Chi-Squared drift detector parameters to save.
-
-    Parameters
-    ----------
-    cd
-        Drift detection object.
-    """
-    preprocess_fn, preprocess_kwargs, model, embed, embed_args, tokenizer, load_emb = \
-        preprocess_step_drift(cd)
-    state_dict = {
-        'args':
-            {
-                'x_ref': cd.x_ref
-            },
-        'kwargs':
-            {
-                'p_val': cd.p_val,
-                'categories_per_feature': cd.x_ref_categories,
-                'preprocess_x_ref': False,
-                'update_x_ref': cd.update_x_ref,
-                'correction': cd.correction,
-                'n_features': cd.n_features,
-                'input_shape': cd.input_shape,
-            },
-        'other':
-            {
-                'n': cd.n,
-                'preprocess_x_ref': cd.preprocess_x_ref,
-                'load_text_embedding': load_emb,
-                'preprocess_fn': preprocess_fn,
-                'preprocess_kwargs': preprocess_kwargs
-            }
-    }
-    return state_dict, model, embed, embed_args, tokenizer
+def resolve_paths(cfg: dict, absolute: Optional[bool] = False) -> dict:
+    for k, v in cfg.items():
+        if isinstance(v, dict):
+            resolve_paths(v, absolute)
+        elif isinstance(v, Path):
+            if absolute:
+                v = v.resolve()
+            cfg.update({k: str(v)})
+    return cfg
 
 
-def state_classifierdrift(cd: ClassifierDrift) -> Tuple[
-            Dict, Union[tf.keras.Sequential, tf.keras.Model],
-            Optional[Union[tf.keras.Model, tf.keras.Sequential]],
-            Optional[TransformerEmbedding], Optional[Dict], Optional[Callable]
-        ]:
-    """
-    Classifier-based drift detector parameters to save.
+def save_model(model: SUPPORTED_MODELS,
+               filepath: Path,
+               input_shape: tuple,
+               backend: str,
+               verbose: Optional[bool] = False) -> dict:
+    cfg_model, cfg_embed = {}, None
+    if isinstance(model, UAE):
+        if isinstance(model.encoder.layers[0], TransformerEmbedding):  # text drift
+            # embedding
+            cfg_embed = {}
+            embed = model.encoder.layers[0].model
+            cfg_embed.update({'embedding_type': model.encoder.layers[0].emb_type})
+            cfg_embed.update({'layers': model.encoder.layers[0].hs_emb.keywords['layers']})
+            save_embedding(embed, embed_args=cfg_embed, filepath=filepath, save_dir='embedding')
+            cfg_embed.update({'src': filepath.joinpath('embedding')})
+            # preprocessing encoder
+            inputs = Input(shape=input_shape, dtype=tf.int64)
+            model.encoder.call(inputs)
+            shape_enc = (model.encoder.layers[0].output.shape[-1],)
+            layers = [InputLayer(input_shape=shape_enc)] + model.encoder.layers[1:]
+            model = tf.keras.Sequential(layers)
+            _ = model(tf.zeros((1,) + shape_enc))
+        else:
+            model = model.encoder
+        cfg_model.update({'type': 'UAE'})
 
-    Parameters
-    ----------
-    cd
-        Drift detection object.
-    """
-    preprocess_fn, preprocess_kwargs, model, embed, embed_args, tokenizer, load_emb = \
-        preprocess_step_drift(cd._detector)
-    cd._detector.train_kwargs['optimizer'] = tf.keras.optimizers.serialize(cd._detector.train_kwargs['optimizer'])
-    state_dict = {
-        'args':
-            {
-                'x_ref': cd._detector.x_ref,
-            },
-        'kwargs':
-            {
-                'p_val': cd._detector.p_val,
-                'preprocess_x_ref': False,
-                'update_x_ref': cd._detector.update_x_ref,
-                'preds_type': cd._detector.preds_type,
-                'binarize_preds': cd._detector.binarize_preds,
-                'train_size': cd._detector.train_size,
-                'train_kwargs': cd._detector.train_kwargs,
-            },
-        'other':
-            {
-                'n': cd._detector.n,
-                'preprocess_x_ref': cd._detector.preprocess_x_ref,
-                'skf': cd._detector.skf,
-                'load_text_embedding': load_emb,
-                'preprocess_fn': preprocess_fn,
-                'preprocess_kwargs': preprocess_kwargs
-            }
-    }
-    return state_dict, cd._detector.model, model, embed, embed_args, tokenizer
+    elif isinstance(model, HiddenOutput):
+        model = model.model
+        cfg_model.update({'type': 'HiddenOutput'})
+    elif isinstance(model, (tf.keras.Sequential, tf.keras.Model)):
+        model = model
+        cfg_model.update({'type': 'custom'})
 
-
-def state_tabulardrift(cd: TabularDrift) -> Tuple[
-            Dict, Optional[Union[tf.keras.Model, tf.keras.Sequential]],
-            Optional[TransformerEmbedding], Optional[Dict], Optional[Callable]
-        ]:
-    """
-    Tabular drift detector parameters to save.
-
-    Parameters
-    ----------
-    cd
-        Drift detection object.
-    """
-    preprocess_fn, preprocess_kwargs, model, embed, embed_args, tokenizer, load_emb = \
-        preprocess_step_drift(cd)
-    state_dict = {
-        'args':
-            {
-                'x_ref': cd.x_ref
-            },
-        'kwargs':
-            {
-                'p_val': cd.p_val,
-                'categories_per_feature': cd.x_ref_categories,
-                'preprocess_x_ref': False,
-                'update_x_ref': cd.update_x_ref,
-                'correction': cd.correction,
-                'alternative': cd.alternative,
-                'n_features': cd.n_features,
-                'input_shape': cd.input_shape,
-            },
-        'other':
-            {
-                'n': cd.n,
-                'preprocess_x_ref': cd.preprocess_x_ref,
-                'load_text_embedding': load_emb,
-                'preprocess_fn': preprocess_fn,
-                'preprocess_kwargs': preprocess_kwargs
-            }
-    }
-    return state_dict, model, embed, embed_args, tokenizer
+    save_tf_model(model, filepath=filepath, save_dir='model')
+    cfg_model.update(
+        {
+            'src': filepath.joinpath('model'),
+            'embedding': cfg_embed
+        }
+    )
+    return cfg_model
 
 
-def state_ksdrift(cd: KSDrift) -> Tuple[
-            Dict, Optional[Union[tf.keras.Model, tf.keras.Sequential]],
-            Optional[TransformerEmbedding], Optional[Dict], Optional[Callable]
-        ]:
-    """
-    K-S drift detector parameters to save.
-
-    Parameters
-    ----------
-    cd
-        Drift detection object.
-    """
-    preprocess_fn, preprocess_kwargs, model, embed, embed_args, tokenizer, load_emb = \
-        preprocess_step_drift(cd)
-    state_dict = {
-        'args':
-            {
-                'x_ref': cd.x_ref
-            },
-        'kwargs':
-            {
-                'p_val': cd.p_val,
-                'preprocess_x_ref': False,
-                'update_x_ref': cd.update_x_ref,
-                'correction': cd.correction,
-                'alternative': cd.alternative,
-                'n_features': cd.n_features,
-                'input_shape': cd.input_shape,
-            },
-        'other':
-            {
-                'n': cd.n,
-                'preprocess_x_ref': cd.preprocess_x_ref,
-                'load_text_embedding': load_emb,
-                'preprocess_fn': preprocess_fn,
-                'preprocess_kwargs': preprocess_kwargs
-            }
-    }
-    return state_dict, model, embed, embed_args, tokenizer
+def save_tokenizer(tokenizer: PreTrainedTokenizerBase,
+                   filepath: Path,
+                   verbose: Optional[bool] = False) -> dict:
+    cfg_token = {}
+    save_path = filepath.joinpath('tokenizer')
+    tokenizer.save_pretrained(save_path)
+    cfg_token.update({'src': save_path})
+    return cfg_token
 
 
-def state_mmddrift(cd: MMDDrift) -> Tuple[
-            Dict, Optional[Union[tf.keras.Model, tf.keras.Sequential]],
-            Optional[TransformerEmbedding], Optional[Dict], Optional[Callable]
-        ]:
-    """
-    MMD drift detector parameters to save.
-    Note: only GaussianRBF kernel supported.
+# def state_chisquaredrift(cd: ChiSquareDrift) -> Tuple[
+#            Dict, Optional[Union[tf.keras.Model, tf.keras.Sequential]],
+#            Optional[TransformerEmbedding], Optional[Dict], Optional[Callable]
+#        ]:
+#    """
+#    Chi-Squared drift detector parameters to save.
+#
+#    Parameters
+#    ----------
+#    cd
+#        Drift detection object.
+#    """
+#    preprocess_fn, preprocess_kwargs, model, embed, embed_args, tokenizer, load_emb = \
+#        preprocess_step_drift(cd)
+#    state_dict = {
+#        'args':
+#            {
+#                'x_ref': cd.x_ref
+#            },
+#        'kwargs':
+#            {
+#                'p_val': cd.p_val,
+#                'categories_per_feature': cd.x_ref_categories,
+#                'preprocess_x_ref': False,
+#                'update_x_ref': cd.update_x_ref,
+#                'correction': cd.correction,
+#                'n_features': cd.n_features,
+#                'input_shape': cd.input_shape,
+#            },
+#        'other':
+#            {
+#                'n': cd.n,
+#                'preprocess_x_ref': cd.preprocess_x_ref,
+#                'load_text_embedding': load_emb,
+#                'preprocess_fn': preprocess_fn,
+#                'preprocess_kwargs': preprocess_kwargs
+#            }
+#    }
+#    return state_dict, model, embed, embed_args, tokenizer
+#
+#
+# def state_classifierdrift(cd: ClassifierDrift) -> Tuple[
+#            Dict, Union[tf.keras.Sequential, tf.keras.Model],
+#            Optional[Union[tf.keras.Model, tf.keras.Sequential]],
+#            Optional[TransformerEmbedding], Optional[Dict], Optional[Callable]
+#        ]:
+#    """
+#    Classifier-based drift detector parameters to save.
+#
+#    Parameters
+#    ----------
+#    cd
+#        Drift detection object.
+#    """
+#    preprocess_fn, preprocess_kwargs, model, embed, embed_args, tokenizer, load_emb = \
+#        preprocess_step_drift(cd._detector)
+#    cd._detector.train_kwargs['optimizer'] = tf.keras.optimizers.serialize(cd._detector.train_kwargs['optimizer'])
+#    state_dict = {
+#        'args':
+#            {
+#                'x_ref': cd._detector.x_ref,
+#            },
+#        'kwargs':
+#            {
+#                'p_val': cd._detector.p_val,
+#                'preprocess_x_ref': False,
+#                'update_x_ref': cd._detector.update_x_ref,
+#                'preds_type': cd._detector.preds_type,
+#                'binarize_preds': cd._detector.binarize_preds,
+#                'train_size': cd._detector.train_size,
+#                'train_kwargs': cd._detector.train_kwargs,
+#            },
+#        'other':
+#            {
+#                'n': cd._detector.n,
+#                'preprocess_x_ref': cd._detector.preprocess_x_ref,
+#                'skf': cd._detector.skf,
+#                'load_text_embedding': load_emb,
+#                'preprocess_fn': preprocess_fn,
+#                'preprocess_kwargs': preprocess_kwargs
+#            }
+#    }
+#    return state_dict, cd._detector.model, model, embed, embed_args, tokenizer
+#
+#
+# def state_tabulardrift(cd: TabularDrift) -> Tuple[
+#            Dict, Optional[Union[tf.keras.Model, tf.keras.Sequential]],
+#            Optional[TransformerEmbedding], Optional[Dict], Optional[Callable]
+#        ]:
+#    """
+#    Tabular drift detector parameters to save.
+#
+#    Parameters
+#    ----------
+#    cd
+#        Drift detection object.
+#    """
+#    preprocess_fn, preprocess_kwargs, model, embed, embed_args, tokenizer, load_emb = \
+#        preprocess_step_drift(cd)
+#    state_dict = {
+#        'args':
+#            {
+#                'x_ref': cd.x_ref
+#            },
+#        'kwargs':
+#            {
+#                'p_val': cd.p_val,
+#                'categories_per_feature': cd.x_ref_categories,
+#                'preprocess_x_ref': False,
+#                'update_x_ref': cd.update_x_ref,
+#                'correction': cd.correction,
+#                'alternative': cd.alternative,
+#                'n_features': cd.n_features,
+#                'input_shape': cd.input_shape,
+#            },
+#        'other':
+#            {
+#                'n': cd.n,
+#                'preprocess_x_ref': cd.preprocess_x_ref,
+#                'load_text_embedding': load_emb,
+#                'preprocess_fn': preprocess_fn,
+#                'preprocess_kwargs': preprocess_kwargs
+#            }
+#    }
+#    return state_dict, model, embed, embed_args, tokenizer
+#
+#
+# def state_ksdrift(cd: KSDrift) -> Tuple[
+#            Dict, Optional[Union[tf.keras.Model, tf.keras.Sequential]],
+#            Optional[TransformerEmbedding], Optional[Dict], Optional[Callable]
+#        ]:
+#    """
+#    K-S drift detector parameters to save.
+#
+#    Parameters
+#    ----------
+#    cd
+#        Drift detection object.
+#    """
+#    preprocess_fn, preprocess_kwargs, model, embed, embed_args, tokenizer, load_emb = \
+#        preprocess_step_drift(cd)
+#    state_dict = {
+#        'args':
+#            {
+#                'x_ref': cd.x_ref
+#            },
+#        'kwargs':
+#            {
+#                'p_val': cd.p_val,
+#                'preprocess_x_ref': False,
+#                'update_x_ref': cd.update_x_ref,
+#                'correction': cd.correction,
+#                'alternative': cd.alternative,
+#                'n_features': cd.n_features,
+#                'input_shape': cd.input_shape,
+#            },
+#        'other':
+#            {
+#                'n': cd.n,
+#                'preprocess_x_ref': cd.preprocess_x_ref,
+#                'load_text_embedding': load_emb,
+#                'preprocess_fn': preprocess_fn,
+#                'preprocess_kwargs': preprocess_kwargs
+#            }
+#    }
+#    return state_dict, model, embed, embed_args, tokenizer
 
-    Parameters
-    ----------
-    cd
-        Drift detection object.
-    """
-    preprocess_fn, preprocess_kwargs, model, embed, embed_args, tokenizer, load_emb = \
-        preprocess_step_drift(cd._detector)
-    if not isinstance(cd._detector.kernel, GaussianRBF):
-        logger.warning('Currently only the default GaussianRBF kernel is supported.')
-    sigma = cd._detector.kernel.sigma.numpy() if not cd._detector.infer_sigma else None
-    state_dict = {
-        'args':
-            {
-                'x_ref': cd._detector.x_ref,
-            },
-        'kwargs':
-            {
-                'p_val': cd._detector.p_val,
-                'preprocess_x_ref': False,
-                'update_x_ref': cd._detector.update_x_ref,
-                'sigma': sigma,
-                'configure_kernel_from_x_ref': not cd._detector.infer_sigma,
-                'n_permutations': cd._detector.n_permutations,
-                'input_shape': cd._detector.input_shape,
-            },
-        'other':
-            {
-                'n': cd._detector.n,
-                'preprocess_x_ref': cd._detector.preprocess_x_ref,
-                'load_text_embedding': load_emb,
-                'preprocess_fn': preprocess_fn,
-                'preprocess_kwargs': preprocess_kwargs
-            }
-    }
-    return state_dict, model, embed, embed_args, tokenizer
+
+# TODO - remove
+# def state_mmddrift(cd: MMDDrift) -> Tuple[
+#            Dict, Optional[Union[tf.keras.Model, tf.keras.Sequential]],
+#            Optional[TransformerEmbedding], Optional[Dict], Optional[Callable]
+#        ]:
+#    """
+#    MMD drift detector parameters to save.
+#    Note: only GaussianRBF kernel supported.
+#
+#    Parameters
+#    ----------
+#    cd
+#        Drift detection object.
+#    """
+#    preprocess_fn, preprocess_kwargs, model, embed, embed_args, tokenizer, load_emb = \
+#        preprocess_step_drift(cd._detector)
+#    if not isinstance(cd._detector.kernel, GaussianRBF):
+#        logger.warning('Currently only the default GaussianRBF kernel is supported.')
+#    sigma = cd._detector.kernel.sigma.numpy() if not cd._detector.infer_sigma else None
+#    state_dict = {
+#        'args':
+#            {
+#                'x_ref': cd._detector.x_ref,
+#            },
+#        'kwargs':
+#            {
+#                'p_val': cd._detector.p_val,
+#                'preprocess_x_ref': False,
+#                'update_x_ref': cd._detector.update_x_ref,
+#                'sigma': sigma,
+#                'configure_kernel_from_x_ref': not cd._detector.infer_sigma,
+#                'n_permutations': cd._detector.n_permutations,
+#                'input_shape': cd._detector.input_shape,
+#            },
+#        'other':
+#            {
+#                'n': cd._detector.n,
+#                'preprocess_x_ref': cd._detector.preprocess_x_ref,
+#                'load_text_embedding': load_emb,
+#                'preprocess_fn': preprocess_fn,
+#                'preprocess_kwargs': preprocess_kwargs
+#            }
+#    }
+#    return state_dict, model, embed, embed_args, tokenizer
 
 
 def state_iforest(od: IForest) -> Dict:
@@ -1024,31 +1120,87 @@ def load_detector(filepath: Union[str, os.PathLike], **kwargs) -> Data:
     elif detector_name == 'OutlierSeq2Seq':
         seq2seq = load_tf_s2s(filepath, state_dict)
         detector = init_od_s2s(state_dict, seq2seq)
-    elif detector_name in ['ChiSquareDrift', 'ClassifierDriftTF', 'KSDrift', 'MMDDriftTF', 'TabularDrift']:
+    elif detector_name in ['ChiSquareDrift', 'ClassifierDriftTF', 'KSDrift',
+                           'TabularDrift']:  # TODO - MMDDriftTF removed
         emb, tokenizer = None, None
         if state_dict['other']['load_text_embedding']:
             emb, tokenizer = load_text_embed(filepath)
         model = load_tf_model(filepath, model_name='encoder')
-        if detector_name == 'KSDrift':
-            load_fn = init_cd_ksdrift
-        elif detector_name == 'MMDDriftTF':
-            load_fn = init_cd_mmddrift
-        elif detector_name == 'ChiSquareDrift':
-            load_fn = init_cd_chisquaredrift
-        elif detector_name == 'TabularDrift':
-            load_fn = init_cd_tabulardrift
-        elif detector_name == 'ClassifierDriftTF':
-            clf_drift = load_tf_model(filepath, model_name='clf_drift')
-            load_fn = partial(init_cd_classifierdrift, clf_drift)
-        else:
-            raise NotImplementedError
-        detector = load_fn(state_dict, model, emb, tokenizer, **kwargs)
+    #        if detector_name == 'KSDrift':
+    #            load_fn = init_cd_ksdrift
+    ##        elif detector_name == 'MMDDriftTF':  # TODO
+    ##            load_fn = init_cd_mmddrift
+    #        elif detector_name == 'ChiSquareDrift':
+    #            load_fn = init_cd_chisquaredrift
+    #        elif detector_name == 'TabularDrift':
+    #            load_fn = init_cd_tabulardrift
+    #        elif detector_name == 'ClassifierDriftTF':
+    #            clf_drift = load_tf_model(filepath, model_name='clf_drift')
+    #            load_fn = partial(init_cd_classifierdrift, clf_drift)
+    #        else:
+    #            raise NotImplementedError
+    #        detector = load_fn(state_dict, model, emb, tokenizer, **kwargs)
     elif detector_name == 'LLR':
         models = load_tf_llr(filepath, **kwargs)
         detector = init_od_llr(state_dict, models)
 
     detector.meta = meta_dict
     return detector
+
+
+def load_model(cfg: dict,
+               backend: str,
+               verbose: Optional[bool] = False) \
+        -> Union[tf.keras.Model, nn.Module, nn.Sequential, TransformerEmbedding]:
+    # TODO - anything detector specific enough to warrant incorporating into detector methods?
+    # Load model
+    src = cfg.get('src', None)
+    typ = cfg.get('type', 'custom')
+    custom_obj = cfg.get('custom_objects', None)
+    if src is None:
+        model = None
+        if verbose:
+            logging.warning("No 'src' field for 'model'. A model will not be loaded.")
+    else:
+        src = Path(src)
+        if backend == 'tensorflow':
+            model = load_tf_model(src, load_dir='.', custom_objects=custom_obj)
+            if typ == 'UAE':
+                model = UAE(encoder_net=model)
+            elif typ == 'HiddenOutput' or typ == 'custom':
+                pass
+            else:
+                raise ValueError("Model 'type' not recognised.")
+        else:
+            raise ValueError('Loading of pytorch models not currently supported')
+
+    # Load embedding
+    cfg_embed = cfg.get('embedding', None)
+    if cfg_embed is not None:
+        cfg_embed = cfg_embed.copy()
+        filepath = cfg_embed.pop('src')
+        emb = TransformerEmbedding(filepath, **cfg_embed)
+
+        if model is not None:
+            # If model exists, chain embedding and model together
+            if typ == 'UAE':
+                encoder = _Encoder(emb, mlp=model)
+                model = UAE(encoder_net=encoder)
+            else:
+                raise ValueError("Currently only model type 'UAE' is supported with an embedding.")
+        else:
+            # if model doesn't exist, embedding is model
+            model = emb
+
+    return model
+
+
+def load_tokenizer(cfg: dict,
+                   verbose: Optional[bool] = False) -> Callable:
+    cfg = cfg.copy()
+    src = cfg.pop('src')
+    tokenizer = AutoTokenizer.from_pretrained(src, **cfg)
+    return tokenizer
 
 
 def load_tf_model(filepath: Union[str, os.PathLike],
@@ -1523,175 +1675,176 @@ def init_preprocess(state_dict: Dict, model: Optional[Union[tf.keras.Model, tf.k
     return preprocess_fn, preprocess_kwargs
 
 
-def init_cd_classifierdrift(clf_drift: tf.keras.Model, state_dict: Dict, model: Optional[tf.keras.Model],
-                            emb: Optional[TransformerEmbedding], tokenizer: Optional[Callable], **kwargs) \
-        -> ClassifierDrift:
-    """
-    Initialize ClassifierDrift detector.
+# def init_cd_classifierdrift(clf_drift: tf.keras.Model, state_dict: Dict, model: Optional[tf.keras.Model],
+#                            emb: Optional[TransformerEmbedding], tokenizer: Optional[Callable], **kwargs) \
+#        -> ClassifierDrift:
+#    """
+#    Initialize ClassifierDrift detector.
+#
+#    Parameters
+#    ----------
+#    clf_drift
+#        Model used for drift classification.
+#    state_dict
+#        Dictionary containing the parameter values.
+#    model
+#        Optional preprocessing model.
+#    emb
+#        Optional text embedding model.
+#    tokenizer
+#        Optional tokenizer for text drift.
+#    kwargs
+#        Kwargs optionally containing preprocess_fn and preprocess_kwargs.
+#
+#    Returns
+#    -------
+#    Initialized ClassifierDrift instance.
+#    """
+#    preprocess_fn, preprocess_kwargs = init_preprocess(state_dict['other'], model, emb, tokenizer, **kwargs)
+#    if isinstance(preprocess_fn, Callable) and isinstance(preprocess_kwargs, dict):
+#        state_dict['kwargs'].update({'preprocess_fn': partial(preprocess_fn, **preprocess_kwargs)})
+#    state_dict['kwargs']['train_kwargs']['optimizer'] = \
+#        tf.keras.optimizers.get(state_dict['kwargs']['train_kwargs']['optimizer'])
+#    args = list(state_dict['args'].values()) + [clf_drift]
+#    cd = ClassifierDrift(*args, **state_dict['kwargs'])
+#    attrs = state_dict['other']
+#    cd._detector.n = attrs['n']
+#    cd._detector.preprocess_x_ref = attrs['preprocess_x_ref']
+#    cd._detector.skf = attrs['skf']
+#    return cd
+#
+#
+# def init_cd_chisquaredrift(state_dict: Dict, model: Optional[Union[tf.keras.Model, tf.keras.Sequential]],
+#                           emb: Optional[TransformerEmbedding], tokenizer: Optional[Callable], **kwargs) \
+#        -> ChiSquareDrift:
+#    """
+#    Initialize ChiSquareDrift detector.
+#
+#    Parameters
+#    ----------
+#    state_dict
+#        Dictionary containing the parameter values.
+#    model
+#        Optional preprocessing model.
+#    emb
+#        Optional text embedding model.
+#    tokenizer
+#        Optional tokenizer for text drift.
+#    kwargs
+#        Kwargs optionally containing preprocess_fn and preprocess_kwargs.
+#
+#    Returns
+#    -------
+#    Initialized ChiSquareDrift instance.
+#    """
+#    preprocess_fn, preprocess_kwargs = init_preprocess(state_dict['other'], model, emb, tokenizer, **kwargs)
+#    if isinstance(preprocess_fn, Callable) and isinstance(preprocess_kwargs, dict):
+#        state_dict['kwargs'].update({'preprocess_fn': partial(preprocess_fn, **preprocess_kwargs)})
+#    cd = ChiSquareDrift(*list(state_dict['args'].values()), **state_dict['kwargs'])
+#    attrs = state_dict['other']
+#    cd.n = attrs['n']
+#    cd.preprocess_x_ref = attrs['preprocess_x_ref']
+#    return cd
+#
+#
+# def init_cd_tabulardrift(state_dict: Dict, model: Optional[Union[tf.keras.Model, tf.keras.Sequential]],
+#                         emb: Optional[TransformerEmbedding], tokenizer: Optional[Callable], **kwargs) \
+#        -> TabularDrift:
+#    """
+#    Initialize TabularDrift detector.
+#
+#    Parameters
+#    ----------
+#    state_dict
+#        Dictionary containing the parameter values.
+#    model
+#        Optional preprocessing model.
+#    emb
+#        Optional text embedding model.
+#    tokenizer
+#        Optional tokenizer for text drift.
+#    kwargs
+#        Kwargs optionally containing preprocess_fn and preprocess_kwargs.
+#
+#    Returns
+#    -------
+#    Initialized TabularDrift instance.
+#    """
+#    preprocess_fn, preprocess_kwargs = init_preprocess(state_dict['other'], model, emb, tokenizer, **kwargs)
+#    if isinstance(preprocess_fn, Callable) and isinstance(preprocess_kwargs, dict):
+#        state_dict['kwargs'].update({'preprocess_fn': partial(preprocess_fn, **preprocess_kwargs)})
+#    cd = TabularDrift(*list(state_dict['args'].values()), **state_dict['kwargs'])
+#    attrs = state_dict['other']
+#    cd.n = attrs['n']
+#    cd.preprocess_x_ref = attrs['preprocess_x_ref']
+#    return cd
+#
+#
+# def init_cd_ksdrift(state_dict: Dict, model: Optional[Union[tf.keras.Model, tf.keras.Sequential]],
+#                    emb: Optional[TransformerEmbedding], tokenizer: Optional[Callable], **kwargs) \
+#        -> KSDrift:
+#    """
+#    Initialize KSDrift detector.
+#
+#    Parameters
+#    ----------
+#    state_dict
+#        Dictionary containing the parameter values.
+#    model
+#        Optional preprocessing model.
+#    emb
+#        Optional text embedding model.
+#    tokenizer
+#        Optional tokenizer for text drift.
+#    kwargs
+#        Kwargs optionally containing preprocess_fn and preprocess_kwargs.
+#
+#    Returns
+#    -------
+#    Initialized KSDrift instance.
+#    """
+#    preprocess_fn, preprocess_kwargs = init_preprocess(state_dict['other'], model, emb, tokenizer, **kwargs)
+#    if isinstance(preprocess_fn, Callable) and isinstance(preprocess_kwargs, dict):
+#        state_dict['kwargs'].update({'preprocess_fn': partial(preprocess_fn, **preprocess_kwargs)})
+#    cd = KSDrift(*list(state_dict['args'].values()), **state_dict['kwargs'])
+#    attrs = state_dict['other']
+#    cd.n = attrs['n']
+#    cd.preprocess_x_ref = attrs['preprocess_x_ref']
+#    return cd
 
-    Parameters
-    ----------
-    clf_drift
-        Model used for drift classification.
-    state_dict
-        Dictionary containing the parameter values.
-    model
-        Optional preprocessing model.
-    emb
-        Optional text embedding model.
-    tokenizer
-        Optional tokenizer for text drift.
-    kwargs
-        Kwargs optionally containing preprocess_fn and preprocess_kwargs.
 
-    Returns
-    -------
-    Initialized ClassifierDrift instance.
-    """
-    preprocess_fn, preprocess_kwargs = init_preprocess(state_dict['other'], model, emb, tokenizer, **kwargs)
-    if isinstance(preprocess_fn, Callable) and isinstance(preprocess_kwargs, dict):
-        state_dict['kwargs'].update({'preprocess_fn': partial(preprocess_fn, **preprocess_kwargs)})
-    state_dict['kwargs']['train_kwargs']['optimizer'] = \
-        tf.keras.optimizers.get(state_dict['kwargs']['train_kwargs']['optimizer'])
-    args = list(state_dict['args'].values()) + [clf_drift]
-    cd = ClassifierDrift(*args, **state_dict['kwargs'])
-    attrs = state_dict['other']
-    cd._detector.n = attrs['n']
-    cd._detector.preprocess_x_ref = attrs['preprocess_x_ref']
-    cd._detector.skf = attrs['skf']
-    return cd
-
-
-def init_cd_chisquaredrift(state_dict: Dict, model: Optional[Union[tf.keras.Model, tf.keras.Sequential]],
-                           emb: Optional[TransformerEmbedding], tokenizer: Optional[Callable], **kwargs) \
-        -> ChiSquareDrift:
-    """
-    Initialize ChiSquareDrift detector.
-
-    Parameters
-    ----------
-    state_dict
-        Dictionary containing the parameter values.
-    model
-        Optional preprocessing model.
-    emb
-        Optional text embedding model.
-    tokenizer
-        Optional tokenizer for text drift.
-    kwargs
-        Kwargs optionally containing preprocess_fn and preprocess_kwargs.
-
-    Returns
-    -------
-    Initialized ChiSquareDrift instance.
-    """
-    preprocess_fn, preprocess_kwargs = init_preprocess(state_dict['other'], model, emb, tokenizer, **kwargs)
-    if isinstance(preprocess_fn, Callable) and isinstance(preprocess_kwargs, dict):
-        state_dict['kwargs'].update({'preprocess_fn': partial(preprocess_fn, **preprocess_kwargs)})
-    cd = ChiSquareDrift(*list(state_dict['args'].values()), **state_dict['kwargs'])
-    attrs = state_dict['other']
-    cd.n = attrs['n']
-    cd.preprocess_x_ref = attrs['preprocess_x_ref']
-    return cd
-
-
-def init_cd_tabulardrift(state_dict: Dict, model: Optional[Union[tf.keras.Model, tf.keras.Sequential]],
-                         emb: Optional[TransformerEmbedding], tokenizer: Optional[Callable], **kwargs) \
-        -> TabularDrift:
-    """
-    Initialize TabularDrift detector.
-
-    Parameters
-    ----------
-    state_dict
-        Dictionary containing the parameter values.
-    model
-        Optional preprocessing model.
-    emb
-        Optional text embedding model.
-    tokenizer
-        Optional tokenizer for text drift.
-    kwargs
-        Kwargs optionally containing preprocess_fn and preprocess_kwargs.
-
-    Returns
-    -------
-    Initialized TabularDrift instance.
-    """
-    preprocess_fn, preprocess_kwargs = init_preprocess(state_dict['other'], model, emb, tokenizer, **kwargs)
-    if isinstance(preprocess_fn, Callable) and isinstance(preprocess_kwargs, dict):
-        state_dict['kwargs'].update({'preprocess_fn': partial(preprocess_fn, **preprocess_kwargs)})
-    cd = TabularDrift(*list(state_dict['args'].values()), **state_dict['kwargs'])
-    attrs = state_dict['other']
-    cd.n = attrs['n']
-    cd.preprocess_x_ref = attrs['preprocess_x_ref']
-    return cd
-
-
-def init_cd_ksdrift(state_dict: Dict, model: Optional[Union[tf.keras.Model, tf.keras.Sequential]],
-                    emb: Optional[TransformerEmbedding], tokenizer: Optional[Callable], **kwargs) \
-        -> KSDrift:
-    """
-    Initialize KSDrift detector.
-
-    Parameters
-    ----------
-    state_dict
-        Dictionary containing the parameter values.
-    model
-        Optional preprocessing model.
-    emb
-        Optional text embedding model.
-    tokenizer
-        Optional tokenizer for text drift.
-    kwargs
-        Kwargs optionally containing preprocess_fn and preprocess_kwargs.
-
-    Returns
-    -------
-    Initialized KSDrift instance.
-    """
-    preprocess_fn, preprocess_kwargs = init_preprocess(state_dict['other'], model, emb, tokenizer, **kwargs)
-    if isinstance(preprocess_fn, Callable) and isinstance(preprocess_kwargs, dict):
-        state_dict['kwargs'].update({'preprocess_fn': partial(preprocess_fn, **preprocess_kwargs)})
-    cd = KSDrift(*list(state_dict['args'].values()), **state_dict['kwargs'])
-    attrs = state_dict['other']
-    cd.n = attrs['n']
-    cd.preprocess_x_ref = attrs['preprocess_x_ref']
-    return cd
-
-
-def init_cd_mmddrift(state_dict: Dict, model: Optional[Union[tf.keras.Model, tf.keras.Sequential]],
-                     emb: Optional[TransformerEmbedding], tokenizer: Optional[Callable], **kwargs) \
-        -> MMDDrift:
-    """
-    Initialize MMDDrift detector.
-
-    Parameters
-    ----------
-    state_dict
-        Dictionary containing the parameter values.
-    model
-        Optional preprocessing model.
-    emb
-        Optional text embedding model.
-    tokenizer
-        Optional tokenizer for text drift.
-    kwargs
-        Kwargs optionally containing preprocess_fn and preprocess_kwargs.
-
-    Returns
-    -------
-    Initialized MMDDrift instance.
-    """
-    preprocess_fn, preprocess_kwargs = init_preprocess(state_dict['other'], model, emb, tokenizer, **kwargs)
-    if isinstance(preprocess_fn, Callable) and isinstance(preprocess_kwargs, dict):
-        state_dict['kwargs'].update({'preprocess_fn': partial(preprocess_fn, **preprocess_kwargs)})
-    cd = MMDDrift(*list(state_dict['args'].values()), **state_dict['kwargs'])
-    attrs = state_dict['other']
-    cd._detector.n = attrs['n']
-    cd._detector.preprocess_x_ref = attrs['preprocess_x_ref']
-    return cd
+# TODO - remove
+# def init_cd_mmddrift(state_dict: Dict, model: Optional[Union[tf.keras.Model, tf.keras.Sequential]],
+#                     emb: Optional[TransformerEmbedding], tokenizer: Optional[Callable], **kwargs) \
+#        -> MMDDrift:
+#    """
+#    Initialize MMDDrift detector.
+#
+#    Parameters
+#    ----------
+#    state_dict
+#        Dictionary containing the parameter values.
+#    model
+#        Optional preprocessing model.
+#    emb
+#        Optional text embedding model.
+#    tokenizer
+#        Optional tokenizer for text drift.
+#    kwargs
+#        Kwargs optionally containing preprocess_fn and preprocess_kwargs.
+#
+#    Returns
+#    -------
+#    Initialized MMDDrift instance.
+#    """
+#    preprocess_fn, preprocess_kwargs = init_preprocess(state_dict['other'], model, emb, tokenizer, **kwargs)
+#    if isinstance(preprocess_fn, Callable) and isinstance(preprocess_kwargs, dict):
+#        state_dict['kwargs'].update({'preprocess_fn': partial(preprocess_fn, **preprocess_kwargs)})
+#    cd = MMDDrift(*list(state_dict['args'].values()), **state_dict['kwargs'])
+#    attrs = state_dict['other']
+#    cd._detector.n = attrs['n']
+#    cd._detector.preprocess_x_ref = attrs['preprocess_x_ref']
+#    return cd
 
 
 def init_od_mahalanobis(state_dict: Dict) -> Mahalanobis:

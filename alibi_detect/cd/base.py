@@ -8,6 +8,10 @@ from alibi_detect.base import BaseDetector, concept_drift_dict
 from alibi_detect.cd.utils import get_input_shape, update_reference
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
 from alibi_detect.utils.statstest import fdr
+from alibi_detect.utils.saving import serialize_preprocess, resolve_paths
+from ruamel.yaml import YAML
+import os
+from pathlib import Path
 
 if has_pytorch:
     import torch  # noqa F401
@@ -499,6 +503,7 @@ class BaseMMDDrift(BaseDetector):
         # optionally already preprocess reference data
         self.p_val = p_val
         if preprocess_x_ref and isinstance(preprocess_fn, Callable):  # type: ignore
+            self.x_ref_orig = x_ref
             self.x_ref = preprocess_fn(x_ref)
         else:
             self.x_ref = x_ref
@@ -587,6 +592,49 @@ class BaseMMDDrift(BaseDetector):
             cd['data']['distance'] = dist
             cd['data']['distance_threshold'] = distance_threshold
         return cd
+
+    @abstractmethod
+    def get_config(self, filepath: Optional[Union[str, os.PathLike]] = None) -> dict:
+        # TODO - could have option to get resolved or unresolved config dict (filepath not needed if resolved)
+        cfg = {'meta': self.meta}
+
+        # x_ref
+        if filepath is None:
+            cfg.update({'x_ref': self.x_ref_orig})
+        else:
+            filepath = Path(filepath)
+            save_path = filepath.joinpath('x_ref.npy')
+            np.save(str(save_path), self.x_ref_orig)
+            cfg.update({'x_ref': save_path})
+
+        # Preprocess field
+        if self.preprocess_fn is not None:
+            if filepath is None:
+                cfg.update({'preprocess': {'preprocess_fn': self.preprocess_fn}})
+            else:
+                preprocess_cfg = serialize_preprocess(self, filepath)
+                cfg.update({'preprocess': preprocess_cfg})
+
+        # Detector field
+        kwargs = {
+                'p_val': self.p_val,
+                'preprocess_x_ref': self.preprocess_x_ref,
+                'update_x_ref': self.update_x_ref,
+                'configure_kernel_from_x_ref': not self.infer_sigma,
+                'n_permutations': self.n_permutations,
+                'input_shape': self.input_shape,
+        }
+        cfg.update({'detector': {'kwargs': kwargs}})
+
+        return resolve_paths(cfg)
+
+    def save_config(self, filepath: Optional[Union[str, os.PathLike]], filename: Optional[str] = 'config.yaml'):
+        # TODO - can move this to BaseDetector once all methods have a get_config method (including ad and od)
+        filepath = Path(filepath)
+        filename = Path(filename)
+        cfg = self.get_config(filepath)
+        absolute = True if Path('test').resolve() == Path.cwd() else False
+        YAML().dump(resolve_paths(cfg, absolute=absolute), filename)
 
 
 class BaseLSDDDrift(BaseDetector):
@@ -746,7 +794,8 @@ class BaseUnivariateDrift(BaseDetector):
             self,
             x_ref: Union[np.ndarray, list],
             p_val: float = .05,
-            preprocess_x_ref: bool = True,
+            x_ref_preprocessed: Optional[bool] = False,
+            preprocess_at_init: Optional[bool] = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
             correction: str = 'bonferroni',
@@ -765,8 +814,13 @@ class BaseUnivariateDrift(BaseDetector):
         p_val
             p-value used for significance of the statistical test for each feature. If the FDR correction method
             is used, this corresponds to the acceptable q-value.
-        preprocess_x_ref
-            Whether to already preprocess and store the reference data.
+        x_ref_preprocessed
+            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
+            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
+            data will also be preprocessed.
+        preprocess_at_init
+            Whether to preprocess the reference data when the detector is instantiated. Otherwise, the reference
+            data will be preprocessed at prediction time. Only applies if `x_ref_preprocessed=False`.
         update_x_ref
             Reference data can optionally be updated to the last n instances seen by the detector
             or via reservoir sampling with size n. For the former, the parameter equals {'last': n} while
@@ -790,13 +844,20 @@ class BaseUnivariateDrift(BaseDetector):
         if p_val is None:
             logger.warning('No p-value set for the drift threshold. Need to set it to detect data drift.')
 
-        # optionally already preprocess reference data
-        self.p_val = p_val
-        if preprocess_x_ref and isinstance(preprocess_fn, Callable):  # type: ignore
+        # Check if preprocess_fn is valid
+        if not x_ref_preprocessed and not isinstance(preprocess_fn, Callable):  # type: ignore
+            raise ValueError("`preprocess_fn` is not a valid Callable.")
+        # x_ref preprocessing logic
+        self.preprocess_at_pred = not preprocess_at_init and not x_ref_preprocessed
+        self.preprocess_at_init = preprocess_at_init and not x_ref_preprocessed
+        # optionally preprocess reference data (now instead of at predict)
+        if self.preprocess_at_init:
             self.x_ref = preprocess_fn(x_ref)
         else:
             self.x_ref = x_ref
-        self.preprocess_x_ref = preprocess_x_ref
+
+        # Other attributes
+        self.p_val = p_val
         self.update_x_ref = update_x_ref
         self.preprocess_fn = preprocess_fn
         self.correction = correction
@@ -808,12 +869,13 @@ class BaseUnivariateDrift(BaseDetector):
         # compute number of features for the univariate tests
         if isinstance(n_features, int):
             self.n_features = n_features
-        elif not isinstance(preprocess_fn, Callable) or preprocess_x_ref:
-            # infer features from preprocessed reference data
-            self.n_features = self.x_ref.reshape(self.x_ref.shape[0], -1).shape[-1]
-        else:  # infer number of features after applying preprocessing step
+        elif self.preprocess_at_pred:
+            # infer number of features after applying preprocessing step
             x = self.preprocess_fn(x_ref[0:1])
             self.n_features = x.reshape(x.shape[0], -1).shape[-1]
+        else:
+            # infer features from preprocessed reference data
+            self.n_features = self.x_ref.reshape(self.x_ref.shape[0], -1).shape[-1]
 
         if correction not in ['bonferroni', 'fdr'] and self.n_features > 1:
             raise ValueError('Only `bonferroni` and `fdr` are acceptable for multivariate correction.')
@@ -837,7 +899,7 @@ class BaseUnivariateDrift(BaseDetector):
         """
         if isinstance(self.preprocess_fn, Callable):  # type: ignore
             x = self.preprocess_fn(x)
-            x_ref = self.x_ref if self.preprocess_x_ref else self.preprocess_fn(self.x_ref)
+            x_ref = self.preprocess_fn(self.x_ref) if self.preprocess_at_pred else self.x_ref
             return x_ref, x
         else:
             return self.x_ref, x
@@ -905,7 +967,7 @@ class BaseUnivariateDrift(BaseDetector):
             raise ValueError('`drift_type` needs to be either `feature` or `batch`.')
 
         # update reference dataset
-        if isinstance(self.update_x_ref, dict) and self.preprocess_fn is not None and self.preprocess_x_ref:
+        if isinstance(self.update_x_ref, dict) and self.preprocess_at_init:
             x = self.preprocess_fn(x)
         self.x_ref = update_reference(self.x_ref, x, self.n, self.update_x_ref)
         # used for reservoir sampling
@@ -921,3 +983,61 @@ class BaseUnivariateDrift(BaseDetector):
         if return_distance:
             cd['data']['distance'] = dist
         return cd
+
+    def get_config(self, filepath: Optional[Union[str, os.PathLike]] = None) -> dict:
+        cfg = {'meta': self.meta}
+
+        # x_ref
+        if filepath is None:
+            cfg.update({'x_ref': self.x_ref})
+        else:
+            filepath = Path(filepath)  # TODO - get_config in BaseDetector would avoid this duplication.
+            if not filepath.is_dir():
+                logger.warning('Directory {} does not exist and is now created.'.format(filepath))
+                filepath.mkdir(parents=True, exist_ok=True)
+            save_path = filepath.joinpath('x_ref.npy')
+            np.save(str(save_path), self.x_ref)
+            cfg.update({'x_ref': save_path})
+
+        # Preprocess field
+        if self.preprocess_fn is not None:
+            if filepath is None:
+                cfg.update({'preprocess': {'preprocess_fn': self.preprocess_fn}})
+            else:
+                preprocess_cfg = serialize_preprocess(self, filepath)
+                cfg.update({'preprocess': preprocess_cfg})
+
+        # Detector field
+        kwargs = {
+                'p_val': self.p_val,
+                'x_ref_preprocessed': self.preprocess_at_init,  # if preprocess_at_init, preprocessed x_ref saved
+                'preprocess_at_init': self.preprocess_at_init,
+                'update_x_ref': self.update_x_ref,
+                'input_shape': self.input_shape,
+                'correction': self.correction,
+                'n_features': self.n_features
+        }
+        cd_cfg = {
+            'type': self.__class__.__name__,
+            'kwargs': kwargs
+        }
+        cfg.update({'detector': cd_cfg})
+
+        return resolve_paths(cfg)
+
+    def save_config(self, filepath: Optional[Union[str, os.PathLike]], filename: Optional[str] = 'config.yaml'):
+        # TODO - can move this to BaseDetector once all methods have a get_config method (including ad and od)
+        filepath = Path(filepath)
+        filename = Path(filename)
+        cfg = self.get_config(filepath)
+        absolute = True if Path('test').resolve() == Path.cwd() else False
+        YAML().dump(resolve_paths(cfg, absolute=absolute), filename)
+
+
+DriftDetector = Union[
+    BaseClassifierDrift,
+    BaseLearnedKernelDrift,
+    BaseMMDDrift,
+    BaseLSDDDrift,
+    BaseUnivariateDrift,
+]

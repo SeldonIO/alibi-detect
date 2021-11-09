@@ -1,4 +1,5 @@
 import logging
+import os
 import numpy as np
 import tensorflow as tf
 from typing import Callable, Dict, Optional, Tuple, Union
@@ -116,3 +117,37 @@ class MMDDriftTF(BaseMMDDrift):
         )
         p_val = (mmd2 <= mmd2_permuted).mean()
         return p_val, mmd2, mmd2_permuted
+
+    def get_config(self, filepath: Optional[Union[str, os.PathLike]] = None) -> dict:
+        """
+        TODO
+        Note: only GaussianRBF kernel supported.
+
+        Parameters
+        ----------
+        filepath
+            Directory to save serialized artefacts to.
+        """
+        cfg = super().get_config(filepath)
+
+        # backend
+        cfg.update({'backend': 'tensorflow'})
+
+        # Kernel
+        if not isinstance(self.kernel, GaussianRBF):
+            logger.warning('Currently only the default GaussianRBF kernel is supported.')
+        sigma = self.kernel.sigma.numpy() if not self.infer_sigma else None
+
+        # Detector
+        cd_cfg = cfg['detector']
+        # cd_cfg.update({'detector_type': self.__class__.__name__})
+        cd_cfg.update({'type': 'MMDDrift'})
+
+        # Detector kwargs
+        kwargs = {
+                'sigma': float(sigma),
+        }
+        cd_cfg['kwargs'].update(kwargs)
+        cfg.update({'detector': cd_cfg})
+
+        return cfg

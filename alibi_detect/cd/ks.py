@@ -2,14 +2,15 @@ import numpy as np
 from scipy.stats import ks_2samp
 from typing import Callable, Dict, Optional, Tuple, Union
 from alibi_detect.cd.base import BaseUnivariateDrift
-
+import os
 
 class KSDrift(BaseUnivariateDrift):
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
             p_val: float = .05,
-            preprocess_x_ref: bool = True,
+            x_ref_preprocessed: Optional[bool] = False,
+            preprocess_at_init: Optional[bool] = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
             correction: str = 'bonferroni',
@@ -29,8 +30,13 @@ class KSDrift(BaseUnivariateDrift):
         p_val
             p-value used for significance of the K-S test for each feature. If the FDR correction method
             is used, this corresponds to the acceptable q-value.
-        preprocess_x_ref
-            Whether to already preprocess and store the reference data.
+        x_ref_preprocessed
+            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
+            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
+            data will also be preprocessed.
+        preprocess_at_init
+            Whether to preprocess the reference data when the detector is instantiated. Otherwise, the reference
+            data will be preprocessed at prediction time. Only applies if `x_ref_preprocessed=False`.
         update_x_ref
             Reference data can optionally be updated to the last n instances seen by the detector
             or via reservoir sampling with size n. For the former, the parameter equals {'last': n} while
@@ -54,7 +60,8 @@ class KSDrift(BaseUnivariateDrift):
         super().__init__(
             x_ref=x_ref,
             p_val=p_val,
-            preprocess_x_ref=preprocess_x_ref,
+            x_ref_preprocessed=x_ref_preprocessed,
+            preprocess_at_init=preprocess_at_init,
             update_x_ref=update_x_ref,
             preprocess_fn=preprocess_fn,
             correction=correction,
@@ -87,3 +94,23 @@ class KSDrift(BaseUnivariateDrift):
             # TODO: update to 'exact' when bug fix is released in scipy 1.5
             dist[f], p_val[f] = ks_2samp(x_ref[:, f], x[:, f], alternative=self.alternative, mode='asymp')
         return p_val, dist
+
+    def get_config(self, filepath: Optional[Union[str, os.PathLike]] = None) -> dict:
+        """
+        TODO
+        Note: only GaussianRBF kernel supported.
+
+        Parameters
+        ----------
+        filepath
+            Directory to save serialized artefacts to.
+        """
+        cfg = super().get_config(filepath)
+
+        # Detector kwargs
+        kwargs = {
+            'alternative': self.alternative,
+        }
+        cfg['detector']['kwargs'].update(kwargs)
+
+        return cfg
