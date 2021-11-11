@@ -169,3 +169,13 @@ class ClassifierDrift:
         prediction probabilities on the reference and test data, and the trained model.
         """
         return self._detector.predict(x, return_p_val, return_distance, return_probs, return_model)
+
+    def get_config(self) -> dict:
+        """
+        Get the detector's configuration dictionary.
+
+        Returns
+        -------
+        The detector's configuration dictionary.
+        """
+        return self._detector.get_config()

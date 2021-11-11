@@ -146,3 +146,22 @@ class TabularDrift(BaseUnivariateDrift):
         Utility method for getting the counts of categories for each categorical variable.
         """
         return {f: [(x[:, f] == v).sum() for v in vals] for f, vals in categories.items()}
+
+    def get_config(self) -> dict:
+        """
+        Get the detector's configuration dictionary.
+
+        Returns
+        -------
+        The detector's configuration dictionary.
+        """
+        cfg = super().get_config()
+
+        # Detector kwargs
+        kwargs = {
+            'categories_per_feature': self.x_ref_categories,
+            'alternative': self.alternative,
+        }
+        cfg['detector']['kwargs'].update(kwargs)
+
+        return cfg

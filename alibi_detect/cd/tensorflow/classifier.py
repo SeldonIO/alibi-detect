@@ -169,3 +169,32 @@ class ClassifierDriftTF(BaseClassifierDrift):
         p_val, dist = self.test_probs(y_oof, probs_oof, n_ref, n_cur)
         probs_sort = probs_oof[np.argsort(idx_oof)]
         return p_val, dist, probs_sort[:n_ref, 1], probs_sort[n_ref:, 1]
+
+    def get_config(self) -> dict:
+        """
+        Get the detector's configuration dictionary.
+
+        Returns
+        -------
+        The detector's configuration dictionary.
+        """
+        cfg = super().get_config()
+
+        # backend
+        cfg.update({'backend': 'tensorflow'})
+
+        # Detector
+        cd_cfg = cfg['detector']
+        cd_cfg.update({'type': 'ClassifierDrift'})
+
+        # Optimizer
+        self.train_kwargs['optimizer'] = tf.keras.optimizers.serialize(self.train_kwargs['optimizer'])
+
+        # Detector kwargs
+        kwargs = {
+            'train_kwargs': self.train_kwargs,
+        }
+        cd_cfg['kwargs'].update(kwargs)
+        cfg.update({'detector': cd_cfg})
+
+        return cfg
