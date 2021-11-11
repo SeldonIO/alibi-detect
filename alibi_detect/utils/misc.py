@@ -1,7 +1,8 @@
 import numpy as np
 
 
-def quantile(sample: np.ndarray, p: float, type: int = 7, sorted: bool = False) -> float:
+def quantile(sample: np.ndarray, p: float, type: int = 7,
+             sorted: bool = False, interpolate: bool = True) -> float:
     """
     Estimate a desired quantile of a univariate distribution from a vector of samples
 
@@ -16,6 +17,8 @@ def quantile(sample: np.ndarray, p: float, type: int = 7, sorted: bool = False) 
         See https://wikipedia.org/wiki/Quantile#Estimating_quantiles_from_a_sample
     sorted
         Whether or not the vector is already sorted into ascending order
+    interpolate
+        Whether to interpolate the desired quantile.
 
     Returns
     -------
@@ -23,6 +26,8 @@ def quantile(sample: np.ndarray, p: float, type: int = 7, sorted: bool = False) 
 
     """
     N = len(sample)
+    if N == 0:
+        raise ValueError("Cannot compute quantiles with zero samples.")
 
     if len(sample.shape) != 1:
         raise ValueError("Quantile estimation only supports vectors of univariate samples.")
@@ -41,7 +46,7 @@ def quantile(sample: np.ndarray, p: float, type: int = 7, sorted: bool = False) 
         raise ValueError("type must be an int with value 6, 7 or 8.")
     h_floor = int(h)
     quantile = sorted_sample[h_floor-1]
-    if h_floor != h:
+    if h_floor != h and interpolate:
         quantile += (h - h_floor)*(sorted_sample[h_floor]-sorted_sample[h_floor-1])
 
     return float(quantile)

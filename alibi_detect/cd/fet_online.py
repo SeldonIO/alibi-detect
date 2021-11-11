@@ -80,6 +80,8 @@ class FETDriftOnline(BaseUniDriftOnline):
         if t_max is not None:
             if t_max < 2 * self.max_ws - 1:
                 raise ValueError("`t_max` must be >= 2 * max(`window_sizes`) for the FETDriftOnline detector.")
+        else:
+            t_max = 2 * self.max_ws - 1
         self.t_max = t_max
 
         # Check data is only [False, True] or [0, 1]
@@ -89,11 +91,12 @@ class FETDriftOnline(BaseUniDriftOnline):
                              "FETDriftOnline detector.")
 
         # Configure thresholds and initialise detector
-        self._configure_thresholds()
         self._initialise()
+        self._configure_thresholds()
 
     def _configure_ref(self) -> None:
         self.sum_ref = np.sum(self.x_ref, axis=0)
+        self.permit_probs = np.full((self.t_max, self.n_features), np.nan)
 
     def _configure_thresholds(self) -> None:
         """
@@ -109,15 +112,12 @@ class FETDriftOnline(BaseUniDriftOnline):
         """
         if self.verbose:
             print("Using %d bootstrap simulations to configure thresholds..." % self.n_bootstraps)
-        t_max = 2 * self.max_ws - 1 if self.t_max is None else self.t_max
 
         # Assuming independent features, calibrate to beta = 1 - (1-FPR)^(1/n_features)
         beta = 1 - (1-self.fpr)**(1/self.n_features)
 
         # Compute test statistic at each t_max number of t's, for each stream and each feature
-        # NOTE - below could likely be sped up with numba, but would need to rewrite scipy hypergeom.
-        #  Probably wouln't offer significant speedup since hypergeom already vectorised over streams.
-        thresholds = np.zeros((t_max, self.n_features))
+        thresholds = np.zeros((self.t_max, self.n_features))
         if self.verbose:
             pbar = tqdm(total=int(self.n_features*len(self.window_sizes)),
                         desc="Simulating %d streams for %d features" % (self.n_bootstraps, self.n_features))
@@ -125,36 +125,47 @@ class FETDriftOnline(BaseUniDriftOnline):
             pbar = None
         for f in range(self.n_features):
             # Compute stats for given feature (for each stream)
-            stats = self._simulate_streams(t_max, float(np.mean(self.x_ref[:, f])), pbar)
+            stats = self._simulate_streams(self.x_ref[:, f], pbar)
             # At each t for each stream, find max stats. over window sizes
             with warnings.catch_warnings():
                 warnings.filterwarnings(action='ignore', message='All-NaN slice encountered')
                 max_stats = np.nanmax(stats, -1)
             # Find threshold (at each t) that satisfies eqn. (2) in Ross et al.
-            for t in range(t_max):
+            for t in range(self.t_max):
                 if t < np.min(self.window_sizes):
                     thresholds[t, f] = np.nan
                 else:
                     # Compute (1-beta) quantile of max_stats at a given t, over all streams
-                    threshold = quantile(max_stats[:, t], 1 - beta)
+                    threshold = quantile(max_stats[:, t], 1 - beta, interpolate=False, type=6)
+                    prob_of_equal = (max_stats[:, t] <= threshold).mean() - (max_stats[:, t] < threshold).mean()
+                    undershoot = 1 - beta - (max_stats[:, t] < threshold).mean()
+                    permit_prob = undershoot / prob_of_equal
                     # Remove streams for which a change point has already been detected
-                    max_stats = max_stats[max_stats[:, t] <= threshold]
+                    stats_below = max_stats[max_stats[:, t] < threshold]
+                    stats_equal = max_stats[max_stats[:, t] == threshold]
+                    if permit_prob != np.inf:
+                        n_keep_equal = np.random.binomial(len(stats_equal), permit_prob)
+                        max_stats = np.concatenate([stats_below, stats_equal[:n_keep_equal]])
+                    else:
+                        max_stats = stats_below
                     thresholds[t, f] = threshold
+                    self.permit_probs[t, f] = permit_prob
+
         self.thresholds = thresholds
 
-    def _simulate_streams(self, t_max: int, p: float, pbar: Optional[tqdm]) -> np.ndarray:
+    def _simulate_streams(self, x_ref: np.ndarray, pbar: Optional[tqdm]) -> np.ndarray:
         """
         Computes test statistic for each stream.
 
         Almost all of the work done here is done in a call to scipy's hypergeom for each window size.
         """
         n_windows = len(self.window_sizes)
-        stats = np.full((self.n_bootstraps, t_max, n_windows), np.nan)
+        stats = np.full((self.n_bootstraps, self.t_max, n_windows), np.nan)
 
-        z_ref = np.random.choice([False, True], (self.n_bootstraps, self.n), p=[p, 1 - p])
-        z_stream = np.random.choice([False, True], (self.n_bootstraps, t_max), p=[p, 1 - p])
-        sum_ref = np.sum(z_ref, axis=-1)
-        cumsums_stream = np.cumsum(z_stream, axis=-1)
+        p = np.mean(x_ref)
+        sum_ref = np.sum(x_ref)
+        x_stream = np.random.choice([False, True], (self.n_bootstraps, self.t_max), p=[p, 1 - p])
+        cumsums_stream = np.cumsum(x_stream, axis=-1)
         for k in range(n_windows):
             if pbar is not None:
                 pbar.update(1)
@@ -162,9 +173,9 @@ class FETDriftOnline(BaseUniDriftOnline):
             cumsums_last_ws = cumsums_stream[:, ws:] - cumsums_stream[:, :-ws]
 
             if self.alternative == 'greater':
-                p_val = hypergeom.cdf(sum_ref[:, None], self.n+ws, sum_ref[:, None] + cumsums_last_ws, self.n)
+                p_val = hypergeom.cdf(sum_ref, self.n+ws, sum_ref + cumsums_last_ws, self.n)
             else:
-                p_val = hypergeom.cdf(cumsums_last_ws, self.n+ws, sum_ref[:, None] + cumsums_last_ws, ws)
+                p_val = hypergeom.cdf(cumsums_last_ws, self.n+ws, sum_ref[None] + cumsums_last_ws, ws)
             stats[:, ws:, k] = self._exp_moving_avg(1 - p_val, self.lam)
         return stats
 
@@ -186,6 +197,38 @@ class FETDriftOnline(BaseUniDriftOnline):
         else:
             # Update stream
             self.xs = np.concatenate([self.xs, x_t])
+
+    def _check_drift(self, test_stats: np.ndarray, thresholds: np.ndarray) -> int:
+        """
+        Private method to compare test stats to thresholds. The max stats over all windows are compute for each
+        feature. Drift is flagged if `max_stats` for any feature exceeds the thresholds for that feature.
+
+        Parameters
+        ----------
+        test_stats
+            Array of test statistics with shape (n_windows, n_features)
+        thresholds
+            Array of thresholds with shape (t_max, n_features).
+
+        Returns
+        -------
+        An int equal to 1 if drift, 0 otherwise.
+        """
+        with warnings.catch_warnings():
+            warnings.filterwarnings(action='ignore', message='All-NaN slice encountered')
+            max_stats = np.nanmax(test_stats, axis=0)
+
+        # If any stats greater than thresholds, flag drift and return
+        if (max_stats > thresholds).any():
+            return 1
+
+        # If still no drift, check if any stats equal to threshold. If so, flag drift with proba self.probs_when_equal
+        equal_inds = np.where(max_stats == thresholds)[0]
+        for equal_ind in equal_inds:
+            if np.random.uniform() > self.permit_probs[min(self.t, len(self.thresholds)-1), equal_ind]:
+                return 1
+
+        return 0
 
     def score(self, x_t: Union[np.ndarray, Any]) -> np.ndarray:
         """

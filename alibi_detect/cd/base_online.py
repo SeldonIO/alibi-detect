@@ -5,7 +5,6 @@ from typing import Any, Callable, Dict,  Optional, Union, List
 from alibi_detect.base import BaseDetector, concept_drift_dict
 from alibi_detect.cd.utils import get_input_shape
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
-import warnings
 
 if has_pytorch:
     import torch  # noqa F401
@@ -290,6 +289,10 @@ class BaseUniDriftOnline(BaseDetector):
         self.drift_preds = np.array([])
         self._configure_ref()
 
+    @abstractmethod
+    def _check_drift(self, test_stats: np.ndarray, thresholds: np.ndarray) -> int:
+        pass
+
     def reset(self) -> None:
         "Resets the detector but does not reconfigure thresholds."
         self._initialise()
@@ -315,14 +318,7 @@ class BaseUniDriftOnline(BaseDetector):
         # Compute test stat and check for drift
         test_stats = self.score(x_t)
         thresholds = self.get_threshold(self.t)
-
-        # Flag drift if test_stats for any window exceed thresholds.
-        # If `thresholds` is (t_max, n_features), `max_stats`>`thresholds` is checked for each feature independently.
-        # If `thresholds` is (t_max, 1), `max_stats` for all features are compared to the single `thresholds` set.
-        with warnings.catch_warnings():
-            warnings.filterwarnings(action='ignore', message='All-NaN slice encountered')
-            max_stats = np.nanmax(test_stats, axis=0)
-        drift_pred = int((max_stats > thresholds).any())
+        drift_pred = self._check_drift(test_stats, thresholds)
 
         # Update results attributes
         self.test_stats = np.concatenate([self.test_stats, test_stats[None, :, :]])

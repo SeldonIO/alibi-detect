@@ -68,8 +68,8 @@ class CVMDriftOnline(BaseUniDriftOnline):
         self.batch_size = n_bootstraps if batch_size is None else batch_size
 
         # Configure thresholds and initialise detector
-        self._configure_thresholds()
         self._initialise()
+        self._configure_thresholds()
 
     def _configure_ref(self) -> None:
         ids_ref_ref = self.x_ref[None, :, :] >= self.x_ref[:, None, :]
@@ -196,6 +196,28 @@ class CVMDriftOnline(BaseUniDriftOnline):
             else:
                 stats[k, :] = np.nan
         return stats
+
+    def _check_drift(self, test_stats: np.ndarray, thresholds: np.ndarray) -> int:
+        """
+        Private method to compare test stats to thresholds. The max stats over all windows are compute for each
+        feature. Drift is flagged if `max_stats` for any feature exceeds the single `thresholds` set.
+
+        Parameters
+        ----------
+        test_stats
+            Array of test statistics with shape (n_windows, n_features)
+        thresholds
+            Array of thresholds with shape (t_max, 1).
+
+        Returns
+        -------
+        An int equal to 1 if drift, 0 otherwise.
+        """
+        with warnings.catch_warnings():
+            warnings.filterwarnings(action='ignore', message='All-NaN slice encountered')
+            max_stats = np.nanmax(test_stats, axis=0)
+        drift_pred = int((max_stats > thresholds).any())
+        return drift_pred
 
 
 @nb.njit(parallel=False, cache=True)
