@@ -140,6 +140,7 @@ class FETDriftOnline(BaseUniDriftOnline):
                     prob_of_equal = (max_stats[:, t] <= threshold).mean() - (max_stats[:, t] < threshold).mean()
                     undershoot = 1 - beta - (max_stats[:, t] < threshold).mean()
                     permit_prob = undershoot / prob_of_equal
+                    permit_prob = min(permit_prob, 1-np.finfo('float').eps)  # prevent rare permit_prob>=1 case
                     # Remove streams for which a change point has already been detected
                     stats_below = max_stats[max_stats[:, t] < threshold]
                     stats_equal = max_stats[max_stats[:, t] == threshold]
@@ -150,7 +151,6 @@ class FETDriftOnline(BaseUniDriftOnline):
                         max_stats = stats_below
                     thresholds[t, f] = threshold
                     self.permit_probs[t, f] = permit_prob
-
         self.thresholds = thresholds
 
     def _simulate_streams(self, x_ref: np.ndarray, pbar: Optional[tqdm]) -> np.ndarray:
