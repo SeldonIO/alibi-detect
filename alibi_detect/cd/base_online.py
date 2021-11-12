@@ -145,7 +145,7 @@ class BaseMultiDriftOnline(BaseDetector):
         """
         # Compute test stat and check for drift
         test_stat = self.score(x_t)
-        threshold = self.get_threshold(self.t)
+        threshold = self.get_threshold(self.t)  # Note t here, has we wish to use the conditional thresholds
         drift_pred = int(test_stat > threshold)
 
         self.test_stats = np.concatenate([self.test_stats, np.array([test_stat])])
@@ -317,7 +317,7 @@ class BaseUniDriftOnline(BaseDetector):
         """
         # Compute test stat and check for drift
         test_stats = self.score(x_t)
-        thresholds = self.get_threshold(self.t)
+        thresholds = self.get_threshold(self.t-1)  # Note t-1 here, has we wish to use the unconditional thresholds
         drift_pred = self._check_drift(test_stats, thresholds)
 
         # Update results attributes

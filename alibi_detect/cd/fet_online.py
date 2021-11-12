@@ -96,7 +96,6 @@ class FETDriftOnline(BaseUniDriftOnline):
 
     def _configure_ref(self) -> None:
         self.sum_ref = np.sum(self.x_ref, axis=0)
-        self.permit_probs = np.full((self.t_max, self.n_features), np.nan)
 
     def _configure_thresholds(self) -> None:
         """
@@ -117,7 +116,8 @@ class FETDriftOnline(BaseUniDriftOnline):
         beta = 1 - (1-self.fpr)**(1/self.n_features)
 
         # Compute test statistic at each t_max number of t's, for each stream and each feature
-        thresholds = np.zeros((self.t_max, self.n_features))
+        thresholds = np.zeros((self.t_max, self.n_features), dtype=np.float32)
+        self.permit_probs = np.full((self.t_max, self.n_features), np.nan)
         if self.verbose:
             pbar = tqdm(total=int(self.n_features*len(self.window_sizes)),
                         desc="Simulating %d streams for %d features" % (self.n_bootstraps, self.n_features))
@@ -136,19 +136,21 @@ class FETDriftOnline(BaseUniDriftOnline):
                     thresholds[t, f] = np.nan
                 else:
                     # Compute (1-beta) quantile of max_stats at a given t, over all streams
-                    threshold = quantile(max_stats[:, t], 1 - beta, interpolate=False, type=6)
-                    prob_of_equal = (max_stats[:, t] <= threshold).mean() - (max_stats[:, t] < threshold).mean()
-                    undershoot = 1 - beta - (max_stats[:, t] < threshold).mean()
-                    permit_prob = undershoot / prob_of_equal
-                    permit_prob = min(permit_prob, 1-np.finfo('float').eps)  # prevent rare permit_prob>=1 case
-                    # Remove streams for which a change point has already been detected
+                    threshold = np.float32(quantile(max_stats[:, t], 1 - beta, interpolate=False, type=6))
                     stats_below = max_stats[max_stats[:, t] < threshold]
-                    stats_equal = max_stats[max_stats[:, t] == threshold]
-                    if permit_prob != np.inf:
-                        n_keep_equal = np.random.binomial(len(stats_equal), permit_prob)
-                        max_stats = np.concatenate([stats_below, stats_equal[:n_keep_equal]])
+                    # Check for stats equal to threshold
+                    prob_of_equal = (max_stats[:, t] <= threshold).mean() - (max_stats[:, t] < threshold).mean()
+                    if prob_of_equal == 0.0:
+                        permit_prob = np.inf
+                        max_stats = stats_below  # Remove streams where change point detected
                     else:
-                        max_stats = stats_below
+                        undershoot = 1 - beta - (max_stats[:, t] < threshold).mean()
+                        permit_prob = undershoot / prob_of_equal
+                        stats_equal = max_stats[max_stats[:, t] == threshold]
+                        n_keep_equal = np.random.binomial(len(stats_equal), permit_prob)
+                        # Remove streams where change point detected, but allow permit_prob streams where stats=thresh
+                        max_stats = np.concatenate([stats_below, stats_equal[:n_keep_equal]])
+
                     thresholds[t, f] = threshold
                     self.permit_probs[t, f] = permit_prob
         self.thresholds = thresholds
@@ -225,7 +227,7 @@ class FETDriftOnline(BaseUniDriftOnline):
         # If still no drift, check if any stats equal to threshold. If so, flag drift with proba self.probs_when_equal
         equal_inds = np.where(max_stats == thresholds)[0]
         for equal_ind in equal_inds:
-            if np.random.uniform() > self.permit_probs[min(self.t, len(self.thresholds)-1), equal_ind]:
+            if np.random.uniform() > self.permit_probs[min(self.t-1, len(self.thresholds)-1), equal_ind]:
                 return 1
 
         return 0
