@@ -177,7 +177,7 @@ class FETDriftOnline(BaseUniDriftOnline):
             if self.alternative == 'greater':
                 p_val = hypergeom.cdf(sum_ref, self.n+ws, sum_ref + cumsums_last_ws, self.n)
             else:
-                p_val = hypergeom.cdf(cumsums_last_ws, self.n+ws, sum_ref[None] + cumsums_last_ws, ws)
+                p_val = hypergeom.cdf(cumsums_last_ws, self.n+ws, sum_ref + cumsums_last_ws, ws)
             stats[:, ws:, k] = self._exp_moving_avg(1 - p_val, self.lam)
         return stats
 
