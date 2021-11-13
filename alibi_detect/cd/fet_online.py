@@ -1,10 +1,10 @@
 from tqdm import tqdm
 import numpy as np
-from scipy.stats import hypergeom
 from typing import Any, Callable, List, Optional, Union
 from alibi_detect.cd.base_online import BaseUniDriftOnline
 from alibi_detect.utils.misc import quantile
-from numba import njit
+from alibi_detect.cd.fet import fisher_exact
+import numba as nb
 import warnings
 
 
@@ -44,7 +44,7 @@ class FETDriftOnline(BaseUniDriftOnline):
             more accurately the desired ERT will be targeted. Should ideally be at least an order of magnitude
             larger than the ERT.
         alternative
-            Defines the alternative hypothesis. Options are 'less' or 'greater'.
+            Defines the alternative hypothesis. Options are 'less', 'greater' or 'two-sided'.
         lam
             Smoothing coefficient used for exponential moving average.
         t_max
@@ -72,8 +72,8 @@ class FETDriftOnline(BaseUniDriftOnline):
             data_type=data_type
         )
         self.lam = lam
-        if alternative.lower() not in ['less', 'greater']:
-            raise ValueError("`alternative` must be either 'less' or 'greater'.")
+        if alternative.lower() not in ['less', 'greater', 'two-sided']:
+            raise ValueError("`alternative` must be either 'less', 'greater' or 'two-sided'.")
         self.alternative = alternative.lower()
 
         # Stream length
@@ -174,15 +174,18 @@ class FETDriftOnline(BaseUniDriftOnline):
             ws = self.window_sizes[k]
             cumsums_last_ws = cumsums_stream[:, ws:] - cumsums_stream[:, :-ws]
 
-            if self.alternative == 'greater':
-                p_val = hypergeom.cdf(sum_ref, self.n+ws, sum_ref + cumsums_last_ws, self.n)
-            else:
-                p_val = hypergeom.cdf(cumsums_last_ws, self.n+ws, sum_ref + cumsums_last_ws, ws)
+            # Construct contingency table and perform fisher's exact test
+            a = cumsums_last_ws
+            b = np.full_like(a, sum_ref)
+            c = ws - cumsums_last_ws
+            d = np.full_like(c, self.n - sum_ref)
+            _, p_val = fisher_exact(a, b, c, d, alternative=self.alternative)
+
             stats[:, ws:, k] = self._exp_moving_avg(1 - p_val, self.lam)
         return stats
 
     @staticmethod
-    @njit(cache=True)
+    @nb.njit(cache=True)
     def _exp_moving_avg(arr: np.ndarray, lam: float) -> np.ndarray:
         """ Apply exponential moving average over the final axis."""
         output = np.zeros_like(arr)
@@ -253,11 +256,14 @@ class FETDriftOnline(BaseUniDriftOnline):
         for k, ws in enumerate(self.window_sizes):
             if self.t >= ws:
                 sum_last_ws = np.sum(self.xs[-ws:, :], axis=0)
-                if self.alternative == 'greater':
-                    p_val = hypergeom.cdf(self.sum_ref, self.n+ws, self.sum_ref + sum_last_ws, self.n)
-                else:
-                    p_val = hypergeom.cdf(sum_last_ws, self.n+ws, self.sum_ref + sum_last_ws, ws)
+                # Construct contingency table and perform fisher's exact test
+                a = sum_last_ws
+                b = np.full_like(a, self.sum_ref)
+                c = ws - sum_last_ws
+                d = np.full_like(c, self.n - self.sum_ref)
+                _, p_val = fisher_exact(a, b, c, d, alternative=self.alternative)
 
+                # Compute test stat and apply smoothing
                 stat = 1 - p_val
                 if len(self.test_stats) != 0:
                     tmp_stats = np.nan_to_num(self.test_stats[-1, k], nan=0.0)

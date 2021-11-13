@@ -13,6 +13,12 @@ extras_require = {"examples": ["seaborn>=0.9.0", "nlp>=0.3.0"],
                   "prophet": ["fbprophet>=0.5, <0.7", "holidays==0.9.11", "pystan<3.0"],
                   "torch": ["torch>=1.7.0"]}
 
+entry_points = {
+        "numba_extensions": [
+            "init = numba_scipy:_init_extension",  # Init the numba_scipy numba extension
+        ],
+    }
+
 setup(
     name="alibi-detect",
     author="Seldon Technologies Ltd.",
@@ -42,9 +48,11 @@ setup(
         "dill>=0.3.0, <0.4.0",
         "tqdm>=4.28.1, <5.0.0",
         "requests>=2.21.0, <3.0.0",
-        "numba!=0.54.0"  # Avoid 0.54 due to: https://github.com/SeldonIO/alibi/issues/466
+        "numba!=0.54.0",  # Avoid 0.54 due to: https://github.com/SeldonIO/alibi/issues/466
+        "numba_scipy>=0.3.0, <0.4.0"
     ],
     extras_require=extras_require,
+    entry_points=entry_points,
     test_suite="tests",
     zip_safe=False,
 )
