@@ -212,7 +212,7 @@ Check the example notebooks (e.g. [CIFAR10](https://docs.seldon.io/projects/alib
 - [Maximum Mean Discrepancy](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/mmddrift.html) ([Gretton et al, 2012](http://jmlr.csail.mit.edu/papers/v13/gretton12a.html))
    - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_mmd_cifar10.html), [molecular graphs](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_mol.html), [movie reviews](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_text_imdb.html), [Amazon reviews](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_text_amazon.html)
 
-- [Learned Kernel MMD](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/learnedkernel.html) ([Liu et al, 2020](https://arxiv.org/abs/2002.09116))
+- [Learned Kernel MMD](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/learnedkerneldrift.html) ([Liu et al, 2020](https://arxiv.org/abs/2002.09116))
   - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_clf_cifar10.html)
 
 - [Chi-Squared](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/chisquaredrift.html)
