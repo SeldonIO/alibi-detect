@@ -3,8 +3,8 @@ import numpy as np
 from typing import Callable, Dict, Tuple, Optional, Union
 from alibi_detect.cd.base import BaseUnivariateDrift
 from scipy.stats import hypergeom
-from scipy.special import betaln
 import numba as nb
+import math
 
 logger = logging.getLogger(__name__)
 
@@ -183,26 +183,48 @@ def fisher_exact(a: np.ndarray, b: np.ndarray, c: np.ndarray, d: np.ndarray, alt
     return oddsratio, pvalue
 
 
-@nb.njit
+@nb.njit(cache=True)
+def _betaln(a: float, b: float) -> float:
+    """
+    Natural logarithm of absolute value of beta function. Equivalent to scipy.special.betaln, but numba accelerated.
+
+    Parameters
+    ----------
+    a
+        Parameter a in beta(a,b)
+    b
+        Parameter b in beta(a,b)
+
+    Returns
+    -------
+    The result of ln(abs(beta(a,b))).
+    """
+    if a == 0 or b == 0:
+        return np.inf
+    else:
+        beta = math.gamma(a)*math.gamma(b)/math.gamma(a+b)
+        return math.log(abs(beta))
+
+
+@nb.njit(cache=True)
 def _pmf(k: int, M: int, n: int, N: int) -> float:
     """
     Compute the probability mass function of a hypergeom distribution. Similar to scipy's hypergeom.pmf, but
-    numba accelerated in order to work in the numba vectorised _binary_search. numba_scipy is required in order to use
-    scipy.special.betaln here.
+    numba accelerated in order to work in the numba vectorised _binary_search.
     """
     # Need float64 conversions as numba_scipy version of betaln only supports (float64,float64) sig.
     tot, good = np.float64(M), np.float64(n)
     N = np.float64(N)
     k = np.float64(k)
     bad = tot - good
-    logpmf = betaln(good + 1, 1.) + betaln(bad + 1, 1.) + betaln(tot - N + 1, N + 1) - betaln(k + 1, good - k + 1) - \
-        betaln(N - k + 1, bad - N + k + 1) - betaln(tot + 1, 1.)
+    logpmf = _betaln(good + 1, 1.) + _betaln(bad + 1, 1.) + _betaln(tot - N + 1, N + 1) - \
+        _betaln(k + 1, good - k + 1) - _betaln(N - k + 1, bad - N + k + 1) - _betaln(tot + 1, 1.)
     return np.exp(logpmf)
 
 
 @nb.vectorize(
     [nb.int64(nb.int64, nb.int64, nb.int64, nb.int64, nb.float64, nb.boolean, nb.float64)],
-    target='parallel')
+    target='parallel', cache=True)
 def _binary_search(n: int, n1: int, n2: int, mode: int, pexact: float, upper: bool, eps: float) -> int:
     """Binary search for where to begin lower/upper halves in two-sided test.
 

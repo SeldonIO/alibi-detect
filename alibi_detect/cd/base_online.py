@@ -113,7 +113,7 @@ class BaseMultiDriftOnline(BaseDetector):
         return x_t[None, :]
 
     def get_threshold(self, t: int) -> float:
-        return self.thresholds[min(t-1, self.window_size - 1)]  # type: ignore
+        return self.thresholds[t] if t < self.window_size else self.thresholds[-1]  # type: ignore
 
     def _initialise(self) -> None:
         self.t = 0  # corresponds to a test set of ref data
@@ -145,7 +145,7 @@ class BaseMultiDriftOnline(BaseDetector):
         """
         # Compute test stat and check for drift
         test_stat = self.score(x_t)
-        threshold = self.get_threshold(self.t+1)  # Note t+1 here, has we wish to use the conditional thresholds
+        threshold = self.get_threshold(self.t)
         drift_pred = int(test_stat > threshold)
 
         self.test_stats = np.concatenate([self.test_stats, np.array([test_stat])])
@@ -283,7 +283,7 @@ class BaseUniDriftOnline(BaseDetector):
         return x_t
 
     def get_threshold(self, t: int) -> np.ndarray:
-        return self.thresholds[min(t-1, len(self.thresholds) - 1), :]  # type: ignore
+        return self.thresholds[t] if t < len(self.thresholds) else self.thresholds[-1]  # type: ignore
 
     def _initialise(self) -> None:
         self.t = 0
@@ -319,7 +319,7 @@ class BaseUniDriftOnline(BaseDetector):
         """
         # Compute test stat and check for drift
         test_stats = self.score(x_t)
-        thresholds = self.get_threshold(self.t)  # Note t here, has we wish to use the unconditional thresholds
+        thresholds = self.get_threshold(self.t-1)  # Note t-1 here, has we wish to use the unconditional thresholds
         drift_pred = self._check_drift(test_stats, thresholds)
 
         # Update results attributes
