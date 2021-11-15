@@ -24,8 +24,8 @@ class CVMDrift(BaseUnivariateDrift):
             data_type: Optional[str] = None
     ) -> None:
         """
-        Cramer-von Mises (CVM) data drift detector, with Bonferroni or False Discovery Rate (FDR)
-        correction for multivariate data.
+        Cramer-von Mises (CVM) data drift detector, which tests for any change in the distribution of continuous data.
+        For multivariate data, the Bonferroni or False Discovery Rate (FDR) correction is applied.
 
         Parameters
         ----------

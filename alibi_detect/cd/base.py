@@ -756,7 +756,9 @@ class BaseUnivariateDrift(BaseDetector):
     ) -> None:
         """
         Generic drift detector component which serves as a base class for methods using
-        univariate tests. Multivariate corrections are applied if n_features>1.
+        univariate tests. If n_features > 1, a multivariate correction is applied such that
+        the false positive rate is upper bounded by the specified p-value, with equality in
+        the case of independent features.
 
         Parameters
         ----------

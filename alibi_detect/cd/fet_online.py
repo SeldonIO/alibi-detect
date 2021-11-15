@@ -16,16 +16,17 @@ class FETDriftOnline(BaseUniDriftOnline):
             window_sizes: List[int],
             preprocess_fn: Optional[Callable] = None,
             n_bootstraps: int = 10000,
-            alternative: str = 'less',
-            lam: float = 0.99,
             t_max: Optional[int] = None,
+            alternative: str = 'decrease',
+            lam: float = 0.99,
             n_features: Optional[int] = None,
             verbose: bool = True,
             input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None
     ) -> None:
         """
-        Online Fisher exact test (FET) data drift detector using preconfigured thresholds.
+        Online Fisher exact test (FET) data drift detector using preconfigured thresholds, which tests for a
+        change in the mean of binary data.
 
         Parameters
         ----------
@@ -43,12 +44,14 @@ class FETDriftOnline(BaseUniDriftOnline):
             The number of bootstrap simulations used to configure the thresholds. The larger this is the
             more accurately the desired ERT will be targeted. Should ideally be at least an order of magnitude
             larger than the ERT.
+        t_max
+            Length of the streams to simulate when configuring thresholds. If `None`, this is set to
+            2 * max(`window_sizes`) - 1.
         alternative
-            Defines the alternative hypothesis. Options are 'less', 'greater' or 'two-sided'.
+            Defines the alternative hypothesis. Options are 'decrease', 'increase' or 'change', corresponding to
+            a decrease, increase, or any change in the mean.
         lam
             Smoothing coefficient used for exponential moving average.
-        t_max
-            Length of streams to simulate. If `None`, this is set to 2 * max(`window_sizes`) - 1.
         n_features
             Number of features used in the statistical test. No need to pass it if no preprocessing takes place.
             In case of a preprocessing step, this can also be inferred automatically but could be more
@@ -72,8 +75,8 @@ class FETDriftOnline(BaseUniDriftOnline):
             data_type=data_type
         )
         self.lam = lam
-        if alternative.lower() not in ['less', 'greater', 'two-sided']:
-            raise ValueError("`alternative` must be either 'less', 'greater' or 'two-sided'.")
+        if alternative.lower() not in ['decrease', 'increase', 'change']:
+            raise ValueError("`alternative` must be either 'decrease', 'increase' or 'change'.")
         self.alternative = alternative.lower()
 
         # Stream length
@@ -85,10 +88,12 @@ class FETDriftOnline(BaseUniDriftOnline):
         self.t_max = t_max
 
         # Check data is only [False, True] or [0, 1]
-        values = set(np.unique(x_ref))
-        if values != {True, False} and values != {0, 1}:
+        values = set(np.unique(self.x_ref))
+        if not set(values).issubset(['0', '1', True, False]):
             raise ValueError("The `x_ref` data must consist of only (0,1)'s or (False,True)'s for the "
                              "FETDriftOnline detector.")
+        if len(np.unique(self.x_ref.astype('int'))) == 1:
+            raise ValueError("The `x_ref` data consists of all 0's or all 1's. Thresholds cannot be configured.")
 
         # Configure thresholds and initialise detector
         self._initialise()
@@ -106,8 +111,9 @@ class FETDriftOnline(BaseUniDriftOnline):
         The test statistics are smoothed using an exponential moving average to remove their discreteness and
         therefore allow more precise quantiles to be targeted.
 
-        The thresholds should stop changing after t=(2*max-window-size - 1) and therefore we need only simulate
-        trajectories and estimate thresholds up to this point.
+        In the unsmoothed case the thresholds should stop changing after t=(2*max-window-size - 1) and therefore
+        we need only simulate trajectories and estimate thresholds up to this point. If heavy smoothing is applied
+        (i.e. if `lam`<<1), a larger `t_max` may be necessary in order to ensure the thresholds have converged.
         """
         if self.verbose:
             print("Using %d bootstrap simulations to configure thresholds..." % self.n_bootstraps)
@@ -115,14 +121,19 @@ class FETDriftOnline(BaseUniDriftOnline):
         # Assuming independent features, calibrate to beta = 1 - (1-FPR)^(1/n_features)
         beta = 1 - (1-self.fpr)**(1/self.n_features)
 
-        # Compute test statistic at each t_max number of t's, for each stream and each feature
-        thresholds = np.zeros((self.t_max, self.n_features), dtype=np.float32)
-        self.permit_probs = np.full((self.t_max, self.n_features), np.nan)
+        # Init progress bar
         if self.verbose:
-            pbar = tqdm(total=int(self.n_features*len(self.window_sizes)),
-                        desc="Simulating %d streams for %d features" % (self.n_bootstraps, self.n_features))
+            if self.n_features > 1:
+                msg = "Simulating streams for %d features and %d window(s)" % (len(self.window_sizes), self.n_features)
+            else:
+                msg = "Simulating streams for %d window(s)" % len(self.window_sizes)
+            pbar = tqdm(total=int(self.n_features*len(self.window_sizes)), desc=msg)
         else:
             pbar = None
+
+        # Compute test statistic at each t_max number of t's, for each stream and each feature
+        self.permit_probs = np.full((self.t_max, self.n_features), np.nan)
+        thresholds = np.full((self.t_max, self.n_features), np.nan, dtype=np.float32)
         for f in range(self.n_features):
             # Compute stats for given feature (for each stream)
             stats = self._simulate_streams(self.x_ref[:, f], pbar)
@@ -131,28 +142,25 @@ class FETDriftOnline(BaseUniDriftOnline):
                 warnings.filterwarnings(action='ignore', message='All-NaN slice encountered')
                 max_stats = np.nanmax(stats, -1)
             # Find threshold (at each t) that satisfies eqn. (2) in Ross et al.
-            for t in range(self.t_max):
-                if t < np.min(self.window_sizes):
-                    thresholds[t, f] = np.nan
+            for t in range(np.min(self.window_sizes), self.t_max):
+                # Compute (1-beta) quantile of max_stats at a given t, over all streams
+                threshold = np.float32(quantile(max_stats[:, t], 1 - beta, interpolate=False, type=6))
+                stats_below = max_stats[max_stats[:, t] < threshold]
+                # Check for stats equal to threshold
+                prob_of_equal = (max_stats[:, t] <= threshold).mean() - (max_stats[:, t] < threshold).mean()
+                if prob_of_equal == 0.0:
+                    permit_prob = np.inf
+                    max_stats = stats_below  # Remove streams where change point detected
                 else:
-                    # Compute (1-beta) quantile of max_stats at a given t, over all streams
-                    threshold = np.float32(quantile(max_stats[:, t], 1 - beta, interpolate=False, type=6))
-                    stats_below = max_stats[max_stats[:, t] < threshold]
-                    # Check for stats equal to threshold
-                    prob_of_equal = (max_stats[:, t] <= threshold).mean() - (max_stats[:, t] < threshold).mean()
-                    if prob_of_equal == 0.0:
-                        permit_prob = np.inf
-                        max_stats = stats_below  # Remove streams where change point detected
-                    else:
-                        undershoot = 1 - beta - (max_stats[:, t] < threshold).mean()
-                        permit_prob = undershoot / prob_of_equal
-                        stats_equal = max_stats[max_stats[:, t] == threshold]
-                        n_keep_equal = np.random.binomial(len(stats_equal), permit_prob)
-                        # Remove streams where change point detected, but allow permit_prob streams where stats=thresh
-                        max_stats = np.concatenate([stats_below, stats_equal[:n_keep_equal]])
+                    undershoot = 1 - beta - (max_stats[:, t] < threshold).mean()
+                    permit_prob = undershoot / prob_of_equal
+                    stats_equal = max_stats[max_stats[:, t] == threshold]
+                    n_keep_equal = np.random.binomial(len(stats_equal), permit_prob)
+                    # Remove streams where change point detected, but allow permit_prob streams where stats=thresh
+                    max_stats = np.concatenate([stats_below, stats_equal[:n_keep_equal]])
 
-                    thresholds[t, f] = threshold
-                    self.permit_probs[t, f] = permit_prob
+                thresholds[t, f] = threshold
+                self.permit_probs[t, f] = permit_prob
         self.thresholds = thresholds
 
     def _simulate_streams(self, x_ref: np.ndarray, pbar: Optional[tqdm]) -> np.ndarray:
@@ -166,8 +174,9 @@ class FETDriftOnline(BaseUniDriftOnline):
 
         p = np.mean(x_ref)
         sum_ref = np.sum(x_ref)
-        x_stream = np.random.choice([False, True], (self.n_bootstraps, self.t_max), p=[p, 1 - p])
+        x_stream = np.random.choice([False, True], (self.n_bootstraps, self.t_max), p=[1 - p, p])
         cumsums_stream = np.cumsum(x_stream, axis=-1)
+        cumsums_stream = np.concatenate([np.zeros_like(cumsums_stream[..., 0:1]), cumsums_stream], axis=-1)
         for k in range(n_windows):
             if pbar is not None:
                 pbar.update(1)
@@ -181,7 +190,7 @@ class FETDriftOnline(BaseUniDriftOnline):
             d = np.full_like(c, self.n - sum_ref)
             _, p_val = fisher_exact(a, b, c, d, alternative=self.alternative)
 
-            stats[:, ws:, k] = self._exp_moving_avg(1 - p_val, self.lam)
+            stats[:, (ws - 1):, k] = self._exp_moving_avg(1 - p_val, self.lam)
         return stats
 
     @staticmethod
@@ -249,6 +258,11 @@ class FETDriftOnline(BaseUniDriftOnline):
         -------
         Estimated FET test statistics (1-p_val) between reference window and test windows.
         """
+        values = set(np.unique(x_t))
+        if not set(values).issubset(['0', '1', True, False]):
+            raise ValueError("The `x_t` data must consist of only (0,1)'s or (False,True)'s for the "
+                             "FETDriftOnline detector.")
+
         x_t = super()._preprocess_xt(x_t)
         self._update_state(x_t)
 
@@ -261,14 +275,14 @@ class FETDriftOnline(BaseUniDriftOnline):
                 b = np.full_like(a, self.sum_ref)
                 c = ws - sum_last_ws
                 d = np.full_like(c, self.n - self.sum_ref)
-                _, p_val = fisher_exact(a, b, c, d, alternative=self.alternative)
+                _, p_vals = fisher_exact(a, b, c, d, alternative=self.alternative)
 
                 # Compute test stat and apply smoothing
-                stat = 1 - p_val
-                if len(self.test_stats) != 0:
-                    tmp_stats = np.nan_to_num(self.test_stats[-1, k], nan=0.0)
-                    stat = (1-self.lam)*tmp_stats + self.lam*stat
-                stats[k] = stat
+                stats_k = 1 - p_vals
+                for f in range(self.n_features):
+                    if len(self.test_stats) != 0 and not np.isnan(self.test_stats[-1, k, f]):
+                        stats_k[f] = (1 - self.lam) * self.test_stats[-1, k, f] + self.lam * stats_k
+                stats[k, :] = stats_k
             else:
-                stats[k] = np.nan
+                stats[k, :] = np.nan
         return stats

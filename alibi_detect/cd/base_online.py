@@ -112,8 +112,8 @@ class BaseMultiDriftOnline(BaseDetector):
             x_t = self.preprocess_fn(x_t)[0]  # type: ignore
         return x_t[None, :]
 
-    def get_threshold(self, t: int) -> Union[float, None]:
-        return self.thresholds[t] if t < self.window_size else self.thresholds[-1]  # type: ignore
+    def get_threshold(self, t: int) -> float:
+        return self.thresholds[min(t-1, self.window_size - 1)]  # type: ignore
 
     def _initialise(self) -> None:
         self.t = 0  # corresponds to a test set of ref data
@@ -145,7 +145,7 @@ class BaseMultiDriftOnline(BaseDetector):
         """
         # Compute test stat and check for drift
         test_stat = self.score(x_t)
-        threshold = self.get_threshold(self.t)  # Note t here, has we wish to use the conditional thresholds
+        threshold = self.get_threshold(self.t+1)  # Note t+1 here, has we wish to use the conditional thresholds
         drift_pred = int(test_stat > threshold)
 
         self.test_stats = np.concatenate([self.test_stats, np.array([test_stat])])
@@ -178,7 +178,9 @@ class BaseUniDriftOnline(BaseDetector):
             data_type: Optional[str] = None,
     ) -> None:
         """
-        Base class for univariate online drift detectors, with multivariate corrections.
+        Base class for univariate online drift detectors. If n_features > 1, a multivariate correction is
+        used to aggregate p-values during threshold configuration, thus allowing the requested expected run
+        time (ERT) to be targeted. The multivariate correction assumes independence between the features.
 
         Parameters
         ----------
@@ -281,7 +283,7 @@ class BaseUniDriftOnline(BaseDetector):
         return x_t
 
     def get_threshold(self, t: int) -> np.ndarray:
-        return self.thresholds[min(t, len(self.thresholds) - 1), :]  # type: ignore
+        return self.thresholds[min(t-1, len(self.thresholds) - 1), :]  # type: ignore
 
     def _initialise(self) -> None:
         self.t = 0
@@ -300,12 +302,12 @@ class BaseUniDriftOnline(BaseDetector):
     def predict(self, x_t: Union[np.ndarray, Any],  return_test_stat: bool = True,
                 ) -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
         """
-        Predict whether the most recent window of data has drifted from the reference data.
+        Predict whether the most recent window(s) of data have drifted from the reference data.
 
         Parameters
         ----------
         x_t
-            A single instance to be added to the test-window.
+            A single instance to be added to the test-window(s).
         return_test_stat
             Whether to return the test statistic and threshold.
 
@@ -317,7 +319,7 @@ class BaseUniDriftOnline(BaseDetector):
         """
         # Compute test stat and check for drift
         test_stats = self.score(x_t)
-        thresholds = self.get_threshold(self.t-1)  # Note t-1 here, has we wish to use the unconditional thresholds
+        thresholds = self.get_threshold(self.t)  # Note t here, has we wish to use the unconditional thresholds
         drift_pred = self._check_drift(test_stats, thresholds)
 
         # Update results attributes

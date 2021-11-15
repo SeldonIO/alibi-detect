@@ -18,14 +18,14 @@ class FETDrift(BaseUnivariateDrift):
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
             correction: str = 'bonferroni',
-            alternative: str = 'less',
+            alternative: str = 'decrease',
             n_features: Optional[int] = None,
             input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None
     ) -> None:
         """
-        Fisher exact test (FET) data drift detector, with Bonferroni or False Discovery Rate (FDR)
-        correction for multivariate data.
+        Fisher exact test (FET) data drift detector, which tests for a change in the mean of binary data.
+        For multivariate data, the Bonferroni or False Discovery Rate (FDR) correction is applied.
 
         Parameters
         ----------
@@ -45,7 +45,8 @@ class FETDrift(BaseUnivariateDrift):
         correction
             Correction type for multivariate data. Either 'bonferroni' or 'fdr' (False Discovery Rate).
         alternative
-            Defines the alternative hypothesis. Options are 'less', 'greater' or 'two-sided'.
+            Defines the alternative hypothesis. Options are 'decrease', 'increase' or 'change', corresponding to
+            a decrease, increase, or any change in the mean.
         n_features
             Number of features used in the FET test. No need to pass it if no preprocessing takes place.
             In case of a preprocessing step, this can also be inferred automatically but could be more
@@ -66,13 +67,13 @@ class FETDrift(BaseUnivariateDrift):
             input_shape=input_shape,
             data_type=data_type
         )
-        if alternative.lower() not in ['less', 'greater', 'two-sided']:
-            raise ValueError("`alternative` must be either 'less', 'greater' or 'two-sided'.")
+        if alternative.lower() not in ['decrease', 'increase', 'change']:
+            raise ValueError("`alternative` must be either 'decrease', 'increase' or 'change'.")
         self.alternative = alternative.lower()
 
         # Check data is only [False, True] or [0, 1]
         values = set(np.unique(x_ref))
-        if values != {True, False} and values != {0, 1}:
+        if not set(values).issubset(['0', '1', True, False]):
             raise ValueError("The `x_ref` data must consist of only (0,1)'s or (False,True)'s for the "
                              "FETDrift detector.")
 
@@ -96,7 +97,7 @@ class FETDrift(BaseUnivariateDrift):
 
         # Check data is only [False, True] or [0, 1]
         values = set(np.unique(x))
-        if values != {True, False} and values != {0, 1}:
+        if not set(values).issubset(['0', '1', True, False]):
             raise ValueError("The `x` data must consist of only [0,1]'s or [False,True]'s for the FETDrift detector.")
 
         # Apply test per feature
@@ -113,7 +114,7 @@ class FETDrift(BaseUnivariateDrift):
         return p_val, odds_ratio
 
 
-def fisher_exact(a: np.ndarray, b: np.ndarray, c: np.ndarray, d: np.ndarray, alternative: str = 'less') \
+def fisher_exact(a: np.ndarray, b: np.ndarray, c: np.ndarray, d: np.ndarray, alternative: str = 'decrease') \
         -> Tuple[np.ndarray, np.ndarray]:
     """
     A vectorised implementation of scipy.stats.fisher_exact.
@@ -139,14 +140,14 @@ def fisher_exact(a: np.ndarray, b: np.ndarray, c: np.ndarray, d: np.ndarray, alt
     n = a + c
 
     # Compute p value
-    if alternative == 'less':
+    if alternative == 'decrease':
         pvalue = hypergeom.cdf(a, n1 + n2, n1, n)
 
-    elif alternative == 'greater':
-        # Same formula as the 'less' case, but with the second column.
+    elif alternative == 'increase':
+        # Same formula as the 'decrease' case, but with the second column.
         pvalue = hypergeom.cdf(b, n1 + n2, n1, b + d)
 
-    elif alternative == 'two-sided':
+    elif alternative == 'change':
         mode = np.int64(np.float64((n + 1) * (n1 + 1)) / (n1 + n2 + 2))
         pexact = hypergeom.pmf(a, n1 + n2, n1, n)
         pmode = hypergeom.pmf(mode, n1 + n2, n1, n)

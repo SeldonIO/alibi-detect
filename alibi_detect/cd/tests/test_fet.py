@@ -4,7 +4,7 @@ from alibi_detect.cd import FETDrift
 
 n, n_features = 100, 1
 
-alternative = ['less', 'greater']
+alternative = ['decrease', 'increase', 'change']
 
 tests_fetdrift = list(alternative)
 n_tests = len(tests_fetdrift)

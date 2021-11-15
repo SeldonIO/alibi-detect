@@ -7,7 +7,7 @@ n, n_features = 100, 1
 n_bootstraps = 1000
 
 window_sizes = [[10], [10, 20]]
-alternative = ['less', 'greater']
+alternative = ['decrease', 'increase', 'change']
 
 tests_fetdriftonline = list(product(window_sizes, alternative))
 n_tests = len(tests_fetdriftonline)
