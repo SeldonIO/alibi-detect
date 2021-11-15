@@ -281,7 +281,7 @@ class FETDriftOnline(BaseUniDriftOnline):
                 stats_k = 1 - p_vals
                 for f in range(self.n_features):
                     if len(self.test_stats) != 0 and not np.isnan(self.test_stats[-1, k, f]):
-                        stats_k[f] = (1 - self.lam) * self.test_stats[-1, k, f] + self.lam * stats_k
+                        stats_k[f] = (1 - self.lam) * self.test_stats[-1, k, f] + self.lam * stats_k[f]
                 stats[k, :] = stats_k
             else:
                 stats[k, :] = np.nan

@@ -162,14 +162,14 @@ def fisher_exact(a: np.ndarray, b: np.ndarray, c: np.ndarray, d: np.ndarray, alt
         plower = hypergeom.cdf(a, n1 + n2, n1, n)
         guess = _binary_search(n[idx_lt_mode], n1[idx_lt_mode], n2[idx_lt_mode],
                                mode[idx_lt_mode], pexact[idx_lt_mode], True, eps)
-        pvalue[idx_lt_mode] = plower[idx_lt_mode] + hypergeom.sf(guess - 1, n1[idx_lt_mode] + n2[idx_lt_mode],
-                                                                 n1[idx_lt_mode], n[idx_lt_mode])
+        pvalue[idx_lt_mode] = plower[idx_lt_mode] + (1-hypergeom.cdf(guess - 1, n1[idx_lt_mode] + n2[idx_lt_mode],
+                                                                     n1[idx_lt_mode], n[idx_lt_mode]))  # TODO sf=1-cdf
         pvalue[idx_gt_pexact] = plower[idx_gt_pexact]
 
         idx_remain = (pvalue > 1.)
         idx_gt_pexact = np.logical_and(pvalue > 1., hypergeom.pmf(0, n1 + n2, n1, n) > pexact / eps)
         idx_remain = np.logical_and(idx_remain, ~idx_gt_pexact)
-        pupper = hypergeom.sf(a - 1, n1 + n2, n1, n)
+        pupper = 1 - hypergeom.cdf(a - 1, n1 + n2, n1, n)  # TODO, replace with cdf once sf issue resolved
         guess = _binary_search(n[idx_remain], n1[idx_remain], n2[idx_remain],
                                mode[idx_remain], pexact[idx_remain], False, eps)
         pvalue[idx_remain] = pupper[idx_remain] + hypergeom.cdf(guess, n1[idx_remain] + n2[idx_remain],
@@ -184,7 +184,7 @@ def fisher_exact(a: np.ndarray, b: np.ndarray, c: np.ndarray, d: np.ndarray, alt
 
 
 @nb.njit(cache=True)
-def _betaln(a: float, b: float) -> float:
+def _betaln(a: Union[int, float], b: Union[int, float]) -> float:
     """
     Natural logarithm of absolute value of beta function. Equivalent to scipy.special.betaln, but numba accelerated.
 
@@ -199,11 +199,12 @@ def _betaln(a: float, b: float) -> float:
     -------
     The result of ln(abs(beta(a,b))).
     """
-    if a == 0 or b == 0:
+    if a < 0 or b < 0:
+        raise ValueError("betaln only implemented for positive values.")
+    elif a == 0 or b == 0:
         return np.inf
-    else:
-        beta = math.gamma(a)*math.gamma(b)/math.gamma(a+b)
-        return math.log(abs(beta))
+    beta = math.lgamma(a) + math.lgamma(b) - math.lgamma(a+b)
+    return beta
 
 
 @nb.njit(cache=True)
@@ -212,13 +213,10 @@ def _pmf(k: int, M: int, n: int, N: int) -> float:
     Compute the probability mass function of a hypergeom distribution. Similar to scipy's hypergeom.pmf, but
     numba accelerated in order to work in the numba vectorised _binary_search.
     """
-    # Need float64 conversions as numba_scipy version of betaln only supports (float64,float64) sig.
-    tot, good = np.float64(M), np.float64(n)
-    N = np.float64(N)
-    k = np.float64(k)
+    tot, good = M, n
     bad = tot - good
-    logpmf = _betaln(good + 1, 1.) + _betaln(bad + 1, 1.) + _betaln(tot - N + 1, N + 1) - \
-        _betaln(k + 1, good - k + 1) - _betaln(N - k + 1, bad - N + k + 1) - _betaln(tot + 1, 1.)
+    logpmf = _betaln(good + 1, 1) + _betaln(bad + 1, 1) + _betaln(tot - N + 1, N + 1) - \
+        _betaln(k + 1, good - k + 1) - _betaln(N - k + 1, bad - N + k + 1) - _betaln(tot + 1, 1)
     return np.exp(logpmf)
 
 
