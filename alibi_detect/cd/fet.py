@@ -101,12 +101,13 @@ class FETDrift(BaseUnivariateDrift):
 
         # Apply test per feature
         n = x.shape[0]
+        n_ref = x_ref.shape[0]
         sum_ref = np.sum(x_ref, axis=0)
         sum_test = np.sum(x, axis=0)
         a = sum_test
         b = np.full_like(a, sum_ref)
         c = n - sum_test
-        d = np.full_like(c, self.n - sum_ref)
+        d = np.full_like(c, n_ref - sum_ref)
         odds_ratio, p_val = fisher_exact(a, b, c, d, alternative=self.alternative)
 
         return p_val, odds_ratio
