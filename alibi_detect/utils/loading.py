@@ -8,6 +8,7 @@ from alibi_detect.cd.tensorflow import HiddenOutput, UAE
 from alibi_detect.cd.tensorflow.preprocess import _Encoder
 from alibi_detect.models.tensorflow import TransformerEmbedding
 from alibi_detect.utils.custom import custom_artefact
+from alibi_detect.utils.tensorflow.kernels import DeepKernel
 import numpy as np
 from transformers import AutoTokenizer
 from torch import device as torch_device
@@ -135,6 +136,9 @@ def load_detector_config(cfg: Union[str, os.PathLike, dict],
         if not isinstance(model, SupportedModels):
             raise ValueError(f"Failed to load the {detector_name}'s model."
                              "Is the `model` field specified, and is the model a supported type?")
+#TODO        if detector_name == 'LearnedKernelDrift':
+#TODO            eps =
+#TODO            model = DeepKernel(model, eps=0.01)
 
     # Init detector
     detector = init_detector(x_ref, detector_cfg, preprocess_fn=preprocess_fn, model=model, backend=backend)

@@ -17,6 +17,7 @@ from alibi_detect.ad import AdversarialAE, ModelDistillation
 from alibi_detect.ad.adversarialae import DenseHidden
 from alibi_detect.cd import ChiSquareDrift, ClassifierDrift, KSDrift, MMDDrift, TabularDrift
 from alibi_detect.cd.tensorflow import HiddenOutput, UAE
+from alibi_detect.cd.tensorflow.classifier import ClassifierDriftTF
 from alibi_detect.cd.tensorflow.preprocess import _Encoder
 from alibi_detect.models.tensorflow.autoencoder import AE, AEGMM, DecoderLSTM, EncoderLSTM, Seq2Seq, VAE, VAEGMM
 from alibi_detect.models.tensorflow import PixelCNN, TransformerEmbedding
@@ -34,7 +35,7 @@ logger = logging.getLogger(__name__)
 Data = Union[
     AdversarialAE,
     ChiSquareDrift,
-    ClassifierDrift,
+    ClassifierDriftTF,
     IForest,
     KSDrift,
     LLR,
@@ -54,7 +55,7 @@ Data = Union[
 DEFAULT_DETECTORS = [
     'AdversarialAE',
     'ChiSquareDrift',
-    'ClassifierDrift',
+    'ClassifierDriftTF',
     'IForest',
     'KSDrift',
     'LLR',
@@ -71,12 +72,14 @@ DEFAULT_DETECTORS = [
     'TabularDrift'
 ]
 
+# TODO - add all drift methods in once .get_config() methods are complete
 DRIFT_DETECTORS = [  # Drift detectors separated out as they now have their own save methods
     'MMDDrift',
-    #    'ChiSquareDrift',  # TODO - add all drift methods in once .get_config() methods are complete
-    #    'TabularDrift',
+    # 'LSDDDrift',
+    'ChiSquareDrift',
+    'TabularDrift',
     'KSDrift',
-    #    'ClassifierDrift',
+    #    'ClassifierDriftTF',
 ]
 
 

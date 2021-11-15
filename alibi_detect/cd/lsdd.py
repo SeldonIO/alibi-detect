@@ -125,3 +125,13 @@ class LSDDDrift:
         and the LSDD values from the permutation test.
         """
         return self._detector.score(x)
+
+    def get_config(self) -> dict:
+        """
+        Get the detector's configuration dictionary.
+
+        Returns
+        -------
+        The detector's configuration dictionary.
+        """
+        return self._detector.get_config()
