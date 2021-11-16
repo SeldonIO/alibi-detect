@@ -35,7 +35,8 @@ class BaseMultiDriftOnline(BaseDetector):
         x_ref
             Data used as reference distribution.
         ert
-            The expected run-time (ERT) in the absence of drift.
+            The expected run-time (ERT) in the absence of drift. For the multivariate detectors, the ERT is defined
+            as the expected run-time from t=0.
         window_size
             The size of the sliding test-window used to compute the test-statistic.
             Smaller windows focus on responding quickly to severe drift, larger windows focus on
@@ -187,7 +188,8 @@ class BaseUniDriftOnline(BaseDetector):
         x_ref
             Data used as reference distribution.
         ert
-            The expected run-time (ERT) in the absence of drift.
+            The expected run-time (ERT) in the absence of drift. For the univariate detectors, the ERT is defined
+            as the expected run-time after the smallest window is full i.e. the run-time from t=min(windows_sizes)-1.
         window_sizes
             The sizes of the sliding test-windows used to compute the test-statistic.
             Smaller windows focus on responding quickly to severe drift, larger windows focus on

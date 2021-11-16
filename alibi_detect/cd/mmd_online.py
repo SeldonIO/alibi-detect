@@ -33,7 +33,8 @@ class MMDDriftOnline:
         x_ref
             Data used as reference distribution.
         ert
-            The expected run-time (ERT) in the absence of drift.
+            The expected run-time (ERT) in the absence of drift. For the multivariate detectors, the ERT is defined
+            as the expected run-time from t=0.
         window_size
             The size of the sliding test-window used to compute the test-statistic.
             Smaller windows focus on responding quickly to severe drift, larger windows focus on

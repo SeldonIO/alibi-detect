@@ -33,7 +33,8 @@ class FETDriftOnline(BaseUniDriftOnline):
         x_ref
             Data used as reference distribution.
         ert
-            The expected run-time (ERT) in the absence of drift.
+            The expected run-time (ERT) in the absence of drift. For the univariate detectors, the ERT is defined
+            as the expected run-time after the smallest window is full i.e. the run-time from t=min(windows_sizes)-1.
         window_sizes
             window sizes for the sliding test-windows used to compute the test-statistic.
             Smaller windows focus on responding quickly to severe drift, larger windows focus on
