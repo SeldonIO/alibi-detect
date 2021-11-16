@@ -184,9 +184,11 @@ def fisher_exact(a: np.ndarray, b: np.ndarray, c: np.ndarray, d: np.ndarray, alt
 
 
 @nb.njit(cache=True)
-def _betaln(a: Union[int, float], b: Union[int, float]) -> float:
+def _betaln(a: float, b: float) -> float:
     """
     Natural logarithm of absolute value of beta function. Equivalent to scipy.special.betaln, but numba accelerated.
+    This is to avoid using the numba-scipy package which is currently a little slow to adopt new scipy versions.
+    When numba-scipy becomes more mature we can use the more precise scipy.special.betaln.
 
     Parameters
     ----------
@@ -199,12 +201,25 @@ def _betaln(a: Union[int, float], b: Union[int, float]) -> float:
     -------
     The result of ln(abs(beta(a,b))).
     """
-    if a < 0 or b < 0:
-        raise ValueError("betaln only implemented for positive values.")
-    elif a == 0 or b == 0:
-        return np.inf
-    beta = math.lgamma(a) + math.lgamma(b) - math.lgamma(a+b)
-    return beta
+    if a <= 0:
+        if 1-a-b > 0:
+            return _betaln(1-a-b, b)
+    if b <= 0:
+        if 1-a-b > 0:
+            return _betaln(1-a-b, a)
+    if a < b:
+        a, b = b, a
+
+    # asymptotic expansion for |a| >> |b|
+    # TODO - Performing an asymptotic expansion via Stirling's series is more precise
+    #  for large a (or b). But current implementation appears to be sufficient. Can improve in future.
+    # if abs(a) > 1e5*abs(b) and abs(a) > 1e5:
+    #    return _loggammadiv(b, a) + math.lgamma(b)
+
+    ya = math.lgamma(abs(a))
+    yb = math.lgamma(abs(b))
+    yab = math.lgamma(a+b)
+    return ya + yb - yab
 
 
 @nb.njit(cache=True)
