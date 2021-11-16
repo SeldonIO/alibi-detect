@@ -227,6 +227,8 @@ class BaseUniDriftOnline(BaseDetector):
             self.x_ref = preprocess_fn(x_ref)
         else:
             self.x_ref = x_ref
+        # Check the (optionally preprocessed) x_ref data is a 2D ndarray
+        self.x_ref = self._check_x(self.x_ref, x_ref=True)
 
         # Other attributes
         self.preprocess_fn = preprocess_fn
@@ -263,6 +265,23 @@ class BaseUniDriftOnline(BaseDetector):
     def _update_state(self, x_t: np.ndarray):
         pass
 
+    def _check_x(self, x: Union[Any], x_ref: bool = False) -> np.ndarray:
+        # Check the type of x
+        if isinstance(x, np.ndarray):
+            pass
+        elif isinstance(x, (int, float)):
+            x = np.array([x])
+        else:
+            raise TypeError("Detectors expect data to be 2D np.ndarray's. If data is passed as another type, a "
+                            "`preprocess_fn` should be given to convert this data to 2D np.ndarray's.")
+        # Reshape to 2D if needed
+        x = x.reshape(x.shape[0], -1)
+        # If x is not reference data, check dimensions of x and x_ref agree
+        if not x_ref:
+            if x.shape[1] != self.x_ref.shape[1]:
+                raise ValueError("Dimensions of `x` and `x_ref` do not match.")
+        return x
+
     def _preprocess_xt(self, x_t: Union[np.ndarray, Any]) -> np.ndarray:
         """
         Private method to preprocess a single test instance ready for _update_state.
@@ -280,6 +299,8 @@ class BaseUniDriftOnline(BaseDetector):
         if isinstance(self.preprocess_fn, Callable):  # type: ignore
             x_t = x_t[None, :] if isinstance(x_t, np.ndarray) else [x_t]
             x_t = self.preprocess_fn(x_t)[0]  # type: ignore
+        # Now check the final data is a 2D ndarray
+        x_t = self._check_x(x_t)
         return x_t
 
     def get_threshold(self, t: int) -> np.ndarray:
