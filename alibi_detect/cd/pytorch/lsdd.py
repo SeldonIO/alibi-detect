@@ -161,3 +161,29 @@ class LSDDDriftTorch(BaseLSDDDrift):
 
         p_val = (lsdd <= lsdd_permuted).float().mean()
         return float(p_val.cpu()), float(lsdd.cpu().numpy()), lsdd_permuted.cpu().numpy()
+
+    def get_config(self) -> dict:
+        """
+        Get the detector's configuration dictionary.
+
+        Returns
+        -------
+        The detector's configuration dictionary.
+        """
+        cfg = super().get_config()
+
+        # backend
+        cfg.update({'backend': 'pytorch'})
+
+        # Detector
+        cd_cfg = cfg['detector']
+        cd_cfg.update({'type': 'LSDDDrift'})
+
+        # Detector kwargs
+        kwargs = {
+                'device': self.device
+        }
+        cd_cfg['kwargs'].update(kwargs)
+        cfg.update({'detector': cd_cfg})
+
+        return cfg

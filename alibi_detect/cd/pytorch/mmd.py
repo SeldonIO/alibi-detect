@@ -166,6 +166,7 @@ class MMDDriftTorch(BaseMMDDrift):
         # Detector kwargs
         kwargs = {
                 'sigma': float(sigma),
+                'device': self.device
         }
         cd_cfg['kwargs'].update(kwargs)
         cfg.update({'detector': cd_cfg})

@@ -161,21 +161,14 @@ class LSDDDriftTF(BaseLSDDDrift):
         # backend
         cfg.update({'backend': 'tensorflow'})
 
-        # Kernel
-        if not isinstance(self.kernel, GaussianRBF):
-            logger.warning('Currently only the default GaussianRBF kernel is supported.')
-        sigma = self.kernel.sigma.numpy() if not self.infer_sigma else None
-
         # Detector
         cd_cfg = cfg['detector']
-        cd_cfg.update({'type': 'MMDDrift'})
+        cd_cfg.update({'type': 'LSDDDrift'})
 
         # Detector kwargs
         kwargs = {
-                'sigma': float(sigma),
         }
         cd_cfg['kwargs'].update(kwargs)
         cfg.update({'detector': cd_cfg})
 
         return cfg
-

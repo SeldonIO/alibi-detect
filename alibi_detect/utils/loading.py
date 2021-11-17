@@ -82,7 +82,8 @@ FIELDS_TO_RESOLVE = [
     ['preprocess', 'preprocess_fn'],
     ['preprocess', 'kwargs', 'model'],
     ['preprocess', 'kwargs', 'embedding'],
-    ['preprocess', 'kwargs', 'tokenizer']
+    ['preprocess', 'kwargs', 'tokenizer'],
+    ['detector', 'kwargs', 'kernel']  # TODO - where should kernel be spec'd?
 ]
 
 

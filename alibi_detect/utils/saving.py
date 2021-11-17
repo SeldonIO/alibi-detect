@@ -213,6 +213,9 @@ def save_detector_config(detector: Data, filepath: Union[str, os.PathLike]):
         preprocess_cfg = serialize_preprocess(preprocess_fn, backend, input_shape, filepath)  # TODO - verbose option
         cfg['preprocess'] = preprocess_cfg
 
+    # Serialize artefacts in detector kwargs (e.g. model and kernel)
+    # TODO
+
     # Save config
     cfg = resolve_paths(cfg)
     YAML().dump(cfg, filepath.joinpath('config.yaml'))

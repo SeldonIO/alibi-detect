@@ -682,7 +682,8 @@ class BaseLSDDDrift(BaseDetector):
             self,
             x_ref: Union[np.ndarray, list],
             p_val: float = .05,
-            preprocess_x_ref: bool = True,
+            x_ref_preprocessed: bool = False,
+            preprocess_at_init: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
             sigma: Optional[np.ndarray] = None,
@@ -701,8 +702,13 @@ class BaseLSDDDrift(BaseDetector):
             Data used as reference distribution.
         p_val
             p-value used for the significance of the permutation test.
-        preprocess_x_ref
-            Whether to already preprocess and store the reference data.
+         x_ref_preprocessed
+            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
+            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
+            data will also be preprocessed.
+        preprocess_at_init
+            Whether to preprocess the reference data when the detector is instantiated. Otherwise, the reference
+            data will be preprocessed at prediction time. Only applies if `x_ref_preprocessed=False`.
         update_x_ref
             Reference data can optionally be updated to the last n instances seen by the detector
             or via reservoir sampling with size n. For the former, the parameter equals {'last': n} while
@@ -732,14 +738,23 @@ class BaseLSDDDrift(BaseDetector):
         if p_val is None:
             logger.warning('No p-value set for the drift threshold. Need to set it to detect data drift.')
 
-        # optionally already preprocess reference data
-        self.p_val = p_val
-        if preprocess_x_ref and isinstance(preprocess_fn, Callable):  # type: ignore
+        # x_ref preprocessing logic
+        self.preprocess_at_pred = not preprocess_at_init and not x_ref_preprocessed and preprocess_fn is not None
+        self.preprocess_at_init = preprocess_at_init and not x_ref_preprocessed and preprocess_fn is not None
+        # Check if preprocess_fn is valid
+        if (self.preprocess_at_init or self.preprocess_at_pred) \
+                and not isinstance(preprocess_fn, Callable):  # type: ignore
+            raise ValueError("`preprocess_fn` is not a valid Callable.")
+
+        # optionally preprocess reference data (now instead of at predict)
+        if self.preprocess_at_init:
             self.x_ref = preprocess_fn(x_ref)
         else:
             self.x_ref = x_ref
+
+        # Other attributes
+        self.p_val = p_val
         self.sigma = sigma
-        self.preprocess_x_ref = preprocess_x_ref
         self.update_x_ref = update_x_ref
         self.preprocess_fn = preprocess_fn
         self.n = len(x_ref)  # type: ignore
@@ -766,7 +781,7 @@ class BaseLSDDDrift(BaseDetector):
         """
         if isinstance(self.preprocess_fn, Callable):  # type: ignore
             x = self.preprocess_fn(x)
-            x_ref = self.x_ref if self.preprocess_x_ref else self.preprocess_fn(self.x_ref)
+            x_ref = self.preprocess_fn(self.x_ref) if self.preprocess_at_pred else self.x_ref
             return x_ref, x
         else:
             return self.x_ref, x
@@ -805,7 +820,7 @@ class BaseLSDDDrift(BaseDetector):
 
         # update reference dataset
         if isinstance(self.update_x_ref, dict):
-            if self.preprocess_fn is not None and self.preprocess_x_ref:
+            if self.preprocess_fn is not None and self.preprocess_at_init:
                 x = self.preprocess_fn(x)
                 x = self._normalize(x)  # type: ignore
             elif self.preprocess_fn is None:
@@ -827,6 +842,40 @@ class BaseLSDDDrift(BaseDetector):
             cd['data']['distance'] = dist
             cd['data']['distance_threshold'] = distance_threshold
         return cd
+
+    @abstractmethod
+    def get_config(self) -> dict:
+        """
+        Get the detector's configuration dictionary.
+
+        Returns
+        -------
+        The detector's configuration dictionary.
+        """
+        cfg = {'version': __version__}
+
+        # x_ref
+        cfg.update({'x_ref': self.x_ref})
+
+        # Preprocess field
+        if self.preprocess_fn is not None:
+            cfg.update({'preprocess': {'preprocess_fn': self.preprocess_fn}})  # type: ignore[dict-item]
+
+        # Detector field
+        kwargs = {
+                'p_val': self.p_val,
+                'x_ref_preprocessed': self.preprocess_at_init,  # if preprocess_at_init, preprocessed x_ref saved
+                'preprocess_at_init': self.preprocess_at_init,
+                'update_x_ref': self.update_x_ref,
+                'sigma': self.sigma,
+                'n_permutations': self.n_permutations,
+                'n_kernel_centers': self.n_kernel_centers,
+                'lambda_rd_max': self.lambda_rd_max,
+                'input_shape': self.input_shape,
+        }
+        cfg.update({'detector': {'kwargs': kwargs}})  # type: ignore[dict-item]
+
+        return cfg
 
 
 class BaseUnivariateDrift(BaseDetector):
