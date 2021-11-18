@@ -183,7 +183,7 @@ class FETDriftOnline(BaseUniDriftOnline):
         Almost all of the work done here is done in a call to scipy's hypergeom for each window size.
         """
         n_windows = len(self.window_sizes)
-        stats = np.full((self.n_bootstraps, self.t_max, n_windows), np.nan)
+        stats = np.full((self.n_bootstraps, self.t_max, n_windows), np.nan, dtype=np.float32)
 
         p = np.mean(x_ref)
         sum_ref = np.sum(x_ref)
