@@ -26,7 +26,19 @@ class FETDriftOnline(BaseUniDriftOnline):
     ) -> None:
         """
         Online Fisher exact test (FET) data drift detector using preconfigured thresholds, which tests for a
-        change in the mean of binary data.
+        change in the mean of binary univariate data. This detector is an adaption of that proposed by
+        :cite:t:`Ross2012b`.
+
+        For multivariate data, the detector makes a correction similar to the Bonferroni correction used for
+        the offline detector. Given :math:`d` features, the detector configures thresholds by
+        targeting the :math:`1-\\beta` quantile of test statistics over the simulated streams, where
+        :math:`\\beta = 1 - (1-(1/ERT))^{(1/d)}`. For the univariate case, this simplifies to
+        :math:`\\beta = 1/ERT`. At prediction time, drift is flagged if the test statistic of any feature stream
+        exceed the thresholds.
+
+        Note
+        ----
+        In the multivariate case, for the ERT to be accurately targeted the feature streams must be independent.
 
         Parameters
         ----------
@@ -143,7 +155,7 @@ class FETDriftOnline(BaseUniDriftOnline):
                 warnings.filterwarnings(action='ignore', message='All-NaN slice encountered')
                 max_stats = np.nanmax(stats, -1)
             # Find threshold (at each t) that satisfies eqn. (2) in Ross et al.
-            for t in range(np.min(self.window_sizes), self.t_max):
+            for t in range(np.min(self.window_sizes)-1, self.t_max):
                 # Compute (1-beta) quantile of max_stats at a given t, over all streams
                 threshold = np.float32(quantile(max_stats[:, t], 1 - beta, interpolate=False, type=6))
                 stats_below = max_stats[max_stats[:, t] < threshold]

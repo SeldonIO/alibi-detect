@@ -69,3 +69,12 @@ models/overview
 
 API reference <api/modules>
 ```
+
+```{toctree}
+:caption: Bibliography
+:glob: true
+:maxdepth: 1
+
+bib
+```
+

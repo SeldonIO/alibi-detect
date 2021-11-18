@@ -55,6 +55,7 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx_autodoc_typehints",
     "sphinxcontrib.apidoc",  # automatically generate API docs, see https://github.com/rtfd/readthedocs.org/issues/1139
+    "sphinxcontrib.bibtex",
     "nbsphinx",
     "nbsphinx_link",  # for linking notebooks from outside sphinx source root
     "myst_parser",
@@ -62,6 +63,10 @@ extensions = [
 
 # nbsphinx settings
 nbsphinx_execute = "auto"
+
+# Bibliography
+bibtex_bibfiles = ['refs.bib']
+bibtex_default_style = 'unsrtalpha'
 
 # apidoc settings
 apidoc_module_dir = "../../alibi_detect"

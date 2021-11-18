@@ -267,7 +267,7 @@ class BaseUniDriftOnline(BaseDetector):
     def _update_state(self, x_t: np.ndarray):
         pass
 
-    def _check_x(self, x: Union[Any], x_ref: bool = False) -> np.ndarray:
+    def _check_x(self, x: Any, x_ref: bool = False) -> np.ndarray:
         # Check the type of x
         if isinstance(x, np.ndarray):
             pass

@@ -24,8 +24,9 @@ class FETDrift(BaseUnivariateDrift):
             data_type: Optional[str] = None
     ) -> None:
         """
-        Fisher exact test (FET) data drift detector, which tests for a change in the mean of binary data.
-        For multivariate data, the Bonferroni or False Discovery Rate (FDR) correction is applied.
+        Fisher exact test (FET) data drift detector, which tests for a change in the mean of binary univariate data.
+        For multivariate data, a separate FET test is applied to each feature, and the obtained p-values are
+        aggregated via the Bonferroni or False Discovery Rate (FDR) corrections.
 
         Parameters
         ----------

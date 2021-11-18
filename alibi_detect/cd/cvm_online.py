@@ -23,7 +23,19 @@ class CVMDriftOnline(BaseUniDriftOnline):
     ) -> None:
         """
         Online Cramer-von Mises (CVM) data drift detector using preconfigured thresholds, which tests for
-        any change in the distribution of continuous data.
+        any change in the distribution of continuous univariate data. This detector is an adaption of that
+        proposed by :cite:t:`Ross2012a`.
+
+        For multivariate data, the detector makes a correction similar to the Bonferroni correction used for
+        the offline detector. Given :math:`d` features, the detector configures thresholds by
+        targeting the :math:`1-\\beta` quantile of test statistics over the simulated streams, where
+        :math:`\\beta = 1 - (1-(1/ERT))^{(1/d)}`. For the univariate case, this simplifies to
+        :math:`\\beta = 1/ERT`. At prediction time, drift is flagged if the test statistic of any feature stream
+        exceed the thresholds.
+
+        Note
+        ----
+        In the multivariate case, for the ERT to be accurately targeted the feature streams must be independent.
 
         Parameters
         ----------
@@ -105,7 +117,7 @@ class CVMDriftOnline(BaseUniDriftOnline):
             max_stats = np.nanmax(stats, -1)
         # Now loop through each t and find threshold (at each t) that satisfies eqn. (2) in Ross et al.
         thresholds = np.full((t_max, 1), np.nan)
-        for t in range(np.min(self.window_sizes), t_max):
+        for t in range(np.min(self.window_sizes)-1, t_max):
             # Compute (1-beta) quantile of max_stats at a given t, over all streams
             threshold = quantile(max_stats[:, t], 1 - beta)
             # Remove streams for which a change point has already been detected
@@ -259,8 +271,9 @@ def _ids_to_stats(
             for j in range(win_cdf_ref.shape[0]):  # Need to loop through as can't broadcast in njit parallel
                 cdf_diffs_on_ref[j, :] = ref_cdf_all[:n] - win_cdf_ref[j, :]
             stats[b, (ws-1):, k] = np.sum(cdf_diffs_on_ref * cdf_diffs_on_ref, axis=-1)
-            for t in range(ws, t_max):
-                win_cdf_win = (cumsums[t, n + t - ws:n + t] - cumsums[t - ws, n + t - ws:n + t]) / ws
+            for t in range(ws-1, t_max):
+                win_cdf_win = (cumsums[t + 1, n + t - ws:n + t] -
+                               cumsums[t + 1 - ws, n + t - ws:n + t]) / ws
                 cdf_diffs_on_win = ref_cdf_all[n + t - ws:n + t] - win_cdf_win
                 stats[b, t, k] += np.sum(cdf_diffs_on_win * cdf_diffs_on_win)
             stats[b, :, k] = _normalise_stats(stats[b, :, k], n, ws)
