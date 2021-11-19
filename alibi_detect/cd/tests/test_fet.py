@@ -40,7 +40,7 @@ def test_fetdrift(fetdrift_params):
         assert preds['data']['is_drift'] == 1
     if alternative == 'greater' or alternative == 'two-sided':
         p_h1 = 0.8
-        x_h1 = np.random.choice(2, (n, 1), p=[1 - p_h1, p_h1])
+        x_h1 = np.random.choice([0, 1], (n, n_features), p=[1 - p_h1, p_h1])
         preds = cd.predict(x_h1)
         assert preds['data']['is_drift'] == 1
 
