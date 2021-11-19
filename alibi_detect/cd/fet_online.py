@@ -46,7 +46,7 @@ class FETDriftOnline(BaseUniDriftOnline):
             Data used as reference distribution.
         ert
             The expected run-time (ERT) in the absence of drift. For the univariate detectors, the ERT is defined
-            as the expected run-time after the smallest window is full i.e. the run-time from t=min(windows_sizes)-1.
+            as the expected run-time after the smallest window is full i.e. the run-time from t=min(windows_sizes).
         window_sizes
             window sizes for the sliding test-windows used to compute the test-statistic.
             Smaller windows focus on responding quickly to severe drift, larger windows focus on
@@ -137,7 +137,8 @@ class FETDriftOnline(BaseUniDriftOnline):
         # Init progress bar
         if self.verbose:
             if self.n_features > 1:
-                msg = "Simulating streams for %d features and %d window(s)" % (len(self.window_sizes), self.n_features)
+                msg = "Simulating streams for %d window(s) and %d features(s)" \
+                      % (len(self.window_sizes), self.n_features)
             else:
                 msg = "Simulating streams for %d window(s)" % len(self.window_sizes)
             pbar = tqdm(total=int(self.n_features*len(self.window_sizes)), desc=msg)

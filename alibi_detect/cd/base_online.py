@@ -271,17 +271,20 @@ class BaseUniDriftOnline(BaseDetector):
         # Check the type of x
         if isinstance(x, np.ndarray):
             pass
-        elif isinstance(x, (int, float)):
+        elif isinstance(x, (int, float, np.int, np.float)):
             x = np.array([x])
         else:
             raise TypeError("Detectors expect data to be 2D np.ndarray's. If data is passed as another type, a "
                             "`preprocess_fn` should be given to convert this data to 2D np.ndarray's.")
-        # Reshape to 2D if needed
-        x = x.reshape(x.shape[0], -1)
-        # If x is not reference data, check dimensions of x and x_ref agree
-        if not x_ref:
+
+        # Check the shape of x
+        if x_ref:
+            x = x.reshape(x.shape[0], -1)
+        else:
+            x = x.reshape(1, -1)
             if x.shape[1] != self.x_ref.shape[1]:
-                raise ValueError("Dimensions of `x` and `x_ref` do not match.")
+                raise ValueError("Dimensions do not match. `x` has shape (%d,%d) and `x_ref` has shape (%d,%d)."
+                                 % (x.shape[0], x.shape[1], self.x_ref.shape[0], self.x_ref.shape[1]))
         return x
 
     def _preprocess_xt(self, x_t: Union[np.ndarray, Any]) -> np.ndarray:

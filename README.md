@@ -113,8 +113,8 @@ The following tables show the advised use cases for each algorithm. The column *
 | Detector                         | Tabular | Image | Time Series | Text  | Categorical Features | Online | Feature Level |
 | :---                             |  :---:  | :---: |   :---:     | :---: |   :---:              | :---:  | :---:         |
 | Kolmogorov-Smirnov               | ✔       | ✔     |             | ✔     | ✔                    |        | ✔             |
-| Cramér-von Mises                 | ✔       | ✔     |             | ✔     | ✔                    | ✔      | ✔             |
-| Fisher's Exact Test              | ✔       | ✔     |             | ✔     | ✔                    | ✔      | ✔             |
+| Cramér-von Mises                 | ✔       | ✔     |             |       |                      | ✔      | ✔             |
+| Fisher's Exact Test              | ✔       |       |             |       | ✔                    | ✔      | ✔             |
 | Maximum Mean Discrepancy         | ✔       | ✔     |             | ✔     | ✔                    | ✔      |               |
 | Learned Kernel MMD               | ✔       | ✔     |             | ✔     | ✔                    |        |               |
 | Least-Squares Density Difference | ✔       | ✔     |             | ✔     | ✔                    | ✔      |               |
