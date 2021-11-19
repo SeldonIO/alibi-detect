@@ -5,7 +5,7 @@ from alibi_detect.cd import FETDrift
 n, n_features = 100, 1
 np.random.seed(0)
 
-alternative = ['decrease', 'increase', 'change']
+alternative = ['less', 'greater', 'two-sided']
 tests_fetdrift = list(alternative)
 n_tests = len(tests_fetdrift)
 
@@ -33,12 +33,12 @@ def test_fetdrift(fetdrift_params):
     assert preds['data']['is_drift'] == 0 and preds['data']['p_val'] >= cd.p_val
 
     # Test predict on heavily drifted data
-    if alternative == 'decrease' or alternative == 'change':
+    if alternative == 'less' or alternative == 'two-sided':
         p_h1 = 0.2
         x_h1 = np.random.choice([0, 1], (n, n_features), p=[1 - p_h1, p_h1])
         preds = cd.predict(x_h1)
         assert preds['data']['is_drift'] == 1
-    if alternative == 'increase' or alternative == 'change':
+    if alternative == 'greater' or alternative == 'two-sided':
         p_h1 = 0.8
         x_h1 = np.random.choice(2, (n, 1), p=[1 - p_h1, p_h1])
         preds = cd.predict(x_h1)

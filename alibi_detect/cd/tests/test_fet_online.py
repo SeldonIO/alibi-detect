@@ -9,7 +9,7 @@ n_bootstraps = 1000
 ert = 150
 window_sizes = [40]
 
-alternatives = ['decrease', 'increase', 'change']
+alternatives = ['less', 'greater']
 
 tests_fetdriftonline = list(alternatives)
 n_tests = len(tests_fetdriftonline)
@@ -51,7 +51,7 @@ def test_fetdriftonline(fetdriftonline_params):
                 cd.reset()
 
         # Drifted data
-        if alternative == 'decrease':
+        if alternative == 'less':
             p_h1 = 0.1
             x_h1 = partial(np.random.choice, (0, 1), size=(1, n_features), p=[1-p_h1, p_h1])
         else:
