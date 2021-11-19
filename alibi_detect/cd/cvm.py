@@ -1,4 +1,3 @@
-import logging
 import numpy as np
 from typing import Callable, Dict, Tuple, Optional, Union
 from alibi_detect.cd.base import BaseUnivariateDrift
@@ -6,8 +5,6 @@ try:
     from scipy.stats import cramervonmises_2samp
 except ImportError:
     cramervonmises_2samp = None
-
-logger = logging.getLogger(__name__)
 
 
 class CVMDrift(BaseUnivariateDrift):

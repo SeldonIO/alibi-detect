@@ -3,7 +3,7 @@ import numpy as np
 from typing import Any, Callable, List, Optional, Union
 from alibi_detect.cd.base_online import BaseUniDriftOnline
 from alibi_detect.utils.misc import quantile
-from alibi_detect.cd.fet import fisher_exact
+from scipy.stats import hypergeom
 import numba as nb
 import warnings
 
@@ -17,7 +17,7 @@ class FETDriftOnline(BaseUniDriftOnline):
             preprocess_fn: Optional[Callable] = None,
             n_bootstraps: int = 10000,
             t_max: Optional[int] = None,
-            alternative: str = 'decrease',
+            alternative: str = 'greater',
             lam: float = 0.99,
             n_features: Optional[int] = None,
             verbose: bool = True,
@@ -61,8 +61,8 @@ class FETDriftOnline(BaseUniDriftOnline):
             Length of the streams to simulate when configuring thresholds. If `None`, this is set to
             2 * max(`window_sizes`) - 1.
         alternative
-            Defines the alternative hypothesis. Options are 'decrease', 'increase' or 'change', corresponding to
-            a decrease, increase, or any change in the mean.
+            Defines the alternative hypothesis. Options are 'greater' or 'less', which correspond to
+            an increase or decrease in the mean of the Bernoulli stream.
         lam
             Smoothing coefficient used for exponential moving average.
         n_features
@@ -88,8 +88,8 @@ class FETDriftOnline(BaseUniDriftOnline):
             data_type=data_type
         )
         self.lam = lam
-        if alternative.lower() not in ['decrease', 'increase', 'change']:
-            raise ValueError("`alternative` must be either 'decrease', 'increase' or 'change'.")
+        if alternative.lower() not in ['greater', 'less']:
+            raise ValueError("`alternative` must be either 'greater' or 'less'.")
         self.alternative = alternative.lower()
 
         # Stream length
@@ -196,12 +196,11 @@ class FETDriftOnline(BaseUniDriftOnline):
             ws = self.window_sizes[k]
             cumsums_last_ws = cumsums_stream[:, ws:] - cumsums_stream[:, :-ws]
 
-            # Construct contingency table and perform fisher's exact test
-            a = cumsums_last_ws
-            b = np.full_like(a, sum_ref)
-            c = ws - cumsums_last_ws
-            d = np.full_like(c, self.n - sum_ref)
-            _, p_val = fisher_exact(a, b, c, d, alternative=self.alternative)
+            # Perform FET with hypergeom.cdf (this is vectorised over streams)
+            if self.alternative == 'greater':
+                p_val = hypergeom.cdf(sum_ref, self.n+ws, sum_ref + cumsums_last_ws, self.n)
+            else:
+                p_val = hypergeom.cdf(cumsums_last_ws, self.n+ws, sum_ref + cumsums_last_ws, ws)
 
             stats[:, (ws - 1):, k] = self._exp_moving_avg(1 - p_val, self.lam)
         return stats
@@ -283,12 +282,12 @@ class FETDriftOnline(BaseUniDriftOnline):
         for k, ws in enumerate(self.window_sizes):
             if self.t >= ws:
                 sum_last_ws = np.sum(self.xs[-ws:, :], axis=0)
-                # Construct contingency table and perform fisher's exact test
-                a = sum_last_ws
-                b = np.full_like(a, self.sum_ref)
-                c = ws - sum_last_ws
-                d = np.full_like(c, self.n - self.sum_ref)
-                _, p_vals = fisher_exact(a, b, c, d, alternative=self.alternative)
+
+                # Perform FET with hypergeom.cdf (this is vectorised over features)
+                if self.alternative == 'greater':
+                    p_vals = hypergeom.cdf(self.sum_ref, self.n+ws, self.sum_ref + sum_last_ws, self.n)
+                else:
+                    p_vals = hypergeom.cdf(sum_last_ws, self.n+ws, self.sum_ref + sum_last_ws, ws)
 
                 # Compute test stat and apply smoothing
                 stats_k = 1 - p_vals
