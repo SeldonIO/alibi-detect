@@ -700,25 +700,25 @@ def load_detector(filepath: Union[str, os.PathLike], **kwargs) -> Data:
     Loaded outlier or adversarial detector object.
     """
     filepath = Path(filepath)
-    # If reference is a 'config.yaml' itself, pass to new load function
-    if filepath.name == 'config.yaml':
+    # If reference is a 'config.toml' itself, pass to new load function
+    if filepath.name == 'config.toml':
         return load_detector_config(filepath)
 
-    # Otherwise, if a directory, look for meta.dill, meta.pickle or config.yaml inside it
+    # Otherwise, if a directory, look for meta.dill, meta.pickle or config.toml inside it
     elif filepath.is_dir():
         files = [str(f.name) for f in filepath.iterdir() if f.is_file()]
-        if 'config.yaml' in files:
-            return load_detector_config(filepath)
+        if 'config.toml' in files:
+            return load_detector_config(filepath.joinpath('config.toml'))
         elif 'meta.dill' in files:
             return load_detector_legacy(filepath, '.dill', **kwargs)
         elif 'meta.pickle' in files:
             return load_detector_legacy(filepath, '.pickle', **kwargs)
         else:
-            raise ValueError('Neither meta.dill, meta.pickle or config.yaml exist in {}.'.format(filepath))
+            raise ValueError('Neither meta.dill, meta.pickle or config.toml exist in {}.'.format(filepath))
 
     # No other file types are accepted, so if not dir raise error
     else:
-        raise ValueError("load_detector accepts only a filepath to a directory, or a config.yaml file.")
+        raise ValueError("load_detector accepts only a filepath to a directory, or a config.toml file.")
 
 
 def load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwargs) -> Data:
