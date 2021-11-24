@@ -185,7 +185,9 @@ def save_detector_config(detector: Data, filepath: Union[str, os.PathLike]):
         File path to save serialized artefacts to.
     """
     # Get backend and detector name
-    backend = detector.meta.get('backend')
+    backend = detector.meta.get('backend', 'tensorflow')
+    # TODO - setting to tensorflow by default atm, but what do we do about detectors with no backend. (We still need to
+    #  know whether preprocess_fn artefacts are tensorflow or pytorch.
     if backend == 'pytorch':
         raise NotImplementedError('Detectors with PyTorch backend are not yet supported.')
     detector_name = detector.meta['name']
@@ -204,7 +206,7 @@ def save_detector_config(detector: Data, filepath: Union[str, os.PathLike]):
     # Save x_ref
     save_path = filepath.joinpath('x_ref.npy')
     np.save(str(save_path), cfg['x_ref'])
-    cfg.update({'x_ref': save_path})
+    cfg.update({'x_ref': 'x_ref.npy'})
 
     # Save preprocess_fn
     if 'preprocess_fn' in cfg:
@@ -1556,7 +1558,7 @@ def init_od_llr(state_dict: Dict, models: tuple) -> LLR:
 
 
 def serialize_preprocess(preprocess_fn: Callable,
-                         backend: Optional[str],
+                         backend: str,
                          input_shape: Optional[tuple],
                          filepath: Path,
                          verbose: bool = False) -> dict:
@@ -1683,37 +1685,41 @@ def save_model(model: SUPPORTED_MODELS,
                input_shape: tuple,
                backend: str,
                verbose: bool = False) -> Tuple[dict, Optional[dict]]:
-    # TODO - need to check for appropriate backend and input_shape here
-    cfg_model, cfg_embed = {}, None
-    if isinstance(model, UAE):
-        if isinstance(model.encoder.layers[0], TransformerEmbedding):  # text drift
-            # embedding
-            cfg_embed = {}
-            embed = model.encoder.layers[0].model
-            cfg_embed.update({'type': model.encoder.layers[0].emb_type})
-            cfg_embed.update({'layers': model.encoder.layers[0].hs_emb.keywords['layers']})
-            save_embedding(embed, embed_args=cfg_embed, filepath=filepath, save_dir='embedding')
-            cfg_embed.update({'src': filepath.joinpath('embedding')})
-            # preprocessing encoder
-            inputs = Input(shape=input_shape, dtype=tf.int64)
-            model.encoder.call(inputs)  # Need to call to populate .output
-            shape_enc = (model.encoder.layers[0].output.shape[-1],)
-            layers = [InputLayer(input_shape=shape_enc)] + model.encoder.layers[1:]
-            model = tf.keras.Sequential(layers)
-            _ = model(tf.zeros((1,) + shape_enc))
-        else:
-            model = model.encoder
-        cfg_model.update({'type': 'UAE'})
+    if backend == 'tensorflow':
+        cfg_model, cfg_embed = {}, None
+        if isinstance(model, UAE):
+            if isinstance(model.encoder.layers[0], TransformerEmbedding):  # text drift
+                # embedding
+                cfg_embed = {}
+                embed = model.encoder.layers[0].model
+                cfg_embed.update({'type': model.encoder.layers[0].emb_type})
+                cfg_embed.update({'layers': model.encoder.layers[0].hs_emb.keywords['layers']})
+                save_embedding(embed, embed_args=cfg_embed, filepath=filepath, save_dir='embedding')
+                cfg_embed.update({'src': 'embedding/'})
+                # preprocessing encoder
+                inputs = Input(shape=input_shape, dtype=tf.int64)
+                model.encoder.call(inputs)  # Need to call to populate .output
+                shape_enc = (model.encoder.layers[0].output.shape[-1],)
+                layers = [InputLayer(input_shape=shape_enc)] + model.encoder.layers[1:]
+                model = tf.keras.Sequential(layers)
+                _ = model(tf.zeros((1,) + shape_enc))
+            else:
+                model = model.encoder
+            cfg_model.update({'type': 'UAE'})
 
-    elif isinstance(model, HiddenOutput):
-        model = model.model
-        cfg_model.update({'type': 'HiddenOutput'})
-    elif isinstance(model, (tf.keras.Sequential, tf.keras.Model)):
-        model = model
-        cfg_model.update({'type': 'custom'})
+        elif isinstance(model, HiddenOutput):
+            model = model.model
+            cfg_model.update({'type': 'HiddenOutput'})
+        elif isinstance(model, (tf.keras.Sequential, tf.keras.Model)):
+            model = model
+            cfg_model.update({'type': 'custom'})
 
-    save_tf_model(model, filepath=filepath, save_dir='model')
-    cfg_model.update({'src': filepath.joinpath('model')})
+        save_tf_model(model, filepath=filepath, save_dir='model')
+
+    else:
+        raise RuntimeError("Saving of pytorch models is not yet implemented.")
+
+    cfg_model.update({'src': 'model/'})
     return cfg_model, cfg_embed
 
 
@@ -1723,5 +1729,5 @@ def save_tokenizer(tokenizer: PreTrainedTokenizerBase,
     cfg_token = {}
     save_path = filepath.joinpath('tokenizer')
     tokenizer.save_pretrained(save_path)
-    cfg_token.update({'src': save_path})
+    cfg_token.update({'src': 'tokenizer/'})
     return cfg_token

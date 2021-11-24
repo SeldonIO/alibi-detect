@@ -266,25 +266,13 @@ def load_preprocessor(cfg: dict,
             cfg.pop('kwargs')
             kwargs = cfg.copy()
 
-            # Handle embedding (if it exists)
+            # Final processing of model (and/or embedding)
             model = kwargs['model']
             emb = kwargs.pop('embedding')  # embedding passed to preprocess_drift as `model` therefore remove
-            if emb is not None:
-                if model is not None:
-                    # If model exists, chain embedding and model together
-                    if isinstance(model, UAE):
-                        encoder = _Encoder(emb, mlp=model)
-                        model = UAE(encoder_net=encoder)
-
-                    else:
-                        raise ValueError("Currently only model type 'UAE' is supported with an embedding.")
-                else:
-                    # if model doesn't exist, embedding is model
-                    model = emb
-
-            # Check model
+            model = prep_model_and_embedding(model, emb, backend=backend)
             if model is None:
-                raise ValueError("The 'model' field must be specified when 'preprocess_fn'='preprocess_drift'")
+                raise ValueError("A 'model'  and/or `embedding` must be specified when "
+                                 "preprocess_fn='preprocess_drift'")
             kwargs.update({'model': model})
 
             # Backend specifics
@@ -366,6 +354,49 @@ def load_tokenizer(cfg: dict,
 
     tokenizer = AutoTokenizer.from_pretrained(src, **kwargs)
     return tokenizer
+
+
+def prep_model_and_embedding(model: Optional[SUPPORTED_MODELS], emb: Optional[TransformerEmbedding],
+                             backend: str) -> SUPPORTED_MODELS:
+    """
+    Function to perform final preprocessing of model before it is passed to preprocess_drift. This is separated from
+    load_model in order to reduce complexity of load functions (with future model load functionality in mind), and also
+    to separate embedding logic from model loading (allows for cleaner config layout and resolution of it).
+
+    Note: downside of separating this function from load_model is we no longer know model_type = UAE/HiddenState/custom
+     when chaining embedding and model together. Currently requires a bit of a hack to avoid nesting UAE's.
+     On plus side, makes clearer distinction between settings for model loading and settings for combining
+     model/embedding (the latter going in preprocess_fn config). But need to revisit...
+
+    Parameters
+    ----------
+    model
+        A compatible model.
+    emb
+        A text embedding model.
+    backend
+        The detector backend (backend in this case actually determines tensorflow vs pytorch model).
+
+    Returns
+    -------
+    The final model ready to passed to preprocess_drift.
+    """
+    # If a model exists, process it
+    if model is not None:
+        if backend == 'tensorflow':
+            model = model.encoder if isinstance(model, UAE) else model
+            if emb is not None:
+                model = _Encoder(emb, mlp=model)
+            model = UAE(encoder_net=model)
+
+        else:
+            raise RuntimeError("Loading of pytorch models is not currently implemented.")
+
+    # If no model exists, store embedding in model (both may be None)
+    else:
+        model = emb
+
+    return model
 
 
 def get_nested_value(dic, keys):

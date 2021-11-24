@@ -25,6 +25,8 @@ class DetectorConfig(CustomBaseModel):
     version: str = __version__
     config_spec: str = __config_spec__
     backend: Literal['tensorflow', 'pytorch'] = 'tensorflow'
+    # Note: Although not all detectors have a backend, we define in base class as `backend` also determines
+    #  whether tf or torch models used for preprocess_fn.
 
 
 class ModelConfig(CustomBaseModel):
