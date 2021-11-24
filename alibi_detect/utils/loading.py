@@ -10,7 +10,7 @@ from alibi_detect.cd.tensorflow import HiddenOutput, UAE
 from alibi_detect.cd.tensorflow.preprocess import _Encoder
 from alibi_detect.models.tensorflow import TransformerEmbedding
 from alibi_detect.utils.registry import registry
-from alibi_detect.utils.config import DETECTOR_CONFIGS, DETECTOR_CONFIGS_RESOLVED, SUPPORTED_MODELS
+from alibi_detect.utils.config import DETECTOR_CONFIGS, DETECTOR_CONFIGS_RESOLVED, SUPPORTED_MODELS, __config_spec__
 from alibi_detect.utils.tensorflow.kernels import DeepKernel
 import numpy as np
 from transformers import AutoTokenizer
@@ -112,8 +112,8 @@ FIELDS_TO_DTYPE = [
 
 def validate_config(cfg: dict, resolved: bool = False) -> dict:
     # Get detector name
-    if 'type' in cfg:
-        detector_name = cfg['type']
+    if 'name' in cfg:
+        detector_name = cfg['name']
     else:
         raise ValueError('`type` missing from config.toml.')
 
@@ -131,6 +131,13 @@ def validate_config(cfg: dict, resolved: bool = False) -> dict:
     if version is not None and version != __version__:
         warnings.warn(f'Trying to load detector from version {version} when using version '
                       f'{__version__}. This may lead to breaking code or invalid results.')
+
+    # Check config specification version
+    config_spec = cfg.pop('config_spec', None)
+    if config_spec is not None and config_spec != __config_spec__:
+        warnings.warn(f'Trying to load detector from  config with specification {version} when the installed '
+                      f'alibi-detect version expects specification {__config_spec__}.'
+                      'This may lead to breaking code or invalid results.')
     return cfg
 
 
@@ -153,7 +160,7 @@ def load_detector_config(cfg: Union[str, os.PathLike, dict],
     cfg = validate_config(cfg, resolved=True)
 
     # Backend and detector type
-    detector_name = cfg.get('type')
+    detector_name = cfg.get('name')
     backend = cfg.pop('backend')  # popping so that cfg left as kwargs + `type` when passed to init_detector
 
     # Get x_ref
@@ -199,7 +206,7 @@ def init_detector(x_ref: Union[np.ndarray, list],
                   model: Optional[SUPPORTED_MODELS] = None,
                   kernel: Optional[Callable] = None,
                   backend: Optional[str] = 'tensorflow') -> Detector:
-    detector_name = cfg.pop('type', None)
+    detector_name = cfg.pop('name', None)
 
     # Process args
     args = [x_ref]

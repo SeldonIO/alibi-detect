@@ -9,6 +9,7 @@ from alibi_detect.cd.utils import get_input_shape, update_reference
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
 from alibi_detect.utils.statstest import fdr
 from alibi_detect.version import __version__
+from alibi_detect.utils.config import __config_spec__
 
 if has_pytorch:
     import torch  # noqa F401
@@ -936,6 +937,7 @@ class BaseUnivariateDrift(BaseDetector):
         # x_ref preprocessing logic
         self.preprocess_at_pred = not preprocess_at_init and not x_ref_preprocessed and preprocess_fn is not None
         self.preprocess_at_init = preprocess_at_init and not x_ref_preprocessed and preprocess_fn is not None
+        self.x_ref_preprocessed = x_ref_preprocessed
         # Check if preprocess_fn is valid
         if (self.preprocess_at_init or self.preprocess_at_pred) \
                 and not isinstance(preprocess_fn, Callable):  # type: ignore
@@ -1084,29 +1086,29 @@ class BaseUnivariateDrift(BaseDetector):
         -------
         The detector's configuration dictionary.
         """
-        cfg = {'version': __version__}
+        cfg = {
+            'version': __version__,
+            'config_spec': __config_spec__,
+            'name': self.__class__.__name__
+        }
 
         # x_ref
         cfg.update({'x_ref': self.x_ref})
 
         # Preprocess field
         if isinstance(self.preprocess_fn, Callable):  # type: ignore
-            cfg.update({'preprocess': {'preprocess_fn': self.preprocess_fn}})  # type: ignore[dict-item]
+            cfg.update({'preprocess_fn': self.preprocess_fn})
 
-        # Detector field
+        # Detector kwargs
         kwargs = {
                 'p_val': self.p_val,
-                'x_ref_preprocessed': self.preprocess_at_init,  # if preprocess_at_init, preprocessed x_ref saved
+                'x_ref_preprocessed': self.preprocess_at_init or self.x_ref_preprocessed,
                 'preprocess_at_init': self.preprocess_at_init,
                 'update_x_ref': self.update_x_ref,
                 'input_shape': self.input_shape,
                 'correction': self.correction,
                 'n_features': self.n_features
         }
-        cd_cfg = {
-            'type': self.__class__.__name__,
-            'kwargs': kwargs
-        }
-        cfg.update({'detector': cd_cfg})  # type: ignore[dict-item]
+        cfg.update(kwargs)
 
         return cfg

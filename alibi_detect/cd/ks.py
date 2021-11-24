@@ -111,6 +111,6 @@ class KSDrift(BaseUnivariateDrift):
         kwargs = {
             'alternative': self.alternative,
         }
-        cfg['detector']['kwargs'].update(kwargs)
+        cfg.update(kwargs)
 
         return cfg

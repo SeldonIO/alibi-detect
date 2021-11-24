@@ -42,8 +42,9 @@ setup(
         "dill>=0.3.0, <0.4.0",
         "tqdm>=4.28.1, <5.0.0",
         "requests>=2.21.0, <3.0.0",
-        "ruamel.yaml>=0.16.0, <0.17.17",
-        "catalogue>=2.0.0, <2.0.7"
+        "toml>=0.10.0, <0.11.0",
+        "catalogue>=2.0.0, <2.0.7",
+        "pydantic>=1.8.0, <1.9.0"
     ],
     extras_require=extras_require,
     test_suite="tests",

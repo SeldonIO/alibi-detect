@@ -8,34 +8,45 @@ from alibi_detect.cd.tensorflow import HiddenOutput, UAE
 from alibi_detect.models.tensorflow import TransformerEmbedding
 from transformers import PreTrainedTokenizerBase
 
+__config_spec__ = "0.1.0dev"  # TODO - remove dev once config layout confirmed
+
 SUPPORTED_MODELS = Union[UAE, HiddenOutput, tf.keras.Sequential, tf.keras.Model]
 
 
-class DetectorConfig(BaseModel):
-    type: str
+# Custom BaseModel so that we can set default config
+class CustomBaseModel(BaseModel):
+    class Config:
+        arbitrary_types_allowed = True
+        extra = 'forbid'  # Forbid extra fields so that we catch misspelled fields
+
+
+class DetectorConfig(CustomBaseModel):
+    name: str
     version: str = __version__
+    config_spec: str = __config_spec__
     backend: Literal['tensorflow', 'pytorch'] = 'tensorflow'
 
 
-class ModelConfig(BaseModel):
-    type: str = Literal['custom', 'HiddenOutput', 'UAE']
+class ModelConfig(CustomBaseModel):
+    type: Literal['custom', 'HiddenOutput', 'UAE'] = 'custom'
     src: str
     custom_obj: Optional[dict] = None
 
 
-class EmbeddingConfig(BaseModel):
-    type: str = Literal['hidden_state']  # TODO - add other types
-    layers: List[int]
+class EmbeddingConfig(CustomBaseModel):
+    type: Literal['pooler_output', 'last_hidden_state',
+                  'hidden_state', 'hidden_state_cls']  # See alibi_detect.models.tensorflow.embedding
+    layers: List[int]  # TODO - add check conditional on embedding type (see docstring in above)
     src: str
 
 
-class TokenizerConfig(BaseModel):
+class TokenizerConfig(CustomBaseModel):
     src: str
     kwargs: Optional[dict] = {}
 
 
-class PreprocessConfig(BaseModel):
-    function: Union[str] = "@preprocess_drift"
+class PreprocessConfig(CustomBaseModel):
+    function: str = "@preprocess_drift"
 
     # Below kwargs are only passed if function == @preprocess_drift
     model: Union[str, ModelConfig, None] = None
@@ -60,11 +71,8 @@ class PreprocessConfigResolved(PreprocessConfig):
     preprocess_batch_fn: Optional[Callable] = None
     dtype: Optional[type] = None
 
-    class Config:
-        arbitrary_types_allowed = True
 
-
-class KernelConfig(BaseModel):
+class KernelConfig(CustomBaseModel):
     kernel: str = "@GaussianRBF"
 
     # Below kwargs are only passed if kernel == @GaussianRBF
@@ -78,9 +86,6 @@ class KernelConfig(BaseModel):
 class KernelConfigResolved(KernelConfig):
     kernel: Callable
     sigma: Optional[np.ndarray] = None
-
-    class Config:
-        arbitrary_types_allowed = True
 
 
 class DriftDetectorConfig(DetectorConfig):
@@ -98,9 +103,6 @@ class DriftDetectorConfig(DetectorConfig):
 class DriftDetectorConfigResolved(DriftDetectorConfig):
     x_ref: np.ndarray
     preprocess_fn: Union[Callable, PreprocessConfigResolved, None]
-
-    class Config:
-        arbitrary_types_allowed = True
 
 
 class KSDriftConfig(DriftDetectorConfig):

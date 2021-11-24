@@ -1,7 +1,7 @@
 # type: ignore
 # TODO: need to rewrite utilities using isinstance or @singledispatch for type checking to work properly
 import dill
-from ruamel.yaml import YAML
+import toml
 import numpy as np
 from functools import partial
 import logging
@@ -207,18 +207,19 @@ def save_detector_config(detector: Data, filepath: Union[str, os.PathLike]):
     cfg.update({'x_ref': save_path})
 
     # Save preprocess_fn
-    if 'preprocess' in cfg:
-        preprocess_fn = cfg['preprocess'].get('preprocess_fn')
-        input_shape = cfg['detector']['kwargs'].get('input_shape')
+    if 'preprocess_fn' in cfg:
+        preprocess_fn = cfg['preprocess_fn']
+        input_shape = cfg.get('input_shape', None)
         preprocess_cfg = serialize_preprocess(preprocess_fn, backend, input_shape, filepath)  # TODO - verbose option
-        cfg['preprocess'] = preprocess_cfg
+        cfg['preprocess_fn'] = preprocess_cfg
 
     # Serialize artefacts in detector kwargs (e.g. model and kernel)
     # TODO
 
     # Save config
     cfg = resolve_paths(cfg)
-    YAML().dump(cfg, filepath.joinpath('config.yaml'))
+    with open(filepath.joinpath('config.toml'), 'w') as f:
+        toml.dump(cfg, f)
 
 
 def state_iforest(od: IForest) -> Dict:
@@ -1587,20 +1588,22 @@ def serialize_preprocess(preprocess_fn: Callable,
         # If the func is preprocess_drift, just save string, otherwise, serialize
         func = preprocess_fn.func
         if func.__name__ == 'preprocess_drift':
-            func = 'preprocess_drift'
+            func = ".".join([func.__module__.replace('alibi_detect.', '@'), func.__name__])
         else:
             save_path = filepath.joinpath('func.dill')
             dill.dump(func, save_path)
-            func = str(save_path)
-        preprocess_cfg.update({'preprocess_fn': func})
+            func = 'func.dill'
+        preprocess_cfg.update({'function': func})
 
         # Process partial function args
         partial_dict = preprocess_fn.keywords
         for k, v in partial_dict.items():
             # Model/embedding
             if isinstance(v, SupportedModels):
-                cfg_model = save_model(v, filepath, input_shape, backend, verbose)
+                cfg_model, cfg_embed = save_model(v, filepath, input_shape, backend, verbose)
                 kwargs.update({k: cfg_model})
+                if cfg_embed is not None:
+                    kwargs.update({'embedding': cfg_embed})
 
             # Tokenizer
             elif isinstance(v, PreTrainedTokenizerBase):
@@ -1611,19 +1614,22 @@ def serialize_preprocess(preprocess_fn: Callable,
             elif callable(v):  # TODO - is this enough? other non-serializable callables might sneak in
                 save_path = filepath.joinpath(k + '.dill')
                 dill.dump(v, save_path)
-                kwargs.update({k: save_path})
+                kwargs.update({k: k + '.dill'})
 
             # Put remaining kwargs directly into cfg
             else:
-                kwargs.update({k: v})
+                if preprocess_fn.func.__name__ == 'preprocess_drift':
+                    kwargs.update({k: v})
+                else:
+                    kwargs.update({'kwargs': {k: v}})
 
     else:
         func = preprocess_fn
         save_path = filepath.joinpath('func.dill')
         dill.dump(func, save_path)
-        preprocess_cfg.update({'preprocess_fn': save_path})
+        preprocess_cfg.update({'preprocess_fn': 'func.dill'})
 
-    preprocess_cfg.update({'kwargs': kwargs})
+    preprocess_cfg.update(kwargs)
 
     return preprocess_cfg
 
@@ -1676,7 +1682,7 @@ def save_model(model: SUPPORTED_MODELS,
                filepath: Path,
                input_shape: tuple,
                backend: str,
-               verbose: bool = False) -> dict:
+               verbose: bool = False) -> Tuple[dict, Optional[dict]]:
     # TODO - need to check for appropriate backend and input_shape here
     cfg_model, cfg_embed = {}, None
     if isinstance(model, UAE):
@@ -1684,7 +1690,7 @@ def save_model(model: SUPPORTED_MODELS,
             # embedding
             cfg_embed = {}
             embed = model.encoder.layers[0].model
-            cfg_embed.update({'embedding_type': model.encoder.layers[0].emb_type})
+            cfg_embed.update({'type': model.encoder.layers[0].emb_type})
             cfg_embed.update({'layers': model.encoder.layers[0].hs_emb.keywords['layers']})
             save_embedding(embed, embed_args=cfg_embed, filepath=filepath, save_dir='embedding')
             cfg_embed.update({'src': filepath.joinpath('embedding')})
@@ -1707,13 +1713,8 @@ def save_model(model: SUPPORTED_MODELS,
         cfg_model.update({'type': 'custom'})
 
     save_tf_model(model, filepath=filepath, save_dir='model')
-    cfg_model.update(
-        {
-            'src': filepath.joinpath('model'),
-            'embedding': cfg_embed
-        }
-    )
-    return cfg_model
+    cfg_model.update({'src': filepath.joinpath('model')})
+    return cfg_model, cfg_embed
 
 
 def save_tokenizer(tokenizer: PreTrainedTokenizerBase,
