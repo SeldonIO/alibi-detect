@@ -1102,7 +1102,7 @@ class BaseUnivariateDrift(BaseDetector):
         # Detector kwargs
         kwargs = {
                 'p_val': self.p_val,
-                'x_ref_preprocessed': self.preprocess_at_init or self.x_ref_preprocessed,
+            'x_ref_preprocessed': self.preprocess_at_init or self.x_ref_preprocessed,
                 'preprocess_at_init': self.preprocess_at_init,
                 'update_x_ref': self.update_x_ref,
                 'input_shape': self.input_shape,
