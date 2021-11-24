@@ -115,7 +115,7 @@ def validate_config(cfg: dict, resolved: bool = False) -> dict:
     if 'name' in cfg:
         detector_name = cfg['name']
     else:
-        raise ValueError('`type` missing from config.toml.')
+        raise ValueError('`name` missing from config.toml.')
 
     # Validate detector specific config
     if detector_name in DETECTOR_CONFIGS.keys():
@@ -161,7 +161,7 @@ def load_detector_config(cfg: Union[str, os.PathLike, dict],
 
     # Backend and detector type
     detector_name = cfg.get('name')
-    backend = cfg.pop('backend')  # popping so that cfg left as kwargs + `type` when passed to init_detector
+    backend = cfg.pop('backend')  # popping so that cfg left as kwargs + `name` when passed to init_detector
 
     # Get x_ref
     x_ref = cfg.pop('x_ref')
@@ -275,6 +275,7 @@ def load_preprocessor(cfg: dict,
                     if isinstance(model, UAE):
                         encoder = _Encoder(emb, mlp=model)
                         model = UAE(encoder_net=encoder)
+
                     else:
                         raise ValueError("Currently only model type 'UAE' is supported with an embedding.")
                 else:

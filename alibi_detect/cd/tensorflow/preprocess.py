@@ -58,6 +58,9 @@ class UAE(tf.keras.Model):
             raise ValueError('Need to provide either `enc_dim` or a tf.keras.Sequential'
                              ' or tf.keras.Model `encoder_net`.')
 
+    def get_config(self):
+        return self.encoder.get_config()
+
     def call(self, x: Union[np.ndarray, tf.Tensor, Dict[str, tf.Tensor]]) -> tf.Tensor:
         return self.encoder(x)
 

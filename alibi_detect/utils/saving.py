@@ -1696,7 +1696,7 @@ def save_model(model: SUPPORTED_MODELS,
             cfg_embed.update({'src': filepath.joinpath('embedding')})
             # preprocessing encoder
             inputs = Input(shape=input_shape, dtype=tf.int64)
-            model.encoder.call(inputs)
+            model.encoder.call(inputs)  # Need to call to populate .output
             shape_enc = (model.encoder.layers[0].output.shape[-1],)
             layers = [InputLayer(input_shape=shape_enc)] + model.encoder.layers[1:]
             model = tf.keras.Sequential(layers)
