@@ -9,15 +9,18 @@ from alibi_detect.models.tensorflow.trainer import trainer
 from alibi_detect.utils.tensorflow.data import TFDataset
 from alibi_detect.utils.tensorflow.misc import clone_model
 from alibi_detect.utils.tensorflow.prediction import predict_batch
+from alibi_detect.utils.warnings import deprecated_alias
 
 
 class ClassifierDriftTF(BaseClassifierDrift):
+    @deprecated_alias(preprocess_x_ref='preprocess_at_init')
     def __init__(
             self,
             x_ref: np.ndarray,
             model: tf.keras.Model,
             p_val: float = .05,
-            preprocess_x_ref: bool = True,
+            x_ref_preprocessed: bool = False,
+            preprocess_at_init: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
             preds_type: str = 'preds',
@@ -50,8 +53,13 @@ class ClassifierDriftTF(BaseClassifierDrift):
             TensorFlow classification model used for drift detection.
         p_val
             p-value used for the significance of the test.
-        preprocess_x_ref
-            Whether to already preprocess and store the reference data.
+        x_ref_preprocessed
+            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
+            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
+            data will also be preprocessed.
+        preprocess_at_init
+            Whether to preprocess the reference data when the detector is instantiated. Otherwise, the reference
+            data will be preprocessed at prediction time. Only applies if `x_ref_preprocessed=False`.
         update_x_ref
             Reference data can optionally be updated to the last n instances seen by the detector
             or via reservoir sampling with size n. For the former, the parameter equals {'last': n} while
@@ -99,7 +107,8 @@ class ClassifierDriftTF(BaseClassifierDrift):
         super().__init__(
             x_ref=x_ref,
             p_val=p_val,
-            preprocess_x_ref=preprocess_x_ref,
+            x_ref_preprocessed=x_ref_preprocessed,
+            preprocess_at_init=preprocess_at_init,
             update_x_ref=update_x_ref,
             preprocess_fn=preprocess_fn,
             preds_type=preds_type,
@@ -183,18 +192,23 @@ class ClassifierDriftTF(BaseClassifierDrift):
         # backend
         cfg.update({'backend': 'tensorflow'})
 
-        # Detector
-        cd_cfg = cfg['detector']
-        cd_cfg.update({'type': 'ClassifierDrift'})
-
-        # Optimizer
-        self.train_kwargs['optimizer'] = tf.keras.optimizers.serialize(self.train_kwargs['optimizer'])
+#        # Optimizer  # TODO - shouldn't do serialization here! Move to saving.py
+#        self.train_kwargs['optimizer'] = tf.keras.optimizers.serialize(self.train_kwargs['optimizer'])
 
         # Detector kwargs
+        optimizer = self.train_kwargs.pop('optimizer')
         kwargs = {
-            'train_kwargs': self.train_kwargs,
+            'model': self.original_model,
+            'reg_loss_fn': self.train_kwargs.pop('reg_loss_fn'),
+            'optimizer': optimizer,  # TODO - if we serialize optimizer object, can we re-init with new learning_rate?
+            'learning_rate': optimizer.learning_rate,  # TODO - does this give learning rate?
+            'batch_size': self.dataset.keywords['batch_size'],
+            'preprocess_batch_fn': self.train_kwargs.pop('preprocess_fn'),
+            'epochs': self.train_kwargs.pop('epochs'),
+            'verbose': self.train_kwargs.pop('verbose'),
+            'train_kwargs': self.train_kwargs,  # Should have popped all default train_kwargs by this point
+            'dataset': self.dataset.func
         }
-        cd_cfg['kwargs'].update(kwargs)
-        cfg.update({'detector': cd_cfg})
+        cfg.update(kwargs)
 
         return cfg

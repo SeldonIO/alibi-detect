@@ -1,3 +1,5 @@
+# TODO - Need to modularise torch and tensorflow imports and use. e.g. has_tensorflow and has_pytorch etc
+# TODO - clarify public vs private functions
 from alibi_detect.version import __version__
 from alibi_detect.cd import ChiSquareDrift, KSDrift, MMDDrift, TabularDrift, LSDDDrift
 from alibi_detect.cd import ClassifierUncertaintyDrift, RegressorUncertaintyDrift
@@ -6,11 +8,12 @@ from alibi_detect.cd.pytorch import preprocess_drift as preprocess_drift_torch
 from alibi_detect.cd.tensorflow import preprocess_drift as preprocess_drift_tf
 from alibi_detect.utils.tensorflow.kernels import GaussianRBF as GaussianRBF_tf
 from alibi_detect.utils.pytorch.kernels import GaussianRBF as GaussianRBF_torch
-from alibi_detect.cd.tensorflow import HiddenOutput, UAE
+from alibi_detect.cd.tensorflow import UAE
 from alibi_detect.cd.tensorflow.preprocess import _Encoder
 from alibi_detect.models.tensorflow import TransformerEmbedding
 from alibi_detect.utils.registry import registry
-from alibi_detect.utils.config import DETECTOR_CONFIGS, DETECTOR_CONFIGS_RESOLVED, SUPPORTED_MODELS, __config_spec__
+from alibi_detect.utils.config import DETECTOR_CONFIGS, DETECTOR_CONFIGS_RESOLVED, SUPPORTED_MODELS, SupportedModels,\
+    __config_spec__
 from alibi_detect.utils.tensorflow.kernels import DeepKernel
 import numpy as np
 from transformers import AutoTokenizer
@@ -30,8 +33,6 @@ from importlib import import_module
 from pydantic import ValidationError  # TODO - subject to decision on pydantic vs beartype for this
 import warnings
 
-# TODO - need to check and consolidate supported models
-SupportedModels = (UAE, HiddenOutput, tf.keras.Sequential, tf.keras.Model)
 
 logger = logging.getLogger(__name__)
 
@@ -472,7 +473,7 @@ def resolve_cfg(cfg: dict, config_dir: Optional[Path], verbose: bool = False) ->
             # Load dill or numpy file
             elif Path(src).is_file():
                 if Path(src).suffix == '.dill':
-                    obj = dill.load(src)
+                    obj = dill.load(open(src, 'rb'))
                 if Path(src).suffix == '.npy':
                     obj = np.load(src)
 

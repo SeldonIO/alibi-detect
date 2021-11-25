@@ -1,5 +1,7 @@
 # type: ignore
 # TODO: need to rewrite utilities using isinstance or @singledispatch for type checking to work properly
+# TODO: Need to clarify public vs private functions here
+# TODO: Add verbose functionality
 import dill
 import toml
 import numpy as np
@@ -15,9 +17,8 @@ from transformers import AutoTokenizer, PreTrainedTokenizerBase
 from typing import Callable, Dict, List, Optional, Tuple, Union
 from alibi_detect.ad import AdversarialAE, ModelDistillation
 from alibi_detect.ad.adversarialae import DenseHidden
-from alibi_detect.cd import ChiSquareDrift, ClassifierDrift, KSDrift, MMDDrift, TabularDrift
+from alibi_detect.cd import ChiSquareDrift, ClassifierDrift, KSDrift, MMDDrift, LSDDDrift, TabularDrift
 from alibi_detect.cd.tensorflow import HiddenOutput, UAE
-from alibi_detect.cd.tensorflow.classifier import ClassifierDriftTF
 from alibi_detect.cd.tensorflow.preprocess import _Encoder
 from alibi_detect.models.tensorflow.autoencoder import AE, AEGMM, DecoderLSTM, EncoderLSTM, Seq2Seq, VAE, VAEGMM
 from alibi_detect.models.tensorflow import PixelCNN, TransformerEmbedding
@@ -25,6 +26,7 @@ from alibi_detect.od import (IForest, LLR, Mahalanobis, OutlierAE, OutlierAEGMM,
                              OutlierSeq2Seq, OutlierVAE, OutlierVAEGMM, SpectralResidual)
 from alibi_detect.od.llr import build_model
 from alibi_detect.utils.loading import load_detector_config, load_tf_model, SUPPORTED_MODELS, SupportedModels
+from alibi_detect.utils.registry import registry
 from alibi_detect.version import __version__
 
 # do not extend pickle dispatch table so as not to change pickle behaviour
@@ -35,12 +37,13 @@ logger = logging.getLogger(__name__)
 Data = Union[
     AdversarialAE,
     ChiSquareDrift,
-    ClassifierDriftTF,
+    ClassifierDrift,
     IForest,
     KSDrift,
     LLR,
     Mahalanobis,
     MMDDrift,
+    LSDDDrift,
     ModelDistillation,
     OutlierAE,
     OutlierAEGMM,
@@ -55,12 +58,13 @@ Data = Union[
 DEFAULT_DETECTORS = [
     'AdversarialAE',
     'ChiSquareDrift',
-    'ClassifierDriftTF',
+    'ClassifierDrift',
     'IForest',
     'KSDrift',
     'LLR',
     'Mahalanobis',
     'MMDDrift',
+    'LSDDDrift',
     'ModelDistillation',
     'OutlierAE',
     'OutlierAEGMM',
@@ -75,7 +79,7 @@ DEFAULT_DETECTORS = [
 # TODO - add all drift methods in once .get_config() methods are complete
 DRIFT_DETECTORS = [  # Drift detectors separated out as they now have their own save methods
     'MMDDrift',
-    # 'LSDDDrift',
+    'LSDDDrift',
     'ChiSquareDrift',
     'TabularDrift',
     'KSDrift',
@@ -83,7 +87,7 @@ DRIFT_DETECTORS = [  # Drift detectors separated out as they now have their own 
 ]
 
 
-def save_detector(detector: Data, filepath: Union[str, os.PathLike]) -> None:
+def save_detector(detector: Data, filepath: Union[str, os.PathLike], verbose: bool = False) -> None:
     """
     Save outlier, drift or adversarial detector.
 
@@ -93,11 +97,13 @@ def save_detector(detector: Data, filepath: Union[str, os.PathLike]) -> None:
         Detector object.
     filepath
         Save directory.
+    verbose
+        Whether to print progress messages.
     """
     if 'backend' in list(detector.meta.keys()) and detector.meta['backend'] == 'pytorch':
         raise NotImplementedError('Detectors with PyTorch backend are not yet supported.')
 
-    detector_name = detector.meta['name']
+    detector_name = detector.__class__.__name__
     if detector_name not in DEFAULT_DETECTORS:
         raise ValueError('{} is not supported by `save_detector`.'.format(detector_name))
 
@@ -109,7 +115,7 @@ def save_detector(detector: Data, filepath: Union[str, os.PathLike]) -> None:
 
     # If a drift detector, wrap drift detector save method
     if detector_name in DRIFT_DETECTORS:
-        save_detector_config(detector, filepath)
+        save_detector_config(detector, filepath, verbose=verbose)
 
     # Otherwise, save via the previous meta and state_dict approach
     else:
@@ -169,7 +175,7 @@ def save_detector(detector: Data, filepath: Union[str, os.PathLike]) -> None:
 
 
 # TODO - eventually this will become save_detector
-def save_detector_config(detector: Data, filepath: Union[str, os.PathLike]):
+def save_detector_config(detector: Data, filepath: Union[str, os.PathLike], verbose: bool = False):
     """
     Save a drift detector. The detector is saved as a yaml config file. Artefacts such as
     `preprocess_fn`, models, embeddings, tokenizers etc are serialized, and their filepaths are
@@ -183,14 +189,16 @@ def save_detector_config(detector: Data, filepath: Union[str, os.PathLike]):
         The detector to save.
     filepath
         File path to save serialized artefacts to.
+    verbose
+        Whether to print progress messages.
     """
-    # Get backend and detector name
+    # Get backend, input_shape and detector_name
     backend = detector.meta.get('backend', 'tensorflow')
     # TODO - setting to tensorflow by default atm, but what do we do about detectors with no backend. (We still need to
     #  know whether preprocess_fn artefacts are tensorflow or pytorch.
     if backend == 'pytorch':
         raise NotImplementedError('Detectors with PyTorch backend are not yet supported.')
-    detector_name = detector.meta['name']
+    detector_name = detector.__class__.__name__
     if detector_name not in DRIFT_DETECTORS:
         raise ValueError('{} is not supported by `save_drift_detector`.'.format(detector_name))
 
@@ -208,15 +216,24 @@ def save_detector_config(detector: Data, filepath: Union[str, os.PathLike]):
     np.save(str(save_path), cfg['x_ref'])
     cfg.update({'x_ref': 'x_ref.npy'})
 
-    # Save preprocess_fn
-    if 'preprocess_fn' in cfg:
-        preprocess_fn = cfg['preprocess_fn']
-        input_shape = cfg.get('input_shape', None)
-        preprocess_cfg = serialize_preprocess(preprocess_fn, backend, input_shape, filepath)  # TODO - verbose option
+    # Save preprocess_fn # TODO - need to add input_shape to all detectors
+    preprocess_fn = cfg.get('preprocess_fn', None)
+    if preprocess_fn is not None:
+        preprocess_cfg = serialize_preprocess(preprocess_fn, backend, cfg['input_shape'], filepath, verbose)
         cfg['preprocess_fn'] = preprocess_cfg
 
-    # Serialize artefacts in detector kwargs (e.g. model and kernel)
-    # TODO
+    # Serialize detector model (e.g. for ClassifierDrift detector)
+    model = cfg.get('model', None)
+    if model is not None:
+        model_cfg, _ = save_model(model, filepath, detector.input_shape, backend, verbose)
+        cfg['model'] = model_cfg
+
+    # Serialize kernel
+    kernel = cfg.get('kernel', None)
+    if kernel is not None:
+        device = detector.device.type if hasattr(detector, 'device') else None
+        kernel_cfg = save_kernel(kernel, filepath, device, verbose)
+        cfg['kernel'] = kernel_cfg
 
     # Save config
     cfg = resolve_paths(cfg)
@@ -1592,8 +1609,8 @@ def serialize_preprocess(preprocess_fn: Callable,
         if func.__name__ == 'preprocess_drift':
             func = ".".join([func.__module__.replace('alibi_detect.', '@'), func.__name__])
         else:
-            save_path = filepath.joinpath('func.dill')
-            dill.dump(func, save_path)
+            with open(filepath.joinpath('func.dill'), 'wb') as f:
+                dill.dump(func, f)
             func = 'func.dill'
         preprocess_cfg.update({'function': func})
 
@@ -1614,8 +1631,8 @@ def serialize_preprocess(preprocess_fn: Callable,
 
             # Arbitrary function e.g. preprocess_batch_fn
             elif callable(v):  # TODO - is this enough? other non-serializable callables might sneak in
-                save_path = filepath.joinpath(k + '.dill')
-                dill.dump(v, save_path)
+                with open(filepath.joinpath(k + '.dill'), 'wb') as f:
+                    dill.dump(v, f)
                 kwargs.update({k: k + '.dill'})
 
             # Put remaining kwargs directly into cfg
@@ -1627,8 +1644,8 @@ def serialize_preprocess(preprocess_fn: Callable,
 
     else:
         func = preprocess_fn
-        save_path = filepath.joinpath('func.dill')
-        dill.dump(func, save_path)
+        with open(filepath.joinpath('func.dill'), 'wb') as f:
+            dill.dump(func, f)
         preprocess_cfg.update({'preprocess_fn': 'func.dill'})
 
     preprocess_cfg.update(kwargs)
@@ -1727,7 +1744,55 @@ def save_tokenizer(tokenizer: PreTrainedTokenizerBase,
                    filepath: Path,
                    verbose: bool = False) -> dict:
     cfg_token = {}
-    save_path = filepath.joinpath('tokenizer')
-    tokenizer.save_pretrained(save_path)
+    tokenizer.save_pretrained(filepath.joinpath('tokenizer'))
     cfg_token.update({'src': 'tokenizer/'})
     return cfg_token
+
+
+def save_kernel(kernel: Callable,
+                filepath: Path,
+                device: Optional[str],
+                verbose: bool = False) -> dict:
+    """
+    Function to save kernel. If the kernel is stored in the artefact registry, the registry key (and kwargs) are
+    written to config. If the kernel is a generic callable, it is pickled.
+
+    Parameters
+    ----------
+    kernel
+        The kernel to save.
+    filepath
+        Filepath to save to (if the kernel is a generic callable).
+    device
+        Device. Only needed if pytorch backend being used.
+    verbose
+        Whether to print progress messages.
+
+    Returns
+    -------
+    The kernel config dictionary.
+    """
+    cfg_kernel = {}
+
+    keys = [k for k, v in registry.get_all().items() if isinstance(kernel, v)]
+    registry_str = keys[0] if len(keys) == 1 else None
+    if registry_str is not None:  # alibi-detect registered kernel
+        cfg_kernel.update({'kernel': '@' + registry_str})
+
+        # kwargs for registered kernel - #NOTE: Potentially would need updating if new kernels registered
+        sigma = kernel.sigma if hasattr(kernel, 'sigma') else None
+        sigma = sigma.cpu() if device == 'cuda' else sigma
+        cfg_kernel.update({
+            'sigma': sigma.numpy().tolist(),
+            'trainable': kernel.trainable if hasattr(kernel, 'trainable') else None
+        })
+
+    elif isinstance(kernel, Callable):  # generic callable
+        with open(filepath.joinpath('kernel.dill'), 'wb') as f:
+            dill.dump(kernel, f)
+        cfg_kernel.update({'kernel': 'kernel.dill'})
+
+    else:  # kernel could not be saved
+        raise ValueError("Could not save kernel. Is it a valid Callable or a alibi-detect registered kernel?")
+
+    return cfg_kernel

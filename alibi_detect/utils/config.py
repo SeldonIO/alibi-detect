@@ -11,7 +11,7 @@ from transformers import PreTrainedTokenizerBase
 __config_spec__ = "0.1.0dev"  # TODO - remove dev once config layout confirmed
 
 SUPPORTED_MODELS = Union[UAE, HiddenOutput, tf.keras.Sequential, tf.keras.Model]
-
+SupportedModels = (UAE, HiddenOutput, tf.keras.Sequential, tf.keras.Model)
 
 # Custom BaseModel so that we can set default config
 class CustomBaseModel(BaseModel):

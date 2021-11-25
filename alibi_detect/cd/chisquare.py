@@ -147,6 +147,6 @@ class ChiSquareDrift(BaseUnivariateDrift):
         kwargs = {
             'categories_per_feature': self.x_ref_categories,
         }
-        cfg['detector']['kwargs'].update(kwargs)
+        cfg.update(kwargs)
 
         return cfg

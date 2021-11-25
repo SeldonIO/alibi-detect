@@ -162,6 +162,6 @@ class TabularDrift(BaseUnivariateDrift):
             'categories_per_feature': self.x_ref_categories,
             'alternative': self.alternative,
         }
-        cfg['detector']['kwargs'].update(kwargs)
+        cfg.update(kwargs)
 
         return cfg

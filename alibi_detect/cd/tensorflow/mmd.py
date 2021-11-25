@@ -139,20 +139,21 @@ class MMDDriftTF(BaseMMDDrift):
         # backend
         cfg.update({'backend': 'tensorflow'})
 
-        # Kernel
-        if not isinstance(self.kernel, GaussianRBF):
-            logger.warning('Currently only the default GaussianRBF kernel is supported.')
-        sigma = self.kernel.sigma.numpy() if not self.infer_sigma else None
-
-        # Detector
-        cd_cfg = cfg['detector']
-        cd_cfg.update({'type': 'MMDDrift'})
+        # kernel logic
+        if isinstance(self.kernel, GaussianRBF):
+            # If default kernel, we don't need to spec
+            sigma = self.kernel.sigma.numpy().tolist() if not self.infer_sigma else None
+            kernel = None
+        else:
+            # Else if non-default kernel, we need to spec, but sigma is irrelevant
+            sigma = None
+            kernel = self.kernel
 
         # Detector kwargs
         kwargs = {
-                'sigma': float(sigma),
+            'kernel': kernel,
+            'sigma': sigma
         }
-        cd_cfg['kwargs'].update(kwargs)
-        cfg.update({'detector': cd_cfg})
+        cfg.update(kwargs)
 
         return cfg

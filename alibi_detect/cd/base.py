@@ -25,7 +25,8 @@ class BaseClassifierDrift(BaseDetector):
             self,
             x_ref: Union[np.ndarray, list],
             p_val: float = .05,
-            preprocess_x_ref: bool = True,
+            x_ref_preprocessed: bool = False,
+            preprocess_at_init: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
             preds_type: str = 'probs',
@@ -45,8 +46,13 @@ class BaseClassifierDrift(BaseDetector):
             Data used as reference distribution.
         p_val
             p-value used for the significance of the test.
-        preprocess_x_ref
-            Whether to already preprocess and store the reference data.
+         x_ref_preprocessed
+            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
+            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
+            data will also be preprocessed.
+        preprocess_at_init
+            Whether to preprocess the reference data when the detector is instantiated. Otherwise, the reference
+            data will be preprocessed at prediction time. Only applies if `x_ref_preprocessed=False`.
         update_x_ref
             Reference data can optionally be updated to the last n instances seen by the detector
             or via reservoir sampling with size n. For the former, the parameter equals {'last': n} while
@@ -88,13 +94,23 @@ class BaseClassifierDrift(BaseDetector):
         if n_folds is not None and n_folds > 1 and not retrain_from_scratch:
             raise ValueError("If using multiple folds the model must be retrained from scratch for each fold.")
 
-        # optionally already preprocess reference data
-        self.p_val = p_val
-        if preprocess_x_ref and isinstance(preprocess_fn, Callable):  # type: ignore
+        # x_ref preprocessing logic
+        self.preprocess_at_pred = not preprocess_at_init and not x_ref_preprocessed and preprocess_fn is not None
+        self.preprocess_at_init = preprocess_at_init and not x_ref_preprocessed and preprocess_fn is not None
+        self.x_ref_preprocessed = x_ref_preprocessed
+        # Check if preprocess_fn is valid
+        if (self.preprocess_at_init or self.preprocess_at_pred) \
+                and not isinstance(preprocess_fn, Callable):  # type: ignore
+            raise ValueError("`preprocess_fn` is not a valid Callable.")
+
+        # optionally preprocess reference data (now instead of at predict)
+        if self.preprocess_at_init:
             self.x_ref = preprocess_fn(x_ref)
         else:
             self.x_ref = x_ref
-        self.preprocess_x_ref = preprocess_x_ref
+
+        # Other attributes
+        self.p_val = p_val
         self.update_x_ref = update_x_ref
         self.preprocess_fn = preprocess_fn
         self.n = len(x_ref)  # type: ignore
@@ -127,7 +143,7 @@ class BaseClassifierDrift(BaseDetector):
         """
         if isinstance(self.preprocess_fn, Callable):  # type: ignore
             x = self.preprocess_fn(x)
-            x_ref = self.x_ref if self.preprocess_x_ref else self.preprocess_fn(self.x_ref)
+            x_ref = self.preprocess_fn(self.x_ref) if self.preprocess_at_pred else self.x_ref
             return x_ref, x
         else:
             return self.x_ref, x
@@ -246,7 +262,7 @@ class BaseClassifierDrift(BaseDetector):
         drift_pred = int(p_val < self.p_val)
 
         # update reference dataset
-        if isinstance(self.update_x_ref, dict) and self.preprocess_fn is not None and self.preprocess_x_ref:
+        if isinstance(self.update_x_ref, dict) and self.preprocess_at_init:
             x = self.preprocess_fn(x)
         self.x_ref = update_reference(self.x_ref, x, self.n, self.update_x_ref)
         # used for reservoir sampling
@@ -277,34 +293,36 @@ class BaseClassifierDrift(BaseDetector):
         -------
         The detector's configuration dictionary.
         """
-        raise NotImplementedError("Saving for BaseClassifier is not yet implemented.")
-        cfg = {'version': __version__}
+        cfg = {
+            'version': __version__,
+            'config_spec': __config_spec__,
+            'name': 'ClassifierDrift'
+        }
 
         # x_ref
         cfg.update({'x_ref': self.x_ref})
 
         # Preprocess field
-        if isinstance(self.preprocess_fn, Callable):  # type: ignore
-            cfg.update({'preprocess': {'preprocess_fn': self.preprocess_fn}})  # type: ignore[dict-item]
+        if self.preprocess_fn is not None:
+            cfg.update({'preprocess_fn': self.preprocess_fn})
 
-        # Detector field
-        # TODO - Need to think more about this. self.skf (and other things?) are state.
-        #  - Need to decide where to store these, and how to ref them in config.
-        #  - Have option in save_detector() to either save state or just save orig kwargs so we can re-init?
+        # Detector kwargs
+        # Note: Currently write kwargs out such that load_detector will load a fresh detector. We don't (yet) write out
+        #  stateful attributes such as self.skf, which would enable the detector to be re-loaded without re-fitting.
         kwargs = {
-                'p_val': self.p_val,
-                'x_ref_preprocessed': self.preprocess_at_init,  # if preprocess_at_init, preprocessed x_ref saved
-                'preprocess_at_init': self.preprocess_at_init,
-                'update_x_ref': self.update_x_ref,
-                'preds_type': self.preds_type,
-                'binarize_preds': self.binarize_preds,
-                'train_size': self.train_size,
+            'p_val': self.p_val,
+            'x_ref_preprocessed': self.preprocess_at_init or self.x_ref_preprocessed,
+            'preprocess_at_init': self.preprocess_at_init,
+            'update_x_ref': self.update_x_ref,
+            'preds_type': self.preds_type,
+            'binarize_preds': self.binarize_preds,
+            'train_size': self.train_size,
+            'n_folds': self.skf.n_splits if self.skf is not None else None,
+            'retrain_from_scratch': self.retrain_from_scratch,
+            'seed': self.skf.random_state if self.skf is not None else 0,
+            'data_type': self.meta['data_type']
         }
-        cd_cfg = {
-            'type': self.__class__.__name__,
-            'kwargs': kwargs
-        }
-        cfg.update({'detector': cd_cfg})  # type: ignore[dict-item]
+        cfg.update(kwargs)
 
         return cfg
 
@@ -547,6 +565,7 @@ class BaseMMDDrift(BaseDetector):
         # x_ref preprocessing logic
         self.preprocess_at_pred = not preprocess_at_init and not x_ref_preprocessed and preprocess_fn is not None
         self.preprocess_at_init = preprocess_at_init and not x_ref_preprocessed and preprocess_fn is not None
+        self.x_ref_preprocessed = x_ref_preprocessed
         # Check if preprocess_fn is valid
         if (self.preprocess_at_init or self.preprocess_at_pred) \
                 and not isinstance(preprocess_fn, Callable):  # type: ignore
@@ -654,26 +673,31 @@ class BaseMMDDrift(BaseDetector):
         -------
         The detector's configuration dictionary.
         """
-        cfg = {'version': __version__}
+        cfg = {
+            'version': __version__,
+            'config_spec': __config_spec__,
+            'name': 'MMDDrift'
+        }
 
         # x_ref
         cfg.update({'x_ref': self.x_ref})
 
         # Preprocess field
         if self.preprocess_fn is not None:
-            cfg.update({'preprocess': {'preprocess_fn': self.preprocess_fn}})  # type: ignore[dict-item]
+            cfg.update({'preprocess_fn': self.preprocess_fn})
 
         # Detector field
         kwargs = {
-                'p_val': self.p_val,
-                'x_ref_preprocessed': self.preprocess_at_init,  # if preprocess_at_init, preprocessed x_ref saved
-                'preprocess_at_init': self.preprocess_at_init,
-                'update_x_ref': self.update_x_ref,
-                'configure_kernel_from_x_ref': not self.infer_sigma,
-                'n_permutations': self.n_permutations,
-                'input_shape': self.input_shape,
+            'p_val': self.p_val,
+            'x_ref_preprocessed': self.preprocess_at_init or self.x_ref_preprocessed,
+            'preprocess_at_init': self.preprocess_at_init,
+            'update_x_ref': self.update_x_ref,
+            'configure_kernel_from_x_ref': not self.infer_sigma,
+            'n_permutations': self.n_permutations,
+            'input_shape': self.input_shape,
+            'data_type': self.meta['data_type']
         }
-        cfg.update({'detector': {'kwargs': kwargs}})  # type: ignore[dict-item]
+        cfg.update(kwargs)
 
         return cfg
 
@@ -742,6 +766,7 @@ class BaseLSDDDrift(BaseDetector):
         # x_ref preprocessing logic
         self.preprocess_at_pred = not preprocess_at_init and not x_ref_preprocessed and preprocess_fn is not None
         self.preprocess_at_init = preprocess_at_init and not x_ref_preprocessed and preprocess_fn is not None
+        self.x_ref_preprocessed = x_ref_preprocessed
         # Check if preprocess_fn is valid
         if (self.preprocess_at_init or self.preprocess_at_pred) \
                 and not isinstance(preprocess_fn, Callable):  # type: ignore
@@ -853,28 +878,34 @@ class BaseLSDDDrift(BaseDetector):
         -------
         The detector's configuration dictionary.
         """
-        cfg = {'version': __version__}
+        cfg = {
+            'version': __version__,
+            'config_spec': __config_spec__,
+            'name': 'LSDDDrift'
+        }
 
         # x_ref
         cfg.update({'x_ref': self.x_ref})
 
         # Preprocess field
         if self.preprocess_fn is not None:
-            cfg.update({'preprocess': {'preprocess_fn': self.preprocess_fn}})  # type: ignore[dict-item]
+            cfg.update({'preprocess_fn': self.preprocess_fn})
 
         # Detector field
         kwargs = {
-                'p_val': self.p_val,
-                'x_ref_preprocessed': self.preprocess_at_init,  # if preprocess_at_init, preprocessed x_ref saved
-                'preprocess_at_init': self.preprocess_at_init,
-                'update_x_ref': self.update_x_ref,
-                'sigma': self.sigma,
-                'n_permutations': self.n_permutations,
-                'n_kernel_centers': self.n_kernel_centers,
-                'lambda_rd_max': self.lambda_rd_max,
-                'input_shape': self.input_shape,
+            'p_val': self.p_val,
+            'x_ref_preprocessed': self.preprocess_at_init or self.x_ref_preprocessed,
+            'preprocess_at_init': self.preprocess_at_init,
+            'update_x_ref': self.update_x_ref,
+            'sigma': self.sigma,
+            'n_permutations': self.n_permutations,
+            'n_kernel_centers': self.n_kernel_centers,
+            'lambda_rd_max': self.lambda_rd_max,
+            'input_shape': self.input_shape,
+            'data_type': self.meta['data_type']
+
         }
-        cfg.update({'detector': {'kwargs': kwargs}})  # type: ignore[dict-item]
+        cfg.update(kwargs)
 
         return cfg
 
@@ -1096,18 +1127,19 @@ class BaseUnivariateDrift(BaseDetector):
         cfg.update({'x_ref': self.x_ref})
 
         # Preprocess field
-        if isinstance(self.preprocess_fn, Callable):  # type: ignore
+        if self.preprocess_fn is not None:
             cfg.update({'preprocess_fn': self.preprocess_fn})
 
         # Detector kwargs
         kwargs = {
-                'p_val': self.p_val,
+            'p_val': self.p_val,
             'x_ref_preprocessed': self.preprocess_at_init or self.x_ref_preprocessed,
-                'preprocess_at_init': self.preprocess_at_init,
-                'update_x_ref': self.update_x_ref,
-                'input_shape': self.input_shape,
-                'correction': self.correction,
-                'n_features': self.n_features
+            'preprocess_at_init': self.preprocess_at_init,
+            'update_x_ref': self.update_x_ref,
+            'correction': self.correction,
+            'n_features': self.n_features,
+            'input_shape': self.input_shape,
+            'data_type': self.meta['data_type']
         }
         cfg.update(kwargs)
 
