@@ -3,7 +3,7 @@ from typing import Any, Callable, List, Optional, Union
 from alibi_detect.cd.base_online import BaseUniDriftOnline
 from alibi_detect.utils.misc import quantile
 import numba as nb
-from tqdm import tqdm
+from tqdm.auto import tqdm
 import warnings
 
 
@@ -139,7 +139,7 @@ class CVMDriftOnline(BaseUniDriftOnline):
         stats = np.zeros((self.n_bootstraps, t_max, n_windows))
         n_batches = int(np.ceil(self.n_bootstraps / self.batch_size))
         idxs = np.array_split(np.arange(self.n_bootstraps), n_batches)
-        batches = tqdm(enumerate(tqdm(idxs)), "Computing thresholds over %d batches" % n_batches) if self.verbose \
+        batches = enumerate(tqdm(idxs, "Computing thresholds over %d batches" % n_batches)) if self.verbose \
             else enumerate(idxs)
         for b, idx in batches:
             xs = np.random.randn(len(idx), self.n + t_max)

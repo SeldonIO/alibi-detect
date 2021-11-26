@@ -1,4 +1,4 @@
-from tqdm import tqdm
+from tqdm.auto import tqdm
 import numpy as np
 from typing import Any, Callable, List, Optional, Union
 from alibi_detect.cd.base_online import BaseUniDriftOnline
