@@ -1,6 +1,6 @@
 from copy import deepcopy
 from functools import partial
-from tqdm import tqdm
+from tqdm.auto import tqdm
 import logging
 import numpy as np
 import torch

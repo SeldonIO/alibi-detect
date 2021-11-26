@@ -1,4 +1,4 @@
-from tqdm import tqdm
+from tqdm.auto import tqdm
 import numpy as np
 import torch
 from typing import Any, Callable, Optional, Union
