@@ -18,7 +18,7 @@ class OutlierSeq2Seq(BaseDetector, FitMixin, ThresholdMixin):
                  seq_len: int,
                  threshold: Union[float, np.ndarray] = None,
                  seq2seq: tf.keras.Model = None,
-                 threshold_net: tf.keras.Sequential = None,
+                 threshold_net: tf.keras.Model = None,
                  latent_dim: int = None,
                  output_activation: str = None,
                  beta: float = 1.

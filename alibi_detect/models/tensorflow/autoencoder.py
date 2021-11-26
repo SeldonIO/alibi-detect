@@ -31,7 +31,7 @@ class Sampling(Layer):
 class EncoderVAE(Layer):
 
     def __init__(self,
-                 encoder_net: tf.keras.Sequential,
+                 encoder_net: tf.keras.Model,
                  latent_dim: int,
                  name: str = 'encoder_vae') -> None:
         """
@@ -65,7 +65,7 @@ class EncoderVAE(Layer):
 class Decoder(Layer):
 
     def __init__(self,
-                 decoder_net: tf.keras.Sequential,
+                 decoder_net: tf.keras.Model,
                  name: str = 'decoder') -> None:
         """
         Decoder of (V)AE.
@@ -87,8 +87,8 @@ class Decoder(Layer):
 class VAE(tf.keras.Model):
 
     def __init__(self,
-                 encoder_net: tf.keras.Sequential,
-                 decoder_net: tf.keras.Sequential,
+                 encoder_net: tf.keras.Model,
+                 decoder_net: tf.keras.Model,
                  latent_dim: int,
                  beta: float = 1.,
                  name: str = 'vae') -> None:
@@ -126,7 +126,7 @@ class VAE(tf.keras.Model):
 class EncoderAE(Layer):
 
     def __init__(self,
-                 encoder_net: tf.keras.Sequential,
+                 encoder_net: tf.keras.Model,
                  name: str = 'encoder_ae') -> None:
         """
         Encoder of AE.
@@ -148,8 +148,8 @@ class EncoderAE(Layer):
 class AE(tf.keras.Model):
 
     def __init__(self,
-                 encoder_net: tf.keras.Sequential,
-                 decoder_net: tf.keras.Sequential,
+                 encoder_net: tf.keras.Model,
+                 decoder_net: tf.keras.Model,
                  name: str = 'ae') -> None:
         """
         Combine encoder and decoder in AE.
@@ -234,7 +234,7 @@ class Seq2Seq(tf.keras.Model):
     def __init__(self,
                  encoder_net: EncoderLSTM,
                  decoder_net: DecoderLSTM,
-                 threshold_net: tf.keras.Sequential,
+                 threshold_net: tf.keras.Model,
                  n_features: int,
                  score_fn: Callable = tf.math.squared_difference,
                  beta: float = 1.,
@@ -359,9 +359,9 @@ def eucl_cosim_features(x: tf.Tensor,
 class AEGMM(tf.keras.Model):
 
     def __init__(self,
-                 encoder_net: tf.keras.Sequential,
-                 decoder_net: tf.keras.Sequential,
-                 gmm_density_net: tf.keras.Sequential,
+                 encoder_net: tf.keras.Model,
+                 decoder_net: tf.keras.Model,
+                 gmm_density_net: tf.keras.Model,
                  n_gmm: int,
                  recon_features: Callable = eucl_cosim_features,
                  name: str = 'aegmm') -> None:
@@ -402,9 +402,9 @@ class AEGMM(tf.keras.Model):
 class VAEGMM(tf.keras.Model):
 
     def __init__(self,
-                 encoder_net: tf.keras.Sequential,
-                 decoder_net: tf.keras.Sequential,
-                 gmm_density_net: tf.keras.Sequential,
+                 encoder_net: tf.keras.Model,
+                 decoder_net: tf.keras.Model,
+                 gmm_density_net: tf.keras.Model,
                  n_gmm: int,
                  latent_dim: int,
                  recon_features: Callable = eucl_cosim_features,
