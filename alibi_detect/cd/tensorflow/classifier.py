@@ -23,7 +23,7 @@ class ClassifierDriftTF(BaseClassifierDrift):
             preprocess_at_init: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
-            preds_type: str = 'preds',
+            preds_type: str = 'probs',
             binarize_preds: bool = False,
             reg_loss_fn: Callable = (lambda model: 0),
             train_size: Optional[float] = .75,
@@ -38,6 +38,7 @@ class ClassifierDriftTF(BaseClassifierDrift):
             verbose: int = 0,
             train_kwargs: Optional[dict] = None,
             dataset: Callable = TFDataset,
+            input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None
     ) -> None:
         """
@@ -92,6 +93,9 @@ class ClassifierDriftTF(BaseClassifierDrift):
             Learning rate used by optimizer.
         batch_size
             Batch size used during training of the classifier.
+        preprocess_batch_fn
+            Optional batch preprocessing function. For example to convert a list of objects to a batch which can be
+            processed by the model.
         epochs
             Number of training epochs for the classifier for each (optional) fold.
         verbose
@@ -101,6 +105,8 @@ class ClassifierDriftTF(BaseClassifierDrift):
             Optional additional kwargs when fitting the classifier.
         dataset
             Dataset object used during training.
+        input_shape
+            Shape of input data.
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
@@ -117,6 +123,7 @@ class ClassifierDriftTF(BaseClassifierDrift):
             n_folds=n_folds,
             retrain_from_scratch=retrain_from_scratch,
             seed=seed,
+            input_shape=input_shape,
             data_type=data_type
         )
         self.meta.update({'backend': 'tensorflow'})
@@ -192,16 +199,19 @@ class ClassifierDriftTF(BaseClassifierDrift):
         # backend
         cfg.update({'backend': 'tensorflow'})
 
-#        # Optimizer  # TODO - shouldn't do serialization here! Move to saving.py
-#        self.train_kwargs['optimizer'] = tf.keras.optimizers.serialize(self.train_kwargs['optimizer'])
+#        # Optimizer (OK to do here as doesn't save anything to file)
+        optimizer = self.train_kwargs.pop('optimizer')
+        optimizer_cfg = tf.keras.optimizers.serialize(optimizer)
+
+        # Remove dataset from train_kwargs (dataset is updated in `score`, but we want to save original TFDataset)
+        self.train_kwargs.pop('dataset')
 
         # Detector kwargs
-        optimizer = self.train_kwargs.pop('optimizer')
         kwargs = {
             'model': self.original_model,
             'reg_loss_fn': self.train_kwargs.pop('reg_loss_fn'),
-            'optimizer': optimizer,  # TODO - if we serialize optimizer object, can we re-init with new learning_rate?
-            'learning_rate': optimizer.learning_rate,  # TODO - does this give learning rate?
+            'optimizer': optimizer_cfg,
+            'learning_rate': optimizer.learning_rate.numpy(),
             'batch_size': self.dataset.keywords['batch_size'],
             'preprocess_batch_fn': self.train_kwargs.pop('preprocess_fn'),
             'epochs': self.train_kwargs.pop('epochs'),

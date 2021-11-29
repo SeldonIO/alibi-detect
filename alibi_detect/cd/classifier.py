@@ -40,6 +40,7 @@ class ClassifierDrift:
             device: Optional[str] = None,
             dataset: Optional[Callable] = None,
             dataloader: Optional[Callable] = None,
+            input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None
     ) -> None:
         """
@@ -112,6 +113,8 @@ class ClassifierDrift:
             Dataset object used during training.
         dataloader
             Dataloader object used during training. Only relevant for 'pytorch' backend.
+        input_shape
+            Shape of input data.
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """

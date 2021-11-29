@@ -44,6 +44,7 @@ class ClassifierDriftTorch(BaseClassifierDrift):
             device: Optional[str] = None,
             dataset: Callable = TorchDataset,
             dataloader: Callable = DataLoader,
+            input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None
     ) -> None:
         """
@@ -114,6 +115,8 @@ class ClassifierDriftTorch(BaseClassifierDrift):
             Dataset object used during training.
         dataloader
             Dataloader object used during training.
+        input_shape
+            Shape of input data.
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
@@ -130,6 +133,7 @@ class ClassifierDriftTorch(BaseClassifierDrift):
             n_folds=n_folds,
             retrain_from_scratch=retrain_from_scratch,
             seed=seed,
+            input_shape=input_shape,
             data_type=data_type
         )
         self.meta.update({'backend': 'pytorch'})

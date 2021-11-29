@@ -35,6 +35,7 @@ class BaseClassifierDrift(BaseDetector):
             n_folds: Optional[int] = None,
             retrain_from_scratch: bool = True,
             seed: int = 0,
+            input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None
     ) -> None:
         """
@@ -77,6 +78,8 @@ class BaseClassifierDrift(BaseDetector):
             it should instead continue training from where it left off on the previous set.
         seed
             Optional random seed for fold selection.
+        input_shape
+            Shape of input data.
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
@@ -124,6 +127,9 @@ class BaseClassifierDrift(BaseDetector):
         else:
             self.train_size, self.skf = train_size, None
         self.retrain_from_scratch = retrain_from_scratch
+
+        # store input shape for save and load functionality
+        self.input_shape = get_input_shape(input_shape, x_ref)
 
         # set metadata
         self.meta['detector_type'] = 'offline'
@@ -320,6 +326,7 @@ class BaseClassifierDrift(BaseDetector):
             'n_folds': self.skf.n_splits if self.skf is not None else None,
             'retrain_from_scratch': self.retrain_from_scratch,
             'seed': self.skf.random_state if self.skf is not None else 0,
+            'input_shape': self.input_shape,
             'data_type': self.meta['data_type']
         }
         cfg.update(kwargs)

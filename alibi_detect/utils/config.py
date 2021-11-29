@@ -1,3 +1,9 @@
+# TODO - conditional checks depending on backend
+# TODO - defaults are currently mix of actual default and None. Doesn't matter too much as None will then be overridden
+#  by detector default kwarg anyway. We could have actual defaults here for clarity, but more maintenance.
+# TODO - similar for Optional[]. Many detector kwargs are not Optional[], but they are for config schema as detector
+#  overrides None. What do we want to put in config schema?
+# TODO - conditional backend imports
 import numpy as np
 import tensorflow as tf
 import torch
@@ -5,6 +11,7 @@ from pydantic import BaseModel
 from typing import Optional, Union, Literal, Dict, List, Callable
 from alibi_detect.version import __version__
 from alibi_detect.cd.tensorflow import HiddenOutput, UAE
+from alibi_detect.utils.tensorflow.data import TFDataset
 from alibi_detect.models.tensorflow import TransformerEmbedding
 from transformers import PreTrainedTokenizerBase
 
@@ -114,7 +121,6 @@ class KSDriftConfig(DriftDetectorConfig):
 
 
 class MMDDriftConfig(DriftDetectorConfig):
-    # TODO - conditional check of kernel type depending on backend
     kernel: Union[str, KernelConfig, None] = None
     sigma: Optional[List[float]] = None
     configure_kernel_from_x_ref: bool = True
@@ -127,6 +133,25 @@ class LSDDDriftConfig(DriftDetectorConfig):
     n_permutations: int = 100
     n_kernel_centers: Optional[int] = None
     lambda_rd_max: float = 0.2
+
+
+class ClassifierDriftConfig(DriftDetectorConfig):
+    model: Union[str, ModelConfig, None] = None
+    preds_type: Literal['probs', 'logits']
+    binarize_preds: bool = False
+    reg_loss_fn: Optional[str] = None
+    train_size: Optional[float] = .75
+    n_folds: Optional[int] = None
+    retrain_from_scratch: bool = True
+    seed: int = 0
+    optimizer: Union[str, dict, None] = None  # dict as can pass dict to tf.keras.optimizers.deserialize
+    learning_rate: float = 1e-3
+    batch_size: int = 32
+    preprocess_batch_fn: Optional[str] = None  # TODO - config dict for this?
+    epochs: int = 3
+    verbose: int = 0
+    train_kwargs: Optional[dict] = None
+    dataset: str = '@alibi_detect.utils.tensorflow.data.TFDataset'
 
 
 class KSDriftConfigResolved(DriftDetectorConfigResolved, KSDriftConfig):
@@ -142,10 +167,18 @@ class LSDDDriftConfigResolved(DriftDetectorConfigResolved, LSDDDriftConfig):
     sigma: Optional[np.ndarray]
 
 
+class ClassifierDriftResolved(DriftDetectorConfigResolved, ClassifierDriftConfig):
+    reg_loss_fn: Callable = (lambda model: 0)
+    optimizer: tf.keras.optimizers = tf.keras.optimizers.Adam
+    preprocess_batch_fn: Optional[Callable] = None
+    dataset: Callable = TFDataset
+
+
 DETECTOR_CONFIGS = {
     'KSDrift': KSDriftConfig,
     'MMDDrift': MMDDriftConfig,
     'LSDDDrift': LSDDDriftConfig,
+    'ClassifierDrift': ClassifierDriftConfig,
 }
 
 
@@ -153,4 +186,5 @@ DETECTOR_CONFIGS_RESOLVED = {
     'KSDrift': KSDriftConfigResolved,
     'MMDDrift': MMDDriftConfigResolved,
     'LSDDDrift': LSDDDriftConfigResolved,
+    'ClassifierDrift': ClassifierDriftResolved,
 }

@@ -323,7 +323,7 @@ def load_model(cfg: dict,
         else:
             raise ValueError("Model 'type' not recognised.")
     else:
-        raise RuntimeError('Loading of pytorch models not currently supported')
+        raise NotImplementedError('Loading of pytorch models not currently supported')
 
     return model
 
@@ -391,7 +391,7 @@ def prep_model_and_embedding(model: Optional[SUPPORTED_MODELS], emb: Optional[Tr
             model = UAE(encoder_net=model)
 
         else:
-            raise RuntimeError("Loading of pytorch models is not currently implemented.")
+            raise NotImplementedError("Loading of pytorch models is not currently implemented.")
 
     # If no model exists, store embedding in model (both may be None)
     else:

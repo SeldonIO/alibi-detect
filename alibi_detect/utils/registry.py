@@ -4,6 +4,7 @@ from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
 if has_tensorflow:
     from alibi_detect.utils.tensorflow.kernels import GaussianRBF as GaussianRBF_tf
     from alibi_detect.cd.tensorflow import preprocess_drift as preprocess_drift_tf
+    from alibi_detect.utils.tensorflow.data import TFDataset as TFDataset_tf
 
 if has_pytorch:
     from alibi_detect.utils.pytorch.kernels import GaussianRBF as GaussianRBF_torch
@@ -16,6 +17,7 @@ registry = catalogue.create("alibi_detect", "registry")
 if has_tensorflow:
     registry.register('utils.tensorflow.kernels.GaussianRBF', func=GaussianRBF_tf)
     registry.register('cd.tensorflow.preprocess.preprocess_drift', func=preprocess_drift_tf)
+    registry.register('alibi_detect.utils.tensorflow.data.TFDataset', func=TFDataset_tf)
 
 if has_pytorch:
     registry.register('utils.pytorch.kernels.GaussianRBF', func=GaussianRBF_torch)

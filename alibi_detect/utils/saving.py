@@ -2,6 +2,7 @@
 # TODO: need to rewrite utilities using isinstance or @singledispatch for type checking to work properly
 # TODO: Need to clarify public vs private functions here
 # TODO: Add verbose functionality
+# TODO: fix save_tf_model directory logic (see #348)
 import dill
 import toml
 import numpy as np
@@ -14,7 +15,7 @@ import tensorflow as tf
 from tensorflow.keras.layers import Input, InputLayer
 from tensorflow_probability.python.distributions.distribution import Distribution
 from transformers import AutoTokenizer, PreTrainedTokenizerBase
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from typing import Callable, Dict, List, Optional, Tuple, Union, Literal
 from alibi_detect.ad import AdversarialAE, ModelDistillation
 from alibi_detect.ad.adversarialae import DenseHidden
 from alibi_detect.cd import ChiSquareDrift, ClassifierDrift, KSDrift, MMDDrift, LSDDDrift, TabularDrift
@@ -83,7 +84,7 @@ DRIFT_DETECTORS = [  # Drift detectors separated out as they now have their own 
     'ChiSquareDrift',
     'TabularDrift',
     'KSDrift',
-    #    'ClassifierDriftTF',
+    'ClassifierDrift',
 ]
 
 
@@ -166,8 +167,8 @@ def save_detector(detector: Data, filepath: Union[str, os.PathLike], verbose: bo
             save_tf_model(detector.model, filepath)
             save_tf_hl(detector.model_hl, filepath)
         elif detector_name == 'ModelDistillation':
-            save_tf_model(detector.distilled_model, filepath, model_name='distilled_model')
-            save_tf_model(detector.model, filepath, model_name='model')
+            save_tf_model(detector.distilled_model, filepath, save_dir='distilled_model')
+            save_tf_model(detector.model, filepath, save_dir='model')
         elif detector_name == 'OutlierSeq2Seq':
             save_tf_s2s(detector, filepath)
         elif detector_name == 'LLR':
@@ -222,11 +223,7 @@ def save_detector_config(detector: Data, filepath: Union[str, os.PathLike], verb
         preprocess_cfg = serialize_preprocess(preprocess_fn, backend, cfg['input_shape'], filepath, verbose)
         cfg['preprocess_fn'] = preprocess_cfg
 
-    # Serialize detector model (e.g. for ClassifierDrift detector)
-    model = cfg.get('model', None)
-    if model is not None:
-        model_cfg, _ = save_model(model, filepath, detector.input_shape, backend, verbose)
-        cfg['model'] = model_cfg
+    # TODO - need to look for and serialize predict_fn for classifier detector
 
     # Serialize kernel
     kernel = cfg.get('kernel', None)
@@ -234,6 +231,27 @@ def save_detector_config(detector: Data, filepath: Union[str, os.PathLike], verb
         device = detector.device.type if hasattr(detector, 'device') else None
         kernel_cfg = save_kernel(kernel, filepath, device, verbose)
         cfg['kernel'] = kernel_cfg
+
+    # ClassifierDrift and SpotTheDiffDrift specific artefacts. TODO - could to detector .save() methods in future.
+    # Serialize detector model
+    model = cfg.get('model', None)
+    if model is not None:
+        model_cfg, _ = save_model(model, filepath, cfg['input_shape'], backend, verbose)
+        cfg['model'] = model_cfg
+
+    # Serialize dataset
+    dataset = cfg.get('dataset', None)
+    if dataset is not None:
+        dataset_cfg, dataset_kwargs = serialize_function(dataset, filepath, save_name='dataset')
+        cfg.update({'dataset': dataset_cfg})
+        if len(dataset_kwargs) != 0:
+            cfg['dataset']['kwargs'] = dataset_kwargs
+
+    # Serialize reg_loss_fn
+    reg_loss_fn = cfg.get('reg_loss_fn', None)
+    if reg_loss_fn is not None:
+        reg_loss_fn_cfg, _ = serialize_function(reg_loss_fn, filepath, save_name='reg_loss_fn')
+        cfg['reg_loss_fn'] = reg_loss_fn_cfg
 
     # Save config
     cfg = resolve_paths(cfg)
@@ -523,7 +541,7 @@ def save_tf_vae(detector: OutlierVAE,
 def save_tf_model(model: tf.keras.Model,
                   filepath: Union[str, os.PathLike],
                   save_dir: str = 'model',
-                  model_name: str = 'model') -> None:
+                  save_format: Literal['tf', 'h5'] = 'tf') -> None:
     """
     Save TensorFlow model.
 
@@ -535,8 +553,9 @@ def save_tf_model(model: tf.keras.Model,
         Save directory.
     save_dir
         Name of folder to save to within the filepath directory.
-    model_name
-        Name of saved model.
+    save_format
+        The format to save to. 'tf' to save to the newer SavedModel format, 'h5' to save to the lighter-weight
+        legacy hdf5 format.
     """
     # create folder to save model in
     model_dir = Path(filepath).joinpath(save_dir)
@@ -546,7 +565,7 @@ def save_tf_model(model: tf.keras.Model,
 
     # save classification model
     if isinstance(model, tf.keras.Model) or isinstance(model, tf.keras.Sequential):
-        model.save(model_dir.joinpath(model_name + '.h5'))
+        model.save(model_dir, save_format=save_format)
     else:
         logger.warning('No `tf.keras.Model` or `tf.keras.Sequential` detected. No model saved.')
 
@@ -1602,55 +1621,67 @@ def serialize_preprocess(preprocess_fn: Callable,
     of the `preprocess` field in the drift detector specification.
     """
     preprocess_cfg = {}
+
+    # Serialize function
+    func, func_kwargs = serialize_function(preprocess_fn, filepath, save_name='preprocess_fn')
+    preprocess_cfg.update({'function': func})
+
+    # Process partial function kwargs (if they exist)
     kwargs = {}
-    if isinstance(preprocess_fn, partial):
-        # If the func is preprocess_drift, just save string, otherwise, serialize
-        func = preprocess_fn.func
-        if func.__name__ == 'preprocess_drift':
-            func = ".".join([func.__module__.replace('alibi_detect.', '@'), func.__name__])
+    for k, v in func_kwargs.items():
+        # Model/embedding
+        if isinstance(v, SupportedModels):
+            cfg_model, cfg_embed = save_model(v, filepath, input_shape, backend, verbose)
+            kwargs.update({k: cfg_model})
+            if cfg_embed is not None:
+                kwargs.update({'embedding': cfg_embed})
+
+        # Tokenizer
+        elif isinstance(v, PreTrainedTokenizerBase):
+            cfg_token = save_tokenizer(v, filepath, verbose)
+            kwargs.update({k: cfg_token})
+
+        # Arbitrary function
+        elif callable(v):  # TODO - probably need to add more here to deal with preprocess_batch_fn etc
+            with open(filepath.joinpath(k + '.dill'), 'wb') as f:
+                dill.dump(v, f)
+            kwargs.update({k: k + '.dill'})
+
+        # Put remaining kwargs directly into cfg
         else:
-            with open(filepath.joinpath('func.dill'), 'wb') as f:
-                dill.dump(func, f)
-            func = 'func.dill'
-        preprocess_cfg.update({'function': func})
+            kwargs.update({k: v})
 
-        # Process partial function args
-        partial_dict = preprocess_fn.keywords
-        for k, v in partial_dict.items():
-            # Model/embedding
-            if isinstance(v, SupportedModels):
-                cfg_model, cfg_embed = save_model(v, filepath, input_shape, backend, verbose)
-                kwargs.update({k: cfg_model})
-                if cfg_embed is not None:
-                    kwargs.update({'embedding': cfg_embed})
-
-            # Tokenizer
-            elif isinstance(v, PreTrainedTokenizerBase):
-                cfg_token = save_tokenizer(v, filepath, verbose)
-                kwargs.update({k: cfg_token})
-
-            # Arbitrary function e.g. preprocess_batch_fn
-            elif callable(v):  # TODO - is this enough? other non-serializable callables might sneak in
-                with open(filepath.joinpath(k + '.dill'), 'wb') as f:
-                    dill.dump(v, f)
-                kwargs.update({k: k + '.dill'})
-
-            # Put remaining kwargs directly into cfg
-            else:
-                if preprocess_fn.func.__name__ == 'preprocess_drift':
-                    kwargs.update({k: v})
-                else:
-                    kwargs.update({'kwargs': {k: v}})
-
+    if 'preprocess_drift' in func:
+        preprocess_cfg.update(kwargs)
     else:
-        func = preprocess_fn
-        with open(filepath.joinpath('func.dill'), 'wb') as f:
-            dill.dump(func, f)
-        preprocess_cfg.update({'preprocess_fn': 'func.dill'})
-
-    preprocess_cfg.update(kwargs)
+        kwargs.update({'kwargs': kwargs})
 
     return preprocess_cfg
+
+
+def serialize_function(func: Callable, filepath: Path, save_name: str = 'func') -> Tuple[str, dict]:
+
+    # If a partial, save function and kwargs
+    if isinstance(func, partial):
+        kwargs = func.keywords
+        func = func.func
+    else:
+        kwargs = {}
+
+    # If a registered function, save registry string
+    keys = [k for k, v in registry.get_all().items() if func == v]
+    registry_str = keys[0] if len(keys) == 1 else None
+    if registry_str is not None:  # alibi-detect registered function
+        src = '@' + registry_str
+
+    # Otherwise, save as dill
+    else:
+        save_name = save_name + '.dill'
+        with open(filepath.joinpath(save_name), 'wb') as f:
+            dill.dump(func, f)
+        src = save_name
+
+    return src, kwargs
 
 
 def save_embedding(embed: tf.keras.Model,
@@ -1715,7 +1746,7 @@ def save_model(model: SUPPORTED_MODELS,
                 cfg_embed.update({'src': 'embedding/'})
                 # preprocessing encoder
                 inputs = Input(shape=input_shape, dtype=tf.int64)
-                model.encoder.call(inputs)  # Need to call to populate .output
+                model.encoder.call(inputs)
                 shape_enc = (model.encoder.layers[0].output.shape[-1],)
                 layers = [InputLayer(input_shape=shape_enc)] + model.encoder.layers[1:]
                 model = tf.keras.Sequential(layers)
@@ -1734,7 +1765,7 @@ def save_model(model: SUPPORTED_MODELS,
         save_tf_model(model, filepath=filepath, save_dir='model')
 
     else:
-        raise RuntimeError("Saving of pytorch models is not yet implemented.")
+        raise NotImplementedError("Saving of pytorch models is not yet implemented.")
 
     cfg_model.update({'src': 'model/'})
     return cfg_model, cfg_embed
