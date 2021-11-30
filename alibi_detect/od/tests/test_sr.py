@@ -1,35 +1,29 @@
-from itertools import product
-import numpy as np
 import pytest
+import numpy as np
 from alibi_detect.od import SpectralResidual
 from alibi_detect.version import __version__
 
-# create normal time series and one with perturbations
-t = np.linspace(0, 0.5, 1000)
-X = np.sin(40 * 2 * np.pi * t) + 0.5 * np.sin(90 * 2 * np.pi * t)
 
-np.random.seed(0)
-idx_pert = np.random.choice(np.arange(1000), size=10, replace=False)  # ensure we perturb exactly 10 points
-X_pert = X.copy()
-X_pert[idx_pert] = 10
+@pytest.fixture(scope='module')
+def signal():
+    np.random.seed(0)
 
-window_amp = [10, 20]
-window_local = [20, 30]
-n_est_points = [10, 20]
-return_instance_score = [True, False]
+    # create normal time series and one with perturbations
+    t = np.linspace(0, 0.5, 1000)
+    X = np.sin(40 * 2 * np.pi * t) + 0.5 * np.sin(90 * 2 * np.pi * t)
 
-tests = list(product(window_amp, window_local, n_est_points, return_instance_score))
-n_tests = len(tests)
+    idx_pert = np.random.choice(np.arange(1000), size=10, replace=False)  # ensure we perturb exactly 10 points
+    X_pert = X.copy()
+    X_pert[idx_pert] = 10
+    return {"t": t, "X": X, "X_pert": X_pert}
 
 
-@pytest.fixture
-def sr_params(request):
-    return tests[request.param]
-
-
-@pytest.mark.parametrize('sr_params', list(range(n_tests)), indirect=True)
-def test_sr(sr_params):
-    window_amp, window_local, n_est_points, return_instance_score = sr_params
+@pytest.mark.parametrize('window_amp', [10, 20])
+@pytest.mark.parametrize('window_local', [20, 30])
+@pytest.mark.parametrize('n_est_points', [10, 20])
+@pytest.mark.parametrize('return_instance_score', [True, False])
+def test_detector(signal, window_amp, window_local, n_est_points, return_instance_score):
+    t, X, X_pert = signal["t"], signal['X'], signal['X_pert']
 
     threshold = 6
     od = SpectralResidual(threshold=threshold, window_amp=window_amp,
