@@ -1,8 +1,14 @@
+import sys
 import enum
 import logging
 import numpy as np
-from typing import Dict, Literal
+from typing import Dict
 from alibi_detect.base import BaseDetector, ThresholdMixin, outlier_prediction_dict
+
+if sys.version_info >= (3, 8):
+    from typing import Literal
+else:
+    from typing_extensions import Literal
 
 logger = logging.getLogger(__name__)
 
