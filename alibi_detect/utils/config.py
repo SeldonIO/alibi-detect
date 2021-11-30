@@ -168,11 +168,11 @@ class LSDDDriftConfigResolved(DriftDetectorConfigResolved, LSDDDriftConfig):
 
 
 class ClassifierDriftResolved(DriftDetectorConfigResolved, ClassifierDriftConfig):
-    reg_loss_fn: Callable = (lambda model: 0)
-    optimizer: tf.keras.optimizers = tf.keras.optimizers.Adam
+    reg_loss_fn: Optional[Callable] = None
+    optimizer: Optional[tf.keras.optimizers.Optimizer] = None
     preprocess_batch_fn: Optional[Callable] = None
-    dataset: Callable = TFDataset
-
+    dataset: Callable = TFDataset,
+    model: Optional[SUPPORTED_MODELS] = None
 
 DETECTOR_CONFIGS = {
     'KSDrift': KSDriftConfig,

@@ -2,7 +2,7 @@
 # TODO: need to rewrite utilities using isinstance or @singledispatch for type checking to work properly
 # TODO: Need to clarify public vs private functions here
 # TODO: Add verbose functionality
-# TODO: fix save_tf_model directory logic (see #348)
+# TODO: clean up save directories, filenames etc, fix save_tf_model directory logic (see #348)
 import dill
 import toml
 import numpy as np
@@ -236,13 +236,14 @@ def save_detector_config(detector: Data, filepath: Union[str, os.PathLike], verb
     # Serialize detector model
     model = cfg.get('model', None)
     if model is not None:
-        model_cfg, _ = save_model(model, filepath, cfg['input_shape'], backend, verbose)
+        model_cfg, _ = save_model(model, base_path=filepath, input_shape=cfg['input_shape'],
+                                  backend=backend, verbose=verbose)
         cfg['model'] = model_cfg
 
     # Serialize dataset
     dataset = cfg.get('dataset', None)
     if dataset is not None:
-        dataset_cfg, dataset_kwargs = serialize_function(dataset, filepath, save_name='dataset')
+        dataset_cfg, dataset_kwargs = serialize_function(dataset, filepath, Path('dataset'))
         cfg.update({'dataset': dataset_cfg})
         if len(dataset_kwargs) != 0:
             cfg['dataset']['kwargs'] = dataset_kwargs
@@ -250,13 +251,13 @@ def save_detector_config(detector: Data, filepath: Union[str, os.PathLike], verb
     # Serialize reg_loss_fn
     reg_loss_fn = cfg.get('reg_loss_fn', None)
     if reg_loss_fn is not None:
-        reg_loss_fn_cfg, _ = serialize_function(reg_loss_fn, filepath, save_name='reg_loss_fn')
+        reg_loss_fn_cfg, _ = serialize_function(reg_loss_fn, filepath, Path('reg_loss_fn'))
         cfg['reg_loss_fn'] = reg_loss_fn_cfg
 
     # Save config
     cfg = resolve_paths(cfg)
     with open(filepath.joinpath('config.toml'), 'w') as f:
-        toml.dump(cfg, f)
+        toml.dump(cfg, f, encoder=toml.TomlNumpyEncoder())
 
 
 def state_iforest(od: IForest) -> Dict:
@@ -540,8 +541,8 @@ def save_tf_vae(detector: OutlierVAE,
 
 def save_tf_model(model: tf.keras.Model,
                   filepath: Union[str, os.PathLike],
-                  save_dir: str = 'model',
-                  save_format: Literal['tf', 'h5'] = 'tf') -> None:
+                  save_dir: Union[str, os.PathLike] = 'model',
+                  save_format: Literal['tf', 'h5'] = 'h5') -> None:  # TODO - change to tf, later PR?
     """
     Save TensorFlow model.
 
@@ -558,14 +559,16 @@ def save_tf_model(model: tf.keras.Model,
         legacy hdf5 format.
     """
     # create folder to save model in
-    model_dir = Path(filepath).joinpath(save_dir)
-    if not model_dir.is_dir():
-        logger.warning('Directory {} does not exist and is now created.'.format(model_dir))
-        model_dir.mkdir(parents=True, exist_ok=True)
+    model_path = Path(filepath).joinpath(save_dir)
+    if not model_path.is_dir():
+        logger.warning('Directory {} does not exist and is now created.'.format(model_path))
+        model_path.mkdir(parents=True, exist_ok=True)
 
     # save classification model
+    model_path = model_path.joinpath('model.h5') if save_format == 'h5' else model_path
+
     if isinstance(model, tf.keras.Model) or isinstance(model, tf.keras.Sequential):
-        model.save(model_dir, save_format=save_format)
+        model.save(model_path, save_format=save_format)
     else:
         logger.warning('No `tf.keras.Model` or `tf.keras.Sequential` detected. No model saved.')
 
@@ -1621,9 +1624,11 @@ def serialize_preprocess(preprocess_fn: Callable,
     of the `preprocess` field in the drift detector specification.
     """
     preprocess_cfg = {}
+    local_path = Path('preprocess_fn')
+    # TODO - create dir
 
     # Serialize function
-    func, func_kwargs = serialize_function(preprocess_fn, filepath, save_name='preprocess_fn')
+    func, func_kwargs = serialize_function(preprocess_fn, filepath, local_path.joinpath('function'))
     preprocess_cfg.update({'function': func})
 
     # Process partial function kwargs (if they exist)
@@ -1631,21 +1636,21 @@ def serialize_preprocess(preprocess_fn: Callable,
     for k, v in func_kwargs.items():
         # Model/embedding
         if isinstance(v, SupportedModels):
-            cfg_model, cfg_embed = save_model(v, filepath, input_shape, backend, verbose)
+            cfg_model, cfg_embed = save_model(v, filepath, input_shape, backend, local_path, verbose)
             kwargs.update({k: cfg_model})
             if cfg_embed is not None:
                 kwargs.update({'embedding': cfg_embed})
 
         # Tokenizer
         elif isinstance(v, PreTrainedTokenizerBase):
-            cfg_token = save_tokenizer(v, filepath, verbose)
+            cfg_token = save_tokenizer(v, filepath, local_path, verbose)
             kwargs.update({k: cfg_token})
 
         # Arbitrary function
         elif callable(v):  # TODO - probably need to add more here to deal with preprocess_batch_fn etc
             with open(filepath.joinpath(k + '.dill'), 'wb') as f:
                 dill.dump(v, f)
-            kwargs.update({k: k + '.dill'})
+            kwargs.update({k: local_path.joinpath(k + '.dill')})
 
         # Put remaining kwargs directly into cfg
         else:
@@ -1659,7 +1664,7 @@ def serialize_preprocess(preprocess_fn: Callable,
     return preprocess_cfg
 
 
-def serialize_function(func: Callable, filepath: Path, save_name: str = 'func') -> Tuple[str, dict]:
+def serialize_function(func: Callable, base_path: Path, path: Path = Path('func')) -> Tuple[str, dict]:
 
     # If a partial, save function and kwargs
     if isinstance(func, partial):
@@ -1676,19 +1681,18 @@ def serialize_function(func: Callable, filepath: Path, save_name: str = 'func') 
 
     # Otherwise, save as dill
     else:
-        save_name = save_name + '.dill'
-        with open(filepath.joinpath(save_name), 'wb') as f:
+        # create folder to save model in
+        filepath = base_path.joinpath(path)
+        with open(filepath.with_suffix('.dill'), 'wb') as f:
             dill.dump(func, f)
-        src = save_name
+        src = path.with_suffix('.dill')
 
     return src, kwargs
 
 
 def save_embedding(embed: tf.keras.Model,
                    embed_args: dict,
-                   filepath: Union[str, os.PathLike],
-                   save_dir: str = 'model',
-                   model_name: str = 'embedding') -> None:
+                   filepath: Path) -> None:
     """
     Save embeddings for text drift models.
 
@@ -1699,21 +1703,16 @@ def save_embedding(embed: tf.keras.Model,
     embed_args
         Arguments for TransformerEmbedding module.
     filepath
-        Save directory.
-    save_dir
-        Name of folder to save to within the filepath directory.
-    model_name
-        Name of saved model.
+        The save directory.
     """
     # create folder to save model in
-    model_dir = Path(filepath).joinpath(save_dir)
-    if not model_dir.is_dir():
-        logger.warning('Directory {} does not exist and is now created.'.format(model_dir))
-        model_dir.mkdir(parents=True, exist_ok=True)
+    if not filepath.is_dir():
+        logger.warning('Directory {} does not exist and is now created.'.format(filepath))
+        filepath.mkdir(parents=True, exist_ok=True)
 
     # Save embedding model
-    embed.save_pretrained(model_dir)
-    with open(model_dir.joinpath(model_name + '.dill'), 'wb') as f:
+    embed.save_pretrained(filepath)
+    with open(filepath.joinpath('embedding.dill'), 'wb') as f:
         dill.dump(embed_args, f)
 
 
@@ -1729,10 +1728,17 @@ def resolve_paths(cfg: dict, absolute: bool = False) -> dict:
 
 
 def save_model(model: SUPPORTED_MODELS,
-               filepath: Path,
+               base_path: Path,
                input_shape: tuple,
                backend: str,
+               path: Path = Path('.'),
                verbose: bool = False) -> Tuple[dict, Optional[dict]]:
+    filepath = base_path.joinpath(path)
+    # create folder to save model in
+    if not filepath.is_dir():
+        logger.warning('Directory {} does not exist and is now created.'.format(filepath))
+        filepath.mkdir(parents=True, exist_ok=True)
+
     if backend == 'tensorflow':
         cfg_model, cfg_embed = {}, None
         if isinstance(model, UAE):
@@ -1742,8 +1748,8 @@ def save_model(model: SUPPORTED_MODELS,
                 embed = model.encoder.layers[0].model
                 cfg_embed.update({'type': model.encoder.layers[0].emb_type})
                 cfg_embed.update({'layers': model.encoder.layers[0].hs_emb.keywords['layers']})
-                save_embedding(embed, embed_args=cfg_embed, filepath=filepath, save_dir='embedding')
-                cfg_embed.update({'src': 'embedding/'})
+                save_embedding(embed, cfg_embed, filepath.joinpath('embedding'))
+                cfg_embed.update({'src': path.joinpath('embedding')})
                 # preprocessing encoder
                 inputs = Input(shape=input_shape, dtype=tf.int64)
                 model.encoder.call(inputs)
@@ -1762,21 +1768,28 @@ def save_model(model: SUPPORTED_MODELS,
             model = model
             cfg_model.update({'type': 'custom'})
 
-        save_tf_model(model, filepath=filepath, save_dir='model')
+        save_tf_model(model, filepath=filepath, save_dir=path.joinpath('model'))
 
     else:
         raise NotImplementedError("Saving of pytorch models is not yet implemented.")
 
-    cfg_model.update({'src': 'model/'})
+    cfg_model.update({'src': path.joinpath('model')})
     return cfg_model, cfg_embed
 
 
 def save_tokenizer(tokenizer: PreTrainedTokenizerBase,
-                   filepath: Path,
+                   base_path: Path,
+                   path: Path = Path('.'),
                    verbose: bool = False) -> dict:
+    # create folder to save model in
+    filepath = base_path.joinpath(path)
+    if not filepath.is_dir():
+        logger.warning('Directory {} does not exist and is now created.'.format(filepath))
+        filepath.mkdir(parents=True, exist_ok=True)
+
     cfg_token = {}
     tokenizer.save_pretrained(filepath.joinpath('tokenizer'))
-    cfg_token.update({'src': 'tokenizer/'})
+    cfg_token.update({'src': path.joinpath('tokenizer')})
     return cfg_token
 
 

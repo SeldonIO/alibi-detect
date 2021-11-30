@@ -59,12 +59,6 @@ REQUIRES_BACKEND = [
     SpotTheDiffDrift.__name__
 ]
 
-LEARNED_DETECTOR = [
-    ClassifierDrift.__name__,
-    LearnedKernelDrift.__name__,
-    SpotTheDiffDrift.__name__
-]
-
 
 # Fields to resolve in resolve_cfg ("resolve" meaning either load local artefact or resolve @registry, conversion to
 # tuple, np.ndarray and np.dtype are dealt with separately).
@@ -77,7 +71,10 @@ FIELDS_TO_RESOLVE = [
     ['preprocess_fn', 'device'],
     ['x_ref'],
     ['model'],
+    ['optimizer'],
+    ['reg_loss_fn'],
     ['kernel'],
+    ['dataset'],
     ['kernel', 'kernel']
 ]
 
@@ -91,7 +88,9 @@ DIR_FIELDS = [
     ['x_ref'],
     ['model', 'src'],
     ['kernel'],
-    ['kernel', 'kernel']
+    ['kernel', 'kernel'],
+    ['optimizer'],
+    ['reg_loss_fn'],
 ]
 
 # Fields to convert from list to tuple in resolve_cfg
@@ -213,8 +212,6 @@ def init_detector(x_ref: Union[np.ndarray, list],
     args = [x_ref]
     if model is not None:
         args.append(model)
-    if detector_name in LEARNED_DETECTOR:
-        raise NotImplementedError("Loading of learned detectors is not implemented yet.")  # TODO
 
     # Process kwargs (cfg should just be kwargs by this point)
     if detector_name in REQUIRES_BACKEND:
@@ -357,6 +354,18 @@ def load_tokenizer(cfg: dict,
     return tokenizer
 
 
+def load_optimizer(cfg: dict,
+                   backend: str,
+                   verbose: bool = False) -> Union[tf.keras.optimizers.Optimizer, Callable]:
+
+    if backend == 'tensorflow':
+        optimizer = tf.keras.optimizers.deserialize(cfg)
+    else:
+        raise NotImplementedError('Loading of pytorch optimizers not currently supported')
+
+    return optimizer
+
+
 def prep_model_and_embedding(model: Optional[SUPPORTED_MODELS], emb: Optional[TransformerEmbedding],
                              backend: str) -> SUPPORTED_MODELS:
     """
@@ -490,6 +499,8 @@ def resolve_cfg(cfg: dict, config_dir: Optional[Path], verbose: bool = False) ->
                 obj = load_embedding(src, verbose=verbose)
             elif key[-1] == 'tokenizer':
                 obj = load_tokenizer(src, verbose=verbose)
+            elif key[-1] == 'optimizer':
+                obj = load_optimizer(src, backend=backend, verbose=verbose)
 
         # Put the resolved function into the cfg dict
         if obj is not None:
@@ -541,7 +552,7 @@ def load_tf_model(filepath: Union[str, os.PathLike],
     filepath
         Saved model directory.
     load_dir
-            Name of saved model folder within the filepath directory.
+        Name of saved model folder within the filepath directory.
     custom_objects
         Optional custom objects when loading the TensorFlow model.
     model_name
@@ -551,6 +562,7 @@ def load_tf_model(filepath: Union[str, os.PathLike],
     -------
     Loaded model.
     """
+    # TODO - update to accept tf format - later PR?
     model_dir = Path(filepath).joinpath(load_dir)
     # Check if path exists
     if not model_dir.is_dir():

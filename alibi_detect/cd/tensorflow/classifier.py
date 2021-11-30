@@ -30,7 +30,7 @@ class ClassifierDriftTF(BaseClassifierDrift):
             n_folds: Optional[int] = None,
             retrain_from_scratch: bool = True,
             seed: int = 0,
-            optimizer: tf.keras.optimizers = tf.keras.optimizers.Adam,
+            optimizer: tf.keras.optimizers.Optimizer = tf.keras.optimizers.Adam,
             learning_rate: float = 1e-3,
             batch_size: int = 32,
             preprocess_batch_fn: Optional[Callable] = None,
@@ -134,7 +134,8 @@ class ClassifierDriftTF(BaseClassifierDrift):
         self.loss_fn = BinaryCrossentropy(from_logits=(self.preds_type == 'logits'))
         self.dataset = partial(dataset, batch_size=batch_size, shuffle=True)
         self.predict_fn = partial(predict_batch, preprocess_fn=preprocess_batch_fn, batch_size=batch_size)
-        self.train_kwargs = {'optimizer': optimizer(learning_rate=learning_rate), 'epochs': epochs,
+        optimizer = optimizer(learning_rate=learning_rate) if isinstance(optimizer, type) else optimizer
+        self.train_kwargs = {'optimizer': optimizer, 'epochs': epochs,
                              'reg_loss_fn': reg_loss_fn, 'preprocess_fn': preprocess_batch_fn, 'verbose': verbose}
         if isinstance(train_kwargs, dict):
             self.train_kwargs.update(train_kwargs)
@@ -198,25 +199,26 @@ class ClassifierDriftTF(BaseClassifierDrift):
 
         # backend
         cfg.update({'backend': 'tensorflow'})
+        train_kwargs = self.train_kwargs.copy()  # copy so that .pop() only affects copy
 
 #        # Optimizer (OK to do here as doesn't save anything to file)
-        optimizer = self.train_kwargs.pop('optimizer')
+        optimizer = train_kwargs.pop('optimizer')
         optimizer_cfg = tf.keras.optimizers.serialize(optimizer)
 
         # Remove dataset from train_kwargs (dataset is updated in `score`, but we want to save original TFDataset)
-        self.train_kwargs.pop('dataset')
+        train_kwargs.pop('dataset', None)
 
         # Detector kwargs
         kwargs = {
             'model': self.original_model,
-            'reg_loss_fn': self.train_kwargs.pop('reg_loss_fn'),
+            'reg_loss_fn': train_kwargs.pop('reg_loss_fn'),
             'optimizer': optimizer_cfg,
-            'learning_rate': optimizer.learning_rate.numpy(),
+            'learning_rate': None,  #optimizer.learning_rate.numpy(),
             'batch_size': self.dataset.keywords['batch_size'],
-            'preprocess_batch_fn': self.train_kwargs.pop('preprocess_fn'),
-            'epochs': self.train_kwargs.pop('epochs'),
-            'verbose': self.train_kwargs.pop('verbose'),
-            'train_kwargs': self.train_kwargs,  # Should have popped all default train_kwargs by this point
+            'preprocess_batch_fn': train_kwargs.pop('preprocess_fn'),
+            'epochs': train_kwargs.pop('epochs'),
+            'verbose': train_kwargs.pop('verbose'),
+            'train_kwargs': train_kwargs,  # Should have popped all default train_kwargs by this point
             'dataset': self.dataset.func
         }
         cfg.update(kwargs)
