@@ -1,9 +1,11 @@
+# mypy: ignore-errors
 # TODO - conditional checks depending on backend
 # TODO - defaults are currently mix of actual default and None. Doesn't matter too much as None will then be overridden
 #  by detector default kwarg anyway. We could have actual defaults here for clarity, but more maintenance.
 # TODO - similar for Optional[]. Many detector kwargs are not Optional[], but they are for config schema as detector
 #  overrides None. What do we want to put in config schema?
 # TODO - conditional backend imports
+# TODO - consider validating output of get_config calls
 import numpy as np
 import tensorflow as tf
 import torch
@@ -19,6 +21,7 @@ __config_spec__ = "0.1.0dev"  # TODO - remove dev once config layout confirmed
 
 SUPPORTED_MODELS = Union[UAE, HiddenOutput, tf.keras.Sequential, tf.keras.Model]
 SupportedModels = (UAE, HiddenOutput, tf.keras.Sequential, tf.keras.Model)
+
 
 # Custom BaseModel so that we can set default config
 class CustomBaseModel(BaseModel):
@@ -136,8 +139,8 @@ class LSDDDriftConfig(DriftDetectorConfig):
 
 
 class ClassifierDriftConfig(DriftDetectorConfig):
-    model: Union[str, ModelConfig, None] = None
-    preds_type: Literal['probs', 'logits']
+    model: Union[str, ModelConfig]
+    preds_type: Literal['probs', 'logits'] = 'probs'
     binarize_preds: bool = False
     reg_loss_fn: Optional[str] = None
     train_size: Optional[float] = .75
@@ -173,6 +176,7 @@ class ClassifierDriftResolved(DriftDetectorConfigResolved, ClassifierDriftConfig
     preprocess_batch_fn: Optional[Callable] = None
     dataset: Callable = TFDataset,
     model: Optional[SUPPORTED_MODELS] = None
+
 
 DETECTOR_CONFIGS = {
     'KSDrift': KSDriftConfig,

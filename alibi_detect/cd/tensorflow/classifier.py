@@ -213,7 +213,7 @@ class ClassifierDriftTF(BaseClassifierDrift):
             'model': self.original_model,
             'reg_loss_fn': train_kwargs.pop('reg_loss_fn'),
             'optimizer': optimizer_cfg,
-            'learning_rate': None,  #optimizer.learning_rate.numpy(),
+            'learning_rate': None,  # None instead of optimizer.learning_rate.numpy() as set in optimizer_cfg
             'batch_size': self.dataset.keywords['batch_size'],
             'preprocess_batch_fn': train_kwargs.pop('preprocess_fn'),
             'epochs': train_kwargs.pop('epochs'),

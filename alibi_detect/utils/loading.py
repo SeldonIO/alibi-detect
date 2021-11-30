@@ -120,9 +120,9 @@ def validate_config(cfg: dict, resolved: bool = False) -> dict:
     # Validate detector specific config
     if detector_name in DETECTOR_CONFIGS.keys():
         if resolved:
-            cfg = DETECTOR_CONFIGS_RESOLVED[detector_name](**cfg).dict()
+            cfg = DETECTOR_CONFIGS_RESOLVED[detector_name](**cfg).dict()  # type: ignore[attr-defined]
         else:
-            cfg = DETECTOR_CONFIGS[detector_name](**cfg).dict()
+            cfg = DETECTOR_CONFIGS[detector_name](**cfg).dict()  # type: ignore[attr-defined]
     else:
         raise ValueError('Loading the specified detector from a config.toml is not yet supported.')
 
@@ -237,8 +237,8 @@ def load_kernel(cfg: dict, device: Optional[str] = None) -> Callable:
             sigma = tf.convert_to_tensor(sigma) if isinstance(sigma, np.ndarray) else sigma
             kernel = kernel(sigma=sigma, trainable=cfg['trainable'])
         elif kernel == GaussianRBF_torch:
-            device = set_device(device)
-            sigma = torch.from_numpy(sigma).to(device) if isinstance(sigma, np.ndarray) else None
+            torch_device = set_device(device)
+            sigma = torch.from_numpy(sigma).to(torch_device) if isinstance(sigma, np.ndarray) else None
             kernel = kernel(sigma=sigma, trainable=cfg['trainable'])
         else:
             kwargs = cfg['kwargs']
@@ -450,7 +450,7 @@ def read_detector_config(filepath: Union[os.PathLike, str]) -> dict:
     filepath = Path(filepath)
     cfg = toml.load(filepath)
     logger.info('Loaded config file from %s', str(filepath))
-    return cfg
+    return cfg  # type: ignore[return-value] # TODO - toml actually returns MutableMapping, consider updating throughout
 
 
 def resolve_cfg(cfg: dict, config_dir: Optional[Path], verbose: bool = False) -> dict:
@@ -524,20 +524,20 @@ def resolve_cfg(cfg: dict, config_dir: Optional[Path], verbose: bool = False) ->
         if val is not None:
             val = val.split('.')
             val[0] = np if val[0] == 'np' else tf if val[0] == 'tf' else torch if val[0] == 'torch' else None
-            if val[0] == None:
+            if val[0] is None:
                 raise ValueError("`dtype` must be in format np.<dtype>, tf.<dtype> or torch.<dtype>.")
             set_nested_value(cfg, key, getattr(val[0], val[1]))
     return cfg
 
 
-def set_device(device: Optional[str] = None) -> torch.device:
+def set_device(device: Optional[str]) -> torch.device:
     if device is None or device in ['gpu', 'cuda']:
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        if device.type == 'cpu':
+        torch_device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        if torch_device.type == 'cpu':
             logger.warning('No GPU detected, fall back on CPU.')
     else:
-        device = torch.device('cpu')
-    return device
+        torch_device = torch.device('cpu')
+    return torch_device
 
 
 def load_tf_model(filepath: Union[str, os.PathLike],

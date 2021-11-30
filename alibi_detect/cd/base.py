@@ -3,7 +3,7 @@ import logging
 import numpy as np
 from sklearn.model_selection import StratifiedKFold
 from scipy.stats import binom_test, ks_2samp
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from typing import Callable, Dict, List, Optional, Tuple, Union, Any
 from alibi_detect.base import BaseDetector, concept_drift_dict
 from alibi_detect.cd.utils import get_input_shape, update_reference
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
@@ -299,14 +299,11 @@ class BaseClassifierDrift(BaseDetector):
         -------
         The detector's configuration dictionary.
         """
-        cfg = {
+        cfg: Dict[str, Any] = {
             'version': __version__,
             'config_spec': __config_spec__,
             'name': 'ClassifierDrift'
         }
-
-        # x_ref
-        cfg.update({'x_ref': self.x_ref})
 
         # Preprocess field
         if self.preprocess_fn is not None:
@@ -680,7 +677,7 @@ class BaseMMDDrift(BaseDetector):
         -------
         The detector's configuration dictionary.
         """
-        cfg = {
+        cfg: Dict[str, Any] = {
             'version': __version__,
             'config_spec': __config_spec__,
             'name': 'MMDDrift'
@@ -885,7 +882,7 @@ class BaseLSDDDrift(BaseDetector):
         -------
         The detector's configuration dictionary.
         """
-        cfg = {
+        cfg: Dict[str, Any] = {
             'version': __version__,
             'config_spec': __config_spec__,
             'name': 'LSDDDrift'
@@ -1124,7 +1121,7 @@ class BaseUnivariateDrift(BaseDetector):
         -------
         The detector's configuration dictionary.
         """
-        cfg = {
+        cfg: Dict[str, Any] = {
             'version': __version__,
             'config_spec': __config_spec__,
             'name': self.__class__.__name__
