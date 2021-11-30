@@ -1,6 +1,7 @@
+import enum
 import logging
 import numpy as np
-from typing import Dict
+from typing import Dict, Literal
 from alibi_detect.base import BaseDetector, ThresholdMixin, outlier_prediction_dict
 
 logger = logging.getLogger(__name__)
@@ -8,17 +9,17 @@ logger = logging.getLogger(__name__)
 # numerical stability for division
 EPSILON = 1e-8
 
-# padding values
-PADDING_CONSTANT = 'constant'
-PADDING_REPLICATE = 'replicate'
-PADDING_REFLECT = 'reflect'
-PADDINGS = [PADDING_CONSTANT, PADDING_REFLECT, PADDING_REPLICATE]
 
-# padding sides
-SIDE_BILATERAL = 'bilateral'
-SIDE_LEFT = 'left'
-SIDE_RIGHT = 'right'
-SIDES = [SIDE_BILATERAL, SIDE_RIGHT, SIDE_LEFT]
+class Padding(str, enum.Enum):
+    CONSTANT = 'constant'
+    REPLICATE = 'replicate'
+    REFLECT = 'reflect'
+
+
+class Side(str, enum.Enum):
+    BILATERAL = 'bilateral'
+    LEFT = 'left'
+    RIGHT = 'right'
 
 
 class SpectralResidual(BaseDetector, ThresholdMixin):
@@ -27,9 +28,9 @@ class SpectralResidual(BaseDetector, ThresholdMixin):
                  threshold: float = None,
                  window_amp: int = None,
                  window_local: int = None,
-                 padding_amp_method: str = PADDING_REFLECT,
-                 padding_local_method: str = PADDING_REFLECT,
-                 padding_amp_side: str = SIDE_BILATERAL,
+                 padding_amp_method: Literal['constant', 'replicate', 'reflect'] = 'reflect',
+                 padding_local_method: Literal['constant', 'replicate', 'reflect'] = 'reflect',
+                 padding_amp_side: Literal['bilateral', 'left', 'right'] = 'bilateral',
                  n_est_points: int = None,
                  n_grad_points: int = 5,
                  ) -> None:
@@ -156,21 +157,23 @@ class SpectralResidual(BaseDetector, ThresholdMixin):
         -------
         Padded signal.
         """
-        if method not in PADDINGS:
-            raise ValueError(f'Unknown padding method. Received {method}. Select one of the following: {PADDINGS}')
+        paddings = [p.value for p in Padding]
+        if method not in paddings:
+            raise ValueError(f"Unknown padding method. Received '{method}'. Select one of the following: {paddings}")
 
-        if side not in SIDES:
-            raise ValueError(f'Unknown padding side. Receive {side}. Select one of the follwoing: {SIDES}')
+        sides = [s.value for s in Side]
+        if side not in sides:
+            raise ValueError(f"Unknown padding side. Receive '{side}'. Select one of the follwoing: {sides}")
 
         assert len(X.shape) == 1, "Only 1D signal supported."
         assert len(W.shape) == 1, "Only 1D kernel/filter supported."
         pad_size = W.shape[0] - 1
 
-        if side == SIDE_BILATERAL:
+        if side == Side.BILATERAL:
             pad_size_right = pad_size // 2
             pad_size_left = pad_size - pad_size_right
 
-        elif side == SIDE_LEFT:
+        elif side == Side.LEFT:
             pad_size_right = 0
             pad_size_left = pad_size
 
@@ -179,7 +182,7 @@ class SpectralResidual(BaseDetector, ThresholdMixin):
             pad_size_left = 0
 
         # replicate padding
-        if method == PADDING_REPLICATE:
+        if method == Padding.REPLICATE:
             return np.concatenate([
                 np.tile(X[0], pad_size_left),
                 X,
@@ -187,7 +190,7 @@ class SpectralResidual(BaseDetector, ThresholdMixin):
             ])
 
         # reflection padding
-        if method == PADDING_REFLECT:
+        if method == Padding.REFLECT:
             return np.concatenate([
                 X[1:pad_size_left + 1][::-1],
                 X,
@@ -320,7 +323,7 @@ class SpectralResidual(BaseDetector, ThresholdMixin):
         padded_sr = SpectralResidual.pad_same(X=sr,
                                               W=self.conv_local,
                                               method=self.padding_local_method,
-                                              side=SIDE_LEFT)
+                                              side=Side.LEFT)
         ma_sr = np.convolve(padded_sr, self.conv_local, 'valid')
         assert sr.shape[0] == ma_sr.shape[0], "`ma_sr` size does not match `sr` size."
 
