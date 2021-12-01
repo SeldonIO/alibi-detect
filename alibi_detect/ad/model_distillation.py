@@ -1,13 +1,14 @@
 import logging
+from typing import Callable, Dict, Tuple, Union, cast
+
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras.losses import kld, categorical_crossentropy
-from typing import Callable, Dict, Tuple, Union
-from alibi_detect.models.tensorflow.trainer import trainer
-from alibi_detect.models.tensorflow.losses import loss_distillation
-from alibi_detect.utils.tensorflow.prediction import predict_batch
 from alibi_detect.base import (BaseDetector, FitMixin, ThresholdMixin,
                                adversarial_prediction_dict)
+from alibi_detect.models.tensorflow.losses import loss_distillation
+from alibi_detect.models.tensorflow.trainer import trainer
+from alibi_detect.utils.tensorflow.prediction import predict_batch
+from tensorflow.keras.losses import categorical_crossentropy, kld
 
 logger = logging.getLogger(__name__)
 
@@ -167,6 +168,8 @@ class ModelDistillation(BaseDetector, FitMixin, ThresholdMixin):
         # model predictions
         y = predict_batch(X, self.model, batch_size=batch_size)
         y_distilled = predict_batch(X, self.distilled_model, batch_size=batch_size)
+        y = cast(np.ndarray, y)  # help mypy out
+        y_distilled = cast(np.ndarray, y_distilled)  # help mypy out
 
         # scale predictions
         if self.temperature != 1.:
