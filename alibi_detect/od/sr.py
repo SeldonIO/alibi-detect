@@ -55,13 +55,13 @@ class SpectralResidual(BaseDetector, ThresholdMixin):
             Possible values: `constant` | `replicate` | `reflect`. Default value: `replicate`.
              - `constant` - padding with constant `0`.
              - `replicate` - repeats the last/extreme value.
-             - `reflect` - reflects the signal.
+             - `reflect` - reflects the time series.
         padding_local_method
             Padding method to be used prior to each convolution over saliency map.
             Possible values: `constant` | `replicate` | `reflect`. Default value: `replicate`.
              - `constant` - padding with constant `0`.
              - `replicate` - repeats the last/extreme value.
-             - `reflect` - reflects the signal.
+             - `reflect` - reflects the time series.
         padding_amp_side
             Whether to pad the amplitudes on both sides or only on one side.
             Possible values: `bilateral` | `left` | `right`.
@@ -74,7 +74,7 @@ class SpectralResidual(BaseDetector, ThresholdMixin):
         super().__init__()
 
         if threshold is None:
-            logger.warning('No threshold level set. Need to infer threshold using `infer_threshold`.')
+            logger.warning("No threshold level set. Need to infer threshold using `infer_threshold`.")
 
         self.threshold = threshold
         self.window_amp = window_amp
@@ -112,9 +112,13 @@ class SpectralResidual(BaseDetector, ThresholdMixin):
         Parameters
         ----------
         X
-            Batch of instances.
+            Uniformly sampled time series instances.
+        t
+            Equidistant timestamps corresponding to each input instances (i.e, the array should contain
+            numerical values in increasing order). If not provided, the timestamps will be replaced by an array of
+            integers `[0, 1, ... , N - 1]`, where `N` is the size of the input time series.
         threshold_perc
-            Percentage of X considered to be normal based on the outlier score.
+            Percentage of `X` considered to be normal based on the outlier score.
         """
         if t is None:
             t = np.arange(X.shape[0])
@@ -128,17 +132,17 @@ class SpectralResidual(BaseDetector, ThresholdMixin):
     @staticmethod
     def pad_same(X: np.ndarray,
                  W: np.ndarray,
-                 method: str = "replicate",
+                 method: str = 'replicate',
                  side: str = 'bilateral'
                  ) -> np.ndarray:
         """
-        Adds padding to the signal `X` such that after applying a valid convolution with a kernel/filter
-        `w`, the resulting signal has the same shape as the input `X`.
+        Adds padding to the time series `X` such that after applying a valid convolution with a kernel/filter
+        `w`, the resulting time series has the same shape as the input `X`.
 
         Parameters
         ----------
         X
-            Signal to be padded
+            Time series to be padded
         W
             Convolution kernel/filter.
         method
@@ -146,28 +150,33 @@ class SpectralResidual(BaseDetector, ThresholdMixin):
             Possible values:
              - `constant` - padding with constant `0`.
              - `replicate` - repeats the last/extreme value.
-             - `reflect` - reflects the signal.
+             - `reflect` - reflects the time series.
         side
-            Whether to pad the signal bilateral or only on one side.
+            Whether to pad the time series bilateral or only on one side.
             Possible values:
-             - `bilateral` - signal is padded on both sides
-             - `left` - signal is padded only on the left hand side.
-             - `right` - signal is padded only on the right hand side.
+             - `bilateral` - time series is padded on both sides
+             - `left` - time series is padded only on the left hand side.
+             - `right` - time series is padded only on the right hand side.
 
         Returns
         -------
-        Padded signal.
+        Padded time series.
         """
         paddings = [p.value for p in Padding]
         if method not in paddings:
-            raise ValueError(f"Unknown padding method. Received '{method}'. Select one of the following: {paddings}")
+            raise ValueError(f"Unknown padding method. Received '{method}'. Select one of the following: {paddings}.")
 
         sides = [s.value for s in Side]
         if side not in sides:
-            raise ValueError(f"Unknown padding side. Receive '{side}'. Select one of the follwoing: {sides}")
+            raise ValueError(f"Unknown padding side. Received '{side}'. Select one of the following: {sides}.")
 
-        assert len(X.shape) == 1, "Only 1D signal supported."
-        assert len(W.shape) == 1, "Only 1D kernel/filter supported."
+        if len(X.shape) != 1:
+            raise ValueError(f"Only 1D time series supported. Received a times series with {len(X.shape)} dimensions.")
+
+        if len(W.shape) != 1:
+            raise ValueError("Only 1D kernel/filter supported. Received a kernel/filter "
+                             f"with {len(W.shape)} dimensions.")
+
         pad_size = W.shape[0] - 1
 
         if side == Side.BILATERAL:
@@ -212,14 +221,16 @@ class SpectralResidual(BaseDetector, ThresholdMixin):
         Parameters
         ----------
         X
-            Time series of instances.
+            Uniformly sampled time series instances.
 
         Returns
         -------
         Array with saliency map values.
         """
-        assert X.shape[0] > self.conv_amp.shape[0], "The length of the input signal should be greater " \
-                                                    "than the amplitude window"
+        if X.shape[0] <= self.window_amp:
+            raise ValueError("The length of the input time series should be greater than the amplitude window. "
+                             f"Received an input times series of length {X.shape[0]} and an amplitude "
+                             f"window of {self.window_amp}.")
 
         fft = np.fft.fft(X)
         amp = np.abs(fft)
@@ -255,9 +266,10 @@ class SpectralResidual(BaseDetector, ThresholdMixin):
         Parameters
         ----------
         X
-            Time series of instances.
+            Uniformly sampled time series instances.
         t
-            Time steps.
+            Equidistant timestamps corresponding to each input instances (i.e, the array should contain
+            numerical values in increasing order).
 
         Returns
         -------
@@ -276,9 +288,10 @@ class SpectralResidual(BaseDetector, ThresholdMixin):
         Parameters
         ----------
         X
-            Time series of instances.
+            Uniformly sampled time series instances.
         t
-            Time steps.
+            Equidistant timestamps corresponding to each input instances (i.e, the array should contain
+            numerical values in increasing order).
 
         Returns
         -------
@@ -296,9 +309,11 @@ class SpectralResidual(BaseDetector, ThresholdMixin):
         Parameters
         ----------
         X
-            Time series of instances.
+            Uniformly sampled time series instances.
         t
-            Time steps.
+            Equidistant timestamps corresponding to each input instances (i.e, the array should contain
+            numerical values in increasing order). If not provided, the timestamps will be replaced by an array of
+            integers `[0, 1, ... , N - 1]`, where `N` is the size of the input time series.
 
         Returns
         -------
@@ -311,12 +326,17 @@ class SpectralResidual(BaseDetector, ThresholdMixin):
             n_samples, n_dim = X.shape
             X = X.reshape(-1, )
             if X.shape[0] != n_samples:
-                raise ValueError('Only univariate time series allowed for SR method. Number of features '
-                                 'of time series equals {}.'.format(n_dim))
+                raise ValueError("Only uni-variate time series allowed for SR method. Received a time "
+                                 f"series with {n_dim} features.")
 
         X_pad = self.add_est_points(X, t)  # add padding
         sr = self.saliency_map(X_pad)      # compute saliency map
         sr = sr[:-self.n_est_points]       # remove padding again
+
+        if X.shape[0] <= self.window_local:
+            raise ValueError("The length of the time series should be greater than the local window. "
+                             f"Received an input time series of length {X.shape[0]} and a local "
+                             f"window of {self.window_local}.")
 
         # pad the spectral residual before convolving. By applying `replicate` or `reflect` padding we can
         # remove some of the bias/outliers introduced at the beginning of the saliency map by a naive zero padding
@@ -343,9 +363,11 @@ class SpectralResidual(BaseDetector, ThresholdMixin):
         Parameters
         ----------
         X
-            Time series of instances.
+            Uniformly sampled time series instances.
         t
-            Time steps.
+            Equidistant timestamps corresponding to each input instances (i.e, the array should contain
+            numerical values in increasing order). If not provided, the timestamps will be replaced by an array of
+            integers `[0, 1, ... , N - 1]`, where `N` is the size of the input time series.
         return_instance_score
             Whether to return instance level outlier scores.
 
@@ -359,7 +381,7 @@ class SpectralResidual(BaseDetector, ThresholdMixin):
             t = np.arange(X.shape[0])
 
         # compute outlier scores
-        iscore = self.score(X.reshape(-1, ), t)
+        iscore = self.score(X, t)
 
         # values above threshold are outliers
         outlier_pred = (iscore > self.threshold).astype(int)
