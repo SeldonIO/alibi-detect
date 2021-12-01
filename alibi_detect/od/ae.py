@@ -15,8 +15,8 @@ class OutlierAE(BaseDetector, FitMixin, ThresholdMixin):
     def __init__(self,
                  threshold: float = None,
                  ae: tf.keras.Model = None,
-                 encoder_net: tf.keras.Sequential = None,
-                 decoder_net: tf.keras.Sequential = None,
+                 encoder_net: tf.keras.Model = None,
+                 decoder_net: tf.keras.Model = None,
                  data_type: str = None
                  ) -> None:
         """
