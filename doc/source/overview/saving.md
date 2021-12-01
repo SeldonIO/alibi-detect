@@ -1,6 +1,6 @@
 # Saving and loading
 
-Alibi Detect includes support for saving and loading detectors to disk using the `dill` module. To 
+Alibi Detect includes support for saving and loading detectors to disk. To 
 save a detector, simply call the `save_detector` method and provide a path to a directory (a new
 one will be created if it doesn't exist):
 
@@ -22,6 +22,14 @@ from alibi_detect.utils.saving import load_detector
 
 filepath = './my_detector/'
 od = load_detector(filepath)
+```
+
+## Detector config files
+
+For drift detectors, the `save_detector` serializes the detector into a human-readable specification file named `config.toml`, stored in `filepath`. As discussed further in [Config-driven detectors](config.md), config files can be edited before reloading the detector, and new detectors can be instantiated from hand-written config files. 
+
+```{note}
+At present outlier and adversarial detectors are serialized using the `dill` library, but these will also be be updated to use `config.toml` files in the future.
 ```
 
 ## Limitations
