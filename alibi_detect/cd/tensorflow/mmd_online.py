@@ -2,12 +2,12 @@ from tqdm import tqdm
 import numpy as np
 import tensorflow as tf
 from typing import Any, Callable, Optional, Union
-from alibi_detect.cd.base_online import BaseDriftOnline
+from alibi_detect.cd.base_online import BaseMultiDriftOnline
 from alibi_detect.utils.tensorflow.kernels import GaussianRBF
 from alibi_detect.utils.tensorflow import zero_diag, quantile, subset_matrix
 
 
-class MMDDriftOnlineTF(BaseDriftOnline):
+class MMDDriftOnlineTF(BaseMultiDriftOnline):
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
@@ -29,7 +29,8 @@ class MMDDriftOnlineTF(BaseDriftOnline):
         x_ref
             Data used as reference distribution.
         ert
-            The expected run-time (ERT) in the absence of drift.
+            The expected run-time (ERT) in the absence of drift. For the multivariate detectors, the ERT is defined
+            as the expected run-time from t=0.
         window_size
             The size of the sliding test-window used to compute the test-statistic.
             Smaller windows focus on responding quickly to severe drift, larger windows focus on

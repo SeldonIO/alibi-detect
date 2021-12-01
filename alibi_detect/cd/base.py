@@ -756,7 +756,9 @@ class BaseUnivariateDrift(BaseDetector):
     ) -> None:
         """
         Generic drift detector component which serves as a base class for methods using
-        univariate tests with multivariate correction.
+        univariate tests. If n_features > 1, a multivariate correction is applied such that
+        the false positive rate is upper bounded by the specified p-value, with equality in
+        the case of independent features.
 
         Parameters
         ----------
@@ -876,7 +878,7 @@ class BaseUnivariateDrift(BaseDetector):
             Batch of instances.
         drift_type
             Predict drift at the 'feature' or 'batch' level. For 'batch', the test statistics for
-            each feature are aggregated using the Bonferroni or False Discovery Rate correction.
+            each feature are aggregated using the Bonferroni or False Discovery Rate correction (if n_features>1).
         return_p_val
             Whether to return feature level p-values.
         return_distance
