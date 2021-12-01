@@ -3,7 +3,7 @@ from typing import Any, Callable, List, Optional, Union
 from alibi_detect.cd.base_online import BaseUniDriftOnline
 from alibi_detect.utils.misc import quantile
 import numba as nb
-from tqdm.auto import tqdm
+from tqdm import tqdm
 import warnings
 
 
