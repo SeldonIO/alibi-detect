@@ -1,17 +1,18 @@
-import dill
 import io
-from io import BytesIO
 import logging
-import numpy as np
 import os
+from io import BytesIO
+from typing import List, Tuple, Type, Union
+from xml.etree import ElementTree
+
+import dill
+import numpy as np
 import pandas as pd
 import requests
+from alibi_detect.utils.data import Bunch
 from requests import RequestException
 from scipy.io import arff
 from sklearn.datasets import fetch_kddcup99
-from typing import List, Tuple, Union
-from xml.etree import ElementTree
-from alibi_detect.utils.data import Bunch
 
 # do not extend pickle dispatch table so as not to change pickle behaviour
 dill.extend(use_dill=False)
@@ -112,7 +113,7 @@ def fetch_kdd(target: list = ['dos', 'r2l', 'u2r', 'probe'],
                  feature_names=keep_cols)
 
 
-def load_url_arff(url: str, dtype: Union[str, np.dtype] = np.float32) -> np.ndarray:
+def load_url_arff(url: str, dtype: Type[np.generic] = np.float32) -> np.ndarray:
     """
     Load arff files from url.
 
