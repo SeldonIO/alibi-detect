@@ -47,7 +47,7 @@ class BaseClassifierDrift(BaseDetector):
             Data used as reference distribution.
         p_val
             p-value used for the significance of the test.
-         x_ref_preprocessed
+        x_ref_preprocessed
             Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
             the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
             data will also be preprocessed.
@@ -731,7 +731,7 @@ class BaseLSDDDrift(BaseDetector):
             Data used as reference distribution.
         p_val
             p-value used for the significance of the permutation test.
-         x_ref_preprocessed
+        x_ref_preprocessed
             Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
             the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
             data will also be preprocessed.
