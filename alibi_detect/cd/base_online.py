@@ -1,21 +1,24 @@
-from abc import abstractmethod
 import logging
+from abc import abstractmethod
+from typing import Any, Callable, Dict, List, Optional, Union
+
 import numpy as np
-from typing import Any, Callable, Dict,  Optional, Union, List
 from alibi_detect.base import BaseDetector, concept_drift_dict
 from alibi_detect.cd.utils import get_input_shape
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
 
 if has_pytorch:
-    import torch  # noqa F401
+    import torch
 
 if has_tensorflow:
-    import tensorflow as tf  # noqa F401
+    import tensorflow as tf
 
 logger = logging.getLogger(__name__)
 
 
 class BaseMultiDriftOnline(BaseDetector):
+    thresholds: np.ndarray
+
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
@@ -60,18 +63,18 @@ class BaseMultiDriftOnline(BaseDetector):
             logger.warning('No expected run-time set for the drift threshold. Need to set it to detect data drift.')
 
         self.ert = ert
-        self.fpr = 1/ert
+        self.fpr = 1 / ert
         self.window_size = window_size
 
         # Preprocess reference data
-        if isinstance(preprocess_fn, Callable):  # type: ignore
+        if isinstance(preprocess_fn, Callable):  # type: ignore[arg-type]
             self.x_ref = preprocess_fn(x_ref)
         else:
             self.x_ref = x_ref
 
         # Other attributes
         self.preprocess_fn = preprocess_fn
-        self.n = len(x_ref)  # type: ignore
+        self.n = len(x_ref)
         self.n_bootstraps = n_bootstraps  # nb of samples used to estimate thresholds
         self.verbose = verbose
 
@@ -108,13 +111,13 @@ class BaseMultiDriftOnline(BaseDetector):
         The preprocessed test instance `x_t`.
         """
         # preprocess if necessary
-        if isinstance(self.preprocess_fn, Callable):  # type: ignore
+        if isinstance(self.preprocess_fn, Callable):  # type: ignore[arg-type]
             x_t = x_t[None, :] if isinstance(x_t, np.ndarray) else [x_t]
-            x_t = self.preprocess_fn(x_t)[0]  # type: ignore
+            x_t = self.preprocess_fn(x_t)[0]
         return x_t[None, :]
 
     def get_threshold(self, t: int) -> float:
-        return self.thresholds[t] if t < self.window_size else self.thresholds[-1]  # type: ignore
+        return self.thresholds[t] if t < self.window_size else self.thresholds[-1]
 
     def _initialise(self) -> None:
         self.t = 0  # corresponds to a test set of ref data
@@ -126,7 +129,7 @@ class BaseMultiDriftOnline(BaseDetector):
         "Resets the detector but does not reconfigure thresholds."
         self._initialise()
 
-    def predict(self, x_t: Union[np.ndarray, Any],  return_test_stat: bool = True,
+    def predict(self, x_t: Union[np.ndarray, Any], return_test_stat: bool = True,
                 ) -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
         """
         Predict whether the most recent window of data has drifted from the reference data.
@@ -166,6 +169,8 @@ class BaseMultiDriftOnline(BaseDetector):
 
 
 class BaseUniDriftOnline(BaseDetector):
+    thresholds: np.ndarray
+
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
@@ -217,7 +222,7 @@ class BaseUniDriftOnline(BaseDetector):
             logger.warning('No expected run-time set for the drift threshold. Need to set it to detect data drift.')
 
         self.ert = ert
-        self.fpr = 1/ert
+        self.fpr = 1 / ert
 
         # Window sizes
         self.window_sizes = window_sizes
@@ -225,7 +230,7 @@ class BaseUniDriftOnline(BaseDetector):
         self.min_ws = np.min(self.window_sizes)
 
         # Preprocess reference data
-        if isinstance(preprocess_fn, Callable):  # type: ignore
+        if isinstance(preprocess_fn, Callable):  # type: ignore[arg-type]
             self.x_ref = preprocess_fn(x_ref)
         else:
             self.x_ref = x_ref
@@ -234,7 +239,7 @@ class BaseUniDriftOnline(BaseDetector):
 
         # Other attributes
         self.preprocess_fn = preprocess_fn
-        self.n = len(x_ref)  # type: ignore
+        self.n = len(x_ref)
         self.n_bootstraps = n_bootstraps  # nb of samples used to estimate thresholds
         self.verbose = verbose
 
@@ -271,7 +276,8 @@ class BaseUniDriftOnline(BaseDetector):
         # Check the type of x
         if isinstance(x, np.ndarray):
             pass
-        elif isinstance(x, (int, float, np.int, np.float)):
+        # TODO: np.int, np.float checks deprecated in numpy 1.20
+        elif isinstance(x, (int, float, np.int, np.float)):  # type: ignore[attr-defined]
             x = np.array([x])
         else:
             raise TypeError("Detectors expect data to be 2D np.ndarray's. If data is passed as another type, a "
@@ -301,15 +307,15 @@ class BaseUniDriftOnline(BaseDetector):
         The preprocessed test instance `x_t`.
         """
         # preprocess if necessary
-        if isinstance(self.preprocess_fn, Callable):  # type: ignore
+        if isinstance(self.preprocess_fn, Callable):  # type: ignore[arg-type]
             x_t = x_t[None, :] if isinstance(x_t, np.ndarray) else [x_t]
-            x_t = self.preprocess_fn(x_t)[0]  # type: ignore
+            x_t = self.preprocess_fn(x_t)[0]
         # Now check the final data is a 2D ndarray
         x_t = self._check_x(x_t)
         return x_t
 
     def get_threshold(self, t: int) -> np.ndarray:
-        return self.thresholds[t] if t < len(self.thresholds) else self.thresholds[-1]  # type: ignore
+        return self.thresholds[t] if t < len(self.thresholds) else self.thresholds[-1]
 
     def _initialise(self) -> None:
         self.t = 0
@@ -325,7 +331,7 @@ class BaseUniDriftOnline(BaseDetector):
         "Resets the detector but does not reconfigure thresholds."
         self._initialise()
 
-    def predict(self, x_t: Union[np.ndarray, Any],  return_test_stat: bool = True,
+    def predict(self, x_t: Union[np.ndarray, Any], return_test_stat: bool = True,
                 ) -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
         """
         Predict whether the most recent window(s) of data have drifted from the reference data.
@@ -345,7 +351,7 @@ class BaseUniDriftOnline(BaseDetector):
         """
         # Compute test stat and check for drift
         test_stats = self.score(x_t)
-        thresholds = self.get_threshold(self.t-1)  # Note t-1 here, has we wish to use the unconditional thresholds
+        thresholds = self.get_threshold(self.t - 1)  # Note t-1 here, has we wish to use the unconditional thresholds
         drift_pred = self._check_drift(test_stats, thresholds)
 
         # Update results attributes
