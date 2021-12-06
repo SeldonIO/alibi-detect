@@ -4,7 +4,6 @@ plugin. This approach may be more flexible if our requirements change in the fut
 """
 
 import glob
-import os
 from pathlib import Path
 import pytest
 from jupytext.cli import jupytext
@@ -16,7 +15,7 @@ from jupytext.cli import jupytext
 # This also means that the approach is limited to all notebooks being in the `NOTEBOOK_DIR`
 # top-level path.
 NOTEBOOK_DIR = 'doc/source/examples'
-ALL_NOTEBOOKS = {Path(x).name for x in glob.glob(os.path.join(NOTEBOOK_DIR, '*.ipynb'))}
+ALL_NOTEBOOKS = {Path(x).name for x in glob.glob(str(Path(NOTEBOOK_DIR).joinpath('*.ipynb')))}
 
 # The following set includes notebooks which are not to be executed during notebook tests.
 # These are typically those that would take too long to run in a CI environment or impractical
