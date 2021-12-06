@@ -1,6 +1,6 @@
 import numpy as np
 import torch
-from typing import Callable, Dict, Optional, Tuple, Union
+from typing import Callable, Dict, Optional, Tuple, Union, cast
 from alibi_detect.cd.base import BaseLSDDDrift
 from alibi_detect.utils.pytorch.kernels import GaussianRBF
 from alibi_detect.utils.pytorch.distance import permed_lsdds
@@ -83,16 +83,20 @@ class LSDDDriftTorch(BaseLSDDDrift):
         else:
             self.device = torch.device('cpu')
 
+        # TODO: TBD: the several type:ignore's below are because x_ref is typed as an np.ndarray
+        #  in the method signature, so we can't cast it to torch.Tensor unless we change the signature
+        #  to also accept torch.Tensor. We also can't redefine it's type as that would involve enabling
+        #  --allow-redefinitions in mypy settings (which we might do eventually).
         if self.preprocess_x_ref or self.preprocess_fn is None:
-            x_ref = torch.as_tensor(self.x_ref).to(self.device)
-            self._configure_normalization(x_ref)
+            x_ref = torch.as_tensor(self.x_ref).to(self.device)  # type: ignore[assignment]
+            self._configure_normalization(x_ref)  # type: ignore[arg-type]
             x_ref = self._normalize(x_ref)
-            self._initialize_kernel(x_ref)
-            self._configure_kernel_centers(x_ref)
-            self.x_ref = x_ref.cpu().numpy()
+            self._initialize_kernel(x_ref)  # type: ignore[arg-type]
+            self._configure_kernel_centers(x_ref)  # type: ignore[arg-type]
+            self.x_ref = x_ref.cpu().numpy()  # type: ignore[union-attr]
             # For stability in high dimensions we don't divide H by (pi*sigma^2)^(d/2)
             # Results in an alternative test-stat of LSDD*(pi*sigma^2)^(d/2). Same p-vals etc.
-            self.H = GaussianRBF(np.sqrt(2.)*self.kernel.sigma)(self.kernel_centers, self.kernel_centers)
+            self.H = GaussianRBF(np.sqrt(2.) * self.kernel.sigma)(self.kernel_centers, self.kernel_centers)
 
     def _initialize_kernel(self, x_ref: torch.Tensor):
         if self.sigma is None:
@@ -105,7 +109,7 @@ class LSDDDriftTorch(BaseLSDDDrift):
     def _configure_normalization(self, x_ref: torch.Tensor, eps: float = 1e-12):
         x_ref_means = x_ref.mean(0)
         x_ref_stds = x_ref.std(0)
-        self._normalize = lambda x: (torch.as_tensor(x) - x_ref_means)/(x_ref_stds + eps)
+        self._normalize = lambda x: (torch.as_tensor(x) - x_ref_means) / (x_ref_stds + eps)  # type: ignore[assignment]
 
     def _configure_kernel_centers(self, x_ref: torch.Tensor):
         "Set aside reference samples to act as kernel centers"
@@ -113,7 +117,7 @@ class LSDDDriftTorch(BaseLSDDDrift):
         c_inds, non_c_inds = perm[:self.n_kernel_centers], perm[self.n_kernel_centers:]
         self.kernel_centers = x_ref[c_inds]
         if np.unique(self.kernel_centers.cpu().numpy(), axis=0).shape[0] < self.n_kernel_centers:
-            perturbation = (torch.randn(self.kernel_centers.shape)*1e-6).to(self.device)
+            perturbation = (torch.randn(self.kernel_centers.shape) * 1e-6).to(self.device)
             self.kernel_centers = self.kernel_centers + perturbation
         x_ref_eff = x_ref[non_c_inds]  # the effective reference set
         self.k_xc = self.kernel(x_ref_eff, self.kernel_centers)
@@ -134,15 +138,15 @@ class LSDDDriftTorch(BaseLSDDDrift):
         and the LSDD values from the permutation test.
         """
         x_ref, x = self.preprocess(x)
-        x_ref = torch.from_numpy(x_ref).to(self.device)
-        x = torch.from_numpy(x).to(self.device)
+        x_ref = torch.from_numpy(x_ref).to(self.device)  # type: ignore[assignment]
+        x = torch.from_numpy(x).to(self.device)  # type: ignore[assignment]
 
         if self.preprocess_fn is not None and self.preprocess_x_ref is False:
-            self._configure_normalization(x_ref)
+            self._configure_normalization(x_ref)  # type: ignore[arg-type]
             x_ref = self._normalize(x_ref)
-            self._initialize_kernel(x_ref)
-            self._configure_kernel_centers(x_ref)
-            self.H = GaussianRBF(np.sqrt(2.)*self.kernel.sigma)(self.kernel_centers, self.kernel_centers)
+            self._initialize_kernel(x_ref)  # type: ignore[arg-type]
+            self._configure_kernel_centers(x_ref)  # type: ignore[arg-type]
+            self.H = GaussianRBF(np.sqrt(2.) * self.kernel.sigma)(self.kernel_centers, self.kernel_centers)
 
         x = self._normalize(x)
 
