@@ -139,9 +139,9 @@ class ClassifierDriftTF(BaseClassifierDrift):
         and that which we'd expect under the null assumption of no drift,
         and the out-of-fold classifier model prediction probabilities on the reference and test data
         """
-        x_ref, x = self.preprocess(x)
+        x_ref, x = self.preprocess(x)  # type: ignore[assignment]
         n_ref, n_cur = len(x_ref), len(x)
-        x, y, splits = self.get_splits(x_ref, x)
+        x, y, splits = self.get_splits(x_ref, x)  # type: ignore[assignment]
 
         # iterate over folds: train a new model for each fold and make out-of-fold (oof) predictions
         preds_oof_list, idx_oof_list = [], []
