@@ -1,24 +1,27 @@
-from abc import abstractmethod
 import logging
-import numpy as np
-from sklearn.model_selection import StratifiedKFold
-from scipy.stats import binom_test, ks_2samp
+from abc import abstractmethod
 from typing import Callable, Dict, List, Optional, Tuple, Union
+
+import numpy as np
 from alibi_detect.base import BaseDetector, concept_drift_dict
 from alibi_detect.cd.utils import get_input_shape, update_reference
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
 from alibi_detect.utils.statstest import fdr
+from scipy.stats import binom_test, ks_2samp
+from sklearn.model_selection import StratifiedKFold
 
 if has_pytorch:
-    import torch  # noqa F401
+    import torch
 
 if has_tensorflow:
-    import tensorflow as tf  # noqa F401
+    import tensorflow as tf
 
 logger = logging.getLogger(__name__)
 
 
 class BaseClassifierDrift(BaseDetector):
+    model: Union['tf.keras.Model', 'torch.nn.Module']
+
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
@@ -88,14 +91,14 @@ class BaseClassifierDrift(BaseDetector):
 
         # optionally already preprocess reference data
         self.p_val = p_val
-        if preprocess_x_ref and isinstance(preprocess_fn, Callable):  # type: ignore
+        if preprocess_x_ref and isinstance(preprocess_fn, Callable):  # type: ignore[arg-type]
             self.x_ref = preprocess_fn(x_ref)
         else:
             self.x_ref = x_ref
         self.preprocess_x_ref = preprocess_x_ref
         self.update_x_ref = update_x_ref
         self.preprocess_fn = preprocess_fn
-        self.n = len(x_ref)  # type: ignore
+        self.n = len(x_ref)
 
         # define whether soft preds and optionally the stratified k-fold split
         self.preds_type = preds_type
@@ -123,7 +126,7 @@ class BaseClassifierDrift(BaseDetector):
         -------
         Preprocessed reference data and new instances.
         """
-        if isinstance(self.preprocess_fn, Callable):  # type: ignore
+        if isinstance(self.preprocess_fn, Callable):  # type: ignore[arg-type]
             x = self.preprocess_fn(x)
             x_ref = self.x_ref if self.preprocess_x_ref else self.preprocess_fn(self.x_ref)
             return x_ref, x
@@ -166,7 +169,7 @@ class BaseClassifierDrift(BaseDetector):
         return x, y, splits
 
     def test_probs(
-        self, y_oof: np.ndarray, probs_oof: np.ndarray, n_ref: int, n_cur: int
+            self, y_oof: np.ndarray, probs_oof: np.ndarray, n_ref: int, n_cur: int
     ) -> Tuple[float, float]:
         """
         Perform a statistical test of the probabilities predicted by the model against
@@ -194,10 +197,10 @@ class BaseClassifierDrift(BaseDetector):
             n_oof = y_oof.shape[0]
             n_correct = (y_oof == probs_oof.round()).sum()
             p_val = binom_test(n_correct, n_oof, baseline_accuracy, alternative='greater')
-            accuracy = n_correct/n_oof
+            accuracy = n_correct / n_oof
             # relative error reduction, in [0,1]
             # e.g. (90% acc -> 99% acc) = 0.9, (50% acc -> 59% acc) = 0.18
-            dist = 1 - (1 - accuracy)/(1-baseline_accuracy)
+            dist = 1 - (1 - accuracy) / (1 - baseline_accuracy)
             dist = max(0, dist)  # below 0 = no evidence for drift
         else:
             probs_ref = probs_oof[y_oof == 0]
@@ -210,7 +213,7 @@ class BaseClassifierDrift(BaseDetector):
     def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, np.ndarray, np.ndarray]:
         pass
 
-    def predict(self, x: Union[np.ndarray, list],  return_p_val: bool = True,
+    def predict(self, x: Union[np.ndarray, list], return_p_val: bool = True,
                 return_distance: bool = True, return_probs: bool = True, return_model: bool = True) \
             -> Dict[str, Dict[str, Union[str, int, float, Callable]]]:
         """
@@ -246,9 +249,11 @@ class BaseClassifierDrift(BaseDetector):
         # update reference dataset
         if isinstance(self.update_x_ref, dict) and self.preprocess_fn is not None and self.preprocess_x_ref:
             x = self.preprocess_fn(x)
-        self.x_ref = update_reference(self.x_ref, x, self.n, self.update_x_ref)
+        # TODO: TBD: can `x` ever be a `list` after pre-processing? update_references and downstream functions
+        # don't support list inputs and without the type: ignore[arg-type] mypy complains
+        self.x_ref = update_reference(self.x_ref, x, self.n, self.update_x_ref)  # type: ignore[arg-type]
         # used for reservoir sampling
-        self.n += len(x)  # type: ignore
+        self.n += len(x)
 
         # populate drift dict
         cd = concept_drift_dict()
@@ -263,11 +268,13 @@ class BaseClassifierDrift(BaseDetector):
             cd['data']['probs_ref'] = probs_ref
             cd['data']['probs_test'] = probs_test
         if return_model:
-            cd['data']['model'] = self.model  # type: ignore
+            cd['data']['model'] = self.model
         return cd
 
 
 class BaseLearnedKernelDrift(BaseDetector):
+    kernel: Union['tf.keras.Model', 'torch.nn.Module']
+
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
@@ -315,14 +322,14 @@ class BaseLearnedKernelDrift(BaseDetector):
 
         # optionally already preprocess reference data
         self.p_val = p_val
-        if preprocess_x_ref and isinstance(preprocess_fn, Callable):  # type: ignore
+        if preprocess_x_ref and isinstance(preprocess_fn, Callable):  # type: ignore[arg-type]
             self.x_ref = preprocess_fn(x_ref)
         else:
             self.x_ref = x_ref
         self.preprocess_x_ref = preprocess_x_ref
         self.update_x_ref = update_x_ref
         self.preprocess_fn = preprocess_fn
-        self.n = len(x_ref)  # type: ignore
+        self.n = len(x_ref)
 
         self.n_permutations = n_permutations
         self.train_size = train_size
@@ -343,7 +350,7 @@ class BaseLearnedKernelDrift(BaseDetector):
         -------
         Preprocessed reference data and new instances.
         """
-        if isinstance(self.preprocess_fn, Callable):  # type: ignore
+        if isinstance(self.preprocess_fn, Callable):  # type: ignore[arg-type]
             x = self.preprocess_fn(x)
             x_ref = self.x_ref if self.preprocess_x_ref else self.preprocess_fn(self.x_ref)
             return x_ref, x
@@ -369,8 +376,8 @@ class BaseLearnedKernelDrift(BaseDetector):
 
         n_ref, n_cur = len(x_ref), len(x)
         perm_ref, perm_cur = np.random.permutation(n_ref), np.random.permutation(n_cur)
-        idx_ref_tr, idx_ref_te = perm_ref[:int(n_ref*self.train_size)], perm_ref[int(n_ref*self.train_size):]
-        idx_cur_tr, idx_cur_te = perm_cur[:int(n_cur*self.train_size)], perm_cur[int(n_cur*self.train_size):]
+        idx_ref_tr, idx_ref_te = perm_ref[:int(n_ref * self.train_size)], perm_ref[int(n_ref * self.train_size):]
+        idx_cur_tr, idx_cur_te = perm_cur[:int(n_cur * self.train_size)], perm_cur[int(n_cur * self.train_size):]
 
         if isinstance(x_ref, np.ndarray):
             x_ref_tr, x_ref_te = x_ref[idx_ref_tr], x_ref[idx_ref_te]
@@ -387,7 +394,7 @@ class BaseLearnedKernelDrift(BaseDetector):
     def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, np.ndarray]:
         pass
 
-    def predict(self, x: Union[np.ndarray, list],  return_p_val: bool = True,
+    def predict(self, x: Union[np.ndarray, list], return_p_val: bool = True,
                 return_distance: bool = True, return_kernel: bool = True) \
             -> Dict[Dict[str, str], Dict[str, Union[int, float, Callable]]]:
         """
@@ -422,9 +429,9 @@ class BaseLearnedKernelDrift(BaseDetector):
         # update reference dataset
         if isinstance(self.update_x_ref, dict) and self.preprocess_fn is not None and self.preprocess_x_ref:
             x = self.preprocess_fn(x)
-        self.x_ref = update_reference(self.x_ref, x, self.n, self.update_x_ref)
+        self.x_ref = update_reference(self.x_ref, x, self.n, self.update_x_ref)  # type: ignore[arg-type]
         # used for reservoir sampling
-        self.n += len(x)  # type: ignore
+        self.n += len(x)
 
         # populate drift dict
         cd = concept_drift_dict()
@@ -437,7 +444,7 @@ class BaseLearnedKernelDrift(BaseDetector):
             cd['data']['distance'] = dist
             cd['data']['distance_threshold'] = distance_threshold
         if return_kernel:
-            cd['data']['kernel'] = self.kernel  # type: ignore
+            cd['data']['kernel'] = self.kernel
         return cd
 
 
@@ -498,14 +505,14 @@ class BaseMMDDrift(BaseDetector):
 
         # optionally already preprocess reference data
         self.p_val = p_val
-        if preprocess_x_ref and isinstance(preprocess_fn, Callable):  # type: ignore
+        if preprocess_x_ref and isinstance(preprocess_fn, Callable):  # type: ignore[arg-type]
             self.x_ref = preprocess_fn(x_ref)
         else:
             self.x_ref = x_ref
         self.preprocess_x_ref = preprocess_x_ref
         self.update_x_ref = update_x_ref
         self.preprocess_fn = preprocess_fn
-        self.n = len(x_ref)  # type: ignore
+        self.n = len(x_ref)
         self.n_permutations = n_permutations  # nb of iterations through permutation test
 
         # store input shape for save and load functionality
@@ -525,12 +532,14 @@ class BaseMMDDrift(BaseDetector):
         -------
         Preprocessed reference data and new instances.
         """
-        if isinstance(self.preprocess_fn, Callable):  # type: ignore
+        if isinstance(self.preprocess_fn, Callable):  # type: ignore[arg-type]
             x = self.preprocess_fn(x)
             x_ref = self.x_ref if self.preprocess_x_ref else self.preprocess_fn(self.x_ref)
-            return x_ref, x
+            # TODO: TBD: similar to above, can x be a list here? x_ref is also revealed to be Any,
+            #  can we tighten the type up (e.g. by typing Callable with stricter inputs/outputs?
+            return x_ref, x  # type: ignore[return-value]
         else:
-            return self.x_ref, x
+            return self.x_ref, x  # type: ignore[return-value]
 
     @abstractmethod
     def kernel_matrix(self, x: Union['torch.Tensor', 'tf.Tensor'], y: Union['torch.Tensor', 'tf.Tensor']) \
@@ -572,9 +581,9 @@ class BaseMMDDrift(BaseDetector):
         # update reference dataset
         if isinstance(self.update_x_ref, dict) and self.preprocess_fn is not None and self.preprocess_x_ref:
             x = self.preprocess_fn(x)
-        self.x_ref = update_reference(self.x_ref, x, self.n, self.update_x_ref)
+        self.x_ref = update_reference(self.x_ref, x, self.n, self.update_x_ref)  # type: ignore[arg-type]
         # used for reservoir sampling
-        self.n += len(x)  # type: ignore
+        self.n += len(x)
 
         # populate drift dict
         cd = concept_drift_dict()
@@ -590,6 +599,10 @@ class BaseMMDDrift(BaseDetector):
 
 
 class BaseLSDDDrift(BaseDetector):
+    # TODO: TBD: this is only created when _configure_normalization is called from backend-specific classes,
+    # is declaring it here the right thing to do?
+    _normalize: Callable
+
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
@@ -646,7 +659,7 @@ class BaseLSDDDrift(BaseDetector):
 
         # optionally already preprocess reference data
         self.p_val = p_val
-        if preprocess_x_ref and isinstance(preprocess_fn, Callable):  # type: ignore
+        if preprocess_x_ref and isinstance(preprocess_fn, Callable):  # type: ignore[arg-type]
             self.x_ref = preprocess_fn(x_ref)
         else:
             self.x_ref = x_ref
@@ -654,7 +667,7 @@ class BaseLSDDDrift(BaseDetector):
         self.preprocess_x_ref = preprocess_x_ref
         self.update_x_ref = update_x_ref
         self.preprocess_fn = preprocess_fn
-        self.n = len(x_ref)  # type: ignore
+        self.n = len(x_ref)
         self.n_permutations = n_permutations  # nb of iterations through permutation test
         self.n_kernel_centers = n_kernel_centers or max(self.n // 20, 1)
         self.lambda_rd_max = lambda_rd_max
@@ -676,12 +689,12 @@ class BaseLSDDDrift(BaseDetector):
         -------
         Preprocessed reference data and new instances.
         """
-        if isinstance(self.preprocess_fn, Callable):  # type: ignore
+        if isinstance(self.preprocess_fn, Callable):  # type: ignore[arg-type]
             x = self.preprocess_fn(x)
             x_ref = self.x_ref if self.preprocess_x_ref else self.preprocess_fn(self.x_ref)
-            return x_ref, x
+            return x_ref, x  # type: ignore[return-value]
         else:
-            return self.x_ref, x
+            return self.x_ref, x  # type: ignore[return-value]
 
     @abstractmethod
     def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, np.ndarray]:
@@ -719,12 +732,12 @@ class BaseLSDDDrift(BaseDetector):
         if isinstance(self.update_x_ref, dict):
             if self.preprocess_fn is not None and self.preprocess_x_ref:
                 x = self.preprocess_fn(x)
-                x = self._normalize(x)  # type: ignore
+                x = self._normalize(x)
             elif self.preprocess_fn is None:
-                x = self._normalize(x)  # type: ignore
+                x = self._normalize(x)
             else:
                 pass
-        self.x_ref = update_reference(self.x_ref, x, self.n, self.update_x_ref)
+        self.x_ref = update_reference(self.x_ref, x, self.n, self.update_x_ref)  # type: ignore[arg-type]
         # used for reservoir sampling
         self.n += len(x)  # type: ignore
 
@@ -794,7 +807,7 @@ class BaseUnivariateDrift(BaseDetector):
 
         # optionally already preprocess reference data
         self.p_val = p_val
-        if preprocess_x_ref and isinstance(preprocess_fn, Callable):  # type: ignore
+        if preprocess_x_ref and isinstance(preprocess_fn, Callable):  # type: ignore[arg-type]
             self.x_ref = preprocess_fn(x_ref)
         else:
             self.x_ref = x_ref
@@ -802,7 +815,7 @@ class BaseUnivariateDrift(BaseDetector):
         self.update_x_ref = update_x_ref
         self.preprocess_fn = preprocess_fn
         self.correction = correction
-        self.n = len(x_ref)  # type: ignore
+        self.n = len(x_ref)
 
         # store input shape for save and load functionality
         self.input_shape = get_input_shape(input_shape, x_ref)
@@ -837,12 +850,12 @@ class BaseUnivariateDrift(BaseDetector):
         -------
         Preprocessed reference data and new instances.
         """
-        if isinstance(self.preprocess_fn, Callable):  # type: ignore
+        if isinstance(self.preprocess_fn, Callable):  # type: ignore[arg-type]
             x = self.preprocess_fn(x)
             x_ref = self.x_ref if self.preprocess_x_ref else self.preprocess_fn(self.x_ref)
-            return x_ref, x
+            return x_ref, x  # type: ignore[return-value]
         else:
-            return self.x_ref, x
+            return self.x_ref, x  # type: ignore[return-value]
 
     @abstractmethod
     def feature_score(self, x_ref: np.ndarray, x: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
@@ -900,18 +913,18 @@ class BaseUnivariateDrift(BaseDetector):
             drift_pred = (p_vals < self.p_val).astype(int)
         elif drift_type == 'batch' and self.correction == 'bonferroni':
             threshold = self.p_val / self.n_features
-            drift_pred = int((p_vals < threshold).any())
+            drift_pred = int((p_vals < threshold).any())  # type: ignore[assignment]
         elif drift_type == 'batch' and self.correction == 'fdr':
-            drift_pred, threshold = fdr(p_vals, q_val=self.p_val)
+            drift_pred, threshold = fdr(p_vals, q_val=self.p_val)  # type: ignore[assignment]
         else:
             raise ValueError('`drift_type` needs to be either `feature` or `batch`.')
 
         # update reference dataset
         if isinstance(self.update_x_ref, dict) and self.preprocess_fn is not None and self.preprocess_x_ref:
             x = self.preprocess_fn(x)
-        self.x_ref = update_reference(self.x_ref, x, self.n, self.update_x_ref)
+        self.x_ref = update_reference(self.x_ref, x, self.n, self.update_x_ref)  # type: ignore[arg-type]
         # used for reservoir sampling
-        self.n += len(x)  # type: ignore
+        self.n += len(x)
 
         # populate drift dict
         cd = concept_drift_dict()
