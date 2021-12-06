@@ -65,12 +65,13 @@ nbsphinx_execute = "auto"
 
 # Create symlinks for example notebooks
 import glob
-nb_files = [os.path.basename(f) for f in glob.glob(os.path.join('examples','*.ipynb')) if not f.startswith('temp_')]
+nb_files = [os.path.basename(f) for f in glob.glob(os.path.join('examples','*.ipynb')) 
+        if not os.path.basename(f).startswith('temp_')]
 for nb_file in nb_files:
     target = os.path.join('../../examples', nb_file)
-    os.remove(target)
+    if os.path.exists(target):
+        os.remove(target)
     os.symlink(os.path.join('../doc/source/examples', nb_file), target)
-quit()
 
 # -- Bibliography ------------------------------------------------------------
 bibtex_bibfiles = ['refs.bib']
