@@ -158,7 +158,7 @@ class MMDDriftOnlineTF(BaseMultiDriftOnline):
 
         self.thresholds = thresholds
 
-    def _update_state(self, x_t: np.ndarray):
+    def _update_state(self, x_t: np.ndarray): # type: ignore[override]
         self.t += 1
         kernel_col = self.kernel(self.x_ref[self.ref_inds], x_t)
         self.test_window = tf.concat([self.test_window[(1-self.window_size):], x_t], axis=0)

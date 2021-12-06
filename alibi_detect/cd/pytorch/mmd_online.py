@@ -79,7 +79,8 @@ class MMDDriftOnlineTorch(BaseMultiDriftOnline):
             self.device = torch.device('cpu')
 
         # initialize kernel
-        sigma = torch.from_numpy(sigma).to(self.device) if isinstance(sigma, np.ndarray) else None
+        sigma = torch.from_numpy(sigma).to(self.device) \
+            if isinstance(sigma, np.ndarray) else None  # type: ignore[assignment]
         self.kernel = kernel(sigma) if kernel == GaussianRBF else kernel
 
         # compute kernel matrix for the reference data
@@ -90,7 +91,7 @@ class MMDDriftOnlineTorch(BaseMultiDriftOnline):
         self._initialise()
 
     def _configure_ref_subset(self):
-        etw_size = 2*self.window_size-1  # etw = extended test window
+        etw_size = 2 * self.window_size - 1  # etw = extended test window
         rw_size = self.n - etw_size  # rw = ref-window
         # Make split and ensure it doesn't cause an initial detection
         mmd_init = None
@@ -101,13 +102,13 @@ class MMDDriftOnlineTorch(BaseMultiDriftOnline):
             self.test_window = self.x_ref[self.init_test_inds]
             # Compute initial mmd to check for initial detection
             self.k_xx_sub = self.k_xx[self.ref_inds][:, self.ref_inds]
-            self.k_xx_sub_sum = zero_diag(self.k_xx_sub).sum()/(rw_size*(rw_size-1))
+            self.k_xx_sub_sum = zero_diag(self.k_xx_sub).sum() / (rw_size * (rw_size - 1))
             self.k_xy = self.kernel(self.x_ref[self.ref_inds], self.test_window)
             k_yy = self.kernel(self.test_window, self.test_window)
             mmd_init = (
-                self.k_xx_sub_sum +
-                zero_diag(k_yy).sum()/(self.window_size*(self.window_size-1)) -
-                2*self.k_xy.mean()
+                    self.k_xx_sub_sum +
+                    zero_diag(k_yy).sum() / (self.window_size * (self.window_size - 1)) -
+                    2 * self.k_xy.mean()
             )
 
     def _configure_thresholds(self):
@@ -117,7 +118,7 @@ class MMDDriftOnlineTorch(BaseMultiDriftOnline):
         # test windows of size W (so 2W-1 test samples in total)
 
         w_size = self.window_size
-        etw_size = 2*w_size-1  # etw = extended test window
+        etw_size = 2 * w_size - 1  # etw = extended test window
         rw_size = self.n - etw_size  # rw = sub-ref window
 
         perms = [torch.randperm(self.n) for _ in range(self.n_bootstraps)]
@@ -136,28 +137,28 @@ class MMDDriftOnlineTorch(BaseMultiDriftOnline):
         k_xy_col_sums_all = [
             self.k_xx[x_inds][:, y_inds].sum(0) for x_inds, y_inds in
             (tqdm(zip(x_inds_all, y_inds_all), total=self.n_bootstraps) if self.verbose else
-                zip(x_inds_all, y_inds_all))
+             zip(x_inds_all, y_inds_all))
         ]
         k_xx_sums_all = [(
-            k_full_sum - zero_diag(self.k_xx[y_inds][:, y_inds]).sum() - 2*k_xy_col_sums.sum()
-        )/(rw_size*(rw_size-1)) for y_inds, k_xy_col_sums in zip(y_inds_all, k_xy_col_sums_all)]
-        k_xy_col_sums_all = [k_xy_col_sums/(rw_size*w_size) for k_xy_col_sums in k_xy_col_sums_all]
+                                 k_full_sum - zero_diag(self.k_xx[y_inds][:, y_inds]).sum() - 2 * k_xy_col_sums.sum()
+                         ) / (rw_size * (rw_size - 1)) for y_inds, k_xy_col_sums in zip(y_inds_all, k_xy_col_sums_all)]
+        k_xy_col_sums_all = [k_xy_col_sums / (rw_size * w_size) for k_xy_col_sums in k_xy_col_sums_all]
 
         # Now to iterate through the W overlapping windows
         thresholds = []
         p_bar = tqdm(range(w_size), "Computing thresholds") if self.verbose else range(w_size)
         for w in p_bar:
-            y_inds_all_w = [y_inds[w:w+w_size] for y_inds in y_inds_all]  # test windows of size w_size
+            y_inds_all_w = [y_inds[w:w + w_size] for y_inds in y_inds_all]  # test windows of size w_size
             mmds = [(
-                k_xx_sum +
-                zero_diag(self.k_xx[y_inds_w][:, y_inds_w]).sum()/(w_size*(w_size-1)) -
-                2*k_xy_col_sums[w:w+w_size].sum()
+                    k_xx_sum +
+                    zero_diag(self.k_xx[y_inds_w][:, y_inds_w]).sum() / (w_size * (w_size - 1)) -
+                    2 * k_xy_col_sums[w:w + w_size].sum()
             ) for k_xx_sum, y_inds_w, k_xy_col_sums in zip(k_xx_sums_all, y_inds_all_w, k_xy_col_sums_all)
             ]
             mmds = torch.tensor(mmds)  # an mmd for each bootstrap sample
 
             # Now we discard all bootstrap samples for which mmd is in top (1/ert)% and record the thresholds
-            thresholds.append(quantile(mmds, 1-self.fpr))
+            thresholds.append(quantile(mmds, 1 - self.fpr))
             y_inds_all = [y_inds_all[i] for i in range(len(y_inds_all)) if mmds[i] < thresholds[-1]]
             k_xx_sums_all = [
                 k_xx_sums_all[i] for i in range(len(k_xx_sums_all)) if mmds[i] < thresholds[-1]
@@ -168,11 +169,11 @@ class MMDDriftOnlineTorch(BaseMultiDriftOnline):
 
         self.thresholds = thresholds
 
-    def _update_state(self, x_t: torch.Tensor):
+    def _update_state(self, x_t: torch.Tensor):  # type: ignore[override]
         self.t += 1
         kernel_col = self.kernel(self.x_ref[self.ref_inds], x_t)
-        self.test_window = torch.cat([self.test_window[(1-self.window_size):], x_t], 0)
-        self.k_xy = torch.cat([self.k_xy[:, (1-self.window_size):], kernel_col], 1)
+        self.test_window = torch.cat([self.test_window[(1 - self.window_size):], x_t], 0)
+        self.k_xy = torch.cat([self.k_xy[:, (1 - self.window_size):], kernel_col], 1)
 
     def score(self, x_t: Union[np.ndarray, Any]) -> float:
         """
@@ -192,8 +193,8 @@ class MMDDriftOnlineTorch(BaseMultiDriftOnline):
         self._update_state(x_t)
         k_yy = self.kernel(self.test_window, self.test_window)
         mmd = (
-            self.k_xx_sub_sum +
-            zero_diag(k_yy).sum()/(self.window_size*(self.window_size-1)) -
-            2*self.k_xy.mean()
+                self.k_xx_sub_sum +
+                zero_diag(k_yy).sum() / (self.window_size * (self.window_size - 1)) -
+                2 * self.k_xy.mean()
         )
         return float(mmd.detach().cpu())
