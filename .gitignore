@@ -119,3 +119,4 @@ venv.bak/
 
 # temp scripts for debugging
 examples/temp_*
+doc/source/examples/temp_*
