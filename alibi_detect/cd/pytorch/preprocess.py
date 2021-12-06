@@ -1,8 +1,10 @@
+from typing import Callable, Optional, Type, Union
+
 import numpy as np
 import torch
 import torch.nn as nn
-from typing import Callable, Optional, Union
-from alibi_detect.utils.pytorch.prediction import predict_batch, predict_batch_transformer
+from alibi_detect.utils.pytorch.prediction import (predict_batch,
+                                                   predict_batch_transformer)
 
 
 class HiddenOutput(nn.Module):
@@ -25,8 +27,8 @@ class HiddenOutput(nn.Module):
 def preprocess_drift(x: Union[np.ndarray, list], model: Union[nn.Module, nn.Sequential],
                      device: Optional[torch.device] = None, preprocess_batch_fn: Callable = None,
                      tokenizer: Optional[Callable] = None, max_len: Optional[int] = None,
-                     batch_size: int = int(1e10), dtype: np.dtype = np.float32) \
-        -> Union[np.ndarray, torch.Tensor]:
+                     batch_size: int = int(1e10), dtype: Union[Type[np.generic], torch.dtype] = np.float32) \
+        -> Union[np.ndarray, torch.Tensor, tuple]:
     """
     Prediction function used for preprocessing step of drift detector.
 
