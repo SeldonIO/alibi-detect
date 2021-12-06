@@ -152,9 +152,9 @@ class MMDDriftOnlineTorch(BaseMultiDriftOnline):
             mmds = [(
                     k_xx_sum +
                     zero_diag(self.k_xx[y_inds_w][:, y_inds_w]).sum() / (w_size * (w_size - 1)) -
-                    2 * k_xy_col_sums[w:w + w_size].sum()
-            ) for k_xx_sum, y_inds_w, k_xy_col_sums in zip(k_xx_sums_all, y_inds_all_w, k_xy_col_sums_all)
-            ]
+                    2 * k_xy_col_sums[w:w + w_size].sum())
+                    for k_xx_sum, y_inds_w, k_xy_col_sums in zip(k_xx_sums_all, y_inds_all_w, k_xy_col_sums_all)
+                    ]
             mmds = torch.tensor(mmds)  # an mmd for each bootstrap sample
 
             # Now we discard all bootstrap samples for which mmd is in top (1/ert)% and record the thresholds

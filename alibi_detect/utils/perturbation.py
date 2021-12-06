@@ -1,6 +1,6 @@
 import random
 from io import BytesIO
-from typing import List, Tuple, Union, cast
+from typing import List, Tuple
 
 import cv2
 import numpy as np
