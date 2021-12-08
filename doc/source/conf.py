@@ -278,7 +278,7 @@ if git_rev:
 
 nbsphinx_prolog = (
     r"""
-{% set docpath = env.doc2path(env.docname, base='doc/source/') %}
+{% set docname = env.doc2path(env.docname, base=False) %}
 
 .. only:: html
 
@@ -286,12 +286,13 @@ nbsphinx_prolog = (
         :format: html
     
     .. nbinfo::
-        This page was generated from `{{ docpath }}`__.
+        This page was generated from `{{ docname }}`__.
     
     __ https://github.com/SeldonIO/alibi-detect/blob/
         """
     + git_rev
-    + r"{{ docpath }}"
+    + "doc/source/"
+    + r"{{ docname }}"
 )
 
 # -- Override order of preference for image formats --------------------------
