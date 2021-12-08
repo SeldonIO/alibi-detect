@@ -9,11 +9,13 @@ on:
   pull_request:
     branches:
       - master
+    types: [opened, synchronize, reopened, ready_for_review]
   schedule:
     - cron: '0 0 * * *'
 
 jobs:
   build:
+    if: github.event.pull_request.draft == false
 
     runs-on: ubuntu-latest
     strategy:
@@ -49,6 +51,7 @@ jobs:
           make build_pypi
 
   docs:
+    if: github.event.pull_request.draft == false
 
     runs-on: ubuntu-18.04
 
@@ -76,6 +79,7 @@ jobs:
           make build_latex
 
   licenses:
+    if: github.event.pull_request.draft == false
 
     runs-on: ubuntu-latest
 
