@@ -16,6 +16,6 @@ authors:
   orcid: "https://orcid.org/0000-0001-8971-7224"
 
 title: "Alibi Detect: Algorithms for outlier, adversarial and drift detection"
-version: 0.7.3
-date-released: 2021-10-29
+version: 0.8.0
+date-released: 2021-12-09
 url: "https://github.com/SeldonIO/alibi-detect"
