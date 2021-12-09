@@ -9,7 +9,7 @@
 - Offline supervised drift detection [example](https://github.com/SeldonIO/alibi-detect/blob/master/examples/cd_supervised_penguins.ipynb) on the penguin classification data. 
 
 ### Changed
- - Refactored online detectors to separate updating of state ([#371](https://github.com/SeldonIO/alibi-detect/pull/371)). State is now updated by `score`. This means `score` can now be called without `predict` being called first.
+ - Refactored online detectors to separate updating of state ([#371](https://github.com/SeldonIO/alibi-detect/pull/371)). 
  - Update `tensorflow` lower bound to 2.2 due to minimum requirements from `transformers`. 
 
 ### Fixed
