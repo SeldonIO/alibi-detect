@@ -87,7 +87,7 @@ also happens to be a case of *covariate drift*.
 :align: center
 :alt: 2D drift example
 ```
-
+<br/><br/>
 It is relatively easy to spot drift by eyeballing these figures here.
 However, the task becomes considerably harder for high-dimensional real
 problems, especially since real-time ground truths are not typically
