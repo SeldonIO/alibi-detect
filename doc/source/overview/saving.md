@@ -32,7 +32,7 @@ For drift detectors, `save_detector` serializes the detector via a config file n
 At present outlier and adversarial detectors are serialized using the `dill` library, but these will also be be updated to use `config.toml` files in the future.
 ```
 
-New detectors can also be instantiated from *bare bones* config files. For example, instead of the following code:
+New detectors can also be instantiated from *bare-bones* config files. For example, instead of the following code:
 
 
 ```python
@@ -53,7 +53,7 @@ p_val = 0.05
 
 where the fields following `name` are the args/kwargs to pass to the detector (see a detectors api docs for 
 a full list of permissible args/kwargs e.g. [MMDDrift](../api/alibi_detect.cd.mmd.rst)). The `config.toml` file 
-can then be loaded with `load_detector('config.toml`). For consistency with the outlier and adversarial 
+can then be loaded with `load_detector('config.toml)`. For consistency with the outlier and adversarial 
 detector save/load functionality, a `filepath` can also be passed to `load_detector`, in which case it 
 will search for a `config.toml` file within the specified directory. 
 
@@ -72,25 +72,29 @@ p_val = 0.05
 preprocess_fn = "funcion.dill"
 ```
 
-|Field                     |.npy file|.dill file|Directory|Registry|
-|:-------------------------|:---------:|:----------:|:-------:|:------:|
-|`x_ref`                   |✔          |            |         |        |
-|`preprocess_fn`           |           |✔           |         |✔       |
-|`kernel`                  |           |✔           |         |✔       |
-|`optimizer`               |           |✔           |         |✔       |
-|`reg_loss_fn`             |           |✔           |         |✔       |
-|`model`                   |           |            |✔        |✔       | 
-|`preprocess_fn.model`     |           |            |✔        |✔       | 
-|`preprocess_fn.embedding` |           |            |✔        |✔       | 
-|`preprocess_fn.tokenizer` |           |            |✔        |✔       |
+|Field                     |.npy file  |.dill file  |Registry|Dictionary| 
+|:-------------------------|:---------:|:----------:|:------:|:--------:|
+|`x_ref`                   |✔          |            |        |          |
+|`kernel`                  |           |✔           |✔       |          |
+|`optimizer`               |           |✔           |✔       |          |
+|`reg_loss_fn`             |           |✔           |✔       |          |
+|`preprocess_fn`           |           |✔           |✔       |✔         |
+|`model`                   |           |            |✔       |✔         |
+|`preprocess_fn.model`     |           |            |✔       |✔         |
+|`preprocess_fn.embedding` |           |            |✔       |✔         |
+|`preprocess_fn.tokenizer` |           |            |✔       |✔         |
 
 
+- **Local files**: Artefacts may be specified as locally serialized files. e.g. `.dill` or `.npy`...
 
-#### More complex artefacts
+- **Function/object registry**: Discuss...
 
-Some artefacts can be specified with additional arguments and settings. For example, if a serialized 
-function is specified for `preprocess_fn`, a dictionary of keyword arguments to be passed at call time
-may be specified: 
+- **Nested dictionaries**: More complex artefacts are specified via dictionaries with `src` and additional option/setting fields (see below sections...). Discuss further here...
+
+#### Preprocessing function
+
+Simple `preprocess_fn`'s can be specified directly as a serialized dill file or via a function registry. If additional arguments are to be passed at call time, the `preprocess_fn`
+can instead be specified via a nested config dictionary:
 
 ```toml
 x_ref = "x_ref.npy"
@@ -101,8 +105,8 @@ src = "function.dill"
 kwargs = {kwarg1="a", kwarg2=1.5, kwarg3=true}
 ```
 
-The [TOML](https://toml.io/en/) offers considerable flexibility in specifying nested fields, 
-for example the `preprocess_fn.kwargs` field may also be specified as follows:
+In this case, the `src` field can be a locally stored `.dill` file or a function registry, and `kwargs` is a dictionary of keyword arguments to be passed to the function.    
+The [TOML](https://toml.io/en/) offers considerable flexibility in specifying nested fields, for example the `preprocess_fn.kwargs` field may also be specified as follows:
 
 ```toml
 x_ref = "x_ref.npy"
@@ -116,15 +120,19 @@ kwarg2 = 1.5
 kwarg3 = true
 ```
 
-#### Local files
+#### Models
 
-Artefacts may be specified as locally serialized files.
+Similar story for all below, elaborate...
 
+#### Embedding
 
+#### Tokenizers
 
-#### Function/object registry
+#### Kernels
 
+#### Optimizers
 
+Dictionary in format used by `tf.keras.optimizers.serialize`
 
 ### Example config files
 
@@ -171,7 +179,7 @@ class_name = "Adam"
 
 [optimizer.config]
 name = "Adam"
-learning_rate = 0.0010000000474974513
+learning_rate = 0.001
 ```
 
 ### Advanced usage
@@ -179,7 +187,13 @@ learning_rate = 0.0010000000474974513
 
 #### Validating config files
 
+Talk about pydantic. The unresolved and resolved config dict is validated with pydantic...
+
+Public function for doing this...
+
 #### Detector specification schemas
+
+Can/should implement a public facing api to fetch the pydantic config schema's in json format. Discuss here...
 
 
 ## Limitations
