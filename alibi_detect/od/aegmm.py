@@ -17,9 +17,9 @@ class OutlierAEGMM(BaseDetector, FitMixin, ThresholdMixin):
     def __init__(self,
                  threshold: float = None,
                  aegmm: tf.keras.Model = None,
-                 encoder_net: tf.keras.Sequential = None,
-                 decoder_net: tf.keras.Sequential = None,
-                 gmm_density_net: tf.keras.Sequential = None,
+                 encoder_net: tf.keras.Model = None,
+                 decoder_net: tf.keras.Model = None,
+                 gmm_density_net: tf.keras.Model = None,
                  n_gmm: int = None,
                  recon_features: Callable = eucl_cosim_features,
                  data_type: str = None

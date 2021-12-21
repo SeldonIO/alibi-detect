@@ -1,0 +1,6 @@
+# Bibliography
+
+```{eval-rst}
+.. bibliography::
+```
+

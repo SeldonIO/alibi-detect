@@ -18,8 +18,8 @@ class OutlierVAE(BaseDetector, FitMixin, ThresholdMixin):
                  threshold: float = None,
                  score_type: str = 'mse',  # TODO: reconstruction proba; make sure to infer correct distribution
                  vae: tf.keras.Model = None,
-                 encoder_net: tf.keras.Sequential = None,
-                 decoder_net: tf.keras.Sequential = None,
+                 encoder_net: tf.keras.Model = None,
+                 decoder_net: tf.keras.Model = None,
                  latent_dim: int = None,
                  samples: int = 10,
                  beta: float = 1.,

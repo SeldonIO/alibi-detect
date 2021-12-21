@@ -9,6 +9,10 @@ from .mmd import MMDDrift
 from .mmd_online import MMDDriftOnline
 from .model_uncertainty import ClassifierUncertaintyDrift, RegressorUncertaintyDrift
 from .tabular import TabularDrift
+from .cvm import CVMDrift
+from .cvm_online import CVMDriftOnline
+from .fet import FETDrift
+from .fet_online import FETDriftOnline
 
 __all__ = [
     "ChiSquareDrift",
@@ -22,5 +26,9 @@ __all__ = [
     "TabularDrift",
     "ClassifierUncertaintyDrift",
     "RegressorUncertaintyDrift",
-    "SpotTheDiffDrift"
+    "SpotTheDiffDrift",
+    "CVMDrift",
+    "CVMDriftOnline",
+    "FETDrift",
+    "FETDriftOnline"
 ]

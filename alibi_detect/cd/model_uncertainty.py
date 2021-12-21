@@ -210,7 +210,7 @@ class RegressorUncertaintyDrift:
 
         if backend == 'tensorflow' and not has_tensorflow or backend == 'pytorch' and not has_pytorch:
             raise ImportError(f'{backend} not installed. Cannot initialize and run the '
-                              f'ClassifierUncertaintyDrift detector with {backend} backend.')
+                              f'RegressorUncertaintyDrift detector with {backend} backend.')
 
         if backend is None:
             model_fn = model

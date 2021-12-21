@@ -36,7 +36,7 @@ setup(
         "scipy>=1.3.0, <2.0.0",
         'scikit-image>=0.14.2, !=0.17.1, <0.19',  # https://github.com/SeldonIO/alibi/issues/215
         "scikit-learn>=0.20.2, <1.1.0",
-        "tensorflow>=2.0.0, !=2.6.0, !=2.6.1, <2.7.0", # https://github.com/SeldonIO/alibi-detect/issues/375
+        "tensorflow>=2.2.0, !=2.6.0, !=2.6.1, <2.7.0",  # https://github.com/SeldonIO/alibi-detect/issues/375 and 387
         "tensorflow_probability>=0.8.0, <0.13.0",
         "transformers>=4.0.0, <5.0.0",
         "dill>=0.3.0, <0.4.0",
@@ -45,6 +45,7 @@ setup(
         "toml>=0.10.1, <0.11.0",
         "catalogue>=2.0.0, <2.0.7",
         "pydantic>=1.8.0, <1.9.0"
+        "numba!=0.54.0",  # Avoid 0.54 due to: https://github.com/SeldonIO/alibi/issues/466
     ],
     extras_require=extras_require,
     test_suite="tests",

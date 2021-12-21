@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="doc/source/_static/Alibi_Detect_Logo_rgb.png" alt="Alibi Detect Logo" width="50%">
+  <img src="https://raw.githubusercontent.com/SeldonIO/alibi-detect/master/doc/source/_static/Alibi_Detect_Logo_rgb.png" alt="Alibi Detect Logo" width="50%">
 </p>
 
 [![Build Status](https://github.com/SeldonIO/alibi-detect/workflows/CI/badge.svg?branch=master)](https://github.com/SeldonIO/alibi-detect/actions?query=workflow%3A%22CI%22)
@@ -110,18 +110,20 @@ The following tables show the advised use cases for each algorithm. The column *
 
 ### Drift Detection
 
-| Detector                 | Tabular | Image | Time Series | Text  | Categorical Features | Online | Feature Level |
-| :---                     |  :---:  | :---: |   :---:     | :---: |   :---:              | :---:  | :---:         |
-| Kolmogorov-Smirnov       | ✔       | ✔     |            |  ✔    |  ✔                   |       |  ✔            |
-| Maximum Mean Discrepancy | ✔       | ✔     |            |  ✔    |  ✔                   | ✔      |              |
-| Learned Kernel MMD          | ✔       | ✔     |            |  ✔    |  ✔                   |       |              |
-| Least-Squares Density Difference | ✔       | ✔     |            |  ✔    |  ✔                   | ✔      |              |
-| Chi-Squared              | ✔       |      |            |      |  ✔                   |       |  ✔            |
-| Mixed-type tabular data  | ✔       |      |            |      |  ✔                   |       |  ✔            |
-| Classifier               | ✔       | ✔     |  ✔          |  ✔    |  ✔                   |       |              |
-| Spot-the-diff            | ✔       | ✔     |  ✔          |  ✔    |  ✔                   |       |  ✔            |
-| Classifier Uncertainty   | ✔       | ✔     |  ✔          |  ✔    |  ✔                   |       |                |
-| Regressor Uncertainty    | ✔       | ✔     |  ✔          |  ✔    |  ✔                   |       |                |
+| Detector                         | Tabular | Image | Time Series | Text  | Categorical Features | Online | Feature Level |
+| :---                             |  :---:  | :---: |   :---:     | :---: |   :---:              | :---:  | :---:         |
+| Kolmogorov-Smirnov               | ✔       | ✔     |             | ✔     | ✔                    |        | ✔             |
+| Cramér-von Mises                 | ✔       | ✔     |             |       |                      | ✔      | ✔             |
+| Fisher's Exact Test              | ✔       |       |             |       | ✔                    | ✔      | ✔             |
+| Maximum Mean Discrepancy         | ✔       | ✔     |             | ✔     | ✔                    | ✔      |               |
+| Learned Kernel MMD               | ✔       | ✔     |             | ✔     | ✔                    |        |               |
+| Least-Squares Density Difference | ✔       | ✔     |             | ✔     | ✔                    | ✔      |               |
+| Chi-Squared                      | ✔       |       |             |       | ✔                    |        | ✔             |
+| Mixed-type tabular data          | ✔       |       |             |       | ✔                    |        | ✔             |
+| Classifier                       | ✔       | ✔     |  ✔          | ✔     | ✔                    |        |               |
+| Spot-the-diff                    | ✔       | ✔     |  ✔          | ✔     | ✔                    |        | ✔             |
+| Classifier Uncertainty           | ✔       | ✔     |  ✔          | ✔     | ✔                    |        |               |
+| Regressor Uncertainty            | ✔       | ✔     |  ✔          | ✔     | ✔                    |        |               |
 
 #### TensorFlow and PyTorch support
 
@@ -206,13 +208,17 @@ Check the example notebooks (e.g. [CIFAR10](https://docs.seldon.io/projects/alib
 
 - [Kolmogorov-Smirnov](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/ksdrift.html)
    - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_ks_cifar10.html), [molecular graphs](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_mol.html), [movie reviews](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_text_imdb.html)
-   
+
+- [Cramér-von Mises](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/cvmdrift.html)
+
+- [Fisher's Exact Test](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/fetdrift.html)
+
 - [Least-Squares Density Difference](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/lsdddrift.html) ([Bu et al, 2016](https://alippi.faculty.polimi.it/articoli/A%20Pdf%20free%20Change%20Detection%20Test%20Based%20on%20Density%20Difference%20Estimation.pdf))
 
 - [Maximum Mean Discrepancy](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/mmddrift.html) ([Gretton et al, 2012](http://jmlr.csail.mit.edu/papers/v13/gretton12a.html))
    - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_mmd_cifar10.html), [molecular graphs](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_mol.html), [movie reviews](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_text_imdb.html), [Amazon reviews](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_text_amazon.html)
 
-- [Learned Kernel MMD](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/learnedkernel.html) ([Liu et al, 2020](https://arxiv.org/abs/2002.09116))
+- [Learned Kernel MMD](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/learnedkerneldrift.html) ([Liu et al, 2020](https://arxiv.org/abs/2002.09116))
   - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_clf_cifar10.html)
 
 - [Chi-Squared](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/chisquaredrift.html)
@@ -328,10 +334,10 @@ BibTeX entry:
 ```
 @software{alibi-detect,
   title = {Alibi Detect: Algorithms for outlier, adversarial and drift detection},
-  author = {Van Looveren, Arnaud and Vacanti, Giovanni and Klaise, Janis and Coca, Alexandru and Cobb, Oliver},
+  author = {Van Looveren, Arnaud and Klaise, Janis and Vacanti, Giovanni and Cobb, Oliver and Scillitoe, Ashley},
   url = {https://github.com/SeldonIO/alibi-detect},
-  version = {0.7.3},
-  date = {2021-10-29},
+  version = {0.8.0},
+  date = {2021-12-09},
   year = {2019}
 }
 ```

@@ -220,7 +220,7 @@ def permed_lsdds(
         rds = tf.reduce_mean(1 - (omega_H_omegas/h_omegas), axis=0)
         less_than_rd_inds = tf.where(rds < lam_rd_max)
         if len(less_than_rd_inds) == 0:
-            repeats = k_all_c.shape[0] - np.unique(k_all_c, dim=0).shape[0]
+            repeats = k_all_c.shape[0] - np.unique(k_all_c, axis=0).shape[0]
             if repeats > 0:
                 msg = "Too many repeat instances for LSDD-based detection. \
                 Try using MMD-based detection instead"

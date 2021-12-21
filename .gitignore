@@ -78,7 +78,6 @@ instance/
 # Sphinx documentation
 doc/_build/
 doc/source/api/
-doc/source/examples/image/
 
 # PyBuilder
 target/
@@ -119,3 +118,4 @@ venv.bak/
 
 # temp scripts for debugging
 examples/temp_*
+doc/source/examples/temp_*

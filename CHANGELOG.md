@@ -1,5 +1,26 @@
 # Change Log
 
+## [v0.8.0](https://github.com/SeldonIO/alibi-detect/tree/v0.8.0) (2021-12-09)
+[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.7.3...v0.8.0)
+
+### Added
+- [Offline](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/fetdrift.html) and [online](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/onlinefetdrift.html) versions of Fisher's Exact Test detector for supervised drift detection on binary data: `from alibi_detect.cd import FETDrift, FETDriftOnline`.
+- [Offline](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/cvmdrift.html) and [online](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/onlinecvmdrift.html) versions of Cramér-von Mises detector for supervised drift detection on continuous data: `from alibi_detect.cd import CVMDrift, CVMDriftOnline`.
+- Offline supervised drift detection [example](https://github.com/SeldonIO/alibi-detect/blob/master/examples/cd_supervised_penguins.ipynb) on the penguin classification dataset.
+
+### Changed
+ - Refactored online detectors to separate updating of state ([#371](https://github.com/SeldonIO/alibi-detect/pull/371)). 
+ - Update `tensorflow` lower bound to 2.2 due to minimum requirements from `transformers`. 
+
+### Fixed
+ - Fixed incorrect kwarg name in `utils.tensorflow.distance.permed_lsdd` function ([#399](https://github.com/SeldonIO/alibi-detect/pull/399)). 
+
+### Development
+ - Updated `sphinx` for documentation building to `>=4.2.0`.
+ - Added a `CITATIONS.cff` file for consistent citing of the library.
+ - CI actions are now not triggered on draft PRs (apart from a `readthedoc` build).
+ - Removed dependency on `nbsphinx_link` and moved examples under `doc/source/examples` with symlinks from the top-level `examples` directory.
+
 ## [v0.7.3](https://github.com/SeldonIO/alibi-detect/tree/v0.7.3) (2021-10-29)
 [Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.7.2...v0.7.3)
 

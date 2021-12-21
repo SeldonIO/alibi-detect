@@ -18,7 +18,8 @@ from transformers import AutoTokenizer, PreTrainedTokenizerBase
 from typing import Callable, Dict, List, Optional, Tuple, Union, Literal
 from alibi_detect.ad import AdversarialAE, ModelDistillation
 from alibi_detect.ad.adversarialae import DenseHidden
-from alibi_detect.cd import ChiSquareDrift, ClassifierDrift, KSDrift, MMDDrift, LSDDDrift, TabularDrift
+from alibi_detect.cd import ChiSquareDrift, ClassifierDrift, KSDrift, MMDDrift, LSDDDrift, TabularDrift, \
+    CVMDrift, FETDrift
 from alibi_detect.cd.tensorflow import HiddenOutput, UAE
 from alibi_detect.cd.tensorflow.preprocess import _Encoder
 from alibi_detect.models.tensorflow.autoencoder import AE, AEGMM, DecoderLSTM, EncoderLSTM, Seq2Seq, VAE, VAEGMM
@@ -53,19 +54,16 @@ Data = Union[
     OutlierVAE,
     OutlierVAEGMM,
     SpectralResidual,
-    TabularDrift
+    TabularDrift,
+    CVMDrift,
+    FETDrift
 ]
 
 DEFAULT_DETECTORS = [
     'AdversarialAE',
-    'ChiSquareDrift',
-    'ClassifierDrift',
     'IForest',
-    'KSDrift',
     'LLR',
     'Mahalanobis',
-    'MMDDrift',
-    'LSDDDrift',
     'ModelDistillation',
     'OutlierAE',
     'OutlierAEGMM',
@@ -74,7 +72,6 @@ DEFAULT_DETECTORS = [
     'OutlierVAE',
     'OutlierVAEGMM',
     'SpectralResidual',
-    'TabularDrift'
 ]
 
 # TODO - add all drift methods in once .get_config() methods are complete
@@ -84,6 +81,8 @@ DRIFT_DETECTORS = [  # Drift detectors separated out as they now have their own 
     'ChiSquareDrift',
     'TabularDrift',
     'KSDrift',
+    'CVMDrift',
+    'FETDrift',
     'ClassifierDrift',
 ]
 
@@ -105,7 +104,7 @@ def save_detector(detector: Data, filepath: Union[str, os.PathLike], verbose: bo
         raise NotImplementedError('Detectors with PyTorch backend are not yet supported.')
 
     detector_name = detector.__class__.__name__
-    if detector_name not in DEFAULT_DETECTORS:
+    if detector_name not in DEFAULT_DETECTORS and detector_name not in DRIFT_DETECTORS:
         raise ValueError('{} is not supported by `save_detector`.'.format(detector_name))
 
     # check if path exists
@@ -811,7 +810,7 @@ def load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwarg
         raise NotImplementedError('Detectors with PyTorch backend are not yet supported.')
 
     detector_name = meta_dict['name']
-    if detector_name not in DEFAULT_DETECTORS:
+    if detector_name not in DEFAULT_DETECTORS and detector_name not in DRIFT_DETECTORS:
         raise ValueError('{} is not supported by `load_detector`.'.format(detector_name))
 
     # load outlier detector specific parameters

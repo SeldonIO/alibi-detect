@@ -1,0 +1,21 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Van Looveren"
+  given-names: "Arnaud"
+  orcid: "https://orcid.org/0000-0002-8347-5305"
+- family-names: "Klaise"
+  given-names: "Janis"
+  orcid: "https://orcid.org/0000-0002-7774-8047"
+- family-names: "Vacanti"
+  given-names: "Giovanni"
+- family-names: "Cobb"
+  given-names: "Oliver"
+- family-names: "Scillitoe"
+  given-names: "Ashley"
+  orcid: "https://orcid.org/0000-0001-8971-7224"
+
+title: "Alibi Detect: Algorithms for outlier, adversarial and drift detection"
+version: 0.8.0
+date-released: 2021-12-09
+url: "https://github.com/SeldonIO/alibi-detect"
