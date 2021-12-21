@@ -64,7 +64,7 @@ REQUIRES_BACKEND = [
 # tuple, np.ndarray and np.dtype are dealt with separately).
 FIELDS_TO_RESOLVE = [
     ['preprocess_fn'],
-    ['preprocess_fn', 'function'],
+    ['preprocess_fn', 'src'],
     ['preprocess_fn', 'model'],
     ['preprocess_fn', 'embedding'],
     ['preprocess_fn', 'tokenizer'],
@@ -75,20 +75,20 @@ FIELDS_TO_RESOLVE = [
     ['reg_loss_fn'],
     ['kernel'],
     ['dataset'],
-    ['kernel', 'kernel']
+    ['kernel', 'src']
 ]
 
 # Directories to amend before resolving config (fields to prepend config file dir to)
 DIR_FIELDS = [
     ['preprocess_fn'],
-    ['preprocess_fn', 'function'],
+    ['preprocess_fn', 'src'],
     ['preprocess_fn', 'model', 'src'],
     ['preprocess_fn', 'embedding', 'src'],
     ['preprocess_fn', 'tokenizer', 'src'],
     ['x_ref'],
     ['model', 'src'],
     ['kernel'],
-    ['kernel', 'kernel'],
+    ['kernel', 'src'],
     ['optimizer'],
     ['reg_loss_fn'],
 ]
@@ -141,8 +141,8 @@ def validate_config(cfg: dict, resolved: bool = False) -> dict:
     return cfg
 
 
-def load_detector_config(cfg: Union[str, os.PathLike, dict],
-                         verbose: bool = False) -> Detector:
+def _load_detector_config(cfg: Union[str, os.PathLike, dict],
+                          verbose: bool = False) -> Detector:
     # Load yaml if needed
     if isinstance(cfg, (str, os.PathLike)):
         config_file = Path(deepcopy(cfg))

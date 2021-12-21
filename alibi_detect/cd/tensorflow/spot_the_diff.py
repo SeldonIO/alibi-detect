@@ -33,6 +33,7 @@ class SpotTheDiffDriftTF:
             verbose: int = 0,
             train_kwargs: Optional[dict] = None,
             dataset: Callable = TFDataset,
+            input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None
     ) -> None:
         """
@@ -96,6 +97,8 @@ class SpotTheDiffDriftTF:
             Optional additional kwargs when fitting the classifier.
         dataset
             Dataset object used during training.
+        input_shape
+            Shape of input data.
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
@@ -146,6 +149,7 @@ class SpotTheDiffDriftTF:
             verbose=verbose,
             train_kwargs=train_kwargs,
             dataset=dataset,
+            input_shape=input_shape,
             data_type=data_type
         )
         self.meta = self._detector.meta
@@ -213,3 +217,35 @@ class SpotTheDiffDriftTF:
         if not return_model:
             del preds['data']['model']
         return preds
+
+    def get_config(self) -> dict:
+        """
+        Get the detector's configuration dictionary.
+
+        Returns
+        -------
+        The detector's configuration dictionary.
+        """
+        cfg = self._detector.get_config()  # Call ClassifierTF.get_config()
+
+        # Remove model from config
+        # (ClassifierTF.get_config() will store InterpretableClf as model. Always created at init, so no need to save.)
+        cfg.pop('model')
+
+        # kernel logic
+        model_cfg = self._detector.model.get_config()
+        kernel = model_cfg.get('kernel')
+        if isinstance(kernel, GaussianRBF):
+            # If default kernel, we don't need to spec
+            kernel = None
+
+        # kwargs
+        kwargs = {
+            'kernel': kernel,
+            'n_diffs': self.meta['params']['n_diffs'],
+            'initial_diffs': self.meta['params']['initial_diffs'],
+            'l1_reg': self.meta['params']['l1_reg']
+        }
+        cfg.update(kwargs)
+
+        return cfg

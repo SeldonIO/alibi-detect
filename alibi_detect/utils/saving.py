@@ -27,7 +27,7 @@ from alibi_detect.models.tensorflow import PixelCNN, TransformerEmbedding
 from alibi_detect.od import (IForest, LLR, Mahalanobis, OutlierAE, OutlierAEGMM, OutlierProphet,
                              OutlierSeq2Seq, OutlierVAE, OutlierVAEGMM, SpectralResidual)
 from alibi_detect.od.llr import build_model
-from alibi_detect.utils.loading import load_detector_config, load_tf_model, SUPPORTED_MODELS, SupportedModels
+from alibi_detect.utils.loading import _load_detector_config, load_tf_model, SUPPORTED_MODELS, SupportedModels
 from alibi_detect.utils.registry import registry
 from alibi_detect.version import __version__
 
@@ -74,7 +74,7 @@ DEFAULT_DETECTORS = [
     'SpectralResidual',
 ]
 
-# TODO - add all drift methods in once .get_config() methods are complete
+# TODO - add all drift methods in as .get_config() methods are completed
 DRIFT_DETECTORS = [  # Drift detectors separated out as they now have their own save methods
     'MMDDrift',
     'LSDDDrift',
@@ -115,7 +115,7 @@ def save_detector(detector: Data, filepath: Union[str, os.PathLike], verbose: bo
 
     # If a drift detector, wrap drift detector save method
     if detector_name in DRIFT_DETECTORS:
-        save_detector_config(detector, filepath, verbose=verbose)
+        _save_detector_config(detector, filepath, verbose=verbose)
 
     # Otherwise, save via the previous meta and state_dict approach
     else:
@@ -125,29 +125,29 @@ def save_detector(detector: Data, filepath: Union[str, os.PathLike], verbose: bo
 
         # save outlier detector specific parameters
         if detector_name == 'OutlierAE':
-            state_dict = state_ae(detector)
+            state_dict = _state_ae(detector)
         elif detector_name == 'OutlierVAE':
-            state_dict = state_vae(detector)
+            state_dict = _state_vae(detector)
         elif detector_name == 'Mahalanobis':
-            state_dict = state_mahalanobis(detector)
+            state_dict = _state_mahalanobis(detector)
         elif detector_name == 'IForest':
-            state_dict = state_iforest(detector)
+            state_dict = _state_iforest(detector)
         elif detector_name == 'OutlierAEGMM':
-            state_dict = state_aegmm(detector)
+            state_dict = _state_aegmm(detector)
         elif detector_name == 'OutlierVAEGMM':
-            state_dict = state_vaegmm(detector)
+            state_dict = _state_vaegmm(detector)
         elif detector_name == 'AdversarialAE':
-            state_dict = state_adv_ae(detector)
+            state_dict = _state_adv_ae(detector)
         elif detector_name == 'ModelDistillation':
-            state_dict = state_adv_md(detector)
+            state_dict = _state_adv_md(detector)
         elif detector_name == 'OutlierProphet':
-            state_dict = state_prophet(detector)
+            state_dict = _state_prophet(detector)
         elif detector_name == 'SpectralResidual':
-            state_dict = state_sr(detector)
+            state_dict = _state_sr(detector)
         elif detector_name == 'OutlierSeq2Seq':
-            state_dict = state_s2s(detector)
+            state_dict = _state_s2s(detector)
         elif detector_name == 'LLR':
-            state_dict = state_llr(detector)
+            state_dict = _state_llr(detector)
 
         with open(filepath.joinpath(detector_name + '.dill'), 'wb') as f:
             dill.dump(state_dict, f)
@@ -175,7 +175,7 @@ def save_detector(detector: Data, filepath: Union[str, os.PathLike], verbose: bo
 
 
 # TODO - eventually this will become save_detector
-def save_detector_config(detector: Data, filepath: Union[str, os.PathLike], verbose: bool = False):
+def _save_detector_config(detector: Data, filepath: Union[str, os.PathLike], verbose: bool = False):
     """
     Save a drift detector. The detector is saved as a yaml config file. Artefacts such as
     `preprocess_fn`, models, embeddings, tokenizers etc are serialized, and their filepaths are
@@ -216,13 +216,11 @@ def save_detector_config(detector: Data, filepath: Union[str, os.PathLike], verb
     np.save(str(save_path), cfg['x_ref'])
     cfg.update({'x_ref': 'x_ref.npy'})
 
-    # Save preprocess_fn # TODO - need to add input_shape to all detectors
+    # Save preprocess_fn
     preprocess_fn = cfg.get('preprocess_fn', None)
     if preprocess_fn is not None:
         preprocess_cfg = serialize_preprocess(preprocess_fn, backend, cfg['input_shape'], filepath, verbose)
         cfg['preprocess_fn'] = preprocess_cfg
-
-    # TODO - need to look for and serialize predict_fn for classifier detector
 
     # Serialize kernel
     kernel = cfg.get('kernel', None)
@@ -231,7 +229,7 @@ def save_detector_config(detector: Data, filepath: Union[str, os.PathLike], verb
         kernel_cfg = save_kernel(kernel, filepath, device, verbose)
         cfg['kernel'] = kernel_cfg
 
-    # ClassifierDrift and SpotTheDiffDrift specific artefacts. TODO - could to detector .save() methods in future.
+    # ClassifierDrift and SpotTheDiffDrift specific artefacts.
     # Serialize detector model
     model = cfg.get('model', None)
     if model is not None:
@@ -253,13 +251,20 @@ def save_detector_config(detector: Data, filepath: Union[str, os.PathLike], verb
         reg_loss_fn_cfg, _ = serialize_function(reg_loss_fn, filepath, Path('reg_loss_fn'))
         cfg['reg_loss_fn'] = reg_loss_fn_cfg
 
+    # Save initial_diffs
+    initial_diffs = cfg.get('initial_diffs', None)
+    if initial_diffs is not None:
+        save_path = filepath.joinpath('initial_diffs.npy')
+        np.save(str(save_path), initial_diffs)
+        cfg.update({'initial_diffs': 'initial_diffs.npy'})
+
     # Save config
-    cfg = resolve_paths(cfg)
+    cfg = _resolve_paths(cfg)
     with open(filepath.joinpath('config.toml'), 'w') as f:
         toml.dump(cfg, f, encoder=toml.TomlNumpyEncoder())
 
 
-def state_iforest(od: IForest) -> Dict:
+def _state_iforest(od: IForest) -> Dict:
     """
     Isolation forest parameters to save.
 
@@ -273,7 +278,7 @@ def state_iforest(od: IForest) -> Dict:
     return state_dict
 
 
-def state_mahalanobis(od: Mahalanobis) -> Dict:
+def _state_mahalanobis(od: Mahalanobis) -> Dict:
     """
     Mahalanobis parameters to save.
 
@@ -297,7 +302,7 @@ def state_mahalanobis(od: Mahalanobis) -> Dict:
     return state_dict
 
 
-def state_ae(od: OutlierAE) -> Dict:
+def _state_ae(od: OutlierAE) -> Dict:
     """
     OutlierAE parameters to save.
 
@@ -310,7 +315,7 @@ def state_ae(od: OutlierAE) -> Dict:
     return state_dict
 
 
-def state_vae(od: OutlierVAE) -> Dict:
+def _state_vae(od: OutlierVAE) -> Dict:
     """
     OutlierVAE parameters to save.
 
@@ -327,7 +332,7 @@ def state_vae(od: OutlierVAE) -> Dict:
     return state_dict
 
 
-def state_aegmm(od: OutlierAEGMM) -> Dict:
+def _state_aegmm(od: OutlierAEGMM) -> Dict:
     """
     OutlierAEGMM parameters to save.
 
@@ -350,7 +355,7 @@ def state_aegmm(od: OutlierAEGMM) -> Dict:
     return state_dict
 
 
-def state_vaegmm(od: OutlierVAEGMM) -> Dict:
+def _state_vaegmm(od: OutlierVAEGMM) -> Dict:
     """
     OutlierVAEGMM parameters to save.
 
@@ -376,7 +381,7 @@ def state_vaegmm(od: OutlierVAEGMM) -> Dict:
     return state_dict
 
 
-def state_adv_ae(ad: AdversarialAE) -> Dict:
+def _state_adv_ae(ad: AdversarialAE) -> Dict:
     """
     AdversarialAE parameters to save.
 
@@ -392,7 +397,7 @@ def state_adv_ae(ad: AdversarialAE) -> Dict:
     return state_dict
 
 
-def state_adv_md(md: ModelDistillation) -> Dict:
+def _state_adv_md(md: ModelDistillation) -> Dict:
     """
     ModelDistillation parameters to save.
 
@@ -407,7 +412,7 @@ def state_adv_md(md: ModelDistillation) -> Dict:
     return state_dict
 
 
-def state_prophet(od: OutlierProphet) -> Dict:
+def _state_prophet(od: OutlierProphet) -> Dict:
     """
     OutlierProphet parameters to save.
 
@@ -421,7 +426,7 @@ def state_prophet(od: OutlierProphet) -> Dict:
     return state_dict
 
 
-def state_sr(od: SpectralResidual) -> Dict:
+def _state_sr(od: SpectralResidual) -> Dict:
     """
     Spectral residual parameters to save.
 
@@ -438,7 +443,7 @@ def state_sr(od: SpectralResidual) -> Dict:
     return state_dict
 
 
-def state_s2s(od: OutlierSeq2Seq) -> Dict:
+def _state_s2s(od: OutlierSeq2Seq) -> Dict:
     """
     OutlierSeq2Seq parameters to save.
 
@@ -455,7 +460,7 @@ def state_s2s(od: OutlierSeq2Seq) -> Dict:
     return state_dict
 
 
-def state_llr(od: LLR) -> Dict:
+def _state_llr(od: LLR) -> Dict:
     """
     LLR parameters to save.
 
@@ -743,17 +748,17 @@ def load_detector(filepath: Union[str, os.PathLike], **kwargs) -> Data:
     filepath = Path(filepath)
     # If reference is a 'config.toml' itself, pass to new load function
     if filepath.name == 'config.toml':
-        return load_detector_config(filepath)
+        return _load_detector_config(filepath)
 
     # Otherwise, if a directory, look for meta.dill, meta.pickle or config.toml inside it
     elif filepath.is_dir():
         files = [str(f.name) for f in filepath.iterdir() if f.is_file()]
         if 'config.toml' in files:
-            return load_detector_config(filepath.joinpath('config.toml'))
+            return _load_detector_config(filepath.joinpath('config.toml'))
         elif 'meta.dill' in files:
-            return load_detector_legacy(filepath, '.dill', **kwargs)
+            return _load_detector_legacy(filepath, '.dill', **kwargs)
         elif 'meta.pickle' in files:
-            return load_detector_legacy(filepath, '.pickle', **kwargs)
+            return _load_detector_legacy(filepath, '.pickle', **kwargs)
         else:
             raise ValueError('Neither meta.dill, meta.pickle or config.toml exist in {}.'.format(filepath))
 
@@ -762,7 +767,7 @@ def load_detector(filepath: Union[str, os.PathLike], **kwargs) -> Data:
         raise ValueError("load_detector accepts only a filepath to a directory, or a config.toml file.")
 
 
-def load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwargs) -> Data:
+def _load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwargs) -> Data:
     """
     Legacy function to load outlier, drift or adversarial detectors stored dill or pickle files.
 
@@ -819,60 +824,43 @@ def load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwarg
     # initialize outlier detector
     if detector_name == 'OutlierAE':
         ae = load_tf_ae(filepath)
-        detector = init_od_ae(state_dict, ae)
+        detector = _init_od_ae(state_dict, ae)
     elif detector_name == 'OutlierVAE':
         vae = load_tf_vae(filepath, state_dict)
-        detector = init_od_vae(state_dict, vae)
+        detector = _init_od_vae(state_dict, vae)
     elif detector_name == 'Mahalanobis':
-        detector = init_od_mahalanobis(state_dict)
+        detector = _init_od_mahalanobis(state_dict)
     elif detector_name == 'IForest':
-        detector = init_od_iforest(state_dict)
+        detector = _init_od_iforest(state_dict)
     elif detector_name == 'OutlierAEGMM':
         aegmm = load_tf_aegmm(filepath, state_dict)
-        detector = init_od_aegmm(state_dict, aegmm)
+        detector = _init_od_aegmm(state_dict, aegmm)
     elif detector_name == 'OutlierVAEGMM':
         vaegmm = load_tf_vaegmm(filepath, state_dict)
-        detector = init_od_vaegmm(state_dict, vaegmm)
+        detector = _init_od_vaegmm(state_dict, vaegmm)
     elif detector_name == 'AdversarialAE':
         ae = load_tf_ae(filepath)
         custom_objects = kwargs['custom_objects'] if 'custom_objects' in k else None
         model = load_tf_model(filepath, custom_objects=custom_objects)
         model_hl = load_tf_hl(filepath, model, state_dict)
-        detector = init_ad_ae(state_dict, ae, model, model_hl)
+        detector = _init_ad_ae(state_dict, ae, model, model_hl)
     elif detector_name == 'ModelDistillation':
         md = load_tf_model(filepath, model_name='distilled_model')
         custom_objects = kwargs['custom_objects'] if 'custom_objects' in k else None
         model = load_tf_model(filepath, custom_objects=custom_objects)
-        detector = init_ad_md(state_dict, md, model)
+        detector = _init_ad_md(state_dict, md, model)
     elif detector_name == 'OutlierProphet':
-        detector = init_od_prophet(state_dict)
+        detector = _init_od_prophet(state_dict)
     elif detector_name == 'SpectralResidual':
-        detector = init_od_sr(state_dict)
+        detector = _init_od_sr(state_dict)
     elif detector_name == 'OutlierSeq2Seq':
         seq2seq = load_tf_s2s(filepath, state_dict)
-        detector = init_od_s2s(state_dict, seq2seq)
-    elif detector_name in ['ChiSquareDrift', 'ClassifierDriftTF', 'KSDrift', 'MMDDriftTF', 'TabularDrift']:
-        emb, tokenizer = None, None
-        if state_dict['other']['load_text_embedding']:
-            emb, tokenizer = load_text_embed(filepath)
-        model = load_tf_model(filepath, model_name='encoder')
-        if detector_name == 'KSDrift':
-            load_fn = init_cd_ksdrift
-        elif detector_name == 'MMDDriftTF':
-            load_fn = init_cd_mmddrift
-        elif detector_name == 'ChiSquareDrift':
-            load_fn = init_cd_chisquaredrift
-        elif detector_name == 'TabularDrift':
-            load_fn = init_cd_tabulardrift
-        elif detector_name == 'ClassifierDriftTF':
-            clf_drift = load_tf_model(filepath, model_name='clf_drift')
-            load_fn = partial(init_cd_classifierdrift, clf_drift)
-        else:
-            raise NotImplementedError
-        detector = load_fn(state_dict, model, emb, tokenizer, **kwargs)
+        detector = _init_od_s2s(state_dict, seq2seq)
     elif detector_name == 'LLR':
         models = load_tf_llr(filepath, **kwargs)
-        detector = init_od_llr(state_dict, models)
+        detector = _init_od_llr(state_dict, models)
+    else:
+        raise NotImplementedError
 
     detector.meta = meta_dict
     return detector
@@ -1084,8 +1072,8 @@ def load_tf_llr(filepath: Union[str, os.PathLike], dist_s: Union[Distribution, P
         return dist_s, dist_b, None, None
 
 
-def init_od_ae(state_dict: Dict,
-               ae: tf.keras.Model) -> OutlierAE:
+def _init_od_ae(state_dict: Dict,
+                ae: tf.keras.Model) -> OutlierAE:
     """
     Initialize OutlierVAE.
 
@@ -1104,8 +1092,8 @@ def init_od_ae(state_dict: Dict,
     return od
 
 
-def init_od_vae(state_dict: Dict,
-                vae: tf.keras.Model) -> OutlierVAE:
+def _init_od_vae(state_dict: Dict,
+                 vae: tf.keras.Model) -> OutlierVAE:
     """
     Initialize OutlierVAE.
 
@@ -1127,10 +1115,10 @@ def init_od_vae(state_dict: Dict,
     return od
 
 
-def init_ad_ae(state_dict: Dict,
-               ae: tf.keras.Model,
-               model: tf.keras.Model,
-               model_hl: List[tf.keras.Model]) -> AdversarialAE:
+def _init_ad_ae(state_dict: Dict,
+                ae: tf.keras.Model,
+                model: tf.keras.Model,
+                model_hl: List[tf.keras.Model]) -> AdversarialAE:
     """
     Initialize AdversarialAE.
 
@@ -1158,9 +1146,9 @@ def init_ad_ae(state_dict: Dict,
     return ad
 
 
-def init_ad_md(state_dict: Dict,
-               distilled_model: tf.keras.Model,
-               model: tf.keras.Model) -> ModelDistillation:
+def _init_ad_md(state_dict: Dict,
+                distilled_model: tf.keras.Model,
+                model: tf.keras.Model) -> ModelDistillation:
     """
     Initialize ModelDistillation.
 
@@ -1185,8 +1173,8 @@ def init_ad_md(state_dict: Dict,
     return ad
 
 
-def init_od_aegmm(state_dict: Dict,
-                  aegmm: tf.keras.Model) -> OutlierAEGMM:
+def _init_od_aegmm(state_dict: Dict,
+                   aegmm: tf.keras.Model) -> OutlierAEGMM:
     """
     Initialize OutlierAEGMM.
 
@@ -1215,8 +1203,8 @@ def init_od_aegmm(state_dict: Dict,
     return od
 
 
-def init_od_vaegmm(state_dict: Dict,
-                   vaegmm: tf.keras.Model) -> OutlierVAEGMM:
+def _init_od_vaegmm(state_dict: Dict,
+                    vaegmm: tf.keras.Model) -> OutlierVAEGMM:
     """
     Initialize OutlierVAEGMM.
 
@@ -1246,8 +1234,8 @@ def init_od_vaegmm(state_dict: Dict,
     return od
 
 
-def init_od_s2s(state_dict: Dict,
-                seq2seq: tf.keras.Model) -> OutlierSeq2Seq:
+def _init_od_s2s(state_dict: Dict,
+                 seq2seq: tf.keras.Model) -> OutlierSeq2Seq:
     """
     Initialize OutlierSeq2Seq.
 
@@ -1272,7 +1260,7 @@ def init_od_s2s(state_dict: Dict,
     return od
 
 
-def load_text_embed(filepath: Union[str, os.PathLike], load_dir: str = 'model') \
+def _load_text_embed(filepath: Union[str, os.PathLike], load_dir: str = 'model') \
         -> Tuple[TransformerEmbedding, Callable]:
     model_dir = Path(filepath).joinpath(load_dir)
     tokenizer = AutoTokenizer.from_pretrained(str(model_dir.resolve()))
@@ -1283,8 +1271,8 @@ def load_text_embed(filepath: Union[str, os.PathLike], load_dir: str = 'model') 
     return emb, tokenizer
 
 
-def init_preprocess(state_dict: Dict, model: Optional[Union[tf.keras.Model, tf.keras.Sequential]],
-                    emb: Optional[TransformerEmbedding], tokenizer: Optional[Callable], **kwargs) \
+def _init_preprocess(state_dict: Dict, model: Optional[Union[tf.keras.Model, tf.keras.Sequential]],
+                     emb: Optional[TransformerEmbedding], tokenizer: Optional[Callable], **kwargs) \
         -> Tuple[Optional[Callable], Optional[dict]]:
     """ Return preprocessing function and kwargs. """
     if kwargs:  # override defaults
@@ -1315,178 +1303,7 @@ def init_preprocess(state_dict: Dict, model: Optional[Union[tf.keras.Model, tf.k
     return preprocess_fn, preprocess_kwargs
 
 
-def init_cd_classifierdrift(clf_drift: tf.keras.Model, state_dict: Dict, model: Optional[tf.keras.Model],
-                            emb: Optional[TransformerEmbedding], tokenizer: Optional[Callable], **kwargs) \
-       -> ClassifierDrift:
-    """
-    Initialize ClassifierDrift detector.
-
-    Parameters
-    ----------
-    clf_drift
-        Model used for drift classification.
-    state_dict
-        Dictionary containing the parameter values.
-    model
-        Optional preprocessing model.
-    emb
-        Optional text embedding model.
-    tokenizer
-        Optional tokenizer for text drift.
-    kwargs
-        Kwargs optionally containing preprocess_fn and preprocess_kwargs.
-
-    Returns
-    -------
-    Initialized ClassifierDrift instance.
-    """
-    preprocess_fn, preprocess_kwargs = init_preprocess(state_dict['other'], model, emb, tokenizer, **kwargs)
-    if isinstance(preprocess_fn, Callable) and isinstance(preprocess_kwargs, dict):
-        state_dict['kwargs'].update({'preprocess_fn': partial(preprocess_fn, **preprocess_kwargs)})
-    state_dict['kwargs']['train_kwargs']['optimizer'] = \
-        tf.keras.optimizers.get(state_dict['kwargs']['train_kwargs']['optimizer'])
-    args = list(state_dict['args'].values()) + [clf_drift]
-    cd = ClassifierDrift(*args, **state_dict['kwargs'])
-    attrs = state_dict['other']
-    cd._detector.n = attrs['n']
-    cd._detector.preprocess_x_ref = attrs['preprocess_x_ref']
-    cd._detector.skf = attrs['skf']
-    return cd
-
-
-def init_cd_chisquaredrift(state_dict: Dict, model: Optional[Union[tf.keras.Model, tf.keras.Sequential]],
-                           emb: Optional[TransformerEmbedding], tokenizer: Optional[Callable], **kwargs) \
-        -> ChiSquareDrift:
-    """
-    Initialize ChiSquareDrift detector.
-
-    Parameters
-    ----------
-    state_dict
-        Dictionary containing the parameter values.
-    model
-        Optional preprocessing model.
-    emb
-        Optional text embedding model.
-    tokenizer
-        Optional tokenizer for text drift.
-    kwargs
-        Kwargs optionally containing preprocess_fn and preprocess_kwargs.
-
-    Returns
-    -------
-    Initialized ChiSquareDrift instance.
-    """
-    preprocess_fn, preprocess_kwargs = init_preprocess(state_dict['other'], model, emb, tokenizer, **kwargs)
-    if isinstance(preprocess_fn, Callable) and isinstance(preprocess_kwargs, dict):
-        state_dict['kwargs'].update({'preprocess_fn': partial(preprocess_fn, **preprocess_kwargs)})
-    cd = ChiSquareDrift(*list(state_dict['args'].values()), **state_dict['kwargs'])
-    attrs = state_dict['other']
-    cd.n = attrs['n']
-    cd.preprocess_x_ref = attrs['preprocess_x_ref']
-    return cd
-
-
-def init_cd_tabulardrift(state_dict: Dict, model: Optional[Union[tf.keras.Model, tf.keras.Sequential]],
-                         emb: Optional[TransformerEmbedding], tokenizer: Optional[Callable], **kwargs) \
-        -> TabularDrift:
-    """
-    Initialize TabularDrift detector.
-
-    Parameters
-    ----------
-    state_dict
-        Dictionary containing the parameter values.
-    model
-        Optional preprocessing model.
-    emb
-        Optional text embedding model.
-    tokenizer
-        Optional tokenizer for text drift.
-    kwargs
-        Kwargs optionally containing preprocess_fn and preprocess_kwargs.
-
-    Returns
-    -------
-    Initialized TabularDrift instance.
-    """
-    preprocess_fn, preprocess_kwargs = init_preprocess(state_dict['other'], model, emb, tokenizer, **kwargs)
-    if isinstance(preprocess_fn, Callable) and isinstance(preprocess_kwargs, dict):
-        state_dict['kwargs'].update({'preprocess_fn': partial(preprocess_fn, **preprocess_kwargs)})
-    cd = TabularDrift(*list(state_dict['args'].values()), **state_dict['kwargs'])
-    attrs = state_dict['other']
-    cd.n = attrs['n']
-    cd.preprocess_x_ref = attrs['preprocess_x_ref']
-    return cd
-
-
-def init_cd_ksdrift(state_dict: Dict, model: Optional[Union[tf.keras.Model, tf.keras.Sequential]],
-                    emb: Optional[TransformerEmbedding], tokenizer: Optional[Callable], **kwargs) \
-        -> KSDrift:
-    """
-    Initialize KSDrift detector.
-
-    Parameters
-    ----------
-    state_dict
-        Dictionary containing the parameter values.
-    model
-        Optional preprocessing model.
-    emb
-        Optional text embedding model.
-    tokenizer
-        Optional tokenizer for text drift.
-    kwargs
-        Kwargs optionally containing preprocess_fn and preprocess_kwargs.
-
-    Returns
-    -------
-    Initialized KSDrift instance.
-    """
-    preprocess_fn, preprocess_kwargs = init_preprocess(state_dict['other'], model, emb, tokenizer, **kwargs)
-    if isinstance(preprocess_fn, Callable) and isinstance(preprocess_kwargs, dict):
-        state_dict['kwargs'].update({'preprocess_fn': partial(preprocess_fn, **preprocess_kwargs)})
-    cd = KSDrift(*list(state_dict['args'].values()), **state_dict['kwargs'])
-    attrs = state_dict['other']
-    cd.n = attrs['n']
-    cd.preprocess_x_ref = attrs['preprocess_x_ref']
-    return cd
-
-
-def init_cd_mmddrift(state_dict: Dict, model: Optional[Union[tf.keras.Model, tf.keras.Sequential]],
-                     emb: Optional[TransformerEmbedding], tokenizer: Optional[Callable], **kwargs) \
-        -> MMDDrift:
-    """
-    Initialize MMDDrift detector.
-
-    Parameters
-    ----------
-    state_dict
-        Dictionary containing the parameter values.
-    model
-        Optional preprocessing model.
-    emb
-        Optional text embedding model.
-    tokenizer
-        Optional tokenizer for text drift.
-    kwargs
-        Kwargs optionally containing preprocess_fn and preprocess_kwargs.
-
-    Returns
-    -------
-    Initialized MMDDrift instance.
-    """
-    preprocess_fn, preprocess_kwargs = init_preprocess(state_dict['other'], model, emb, tokenizer, **kwargs)
-    if isinstance(preprocess_fn, Callable) and isinstance(preprocess_kwargs, dict):
-        state_dict['kwargs'].update({'preprocess_fn': partial(preprocess_fn, **preprocess_kwargs)})
-    cd = MMDDrift(*list(state_dict['args'].values()), **state_dict['kwargs'])
-    attrs = state_dict['other']
-    cd._detector.n = attrs['n']
-    cd._detector.preprocess_x_ref = attrs['preprocess_x_ref']
-    return cd
-
-
-def init_od_mahalanobis(state_dict: Dict) -> Mahalanobis:
+def _init_od_mahalanobis(state_dict: Dict) -> Mahalanobis:
     """
     Initialize Mahalanobis.
 
@@ -1514,7 +1331,7 @@ def init_od_mahalanobis(state_dict: Dict) -> Mahalanobis:
     return od
 
 
-def init_od_iforest(state_dict: Dict) -> IForest:
+def _init_od_iforest(state_dict: Dict) -> IForest:
     """
     Initialize isolation forest.
 
@@ -1532,7 +1349,7 @@ def init_od_iforest(state_dict: Dict) -> IForest:
     return od
 
 
-def init_od_prophet(state_dict: Dict) -> OutlierProphet:
+def _init_od_prophet(state_dict: Dict) -> OutlierProphet:
     """
     Initialize OutlierProphet.
 
@@ -1550,7 +1367,7 @@ def init_od_prophet(state_dict: Dict) -> OutlierProphet:
     return od
 
 
-def init_od_sr(state_dict: Dict) -> SpectralResidual:
+def _init_od_sr(state_dict: Dict) -> SpectralResidual:
     """
     Initialize spectral residual detector.
 
@@ -1571,7 +1388,7 @@ def init_od_sr(state_dict: Dict) -> SpectralResidual:
     return od
 
 
-def init_od_llr(state_dict: Dict, models: tuple) -> LLR:
+def _init_od_llr(state_dict: Dict, models: tuple) -> LLR:
     """
     Initialize LLR detector.
 
@@ -1624,11 +1441,10 @@ def serialize_preprocess(preprocess_fn: Callable,
     """
     preprocess_cfg = {}
     local_path = Path('preprocess_fn')
-    # TODO - create dir
 
     # Serialize function
     func, func_kwargs = serialize_function(preprocess_fn, filepath, local_path.joinpath('function'))
-    preprocess_cfg.update({'function': func})
+    preprocess_cfg.update({'src': func})
 
     # Process partial function kwargs (if they exist)
     kwargs = {}
@@ -1646,7 +1462,7 @@ def serialize_preprocess(preprocess_fn: Callable,
             kwargs.update({k: cfg_token})
 
         # Arbitrary function
-        elif callable(v):  # TODO - probably need to add more here to deal with preprocess_batch_fn etc
+        elif callable(v):
             with open(filepath.joinpath(k + '.dill'), 'wb') as f:
                 dill.dump(v, f)
             kwargs.update({k: local_path.joinpath(k + '.dill')})
@@ -1663,7 +1479,7 @@ def serialize_preprocess(preprocess_fn: Callable,
     return preprocess_cfg
 
 
-def serialize_function(func: Callable, base_path: Path, path: Path = Path('func')) -> Tuple[str, dict]:
+def serialize_function(func: Callable, base_path: Path, local_path: Path = Path('function')) -> Tuple[str, dict]:
 
     # If a partial, save function and kwargs
     if isinstance(func, partial):
@@ -1681,10 +1497,13 @@ def serialize_function(func: Callable, base_path: Path, path: Path = Path('func'
     # Otherwise, save as dill
     else:
         # create folder to save model in
-        filepath = base_path.joinpath(path)
+        filepath = base_path.joinpath(local_path)
+        if not filepath.parent.is_dir():
+            logger.warning('Directory {} does not exist and is now created.'.format(filepath.parent))
+            filepath.parent.mkdir(parents=True, exist_ok=True)
         with open(filepath.with_suffix('.dill'), 'wb') as f:
             dill.dump(func, f)
-        src = path.with_suffix('.dill')
+        src = local_path.with_suffix('.dill')
 
     return src, kwargs
 
@@ -1715,10 +1534,10 @@ def save_embedding(embed: tf.keras.Model,
         dill.dump(embed_args, f)
 
 
-def resolve_paths(cfg: dict, absolute: bool = False) -> dict:
+def _resolve_paths(cfg: dict, absolute: bool = False) -> dict:
     for k, v in cfg.items():
         if isinstance(v, dict):
-            resolve_paths(v, absolute)
+            _resolve_paths(v, absolute)
         elif isinstance(v, Path):
             if absolute:
                 v = v.resolve()
@@ -1820,7 +1639,7 @@ def save_kernel(kernel: Callable,
     keys = [k for k, v in registry.get_all().items() if isinstance(kernel, v)]
     registry_str = keys[0] if len(keys) == 1 else None
     if registry_str is not None:  # alibi-detect registered kernel
-        cfg_kernel.update({'kernel': '@' + registry_str})
+        cfg_kernel.update({'src': '@' + registry_str})
 
         # kwargs for registered kernel - #NOTE: Potentially would need updating if new kernels registered
         sigma = kernel.sigma if hasattr(kernel, 'sigma') else None
@@ -1833,7 +1652,7 @@ def save_kernel(kernel: Callable,
     elif isinstance(kernel, Callable):  # generic callable
         with open(filepath.joinpath('kernel.dill'), 'wb') as f:
             dill.dump(kernel, f)
-        cfg_kernel.update({'kernel': 'kernel.dill'})
+        cfg_kernel.update({'src': 'kernel.dill'})
 
     else:  # kernel could not be saved
         raise ValueError("Could not save kernel. Is it a valid Callable or a alibi-detect registered kernel?")

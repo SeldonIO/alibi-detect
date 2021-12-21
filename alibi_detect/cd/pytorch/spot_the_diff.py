@@ -37,6 +37,7 @@ class SpotTheDiffDriftTorch:
             device: Optional[str] = None,
             dataset: Callable = TorchDataset,
             dataloader: Callable = DataLoader,
+            input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None
     ) -> None:
         """
@@ -105,6 +106,8 @@ class SpotTheDiffDriftTorch:
             Dataset object used during training.
         dataloader
             Dataloader object used during training.
+        input_shape
+            Shape of input data.
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
@@ -158,6 +161,7 @@ class SpotTheDiffDriftTorch:
             device=device,
             dataset=dataset,
             dataloader=dataloader,
+            input_shape=input_shape,
             data_type=data_type
         )
         self.meta = self._detector.meta

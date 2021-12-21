@@ -38,6 +38,7 @@ class SpotTheDiffDrift:
             device: Optional[str] = None,
             dataset: Optional[Callable] = None,
             dataloader: Optional[Callable] = None,
+            input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None
     ) -> None:
         """
@@ -108,6 +109,8 @@ class SpotTheDiffDrift:
             Dataset object used during training.
         dataloader
             Dataloader object used during training. Only relevant for 'pytorch' backend.
+        input_shape
+            Shape of input data.
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
@@ -173,3 +176,13 @@ class SpotTheDiffDrift:
         data, and the trained model.
         """
         return self._detector.predict(x, return_p_val, return_distance, return_probs, return_model)
+
+    def get_config(self) -> dict:
+        """
+        Get the detector's configuration dictionary.
+
+        Returns
+        -------
+        The detector's configuration dictionary.
+        """
+        return self._detector.get_config()
