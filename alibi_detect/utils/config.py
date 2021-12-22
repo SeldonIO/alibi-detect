@@ -108,7 +108,7 @@ class DriftDetectorConfig(DetectorConfig):
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
     preprocess_fn: Union[str, PreprocessConfig, None]
-    input_shape: Optional[tuple] = None  # TODO: not all offline detectors have input_shape and data_type. Should they?
+    input_shape: Optional[tuple] = None
     data_type: Optional[str] = None
 
 
@@ -118,6 +118,30 @@ class DriftDetectorConfigResolved(DriftDetectorConfig):
 
 
 class KSDriftConfig(DriftDetectorConfig):
+    correction: str = 'bonferroni'
+    alternative: str = 'two-sided'
+    n_features: Optional[int] = None
+
+
+class ChiSquareDriftConfig(DriftDetectorConfig):
+    correction: str = 'bonferroni'
+    categories_per_feature: Dict[int, Optional[int]] = None,
+    n_features: Optional[int] = None
+
+
+class TabularDriftConfig(DriftDetectorConfig):
+    correction: str = 'bonferroni'
+    categories_per_feature: Dict[int, Optional[int]] = None,
+    alternative: str = 'two-sided'
+    n_features: Optional[int] = None
+
+
+class CVMDriftConfig(DriftDetectorConfig):
+    correction: str = 'bonferroni'
+    n_features: Optional[int] = None
+
+
+class FETDriftConfig(DriftDetectorConfig):
     correction: str = 'bonferroni'
     alternative: str = 'two-sided'
     n_features: Optional[int] = None
@@ -150,14 +174,37 @@ class ClassifierDriftConfig(DriftDetectorConfig):
     optimizer: Union[str, dict, None] = None  # dict as can pass dict to tf.keras.optimizers.deserialize
     learning_rate: float = 1e-3
     batch_size: int = 32
-    preprocess_batch_fn: Optional[str] = None  # TODO - config dict for this?
+    preprocess_batch_fn: Optional[str] = None
     epochs: int = 3
     verbose: int = 0
     train_kwargs: Optional[dict] = None
     dataset: str = '@alibi_detect.utils.tensorflow.data.TFDataset'
 
 
+class SpotTheDiffDriftConfig(ClassifierDriftConfig):
+    kernel: Union[str, KernelConfig, None] = None
+    n_diffs: int = 1
+    initial_diffs: Optional[str] = None
+    l1_reg: float = 0.01
+
+
 class KSDriftConfigResolved(DriftDetectorConfigResolved, KSDriftConfig):
+    pass
+
+
+class ChiSquareDriftConfigResolved(DriftDetectorConfigResolved, ChiSquareDriftConfig):
+    pass
+
+
+class TabularDriftConfigResolved(DriftDetectorConfigResolved, TabularDriftConfig):
+    pass
+
+
+class CVMDriftConfigResolved(DriftDetectorConfigResolved, CVMDriftConfig):
+    pass
+
+
+class FETDriftConfigResolved(DriftDetectorConfigResolved, FETDriftConfig):
     pass
 
 
@@ -178,17 +225,32 @@ class ClassifierDriftResolved(DriftDetectorConfigResolved, ClassifierDriftConfig
     model: Optional[SUPPORTED_MODELS] = None
 
 
+class SpotTheDiffDriftResolved(DriftDetectorConfigResolved, ClassifierDriftResolved):
+    kernel: Union[Callable, KernelConfigResolved, None]
+    initial_diffs: Optional[np.ndarray] = None
+
+
 DETECTOR_CONFIGS = {
     'KSDrift': KSDriftConfig,
+    'ChiSquareDrift': ChiSquareDriftConfig,
+    'TabularDrift': TabularDriftConfig,
+    'CVMDrift': CVMDriftConfig,
+    'FETDrift': FETDriftConfig,
     'MMDDrift': MMDDriftConfig,
     'LSDDDrift': LSDDDriftConfig,
     'ClassifierDrift': ClassifierDriftConfig,
+    'SpotTheDiffDrift': SpotTheDiffDriftConfig,
 }
 
 
 DETECTOR_CONFIGS_RESOLVED = {
     'KSDrift': KSDriftConfigResolved,
+    'ChiSquareDrift': ChiSquareDriftConfigResolved,
+    'TabularDrift': TabularDriftConfigResolved,
+    'CVMDrift': CVMDriftConfigResolved,
+    'FETDrift': FETDriftConfigResolved,
     'MMDDrift': MMDDriftConfigResolved,
     'LSDDDrift': LSDDDriftConfigResolved,
     'ClassifierDrift': ClassifierDriftResolved,
+    'SpotTheDiffDrift': SpotTheDiffDriftResolved
 }

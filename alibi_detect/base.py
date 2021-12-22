@@ -53,7 +53,7 @@ def concept_drift_dict():
 
 
 class BaseDetector(ABC):
-    """ Base class for outlier detection algorithms. """
+    """ Base class for outlier, adversarial and drift detection algorithms. """
 
     def __init__(self):
         self.meta = copy.deepcopy(DEFAULT_META)

@@ -19,7 +19,7 @@ from typing import Callable, Dict, List, Optional, Tuple, Union, Literal
 from alibi_detect.ad import AdversarialAE, ModelDistillation
 from alibi_detect.ad.adversarialae import DenseHidden
 from alibi_detect.cd import ChiSquareDrift, ClassifierDrift, KSDrift, MMDDrift, LSDDDrift, TabularDrift, \
-    CVMDrift, FETDrift
+    CVMDrift, FETDrift, SpotTheDiffDrift, ClassifierUncertaintyDrift, LearnedKernelDrift
 from alibi_detect.cd.tensorflow import HiddenOutput, UAE
 from alibi_detect.cd.tensorflow.preprocess import _Encoder
 from alibi_detect.models.tensorflow.autoencoder import AE, AEGMM, DecoderLSTM, EncoderLSTM, Seq2Seq, VAE, VAEGMM
@@ -56,7 +56,10 @@ Data = Union[
     SpectralResidual,
     TabularDrift,
     CVMDrift,
-    FETDrift
+    FETDrift,
+    SpotTheDiffDrift,
+    ClassifierUncertaintyDrift,
+    LearnedKernelDrift
 ]
 
 DEFAULT_DETECTORS = [
@@ -84,6 +87,9 @@ DRIFT_DETECTORS = [  # Drift detectors separated out as they now have their own 
     'CVMDrift',
     'FETDrift',
     'ClassifierDrift',
+    'SpotTheDiffDrift',
+#    'ClassifierUncertaintyDrift',
+#    'LearnedKernelDrift'
 ]
 
 
