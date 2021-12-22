@@ -573,7 +573,7 @@ def load_tf_model(filepath: Union[str, os.PathLike],
     -------
     Loaded model.
     """
-    # TODO - update to accept tf format - later PR?
+    # TODO - update to accept tf format - later PR? (like in save_tf_model, remove model_name for this)
     model_dir = Path(filepath).joinpath(load_dir)
     # Check if path exists
     if not model_dir.is_dir():

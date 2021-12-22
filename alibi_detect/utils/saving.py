@@ -851,7 +851,7 @@ def _load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwar
         model_hl = load_tf_hl(filepath, model, state_dict)
         detector = _init_ad_ae(state_dict, ae, model, model_hl)
     elif detector_name == 'ModelDistillation':
-        md = load_tf_model(filepath, model_name='distilled_model')
+        md = load_tf_model(filepath, load_dir='distilled_model')
         custom_objects = kwargs['custom_objects'] if 'custom_objects' in k else None
         model = load_tf_model(filepath, custom_objects=custom_objects)
         detector = _init_ad_md(state_dict, md, model)
