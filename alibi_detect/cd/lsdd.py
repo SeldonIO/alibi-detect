@@ -1,6 +1,7 @@
 import numpy as np
 from typing import Callable, Dict, Optional, Union, Tuple
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
+from alibi_detect.utils.warnings import deprecated_alias
 
 if has_pytorch:
     from alibi_detect.cd.pytorch.lsdd import LSDDDriftTorch
@@ -10,6 +11,7 @@ if has_tensorflow:
 
 
 class LSDDDrift:
+    @deprecated_alias(preprocess_x_ref='preprocess_at_init')
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],

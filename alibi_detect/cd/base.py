@@ -305,6 +305,9 @@ class BaseClassifierDrift(BaseDetector):
             'name': 'ClassifierDrift'
         }
 
+        # x_ref
+        cfg.update({'x_ref': self.x_ref})
+
         # Preprocess field
         if self.preprocess_fn is not None:
             cfg.update({'preprocess_fn': self.preprocess_fn})

@@ -58,7 +58,7 @@ class TokenizerConfig(CustomBaseModel):
 
 
 class PreprocessConfig(CustomBaseModel):
-    function: str = "@preprocess_drift"
+    src: str = "@preprocess_drift"
 
     # Below kwargs are only passed if function == @preprocess_drift
     model: Union[str, ModelConfig, None] = None
@@ -75,7 +75,7 @@ class PreprocessConfig(CustomBaseModel):
 
 
 class PreprocessConfigResolved(PreprocessConfig):
-    function: Callable
+    src: Callable
     device: Optional[torch.device] = None  # Note: `device` resolved for preprocess_drift but not detectors
     model: Optional[SUPPORTED_MODELS] = None
     embedding: Optional[TransformerEmbedding] = None
@@ -85,7 +85,7 @@ class PreprocessConfigResolved(PreprocessConfig):
 
 
 class KernelConfig(CustomBaseModel):
-    kernel: str = "@GaussianRBF"
+    src: str = "@GaussianRBF"
 
     # Below kwargs are only passed if kernel == @GaussianRBF
     sigma: Optional[List[float]] = None
@@ -96,7 +96,7 @@ class KernelConfig(CustomBaseModel):
 
 
 class KernelConfigResolved(KernelConfig):
-    kernel: Callable
+    src: Callable
     sigma: Optional[np.ndarray] = None
 
 
@@ -125,13 +125,13 @@ class KSDriftConfig(DriftDetectorConfig):
 
 class ChiSquareDriftConfig(DriftDetectorConfig):
     correction: str = 'bonferroni'
-    categories_per_feature: Dict[int, Optional[int]] = None,
+    categories_per_feature: Dict[int, Union[int, List[int]]] = None,
     n_features: Optional[int] = None
 
 
 class TabularDriftConfig(DriftDetectorConfig):
     correction: str = 'bonferroni'
-    categories_per_feature: Dict[int, Optional[int]] = None,
+    categories_per_feature: Dict[int, Union[int, List[int], None]] = None,
     alternative: str = 'two-sided'
     n_features: Optional[int] = None
 
@@ -225,7 +225,12 @@ class ClassifierDriftResolved(DriftDetectorConfigResolved, ClassifierDriftConfig
     model: Optional[SUPPORTED_MODELS] = None
 
 
-class SpotTheDiffDriftResolved(DriftDetectorConfigResolved, ClassifierDriftResolved):
+class SpotTheDiffDriftResolved(DriftDetectorConfigResolved, SpotTheDiffDriftConfig):
+    reg_loss_fn: Optional[Callable] = None
+    optimizer: Optional[tf.keras.optimizers.Optimizer] = None
+    preprocess_batch_fn: Optional[Callable] = None
+    dataset: Callable = TFDataset,
+    model: Optional[SUPPORTED_MODELS] = None
     kernel: Union[Callable, KernelConfigResolved, None]
     initial_diffs: Optional[np.ndarray] = None
 

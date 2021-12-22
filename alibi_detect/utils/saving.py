@@ -18,8 +18,8 @@ from transformers import AutoTokenizer, PreTrainedTokenizerBase
 from typing import Callable, Dict, List, Optional, Tuple, Union, Literal
 from alibi_detect.ad import AdversarialAE, ModelDistillation
 from alibi_detect.ad.adversarialae import DenseHidden
-from alibi_detect.cd import ChiSquareDrift, ClassifierDrift, KSDrift, MMDDrift, LSDDDrift, TabularDrift, \
-    CVMDrift, FETDrift, SpotTheDiffDrift, ClassifierUncertaintyDrift, LearnedKernelDrift
+from alibi_detect.cd import (ChiSquareDrift, ClassifierDrift, KSDrift, MMDDrift, LSDDDrift, TabularDrift,
+                             CVMDrift, FETDrift, SpotTheDiffDrift, ClassifierUncertaintyDrift, LearnedKernelDrift)
 from alibi_detect.cd.tensorflow import HiddenOutput, UAE
 from alibi_detect.cd.tensorflow.preprocess import _Encoder
 from alibi_detect.models.tensorflow.autoencoder import AE, AEGMM, DecoderLSTM, EncoderLSTM, Seq2Seq, VAE, VAEGMM
@@ -552,7 +552,7 @@ def save_tf_vae(detector: OutlierVAE,
 def save_tf_model(model: tf.keras.Model,
                   filepath: Union[str, os.PathLike],
                   save_dir: Union[str, os.PathLike] = 'model',
-                  save_format: Literal['tf', 'h5'] = 'h5') -> None:  # TODO - change to tf, later PR?
+                  save_format: Literal['tf', 'h5'] = 'h5') -> None:  # TODO - change to tf, later PR
     """
     Save TensorFlow model.
 
@@ -1558,10 +1558,6 @@ def save_model(model: SUPPORTED_MODELS,
                path: Path = Path('.'),
                verbose: bool = False) -> Tuple[dict, Optional[dict]]:
     filepath = base_path.joinpath(path)
-    # create folder to save model in
-    if not filepath.is_dir():
-        logger.warning('Directory {} does not exist and is now created.'.format(filepath))
-        filepath.mkdir(parents=True, exist_ok=True)
 
     if backend == 'tensorflow':
         cfg_model, cfg_embed = {}, None
@@ -1592,7 +1588,7 @@ def save_model(model: SUPPORTED_MODELS,
             model = model
             cfg_model.update({'type': 'custom'})
 
-        save_tf_model(model, filepath=filepath, save_dir=path.joinpath('model'))
+        save_tf_model(model, filepath=filepath, save_dir='model')
 
     else:
         raise NotImplementedError("Saving of pytorch models is not yet implemented.")

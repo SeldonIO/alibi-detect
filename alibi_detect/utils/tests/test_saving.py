@@ -1,6 +1,10 @@
+# TODO - test pytorch save/load functionality
+# TODO - these tests do not give comprehensive coverage of save/load for all kwarg's. Could add but more costly...
 from functools import partial
 import numpy as np
+import scipy
 import pytest
+from pytest_lazyfixture import lazy_fixture
 from sklearn.model_selection import StratifiedKFold
 import sys
 from tempfile import TemporaryDirectory
@@ -8,7 +12,11 @@ import tensorflow as tf
 from tensorflow.keras.layers import Dense, InputLayer
 from typing import Callable
 from alibi_detect.ad import AdversarialAE, ModelDistillation
-from alibi_detect.cd import ChiSquareDrift, ClassifierDrift, KSDrift, MMDDrift, TabularDrift
+from alibi_detect.cd import (ChiSquareDrift, ClassifierDrift, KSDrift, MMDDrift, TabularDrift, FETDrift,
+                             LSDDDrift, SpotTheDiffDrift, SpotTheDiffDrift, ClassifierUncertaintyDrift)
+from packaging import version
+if version.parse(scipy.__version__) >= version.parse('1.7.0'):
+    from alibi_detect.cd import CVMDrift
 from alibi_detect.cd.tensorflow import UAE, preprocess_drift
 from alibi_detect.models.tensorflow.autoencoder import DecoderLSTM, EncoderLSTM
 from alibi_detect.od import (IForest, LLR, Mahalanobis, OutlierAEGMM, OutlierVAE, OutlierVAEGMM,
@@ -28,6 +36,7 @@ X_ref = np.random.rand(samples * input_dim).reshape(samples, input_dim)
 X_ref_cat = np.tile(np.array([np.arange(samples)] * input_dim).T, (2, 1))
 X_ref_mix = X_ref.copy()
 X_ref_mix[:, 0] = np.tile(np.array(np.arange(samples // 2)), (1, 2)).T[:, 0]
+X_ref_bin = np.random.choice([0, 1], (samples, input_dim), p=[0.6, 0.4])
 n_permutations = 10
 
 # define encoder and decoder
@@ -110,27 +119,43 @@ detector = [
                    latent_dim=latent_dim),
     KSDrift(X_ref,
             p_val=p_val,
-            preprocess_x_ref=False,
+            preprocess_at_init=False,
             preprocess_fn=preprocess_fn),
+    FETDrift(X_ref_bin,
+             p_val=p_val,
+             preprocess_at_init=True,
+             alternative='less'),
     MMDDrift(X_ref,
              p_val=p_val,
-             preprocess_x_ref=False,
+             preprocess_at_init=False,
              preprocess_fn=preprocess_fn,
              configure_kernel_from_x_ref=True,
              n_permutations=n_permutations),
+    LSDDDrift(X_ref,
+              p_val=p_val,
+              preprocess_at_init=False,
+              preprocess_fn=preprocess_fn,
+              n_permutations=n_permutations),
     ChiSquareDrift(X_ref_cat,
                    p_val=p_val,
-                   preprocess_x_ref=True),
+                   preprocess_at_init=True),
     TabularDrift(X_ref_mix,
                  p_val=p_val,
                  categories_per_feature={0: None},
-                 preprocess_x_ref=True),
+                 preprocess_at_init=True),
     ClassifierDrift(X_ref,
                     model=model,
                     p_val=p_val,
                     n_folds=n_folds_drift,
-                    train_size=None)
+                    train_size=None),
 ]
+if version.parse(scipy.__version__) >= version.parse('1.7.0'):
+    detector.append(
+        CVMDrift(X_ref,
+                 p_val=p_val,
+                 preprocess_at_init=True)
+    )
+# TODO: SpotTheDiffDrift, ClassifierUncertaintyDrift, LearnedKernelDrift
 n_tests = len(detector)
 
 
@@ -141,6 +166,10 @@ def select_detector(request):
 
 @pytest.mark.parametrize('select_detector', list(range(n_tests)), indirect=True)
 def test_save_load(select_detector):
+    """
+    Test of simple save/load functionality. Relatively simple detectors are instantiated, before being saved
+    to a temporary directly and then loaded again.
+    """
     det = select_detector
     det_name = det.meta['name']
 
@@ -157,7 +186,8 @@ def test_save_load(select_detector):
         assert det_load_name == det_name
 
         if not type(det_load) in [
-            OutlierProphet, ChiSquareDrift, ClassifierDrift, KSDrift, MMDDrift, TabularDrift
+            OutlierProphet, ChiSquareDrift, ClassifierDrift, KSDrift, MMDDrift, TabularDrift, LSDDDrift,
+            FETDrift, CVMDrift
         ]:
             assert det_load.threshold == det.threshold == threshold
 
@@ -213,7 +243,7 @@ def test_save_load(select_detector):
             assert det_load.latent_dim == latent_dim
             assert det_load.threshold == threshold
             assert det_load.shape == (-1, seq_len, input_dim)
-        elif type(det_load) == KSDrift:
+        elif type(det_load) == (KSDrift, FETDrift, CVMDrift):
             assert det_load.n_features == latent_dim
             assert det_load.p_val == p_val
             assert (det_load.x_ref == X_ref).all()
@@ -231,7 +261,13 @@ def test_save_load(select_detector):
             assert (det_load._detector.x_ref == X_ref).all()
             assert isinstance(det_load._detector.preprocess_fn, Callable)
             assert det_load._detector.preprocess_fn.func.__name__ == 'preprocess_drift'
-        elif type(det_load) == ClassifierDrift:
+        elif type(det_load) == LSDDDrift:
+            assert det_load._detector.n_permutations == n_permutations
+            assert det_load._detector.p_val == p_val
+            assert (det_load._detector.x_ref == X_ref).all()
+            assert isinstance(det_load._detector.preprocess_fn, Callable)
+            assert det_load._detector.preprocess_fn.func.__name__ == 'preprocess_drift'
+        elif type(det_load) == (ClassifierDrift, SpotTheDiffDrift):
             assert det_load._detector.p_val == p_val
             assert (det_load._detector.x_ref == X_ref).all()
             assert isinstance(det_load._detector.skf, StratifiedKFold)
@@ -242,3 +278,15 @@ def test_save_load(select_detector):
             assert isinstance(det_load.dist_b, tf.keras.Model)
             assert not det_load.sequential
             assert not det_load.has_log_prob
+        # TODO - any checks for SpotTheDiff, and checks for modeluncertainty + learnedkernel
+
+#def test_load_text():
+#    """
+#    Test saving and loading a preprocess_fn with a text tokenizer and embedding.
+#    """
+
+
+#def test_load_registry():
+#    """
+#    Test loading of function registries.
+#    """

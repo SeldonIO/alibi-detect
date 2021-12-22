@@ -6,11 +6,13 @@ mypy>=0.812, <0.900
 pytest>=5.3.5, <7.0.0
 pytest-cov>=2.6.1, <4.0.0
 pytest-xdist>=1.28.0, <3.0.0 # for distributed testing, currently unused (see setup.cfg)
+pytest-lazy-fixture>=0.6.3, <0.7.0
 pytest-timeout>=1.4.2, <3.0.0 # for notebook tests
 jupytext>=1.12.0, <2.0.0 # for notebook tests
 ipykernel>=5.1.0, <6.0.0 # for notebook tests
 nbconvert>=6.0.7, <7.0.0 # for notebook tests
 ipywidgets>=7.6.5, <8.0.0 # for notebook tests
+alibi-testing @ git+git://github.com/SeldonIO/alibi-testing@master#egg=alibi-testing # pre-trained models for testing
 # other
 pre-commit>=1.20.0, <3.0.0
 tox>=3.21.0, <4.0.0 # used to generate licence info via `make licenses`
