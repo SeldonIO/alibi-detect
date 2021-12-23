@@ -1,6 +1,10 @@
 import numpy as np
 from typing import Callable, Dict, Optional, Union
-from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
+from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, has_sklearn
+
+if has_sklearn:
+    from sklearn.base import ClassifierMixin
+    from alibi_detect.cd.sklearn.classifier import ClassifierDriftSklearn
 
 if has_pytorch:
     from torch.utils.data import DataLoader
@@ -16,7 +20,7 @@ class ClassifierDrift:
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
-            model: Callable,
+            model: Union[ClassifierMixin, Callable],
             backend: str = 'tensorflow',
             p_val: float = .05,
             preprocess_x_ref: bool = True,
@@ -39,6 +43,8 @@ class ClassifierDrift:
             device: Optional[str] = None,
             dataset: Optional[Callable] = None,
             dataloader: Optional[Callable] = None,
+            use_calibration: bool = False,
+            calibration_kwargs: Optional[dict] = None,
             data_type: Optional[str] = None
     ) -> None:
         """
@@ -106,16 +112,23 @@ class ClassifierDrift:
             Dataset object used during training.
         dataloader
             Dataloader object used during training. Only relevant for 'pytorch' backend.
+        use_calibration
+            Whether to use calibration. When the model does not support 'predict_proba', calibration can be used
+            to obtain the prediction probabilities. The calibration can also be used on top of the models that
+            already support 'predict_proba'. Only relevant for 'sklearn' backend.
+        calibration_kwargs
+            Optional additional kwargs for calibration. Only relevant for 'sklearn' backend.
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
         super().__init__()
 
         backend = backend.lower()
-        if backend == 'tensorflow' and not has_tensorflow or backend == 'pytorch' and not has_pytorch:
+        if (backend == 'tensorflow' and not has_tensorflow) or (backend == 'pytorch' and not has_pytorch) or \
+                (backend == 'sklearn' and not has_sklearn):
             raise ImportError(f'{backend} not installed. Cannot initialize and run the '
                               f'ClassifierDrift detector with {backend} backend.')
-        elif backend not in ['tensorflow', 'pytorch']:
+        elif backend not in ['tensorflow', 'pytorch', 'sklearn']:
             raise NotImplementedError(f'{backend} not implemented. Use tensorflow or pytorch instead.')
 
         kwargs = locals()
@@ -125,18 +138,26 @@ class ClassifierDrift:
             pop_kwargs += ['optimizer']
         [kwargs.pop(k, None) for k in pop_kwargs]
 
-        if backend == 'tensorflow' and has_tensorflow:
-            pop_kwargs = ['device', 'dataloader']
+        if backend == 'tensorflow':
+            pop_kwargs = ['device', 'dataloader', 'use_calibration', 'calibration_kwargs']
             [kwargs.pop(k, None) for k in pop_kwargs]
             if dataset is None:
                 kwargs.update({'dataset': TFDataset})
             self._detector = ClassifierDriftTF(*args, **kwargs)  # type: ignore
-        else:
+        elif backend == 'pytorch':
+            pop_kwargs = ['use_calibration', 'calibration_kwargs']
+            [kwargs.pop(k, None) for k in pop_kwargs]
             if dataset is None:
                 kwargs.update({'dataset': TorchDataset})
             if dataloader is None:
                 kwargs.update({'dataloader': DataLoader})
             self._detector = ClassifierDriftTorch(*args, **kwargs)  # type: ignore
+        else:
+            pop_kwargs = ['preds_type', 'reg_loss_fn', 'optimizer', 'learning_rate', 'batch_size',
+                          'preprocess_batch_fn', 'epochs', 'train_kwargs', 'device',  'dataset',
+                          'dataloader', 'verbose']
+            [kwargs.pop(k, None) for k in pop_kwargs]
+            self._detector = ClassifierDriftSklearn(*args, **kwargs)  # type: ignore
         self.meta = self._detector.meta
 
     def predict(self, x: Union[np.ndarray, list],  return_p_val: bool = True,
