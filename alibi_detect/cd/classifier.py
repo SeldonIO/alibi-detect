@@ -118,7 +118,7 @@ class ClassifierDrift:
         dataloader
             Dataloader object used during training. Only relevant for 'pytorch' backend.
         use_calibration
-            Whether to use calibration. Whether to use calibration. Calibration can also be used on top of any model.
+            Whether to use calibration. Whether to use calibration. Calibration can be used on top of any model.
             Only relevant for 'sklearn' backend.
         calibration_kwargs
             Optional additional kwargs for calibration. Only relevant for 'sklearn' backend.

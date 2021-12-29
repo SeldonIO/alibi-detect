@@ -68,7 +68,7 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
         seed
             Optional random seed for fold selection.
         use_calibration
-            Whether to use calibration. Whether to use calibration. Calibration can also be used on top of any model.
+            Whether to use calibration. Whether to use calibration. Calibration can be used on top of any model.
         calibration_kwargs
             Optional additional kwargs for calibration.
             See https://scikit-learn.org/stable/modules/generated/sklearn.calibration.CalibratedClassifierCV.html
