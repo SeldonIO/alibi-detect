@@ -49,7 +49,7 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
         preprocess_fn
             Function to preprocess the data before computing the data drift metrics.
         binarize_preds
-            Whether to test for discrepency on soft (e.g. prob/log-prob) model predictions directly
+            Whether to test for discrepancy on soft (e.g. prob/log-prob) model predictions directly
             with a K-S test or binarise to 0-1 prediction errors and apply a binomial test.
         train_size
             Optional fraction (float between 0 and 1) of the dataset used to train the classifier.
@@ -64,10 +64,14 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
             it should instead continue training from where it left off on the previous set.
         seed
             Optional random seed for fold selection.
+        use_calibration
+            Whether to use calibration. When the model does not support 'predict_proba', calibration can be used
+            to obtain the prediction probabilities. The calibration can also be used on top of the models that
+            already support 'predict_proba'. Only relevant for 'sklearn' backend.
+        calibration_kwargs
+            Optional additional kwargs for calibration. Only relevant for 'sklearn' backend.
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
-        **kwargs
-            Other arguments. Not used.
         """
         super().__init__(
             x_ref=x_ref,

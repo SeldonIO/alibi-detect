@@ -73,7 +73,7 @@ class ClassifierDrift:
         preds_type
             Whether the model outputs 'probs' or 'logits'
         binarize_preds
-            Whether to test for discrepency on soft  (e.g. probs/logits) model predictions directly
+            Whether to test for discrepancy on soft  (e.g. probs/logits) model predictions directly
             with a K-S test or binarise to 0-1 prediction errors and apply a binomial test.
         reg_loss_fn
             The regularisation term reg_loss_fn(model) is added to the loss function being optimized.
