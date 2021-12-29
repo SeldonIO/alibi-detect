@@ -123,6 +123,10 @@ class ClassifierDriftTorch(BaseClassifierDrift):
             seed=seed,
             data_type=data_type
         )
+
+        if preds_type not in ['probs', 'logits']:
+            raise ValueError("'preds_type' should be 'probs' or 'logits'")
+
         self.meta.update({'backend': 'pytorch'})
 
         # set device, define model and training kwargs

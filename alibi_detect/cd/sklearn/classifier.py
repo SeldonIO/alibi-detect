@@ -18,6 +18,7 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
             preprocess_x_ref: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
+            preds_type: str = 'probs',
             binarize_preds: bool = False,
             train_size: Optional[float] = .75,
             n_folds: Optional[int] = None,
@@ -48,6 +49,8 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
             for reservoir sampling {'reservoir_sampling': n} is passed.
         preprocess_fn
             Function to preprocess the data before computing the data drift metrics.
+        preds_type
+            Whether the model outputs 'probs' or 'scores'.
         binarize_preds
             Whether to test for discrepancy on soft (e.g. prob/log-prob) model predictions directly
             with a K-S test or binarise to 0-1 prediction errors and apply a binomial test.
@@ -79,7 +82,7 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
             preprocess_x_ref=preprocess_x_ref,
             update_x_ref=update_x_ref,
             preprocess_fn=preprocess_fn,
-            preds_type='probs',
+            preds_type=preds_type,
             binarize_preds=binarize_preds,
             train_size=train_size,
             n_folds=n_folds,
@@ -87,6 +90,10 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
             seed=seed,
             data_type=data_type
         )
+
+        if preds_type not in ['probs', 'scores']:
+            raise ValueError("'preds_type' should be 'probs' or 'scores'")
+
         self.meta.update({'backend': 'sklearn'})
         self.original_model = model
         self.use_calibration = use_calibration
@@ -115,26 +122,51 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
                 logger.warning('`retrain_from_scratch=True` sets automatically the parameter `warm_start=False`.')
                 model.warm_start = False
 
-        # calibrate the model if user specified.
-        if self.use_calibration:
-            logger.warning('Using calibration to obtain the prediction probabilities.')
-            model = CalibratedClassifierCV(base_estimator=model, **self.calibration_kwargs)
+        if self.preds_type == 'probs':
+            # calibrate the model if user specified.
+            if self.use_calibration:
+                logger.warning('Using calibration to obtain the prediction probabilities.')
+                model = CalibratedClassifierCV(base_estimator=model, **self.calibration_kwargs)
 
-        # if the binarize_preds=True, we don't really need the probabilities as in test_probs will be rounded
-        # to the closest integer (i.e., to 0 or 1) according to the predicted probability. Thus, we can define
-        # a hard label predict_proba based on the predict method
-        if self.binarize_preds and (not hasattr(model, 'predict_proba')):
+            # if the binarize_preds=True, we don't really need the probabilities as in test_probs will be rounded
+            # to the closest integer (i.e., to 0 or 1) according to the predicted probability. Thus, we can define
+            # a hard label predict_proba based on the predict method
+            if self.binarize_preds and (not hasattr(model, 'predict_proba')):
+                if not hasattr(model, 'predict'):
+                    raise AttributeError('Trying to use a model which does not support `predict`.')
+
+                def predict_proba(self, X):
+                    return np.eye(2)[self.predict(X).astype(np.int32)]
+
+                # add predict_proba method
+                model.predict_proba = partial(predict_proba, model)
+
+            # at this point the model does not have any predict_proba, thus the test can not be performed.
+            if not hasattr(model, 'predict_proba'):
+                raise AttributeError("Trying to use a model which does not support `predict_proba` with "
+                                     "`preds_type='probs'`. Set (`use_calibration=True`, `calibration_kwargs`) or "
+                                     "(`binarize_preds=True`).")
+
+        else:
+            if self.use_calibration:
+                logger.warning("No calibration is performed when `preds_type='scores'`.")
+
+            if self.binarize_preds:
+                raise ValueError("`binarize_preds` must be `False` when `preds_type='scores'`.")
+
+            if not hasattr(model, 'decision_function'):
+                raise AttributeError("Trying to use a model which does not support `decision_function` with "
+                                     "`preds_type='scores'`.")
+
+            # need to put the scores in the format expected by test function, which requires to duplicate the
+            # scores along axis=1
             def predict_proba(self, X):
-                return np.eye(2)[self.predict(X).astype(np.int32)]
+                scores = self.decision_function(X).reshape(-1, 1)
+                return np.tile(scores, reps=2)
 
             # add predict_proba method
             model.predict_proba = partial(predict_proba, model)
 
-        # at this point the model does not have any predict_proba, thus the test can not be performed.
-        if not hasattr(model, 'predict_proba'):
-            raise AttributeError(f'The model {model.__class__.__name__} does not support `predict_proba`. '
-                                 'Try setting (`use_calibration=True` and `calibration_kwargs`) or '
-                                 '(`binarize_preds=True`).')
         return model
 
     def score(self, x: np.ndarray) -> Tuple[float, float, np.ndarray, np.ndarray]:

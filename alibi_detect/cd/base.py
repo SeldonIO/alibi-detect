@@ -83,9 +83,6 @@ class BaseClassifierDrift(BaseDetector):
         if isinstance(train_size, float) and isinstance(n_folds, int):
             logger.warning('Both `n_folds` and `train_size` specified. By default `n_folds` is used.')
 
-        if preds_type not in ['probs', 'logits']:
-            raise ValueError("'preds_type' should be 'probs' or 'logits'")
-
         if n_folds is not None and n_folds > 1 and not retrain_from_scratch:
             raise ValueError("If using multiple folds the model must be retrained from scratch for each fold.")
 

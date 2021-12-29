@@ -71,7 +71,8 @@ class ClassifierDrift:
         preprocess_fn
             Function to preprocess the data before computing the data drift metrics.
         preds_type
-            Whether the model outputs 'probs' or 'logits'
+            Whether the model outputs 'probs' (for pytorch, tensorflow, sklearn), 'logits' (for pytorch, tensorflow),
+            'scores' (for sklearn).
         binarize_preds
             Whether to test for discrepancy on soft  (e.g. probs/logits) model predictions directly
             with a K-S test or binarise to 0-1 prediction errors and apply a binomial test.
@@ -153,9 +154,8 @@ class ClassifierDrift:
                 kwargs.update({'dataloader': DataLoader})
             self._detector = ClassifierDriftTorch(*args, **kwargs)  # type: ignore
         else:
-            pop_kwargs = ['preds_type', 'reg_loss_fn', 'optimizer', 'learning_rate', 'batch_size',
-                          'preprocess_batch_fn', 'epochs', 'train_kwargs', 'device',  'dataset',
-                          'dataloader', 'verbose']
+            pop_kwargs = ['reg_loss_fn', 'optimizer', 'learning_rate', 'batch_size', 'preprocess_batch_fn',
+                          'epochs', 'train_kwargs', 'device',  'dataset', 'dataloader', 'verbose']
             [kwargs.pop(k, None) for k in pop_kwargs]
             self._detector = ClassifierDriftSklearn(*args, **kwargs)  # type: ignore
         self.meta = self._detector.meta
