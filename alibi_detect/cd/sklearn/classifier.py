@@ -85,11 +85,53 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
         )
         self.meta.update({'backend': 'sklearn'})
         self.original_model = model
-        self.model = clone(model)
-
-        # save calibration params
         self.use_calibration = use_calibration
         self.calibration_kwargs = dict() if calibration_kwargs is None else calibration_kwargs
+        self.model = self._clone_model()
+
+    def _clone_model(self):
+        model = clone(self.original_model)
+
+        # equivalence between `retrain_from_scratch` and `warm_start`
+        if not self.retrain_from_scratch:
+            if hasattr(model, 'warm_start'):
+                logger.warning('`retrain_from_scratch=False` sets automatically the parameter `warm_start=True` '
+                               'for the given classifier. Please consult the documentation to ensure that the '
+                               '`warm_start=True` is applicable in the current context (i.e., for tree-based '
+                               'models such as RandomForest, setting `warm_start=True` is not applicable since the '
+                               'fit function expects the same dataset and an update/increase in the number of '
+                               'estimators - previous fitted estimators will be kept frozen while the new ones '
+                               'will be fitted).')
+                model.warm_start = True
+            else:
+                logger.warning('Current classifier does not support `warm_start`. The model will be retrained '
+                               'from scratch every iteration.')
+        else:
+            if hasattr(model, 'warm_start'):
+                logger.warning('`retrain_from_scratch=True` sets automatically the parameter `warm_start=False`.')
+                model.warm_start = False
+
+        # calibrate the model if user specified.
+        if self.use_calibration:
+            logger.warning('Using calibration to obtain the prediction probabilities.')
+            model = CalibratedClassifierCV(base_estimator=model, **self.calibration_kwargs)
+
+        # if the binarize_preds=True, we don't really need the probabilities as in test_probs will be rounded
+        # to the closest integer (i.e., to 0 or 1) according to the predicted probability. Thus, we can define
+        # a hard label predict_proba based on the predict method
+        if self.binarize_preds and (not hasattr(model, 'predict_proba')):
+            def predict_proba(self, X):
+                return np.eye(2)[self.predict(X).astype(np.int32)]
+
+            # add predict_proba method
+            model.predict_proba = partial(predict_proba, model)
+
+        # at this point the model does not have any predict_proba, thus the test can not be performed.
+        if not hasattr(model, 'predict_proba'):
+            raise AttributeError(f'The model {model.__class__.__name__} does not support `predict_proba`. '
+                                 'Try setting (`use_calibration=True` and `calibration_kwargs`) or '
+                                 '(`binarize_preds=True`).')
+        return model
 
     def score(self, x: np.ndarray) -> Tuple[float, float, np.ndarray, np.ndarray]:
         """
@@ -106,6 +148,7 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
         p-value, a notion of distance between the trained classifier's out-of-fold performance
         and that which we'd expect under the null assumption of no drift,
         and the out-of-fold classifier model prediction probabilities on the reference and test data
+
         """
         x_ref, x = self.preprocess(x)
         n_ref, n_cur = len(x_ref), len(x)
@@ -123,51 +166,9 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
             else:
                 raise TypeError(f'x needs to be of type np.ndarray or list and not {type(x)}.')
 
-            # equivalence between `retrain_from_scratch` and `warm_start`
-            if not self.retrain_from_scratch:
-                if hasattr(self.model, 'warm_start'):
-                    logger.warning('`retrain_from_scratch=False` sets automatically the parameter `warm_start=True` '
-                                   'for the given classifier. Please consult the documentation to ensure that the '
-                                   '`warm_start=True` is applicable in the current context (i.e., for tree-based '
-                                   'models such as RandomForest, setting `warm_start=True` is not applicable since the '
-                                   'fit function expects the same dataset and an update/increase in the number of '
-                                   'estimators - previous fitted estimators will be kept frozen while the new ones '
-                                   'will be fitted).')
-                    self.model.warm_start = True
-                else:
-                    logger.warning('Current classifier does not support `warm_start`. The model will be retrained '
-                                   'from scratch every iteration.')
-            else:
-                if hasattr(self.model, 'warm_start'):
-                    logger.warning('`retrain_from_scratch=True` sets automatically the parameter `warm_start=False`.')
-                    self.model.warm_start = False
-
-            # calibrate the model if user specified.
-            if self.use_calibration:
-                logger.warning('Using calibration to obtain the prediction probabilities.')
-                model = CalibratedClassifierCV(base_estimator=self.model, **self.calibration_kwargs)
-            else:
-                model = self.model
-
-            # if the binarize_preds=True, we don't really need the probabilities as in test_probs will be rounded
-            # to the closest integer (i.e., to 0 or 1) according to the predicted probability. Thus, we can define
-            # a hard label predict_proba based on the predict method
-            if self.binarize_preds and (not hasattr(model, 'predict_proba')):
-                def predict_proba(self, X):
-                    return np.eye(2)[self.predict(X).astype(np.int32)]
-
-                # add predict_proba method
-                model.predict_proba = partial(predict_proba, model)
-
-            # at this point the model does not have any predict_proba, thus the test can not be performed.
-            if not hasattr(model, 'predict_proba'):
-                raise AttributeError(f'The model {self.model.__class__.__name__} does not support `predict_proba`. '
-                                     'Try setting (`use_calibration=True` and `calibration_kwargs`) or '
-                                     '(`binarize_preds=True`).')
-
             # fit the model and compute probabilities
-            model.fit(x_tr, y_tr)
-            probs = model.predict_proba(x_te)
+            self.model.fit(x_tr, y_tr)
+            probs = self.model.predict_proba(x_te)
             probs_oof_list.append(probs)
             idx_oof_list.append(idx_te)
 
