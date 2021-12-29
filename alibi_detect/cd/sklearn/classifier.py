@@ -38,7 +38,7 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
         x_ref
             Data used as reference distribution.
         model
-            TensorFlow classification model used for drift detection.
+            Sklearn classification model used for drift detection.
         p_val
             p-value used for the significance of the test.
         preprocess_x_ref
@@ -52,7 +52,7 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
         preds_type
             Whether the model outputs 'probs' or 'scores'.
         binarize_preds
-            Whether to test for discrepancy on soft (e.g. prob/log-prob) model predictions directly
+            Whether to test for discrepancy on soft (e.g. probs/scores) model predictions directly
             with a K-S test or binarise to 0-1 prediction errors and apply a binomial test.
         train_size
             Optional fraction (float between 0 and 1) of the dataset used to train the classifier.
@@ -68,11 +68,11 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
         seed
             Optional random seed for fold selection.
         use_calibration
-            Whether to use calibration. When the model does not support 'predict_proba', calibration can be used
-            to obtain the prediction probabilities. The calibration can also be used on top of the models that
-            already support 'predict_proba'. Only relevant for 'sklearn' backend.
+            Whether to use calibration. Whether to use calibration. Calibration can also be used on top of any model.
         calibration_kwargs
-            Optional additional kwargs for calibration. Only relevant for 'sklearn' backend.
+            Optional additional kwargs for calibration.
+            See https://scikit-learn.org/stable/modules/generated/sklearn.calibration.CalibratedClassifierCV.html
+            for more details.
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
@@ -181,8 +181,8 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
 
         Returns
         -------
-        p-value, a notion of distance between the trained classifier's out-of-fold performance
-        and that which we'd expect under the null assumption of no drift,
+        p-value, a notion of distance between the trained classifier's out-of-fold performance \
+        and that which we'd expect under the null assumption of no drift, \
         and the out-of-fold classifier model prediction probabilities on the reference and test data
 
         """

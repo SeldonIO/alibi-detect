@@ -57,27 +57,28 @@ class ClassifierDrift:
         x_ref
             Data used as reference distribution.
         model
-            PyTorch or TensorFlow classification model used for drift detection.
+            PyTorch, TensorFlow or Sklearn classification model used for drift detection.
         backend
-            Backend used for the training loop implementation.
+            Backend used for the training loop implementation. Supported: 'tensorflow' | 'pytorch' | 'sklearn'.
         p_val
             p-value used for the significance of the test.
         preprocess_x_ref
             Whether to already preprocess and store the reference data.
         update_x_ref
-            Reference data can optionally be updated to the last n instances seen by the detector
-            or via reservoir sampling with size n. For the former, the parameter equals {'last': n} while
-            for reservoir sampling {'reservoir_sampling': n} is passed.
+            Reference data can optionally be updated to the last `n` instances seen by the detector
+            or via reservoir sampling with size `n`. For the former, the parameter equals `{'last': n}` while
+            for reservoir sampling `{'reservoir_sampling': n}` is passed.
         preprocess_fn
             Function to preprocess the data before computing the data drift metrics.
         preds_type
-            Whether the model outputs 'probs' (for pytorch, tensorflow, sklearn), 'logits' (for pytorch, tensorflow),
-            'scores' (for sklearn).
+            Whether the model outputs 'probs' (for 'tensorflow', 'pytorch', 'sklearn' models), 'logits' (for 'pytorch',
+            'tensorflow' models), 'scores' (for 'sklearn' models if `decision_function` is supported).
         binarize_preds
-            Whether to test for discrepancy on soft  (e.g. probs/logits) model predictions directly
+            Whether to test for discrepancy on soft  (e.g. probs/logits/scores) model predictions directly
             with a K-S test or binarise to 0-1 prediction errors and apply a binomial test.
         reg_loss_fn
-            The regularisation term reg_loss_fn(model) is added to the loss function being optimized.
+            The regularisation term `reg_loss_fn(model)` is added to the loss function being optimized.
+            Only relevant for 'tensorflow` and 'pytorch' backends.
         train_size
             Optional fraction (float between 0 and 1) of the dataset used to train the classifier.
             The drift is detected on `1 - train_size`. Cannot be used in combination with `n_folds`.
@@ -92,33 +93,37 @@ class ClassifierDrift:
         seed
             Optional random seed for fold selection.
         optimizer
-            Optimizer used during training of the classifier.
+            Optimizer used during training of the classifier. Only relevant for 'tensorflow' and 'pytorch' backends.
         learning_rate
-            Learning rate used by optimizer.
+            Learning rate used by optimizer. Only relevant for 'tensorflow' and 'pytorch' backends.
         batch_size
-            Batch size used during training of the classifier.
+            Batch size used during training of the classifier. Only relevant for 'tensorflow' and 'pytorch' backends.
         preprocess_batch_fn
             Optional batch preprocessing function. For example to convert a list of objects to a batch which can be
-            processed by the model.
+            processed by the model. Only relevant for 'tensorflow' and 'pytorch' backends.
         epochs
-            Number of training epochs for the classifier for each (optional) fold.
+            Number of training epochs for the classifier for each (optional) fold. Only relevant for 'tensorflow'
+            and 'pytorch' backends.
         verbose
-            Verbosity level during the training of the classifier. 0 is silent, 1 a progress bar.
+            Verbosity level during the training of the classifier. 0 is silent, 1 a progress bar. Only relevant for
+            'tensorflow' and 'pytorch' backends.
         train_kwargs
-            Optional additional kwargs when fitting the classifier.
+            Optional additional kwargs when fitting the classifier. Only relevant for 'tensorflow' and
+            'pytorch' backends.
         device
             Device type used. The default None tries to use the GPU and falls back on CPU if needed.
             Can be specified by passing either 'cuda', 'gpu' or 'cpu'. Only relevant for 'pytorch' backend.
         dataset
-            Dataset object used during training.
+            Dataset object used during training. Only relevant for 'tensorflow' and 'pytorch' backends.
         dataloader
             Dataloader object used during training. Only relevant for 'pytorch' backend.
         use_calibration
-            Whether to use calibration. When the model does not support 'predict_proba', calibration can be used
-            to obtain the prediction probabilities. The calibration can also be used on top of the models that
-            already support 'predict_proba'. Only relevant for 'sklearn' backend.
+            Whether to use calibration. Whether to use calibration. Calibration can also be used on top of any model.
+            Only relevant for 'sklearn' backend.
         calibration_kwargs
             Optional additional kwargs for calibration. Only relevant for 'sklearn' backend.
+            See https://scikit-learn.org/stable/modules/generated/sklearn.calibration.CalibratedClassifierCV.html
+            for more details.
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
@@ -183,10 +188,12 @@ class ClassifierDrift:
 
         Returns
         -------
-        Dictionary containing 'meta' and 'data' dictionaries.
-        'meta' has the model's metadata.
-        'data' contains the drift prediction and optionally the p-value, performance of the classifier
-        relative to its expectation under the no-change null, the out-of-fold classifier model
-        prediction probabilities on the reference and test data, and the trained model.
+        Dictionary containing 'meta' and 'data' dictionaries
+
+         - 'meta' - has the model's metadata.
+
+         - 'data' - contains the drift prediction and optionally the p-value, performance of the classifier \
+        relative to its expectation under the no-change null, the out-of-fold classifier model \
+        prediction probabilities on the reference and test data, and the trained model. \
         """
         return self._detector.predict(x, return_p_val, return_distance, return_probs, return_model)

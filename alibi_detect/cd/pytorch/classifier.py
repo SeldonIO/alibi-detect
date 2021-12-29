@@ -162,8 +162,8 @@ class ClassifierDriftTorch(BaseClassifierDrift):
 
         Returns
         -------
-        p-value, a notion of distance between the trained classifier's out-of-fold performance
-        and that which we'd expect under the null assumption of no drift,
+        p-value, a notion of distance between the trained classifier's out-of-fold performance \
+        and that which we'd expect under the null assumption of no drift, \
         and the out-of-fold classifier model prediction probabilities on the reference and test data
         """
         x_ref, x = self.preprocess(x)
