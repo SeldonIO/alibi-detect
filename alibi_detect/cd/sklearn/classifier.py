@@ -106,6 +106,7 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
         # equivalence between `retrain_from_scratch` and `warm_start`
         if not self.retrain_from_scratch:
             if hasattr(model, 'warm_start'):
+                model.warm_start = True
                 logger.warning('`retrain_from_scratch=False` sets automatically the parameter `warm_start=True` '
                                'for the given classifier. Please consult the documentation to ensure that the '
                                '`warm_start=True` is applicable in the current context (i.e., for tree-based '
@@ -113,20 +114,19 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
                                'fit function expects the same dataset and an update/increase in the number of '
                                'estimators - previous fitted estimators will be kept frozen while the new ones '
                                'will be fitted).')
-                model.warm_start = True
             else:
                 logger.warning('Current classifier does not support `warm_start`. The model will be retrained '
                                'from scratch every iteration.')
         else:
             if hasattr(model, 'warm_start'):
-                logger.warning('`retrain_from_scratch=True` sets automatically the parameter `warm_start=False`.')
                 model.warm_start = False
+                logger.warning('`retrain_from_scratch=True` sets automatically the parameter `warm_start=False`.')
 
         if self.preds_type == 'probs':
             # calibrate the model if user specified.
             if self.use_calibration:
-                logger.warning('Using calibration to obtain the prediction probabilities.')
                 model = CalibratedClassifierCV(base_estimator=model, **self.calibration_kwargs)
+                logger.warning('Using calibration to obtain the prediction probabilities.')
 
             # if the binarize_preds=True, we don't really need the probabilities as in test_probs will be rounded
             # to the closest integer (i.e., to 0 or 1) according to the predicted probability. Thus, we can define
@@ -202,7 +202,6 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
             else:
                 raise TypeError(f'x needs to be of type np.ndarray or list and not {type(x)}.')
 
-            # fit the model and compute probabilities
             self.model.fit(x_tr, y_tr)
             probs = self.model.predict_proba(x_te)
             probs_oof_list.append(probs)

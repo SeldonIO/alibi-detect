@@ -181,7 +181,7 @@ class BaseClassifierDrift(BaseDetector):
         n_ref
             Size of reference window used in training model
         n_cur
-            Size of current window used in trianing model
+            Size of current window used in training model
 
         Returns
         -------
