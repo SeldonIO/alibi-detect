@@ -4,16 +4,16 @@ from functools import partial
 import numpy as np
 import scipy
 import pytest
-from pytest_lazyfixture import lazy_fixture
+# from pytest_lazyfixture import lazy_fixture
 from sklearn.model_selection import StratifiedKFold
 import sys
 from tempfile import TemporaryDirectory
 import tensorflow as tf
-from tensorflow.keras.layers import Dense, InputLayer
+from tensorflow.keras.layers import Dense, InputLayer, Conv1D, Flatten
 from typing import Callable
 from alibi_detect.ad import AdversarialAE, ModelDistillation
 from alibi_detect.cd import (ChiSquareDrift, ClassifierDrift, KSDrift, MMDDrift, TabularDrift, FETDrift,
-                             LSDDDrift, SpotTheDiffDrift, SpotTheDiffDrift, ClassifierUncertaintyDrift)
+                             LSDDDrift, SpotTheDiffDrift, LearnedKernelDrift)  # ), ClassifierUncertaintyDrift)
 from packaging import version
 if version.parse(scipy.__version__) >= version.parse('1.7.0'):
     from alibi_detect.cd import CVMDrift
@@ -21,6 +21,7 @@ from alibi_detect.cd.tensorflow import UAE, preprocess_drift
 from alibi_detect.models.tensorflow.autoencoder import DecoderLSTM, EncoderLSTM
 from alibi_detect.od import (IForest, LLR, Mahalanobis, OutlierAEGMM, OutlierVAE, OutlierVAEGMM,
                              OutlierProphet, SpectralResidual, OutlierSeq2Seq, OutlierAE)
+from alibi_detect.utils.tensorflow.kernels import DeepKernel
 from alibi_detect.utils.saving import save_detector, load_detector  # type: ignore
 
 input_dim = 4
@@ -80,6 +81,17 @@ threshold_net = tf.keras.Sequential(
 inputs = tf.keras.Input(shape=(input_dim,))
 outputs = tf.keras.layers.Dense(2, activation=tf.nn.softmax)(inputs)
 model = tf.keras.Model(inputs=inputs, outputs=outputs)
+
+# Deep kernel projection
+proj = tf.keras.Sequential(
+  [
+      InputLayer((1, 1, input_dim,)),
+      Conv1D(int(input_dim), 2, strides=1, padding='same', activation=tf.nn.relu),
+      Conv1D(input_dim, 2, strides=1, padding='same', activation=tf.nn.relu),
+      Flatten(),
+  ]
+)
+deep_kernel = DeepKernel(proj, eps=0.01)
 
 detector = [
     AdversarialAE(threshold=threshold,
@@ -147,7 +159,16 @@ detector = [
                     model=model,
                     p_val=p_val,
                     n_folds=n_folds_drift,
-                    train_size=None),
+                    train_size=None,
+                    preprocess_at_init=True),
+    SpotTheDiffDrift(X_ref,
+                     p_val=p_val,
+                     n_folds=n_folds_drift,
+                     train_size=None),
+    LearnedKernelDrift(X_ref[:, None, :],
+                       deep_kernel,
+                       p_val=p_val,
+                       train_size=0.7)
 ]
 if version.parse(scipy.__version__) >= version.parse('1.7.0'):
     detector.append(
@@ -155,7 +176,7 @@ if version.parse(scipy.__version__) >= version.parse('1.7.0'):
                  p_val=p_val,
                  preprocess_at_init=True)
     )
-# TODO: SpotTheDiffDrift, ClassifierUncertaintyDrift, LearnedKernelDrift
+# TODO: ClassifierUncertaintyDrift
 n_tests = len(detector)
 
 
@@ -187,7 +208,7 @@ def test_save_load(select_detector):
 
         if not type(det_load) in [
             OutlierProphet, ChiSquareDrift, ClassifierDrift, KSDrift, MMDDrift, TabularDrift, LSDDDrift,
-            FETDrift, CVMDrift
+            FETDrift, CVMDrift, SpotTheDiffDrift, LearnedKernelDrift
         ]:
             assert det_load.threshold == det.threshold == threshold
 
@@ -273,20 +294,25 @@ def test_save_load(select_detector):
             assert isinstance(det_load._detector.skf, StratifiedKFold)
             assert isinstance(det_load._detector.train_kwargs, dict)
             assert isinstance(det_load._detector.model, tf.keras.Model)
+        elif type(det_load) == LearnedKernelDrift:
+            assert det_load._detector.p_val == p_val
+            assert (det_load._detector.x_ref == X_ref[:, None, :]).all()
+            assert isinstance(det_load._detector.train_kwargs, dict)
+            assert isinstance(det_load._detector.kernel, DeepKernel)
         elif type(det_load) == LLR:
             assert isinstance(det_load.dist_s, tf.keras.Model)
             assert isinstance(det_load.dist_b, tf.keras.Model)
             assert not det_load.sequential
             assert not det_load.has_log_prob
-        # TODO - any checks for SpotTheDiff, and checks for modeluncertainty + learnedkernel
+        # TODO - checks for modeluncertainty
 
-#def test_load_text():
+# def test_load_text():
 #    """
 #    Test saving and loading a preprocess_fn with a text tokenizer and embedding.
 #    """
 
 
-#def test_load_registry():
+# def test_load_registry():
 #    """
 #    Test loading of function registries.
 #    """

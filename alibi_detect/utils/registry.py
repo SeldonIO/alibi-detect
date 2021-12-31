@@ -17,7 +17,7 @@ registry = catalogue.create("alibi_detect", "registry")
 if has_tensorflow:
     registry.register('utils.tensorflow.kernels.GaussianRBF', func=GaussianRBF_tf)
     registry.register('cd.tensorflow.preprocess.preprocess_drift', func=preprocess_drift_tf)
-    registry.register('alibi_detect.utils.tensorflow.data.TFDataset', func=TFDataset_tf)
+    registry.register('utils.tensorflow.data.TFDataset', func=TFDataset_tf)
 
 if has_pytorch:
     registry.register('utils.pytorch.kernels.GaussianRBF', func=GaussianRBF_torch)

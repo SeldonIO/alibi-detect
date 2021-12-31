@@ -215,16 +215,3 @@ class ClassifierDriftTorch(BaseClassifierDrift):
         The detector's configuration dictionary.
         """
         raise RuntimeError("get_config not yet implemented for ClassifierDrift with pytorch backend.")
-#        cfg = super().get_config()
-#
-#        # backend
-#        cfg.update({'backend': 'tensorflow'})
-#
-#        # Detector kwargs
-#        optimizer = self.train_kwargs.pop('optimizer')
-#        kwargs = {
-#            #TODO
-#        }
-#        cfg.update(kwargs)
-#
-#        return cfg

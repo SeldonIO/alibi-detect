@@ -19,7 +19,8 @@ from typing import Callable, Dict, List, Optional, Tuple, Union, Literal
 from alibi_detect.ad import AdversarialAE, ModelDistillation
 from alibi_detect.ad.adversarialae import DenseHidden
 from alibi_detect.cd import (ChiSquareDrift, ClassifierDrift, KSDrift, MMDDrift, LSDDDrift, TabularDrift,
-                             CVMDrift, FETDrift, SpotTheDiffDrift, ClassifierUncertaintyDrift, LearnedKernelDrift)
+                             CVMDrift, FETDrift, SpotTheDiffDrift, ClassifierUncertaintyDrift,
+                             RegressorUncertaintyDrift, LearnedKernelDrift)
 from alibi_detect.cd.tensorflow import HiddenOutput, UAE
 from alibi_detect.cd.tensorflow.preprocess import _Encoder
 from alibi_detect.models.tensorflow.autoencoder import AE, AEGMM, DecoderLSTM, EncoderLSTM, Seq2Seq, VAE, VAEGMM
@@ -27,7 +28,8 @@ from alibi_detect.models.tensorflow import PixelCNN, TransformerEmbedding
 from alibi_detect.od import (IForest, LLR, Mahalanobis, OutlierAE, OutlierAEGMM, OutlierProphet,
                              OutlierSeq2Seq, OutlierVAE, OutlierVAEGMM, SpectralResidual)
 from alibi_detect.od.llr import build_model
-from alibi_detect.utils.loading import _load_detector_config, load_tf_model, SUPPORTED_MODELS, SupportedModels
+from alibi_detect.utils.loading import _load_detector_config, load_tf_model, SUPPORTED_MODELS, SupportedModels,\
+    _replace
 from alibi_detect.utils.registry import registry
 from alibi_detect.version import __version__
 
@@ -59,6 +61,7 @@ Data = Union[
     FETDrift,
     SpotTheDiffDrift,
     ClassifierUncertaintyDrift,
+    RegressorUncertaintyDrift,
     LearnedKernelDrift
 ]
 
@@ -88,8 +91,7 @@ DRIFT_DETECTORS = [  # Drift detectors separated out as they now have their own 
     'FETDrift',
     'ClassifierDrift',
     'SpotTheDiffDrift',
-#    'ClassifierUncertaintyDrift',
-#    'LearnedKernelDrift'
+    'LearnedKernelDrift'
 ]
 
 
@@ -232,8 +234,10 @@ def _save_detector_config(detector: Data, filepath: Union[str, os.PathLike], ver
     kernel = cfg.get('kernel', None)
     if kernel is not None:
         device = detector.device.type if hasattr(detector, 'device') else None
-        kernel_cfg = save_kernel(kernel, filepath, device, verbose)
-        cfg['kernel'] = kernel_cfg
+        cfg['kernel'] = save_kernel(kernel, filepath, device, verbose)
+        if isinstance(kernel, dict):  # serialise proj from DeepKernel
+            cfg['kernel']['proj'], _ = save_model(kernel['proj'], base_path=filepath, input_shape=cfg['input_shape'],
+                                                  backend=backend, verbose=verbose)
 
     # ClassifierDrift and SpotTheDiffDrift specific artefacts.
     # Serialize detector model
@@ -266,6 +270,7 @@ def _save_detector_config(detector: Data, filepath: Union[str, os.PathLike], ver
 
     # Save config
     cfg = _resolve_paths(cfg)
+    cfg = _replace(cfg, None, "None")  # Note: None replaced with "None" as None/null not valid TOML
     with open(filepath.joinpath('config.toml'), 'w') as f:
         toml.dump(cfg, f, encoder=toml.TomlNumpyEncoder())
 
@@ -1509,7 +1514,7 @@ def serialize_function(func: Callable, base_path: Path, local_path: Path = Path(
             filepath.parent.mkdir(parents=True, exist_ok=True)
         with open(filepath.with_suffix('.dill'), 'wb') as f:
             dill.dump(func, f)
-        src = local_path.with_suffix('.dill')
+        src = str(local_path.with_suffix('.dill'))
 
     return src, kwargs
 
@@ -1616,6 +1621,7 @@ def save_tokenizer(tokenizer: PreTrainedTokenizerBase,
 def save_kernel(kernel: Callable,
                 filepath: Path,
                 device: Optional[str],
+                filename: str = 'kernel.dill',
                 verbose: bool = False) -> dict:
     """
     Function to save kernel. If the kernel is stored in the artefact registry, the registry key (and kwargs) are
@@ -1629,6 +1635,8 @@ def save_kernel(kernel: Callable,
         Filepath to save to (if the kernel is a generic callable).
     device
         Device. Only needed if pytorch backend being used.
+    filename
+        Filename to save to (if the kernel is a generic callable).
     verbose
         Whether to print progress messages.
 
@@ -1638,12 +1646,13 @@ def save_kernel(kernel: Callable,
     """
     cfg_kernel = {}
 
-    keys = [k for k, v in registry.get_all().items() if isinstance(kernel, v)]
+    keys = [k for k, v in registry.get_all().items() if type(kernel) == v or kernel == v]
+    #  TODO - doesn't work if trainable etc set
     registry_str = keys[0] if len(keys) == 1 else None
     if registry_str is not None:  # alibi-detect registered kernel
         cfg_kernel.update({'src': '@' + registry_str})
 
-        # kwargs for registered kernel - #NOTE: Potentially would need updating if new kernels registered
+        # kwargs for registered kernel
         sigma = kernel.sigma if hasattr(kernel, 'sigma') else None
         sigma = sigma.cpu() if device == 'cuda' else sigma
         cfg_kernel.update({
@@ -1652,9 +1661,21 @@ def save_kernel(kernel: Callable,
         })
 
     elif isinstance(kernel, Callable):  # generic callable
-        with open(filepath.joinpath('kernel.dill'), 'wb') as f:
+        with open(filepath.joinpath(filename), 'wb') as f:
             dill.dump(kernel, f)
-        cfg_kernel.update({'src': 'kernel.dill'})
+        cfg_kernel.update({'src': filename})
+
+    elif isinstance(kernel, dict):  # DeepKernel config dict
+        kernel_a = save_kernel(kernel['kernel_a'], filepath, device, filename='kernel_a.dill', verbose=verbose)
+        kernel_b = kernel.get('kernel_b')
+        if kernel_b is not None:
+            kernel_b = save_kernel(kernel['kernel_b'], filepath, device, filename='kernel_b.dill', verbose=verbose)
+        cfg_kernel.update({
+            'kernel_a': kernel_a,
+            'kernel_b': kernel_b,
+            'proj': kernel['proj'],
+            'eps': kernel['eps']
+        })
 
     else:  # kernel could not be saved
         raise ValueError("Could not save kernel. Is it a valid Callable or a alibi-detect registered kernel?")

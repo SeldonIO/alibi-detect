@@ -320,6 +320,7 @@ class BaseClassifierDrift(BaseDetector):
             'x_ref_preprocessed': self.preprocess_at_init or self.x_ref_preprocessed,
             'preprocess_at_init': self.preprocess_at_init,
             'update_x_ref': self.update_x_ref,
+            'preprocess_fn': self.preprocess_fn,
             'preds_type': self.preds_type,
             'binarize_preds': self.binarize_preds,
             'train_size': self.train_size,
@@ -339,12 +340,14 @@ class BaseLearnedKernelDrift(BaseDetector):
             self,
             x_ref: Union[np.ndarray, list],
             p_val: float = .05,
-            preprocess_x_ref: bool = True,
+            x_ref_preprocessed: bool = False,
+            preprocess_at_init: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
             n_permutations: int = 100,
             train_size: Optional[float] = .75,
             retrain_from_scratch: bool = True,
+            input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None
     ) -> None:
         """
@@ -356,8 +359,13 @@ class BaseLearnedKernelDrift(BaseDetector):
             Data used as reference distribution.
         p_val
             p-value used for the significance of the test.
-        preprocess_x_ref
-            Whether to already preprocess and store the reference data.
+        x_ref_preprocessed
+            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
+            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
+            data will also be preprocessed.
+        preprocess_at_init
+            Whether to preprocess the reference data when the detector is instantiated. Otherwise, the reference
+            data will be preprocessed at prediction time. Only applies if `x_ref_preprocessed=False`.
         update_x_ref
             Reference data can optionally be updated to the last n instances seen by the detector
             or via reservoir sampling with size n. For the former, the parameter equals {'last': n} while
@@ -372,6 +380,8 @@ class BaseLearnedKernelDrift(BaseDetector):
         retrain_from_scratch
             Whether the kernel should be retrained from scratch for each set of test data or whether
             it should instead continue training from where it left off on the previous set.
+        input_shape
+            Shape of input data.
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
@@ -380,13 +390,23 @@ class BaseLearnedKernelDrift(BaseDetector):
         if p_val is None:
             logger.warning('No p-value set for the drift threshold. Need to set it to detect data drift.')
 
-        # optionally already preprocess reference data
-        self.p_val = p_val
-        if preprocess_x_ref and isinstance(preprocess_fn, Callable):  # type: ignore
+        # x_ref preprocessing logic
+        self.preprocess_at_pred = not preprocess_at_init and not x_ref_preprocessed and preprocess_fn is not None
+        self.preprocess_at_init = preprocess_at_init and not x_ref_preprocessed and preprocess_fn is not None
+        self.x_ref_preprocessed = x_ref_preprocessed
+        # Check if preprocess_fn is valid
+        if (self.preprocess_at_init or self.preprocess_at_pred) \
+                and not isinstance(preprocess_fn, Callable):  # type: ignore
+            raise ValueError("`preprocess_fn` is not a valid Callable.")
+
+        # optionally preprocess reference data (now instead of at predict)
+        if self.preprocess_at_init:
             self.x_ref = preprocess_fn(x_ref)
         else:
             self.x_ref = x_ref
-        self.preprocess_x_ref = preprocess_x_ref
+
+        # Other attributes
+        self.p_val = p_val
         self.update_x_ref = update_x_ref
         self.preprocess_fn = preprocess_fn
         self.n = len(x_ref)  # type: ignore
@@ -394,6 +414,9 @@ class BaseLearnedKernelDrift(BaseDetector):
         self.n_permutations = n_permutations
         self.train_size = train_size
         self.retrain_from_scratch = retrain_from_scratch
+
+        # store input shape for save and load functionality
+        self.input_shape = get_input_shape(input_shape, x_ref)
 
         # set metadata
         self.meta['detector_type'] = 'offline'
@@ -412,7 +435,7 @@ class BaseLearnedKernelDrift(BaseDetector):
         """
         if isinstance(self.preprocess_fn, Callable):  # type: ignore
             x = self.preprocess_fn(x)
-            x_ref = self.x_ref if self.preprocess_x_ref else self.preprocess_fn(self.x_ref)
+            x_ref = self.preprocess_fn(self.x_ref) if self.preprocess_at_pred else self.x_ref
             return x_ref, x
         else:
             return self.x_ref, x
@@ -487,7 +510,7 @@ class BaseLearnedKernelDrift(BaseDetector):
         distance_threshold = np.sort(dist_permutations)[::-1][idx_threshold]
 
         # update reference dataset
-        if isinstance(self.update_x_ref, dict) and self.preprocess_fn is not None and self.preprocess_x_ref:
+        if isinstance(self.update_x_ref, dict) and self.preprocess_at_init:
             x = self.preprocess_fn(x)
         self.x_ref = update_reference(self.x_ref, x, self.n, self.update_x_ref)
         # used for reservoir sampling
@@ -506,6 +529,47 @@ class BaseLearnedKernelDrift(BaseDetector):
         if return_kernel:
             cd['data']['kernel'] = self.kernel  # type: ignore
         return cd
+
+    @abstractmethod
+    def get_config(self) -> dict:
+        """
+        Get the detector's configuration dictionary.
+
+        Returns
+        -------
+        The detector's configuration dictionary.
+        """
+        cfg: Dict[str, Any] = {
+            'version': __version__,
+            'config_spec': __config_spec__,
+            'name': 'LearnedKernelDrift'
+        }
+
+        # x_ref
+        cfg.update({'x_ref': self.x_ref})
+
+        # Preprocess field
+        if self.preprocess_fn is not None:
+            cfg.update({'preprocess_fn': self.preprocess_fn})
+
+        # Detector kwargs
+        # Note: Currently write kwargs out such that load_detector will load a fresh detector. We don't (yet) write out
+        #  stateful attributes which would enable the detector to be re-loaded without re-fitting.
+        kwargs = {
+            'p_val': self.p_val,
+            'x_ref_preprocessed': self.preprocess_at_init or self.x_ref_preprocessed,
+            'preprocess_at_init': self.preprocess_at_init,
+            'update_x_ref': self.update_x_ref,
+            'preprocess_fn': self.preprocess_fn,
+            'n_permutations': self.n_permutations,
+            'train_size': self.train_size,
+            'retrain_from_scratch': self.retrain_from_scratch,
+            'input_shape': self.input_shape,
+            'data_type': self.meta['data_type']
+        }
+        cfg.update(kwargs)
+
+        return cfg
 
 
 class BaseMMDDrift(BaseDetector):

@@ -144,7 +144,7 @@ x_ref = "x_ref.npy"
 name = "LSDDDrift"
 
 [preprocess_fn]
-function = "@cd.tensorflow.preprocess.preprocess_drift"
+src = "@cd.tensorflow.preprocess.preprocess_drift"
 batch_size = 32
 max_len = 100
 tokenizer.src = "tokenizer/"

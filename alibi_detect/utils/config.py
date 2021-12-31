@@ -58,10 +58,10 @@ class TokenizerConfig(CustomBaseModel):
 
 
 class PreprocessConfig(CustomBaseModel):
-    src: str = "@preprocess_drift"
+    src: str = "@cd.tensorflow.preprocess.preprocess_drift"
 
     # Below kwargs are only passed if function == @preprocess_drift
-    model: Union[str, ModelConfig, None] = None
+    model: Union[str, ModelConfig, None] = None  # TODO - make required field when src is preprocess_drift
     embedding: Union[str, EmbeddingConfig, None] = None
     tokenizer: Union[str, TokenizerConfig, None] = None
     device: Literal['cpu', 'cuda', 'gpu', None] = None
@@ -76,8 +76,8 @@ class PreprocessConfig(CustomBaseModel):
 
 class PreprocessConfigResolved(PreprocessConfig):
     src: Callable
-    device: Optional[torch.device] = None  # Note: `device` resolved for preprocess_drift but not detectors
-    model: Optional[SUPPORTED_MODELS] = None
+    device: Optional[torch.device] = None  # Note: `device` resolved for preprocess_drift, but str for detectors
+    model: Optional[SUPPORTED_MODELS] = None  # TODO - Not optional if src is preprocess_drift
     embedding: Optional[TransformerEmbedding] = None
     tokenizer: Optional[PreTrainedTokenizerBase] = None
     preprocess_batch_fn: Optional[Callable] = None
@@ -85,7 +85,7 @@ class PreprocessConfigResolved(PreprocessConfig):
 
 
 class KernelConfig(CustomBaseModel):
-    src: str = "@GaussianRBF"
+    src: str = "@utils.tensorflow.kernels.GaussianRBF"
 
     # Below kwargs are only passed if kernel == @GaussianRBF
     sigma: Optional[List[float]] = None
@@ -100,13 +100,24 @@ class KernelConfigResolved(KernelConfig):
     sigma: Optional[np.ndarray] = None
 
 
+class DeepKernelConfig(CustomBaseModel):
+    proj: Union[str, ModelConfig]
+    kernel_a: Union[str, KernelConfig] = "@utils.tensorflow.kernels.GaussianRBF"
+    kernel_b: Union[str, KernelConfig, None] = None
+    eps: Union[float, str] = 'trainable'
+
+
+class DeepKernelConfigResolved(DeepKernelConfig):
+    proj: SUPPORTED_MODELS
+    kernel_a: Union[Callable, KernelConfigResolved]
+    kernel_b: Union[Callable, KernelConfigResolved, None] = None
+
+
 class DriftDetectorConfig(DetectorConfig):
     # args/kwargs shared by all drift detectors
     x_ref: str = 'x_ref.npy'
     p_val: float = .05
     x_ref_preprocessed: bool = False
-    preprocess_at_init: bool = True
-    update_x_ref: Optional[Dict[str, int]] = None
     preprocess_fn: Union[str, PreprocessConfig, None]
     input_shape: Optional[tuple] = None
     data_type: Optional[str] = None
@@ -118,18 +129,24 @@ class DriftDetectorConfigResolved(DriftDetectorConfig):
 
 
 class KSDriftConfig(DriftDetectorConfig):
+    preprocess_at_init: bool = True
+    update_x_ref: Optional[Dict[str, int]] = None
     correction: str = 'bonferroni'
     alternative: str = 'two-sided'
     n_features: Optional[int] = None
 
 
 class ChiSquareDriftConfig(DriftDetectorConfig):
+    preprocess_at_init: bool = True
+    update_x_ref: Optional[Dict[str, int]] = None
     correction: str = 'bonferroni'
     categories_per_feature: Dict[int, Union[int, List[int]]] = None,
     n_features: Optional[int] = None
 
 
 class TabularDriftConfig(DriftDetectorConfig):
+    preprocess_at_init: bool = True
+    update_x_ref: Optional[Dict[str, int]] = None
     correction: str = 'bonferroni'
     categories_per_feature: Dict[int, Union[int, List[int], None]] = None,
     alternative: str = 'two-sided'
@@ -137,17 +154,23 @@ class TabularDriftConfig(DriftDetectorConfig):
 
 
 class CVMDriftConfig(DriftDetectorConfig):
+    preprocess_at_init: bool = True
+    update_x_ref: Optional[Dict[str, int]] = None
     correction: str = 'bonferroni'
     n_features: Optional[int] = None
 
 
 class FETDriftConfig(DriftDetectorConfig):
+    preprocess_at_init: bool = True
+    update_x_ref: Optional[Dict[str, int]] = None
     correction: str = 'bonferroni'
     alternative: str = 'two-sided'
     n_features: Optional[int] = None
 
 
 class MMDDriftConfig(DriftDetectorConfig):
+    preprocess_at_init: bool = True
+    update_x_ref: Optional[Dict[str, int]] = None
     kernel: Union[str, KernelConfig, None] = None
     sigma: Optional[List[float]] = None
     configure_kernel_from_x_ref: bool = True
@@ -156,13 +179,18 @@ class MMDDriftConfig(DriftDetectorConfig):
 
 
 class LSDDDriftConfig(DriftDetectorConfig):
+    preprocess_at_init: bool = True
+    update_x_ref: Optional[Dict[str, int]] = None
     sigma: Optional[List[float]] = None
     n_permutations: int = 100
     n_kernel_centers: Optional[int] = None
     lambda_rd_max: float = 0.2
+    device: Literal['cpu', 'cuda', None] = None
 
 
 class ClassifierDriftConfig(DriftDetectorConfig):
+    preprocess_at_init: bool = True
+    update_x_ref: Optional[Dict[str, int]] = None
     model: Union[str, ModelConfig]
     preds_type: Literal['probs', 'logits'] = 'probs'
     binarize_preds: bool = False
@@ -179,13 +207,48 @@ class ClassifierDriftConfig(DriftDetectorConfig):
     verbose: int = 0
     train_kwargs: Optional[dict] = None
     dataset: str = '@alibi_detect.utils.tensorflow.data.TFDataset'
+    device: Literal['cpu', 'cuda', None] = None
 
 
-class SpotTheDiffDriftConfig(ClassifierDriftConfig):
+class SpotTheDiffDriftConfig(DriftDetectorConfig):
+    binarize_preds: bool = False
+    train_size: Optional[float] = .75
+    n_folds: Optional[int] = None
+    retrain_from_scratch: bool = True
+    seed: int = 0
+    optimizer: Union[str, dict, None] = None  # dict as can pass dict to tf.keras.optimizers.deserialize
+    learning_rate: float = 1e-3
+    batch_size: int = 32
+    preprocess_batch_fn: Optional[str] = None
+    epochs: int = 3
+    verbose: int = 0
+    train_kwargs: Optional[dict] = None
+    dataset: str = '@alibi_detect.utils.tensorflow.data.TFDataset'
     kernel: Union[str, KernelConfig, None] = None
     n_diffs: int = 1
     initial_diffs: Optional[str] = None
     l1_reg: float = 0.01
+    device: Literal['cpu', 'cuda', None] = None
+
+
+class LearnedKernelDriftConfig(DriftDetectorConfig):
+    kernel: Union[str, DeepKernelConfig]
+    preprocess_at_init: bool = True,
+    update_x_ref: Optional[Dict[str, int]] = None,
+    n_permutations: int = 100,
+    var_reg: float = 1e-5,
+    reg_loss_fn: Optional[str] = None
+    train_size: Optional[float] = .75,
+    retrain_from_scratch: bool = True,
+    optimizer: Union[str, dict, None] = None  # dict as can pass dict to tf.keras.optimizers.deserialize
+    learning_rate: float = 1e-3,
+    batch_size: int = 32,
+    preprocess_batch_fn: Optional[str] = None
+    epochs: int = 3,
+    verbose: int = 0,
+    train_kwargs: Optional[dict] = None,
+    dataset: str = '@alibi_detect.utils.tensorflow.data.TFDataset'
+    device: Literal['cpu', 'cuda', None] = None
 
 
 class KSDriftConfigResolved(DriftDetectorConfigResolved, KSDriftConfig):
@@ -217,7 +280,7 @@ class LSDDDriftConfigResolved(DriftDetectorConfigResolved, LSDDDriftConfig):
     sigma: Optional[np.ndarray]
 
 
-class ClassifierDriftResolved(DriftDetectorConfigResolved, ClassifierDriftConfig):
+class ClassifierDriftConfigResolved(DriftDetectorConfigResolved, ClassifierDriftConfig):
     reg_loss_fn: Optional[Callable] = None
     optimizer: Optional[tf.keras.optimizers.Optimizer] = None
     preprocess_batch_fn: Optional[Callable] = None
@@ -225,14 +288,20 @@ class ClassifierDriftResolved(DriftDetectorConfigResolved, ClassifierDriftConfig
     model: Optional[SUPPORTED_MODELS] = None
 
 
-class SpotTheDiffDriftResolved(DriftDetectorConfigResolved, SpotTheDiffDriftConfig):
-    reg_loss_fn: Optional[Callable] = None
+class SpotTheDiffDriftConfigResolved(DriftDetectorConfigResolved, SpotTheDiffDriftConfig):
     optimizer: Optional[tf.keras.optimizers.Optimizer] = None
     preprocess_batch_fn: Optional[Callable] = None
     dataset: Callable = TFDataset,
-    model: Optional[SUPPORTED_MODELS] = None
     kernel: Union[Callable, KernelConfigResolved, None]
     initial_diffs: Optional[np.ndarray] = None
+
+
+class LearnedKernelDriftConfigResolved(DriftDetectorConfigResolved, LearnedKernelDriftConfig):
+    kernel: Union[Callable, DeepKernelConfigResolved]
+    reg_loss_fn: Optional[Callable] = None
+    optimizer: Optional[tf.keras.optimizers.Optimizer] = None
+    preprocess_batch_fn: Optional[Callable] = None
+    dataset: Callable = TFDataset,
 
 
 DETECTOR_CONFIGS = {
@@ -245,6 +314,7 @@ DETECTOR_CONFIGS = {
     'LSDDDrift': LSDDDriftConfig,
     'ClassifierDrift': ClassifierDriftConfig,
     'SpotTheDiffDrift': SpotTheDiffDriftConfig,
+    'LearnedKernelDrift': LearnedKernelDriftConfig
 }
 
 
@@ -256,6 +326,7 @@ DETECTOR_CONFIGS_RESOLVED = {
     'FETDrift': FETDriftConfigResolved,
     'MMDDrift': MMDDriftConfigResolved,
     'LSDDDrift': LSDDDriftConfigResolved,
-    'ClassifierDrift': ClassifierDriftResolved,
-    'SpotTheDiffDrift': SpotTheDiffDriftResolved
+    'ClassifierDrift': ClassifierDriftConfigResolved,
+    'SpotTheDiffDrift': SpotTheDiffDriftConfigResolved,
+    'LearnedKernelDrift': LearnedKernelDriftConfigResolved
 }

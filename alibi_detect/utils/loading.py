@@ -14,7 +14,8 @@ from alibi_detect.models.tensorflow import TransformerEmbedding
 from alibi_detect.utils.registry import registry
 from alibi_detect.utils.config import DETECTOR_CONFIGS, DETECTOR_CONFIGS_RESOLVED, SUPPORTED_MODELS, SupportedModels,\
     __config_spec__
-from alibi_detect.utils.tensorflow.kernels import DeepKernel
+from alibi_detect.utils.tensorflow.kernels import DeepKernel as DeepKernel_tf
+from alibi_detect.utils.pytorch.kernels import DeepKernel as DeepKernel_torch
 import numpy as np
 from transformers import AutoTokenizer
 import torch
@@ -30,7 +31,7 @@ import dill
 import os
 import toml
 from importlib import import_module
-from pydantic import ValidationError  # TODO - subject to decision on pydantic vs beartype for this
+from pydantic import ValidationError
 import warnings
 
 
@@ -75,7 +76,11 @@ FIELDS_TO_RESOLVE = [
     ['reg_loss_fn'],
     ['kernel'],
     ['dataset'],
-    ['kernel', 'src']
+    ['kernel', 'src'],
+    ['kernel', 'proj'],
+    ['kernel', 'kernel_a', 'src'],
+    ['kernel', 'kernel_b', 'src'],
+    ['initial_diffs']
 ]
 
 # Directories to amend before resolving config (fields to prepend config file dir to)
@@ -91,6 +96,10 @@ DIR_FIELDS = [
     ['kernel', 'src'],
     ['optimizer'],
     ['reg_loss_fn'],
+    ['kernel', 'proj', 'src'],
+    ['kernel', 'kernel_a', 'src'],
+    ['kernel', 'kernel_b', 'src'],
+    ['initial_diffs']
 ]
 
 # Fields to convert from list to tuple in resolve_cfg
@@ -101,7 +110,9 @@ FIELDS_TO_TUPLE = [
 # Fields to convert from list to np.ndarray in resolve_cfg
 FIELDS_TO_ARRAY = [
     ['sigma'],
-    ['kernel', 'sigma']
+    ['kernel', 'sigma'],
+    ['kernel', 'kernel_a', 'sigma'],
+    ['kernel', 'kernel_b', 'sigma'],
 ]
 
 # Fields to convert from str to np.dtype
@@ -147,7 +158,8 @@ def _load_detector_config(cfg: Union[str, os.PathLike, dict],
     if isinstance(cfg, (str, os.PathLike)):
         config_file = Path(deepcopy(cfg))
         config_dir = config_file.parent
-        cfg = read_detector_config(config_file)
+        cfg = read_config(config_file)
+        cfg = _replace(cfg, "None", None)
     elif isinstance(cfg, dict):
         config_file = None
         config_dir = None
@@ -171,13 +183,7 @@ def _load_detector_config(cfg: Union[str, os.PathLike, dict],
     # Get kernel
     kernel = cfg.pop('kernel', None)  # Don't need to check if None as kernel=None defaults to GaussianRBF
     if isinstance(kernel, dict):
-        kernel = load_kernel(kernel, cfg['device'])
-    if detector_name == 'LearnedKernelDrift':
-        if kernel is None:
-            raise ValueError('A `kernel` must be specified for the LearnedKernelDrift detector.')
-        elif not isinstance(kernel, DeepKernel):
-            eps = cfg.pop('eps')  # TODO - default value?
-            kernel = DeepKernel(kernel, eps=eps)
+        kernel = load_kernel(kernel, backend, cfg['device'])
 
     # Get preprocess_fn
     preprocess_fn = cfg.pop('preprocess_fn')
@@ -227,22 +233,46 @@ def init_detector(x_ref: Union[np.ndarray, list],
     return detector
 
 
-def load_kernel(cfg: dict, device: Optional[str] = None) -> Callable:
+def load_kernel(cfg: dict, backend: str = 'tensorflow', device: Optional[str] = None) -> Callable:
     """
     """
-    kernel = cfg['src']
-    sigma = cfg['sigma']
-    if callable(kernel):
-        if kernel == GaussianRBF_tf:
-            sigma = tf.convert_to_tensor(sigma) if isinstance(sigma, np.ndarray) else sigma
-            kernel = kernel(sigma=sigma, trainable=cfg['trainable'])
-        elif kernel == GaussianRBF_torch:
-            torch_device = set_device(device)
-            sigma = torch.from_numpy(sigma).to(torch_device) if isinstance(sigma, np.ndarray) else None
-            kernel = kernel(sigma=sigma, trainable=cfg['trainable'])
+
+    if 'src' in cfg:  # Standard kernel config
+        kernel = cfg['src']
+        sigma = cfg['sigma']
+        if callable(kernel):
+            if kernel == GaussianRBF_tf:
+                sigma = tf.convert_to_tensor(sigma) if isinstance(sigma, np.ndarray) else sigma
+                kernel = kernel(sigma=sigma, trainable=cfg['trainable'])
+            elif kernel == GaussianRBF_torch:
+                torch_device = set_device(device)
+                sigma = torch.from_numpy(sigma).to(torch_device) if isinstance(sigma, np.ndarray) else None
+                kernel = kernel(sigma=sigma, trainable=cfg['trainable'])
+            else:
+                kwargs = cfg['kwargs']
+                kernel = kernel(**kwargs)
+
+    elif 'proj' in cfg:  # DeepKernel config
+        proj = cfg['proj']
+        eps = cfg['eps']
+        # Kernel a
+        kernel_a = cfg['kernel_a']
+        if kernel_a is not None:
+            kernel_a = load_kernel(kernel_a, backend, device)
         else:
-            kwargs = cfg['kwargs']
-            kernel = kernel(**kwargs)
+            kernel_a = GaussianRBF_tf(trainable=True) if backend == 'tensorflow' else GaussianRBF_torch(trainable=True)
+        # Kernel b
+        kernel_b = cfg['kernel_b']
+        if kernel_b is not None:
+            kernel_b = load_kernel(kernel_b, backend, device)
+        else:
+            kernel_b = GaussianRBF_tf(trainable=True) if backend == 'tensorflow' else GaussianRBF_torch(trainable=True)
+
+        # Assemble deep kernel
+        if backend == 'tensorflow':
+            kernel = DeepKernel_tf(proj, kernel_a=kernel_a, kernel_b=kernel_b, eps=eps)
+        else:
+            kernel = DeepKernel_torch(proj, kernel_a=kernel_a, kernel_b=kernel_b, eps=eps)
     else:
         raise ValueError('Unable to process kernel.)')
     return kernel
@@ -443,7 +473,7 @@ def instantiate_class(module: str, name: str, *args, **kwargs) -> Detector:
     return klass(*args, **kwargs)
 
 
-def read_detector_config(filepath: Union[os.PathLike, str]) -> dict:
+def read_config(filepath: Union[os.PathLike, str]) -> dict:
     """
     This function reads a detector toml config file and returns a dict specifying the detector.
     """
@@ -503,7 +533,7 @@ def resolve_cfg(cfg: dict, config_dir: Optional[Path], verbose: bool = False) ->
         # Resolve dict spec
         elif isinstance(src, dict):
             backend = cfg.get('backend', 'tensorflow')
-            if key[-1] == 'model':
+            if key[-1] in ('model', 'proj'):
                 obj = load_model(src, backend=backend, verbose=verbose)
             if key[-1] == 'embedding':
                 obj = load_embedding(src, verbose=verbose)
@@ -585,3 +615,12 @@ def load_tf_model(filepath: Union[str, os.PathLike],
         return None
     model = tf.keras.models.load_model(model_dir.joinpath(model_name + '.h5'), custom_objects=custom_objects)
     return model
+
+
+def _replace(cfg: dict, orig: Optional[str], new: Optional[str]) -> dict:
+    for k, v in cfg.items():
+        if v == orig:
+            cfg[k] = new
+        elif isinstance(v, dict):
+            _replace(v, orig, new)
+    return cfg
