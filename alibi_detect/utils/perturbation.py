@@ -131,10 +131,10 @@ def apply_mask(X: np.ndarray,
 
         for c in channels:
             mask[
-                _,
-                x_start[_]:x_start[_] + mask_size[0],
-                y_start[_]:y_start[_] + mask_size[1],
-                c
+            _,
+            x_start[_]:x_start[_] + mask_size[0],
+            y_start[_]:y_start[_] + mask_size[1],
+            c
             ] = update_val
 
     # apply masks to instances
@@ -201,7 +201,7 @@ def inject_outlier_ts(X: np.ndarray,
         X_outlier[outlier_idx, s] += np.sign(rnd) * np.maximum(np.abs(rnd * n_std), min_std) * stdev
         is_outlier[outlier_idx] = 1
     if n_dim == 1:
-        X_outlier = X_outlier.reshape(n_samples,)
+        X_outlier = X_outlier.reshape(n_samples, )
     return Bunch(data=X_outlier, target=is_outlier, target_names=['normal', 'outlier'])
 
 
@@ -377,6 +377,7 @@ def inject_outlier_categorical(X: np.ndarray,
                  cat_perturb=cat_perturb,
                  d_abs=d_abs,
                  target_names=['normal', 'outlier'])
+
 
 # Note: the perturbation functions below are adopted from
 # https://github.com/hendrycks/robustness/blob/master/ImageNet-C/imagenet_c/imagenet_c/corruptions.py
@@ -666,8 +667,8 @@ def disk(radius: float, alias_blur: float = 0.1, dtype=np.float32) -> np.ndarray
     -------
     Kernel used for Gaussian blurring.
     """
-    if radius <= 8:
-        L = np.arange(-8, 8 + 1)
+    if radius <= 8.:
+        L = np.arange(-8., 8. + 1)
         ksize = (3, 3)
     else:
         L = np.arange(-radius, radius + 1)
@@ -979,11 +980,11 @@ def elastic_transform(x: np.ndarray, mult_dxdy: float, sigma: float,
     rnd_rng *= shape[0]
 
     # random affine
-    center_square = np.float32(shape_size) // 2  # type: ignore[arg-type]
+    center_square = np.asarray(shape_size, dtype=np.float32) // 2
     square_size = min(shape_size) // 3
-    pts1 = np.float32([center_square + square_size,
+    pts1 = np.asarray([center_square + square_size,
                        [center_square[0] + square_size, center_square[1] - square_size],
-                       center_square - square_size])  # type: ignore[arg-type]
+                       center_square - square_size], dtype=np.float32)
     pts2 = pts1 + np.random.uniform(-rnd_rng, rnd_rng, size=pts1.shape).astype(np.float32)
     M = cv2.getAffineTransform(pts1, pts2)
     image = cv2.warpAffine(x, M, shape_size[::-1], borderMode=cv2.BORDER_REFLECT_101)
