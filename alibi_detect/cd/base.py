@@ -381,7 +381,7 @@ class BaseLearnedKernelDrift(BaseDetector):
 
         if isinstance(x_ref, np.ndarray):
             x_ref_tr, x_ref_te = x_ref[idx_ref_tr], x_ref[idx_ref_te]
-            x_cur_tr, x_cur_te = x[idx_cur_tr], x[idx_cur_te]
+            x_cur_tr, x_cur_te = x[idx_cur_tr], x[idx_cur_te]  # type: ignore[call-overload]
         elif isinstance(x, list):
             x_ref_tr, x_ref_te = [x_ref[_] for _ in idx_ref_tr], [x_ref[_] for _ in idx_ref_te]
             x_cur_tr, x_cur_te = [x[_] for _ in idx_cur_tr], [x[_] for _ in idx_cur_te]
