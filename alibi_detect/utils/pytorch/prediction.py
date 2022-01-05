@@ -1,5 +1,5 @@
 from functools import partial
-from typing import Callable, Type, Union, cast
+from typing import Callable, Type, Union
 
 import numpy as np
 import torch
