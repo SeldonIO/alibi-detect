@@ -121,8 +121,8 @@ class BaseMultiDriftOnline(BaseDetector):
 
     def _initialise(self) -> None:
         self.t = 0  # corresponds to a test set of ref data
-        self.test_stats = np.array([])
-        self.drift_preds = np.array([])
+        self.test_stats = np.array([])  # type: ignore[var-annotated]
+        self.drift_preds = np.array([])  # type: ignore[var-annotated]
         self._configure_ref_subset()
 
     def reset(self) -> None:
@@ -320,7 +320,7 @@ class BaseUniDriftOnline(BaseDetector):
     def _initialise(self) -> None:
         self.t = 0
         self.test_stats = np.empty([0, len(self.window_sizes), self.n_features])
-        self.drift_preds = np.array([])
+        self.drift_preds = np.array([])  # type: ignore[var-annotated]
         self._configure_ref()
 
     @abstractmethod
