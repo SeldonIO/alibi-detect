@@ -1,8 +1,9 @@
 from functools import partial
+from typing import Callable, Type, Union, cast
+
 import numpy as np
 import torch
 import torch.nn as nn
-from typing import Callable, Union, Type
 from alibi_detect.utils.prediction import tokenize_transformer
 
 
@@ -64,11 +65,12 @@ def predict_batch(x: Union[list, np.ndarray, torch.Tensor], model: Union[Callabl
             else:
                 raise TypeError(f'Model output type {type(preds_tmp)} not supported. The model output '
                                 f'type needs to be one of list, tuple, np.ndarray or torch.Tensor.')
-    concat = partial(np.concatenate, axis=0) if return_np else partial(torch.cat, dim=0)
-    out = tuple(concat(p) for p in preds) if isinstance(preds, tuple) else concat(preds)
+    concat = partial(np.concatenate, axis=0) if return_np else partial(torch.cat, dim=0)  # type: ignore[arg-type]
+    out = tuple(concat(p) for p in preds) if isinstance(preds, tuple) \
+        else concat(preds)  # type: Union[tuple, np.ndarray, torch.Tensor]
     if return_list:
-        out = list(out)  # TODO: update return type with list
-    return out
+        out = list(out)  # type: ignore[assignment]
+    return out  # TODO: update return type with list
 
 
 def predict_batch_transformer(x: Union[list, np.ndarray], model: Union[nn.Module, nn.Sequential],
