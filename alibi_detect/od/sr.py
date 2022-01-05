@@ -44,8 +44,8 @@ class SpectralResidual(BaseDetector, ThresholdMixin):
         self.threshold = threshold
         self.window_amp = window_amp
         self.window_local = window_local
-        self.conv_amp = np.ones((1, window_amp)).reshape(-1,) / window_amp
-        self.conv_local = np.ones((1, window_local)).reshape(-1,) / window_local
+        self.conv_amp = np.ones((1, window_amp)).reshape(-1, ) / window_amp
+        self.conv_local = np.ones((1, window_local)).reshape(-1, ) / window_local
         self.n_est_points = n_est_points
         self.n_grad_points = n_grad_points
 
@@ -96,7 +96,7 @@ class SpectralResidual(BaseDetector, ThresholdMixin):
         log_amp = np.log(amp)
         phase = np.angle(fft)
         ma_log_amp = np.convolve(log_amp, self.conv_amp, 'same')
-        res_amp = log_amp - ma_log_amp
+        res_amp = log_amp - ma_log_amp  # type: np.ndarray
         sr = np.abs(np.fft.ifft(np.exp(res_amp + 1j * phase)))
         return sr
 
@@ -116,8 +116,8 @@ class SpectralResidual(BaseDetector, ThresholdMixin):
         -------
         Array with slope values.
         """
-        dX = X[-1] - X[-self.n_grad_points-1:-1]
-        dt = t[-1] - t[-self.n_grad_points-1:-1]
+        dX = X[-1] - X[-self.n_grad_points - 1:-1]
+        dt = t[-1] - t[-self.n_grad_points - 1:-1]
         mean_grads = np.mean(dX / dt) * np.mean(dt)
         return mean_grads
 
@@ -162,7 +162,7 @@ class SpectralResidual(BaseDetector, ThresholdMixin):
 
         if len(X.shape) == 2:
             n_samples, n_dim = X.shape
-            X = X.reshape(-1,)
+            X = X.reshape(-1, )
             if X.shape[0] != n_samples:
                 raise ValueError('Only univariate time series allowed for SR method. Number of features '
                                  'of time series equals {}.'.format(n_dim))
