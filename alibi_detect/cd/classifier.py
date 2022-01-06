@@ -71,8 +71,9 @@ class ClassifierDrift:
         preprocess_fn
             Function to preprocess the data before computing the data drift metrics.
         preds_type
-            Whether the model outputs 'probs' (for 'tensorflow', 'pytorch', 'sklearn' models), 'logits' (for 'pytorch',
-            'tensorflow' models), 'scores' (for 'sklearn' models if `decision_function` is supported).
+            Whether the model outputs 'probs' (probabilities - for 'tensorflow', 'pytorch', 'sklearn' models),
+            'logits' (for 'pytorch', 'tensorflow' models), 'scores' (for 'sklearn' models if `decision_function`
+            is supported).
         binarize_preds
             Whether to test for discrepancy on soft  (e.g. probs/logits/scores) model predictions directly
             with a K-S test or binarise to 0-1 prediction errors and apply a binomial test.
@@ -118,7 +119,7 @@ class ClassifierDrift:
         dataloader
             Dataloader object used during training. Only relevant for 'pytorch' backend.
         use_calibration
-            Whether to use calibration. Whether to use calibration. Calibration can be used on top of any model.
+            Whether to use calibration. Calibration can be used on top of any model.
             Only relevant for 'sklearn' backend.
         calibration_kwargs
             Optional additional kwargs for calibration. Only relevant for 'sklearn' backend.
@@ -135,7 +136,7 @@ class ClassifierDrift:
             raise ImportError(f'{backend} not installed. Cannot initialize and run the '
                               f'ClassifierDrift detector with {backend} backend.')
         elif backend not in ['tensorflow', 'pytorch', 'sklearn']:
-            raise NotImplementedError(f'{backend} not implemented. Use tensorflow or pytorch instead.')
+            raise NotImplementedError(f"{backend} not implemented. Use 'tensorflow', 'pytorch' or 'sklearn' instead.")
 
         kwargs = locals()
         args = [kwargs['x_ref'], kwargs['model']]

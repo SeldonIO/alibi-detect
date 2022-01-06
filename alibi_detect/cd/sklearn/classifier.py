@@ -4,6 +4,7 @@ from functools import partial
 from typing import Callable, Dict, Optional, Tuple
 from sklearn.base import clone, ClassifierMixin
 from sklearn.calibration import CalibratedClassifierCV
+from sklearn.exceptions import NotFittedError
 from alibi_detect.cd.base import BaseClassifierDrift
 
 logger = logging.getLogger(__name__)
@@ -100,6 +101,17 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
         self.calibration_kwargs = dict() if calibration_kwargs is None else calibration_kwargs
         self.model = self._clone_model()
 
+    def _has_predict_proba(self, model) -> bool:
+        try:
+            # taking self.x_ref[0].shape to overcome bot cases when self.x_ref is np.ndarray or list
+            model.predict_proba(np.zeros((1, ) + self.x_ref[0].shape))
+            has_predict_proba = True
+        except NotFittedError:
+            has_predict_proba = True
+        except AttributeError:
+            has_predict_proba = False
+        return has_predict_proba
+
     def _clone_model(self):
         model = clone(self.original_model)
 
@@ -128,21 +140,28 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
                 model = CalibratedClassifierCV(base_estimator=model, **self.calibration_kwargs)
                 logger.warning('Using calibration to obtain the prediction probabilities.')
 
+            # check if it has predict proba. Cannot be checked via `hasattr` due to the same issue in SVC (see below)
+            has_predict_proba = self._has_predict_proba(model)
+
             # if the binarize_preds=True, we don't really need the probabilities as in test_probs will be rounded
             # to the closest integer (i.e., to 0 or 1) according to the predicted probability. Thus, we can define
             # a hard label predict_proba based on the predict method
-            if self.binarize_preds and (not hasattr(model, 'predict_proba')):
+            if self.binarize_preds and (not has_predict_proba):
                 if not hasattr(model, 'predict'):
                     raise AttributeError('Trying to use a model which does not support `predict`.')
 
                 def predict_proba(self, X):
                     return np.eye(2)[self.predict(X).astype(np.int32)]
 
-                # add predict_proba method
-                model.predict_proba = partial(predict_proba, model)
+                # add predict_proba method. Overwriting predict_proba is not possible for SVC due
+                # to @available_if(_check_proba)
+                # Check link: https://github.com/scikit-learn/scikit-learn/blob/7e1e6d09b/sklearn/svm/_base.py#L807
+                model.aux_predict_proba = partial(predict_proba, model)
+            elif has_predict_proba:
+                model.aux_predict_proba = model.predict_proba
 
             # at this point the model does not have any predict_proba, thus the test can not be performed.
-            if not hasattr(model, 'predict_proba'):
+            if not hasattr(model, 'aux_predict_proba'):
                 raise AttributeError("Trying to use a model which does not support `predict_proba` with "
                                      "`preds_type='probs'`. Set (`use_calibration=True`, `calibration_kwargs`) or "
                                      "(`binarize_preds=True`).")
@@ -165,7 +184,7 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
                 return np.tile(scores, reps=2)
 
             # add predict_proba method
-            model.predict_proba = partial(predict_proba, model)
+            model.aux_predict_proba = partial(predict_proba, model)
 
         return model
 
@@ -203,7 +222,7 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
                 raise TypeError(f'x needs to be of type np.ndarray or list and not {type(x)}.')
 
             self.model.fit(x_tr, y_tr)
-            probs = self.model.predict_proba(x_te)
+            probs = self.model.aux_predict_proba(x_te)
             probs_oof_list.append(probs)
             idx_oof_list.append(idx_te)
 
