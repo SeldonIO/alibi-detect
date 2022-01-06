@@ -82,8 +82,8 @@ class MMDDriftTorch(BaseMMDDrift):
             self.device = torch.device('cpu')
 
         # initialize kernel
-        sigma = torch.from_numpy(sigma).to(self.device) \
-            if isinstance(sigma, np.ndarray) else None  # type: ignore[assignment]
+        sigma = torch.from_numpy(sigma).to(self.device) if isinstance(sigma,  # type: ignore[assignment]
+                                                                      np.ndarray) else None
         self.kernel = kernel(sigma) if kernel == GaussianRBF else kernel
 
         # compute kernel matrix for the reference data
