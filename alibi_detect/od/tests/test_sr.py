@@ -7,7 +7,9 @@ from alibi_detect.version import __version__
 # create normal time series and one with perturbations
 t = np.linspace(0, 0.5, 1000)
 X = np.sin(40 * 2 * np.pi * t) + 0.5 * np.sin(90 * 2 * np.pi * t)
-idx_pert = np.random.randint(0, 1000, 10)
+
+np.random.seed(0)
+idx_pert = np.random.choice(np.arange(1000), size=10, replace=False)  # ensure we perturb exactly 10 points
 X_pert = X.copy()
 X_pert[idx_pert] = 10
 
@@ -29,7 +31,7 @@ def sr_params(request):
 def test_sr(sr_params):
     window_amp, window_local, n_est_points, return_instance_score = sr_params
 
-    threshold = 2.5
+    threshold = 6
     od = SpectralResidual(threshold=threshold, window_amp=window_amp,
                           window_local=window_local, n_est_points=n_est_points)
 
@@ -46,7 +48,7 @@ def test_sr(sr_params):
     else:
         assert preds_in['data']['instance_score'] is None
     preds_out = od.predict(X_pert, t, return_instance_score=return_instance_score)
-    assert preds_out['data']['is_outlier'].sum() > 0
+    assert preds_out['data']['is_outlier'].sum() >= 10  # check if we detect at least the number of perturbed points
     if return_instance_score:
         assert preds_out['data']['is_outlier'].sum() == (preds_out['data']['instance_score']
                                                          > od.threshold).astype(int).sum()
