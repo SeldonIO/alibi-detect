@@ -54,7 +54,7 @@ class SpectralResidual(BaseDetector, ThresholdMixin):
             Padding method to be used prior to each convolution over log amplitude.
             Possible values: `constant` | `replicate` | `reflect`. Default value: `replicate`.
 
-             - `constant` - padding with constant `0`.
+             - `constant` - padding with constant 0.
 
              - `replicate` - repeats the last/extreme value.
 
@@ -64,7 +64,7 @@ class SpectralResidual(BaseDetector, ThresholdMixin):
             Padding method to be used prior to each convolution over saliency map.
             Possible values: `constant` | `replicate` | `reflect`. Default value: `replicate`.
 
-             - `constant` - padding with constant `0`.
+             - `constant` - padding with constant 0.
 
              - `replicate` - repeats the last/extreme value.
 
@@ -156,7 +156,7 @@ class SpectralResidual(BaseDetector, ThresholdMixin):
             Padding method to be used.
             Possible values:
 
-             - `constant` - padding with constant `0`.
+             - `constant` - padding with constant 0.
 
              - `replicate` - repeats the last/extreme value.
 
