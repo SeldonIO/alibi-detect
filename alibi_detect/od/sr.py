@@ -53,15 +53,23 @@ class SpectralResidual(BaseDetector, ThresholdMixin):
         padding_amp_method
             Padding method to be used prior to each convolution over log amplitude.
             Possible values: `constant` | `replicate` | `reflect`. Default value: `replicate`.
+
              - `constant` - padding with constant `0`.
+
              - `replicate` - repeats the last/extreme value.
+
              - `reflect` - reflects the time series.
+
         padding_local_method
             Padding method to be used prior to each convolution over saliency map.
             Possible values: `constant` | `replicate` | `reflect`. Default value: `replicate`.
+
              - `constant` - padding with constant `0`.
+
              - `replicate` - repeats the last/extreme value.
+
              - `reflect` - reflects the time series.
+
         padding_amp_side
             Whether to pad the amplitudes on both sides or only on one side.
             Possible values: `bilateral` | `left` | `right`.
@@ -133,8 +141,7 @@ class SpectralResidual(BaseDetector, ThresholdMixin):
     def pad_same(X: np.ndarray,
                  W: np.ndarray,
                  method: str = 'replicate',
-                 side: str = 'bilateral'
-                 ) -> np.ndarray:
+                 side: str = 'bilateral') -> np.ndarray:
         """
         Adds padding to the time series `X` such that after applying a valid convolution with a kernel/filter
         `w`, the resulting time series has the same shape as the input `X`.
@@ -148,14 +155,20 @@ class SpectralResidual(BaseDetector, ThresholdMixin):
         method
             Padding method to be used.
             Possible values:
+
              - `constant` - padding with constant `0`.
+
              - `replicate` - repeats the last/extreme value.
+
              - `reflect` - reflects the time series.
         side
             Whether to pad the time series bilateral or only on one side.
             Possible values:
-             - `bilateral` - time series is padded on both sides
+
+             - `bilateral` - time series is padded on both sides.
+
              - `left` - time series is padded only on the left hand side.
+
              - `right` - time series is padded only on the right hand side.
 
         Returns
