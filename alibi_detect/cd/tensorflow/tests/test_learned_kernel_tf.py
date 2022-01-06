@@ -27,7 +27,7 @@ class MyKernel(tf.keras.Model):  # TODO: Support then test models using keras fu
 
 
 # test List[Any] inputs to the detector
-def identity_fn(x: Union[np.array, list]) -> np.array:
+def identity_fn(x: Union[np.ndarray, list]) -> np.ndarray:
     if isinstance(x, list):
         return np.array(x)
     else:

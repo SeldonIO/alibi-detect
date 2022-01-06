@@ -1,7 +1,8 @@
 import logging
-import numpy as np
 import random
-from typing import Dict, Callable, Optional, Tuple, Union
+from typing import Callable, Dict, Optional, Tuple, Union
+
+import numpy as np
 from alibi_detect.utils.sampling import reservoir_sampling
 
 logger = logging.getLogger(__name__)
@@ -46,13 +47,13 @@ def update_reference(X_ref: np.ndarray,
 
 
 def encompass_batching(
-    model: Callable,
-    backend: str,
-    batch_size: int,
-    device: Optional[str] = None,
-    preprocess_batch_fn: Optional[Callable] = None,
-    tokenizer: Optional[Callable] = None,
-    max_len: Optional[int] = None,
+        model: Callable,
+        backend: str,
+        batch_size: int,
+        device: Optional[str] = None,
+        preprocess_batch_fn: Optional[Callable] = None,
+        tokenizer: Optional[Callable] = None,
+        max_len: Optional[int] = None,
 ) -> Callable:
     """
     Takes a function that must be batch evaluated (on tokenized input) and returns a function
@@ -65,20 +66,20 @@ def encompass_batching(
     if backend == 'tensorflow':
         from alibi_detect.cd.tensorflow.preprocess import preprocess_drift
     elif backend == 'pytorch':
-        from alibi_detect.cd.pytorch.preprocess import preprocess_drift  # type: ignore
+        from alibi_detect.cd.pytorch.preprocess import preprocess_drift  # type: ignore[no-redef]
         kwargs['device'] = device
     else:
         raise NotImplementedError(f'{backend} not implemented. Use tensorflow or pytorch instead.')
 
     def model_fn(x: Union[np.ndarray, list]) -> np.ndarray:
-        return preprocess_drift(x, model, **kwargs)  # type: ignore
+        return preprocess_drift(x, model, **kwargs)  # type: ignore[arg-type]
 
     return model_fn
 
 
 def encompass_shuffling_and_batch_filling(
-    model_fn: Callable,
-    batch_size: int
+        model_fn: Callable,
+        batch_size: int
 ) -> Callable:
     """
     Takes a function that already handles batching but additionally performing shuffling
@@ -90,13 +91,13 @@ def encompass_shuffling_and_batch_filling(
         # shuffle
         n_x = len(x)
         perm = np.random.permutation(n_x)
-        x = x[perm] if is_np else [x[i] for i in perm]
+        x = x[perm] if is_np else [x[i] for i in perm]  # type: ignore[call-overload]
         # add extras if necessary
         final_batch_size = n_x % batch_size
         if final_batch_size != 0:
             doubles_inds = random.choices([i for i in range(n_x)], k=batch_size - final_batch_size)
             if is_np:
-                x = np.concatenate([x, x[doubles_inds]], axis=0)  # type: ignore
+                x = np.concatenate([x, x[doubles_inds]], axis=0)  # type: ignore[call-overload]
             else:
                 x += [x[i] for i in doubles_inds]
         # remove any extras and unshuffle

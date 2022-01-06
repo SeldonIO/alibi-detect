@@ -43,7 +43,7 @@ class PtModel(nn.Module):
 def dumb_model(x, n_labels, softmax=False):
     if isinstance(x, list):
         x = np.concatenate(x, axis=0)
-    x = np.stack([np.mean(x*(i+1), axis=-1) for i in range(n_labels)], axis=-1)
+    x = np.stack([np.mean(x * (i + 1), axis=-1) for i in range(n_labels)], axis=-1)
     if softmax:
         x = scipy.special.softmax(x, axis=-1)
     return x
@@ -63,7 +63,7 @@ def id_fn(x: list, to_pt: bool = False) -> Union[np.ndarray, torch.Tensor]:
     if to_pt:
         return torch.from_numpy(x)
     else:
-        return x
+        return x  # type: ignore[return-value]
 
 
 p_val = [.05]

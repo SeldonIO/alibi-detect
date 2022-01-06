@@ -1,9 +1,11 @@
+from typing import Callable, Dict, Optional, Type, Union
+
 import numpy as np
 import tensorflow as tf
+from alibi_detect.utils.tensorflow.prediction import (
+    predict_batch, predict_batch_transformer)
 from tensorflow.keras.layers import Dense, Flatten, Input, InputLayer
 from tensorflow.keras.models import Model
-from typing import Callable, Dict, Optional, Union
-from alibi_detect.utils.tensorflow.prediction import predict_batch, predict_batch_transformer
 
 
 class _Encoder(tf.keras.Model):
@@ -85,7 +87,7 @@ class HiddenOutput(tf.keras.Model):
 
 def preprocess_drift(x: Union[np.ndarray, list], model: tf.keras.Model,
                      preprocess_batch_fn: Callable = None, tokenizer: Callable = None,
-                     max_len: int = None, batch_size: int = int(1e10), dtype: np.dtype = np.float32) \
+                     max_len: int = None, batch_size: int = int(1e10), dtype: Type[np.generic] = np.float32) \
         -> Union[np.ndarray, tf.Tensor]:
     """
     Prediction function used for preprocessing step of drift detector.

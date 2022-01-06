@@ -1,14 +1,15 @@
 from functools import partial
+from typing import Callable, Type, Union
+
 import numpy as np
 import torch
 import torch.nn as nn
-from typing import Callable, Union
 from alibi_detect.utils.prediction import tokenize_transformer
 
 
 def predict_batch(x: Union[list, np.ndarray, torch.Tensor], model: Union[Callable, nn.Module, nn.Sequential],
                   device: torch.device = None, batch_size: int = int(1e10), preprocess_fn: Callable = None,
-                  dtype: Union[np.dtype, torch.dtype] = np.float32) -> Union[np.ndarray, torch.Tensor, tuple]:
+                  dtype: Union[Type[np.generic], torch.dtype] = np.float32) -> Union[np.ndarray, torch.Tensor, tuple]:
     """
     Make batch predictions on a model.
 
@@ -64,17 +65,18 @@ def predict_batch(x: Union[list, np.ndarray, torch.Tensor], model: Union[Callabl
             else:
                 raise TypeError(f'Model output type {type(preds_tmp)} not supported. The model output '
                                 f'type needs to be one of list, tuple, np.ndarray or torch.Tensor.')
-    concat = partial(np.concatenate, axis=0) if return_np else partial(torch.cat, dim=0)
-    out = tuple(concat(p) for p in preds) if isinstance(preds, tuple) else concat(preds)
+    concat = partial(np.concatenate, axis=0) if return_np else partial(torch.cat, dim=0)  # type: ignore[arg-type]
+    out = tuple(concat(p) for p in preds) if isinstance(preds, tuple) \
+        else concat(preds)  # type: Union[tuple, np.ndarray, torch.Tensor]
     if return_list:
-        out = list(out)
-    return out
+        out = list(out)  # type: ignore[assignment]
+    return out  # TODO: update return type with list
 
 
 def predict_batch_transformer(x: Union[list, np.ndarray], model: Union[nn.Module, nn.Sequential],
                               tokenizer: Callable, max_len: int, device: torch.device = None,
-                              batch_size: int = int(1e10), dtype: Union[np.float32, torch.dtype] = np.float32) \
-        -> Union[np.ndarray, torch.Tensor]:
+                              batch_size: int = int(1e10), dtype: Union[Type[np.generic], torch.dtype] = np.float32) \
+        -> Union[np.ndarray, torch.Tensor, tuple]:
     """
     Make batch predictions using a transformers tokenizer and model.
 

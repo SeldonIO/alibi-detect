@@ -1,18 +1,19 @@
-import cv2
-from io import BytesIO
-import numpy as np
-from PIL import Image
 import random
-from scipy.ndimage import zoom
-from scipy.ndimage.interpolation import map_coordinates
-import skimage as sk
-from skimage.filters import gaussian
-import tensorflow as tf
+from io import BytesIO
 from typing import List, Tuple
+
+import cv2
+import numpy as np
+import skimage as sk
+import tensorflow as tf
 from alibi_detect.utils.data import Bunch
 from alibi_detect.utils.discretizer import Discretizer
 from alibi_detect.utils.distance import abdm, multidim_scaling
 from alibi_detect.utils.mapping import ohe2ord
+from PIL import Image
+from scipy.ndimage import zoom
+from scipy.ndimage.interpolation import map_coordinates
+from skimage.filters import gaussian
 
 
 def mutate_categorical(X: np.ndarray,
@@ -137,14 +138,14 @@ def apply_mask(X: np.ndarray,
             ] = update_val
 
     # apply masks to instances
-    X_mask = []
+    X_masks = []
     for _ in range(X_shape[0]):
         if mask_type == 'zero':
             X_mask_ = X[_].reshape((1,) + X_shape[1:]) * mask
         else:
             X_mask_ = np.clip(X[_].reshape((1,) + X_shape[1:]) + mask, clip_rng[0], clip_rng[1])
-        X_mask.append(X_mask_)
-    X_mask = np.concatenate(X_mask, axis=0)
+        X_masks.append(X_mask_)
+    X_mask = np.concatenate(X_masks, axis=0)
 
     return X_mask, mask
 
@@ -200,7 +201,7 @@ def inject_outlier_ts(X: np.ndarray,
         X_outlier[outlier_idx, s] += np.sign(rnd) * np.maximum(np.abs(rnd * n_std), min_std) * stdev
         is_outlier[outlier_idx] = 1
     if n_dim == 1:
-        X_outlier = X_outlier.reshape(n_samples,)
+        X_outlier = X_outlier.reshape(n_samples, )
     return Bunch(data=X_outlier, target=is_outlier, target_names=['normal', 'outlier'])
 
 
@@ -376,6 +377,7 @@ def inject_outlier_categorical(X: np.ndarray,
                  cat_perturb=cat_perturb,
                  d_abs=d_abs,
                  target_names=['normal', 'outlier'])
+
 
 # Note: the perturbation functions below are adopted from
 # https://github.com/hendrycks/robustness/blob/master/ImageNet-C/imagenet_c/imagenet_c/corruptions.py
@@ -633,7 +635,7 @@ def glass_blur(x: np.ndarray, sigma: float, max_delta: int, iterations: int, xra
     if xrange[0] != 0 or xrange[1] != 255:
         x = (x - xrange[0]) / (xrange[1] - xrange[0]) * 255
 
-    x = np.uint8(gaussian(x, sigma=sigma, multichannel=True))
+    x = gaussian(x, sigma=sigma, multichannel=True).astype(np.uint8)
     for i in range(iterations):
         for h in range(nrows - max_delta, max_delta, -1):
             for w in range(ncols - max_delta, max_delta, -1):
@@ -665,8 +667,8 @@ def disk(radius: float, alias_blur: float = 0.1, dtype=np.float32) -> np.ndarray
     -------
     Kernel used for Gaussian blurring.
     """
-    if radius <= 8:
-        L = np.arange(-8, 8 + 1)
+    if radius <= 8.:
+        L = np.arange(-8., 8. + 1)
         ksize = (3, 3)
     else:
         L = np.arange(-radius, radius + 1)
@@ -940,7 +942,7 @@ def jpeg_compression(x: np.ndarray, strength: float, xrange: tuple = None) -> np
 
     x = Image.fromarray(x.astype('uint8'), mode='RGB')
     output = BytesIO()
-    x.save(output, 'JPEG', quality=strength)
+    x.save(output, 'JPEG', quality=strength)  # type: ignore[attr-defined] # TODO: allow redefinition
     x = Image.open(output)
     x_jpeg = np.array(x, dtype=np.float32) / 255
     x_jpeg = x_jpeg * (xrange[1] - xrange[0]) + xrange[0]
@@ -978,11 +980,11 @@ def elastic_transform(x: np.ndarray, mult_dxdy: float, sigma: float,
     rnd_rng *= shape[0]
 
     # random affine
-    center_square = np.float32(shape_size) // 2
+    center_square = np.asarray(shape_size, dtype=np.float32) // 2
     square_size = min(shape_size) // 3
-    pts1 = np.float32([center_square + square_size,
+    pts1 = np.asarray([center_square + square_size,
                        [center_square[0] + square_size, center_square[1] - square_size],
-                       center_square - square_size])
+                       center_square - square_size], dtype=np.float32)
     pts2 = pts1 + np.random.uniform(-rnd_rng, rnd_rng, size=pts1.shape).astype(np.float32)
     M = cv2.getAffineTransform(pts1, pts2)
     image = cv2.warpAffine(x, M, shape_size[::-1], borderMode=cv2.BORDER_REFLECT_101)

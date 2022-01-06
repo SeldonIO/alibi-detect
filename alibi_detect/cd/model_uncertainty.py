@@ -125,8 +125,8 @@ class ClassifierUncertaintyDrift:
         self.meta = self._detector.meta
         self.meta['name'] = 'ClassifierUncertaintyDrift'
 
-    def predict(self, x: Union[np.ndarray, list],  return_p_val: bool = True,
-                return_distance: bool = True) -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
+    def predict(self, x: Union[np.ndarray, list], return_p_val: bool = True,
+                return_distance: bool = True) -> Dict[Dict[str, str], Dict[str, Union[np.ndarray, int, float]]]:
         """
         Predict whether a batch of data has drifted from the reference data.
 
@@ -260,8 +260,8 @@ class RegressorUncertaintyDrift:
         self.meta = self._detector.meta
         self.meta['name'] = 'RegressorUncertaintyDrift'
 
-    def predict(self, x: Union[np.ndarray, list],  return_p_val: bool = True,
-                return_distance: bool = True) -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
+    def predict(self, x: Union[np.ndarray, list], return_p_val: bool = True,
+                return_distance: bool = True) -> Dict[Dict[str, str], Dict[str, Union[np.ndarray, int, float]]]:
         """
         Predict whether a batch of data has drifted from the reference data.
 
