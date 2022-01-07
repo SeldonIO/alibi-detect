@@ -1,7 +1,7 @@
 import logging
 import numpy as np
 from functools import partial
-from typing import Callable, Dict, Optional, Tuple
+from typing import Callable, Dict, Optional, Tuple, Union
 from sklearn.base import clone, ClassifierMixin
 from sklearn.calibration import CalibratedClassifierCV
 from sklearn.exceptions import NotFittedError
@@ -99,7 +99,7 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
         self.original_model = model
         self.use_calibration = use_calibration
         self.calibration_kwargs = dict() if calibration_kwargs is None else calibration_kwargs
-        self.model = self._clone_model()
+        self.model = self._clone_model()  # type: ClassifierMixin
 
     def _has_predict_proba(self, model) -> bool:
         try:
@@ -188,7 +188,7 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
 
         return model
 
-    def score(self, x: np.ndarray) -> Tuple[float, float, np.ndarray, np.ndarray]:
+    def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, np.ndarray, np.ndarray]:
         """
         Compute the out-of-fold drift metric such as the accuracy from a classifier
         trained to distinguish the reference data from the data to be tested.
