@@ -156,9 +156,9 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
                 # add predict_proba method. Overwriting predict_proba is not possible for SVC due
                 # to @available_if(_check_proba)
                 # Check link: https://github.com/scikit-learn/scikit-learn/blob/7e1e6d09b/sklearn/svm/_base.py#L807
-                model.aux_predict_proba = partial(predict_proba, model)
+                setattr(model, 'aux_predict_proba', partial(predict_proba, model))
             elif has_predict_proba:
-                model.aux_predict_proba = model.predict_proba
+                setattr(model, 'aux_predict_proba', model.predict_proba)
 
             # at this point the model does not have any predict_proba, thus the test can not be performed.
             if not hasattr(model, 'aux_predict_proba'):
@@ -184,7 +184,7 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
                 return np.tile(scores, reps=2)
 
             # add predict_proba method
-            model.aux_predict_proba = partial(predict_proba, model)
+            setattr(model, 'aux_predict_proba', partial(predict_proba, model))
 
         return model
 
