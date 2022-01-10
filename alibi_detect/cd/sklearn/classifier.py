@@ -1,10 +1,10 @@
-import inspect
 import logging
 import numpy as np
 from functools import partial
 from typing import Callable, Dict, Optional, Tuple, Union
 from sklearn.base import clone, ClassifierMixin
 from sklearn.calibration import CalibratedClassifierCV
+from sklearn.exceptions import NotFittedError
 from alibi_detect.cd.base import BaseClassifierDrift
 
 logger = logging.getLogger(__name__)
@@ -101,6 +101,17 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
         self.calibration_kwargs = dict() if calibration_kwargs is None else calibration_kwargs
         self.model = self._clone_model()  # type: ClassifierMixin
 
+    def _has_predict_proba(self, model) -> bool:
+        try:
+            # taking self.x_ref[0].shape to overcome bot cases when self.x_ref is np.ndarray or list
+            model.predict_proba(np.zeros((1, ) + self.x_ref[0].shape))
+            has_predict_proba = True
+        except NotFittedError:
+            has_predict_proba = True
+        except AttributeError:
+            has_predict_proba = False
+        return has_predict_proba
+
     def _clone_model(self):
         model = clone(self.original_model)
 
@@ -129,8 +140,8 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
                 model = CalibratedClassifierCV(base_estimator=model, **self.calibration_kwargs)
                 logger.warning('Using calibration to obtain the prediction probabilities.')
 
-            # check if it has `predict_proba`. Cannot be checked via `hasattr` due to the same issue in SVC (see below)
-            has_predict_proba = 'predict_proba' in [m[0] for m in inspect.getmembers(model, predicate=inspect.ismethod)]
+            # check if it has predict proba. Cannot be checked via `hasattr` due to the same issue in SVC (see below)
+            has_predict_proba = self._has_predict_proba(model)
 
             # if the binarize_preds=True, we don't really need the probabilities as in test_probs will be rounded
             # to the closest integer (i.e., to 0 or 1) according to the predicted probability. Thus, we can define
@@ -145,9 +156,9 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
                 # add predict_proba method. Overwriting predict_proba is not possible for SVC due
                 # to @available_if(_check_proba)
                 # Check link: https://github.com/scikit-learn/scikit-learn/blob/7e1e6d09b/sklearn/svm/_base.py#L807
-                setattr(model, 'aux_predict_proba', partial(predict_proba, model))
+                model.aux_predict_proba = partial(predict_proba, model)
             elif has_predict_proba:
-                setattr(model, 'aux_predict_proba', model.predict_proba)
+                model.aux_predict_proba = model.predict_proba
 
             # at this point the model does not have any predict_proba, thus the test can not be performed.
             if not hasattr(model, 'aux_predict_proba'):
@@ -173,7 +184,7 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
                 return np.tile(scores, reps=2)
 
             # add predict_proba method
-            setattr(model, 'aux_predict_proba', partial(predict_proba, model))
+            model.aux_predict_proba = partial(predict_proba, model)
 
         return model
 
