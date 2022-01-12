@@ -1,6 +1,5 @@
 import platform
 import datetime
-import fbprophet
 from itertools import product
 import numpy as np
 import pandas as pd
@@ -33,10 +32,12 @@ def prophet_params(request):
     return tests[request.param]
 
 
-@pytest.mark.skipif(platform.system() == 'Windows',
+@pytest.mark.skipif(platform.system().lower() == 'Windows',
                     reason="Prophet tests skipped on Windows OS")
 @pytest.mark.parametrize('prophet_params', list(range(n_tests)), indirect=True)
 def test_prophet(prophet_params):
+    import fbprophet
+    print(platform.system())
     growth, return_instance_score, return_forecast = prophet_params
     od = OutlierProphet(growth=growth)
     assert isinstance(od.model, fbprophet.forecaster.Prophet)
