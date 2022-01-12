@@ -17,10 +17,16 @@ jobs:
   build:
     if: github.event.pull_request.draft == false
 
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
+        os: ubuntu-latest
         python-version: [ '3.6', '3.7', '3.8', '3.9' ]
+        include: # Run macos and windows tests on python 3.9 only
+          - os: windows-latest 
+            python-version:  '3.9'
+          - os: macos-latest 
+            python-version:  '3.9'
 
     steps:
       - name: Checkout code
