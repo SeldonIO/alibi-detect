@@ -20,7 +20,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: ubuntu-latest
+        os: [ubuntu-latest]
         python-version: [ '3.6', '3.7', '3.8', '3.9' ]
         include: # Run macos and windows tests on python 3.9 only
           - os: windows-latest 
