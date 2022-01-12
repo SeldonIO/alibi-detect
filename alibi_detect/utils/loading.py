@@ -154,12 +154,12 @@ def validate_config(cfg: dict, resolved: bool = False) -> dict:
 
 def _load_detector_config(cfg: Union[str, os.PathLike, dict],
                           verbose: bool = False) -> Detector:
-    # Load yaml if needed
+    # Load toml if needed
     if isinstance(cfg, (str, os.PathLike)):
         config_file = Path(deepcopy(cfg))
         config_dir = config_file.parent
         cfg = read_config(config_file)
-        cfg = _replace(cfg, "None", None)
+        cfg = _replace(cfg, "None", None)  # TODO - move to read_config()
     elif isinstance(cfg, dict):
         config_file = None
         config_dir = None

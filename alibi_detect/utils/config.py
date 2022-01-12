@@ -4,7 +4,7 @@
 #  by detector default kwarg anyway. We could have actual defaults here for clarity, but more maintenance.
 # TODO - similar for Optional[]. Many detector kwargs are not Optional[], but they are for config schema as detector
 #  overrides None. What do we want to put in config schema?
-# TODO - conditional backend imports
+# TODO - conditional backend imports (currently needs tensorflow and torch installed)
 # TODO - consider validating output of get_config calls
 import numpy as np
 import tensorflow as tf

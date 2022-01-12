@@ -58,6 +58,8 @@ extensions = [
     "sphinxcontrib.bibtex",
     "nbsphinx",
     "myst_parser",
+    "sphinx_panels",
+    "sphinx_copybutton"
 ]
 
 # -- nbsphinx settings -------------------------------------------------------
@@ -108,7 +110,7 @@ autodoc_mock_imports = [
     "tqdm",
     "dill",
     "pydantic",
-    "catalogue"
+    "catalogue",
     "numba"
 ]
 
@@ -172,7 +174,7 @@ html_theme_options = {"logo_only": True}
 html_static_path = ["_static"]
 
 # override default theme width
-html_css_files = ['theme_overrides.css'] # override wide tables in RTD theme
+html_css_files = ['theme_overrides.css', 'code_blocks.css'] # override wide tables in RTD theme
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.
