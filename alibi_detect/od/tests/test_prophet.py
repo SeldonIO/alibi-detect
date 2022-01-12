@@ -1,3 +1,4 @@
+import platform
 import datetime
 import fbprophet
 from itertools import product
@@ -32,6 +33,8 @@ def prophet_params(request):
     return tests[request.param]
 
 
+@pytest.mark.skipif(platform.system() == 'Windows',
+                    reason="Prophet tests skipped on Windows OS")
 @pytest.mark.parametrize('prophet_params', list(range(n_tests)), indirect=True)
 def test_prophet(prophet_params):
     growth, return_instance_score, return_forecast = prophet_params

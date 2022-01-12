@@ -1,5 +1,9 @@
 name: CI
 
+defaults:
+  run:
+    shell: bash  # To override PowerShell on Windows
+
 on:
   # Trigger the workflow on push or pull request,
   # but only for the master branch
@@ -43,7 +47,9 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install wheel # To avoid having to install dependencies from setup.py's
           python -m pip install -r requirements/dev.txt
-          python -m pip install -e .[prophet]
+          if [ "$RUNNER_OS" != "Windows" ]; then  # Skip Prophet tests on windows for now (need to ensure mingw-w64 compiler toolchain installed properly)
+            python -m pip install -e .[prophet]
+          fi
           python -m pip install -e .[torch]
           python -m pip freeze
 
