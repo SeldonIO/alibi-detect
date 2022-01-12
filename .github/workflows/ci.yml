@@ -31,30 +31,37 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
+
       - name: Install dependencies
         run: |
-          sudo apt-get install build-essential
-          pip install --upgrade pip
-          pip install -r requirements/dev.txt
-          pip install -e .[prophet]
-          pip install -e .[torch]
-          pip freeze
+          # sudo apt-get install build-essential
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements/dev.txt
+          python -m pip install -e .[prophet]
+          python -m pip install -e .[torch]
+          python -m pip freeze
+
       - name: Lint with flake8
         run: |
           flake8 alibi_detect
+
       - name: Typecheck with mypy
         run: |
           mypy alibi_detect
+
       - name: Test with pytest
         run: |
           pytest alibi_detect
+
       - name: Build Python package
         run: |
           make build_pypi
+
 
   docs:
     if: github.event.pull_request.draft == false
