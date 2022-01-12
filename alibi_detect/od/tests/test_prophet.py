@@ -1,10 +1,10 @@
-import platform
 import datetime
 from itertools import product
 import numpy as np
 import pandas as pd
 import pytest
 from alibi_detect.od import OutlierProphet
+from alibi_detect.od.prophet import PROPHET_INSTALLED
 from alibi_detect.version import __version__
 
 growth = ['linear', 'logistic']
@@ -32,12 +32,11 @@ def prophet_params(request):
     return tests[request.param]
 
 
-@pytest.mark.skipif(platform.system().lower() == 'Windows',
-                    reason="Prophet tests skipped on Windows OS")
+@pytest.mark.skipif(not PROPHET_INSTALLED,
+                    reason="Prophet tests skipped as Prophet not installed")
 @pytest.mark.parametrize('prophet_params', list(range(n_tests)), indirect=True)
 def test_prophet(prophet_params):
     import fbprophet
-    print(platform.system())
     growth, return_instance_score, return_forecast = prophet_params
     od = OutlierProphet(growth=growth)
     assert isinstance(od.model, fbprophet.forecaster.Prophet)
