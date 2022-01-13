@@ -8,6 +8,6 @@ sphinxcontrib-bibtex>=2.1.0, <3.0.0
 myst-parser>=0.14, <0.16
 nbsphinx>=0.8.5, <0.9.0
 ipykernel>=5.1.0, <6.0.0 # required for executing notebooks via nbsphinx
-ipython>=7.2.0, <8.0.0 # required for executing notebooks nbsphinx
+ipython>=7.2.0, <9.0.0 # required for executing notebooks nbsphinx
 # pandoc
 # pandoc==1.16.02 # NB: as this is not a Python library, it should be installed manually on the system or via a package manager such as `conda`
