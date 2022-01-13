@@ -37,14 +37,13 @@ jobs:
 
       - name: Install dependencies
         run: |
-          sudo apt-get install build-essential
-          pip install --upgrade pip
-          pip install -r requirements/dev.txt
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements/dev.txt
           if [ "$RUNNER_OS" != "Windows" ]; then  # Skip Prophet notebooks on windows for now
             python -m pip install -e .[prophet]
           fi
-          pip install -e .[torch]
-          pip freeze
+          python -m pip install -e .[torch]
+          python -m pip freeze
 
       - name: Run notebooks
         run: |

@@ -43,7 +43,6 @@ jobs:
 
       - name: Install dependencies
         run: |
-          # sudo apt-get install build-essential # build-essential appears to already be up-to date on all latest github os'. Nice to remove as otherwise need conditional step dependent on os
           python -m pip install --upgrade pip
           python -m pip install wheel # To avoid having to install dependencies from setup.py's
           python -m pip install -r requirements/dev.txt
