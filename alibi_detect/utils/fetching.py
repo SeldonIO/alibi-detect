@@ -536,6 +536,4 @@ def _join_url(base: str, parts: Union[str, List[str]]) -> str:
     if len(parts) == 0:
         raise TypeError("The `parts` argument must contain at least one item.")
     url = urljoin(base + "/", "/".join(quote_plus(part.strip(r"\/"), safe="/") for part in parts))
-    print(parts)
-    print(url)
     return url
