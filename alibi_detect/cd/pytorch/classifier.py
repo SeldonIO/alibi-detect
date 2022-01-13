@@ -123,6 +123,10 @@ class ClassifierDriftTorch(BaseClassifierDrift):
             seed=seed,
             data_type=data_type
         )
+
+        if preds_type not in ['probs', 'logits']:
+            raise ValueError("'preds_type' should be 'probs' or 'logits'")
+
         self.meta.update({'backend': 'pytorch'})
 
         # set device, define model and training kwargs
@@ -158,8 +162,8 @@ class ClassifierDriftTorch(BaseClassifierDrift):
 
         Returns
         -------
-        p-value, a notion of distance between the trained classifier's out-of-fold performance
-        and that which we'd expect under the null assumption of no drift,
+        p-value, a notion of distance between the trained classifier's out-of-fold performance \
+        and that which we'd expect under the null assumption of no drift, \
         and the out-of-fold classifier model prediction probabilities on the reference and test data
         """
         x_ref, x = self.preprocess(x)

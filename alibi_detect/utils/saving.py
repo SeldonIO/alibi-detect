@@ -89,7 +89,7 @@ def save_detector(detector: Data, filepath: Union[str, os.PathLike]) -> None:
     filepath
         Save directory.
     """
-    if 'backend' in list(detector.meta.keys()) and detector.meta['backend'] == 'pytorch':
+    if 'backend' in list(detector.meta.keys()) and detector.meta['backend'] in ['pytorch', 'sklearn']:
         raise NotImplementedError('Detectors with PyTorch backend are not yet supported.')
 
     detector_name = detector.meta['name']

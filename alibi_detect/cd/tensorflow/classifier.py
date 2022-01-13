@@ -20,7 +20,7 @@ class ClassifierDriftTF(BaseClassifierDrift):
             preprocess_x_ref: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
-            preds_type: str = 'preds',
+            preds_type: str = 'probs',
             binarize_preds: bool = False,
             reg_loss_fn: Callable = (lambda model: 0),
             train_size: Optional[float] = .75,
@@ -59,7 +59,7 @@ class ClassifierDriftTF(BaseClassifierDrift):
         preprocess_fn
             Function to preprocess the data before computing the data drift metrics.
         preds_type
-            Whether the model outputs 'probs' or 'logits'
+            Whether the model outputs 'probs' or 'logits'.
         binarize_preds
             Whether to test for discrepency on soft (e.g. prob/log-prob) model predictions directly
             with a K-S test or binarise to 0-1 prediction errors and apply a binomial test.
@@ -110,6 +110,10 @@ class ClassifierDriftTF(BaseClassifierDrift):
             seed=seed,
             data_type=data_type
         )
+
+        if preds_type not in ['probs', 'logits']:
+            raise ValueError("'preds_type' should be 'probs' or 'logits'")
+
         self.meta.update({'backend': 'tensorflow'})
 
         # define and compile classifier model
@@ -135,8 +139,8 @@ class ClassifierDriftTF(BaseClassifierDrift):
 
         Returns
         -------
-        p-value, a notion of distance between the trained classifier's out-of-fold performance
-        and that which we'd expect under the null assumption of no drift,
+        p-value, a notion of distance between the trained classifier's out-of-fold performance \
+        and that which we'd expect under the null assumption of no drift, \
         and the out-of-fold classifier model prediction probabilities on the reference and test data
         """
         x_ref, x = self.preprocess(x)  # type: ignore[assignment]
