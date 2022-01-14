@@ -37,6 +37,7 @@ Data = Union[
     SpectralResidual
 ]
 
+"""Number of seconds to wait for URL requests before raising an error."""
 TIMEOUT = 10
 
 

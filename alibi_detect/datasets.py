@@ -21,6 +21,7 @@ pd.options.mode.chained_assignment = None  # default='warn'
 
 logger = logging.getLogger(__name__)
 
+"""Number of seconds to wait for URL requests before raising an error."""
 TIMEOUT = 10
 
 
