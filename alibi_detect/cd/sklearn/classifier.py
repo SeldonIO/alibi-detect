@@ -77,7 +77,7 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
             See https://scikit-learn.org/stable/modules/generated/sklearn.calibration.CalibratedClassifierCV.html
             for more details.
         use_oob
-            Whether to use out-of-bag(OOB) predictions. Supported only for RandomForestClassifier.
+            Whether to use out-of-bag(OOB) predictions. Supported only for `RandomForestClassifier`.
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
@@ -267,7 +267,7 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
         probs_sort = probs_oof[np.argsort(idx_oof)]
         return p_val, dist, probs_sort[:n_ref, 1], probs_sort[n_ref:, 1]
 
-    def _score_rf(self, x: np.ndarray) -> Tuple[float, float, np.ndarray, np.ndarray]:
+    def _score_rf(self, x: Union[np.ndarray, list]) -> Tuple[float, float, np.ndarray, np.ndarray]:
         x_ref, x = self.preprocess(x)
         x, y, _ = self.get_splits(x_ref, x, return_splits=False)
         self.model.fit(x, y)

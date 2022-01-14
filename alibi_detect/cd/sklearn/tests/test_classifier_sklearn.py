@@ -278,16 +278,12 @@ def test_predict_proba2(model, pred_types, use_calibration, binarize_preds):
 @pytest.mark.parametrize('n_features', [4])
 @pytest.mark.parametrize('n_folds', [2, 5])
 @pytest.mark.parametrize('preds_type', ['probs'])
-@pytest.mark.parametrize('binarize_preds, use_calibration, use_oob',
-    [
-        (False, False, False),
-        (False, False, True),
-        (False, True, False),
-        (True, False, False),
-        (True, False, True),
-        (True, True, False),
-    ]
-)
+@pytest.mark.parametrize('binarize_preds, use_calibration, use_oob', [(False, False, False),
+                                                                      (False, False, True),
+                                                                      (False, True, False),
+                                                                      (True, False, False),
+                                                                      (True, False, True),
+                                                                      (True, True, False)])
 def test_rf_oob(model, p_val, n, n_features, n_folds, preds_type, binarize_preds, use_calibration, use_oob):
     np.random.seed(0)
 
