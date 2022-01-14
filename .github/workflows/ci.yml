@@ -1,5 +1,9 @@
 name: CI
 
+defaults:
+  run:
+    shell: bash  # To override PowerShell on Windows
+
 on:
   # Trigger the workflow on push or pull request,
   # but only for the master branch
@@ -17,38 +21,53 @@ jobs:
   build:
     if: github.event.pull_request.draft == false
 
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
+        os: [ubuntu-latest]
         python-version: [ '3.6', '3.7', '3.8', '3.9' ]
+        include: # Run macos and windows tests on python 3.9 only
+          - os: windows-latest 
+            python-version:  '3.9'
+          - os: macos-latest 
+            python-version:  '3.9'
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
+
       - name: Install dependencies
         run: |
-          sudo apt-get install build-essential
-          pip install --upgrade pip
-          pip install -r requirements/dev.txt
-          pip install -e .[prophet]
-          pip install -e .[torch]
-          pip freeze
+          python -m pip install --upgrade pip
+          python -m pip install wheel # To avoid having to install dependencies from setup.py's
+          python -m pip install -r requirements/dev.txt
+          if [ "$RUNNER_OS" != "Windows" ]; then  # Skip Prophet tests on windows for now (need to ensure mingw-w64 compiler toolchain installed properly)
+            python -m pip install -e .[prophet]
+          fi
+          python -m pip install -e .[torch]
+          python -m pip freeze
+
       - name: Lint with flake8
         run: |
           flake8 alibi_detect
+
       - name: Typecheck with mypy
         run: |
           mypy alibi_detect
+
       - name: Test with pytest
         run: |
           pytest alibi_detect
+
       - name: Build Python package
         run: |
           make build_pypi
+
 
   docs:
     if: github.event.pull_request.draft == false

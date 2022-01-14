@@ -148,7 +148,7 @@ class BaseClassifierDrift(BaseDetector):
         train and test indices for optionally different folds.
         """
         # create dataset and labels
-        y = np.concatenate([np.zeros(len(x_ref)), np.ones(len(x))], axis=0).astype(int)
+        y = np.concatenate([np.zeros(len(x_ref)), np.ones(len(x))], axis=0).astype(np.int64)  # Fix #411
         if isinstance(x_ref, np.ndarray) and isinstance(x, np.ndarray):
             x = np.concatenate([x_ref, x], axis=0)
         else:  # add 2 lists

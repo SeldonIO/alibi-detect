@@ -13,6 +13,7 @@ from alibi_detect.cd.tensorflow import UAE, preprocess_drift
 from alibi_detect.models.tensorflow.autoencoder import DecoderLSTM, EncoderLSTM
 from alibi_detect.od import (IForest, LLR, Mahalanobis, OutlierAEGMM, OutlierVAE, OutlierVAEGMM,
                              OutlierProphet, SpectralResidual, OutlierSeq2Seq, OutlierAE)
+from alibi_detect.od.prophet import PROPHET_INSTALLED
 from alibi_detect.utils.saving import save_detector, load_detector  # type: ignore
 
 input_dim = 4
@@ -98,8 +99,6 @@ detector = [
                   latent_dim=latent_dim,
                   samples=samples,
                   **kwargs),
-    OutlierProphet(threshold=.7,
-                   growth='logistic'),
     SpectralResidual(threshold=threshold,
                      window_amp=10,
                      window_local=10),
@@ -131,6 +130,11 @@ detector = [
                     n_folds=n_folds_drift,
                     train_size=None)
 ]
+if PROPHET_INSTALLED:
+    detector.append(
+            OutlierProphet(threshold=.7,
+                           growth='logistic')
+    )
 n_tests = len(detector)
 
 

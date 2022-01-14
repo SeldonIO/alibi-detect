@@ -8,6 +8,12 @@ from pathlib import Path
 import pytest
 from jupytext.cli import jupytext
 
+try:
+    from fbprophet import Prophet  # noqa F401
+    PROPHET_INSTALLED = True
+except ImportError:
+    PROPHET_INSTALLED = False
+
 # Set of all example notebooks
 # NOTE: we specifically get only the name of the notebook not the full path as we want to
 # use these as variables on the command line for `pytest` for the workflow executing only
@@ -36,6 +42,8 @@ EXCLUDE_NOTEBOOKS = {
     # the following require complex dependencies
     'cd_mol.ipynb',  # complex to install pytorch-geometric
 }
+if PROPHET_INSTALLED:
+    EXCLUDE_NOTEBOOKS.add('od_prophet_weather.ipynb')  # Exclude if fbprophet not installed i.e. on Windows
 
 EXECUTE_NOTEBOOKS = ALL_NOTEBOOKS - EXCLUDE_NOTEBOOKS
 
