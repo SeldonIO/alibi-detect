@@ -77,7 +77,7 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
             See https://scikit-learn.org/stable/modules/generated/sklearn.calibration.CalibratedClassifierCV.html
             for more details.
         use_oob
-            Whether to use OOB predictions. Supported only for RandomForestClassifier.
+            Whether to use out-of-bag(OOB) predictions. Supported only for RandomForestClassifier.
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
