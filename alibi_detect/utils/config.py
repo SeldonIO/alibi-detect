@@ -48,7 +48,7 @@ class ModelConfig(CustomBaseModel):
 class EmbeddingConfig(CustomBaseModel):
     type: Literal['pooler_output', 'last_hidden_state',
                   'hidden_state', 'hidden_state_cls']  # See alibi_detect.models.tensorflow.embedding
-    layers: List[int]  # TODO - add check conditional on embedding type (see docstring in above)
+    layers: Optional[List[int]] = None  # TODO - add check conditional on embedding type (see docstring in above)
     src: str
 
 
@@ -85,7 +85,7 @@ class PreprocessConfigResolved(PreprocessConfig):
 
 
 class KernelConfig(CustomBaseModel):
-    src: str = "@utils.tensorflow.kernels.GaussianRBF"
+    src: str
 
     # Below kwargs are only passed if kernel == @GaussianRBF
     sigma: Optional[List[float]] = None

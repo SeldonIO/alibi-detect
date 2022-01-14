@@ -82,7 +82,7 @@ bibtex_default_style = 'unsrtalpha'
 # apidoc settings
 apidoc_module_dir = "../../alibi_detect"
 apidoc_output_dir = "api"
-apidoc_excluded_paths = ["**/*test*"]
+apidoc_excluded_paths = ["**/*test*", "utils/config.py"]
 apidoc_module_first = True
 apidoc_separate_modules = True
 apidoc_extra_args = ["-d 6"]

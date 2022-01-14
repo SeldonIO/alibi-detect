@@ -260,7 +260,7 @@ preprocess_fn = {src="function.dill"}
 preprocess_fn.src = "function.dill"
 ```
 
-In the following sections, the layouts of the various possible artefact dictionaries are documented. 
+In the following sections, the layouts of the various possible artefact dictionaries are documented.
 
 #### Preprocessing function
 
@@ -308,23 +308,92 @@ preprocess_batch_fn = "batch_fn.dill"
 
 #### Models 
 
-| Field      | Description                                                                                                                                          |
-|:-----------|:-----------------------------------------------------------------------------------------------------------------------------------------------------|
-| src        | Filepath to directory storing the model.                                                                                                             |
-| type       | Type of model. Options:<br/> - `"custom"`: <br/> - `"HiddenOutput"`: <br/> - `"UAE"`:                                                                |
-| custom_obj | Dictionary of custom objects. Passed to the tensorflow [load_model](https://www.tensorflow.org/api_docs/python/tf/keras/models/load_model) function. |
+A `model` dictionary may be used to specify a model within a `preprocess_fn`, or a model for detectors such as the
+[ClassifierDrift](../api/alibi_detect.cd.classifier.rst) detector. The possible fields are:
 
-Similar story for all below, elaborate...
+| Field      | Description                                                                                                                                                                                                                                                                     | Default (if optional) |
+|:-----------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:----------------------|
+| src        | Filepath to directory storing the model (relative to the `config.toml` file, or absolute).                                                                                                                                                                                      |                       |
+| type       | The type of model to be loaded. Options:<br/> - `"custom"`: A generic custom model. <br/> - `"HiddenOutput"`: An Alibi Detect [HiddenOutput](../api/alibi_detect.cd.tensorflow.rst) model. <br/> - `"UAE"`: An Alibi Detect [UAE](../api/alibi_detect.cd.tensorflow.rst) model. | `"custom"`            |
+| custom_obj | Dictionary of custom objects. Passed to the tensorflow [load_model](https://www.tensorflow.org/api_docs/python/tf/keras/models/load_model) function.                                                                                                                            | `None`                |
+
+The `src` should refer to a directory containing a TensorFlow model stored in the 
+[Keras H5 format](https://www.tensorflow.org/guide/keras/save_and_serialize#keras_h5_format) 
+(more model formats will be supported in the future). Below is a simple example config to load a generic TensorFlow
+model stored in `model/`.
+
+<p class="codeblock-label">config.toml (excerpt)</p>
+
+```toml
+[model]
+type = "custom"
+src = "model"
+```
 
 #### Embedding
 
+As demonstrated in [Text drift detection on IMDB movie reviews](../examples/cd_text_imdb.ipynb), pre-trained embeddings
+can be extracted from [HuggingFace’s transformer package](https://github.com/huggingface/transformers) for use as a 
+preprocessing step. For this purpose, models specified in the `embedding` field will be passed through the Alibi Detect 
+[TransformerEmbedding](../api/alibi_detect.models.tensorflow.embedding.rst) function (or its pytorch equivalent).
+
+| Field  | Description                                                                                                                                                     | Default (if optional) |
+|:-------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------|:----------------------|
+| src    | Model name e.g. `"bert-base-cased"`, or a filepath to directory storing the model to extract embeddings from (relative to the `config.toml` file, or absolute). |                       |
+| type   | The type of embedding to be loaded. See `embedding_type` in [TransformerEmbedding](../api/alibi_detect.models.tensorflow.embedding.rst).                        |                       |
+| layers | List specifying the hidden layers to be used to extract the embedding.                                                                                          | `None`                |
+
+Example:
+
+<p class="codeblock-label">config.toml (excerpt)</p>
+
+```toml
+[model]
+src = "bert-base-cased"
+type = "hidden_state"
+layers = [-1, -2, -3, -4, -5, -6, -7, -8]
+```
+
 #### Tokenizers
 
+Pre-trained tokenizers from [HuggingFace's tokenizers package](https://github.com/huggingface/tokenizers) may be 
+specified via the `tokenizer` field.
+
+| Field  | Description                                                                                                                                                                                | Default (if optional) |
+|:-------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:----------------------|
+| src    | Model name e.g. `"bert-base-cased"`, or a filepath to directory storing the tokenizer model (relative to the `config.toml` file, or absolute).                                             |                       |
+| kwargs | Dictionary of keyword arguments to pass to [AutoTokenizer.from_pretrained](https://huggingface.co/docs/transformers/v4.15.0/en/model_doc/auto#transformers.AutoTokenizer.from_pretrained). | `{}`                  |
+
 #### Kernels
+
+| Field     | Description                                                       | Default (if optional) |
+|:----------|:------------------------------------------------------------------|:----------------------|
+| src       | `"@utils.tensorflow.kernels.GaussianRBF"`                         |                       |
+| sigma     |                                                                   |                       |
+| trainable |                                                                   |                       |
+| kwargs    | Dictionary of additional keyword arguments to pass to the kernel. | `{}`                  |
+
+# TODO - does it make sense to have defaults? Related to None issue
+# TODO - Better way to do kwargs? i.e. include sigma etc in kwargs? TypedDict etc...
+
+Example:
+
+<p class="codeblock-label">config.toml (excerpt)</p>
+
+```toml
+[]
+```
 
 #### Optimizers
 
 Dictionary in format used by `tf.keras.optimizers.serialize`
+Example:
+
+<p class="codeblock-label">config.toml (excerpt)</p>
+
+```toml
+[]
+```
 
 (examples)=
 ## Example config files
@@ -333,8 +402,7 @@ Dictionary in format used by `tf.keras.optimizers.serialize`
 ### Drift detection on text data
 from the IMDB example
 
-TODO: get rid of all this and just add docstrings to pydantic model schema's? Then it'll all show up 
-[here](../api/alibi_detect.utils.config.rst)
+<p class="codeblock-label">config.toml</p>
 
 ```toml
 x_ref = "x_ref.npy"
@@ -359,6 +427,8 @@ layers = [-1, -2, -3, -4, -5, -6, -7, -8]
 ### A classifier based drift detector
 
 From the clf cifar10 example
+
+<p class="codeblock-label">config.toml</p>
 
 ```toml
 name = "ClassifierDrift"
