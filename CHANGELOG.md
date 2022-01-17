@@ -1,5 +1,23 @@
 # Change Log
 
+## [v0.8.1](https://github.com/SeldonIO/alibi-detect/tree/v0.8.1) (2022-01-18)
+[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.8.0...v0.8.1)
+
+### Added
+- **New feature** `ClassifierDrift` now supports `sklearn` models ([#414](https://github.com/SeldonIO/alibi-detect/pull/414)). See [this example](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_clf_adult.html). 
+- The maximum `tensorflow` version has been bumped from 2.6 to 2.7 ([#377](https://github.com/SeldonIO/alibi-detect/pull/377)).
+
+### 
+- Python 3.6 has been deprecated from the supported versions as it has reached end-of-life. 
+
+### Fixed
+- The `SpectralResidual` detector now uses padding to prevent spikes occuring at the beginning and end of scores ([#396](https://github.com/SeldonIO/alibi-detect/pull/396)).
+- The handling of url's in the dataset and model fetching methods has been modified to fix behaviour on Windows platforms.  
+
+### Development
+- `numpy` typing has been updated to be compatible with `numpy 1.22` ([#403](https://github.com/SeldonIO/alibi-detect/pull/403)). This is a prerequisite for upgrading to `tensorflow 2.7`. 
+- The Alibi Detect CI tests now include Windows and MacOS platforms ([#423](https://github.com/SeldonIO/alibi-detect/pull/423)).
+
 ## [v0.8.0](https://github.com/SeldonIO/alibi-detect/tree/v0.8.0) (2021-12-09)
 [Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.7.3...v0.8.0)
 
