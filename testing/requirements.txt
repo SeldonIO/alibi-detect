@@ -3,7 +3,7 @@
 # `test_changed_notebooks` github workflows. The dependencies of notebooks excluded 
 # from testing (see `EXCLUDE_NOTEBOOKS` in `testing/test_notebooks.py`) are not 
 # included here.
-alibi==0.6.2
+alibi<=1.0.0
 seaborn>=0.9.0
 nlp>=0.3.0
 torchvision>=0.8.0
