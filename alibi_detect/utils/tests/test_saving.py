@@ -2,7 +2,6 @@ from functools import partial
 import numpy as np
 import pytest
 from sklearn.model_selection import StratifiedKFold
-import sys
 from tempfile import TemporaryDirectory
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, InputLayer
@@ -147,11 +146,6 @@ def select_detector(request):
 def test_save_load(select_detector):
     det = select_detector
     det_name = det.meta['name']
-
-    # save and load functionality does not work for OutlierProphet and Python 3.6.
-    # https://github.com/facebook/prophet/issues/1361
-    if sys.version_info.minor == 6 and isinstance(det, OutlierProphet):
-        return
 
     with TemporaryDirectory() as temp_dir:
         temp_dir += '/'

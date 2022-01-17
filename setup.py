@@ -25,7 +25,7 @@ setup(
     license="Apache 2.0",
     packages=find_packages(),
     include_package_data=True,
-    python_requires=">=3.6",
+    python_requires=">=3.7",
     # lower bounds based on Debian Stable versions where available
     install_requires=[
         "matplotlib>=3.0.0, <4.0.0",
@@ -42,7 +42,7 @@ setup(
         "dill>=0.3.0, <0.4.0",
         "tqdm>=4.28.1, <5.0.0",
         "requests>=2.21.0, <3.0.0",
-        "numba!=0.54.0",  # Avoid 0.54 due to: https://github.com/SeldonIO/alibi/issues/466
+        "numba>=0.50.0, !=0.54.0, <0.56.0",  # Avoid 0.54 due to: https://github.com/SeldonIO/alibi/issues/466
     ],
     extras_require=extras_require,
     test_suite="tests",

@@ -4,7 +4,7 @@
 
 [![Build Status](https://github.com/SeldonIO/alibi-detect/workflows/CI/badge.svg?branch=master)](https://github.com/SeldonIO/alibi-detect/actions?query=workflow%3A%22CI%22)
 [![Documentation Status](https://readthedocs.org/projects/alibi-detect/badge/?version=latest)](https://docs.seldon.io/projects/alibi-detect/en/latest/?badge=latest)
-![Python version](https://img.shields.io/badge/python-3.6%20%7C%203.7%20%7C%203.8%20%7C%203.9-blue.svg)
+![Python version](https://img.shields.io/badge/python-3.7%20%7C%203.8%20%7C%203.9-blue.svg)
 [![PyPI version](https://badge.fury.io/py/alibi-detect.svg)](https://badge.fury.io/py/alibi-detect)
 ![GitHub Licence](https://img.shields.io/github/license/seldonio/alibi-detect.svg)
 [![Slack channel](https://img.shields.io/badge/chat-on%20slack-e51670.svg)](https://join.slack.com/t/seldondev/shared_invite/zt-vejg6ttd-ksZiQs3O_HOtPQsen_labg)
@@ -78,8 +78,6 @@ od = load_detector(filepath)
 ```
 
 The predictions are returned in a dictionary with as keys `meta` and `data`. `meta` contains the detector's metadata while `data` is in itself a dictionary with the actual predictions. It contains the outlier, adversarial or drift scores and thresholds as well as the predictions whether instances are e.g. outliers or not. The exact details can vary slightly from method to method, so we encourage the reader to become familiar with the [types of algorithms supported](https://docs.seldon.io/projects/alibi-detect/en/latest/overview/algorithms.html).
-
-The save and load functionality for the [Prophet time series outlier detector](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/prophet.html) is currently experiencing [issues in Python 3.6](https://github.com/facebook/prophet/issues/1361) but works in Python 3.7.
 
 ## Supported Algorithms
 
