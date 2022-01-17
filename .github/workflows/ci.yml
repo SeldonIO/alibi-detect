@@ -43,8 +43,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install wheel # To avoid having to install dependencies from setup.py's
+          python -m pip install --upgrade pip setuptools
           python -m pip install -r requirements/dev.txt
           if [ "$RUNNER_OS" != "Windows" ]; then  # Skip Prophet tests on windows for now (need to ensure mingw-w64 compiler toolchain installed properly)
             python -m pip install -e .[prophet]
