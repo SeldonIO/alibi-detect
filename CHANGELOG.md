@@ -7,7 +7,7 @@
 - **New feature** `ClassifierDrift` now supports `sklearn` models ([#414](https://github.com/SeldonIO/alibi-detect/pull/414)). See [this example](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_clf_adult.html). 
 - The maximum `tensorflow` version has been bumped from 2.6 to 2.7 ([#377](https://github.com/SeldonIO/alibi-detect/pull/377)).
 
-### 
+### Changed
 - Python 3.6 has been deprecated from the supported versions as it has reached end-of-life. 
 
 ### Fixed
