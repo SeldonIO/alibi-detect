@@ -1,0 +1,11 @@
+# Dependencies installed (with !pip install) in example notebooks are listed below.
+# Note: These dependencies are installed during the `test_all_notebooks` and 
+# `test_changed_notebooks` github workflows. The dependencies of notebooks excluded 
+# from testing (see `EXCLUDE_NOTEBOOKS` in `testing/test_notebooks.py`) are not 
+# included here.
+alibi<1.0.0
+seaborn>=0.9.0
+nlp>=0.3.0
+torchvision>=0.8.0
+palmerpenguins>=0.1.1
+TimeSynth @ git+https://github.com/TimeSynth/TimeSynth@master
