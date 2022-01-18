@@ -17,6 +17,6 @@ authors:
 - family-names: "Samoilescu"
   given-names: "Robert"
 title: "Alibi Detect: Algorithms for outlier, adversarial and drift detection"
-version: 0.8.0
-date-released: 2021-12-09
+version: 0.8.1
+date-released: 2022-01-18
 url: "https://github.com/SeldonIO/alibi-detect"

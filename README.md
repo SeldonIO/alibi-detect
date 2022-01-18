@@ -334,8 +334,8 @@ BibTeX entry:
   title = {Alibi Detect: Algorithms for outlier, adversarial and drift detection},
   author = {Van Looveren, Arnaud and Klaise, Janis and Vacanti, Giovanni and Cobb, Oliver and Scillitoe, Ashley and Samoilescu, Robert},
   url = {https://github.com/SeldonIO/alibi-detect},
-  version = {0.8.0},
-  date = {2021-12-09},
+  version = {0.8.1},
+  date = {2022-01-18},
   year = {2019}
 }
 ```
