@@ -566,11 +566,15 @@ in your local Python shell.
 ### Drift detection on text data
 
 This example presents a configuration for the [MMDDrift](../api/alibi_detect.cd.mmd.rst) detector used in
-[Text drift detection on IMDB movie reviews](../examples/cd_text_imdb.ipynb). A `tokenizer`, `embedding` and 
+[Text drift detection on IMDB movie reviews](../examples/cd_text_imdb.ipynb). The detector will pass the input text 
+data through a `preprocess_fn` step consisting of a `tokenizer`, `embedding` and `model`. The 
+[Untrained AutoEncoder (UAE)](https://docs.seldon.io/projects/alibi-detect/en/latest/api/alibi_detect.cd.tensorflow.html?highlight=uae#alibi_detect.cd.tensorflow.UAE)
+model is included in order to reduce the dimensionality of the embedding space, which consists of a 768-dimensional 
+vector for each instance.
 
 
 
-````{tabbed} Config-driven instantiation
+````{tabbed} Config file
 :new-group:
 
 <p class="codeblock-label">config.toml</p>
