@@ -269,11 +269,19 @@ def _save_detector_config(detector: Data, filepath: Union[str, os.PathLike], ver
         cfg.update({'initial_diffs': 'initial_diffs.npy'})
 
     # Save config
+    save_config(cfg, filepath)
+
+
+def save_config(cfg: dict, filepath: Union[str, os.PathLike]) -> dict:
+    filepath = Path(filepath)
+    if not filepath.is_dir():
+        logger.warning('Directory {} does not exist and is now created.'.format(filepath))
+        filepath.mkdir(parents=True, exist_ok=True)
     cfg = _resolve_paths(cfg)
     cfg = _replace(cfg, None, "None")  # Note: None replaced with "None" as None/null not valid TOML
     with open(filepath.joinpath('config.toml'), 'w') as f:
         toml.dump(cfg, f, encoder=toml.TomlNumpyEncoder())
-
+    return cfg
 
 def _state_iforest(od: IForest) -> Dict:
     """

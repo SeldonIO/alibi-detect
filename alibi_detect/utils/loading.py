@@ -1,5 +1,7 @@
 # TODO - Need to modularise torch and tensorflow imports and use. e.g. has_tensorflow and has_pytorch etc
 # TODO - clarify public vs private functions
+# TODO - further modularisation? e.g. load_kernel_tf and load_kernel_torch? Or check that torch kernel isn't loaded
+#  with torch installed etc elsewhere...
 from alibi_detect.version import __version__
 from alibi_detect.cd import ChiSquareDrift, KSDrift, MMDDrift, TabularDrift, LSDDDrift
 from alibi_detect.cd import ClassifierUncertaintyDrift, RegressorUncertaintyDrift
@@ -12,7 +14,7 @@ from alibi_detect.cd.tensorflow import UAE
 from alibi_detect.cd.tensorflow.preprocess import _Encoder
 from alibi_detect.models.tensorflow import TransformerEmbedding
 from alibi_detect.utils.registry import registry
-from alibi_detect.utils.config import DETECTOR_CONFIGS, DETECTOR_CONFIGS_RESOLVED, SUPPORTED_MODELS, SupportedModels,\
+from alibi_detect.utils.schemas import DETECTOR_CONFIGS, DETECTOR_CONFIGS_RESOLVED, SUPPORTED_MODELS, SupportedModels,\
     __config_spec__
 from alibi_detect.utils.tensorflow.kernels import DeepKernel as DeepKernel_tf
 from alibi_detect.utils.pytorch.kernels import DeepKernel as DeepKernel_torch

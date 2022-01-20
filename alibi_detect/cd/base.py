@@ -9,7 +9,7 @@ from alibi_detect.cd.utils import get_input_shape, update_reference
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
 from alibi_detect.utils.statstest import fdr
 from alibi_detect.version import __version__
-from alibi_detect.utils.config import __config_spec__
+from alibi_detect.utils.schemas import __config_spec__
 
 if has_pytorch:
     import torch  # noqa F401
