@@ -17,9 +17,9 @@ logger = logging.getLogger(__name__)
 EXAMPLES = ['imdb_mmd']
 
 
-def fetch_example_config(example: str, filepath: Union[str, os.PathLike], verbose: bool = False):
+def gen_example_config(example: str, filepath: Union[str, os.PathLike], verbose: bool = False):
     """
-    Fetch a detector's config file and all related artefacts for a given example. The config file and artefacts
+    Generate a detector's config file and all related artefacts for a given example. The config file and artefacts
     are saved to disk. Running `load_detector(filename)` will instantiate the detector.
 
     Parameters
@@ -37,14 +37,14 @@ def fetch_example_config(example: str, filepath: Union[str, os.PathLike], verbos
         filepath.mkdir(parents=True, exist_ok=True)
 
     if example.lower() == 'imdb_mmd':
-        _fetch_imdb_mmd(filepath, verbose)
+        _gen_imdb_mmd(filepath, verbose)
     else:
         raise ValueError('The requested `example` is not recognised. Choose from %s' % str(EXAMPLES))
 
 
-def _fetch_imdb_mmd(filepath: Path, verbose: bool = False):
+def _gen_imdb_mmd(filepath: Path, verbose: bool = False):
     """
-    Fetch the imdb_mmd example. Drift detection on the imdb dataset with an MMDDrift detector.
+    Generate config for the imdb_mmd example. Drift detection on the imdb dataset with an MMDDrift detector.
     Code is taken (with minor modification) from examples/cd_text_imdb.ipynb.
 
     Parameters

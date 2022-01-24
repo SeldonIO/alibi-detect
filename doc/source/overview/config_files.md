@@ -581,7 +581,7 @@ vector for each instance.
 
 ```toml
 x_ref = "x_ref.npy"
-name = "LSDDDrift"
+name = "MMDDrift"
 
 [preprocess_fn]
 src = "@cd.tensorflow.preprocess.preprocess_drift"
@@ -603,25 +603,81 @@ layers = [-1, -2, -3, -4, -5, -6, -7, -8]
 ````{tabbed} Run Me
 
 ```python
+from alibi_detect.utils.fetching import fetch_config
 from alibi_detect.utils.saving import load_detector
 filepath = 'IMDB_example_MMD/'
+fetch_config('imdb_mmd', filepath)
 detector = load_detector(filepath)
 ```
 ````
-
-TODO - revert back to MMDDrift for above.
-TODO - Generate/fetch artefacts
 
 % TODO: Add a second example demo-ing loading of state (once implemented). e.g. for online or learned kernel.
 
 ## Advanced usage
 
-
 ### Validating config files
 
-Talk about pydantic. The unresolved and resolved config dict is validated with pydantic...
+When `load_detector` is called, the `validate_config` utility function is used internally to validate the given
+detector configuration. This allows any problems with the configuration to be detected prior to sometimes time-consuming
+operations of loading artefacts and instantiating the detector. The `validate_config` function can also be used by 
+devs working with Alibi Detect config dictionaries. 
 
-Public function for doing this...
+Under-the-hood, `load_detector` parses the `config.toml` file into a *unresolved* config dictionary. It then passes
+this *dict* through `validate_config`, to check for errors such as incorrectly named fields, and incorrect types. 
+If working directly with config dictionaries, the same process can be done explicitly, for example:
+
+```python
+from alibi_detect.utils.loading import validate_config
+
+# Define a simple config dict
+cfg = {
+    'name': 'MMDDrift',
+    'x_ref': 'x_ref.npy',
+    'p_val': [0.05],
+    'bad_field': 'oops!'
+}
+
+# Validate the config
+validate_config(cfg)
+```
+
+This will return a `ValidationError` because `p_val` is expected to be *float* not a *list*, and `bad_field` isn't 
+a recognised field for the `MMDDrift` detector:
+
+```console
+ValidationError: 2 validation errors for MMDDriftConfig
+p_val
+  value is not a valid float (type=type_error.float)
+bad_field
+  extra fields not permitted (type=value_error.extra)
+```
+
+Validating at this stage is useful at errors can be caught before the sometimes time-consuming operation of 
+resolving the config dictionary, which involves loading each artefact in the dictionary. The *resolved* config 
+dictionary is then also passed through `validate_config`, and this second validation can also be done explicitly:
+
+```python
+import numpy as np
+from alibi_detect.utils.loading import validate_config
+
+# Create some reference data
+x_ref = np.random.normal(size=(100,5))
+
+# Define a simple config dict
+cfg = {
+    'name': 'MMDDrift',
+    'x_ref': x_ref,
+    'p_val': 0.05
+}
+
+# Validate the config
+validate_config(cfg, resolved=True)
+```
+
+Note that since `resolved=True`, `validate_config` is now expecting `x_ref` to be a Numpy ndarray instead of a string.
+This second level of validation can be useful as it helps detect problems with loaded artefacts before attempting the
+sometimes time-consuming operation of instantiating the detector. 
+
 
 ### Detector specification schemas
 
