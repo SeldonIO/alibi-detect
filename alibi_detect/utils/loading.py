@@ -71,7 +71,6 @@ FIELDS_TO_RESOLVE = [
     ['preprocess_fn', 'model'],
     ['preprocess_fn', 'embedding'],
     ['preprocess_fn', 'tokenizer'],
-    ['preprocess_fn', 'device'],
     ['x_ref'],
     ['model'],
     ['optimizer'],

@@ -157,7 +157,7 @@ class TabularDrift(BaseUnivariateDrift):
         """
         cfg = super().get_config()
 
-        # Prep categories_per_feature. TODO - toml can't write dict with int keys. See loading.read_detector_config
+        # Prep categories_per_feature. NOTE - toml can't write dict with int keys. See loading.read_detector_config
         categories_per_feature = {}
         for key in self.x_ref_categories.keys():
             categories_per_feature[str(key)] = self.x_ref_categories[key]

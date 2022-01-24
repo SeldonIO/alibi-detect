@@ -19,8 +19,6 @@ x_ref = np.load('detector_directory/x_ref.npy')
 detector = MMDDrift(x_ref, p_val=0.05)
 ```
 
-TODO - custom styling for code-blocks and panels
-
 ---
 
 **Config-driven instantiation**
@@ -28,7 +26,8 @@ TODO - custom styling for code-blocks and panels
 
 <p class="codeblock-label">config.toml</p>
 
-```toml
+```{code-block} toml
+
 name = "MMDDrift"
 x_ref = "x_ref.npy"
 p_val = 0.05
@@ -141,18 +140,20 @@ The following table shows the allowable formats for all artefacts that can be sp
 |Field                     |.npy file  |.dill file  |Registry|Dictionary| 
 |:-------------------------|:---------:|:----------:|:------:|:--------:|
 |`x_ref`                   |✔          |            |        |          |
-|`kernel`                  |           |✔           |✔       |          |
 |`optimizer`               |           |✔           |✔       |          |
 |`reg_loss_fn`             |           |✔           |✔       |          |
-|`preprocess_fn`           |           |✔           |✔       |✔         |
 |`model`                   |           |            |✔       |✔         |
+|`preprocess_fn`           |           |✔           |✔       |✔         |
 |`preprocess_fn.model`     |           |            |✔       |✔         |
 |`preprocess_fn.embedding` |           |            |✔       |✔         |
 |`preprocess_fn.tokenizer` |           |            |✔       |✔         |
+|`dataset`                 |           |✔           |✔       |✔         |
+|`kernel`                  |           |✔           |✔       |✔         |
+|`kernel.proj`             |           |            |✔       |✔         |
+|`kernel.kernel_a`         |           |✔           |✔       |✔         |
+|`kernel.kernel_b`         |           |✔           |✔       |✔         |
+|`initial_diffs`           |✔          |            |        |          |
 ```
-
-{ref}`all-artefacts-table`
-TODO: More fields to add in table. 
 
 (dictionaries)=
 ### Artefact dictionaries
@@ -558,9 +559,10 @@ to be easily specified for preprocessing, as demonstrated in the [IMDB example](
 (examples)=
 ## Example config files
 
-To demonstrate the config-driven functionality, example detector configurations are presented in this section. 
-To download a config file and its related artefacts, click on the *Run Me* tabs, copy the Python code, and run it
-in your local Python shell.
+% To demonstrate the config-driven functionality, example detector configurations are presented in this section. 
+
+% To download a config file and its related artefacts, click on the *Run Me* tabs, copy the Python code, and run it
+% in your local Python shell.
 
 (imdb_example)=
 ### Drift detection on text data
@@ -573,9 +575,8 @@ model is included in order to reduce the dimensionality of the embedding space, 
 vector for each instance.
 
 
-
-````{tabbed} Config file
-:new-group:
+%````{tabbed} Config file
+%:new-group:
 
 <p class="codeblock-label">config.toml</p>
 
@@ -598,18 +599,18 @@ src = "embedding/"
 type = "hidden_state"
 layers = [-1, -2, -3, -4, -5, -6, -7, -8]
 ```
-````
-
-````{tabbed} Run Me
-
-```python
-from alibi_detect.utils.fetching import fetch_config
-from alibi_detect.utils.saving import load_detector
-filepath = 'IMDB_example_MMD/'
-fetch_config('imdb_mmd', filepath)
-detector = load_detector(filepath)
-```
-````
+%````
+%
+%````{tabbed} Run Me
+%
+%```python
+%from alibi_detect.utils.fetching import fetch_config
+%from alibi_detect.utils.saving import load_detector
+%filepath = 'IMDB_example_MMD/'
+%fetch_config('imdb_mmd', filepath)
+%detector = load_detector(filepath)
+%```
+%````
 
 % TODO: Add a second example demo-ing loading of state (once implemented). e.g. for online or learned kernel.
 
@@ -681,4 +682,44 @@ sometimes time-consuming operation of instantiating the detector.
 
 ### Detector specification schemas
 
-Can/should implement a public facing api to fetch the pydantic config schema's in json format. Discuss here...
+Validation of detector config files is performed with [pydantic](https://pydantic-docs.helpmanual.io/). Each 
+detector's *unresolved* configuration is represented by a pydantic model, stored in `DETECTOR_CONFIGS`. Information on 
+a detector config's permitted fields and their types can be obtained via the config model's `schema` method
+(or `schema_json` if a json formatted string is preferred). For example, for the `KSDrift` detector:
+
+```python
+from alibi_detect.utils.schemas import DETECTOR_CONFIGS
+schema = DETECTOR_CONFIGS['KSDrift'].schema()
+
+```
+
+returns a dictionary with the keys `['title', 'type', 'properties', 'required', 'additionalProperties', 'definitions']`.
+The `'properties'` item is a dictionary containing all the possible fields for the detector:
+
+```python
+{'name': {'title': 'Name', 'type': 'string'},
+ 'version': {'title': 'Version', 'default': '0.8.1dev', 'type': 'string'},
+ 'config_spec': {'title': 'Config Spec',
+  'default': '0.1.0dev',
+  'type': 'string'},
+ 'backend': {'title': 'Backend',
+  'default': 'tensorflow',
+  'enum': ['tensorflow', 'pytorch'],
+  'type': 'string'},
+ 'x_ref': {'title': 'X Ref', 'default': 'x_ref.npy', 'type': 'string'},
+ 'p_val': {'title': 'P Val', 'default': 0.05, 'type': 'number'},
+ 'x_ref_preprocessed': {'title': 'X Ref Preprocessed',
+  'default': False,
+  'type': 'boolean'},
+ ...
+ }
+```
+
+Compulsory fields are listed in `'required'`, whilst additional pydantic model definitions such as 
+`ModelConfig` are stored in `'definitions'`. These additional models define the schemas for the 
+[artefact dictionaries](complex_fields). 
+
+Similarly, *resolved* detector configurations are represented by pydantic models stored in 
+`DETECTOR_CONFIGS_RESOLVED`. The difference being that for these models, artefacts are expected to have their 
+resolved types, for example `x_ref` should be a NumPy ndarray. The `schema` and `schema_json` methods can be applied 
+to these models in the same way.

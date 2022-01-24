@@ -182,7 +182,7 @@ def save_detector(detector: Data, filepath: Union[str, os.PathLike], verbose: bo
             save_tf_llr(detector, filepath)
 
 
-# TODO - eventually this will become save_detector
+# TODO - eventually this will become save_detector (once outlier and adversarial updated to save via config.tonl)
 def _save_detector_config(detector: Data, filepath: Union[str, os.PathLike], verbose: bool = False):
     """
     Save a drift detector. The detector is saved as a yaml config file. Artefacts such as
@@ -282,6 +282,7 @@ def save_config(cfg: dict, filepath: Union[str, os.PathLike]) -> dict:
     with open(filepath.joinpath('config.toml'), 'w') as f:
         toml.dump(cfg, f, encoder=toml.TomlNumpyEncoder())
     return cfg
+
 
 def _state_iforest(od: IForest) -> Dict:
     """
@@ -1655,7 +1656,6 @@ def save_kernel(kernel: Callable,
     cfg_kernel = {}
 
     keys = [k for k, v in registry.get_all().items() if type(kernel) == v or kernel == v]
-    #  TODO - doesn't work if trainable etc set
     registry_str = keys[0] if len(keys) == 1 else None
     if registry_str is not None:  # alibi-detect registered kernel
         cfg_kernel.update({'src': '@' + registry_str})

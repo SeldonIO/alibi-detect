@@ -81,7 +81,7 @@ class LSDDDriftTF(BaseLSDDDrift):
         self.meta.update({'backend': 'tensorflow'})
 
         if not self.preprocess_at_pred:
-            x_ref = tf.convert_to_tensor(self.x_ref)  # TODO - why is this here but not in score?
+            x_ref = tf.convert_to_tensor(self.x_ref)
             self._configure_normalization(x_ref)
             x_ref = self._normalize(x_ref)
             self._initialize_kernel(x_ref)

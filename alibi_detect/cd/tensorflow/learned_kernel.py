@@ -258,7 +258,7 @@ class LearnedKernelDriftTF(BaseLearnedKernelDrift):
             'preprocess_batch_fn': train_kwargs.pop('preprocess_fn'),
             'epochs': train_kwargs.pop('epochs'),
             'verbose': train_kwargs.pop('verbose'),
-            'train_kwargs': train_kwargs,  # Should have popped all default train_kwargs by this point TODO - check
+            'train_kwargs': train_kwargs,  # Should have popped all default train_kwargs by this point
             'dataset': self.dataset.func
         }
         cfg.update(kwargs)
