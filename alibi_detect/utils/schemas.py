@@ -1,7 +1,8 @@
 # mypy: ignore-errors
 # TODO - conditional checks depending on backend
 # TODO - defaults are currently mix of actual default and None. Doesn't matter too much as None will then be overridden
-#  by detector default kwarg anyway. We could have actual defaults here for clarity, but more maintenance.
+#  by detector default kwarg anyway. We could have actual defaults here for clarity, but more maintenance. Not true?!
+#
 # TODO - similar for Optional[]. Many detector kwargs are not Optional[], but they are for config schema as detector
 #  overrides None. What do we want to put in config schema?
 # TODO - conditional backend imports (currently needs tensorflow and torch installed)

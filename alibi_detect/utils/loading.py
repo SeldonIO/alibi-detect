@@ -2,30 +2,40 @@
 # TODO - clarify public vs private functions
 # TODO - further modularisation? e.g. load_kernel_tf and load_kernel_torch? Or check that torch kernel isn't loaded
 #  with torch installed etc elsewhere...
+# alibi_detect imports
 from alibi_detect.version import __version__
-from alibi_detect.cd import ChiSquareDrift, KSDrift, MMDDrift, TabularDrift, LSDDDrift
-from alibi_detect.cd import ClassifierUncertaintyDrift, RegressorUncertaintyDrift
-from alibi_detect.cd import ClassifierDrift, LearnedKernelDrift, SpotTheDiffDrift
+from alibi_detect.ad import AdversarialAE, ModelDistillation
+from alibi_detect.ad.adversarialae import DenseHidden
+from alibi_detect.cd import (ChiSquareDrift, ClassifierDrift, KSDrift, MMDDrift, LSDDDrift, TabularDrift,
+                             CVMDrift, FETDrift, SpotTheDiffDrift, ClassifierUncertaintyDrift,
+                             RegressorUncertaintyDrift, LearnedKernelDrift)
+from alibi_detect.od import (IForest, LLR, Mahalanobis, OutlierAE, OutlierAEGMM, OutlierProphet,
+                             OutlierSeq2Seq, OutlierVAE, OutlierVAEGMM, SpectralResidual)
+from alibi_detect.od.llr import build_model
 from alibi_detect.cd.pytorch import preprocess_drift as preprocess_drift_torch
 from alibi_detect.cd.tensorflow import preprocess_drift as preprocess_drift_tf
 from alibi_detect.utils.tensorflow.kernels import GaussianRBF as GaussianRBF_tf
 from alibi_detect.utils.pytorch.kernels import GaussianRBF as GaussianRBF_torch
 from alibi_detect.cd.tensorflow import UAE
+from alibi_detect.models.tensorflow import TransformerEmbedding, PixelCNN
 from alibi_detect.cd.tensorflow.preprocess import _Encoder
-from alibi_detect.models.tensorflow import TransformerEmbedding
+from alibi_detect.models.tensorflow.autoencoder import AE, AEGMM, DecoderLSTM, EncoderLSTM, Seq2Seq, VAE, VAEGMM
 from alibi_detect.utils.registry import registry
 from alibi_detect.utils.schemas import DETECTOR_CONFIGS, DETECTOR_CONFIGS_RESOLVED, SUPPORTED_MODELS, SupportedModels,\
     __config_spec__
 from alibi_detect.utils.tensorflow.kernels import DeepKernel as DeepKernel_tf
 from alibi_detect.utils.pytorch.kernels import DeepKernel as DeepKernel_torch
-import numpy as np
-from transformers import AutoTokenizer
-import torch
-import torch.nn as nn
+# TensorFlow imports
 import tensorflow as tf
 from tensorflow.keras import Model as KerasModel
-from typing import Union, Optional, Callable
-import logging
+from tensorflow_probability.python.distributions.distribution import Distribution
+# PyTorch imports
+import torch
+import torch.nn as nn
+# Misc imports
+from transformers import AutoTokenizer
+import numpy as np
+from typing import Union, Optional, Callable, Dict, List, Tuple
 from copy import deepcopy
 from functools import partial
 from pathlib import Path
@@ -35,22 +45,38 @@ import toml
 from importlib import import_module
 from pydantic import ValidationError
 import warnings
+import logging
 
 
 logger = logging.getLogger(__name__)
 
-Detector = Union[
+Data = Union[
+    AdversarialAE,
     ChiSquareDrift,
     ClassifierDrift,
-    ClassifierUncertaintyDrift,
+    IForest,
     KSDrift,
-    LearnedKernelDrift,
-    LSDDDrift,
+    LLR,
+    Mahalanobis,
     MMDDrift,
-    RegressorUncertaintyDrift,
+    LSDDDrift,
+    ModelDistillation,
+    OutlierAE,
+    OutlierAEGMM,
+    OutlierProphet,
+    OutlierSeq2Seq,
+    OutlierVAE,
+    OutlierVAEGMM,
+    SpectralResidual,
+    TabularDrift,
+    CVMDrift,
+    FETDrift,
     SpotTheDiffDrift,
-    TabularDrift
+    ClassifierUncertaintyDrift,
+    RegressorUncertaintyDrift,
+    LearnedKernelDrift
 ]
+
 
 REQUIRES_BACKEND = [
     ClassifierDrift.__name__,
@@ -62,6 +88,34 @@ REQUIRES_BACKEND = [
     SpotTheDiffDrift.__name__
 ]
 
+DEFAULT_DETECTORS = [
+    'AdversarialAE',
+    'IForest',
+    'LLR',
+    'Mahalanobis',
+    'ModelDistillation',
+    'OutlierAE',
+    'OutlierAEGMM',
+    'OutlierProphet',
+    'OutlierSeq2Seq',
+    'OutlierVAE',
+    'OutlierVAEGMM',
+    'SpectralResidual',
+]
+
+# TODO - add all drift methods in as .get_config() methods are completed
+DRIFT_DETECTORS = [  # Drift detectors separated out as they now have their own save methods
+    'MMDDrift',
+    'LSDDDrift',
+    'ChiSquareDrift',
+    'TabularDrift',
+    'KSDrift',
+    'CVMDrift',
+    'FETDrift',
+    'ClassifierDrift',
+    'SpotTheDiffDrift',
+    'LearnedKernelDrift'
+]
 
 # Fields to resolve in resolve_cfg ("resolve" meaning either load local artefact or resolve @registry, conversion to
 # tuple, np.ndarray and np.dtype are dealt with separately).
@@ -154,7 +208,7 @@ def validate_config(cfg: dict, resolved: bool = False) -> dict:
 
 
 def _load_detector_config(cfg: Union[str, os.PathLike, dict],
-                          verbose: bool = False) -> Detector:
+                          verbose: bool = False) -> Data:
     # Load toml if needed
     if isinstance(cfg, (str, os.PathLike)):
         config_file = Path(deepcopy(cfg))
@@ -212,7 +266,7 @@ def init_detector(x_ref: Union[np.ndarray, list],
                   preprocess_fn: Optional[Callable] = None,
                   model: Optional[SUPPORTED_MODELS] = None,
                   kernel: Optional[Callable] = None,
-                  backend: Optional[str] = 'tensorflow') -> Detector:
+                  backend: Optional[str] = 'tensorflow') -> Data:
     detector_name = cfg.pop('name', None)
 
     # Process args
@@ -455,22 +509,9 @@ def set_nested_value(dic, keys, value):
     dic[keys[-1]] = value
 
 
-def instantiate_class(module: str, name: str, *args, **kwargs) -> Detector:
+def instantiate_class(module: str, name: str, *args, **kwargs) -> Data:
     # TODO - need option to validate without instantiating class?
     klass = getattr(import_module(module), name)
-
-    # Validate resolved detector args/kwargs
-    val = None
-    if hasattr(klass, 'validate'):
-        val = klass.validate
-    elif hasattr(klass.__init__, 'validate'):
-        val = klass.__init__.validate
-    if val is not None:
-        try:
-            val(*args, **kwargs)
-        except ValidationError as exc:
-            logger.warning("Error validating class instantiation arguments:\n%s" % exc)
-
     return klass(*args, **kwargs)
 
 
@@ -580,6 +621,686 @@ def set_device(device: Optional[str]) -> torch.device:
     else:
         torch_device = torch.device('cpu')
     return torch_device
+
+
+def load_detector(filepath: Union[str, os.PathLike], **kwargs) -> Data:
+    """
+    Load outlier, drift or adversarial detector.
+
+    Parameters
+    ----------
+    filepath
+        Load directory.
+
+    Returns
+    -------
+    Loaded outlier or adversarial detector object.
+    """
+    filepath = Path(filepath)
+    # If reference is a 'config.toml' itself, pass to new load function
+    if filepath.name == 'config.toml':
+        return _load_detector_config(filepath)
+
+    # Otherwise, if a directory, look for meta.dill, meta.pickle or config.toml inside it
+    elif filepath.is_dir():
+        files = [str(f.name) for f in filepath.iterdir() if f.is_file()]
+        if 'config.toml' in files:
+            return _load_detector_config(filepath.joinpath('config.toml'))
+        elif 'meta.dill' in files:
+            return _load_detector_legacy(filepath, '.dill', **kwargs)
+        elif 'meta.pickle' in files:
+            return _load_detector_legacy(filepath, '.pickle', **kwargs)
+        else:
+            raise ValueError('Neither meta.dill, meta.pickle or config.toml exist in {}.'.format(filepath))
+
+    # No other file types are accepted, so if not dir raise error
+    else:
+        raise ValueError("load_detector accepts only a filepath to a directory, or a config.toml file.")
+
+
+def _load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwargs) -> Data:
+    """
+    Legacy function to load outlier, drift or adversarial detectors stored dill or pickle files.
+
+    Warning
+    -------
+    This function will be removed in a future version.
+
+    Parameters
+    ----------
+    filepath
+        Load directory.
+    suffix
+        File suffix for meta and state files. Either `'.dill'` or `'.pickle'`.
+
+    Returns
+    -------
+    Loaded outlier or adversarial detector object.
+    """
+    warnings.warn(' Loading of meta.dill and meta.pickle files will be removed in a future version.',
+                  DeprecationWarning, 3)
+
+    if kwargs:
+        k = list(kwargs.keys())
+    else:
+        k = []
+
+    # check if path exists
+    filepath = Path(filepath)
+    if not filepath.is_dir():
+        raise ValueError('{} does not exist.'.format(filepath))
+
+    # load metadata
+    meta_dict = dill.load(open(filepath.joinpath('meta' + suffix), 'rb'))
+
+    # check version
+    try:
+        if meta_dict['version'] != __version__:
+            warnings.warn(f'Trying to load detector from version {meta_dict["version"]} when using version '
+                          f'{__version__}. This may lead to breaking code or invalid results.')
+    except KeyError:
+        warnings.warn('Trying to load detector from an older version.'
+                      'This may lead to breaking code or invalid results.')
+
+    if 'backend' in list(meta_dict.keys()) and meta_dict['backend'] == 'pytorch':
+        raise NotImplementedError('Detectors with PyTorch backend are not yet supported.')
+
+    detector_name = meta_dict['name']
+    if detector_name not in DEFAULT_DETECTORS and detector_name not in DRIFT_DETECTORS:
+        raise ValueError('{} is not supported by `load_detector`.'.format(detector_name))
+
+    # load outlier detector specific parameters
+    state_dict = dill.load(open(filepath.joinpath(detector_name + suffix), 'rb'))
+
+    # initialize outlier detector
+    if detector_name == 'OutlierAE':
+        ae = load_tf_ae(filepath)
+        detector = _init_od_ae(state_dict, ae)
+    elif detector_name == 'OutlierVAE':
+        vae = load_tf_vae(filepath, state_dict)
+        detector = _init_od_vae(state_dict, vae)
+    elif detector_name == 'Mahalanobis':
+        detector = _init_od_mahalanobis(state_dict)
+    elif detector_name == 'IForest':
+        detector = _init_od_iforest(state_dict)
+    elif detector_name == 'OutlierAEGMM':
+        aegmm = load_tf_aegmm(filepath, state_dict)
+        detector = _init_od_aegmm(state_dict, aegmm)
+    elif detector_name == 'OutlierVAEGMM':
+        vaegmm = load_tf_vaegmm(filepath, state_dict)
+        detector = _init_od_vaegmm(state_dict, vaegmm)
+    elif detector_name == 'AdversarialAE':
+        ae = load_tf_ae(filepath)
+        custom_objects = kwargs['custom_objects'] if 'custom_objects' in k else None
+        model = load_tf_model(filepath, custom_objects=custom_objects)
+        model_hl = load_tf_hl(filepath, model, state_dict)
+        detector = _init_ad_ae(state_dict, ae, model, model_hl)
+    elif detector_name == 'ModelDistillation':
+        md = load_tf_model(filepath, load_dir='distilled_model')
+        custom_objects = kwargs['custom_objects'] if 'custom_objects' in k else None
+        model = load_tf_model(filepath, custom_objects=custom_objects)
+        detector = _init_ad_md(state_dict, md, model)
+    elif detector_name == 'OutlierProphet':
+        detector = _init_od_prophet(state_dict)
+    elif detector_name == 'SpectralResidual':
+        detector = _init_od_sr(state_dict)
+    elif detector_name == 'OutlierSeq2Seq':
+        seq2seq = load_tf_s2s(filepath, state_dict)
+        detector = _init_od_s2s(state_dict, seq2seq)
+    elif detector_name == 'LLR':
+        models = load_tf_llr(filepath, **kwargs)
+        detector = _init_od_llr(state_dict, models)
+    else:
+        raise NotImplementedError
+
+    detector.meta = meta_dict
+    return detector
+
+
+def load_tf_hl(filepath: Union[str, os.PathLike], model: tf.keras.Model, state_dict: dict) -> List[tf.keras.Model]:
+    """
+    Load hidden layer models for AdversarialAE.
+
+    Parameters
+    ----------
+    filepath
+        Saved model directory.
+    model
+        tf.keras classification model.
+    state_dict
+        Dictionary containing the detector's parameters.
+
+    Returns
+    -------
+    List with loaded tf.keras models.
+    """
+    model_dir = Path(filepath).joinpath('model')
+    hidden_layer_kld = state_dict['hidden_layer_kld']
+    if not hidden_layer_kld:
+        return []
+    model_hl = []
+    for i, (hidden_layer, output_dim) in enumerate(hidden_layer_kld.items()):
+        m = DenseHidden(model, hidden_layer, output_dim)
+        m.load_weights(model_dir.joinpath('model_hl_' + str(i) + '.ckpt'))
+        model_hl.append(m)
+    return model_hl
+
+
+def load_tf_ae(filepath: Union[str, os.PathLike]) -> tf.keras.Model:
+    """
+    Load AE.
+
+    Parameters
+    ----------
+    filepath
+        Saved model directory.
+
+    Returns
+    -------
+    Loaded AE.
+    """
+    model_dir = Path(filepath).joinpath('model')
+    if not [f.name for f in model_dir.glob('[!.]*.h5')]:
+        logger.warning('No encoder, decoder or ae found in {}.'.format(model_dir))
+        return None
+    encoder_net = tf.keras.models.load_model(model_dir.joinpath('encoder_net.h5'))
+    decoder_net = tf.keras.models.load_model(model_dir.joinpath('decoder_net.h5'))
+    ae = AE(encoder_net, decoder_net)
+    ae.load_weights(model_dir.joinpath('ae.ckpt'))
+    return ae
+
+
+def load_tf_vae(filepath: Union[str, os.PathLike],
+                state_dict: Dict) -> tf.keras.Model:
+    """
+    Load VAE.
+
+    Parameters
+    ----------
+    filepath
+        Saved model directory.
+    state_dict
+        Dictionary containing the latent dimension and beta parameters.
+
+    Returns
+    -------
+    Loaded VAE.
+    """
+    model_dir = Path(filepath).joinpath('model')
+    if not [f.name for f in model_dir.glob('[!.]*.h5')]:
+        logger.warning('No encoder, decoder or vae found in {}.'.format(model_dir))
+        return None
+    encoder_net = tf.keras.models.load_model(model_dir.joinpath('encoder_net.h5'))
+    decoder_net = tf.keras.models.load_model(model_dir.joinpath('decoder_net.h5'))
+    vae = VAE(encoder_net, decoder_net, state_dict['latent_dim'], beta=state_dict['beta'])
+    vae.load_weights(model_dir.joinpath('vae.ckpt'))
+    return vae
+
+
+def load_tf_aegmm(filepath: Union[str, os.PathLike],
+                  state_dict: Dict) -> tf.keras.Model:
+    """
+    Load AEGMM.
+
+    Parameters
+    ----------
+    filepath
+        Saved model directory.
+    state_dict
+        Dictionary containing the `n_gmm` and `recon_features` parameters.
+
+    Returns
+    -------
+    Loaded AEGMM.
+    """
+    model_dir = Path(filepath).joinpath('model')
+
+    if not [f.name for f in model_dir.glob('[!.]*.h5')]:
+        logger.warning('No encoder, decoder, gmm density net or aegmm found in {}.'.format(model_dir))
+        return None
+    encoder_net = tf.keras.models.load_model(model_dir.joinpath('encoder_net.h5'))
+    decoder_net = tf.keras.models.load_model(model_dir.joinpath('decoder_net.h5'))
+    gmm_density_net = tf.keras.models.load_model(model_dir.joinpath('gmm_density_net.h5'))
+    aegmm = AEGMM(encoder_net, decoder_net, gmm_density_net, state_dict['n_gmm'], state_dict['recon_features'])
+    aegmm.load_weights(model_dir.joinpath('aegmm.ckpt'))
+    return aegmm
+
+
+def load_tf_vaegmm(filepath: Union[str, os.PathLike],
+                   state_dict: Dict) -> tf.keras.Model:
+    """
+    Load VAEGMM.
+
+    Parameters
+    ----------
+    filepath
+        Saved model directory.
+    state_dict
+        Dictionary containing the `n_gmm`, `latent_dim` and `recon_features` parameters.
+
+    Returns
+    -------
+    Loaded VAEGMM.
+    """
+    model_dir = Path(filepath).joinpath('model')
+    if not [f.name for f in model_dir.glob('[!.]*.h5')]:
+        logger.warning('No encoder, decoder, gmm density net or vaegmm found in {}.'.format(model_dir))
+        return None
+    encoder_net = tf.keras.models.load_model(model_dir.joinpath('encoder_net.h5'))
+    decoder_net = tf.keras.models.load_model(model_dir.joinpath('decoder_net.h5'))
+    gmm_density_net = tf.keras.models.load_model(model_dir.joinpath('gmm_density_net.h5'))
+    vaegmm = VAEGMM(encoder_net, decoder_net, gmm_density_net, state_dict['n_gmm'],
+                    state_dict['latent_dim'], state_dict['recon_features'], state_dict['beta'])
+    vaegmm.load_weights(model_dir.joinpath('vaegmm.ckpt'))
+    return vaegmm
+
+
+def load_tf_s2s(filepath: Union[str, os.PathLike],
+                state_dict: Dict) -> tf.keras.Model:
+    """
+    Load seq2seq TensorFlow model.
+
+    Parameters
+    ----------
+    filepath
+        Saved model directory.
+    state_dict
+        Dictionary containing the `latent_dim`, `shape`, `output_activation` and `beta` parameters.
+
+    Returns
+    -------
+    Loaded seq2seq model.
+    """
+    model_dir = Path(filepath).joinpath('model')
+    if not [f.name for f in model_dir.glob('[!.]*.h5')]:
+        logger.warning('No seq2seq or threshold estimation net found in {}.'.format(model_dir))
+        return None
+    # load threshold estimator net, initialize encoder and decoder and load seq2seq weights
+    threshold_net = tf.keras.models.load_model(model_dir.joinpath('threshold_net.h5'), compile=False)
+    latent_dim = state_dict['latent_dim']
+    n_features = state_dict['shape'][-1]
+    encoder_net = EncoderLSTM(latent_dim)
+    decoder_net = DecoderLSTM(latent_dim, n_features, state_dict['output_activation'])
+    seq2seq = Seq2Seq(encoder_net, decoder_net, threshold_net, n_features, beta=state_dict['beta'])
+    seq2seq.load_weights(model_dir.joinpath('seq2seq.ckpt'))
+    return seq2seq
+
+
+def load_tf_llr(filepath: Union[str, os.PathLike], dist_s: Union[Distribution, PixelCNN] = None,
+                dist_b: Union[Distribution, PixelCNN] = None, input_shape: tuple = None):
+    """
+    Load LLR TensorFlow models or distributions.
+
+    Parameters
+    ----------
+    detector
+        Likelihood ratio detector.
+    filepath
+        Saved model directory.
+    dist_s
+        TensorFlow distribution for semantic model.
+    dist_b
+        TensorFlow distribution for background model.
+    input_shape
+        Input shape of the model.
+
+    Returns
+    -------
+    Detector with loaded models.
+    """
+    model_dir = Path(filepath).joinpath('model')
+    h5files = [f.name for f in model_dir.glob('[!.]*.h5')]
+    if 'model_s.h5' in h5files and 'model_b.h5' in h5files:
+        model_s, dist_s = build_model(dist_s, input_shape, str(model_dir.joinpath('model_s.h5').resolve()))
+        model_b, dist_b = build_model(dist_b, input_shape, str(model_dir.joinpath('model_b.h5').resolve()))
+        return dist_s, dist_b, model_s, model_b
+    else:
+        dist_s = tf.keras.models.load_model(model_dir.joinpath('model.h5'), compile=False)
+        if 'model_background.h5' in h5files:
+            dist_b = tf.keras.models.load_model(model_dir.joinpath('model_background.h5'), compile=False)
+        else:
+            dist_b = None
+        return dist_s, dist_b, None, None
+
+
+def _init_od_ae(state_dict: Dict,
+                ae: tf.keras.Model) -> OutlierAE:
+    """
+    Initialize OutlierVAE.
+
+    Parameters
+    ----------
+    state_dict
+        Dictionary containing the parameter values.
+    ae
+        Loaded AE.
+
+    Returns
+    -------
+    Initialized OutlierAE instance.
+    """
+    od = OutlierAE(threshold=state_dict['threshold'], ae=ae)
+    return od
+
+
+def _init_od_vae(state_dict: Dict,
+                 vae: tf.keras.Model) -> OutlierVAE:
+    """
+    Initialize OutlierVAE.
+
+    Parameters
+    ----------
+    state_dict
+        Dictionary containing the parameter values.
+    vae
+        Loaded VAE.
+
+    Returns
+    -------
+    Initialized OutlierVAE instance.
+    """
+    od = OutlierVAE(threshold=state_dict['threshold'],
+                    score_type=state_dict['score_type'],
+                    vae=vae,
+                    samples=state_dict['samples'])
+    return od
+
+
+def _init_ad_ae(state_dict: Dict,
+                ae: tf.keras.Model,
+                model: tf.keras.Model,
+                model_hl: List[tf.keras.Model]) -> AdversarialAE:
+    """
+    Initialize AdversarialAE.
+
+    Parameters
+    ----------
+    state_dict
+        Dictionary containing the parameter values.
+    ae
+        Loaded VAE.
+    model
+        Loaded classification model.
+    model_hl
+        List of tf.keras models.
+
+    Returns
+    -------
+    Initialized AdversarialAE instance.
+    """
+    ad = AdversarialAE(threshold=state_dict['threshold'],
+                       ae=ae,
+                       model=model,
+                       model_hl=model_hl,
+                       w_model_hl=state_dict['w_model_hl'],
+                       temperature=state_dict['temperature'])
+    return ad
+
+
+def _init_ad_md(state_dict: Dict,
+                distilled_model: tf.keras.Model,
+                model: tf.keras.Model) -> ModelDistillation:
+    """
+    Initialize ModelDistillation.
+
+    Parameters
+    ----------
+    state_dict
+        Dictionary containing the parameter values.
+    distilled_model
+        Loaded distilled model.
+    model
+        Loaded classification model.
+
+    Returns
+    -------
+    Initialized ModelDistillation instance.
+    """
+    ad = ModelDistillation(threshold=state_dict['threshold'],
+                           distilled_model=distilled_model,
+                           model=model,
+                           temperature=state_dict['temperature'],
+                           loss_type=state_dict['loss_type'])
+    return ad
+
+
+def _init_od_aegmm(state_dict: Dict,
+                   aegmm: tf.keras.Model) -> OutlierAEGMM:
+    """
+    Initialize OutlierAEGMM.
+
+    Parameters
+    ----------
+    state_dict
+        Dictionary containing the parameter values.
+    aegmm
+        Loaded AEGMM.
+
+    Returns
+    -------
+    Initialized OutlierAEGMM instance.
+    """
+    od = OutlierAEGMM(threshold=state_dict['threshold'],
+                      aegmm=aegmm)
+    od.phi = state_dict['phi']
+    od.mu = state_dict['mu']
+    od.cov = state_dict['cov']
+    od.L = state_dict['L']
+    od.log_det_cov = state_dict['log_det_cov']
+
+    if not all(tf.is_tensor(_) for _ in [od.phi, od.mu, od.cov, od.L, od.log_det_cov]):
+        logger.warning('Loaded AEGMM detector has not been fit.')
+
+    return od
+
+
+def _init_od_vaegmm(state_dict: Dict,
+                    vaegmm: tf.keras.Model) -> OutlierVAEGMM:
+    """
+    Initialize OutlierVAEGMM.
+
+    Parameters
+    ----------
+    state_dict
+        Dictionary containing the parameter values.
+    vaegmm
+        Loaded VAEGMM.
+
+    Returns
+    -------
+    Initialized OutlierVAEGMM instance.
+    """
+    od = OutlierVAEGMM(threshold=state_dict['threshold'],
+                       vaegmm=vaegmm,
+                       samples=state_dict['samples'])
+    od.phi = state_dict['phi']
+    od.mu = state_dict['mu']
+    od.cov = state_dict['cov']
+    od.L = state_dict['L']
+    od.log_det_cov = state_dict['log_det_cov']
+
+    if not all(tf.is_tensor(_) for _ in [od.phi, od.mu, od.cov, od.L, od.log_det_cov]):
+        logger.warning('Loaded VAEGMM detector has not been fit.')
+
+    return od
+
+
+def _init_od_s2s(state_dict: Dict,
+                 seq2seq: tf.keras.Model) -> OutlierSeq2Seq:
+    """
+    Initialize OutlierSeq2Seq.
+
+    Parameters
+    ----------
+    state_dict
+        Dictionary containing the parameter values.
+    seq2seq
+        Loaded seq2seq model.
+
+    Returns
+    -------
+    Initialized OutlierSeq2Seq instance.
+    """
+    seq_len, n_features = state_dict['shape'][1:]
+    od = OutlierSeq2Seq(n_features,
+                        seq_len,
+                        threshold=state_dict['threshold'],
+                        seq2seq=seq2seq,
+                        latent_dim=state_dict['latent_dim'],
+                        output_activation=state_dict['output_activation'])
+    return od
+
+
+def _load_text_embed(filepath: Union[str, os.PathLike], load_dir: str = 'model') \
+        -> Tuple[TransformerEmbedding, Callable]:
+    model_dir = Path(filepath).joinpath(load_dir)
+    tokenizer = AutoTokenizer.from_pretrained(str(model_dir.resolve()))
+    args = dill.load(open(model_dir.joinpath('embedding.dill'), 'rb'))
+    emb = TransformerEmbedding(
+        str(model_dir.resolve()), embedding_type=args['embedding_type'], layers=args['layers']
+    )
+    return emb, tokenizer
+
+
+def _init_preprocess(state_dict: Dict, model: Optional[Union[tf.keras.Model, tf.keras.Sequential]],
+                     emb: Optional[TransformerEmbedding], tokenizer: Optional[Callable], **kwargs) \
+        -> Tuple[Optional[Callable], Optional[dict]]:
+    """ Return preprocessing function and kwargs. """
+    if kwargs:  # override defaults
+        keys = list(kwargs.keys())
+        preprocess_fn = kwargs['preprocess_fn'] if 'preprocess_fn' in keys else None
+        preprocess_kwargs = kwargs['preprocess_kwargs'] if 'preprocess_kwargs' in keys else None
+        return preprocess_fn, preprocess_kwargs
+    elif model is not None and isinstance(state_dict['preprocess_fn'], Callable) \
+            and isinstance(state_dict['preprocess_kwargs'], dict):
+        preprocess_fn = state_dict['preprocess_fn']
+        preprocess_kwargs = state_dict['preprocess_kwargs']
+    else:
+        return None, None
+
+    keys = list(preprocess_kwargs.keys())
+
+    if 'model' not in keys:
+        raise ValueError('No model found for the preprocessing step.')
+
+    if preprocess_kwargs['model'] == 'UAE':
+        if emb is not None:
+            model = _Encoder(emb, mlp=model)
+            preprocess_kwargs['tokenizer'] = tokenizer
+        preprocess_kwargs['model'] = UAE(encoder_net=model)
+    else:  # incl. preprocess_kwargs['model'] == 'HiddenOutput'
+        preprocess_kwargs['model'] = model
+
+    return preprocess_fn, preprocess_kwargs
+
+
+def _init_od_mahalanobis(state_dict: Dict) -> Mahalanobis:
+    """
+    Initialize Mahalanobis.
+
+    Parameters
+    ----------
+    state_dict
+        Dictionary containing the parameter values.
+
+    Returns
+    -------
+    Initialized Mahalanobis instance.
+    """
+    od = Mahalanobis(threshold=state_dict['threshold'],
+                     n_components=state_dict['n_components'],
+                     std_clip=state_dict['std_clip'],
+                     start_clip=state_dict['start_clip'],
+                     max_n=state_dict['max_n'],
+                     cat_vars=state_dict['cat_vars'],
+                     ohe=state_dict['ohe'])
+    od.d_abs = state_dict['d_abs']
+    od.clip = state_dict['clip']
+    od.mean = state_dict['mean']
+    od.C = state_dict['C']
+    od.n = state_dict['n']
+    return od
+
+
+def _init_od_iforest(state_dict: Dict) -> IForest:
+    """
+    Initialize isolation forest.
+
+    Parameters
+    ----------
+    state_dict
+        Dictionary containing the parameter values.
+
+    Returns
+    -------
+    Initialized IForest instance.
+    """
+    od = IForest(threshold=state_dict['threshold'])
+    od.isolationforest = state_dict['isolationforest']
+    return od
+
+
+def _init_od_prophet(state_dict: Dict) -> OutlierProphet:
+    """
+    Initialize OutlierProphet.
+
+    Parameters
+    ----------
+    state_dict
+        Dictionary containing the parameter values.
+
+    Returns
+    -------
+    Initialized OutlierProphet instance.
+    """
+    od = OutlierProphet(cap=state_dict['cap'])
+    od.model = state_dict['model']
+    return od
+
+
+def _init_od_sr(state_dict: Dict) -> SpectralResidual:
+    """
+    Initialize spectral residual detector.
+
+    Parameters
+    ----------
+    state_dict
+        Dictionary containing the parameter values.
+
+    Returns
+    -------
+    Initialized SpectralResidual instance.
+    """
+    od = SpectralResidual(threshold=state_dict['threshold'],
+                          window_amp=state_dict['window_amp'],
+                          window_local=state_dict['window_local'],
+                          n_est_points=state_dict['n_est_points'],
+                          n_grad_points=state_dict['n_grad_points'])
+    return od
+
+
+def _init_od_llr(state_dict: Dict, models: tuple) -> LLR:
+    """
+    Initialize LLR detector.
+
+    Parameters
+    ----------
+    state_dict
+        Dictionary containing the parameter values.
+
+    Returns
+    -------
+    Initialized LLR instance.
+    """
+    od = LLR(threshold=state_dict['threshold'],
+             model=models[0],
+             model_background=models[1],
+             log_prob=state_dict['log_prob'],
+             sequential=state_dict['sequential'])
+    if models[2] is not None and models[3] is not None:
+        od.model_s = models[2]
+        od.model_b = models[3]
+    return od
 
 
 def load_tf_model(filepath: Union[str, os.PathLike],
