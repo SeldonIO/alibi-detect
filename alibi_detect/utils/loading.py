@@ -1,3 +1,5 @@
+# type: ignore
+# TODO: need to rewrite utilities using isinstance or @singledispatch for type checking to work properly
 # TODO - Need to modularise torch and tensorflow imports and use. e.g. has_tensorflow and has_pytorch etc
 # TODO - clarify public vs private functions
 # TODO - further modularisation? e.g. load_kernel_tf and load_kernel_torch? Or check that torch kernel isn't loaded
@@ -43,7 +45,6 @@ import dill
 import os
 import toml
 from importlib import import_module
-from pydantic import ValidationError
 import warnings
 import logging
 
@@ -283,7 +284,8 @@ def init_detector(x_ref: Union[np.ndarray, list],
         cfg.update({'kernel': kernel})
 
     # Instantiate the detector
-    detector = instantiate_class('alibi_detect.cd', detector_name, *args, **cfg)
+    klass = getattr(import_module('alibi_detect.cd'), detector_name)
+    detector = klass(*args, **cfg)
     logger.info('Instantiated drift detector %s', detector_name)
     return detector
 
@@ -458,11 +460,6 @@ def prep_model_and_embedding(model: Optional[SUPPORTED_MODELS], emb: Optional[Tr
     load_model in order to reduce complexity of load functions (with future model load functionality in mind), and also
     to separate embedding logic from model loading (allows for cleaner config layout and resolution of it).
 
-    Note: downside of separating this function from load_model is we no longer know model_type = UAE/HiddenState/custom
-     when chaining embedding and model together. Currently requires a bit of a hack to avoid nesting UAE's.
-     On plus side, makes clearer distinction between settings for model loading and settings for combining
-     model/embedding (the latter going in preprocess_fn config). But need to revisit...
-
     Parameters
     ----------
     model
@@ -479,7 +476,7 @@ def prep_model_and_embedding(model: Optional[SUPPORTED_MODELS], emb: Optional[Tr
     # If a model exists, process it
     if model is not None:
         if backend == 'tensorflow':
-            model = model.encoder if isinstance(model, UAE) else model
+            model = model.encoder if isinstance(model, UAE) else model  # This is to avoid nesting UAE's
             if emb is not None:
                 model = _Encoder(emb, mlp=model)
             model = UAE(encoder_net=model)
@@ -507,12 +504,6 @@ def set_nested_value(dic, keys, value):
     for key in keys[:-1]:
         dic = dic.setdefault(key, {})
     dic[keys[-1]] = value
-
-
-def instantiate_class(module: str, name: str, *args, **kwargs) -> Data:
-    # TODO - need option to validate without instantiating class?
-    klass = getattr(import_module(module), name)
-    return klass(*args, **kwargs)
 
 
 def read_config(filepath: Union[os.PathLike, str]) -> dict:
