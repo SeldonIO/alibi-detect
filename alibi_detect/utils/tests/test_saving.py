@@ -8,237 +8,379 @@ from functools import partial
 import numpy as np
 import scipy
 import pytest
-# from pytest_lazyfixture import lazy_fixture
+from pytest_cases import parametrize_with_cases, parametrize, fixture, param_fixture
 from sklearn.model_selection import StratifiedKFold
 from tempfile import TemporaryDirectory
 import tensorflow as tf
-from tensorflow.keras.layers import Dense, InputLayer, Conv1D, Flatten
 from typing import Callable
-from alibi_detect.cd import (ChiSquareDrift, ClassifierDrift, KSDrift, MMDDrift, TabularDrift, FETDrift,
-                             LSDDDrift, SpotTheDiffDrift, LearnedKernelDrift)  # ), ClassifierUncertaintyDrift)
 from packaging import version
-if version.parse(scipy.__version__) >= version.parse('1.7.0'):
-    from alibi_detect.cd import CVMDrift
-from alibi_detect.cd.tensorflow import UAE, preprocess_drift
+from alibi_detect.cd.tensorflow import preprocess_drift as preprocess_drift_tf
+from alibi_detect.cd.pytorch import preprocess_drift as preprocess_drift_pt
 from alibi_detect.utils.tensorflow.kernels import DeepKernel
+import torch
 from alibi_detect.utils.saving import save_detector  # type: ignore
 from alibi_detect.utils.loading import load_detector  # type: ignore
-
-input_dim = 4
-latent_dim = 2
-n_gmm = 2
-threshold = 10.
-threshold_drift = .55
-n_folds_drift = 5
-samples = 6
-seq_len = 10
-p_val = .05
-X_ref = np.random.rand(samples * input_dim).reshape(samples, input_dim)
-X_ref_cat = np.tile(np.array([np.arange(samples)] * input_dim).T, (2, 1))
-X_ref_mix = X_ref.copy()
-X_ref_mix[:, 0] = np.tile(np.array(np.arange(samples // 2)), (1, 2)).T[:, 0]
-X_ref_bin = np.random.choice([0, 1], (samples, input_dim), p=[0.6, 0.4])
-n_permutations = 10
-
-# define encoder and decoder
-encoder_net = tf.keras.Sequential(
-    [
-        InputLayer(input_shape=(input_dim,)),
-        Dense(5, activation=tf.nn.relu),
-        Dense(latent_dim, activation=None)
-    ]
+from alibi_detect.cd import (
+    ChiSquareDrift,
+    ClassifierDrift,
+    KSDrift,
+    MMDDrift,
+    TabularDrift,
+    FETDrift,
+    LSDDDrift,
+    SpotTheDiffDrift,
+    LearnedKernelDrift,
+    #  ClassifierUncertaintyDrift,
 )
-
-preprocess_fn = partial(preprocess_drift, model=UAE(encoder_net=encoder_net))
-
-gmm_density_net = tf.keras.Sequential(
-    [
-        InputLayer(input_shape=(latent_dim + 2,)),
-        Dense(10, activation=tf.nn.relu),
-        Dense(n_gmm, activation=tf.nn.softmax)
-    ]
-)
-
-threshold_net = tf.keras.Sequential(
-    [
-        InputLayer(input_shape=(seq_len, latent_dim)),
-        Dense(5, activation=tf.nn.relu)
-    ]
-)
-
-# define classifier model
-inputs = tf.keras.Input(shape=(input_dim,))
-outputs = tf.keras.layers.Dense(2, activation=tf.nn.softmax)(inputs)
-model = tf.keras.Model(inputs=inputs, outputs=outputs)
-
-# Deep kernel projection
-proj = tf.keras.Sequential(
-  [
-      InputLayer((1, 1, input_dim,)),
-      Conv1D(int(input_dim), 2, strides=1, padding='same', activation=tf.nn.relu),
-      Conv1D(input_dim, 2, strides=1, padding='same', activation=tf.nn.relu),
-      Flatten(),
-  ]
-)
-deep_kernel = DeepKernel(proj, eps=0.01)
-
-detector = [
-    KSDrift(X_ref,
-            p_val=p_val,
-            preprocess_at_init=False,
-            preprocess_fn=preprocess_fn),
-    FETDrift(X_ref_bin,
-             p_val=p_val,
-             preprocess_at_init=True,
-             alternative='less'),
-    MMDDrift(X_ref,
-             p_val=p_val,
-             preprocess_at_init=False,
-             preprocess_fn=preprocess_fn,
-             configure_kernel_from_x_ref=True,
-             n_permutations=n_permutations),
-    LSDDDrift(X_ref,
-              p_val=p_val,
-              preprocess_at_init=False,
-              preprocess_fn=preprocess_fn,
-              n_permutations=n_permutations),
-    ChiSquareDrift(X_ref_cat,
-                   p_val=p_val,
-                   preprocess_at_init=True),
-    TabularDrift(X_ref_mix,
-                 p_val=p_val,
-                 categories_per_feature={0: None},
-                 preprocess_at_init=True),
-    ClassifierDrift(X_ref,
-                    model=model,
-                    p_val=p_val,
-                    n_folds=n_folds_drift,
-                    train_size=None,
-                    preprocess_at_init=True),
-    SpotTheDiffDrift(X_ref,
-                     p_val=p_val,
-                     n_folds=n_folds_drift,
-                     train_size=None),
-    LearnedKernelDrift(X_ref[:, None, :],
-                       deep_kernel,
-                       p_val=p_val,
-                       train_size=0.7)
-]
+from datasets import ContinuousData, BinData, CategoricalData, MixedData
 if version.parse(scipy.__version__) >= version.parse('1.7.0'):
-    detector.append(
-        CVMDrift(X_ref,
-                 p_val=p_val,
+    from alibi_detect.cd import CVMDrift
+
+backend = param_fixture("backend", ['tensorflow'])
+P_VAL = 0.05
+N_PERMUTATIONS = 10
+LATENT_DIM = 2  # Must be less than input_dim set in ./datasets.py
+
+
+@fixture  # If wanted to test more than one preprocess_fn, could parametrize this
+def preprocess_uae(backend, current_cases):
+    """
+    Preprocess function with Untrained Autoencoder of given input dimension and backend.
+    """
+    _, _, data_params = current_cases["data"]
+    _, input_dim = data_params['data_shape']
+
+    if backend == 'tensorflow':
+        encoder_net = tf.keras.Sequential(
+               [
+                   tf.keras.layers.InputLayer(input_shape=(input_dim,)),
+                   tf.keras.layers.Dense(5, activation=tf.nn.relu),
+                   tf.keras.layers.Dense(LATENT_DIM, activation=None)
+               ]
+           )
+        preprocess_fn = partial(preprocess_drift_tf, model=encoder_net)
+    elif backend == 'pytorch':
+        raise NotImplementedError('`pytorch` tests not implemented.')
+    else:
+        raise ValueError('preprocess_uae `backend` not valid.')
+
+    return preprocess_fn
+
+
+@fixture
+def deep_kernel(backend, current_cases):
+    """
+    Deep kernel with given input function and backend.
+    """
+    _, _, data_params = current_cases["data"]
+    _, input_dim = data_params['data_shape']
+
+    if backend == 'tensorflow':
+        proj = tf.keras.Sequential(
+          [
+              tf.keras.layers.InputLayer((1, 1, input_dim,)),
+              tf.keras.layers.Conv1D(int(input_dim), 2, strides=1, padding='same', activation=tf.nn.relu),
+              tf.keras.layers.Conv1D(input_dim, 2, strides=1, padding='same', activation=tf.nn.relu),
+              tf.keras.layers.Flatten(),
+          ]
+        )
+        deep_kernel = DeepKernel(proj, eps=0.01)
+    elif backend == 'pytorch':
+        raise NotImplementedError('`pytorch` tests not implemented.')
+    else:
+        raise ValueError('preprocess_uae `backend` not valid.')
+    return deep_kernel
+
+
+@fixture
+def classifier(backend, current_cases):
+    """
+    Classification model with given input function and backend.
+    """
+    _, _, data_params = current_cases["data"]
+    _, input_dim = data_params['data_shape']
+    if backend == 'tensorflow':
+        inputs = tf.keras.Input(shape=(input_dim,))
+        outputs = tf.keras.layers.Dense(2, activation=tf.nn.softmax)(inputs)
+        model = tf.keras.Model(inputs=inputs, outputs=outputs)
+    elif backend == 'pytorch':
+        raise NotImplementedError('`pytorch` tests not implemented.')
+    else:
+        raise ValueError('preprocess_uae `backend` not valid.')
+    return model
+
+
+@parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
+def test_save_ksdrift(data, preprocess_uae, tmp_path):
+    """ Test KSDrift on continuous datasets, with UAE as preprocess_fn."""
+    # Detector save/load
+    X_ref, X_h0 = data
+    cd = KSDrift(X_ref,
+                 p_val=P_VAL,
+                 preprocess_fn=preprocess_uae,
                  preprocess_at_init=True,
-                 preprocess_fn=preprocess_fn)
-    )
-# TODO: ClassifierUncertaintyDrift
-n_tests = len(detector)
+                 )
+    save_detector(cd, tmp_path)
+    cd_load = load_detector(tmp_path)
+
+    # Assert
+    np.testing.assert_array_equal(preprocess_uae(X_ref), cd_load.x_ref)
+    assert cd_load.x_ref_preprocessed
+    assert cd_load.n_features == LATENT_DIM
+    assert cd_load.p_val == P_VAL
+    assert isinstance(cd_load.preprocess_fn, Callable)
+    assert cd_load.preprocess_fn.func.__name__ == 'preprocess_drift'
+    np.testing.assert_array_equal(cd.predict(X_h0)['data']['p_val'],  # only do for deterministic detectors
+                                  cd_load.predict(X_h0)['data']['p_val'])
 
 
-@pytest.fixture
-def select_detector(request):
-    return detector[request.param]
+@pytest.mark.skipif(version.parse(scipy.__version__) < version.parse('1.7.0'),
+                    reason="Requires scipy version >= 1.7.0")
+@parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
+def test_save_cvmdrift(data, preprocess_uae, tmp_path):
+    """ Test CVMDrift on continuous datasets, with UAE as preprocess_fn."""
+    # Detector save/load
+    X_ref, X_h0 = data
+    cd = CVMDrift(X_ref,
+                 p_val=P_VAL,
+                 preprocess_fn=preprocess_uae,
+                 preprocess_at_init=True,
+                 )
+    save_detector(cd, tmp_path)
+    cd_load = load_detector(tmp_path)
+
+    # Assert
+    np.testing.assert_array_equal(preprocess_uae(X_ref), cd_load.x_ref)
+    assert cd_load.x_ref_preprocessed
+    assert cd_load.n_features == LATENT_DIM
+    assert cd_load.p_val == P_VAL
+    assert isinstance(cd_load.preprocess_fn, Callable)
+    assert cd_load.preprocess_fn.func.__name__ == 'preprocess_drift'
+    np.testing.assert_array_equal(cd.predict(X_h0)['data']['p_val'],  # only do for deterministic detectors
+                                  cd_load.predict(X_h0)['data']['p_val'])
 
 
-@pytest.mark.parametrize('select_detector', list(range(n_tests)), indirect=True)
-def test_save_load(select_detector):
-    """
-    Test of simple save/load functionality. Relatively simple detectors are instantiated, before being saved
-    to a temporary directly and then loaded again. For deterministic detectors, the predicted p-values are compared
-    to those predicted by the original detector.
-    """
-    det = select_detector
-    det_name = det.meta['name']
+@parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
+def test_save_mmddrift(data, preprocess_uae, backend, tmp_path):
+    """ Test MMDDrift on continuous datasets, with UAE as preprocess_fn."""
+    # Detector save/load
+    X_ref, X_h0 = data
+    cd = MMDDrift(X_ref,
+                  p_val=P_VAL,
+                  backend=backend,
+                  preprocess_fn=preprocess_uae,
+                  n_permutations=N_PERMUTATIONS,
+                  preprocess_at_init=True,
+                  )
+    save_detector(cd, tmp_path)
+    cd_load = load_detector(tmp_path)
 
-    with TemporaryDirectory() as temp_dir:
-        temp_dir += '/'
-        save_detector(det, temp_dir)
-        det_load = load_detector(temp_dir)
-        det_load_name = det_load.meta['name']
-        assert det_load_name == det_name
+    # assertions
+    np.testing.assert_array_equal(preprocess_uae(X_ref), cd_load._detector.x_ref)
+    assert cd_load._detector.x_ref_preprocessed
+    assert not cd_load._detector.infer_sigma
+    assert cd_load._detector.n_permutations == N_PERMUTATIONS
+    assert cd_load._detector.p_val == P_VAL
+    assert isinstance(cd_load._detector.preprocess_fn, Callable)
+    assert cd_load._detector.preprocess_fn.func.__name__ == 'preprocess_drift'
+    # assert det.predict(X_ref)['data']['p_val'] == det_load.predict(X_ref)['data']['p_val']
+    # Commented as settings tf/np seeds does not currently make deterministic
 
-        if type(det_load) in [KSDrift, CVMDrift]:
-            assert det_load.n_features == latent_dim
-            assert det_load.p_val == p_val
-            if type(det_load) == CVMDrift:
-                x = preprocess_fn(X_ref)  # det_load.x_ref should be the preprocessed x_ref after save/load
-                assert det_load.x_ref_preprocessed
-            else:
-                x = X_ref
-            np.testing.assert_array_equal(det_load.x_ref, x)
-            assert isinstance(det_load.preprocess_fn, Callable)
-            assert det_load.preprocess_fn.func.__name__ == 'preprocess_drift'
-            np.testing.assert_array_equal(det.predict(X_ref)['data']['p_val'],  # only do for deterministic detectors
-                                          det_load.predict(X_ref)['data']['p_val'])
-        elif type(det_load) == FETDrift:
-            assert det_load.n_features == input_dim
-            np.testing.assert_array_equal(det_load.x_ref, X_ref_bin)
-            print(det.predict(X_ref_bin))
-            np.testing.assert_array_equal(det.predict(X_ref_bin)['data']['p_val'],
-                                          det_load.predict(X_ref_bin)['data']['p_val'])
-        elif type(det_load) in [ChiSquareDrift, TabularDrift]:
-            assert isinstance(det_load.x_ref_categories, dict)
-            assert det_load.p_val == p_val
-            x = X_ref_cat.copy() if isinstance(det_load, ChiSquareDrift) else X_ref_mix.copy()
-            np.testing.assert_array_equal(det_load.x_ref, x)
-            np.testing.assert_array_equal(det.predict(x)['data']['p_val'],
-                                          det_load.predict(x)['data']['p_val'])
-        elif type(det_load) == MMDDrift:
-            assert not det_load._detector.infer_sigma
-            assert det_load._detector.n_permutations == n_permutations
-            assert det_load._detector.p_val == p_val
-            np.testing.assert_array_equal(det_load._detector.x_ref, X_ref)
-            assert isinstance(det_load._detector.preprocess_fn, Callable)
-            assert det_load._detector.preprocess_fn.func.__name__ == 'preprocess_drift'
-            # assert det.predict(X_ref)['data']['p_val'] == det_load.predict(X_ref)['data']['p_val']
-            # Commented as settings tf/np seeds does not currently make deterministic
-        elif type(det_load) == LSDDDrift:
-            assert det_load._detector.n_permutations == n_permutations
-            assert det_load._detector.p_val == p_val
-            np.testing.assert_array_equal(det_load._detector.x_ref, X_ref)
-            assert isinstance(det_load._detector.preprocess_fn, Callable)
-            assert det_load._detector.preprocess_fn.func.__name__ == 'preprocess_drift'
-            # assert det.predict(X_ref)['data']['p_val'] == det_load.predict(X_ref)['data']['p_val']
-            # Commented as settings tf/np seeds does not currently make deterministic
-        elif type(det_load) == ClassifierDrift:
-            assert det_load._detector.p_val == p_val
-            np.testing.assert_array_equal(det_load._detector.x_ref, X_ref)
-            assert isinstance(det_load._detector.skf, StratifiedKFold)
-            assert isinstance(det_load._detector.train_kwargs, dict)
-            assert isinstance(det_load._detector.model, tf.keras.Model)
-        elif type(det_load) == SpotTheDiffDrift:
-            assert det_load._detector._detector.p_val == p_val
-            np.testing.assert_array_equal(det_load._detector._detector.x_ref, X_ref)
-            assert isinstance(det_load._detector._detector.skf, StratifiedKFold)
-            assert isinstance(det_load._detector._detector.train_kwargs, dict)
-            assert isinstance(det_load._detector._detector.model, tf.keras.Model)
-        elif type(det_load) == LearnedKernelDrift:
-            x = X_ref[:, None, :]
-            assert det_load._detector.p_val == p_val
-            np.testing.assert_array_equal(det_load._detector.x_ref, x)
-            assert isinstance(det_load._detector.train_kwargs, dict)
-            assert isinstance(det_load._detector.kernel, DeepKernel)
 
-        # TODO - checks for modeluncertainty
+@parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
+def test_save_lsdddrift(data, preprocess_uae, backend, tmp_path):
+    """ Test LSDDDrift on continuous datasets, with UAE as preprocess_fn."""
+    # Detector save/load
+    X_ref, X_h0 = data
+    cd = LSDDDrift(X_ref,
+                   p_val=P_VAL,
+                   backend=backend,
+                   preprocess_fn=preprocess_uae,
+                   n_permutations=N_PERMUTATIONS,
+                   preprocess_at_init=True,
+                   )
+    save_detector(cd, tmp_path)
+    cd_load = load_detector(tmp_path)
 
-# TODO- unit tests
-#       - save/load_kernel
-#       - save/load_tokenizer
-#       - save/load_embedding
-#       - save/load_model
-#       - serialize_preprocess/load_preprocessor
-#       - serialize_function
-#       - _resolve_paths
-#       - load_optimizer
-#       - validate_config
-#       - _load_detector_config
-#       - init_detector
-#       - prep_model_and_embedding
-#       - get_nested_value
-#       - set_nested_value
-#       - read_config
-#       - resolve_cfg
-#       - set_device
-#       - _replace
-#       - save/load_tf_model
-#       - registry!
+    # assertions
+    np.testing.assert_array_equal(preprocess_uae(X_ref), cd_load._detector.x_ref)
+    assert cd_load._detector.x_ref_preprocessed
+    assert cd_load._detector.n_permutations == N_PERMUTATIONS
+    assert cd_load._detector.p_val == P_VAL
+    assert isinstance(cd_load._detector.preprocess_fn, Callable)
+    assert cd_load._detector.preprocess_fn.func.__name__ == 'preprocess_drift'
+    # assert det.predict(X_ref)['data']['p_val'] == det_load.predict(X_ref)['data']['p_val']
+    # Commented as settings tf/np seeds does not currently make deterministic
+
+
+@parametrize_with_cases("data", cases=BinData, prefix='data_')
+def test_save_fetdrift(data, tmp_path):
+    """ Test FETDrift on binary datasets."""
+    # Detector save/load
+    X_ref, X_h0 = data
+    input_dim = X_ref.shape[1]
+    cd = FETDrift(X_ref,
+                  p_val=P_VAL,
+                  alternative='less',
+                  )
+    save_detector(cd, tmp_path)
+    cd_load = load_detector(tmp_path)
+
+    # Assert
+    np.testing.assert_array_equal(X_ref, cd_load.x_ref)
+    assert not cd_load.x_ref_preprocessed
+    assert cd_load.n_features == input_dim
+    assert cd_load.p_val == P_VAL
+    assert cd_load.alternative == 'less'
+    np.testing.assert_array_equal(cd.predict(X_h0)['data']['p_val'],  # only do for deterministic detectors
+                                  cd_load.predict(X_h0)['data']['p_val'])
+
+
+@parametrize_with_cases("data", cases=CategoricalData, prefix='data_')
+def test_save_chisquaredrift(data, tmp_path):
+    """ Test ChiSquareDrift on categorical datasets."""
+    # Detector save/load
+    X_ref, X_h0 = data
+    input_dim = X_ref.shape[1]
+    cd = ChiSquareDrift(X_ref,
+                        p_val=P_VAL,
+                        )
+    save_detector(cd, tmp_path)
+    cd_load = load_detector(tmp_path)
+
+    # Assert
+    np.testing.assert_array_equal(X_ref, cd_load.x_ref)
+    assert not cd_load.x_ref_preprocessed
+    assert cd_load.n_features == input_dim
+    assert cd_load.p_val == P_VAL
+    assert isinstance(cd_load.x_ref_categories, dict)
+    np.testing.assert_array_equal(cd.predict(X_h0)['data']['p_val'],  # only do for deterministic detectors
+                                  cd_load.predict(X_h0)['data']['p_val'])
+
+
+@parametrize_with_cases("data", cases=MixedData, prefix='data_')
+def test_save_tabulardrift(data, tmp_path):
+    """ Test TabularDrift on mixed datasets."""
+    # Detector save/load
+    X_ref, X_h0 = data
+    input_dim = X_ref.shape[1]
+    cd = TabularDrift(X_ref,
+                      p_val=P_VAL,
+                      categories_per_feature={0: None},
+                      )
+    save_detector(cd, tmp_path)
+    cd_load = load_detector(tmp_path)
+
+    # Assert
+    np.testing.assert_array_equal(X_ref, cd_load.x_ref)
+    assert not cd_load.x_ref_preprocessed
+    assert cd_load.n_features == input_dim
+    assert cd_load.p_val == P_VAL
+    assert isinstance(cd_load.x_ref_categories, dict)
+    np.testing.assert_array_equal(cd.predict(X_h0)['data']['p_val'],  # only do for deterministic detectors
+                                  cd_load.predict(X_h0)['data']['p_val'])
+
+
+@parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
+def test_save_classifierdrift(data, classifier, backend, tmp_path):
+    """ Test ClassifierDrift on continuous datasets."""
+    # Detector save/load
+    X_ref, X_h0 = data
+    cd = ClassifierDrift(X_ref,
+                         model=classifier,
+                         p_val=P_VAL,
+                         n_folds=5,
+                         backend=backend,
+                         train_size=None)
+    save_detector(cd, tmp_path)
+    cd_load = load_detector(tmp_path)
+
+    # Assert
+    np.testing.assert_array_equal(X_ref, cd_load._detector.x_ref)
+    assert isinstance(cd_load._detector.skf, StratifiedKFold)
+    assert not cd_load._detector.x_ref_preprocessed
+    assert cd_load._detector.p_val == P_VAL
+    assert isinstance(cd_load._detector.train_kwargs, dict)
+    if backend == 'tensorflow':
+        assert isinstance(cd_load._detector.model, tf.keras.Model)
+    else:
+        pass  # TODO
+#    np.testing.assert_array_equal(cd.predict(X_h0)['data']['p_val'],  # only do for deterministic detectors
+#                                  cd_load.predict(X_h0)['data']['p_val'])
+
+
+@parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
+def test_save_spotthediff(data, classifier, preprocess_uae, backend, tmp_path):
+    """ Test SpotTheDiffDrift on continuous datasets, with UAE as preprocess_fn."""
+    # Detector save/load
+    X_ref, X_h0 = data
+    cd = SpotTheDiffDrift(X_ref,
+                          p_val=P_VAL,
+                          n_folds=5,
+                          train_size=None,
+                          backend=backend,
+                          preprocess_fn=preprocess_uae)
+    save_detector(cd, tmp_path)
+    cd_load = load_detector(tmp_path)
+
+    # Assert
+    np.testing.assert_array_equal(preprocess_uae(X_ref), cd_load._detector._detector.x_ref)
+    assert isinstance(cd_load._detector._detector.skf, StratifiedKFold)
+    assert cd_load._detector._detector.x_ref_preprocessed
+    assert cd_load._detector._detector.p_val == P_VAL
+    assert isinstance(cd_load._detector._detector.preprocess_fn, Callable)
+    assert cd_load._detector._detector.preprocess_fn.func.__name__ == 'preprocess_drift'
+    assert isinstance(cd_load._detector._detector.train_kwargs, dict)
+    if backend == 'tensorflow':
+        assert isinstance(cd_load._detector._detector.model, tf.keras.Model)
+    else:
+        pass  # TODO
+
+
+@parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
+def test_save_learnedkernel(data, deep_kernel, preprocess_uae, backend, tmp_path):
+    """ Test LearnedKernelDrift on continuous datasets, with UAE as preprocess_fn."""
+    # Detector save/load
+    X_ref, X_h0 = data
+    cd = LearnedKernelDrift(X_ref[:, None, :],
+                            deep_kernel,
+                            p_val=P_VAL,
+                            backend=backend,
+                            preprocess_fn=preprocess_uae,
+                            train_size=0.7)
+    save_detector(cd, tmp_path)
+    cd_load = load_detector(tmp_path)
+
+    # Assert
+    x = X_ref[:, None, :]
+    np.testing.assert_array_equal(preprocess_uae(x), cd_load._detector.x_ref)
+    assert cd_load._detector.x_ref_preprocessed
+    assert cd_load._detector.p_val == P_VAL
+    assert isinstance(cd_load._detector.train_kwargs, dict)
+    assert isinstance(cd_load._detector.kernel, DeepKernel)
+
+
+# TODO - checks for modeluncertainty detectors
+#
+## TODO- unit tests
+##       - save/load_kernel
+##       - save/load_tokenizer
+##       - save/load_embedding
+##       - save/load_model
+##       - serialize_preprocess/load_preprocessor
+##       - serialize_function
+##       - _resolve_paths
+##       - load_optimizer
+##       - validate_config
+##       - _load_detector_config
+##       - init_detector
+##       - prep_model_and_embedding
+##       - get_nested_value
+##       - set_nested_value
+##       - read_config
+##       - resolve_cfg
+##       - set_device
+##       - _replace
+##       - save/load_tf_model
+##       - registry! - Do in separate file
+#
