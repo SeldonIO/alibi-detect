@@ -147,20 +147,18 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
 
             if self.use_calibration:
                 self.use_calibration = False
-                logger.warning(
-                    'Calibration cannot be user when `use_oob=True`. Setting `use_calibration=False`.'
-                )
+                logger.warning('Calibration cannot be used when `use_oob=True`. Setting `use_calibration=False`.')
 
             model.oob_score = True
             model.bootstrap = True
             logger.warning(
-                '`use_oob=True` sets automatically the parameter `boostrap=True` and `oob_score=True`. '
+                '`use_oob=True` sets automatically the classifier parameters `boostrap=True` and `oob_score=True`. '
                 '`train_size` and `n_folds` are ignored when `use_oob=True`.'
             )
         else:
             if isinstance(model, RandomForestClassifier):
                 model.oob_score = False
-                logger.warning('`use_oob=False` sets automatically the parameter `oob_score=False`.')
+                logger.warning('`use_oob=False` sets automatically the classifier parameters `oob_score=False`.')
 
         # preds_type checks
         if self.preds_type == 'probs':
