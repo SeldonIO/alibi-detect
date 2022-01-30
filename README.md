@@ -2,12 +2,30 @@
   <img src="https://raw.githubusercontent.com/SeldonIO/alibi-detect/master/doc/source/_static/Alibi_Detect_Logo_rgb.png" alt="Alibi Detect Logo" width="50%">
 </p>
 
-[![Build Status](https://github.com/SeldonIO/alibi-detect/workflows/CI/badge.svg?branch=master)](https://github.com/SeldonIO/alibi-detect/actions?query=workflow%3A%22CI%22)
-[![Documentation Status](https://readthedocs.org/projects/alibi-detect/badge/?version=latest)](https://docs.seldon.io/projects/alibi-detect/en/latest/?badge=latest)
+<!--- BADGES: START --->
+
+<!---
 ![Python version](https://img.shields.io/badge/python-3.7%20%7C%203.8%20%7C%203.9-blue.svg)
 [![PyPI version](https://badge.fury.io/py/alibi-detect.svg)](https://badge.fury.io/py/alibi-detect)
-![GitHub Licence](https://img.shields.io/github/license/seldonio/alibi-detect.svg)
-[![Slack channel](https://img.shields.io/badge/chat-on%20slack-e51670.svg)](https://join.slack.com/t/seldondev/shared_invite/zt-vejg6ttd-ksZiQs3O_HOtPQsen_labg)
+--->
+[![GitHub - License](https://img.shields.io/github/license/SeldonIO/alibi-detect?logo=github&style=flat&color=green)][#github-license]
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/alibi-detect?logo=pypi&style=flat&color=blue)][#pypi-package]
+[![PyPI - Package Version](https://img.shields.io/pypi/v/alibi-detect?logo=pypi&style=flat&color=orange)][#pypi-package]
+[![Conda - Platform](https://img.shields.io/conda/pn/conda-forge/alibi-detect?logo=anaconda&style=flat)][#conda-forge-package]
+[![Conda (channel only)](https://img.shields.io/conda/vn/conda-forge/alibi-detect?logo=anaconda&style=flat&color=orange)][#conda-forge-package]
+[![Conda Recipe](https://img.shields.io/static/v1?logo=conda-forge&style=flat&color=green&label=recipe&message=alibi-detect)][#conda-forge-feedstock]
+[![Documentation Status](https://readthedocs.org/projects/alibi-detect/badge/?version=latest)][#docs-package]
+[![Build Status](https://github.com/SeldonIO/alibi-detect/workflows/CI/badge.svg?branch=master)][#build-status]
+[![Slack channel](https://img.shields.io/badge/chat-on%20slack-e51670.svg)][#slack-channel]
+
+[#github-license]: https://github.com/sugatoray/genespeak/blob/master/LICENSE
+[#pypi-package]: https://pypi.org/project/genespeak/
+[#conda-forge-package]: https://anaconda.org/conda-forge/alibi-detect
+[#conda-forge-feedstock]: https://github.com/conda-forge/alibi-detect-feedstock
+[#docs-package]: https://docs.seldon.io/projects/alibi-detect/en/latest/
+[#build-status]: https://github.com/SeldonIO/alibi-detect/actions?query=workflow%3A%22CI%22
+[#slack-channel]: https://join.slack.com/t/seldondev/shared_invite/zt-vejg6ttd-ksZiQs3O_HOtPQsen_labg
+<!--- BADGES: END --->
 ---
 
 [Alibi Detect](https://github.com/SeldonIO/alibi-detect) is an open source Python library focused on **outlier**, **adversarial** and **drift** detection. The package aims to cover both online and offline detectors for tabular data, text, images and time series. Both **TensorFlow** and **PyTorch** backends are supported for drift detection.
@@ -44,18 +62,34 @@ For a thorough introduction to drift detection, check out [Protecting Your Machi
 
 ## Installation and Usage
 
-alibi-detect can be installed from [PyPI](https://pypi.org/project/alibi-detect):
-```bash
-pip install alibi-detect
-```
-Alternatively, the development version can be installed:
-```bash
-pip install git+https://github.com/SeldonIO/alibi-detect.git
-```
+The package, `alibi-detect` can be installed from:
 
-To use the `Prophet` time series outlier detector:
-```bash
-pip install alibi-detect[prophet]
+- PyPI or GitHub source (with `pip`)
+- Anaconda (with `conda`)
+
+**With pip**
+
+- alibi-detect can be installed from [PyPI](https://pypi.org/project/alibi-detect):
+
+   ```bash
+   pip install alibi-detect
+   ```
+- Alternatively, the development version can be installed:
+
+   ```bash
+   pip install git+https://github.com/SeldonIO/alibi-detect.git
+   ```
+
+- To use the `Prophet` time series outlier detector:
+
+   ```bash
+   pip install alibi-detect[prophet]
+   ```
+
+**With conda**
+
+```sh
+conda install -c conda-forge alibi-detect
 ```
 
 We will use the [VAE outlier detector](https://docs.seldon.io/projects/alibi-detect/en/latest/od/methods/vae.html) to illustrate the API.
