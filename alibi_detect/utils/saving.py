@@ -182,23 +182,23 @@ def _save_detector_config(detector: Data, filepath: Union[str, os.PathLike], ver
     # Save preprocess_fn
     preprocess_fn = cfg.get('preprocess_fn', None)
     if preprocess_fn is not None:
-        preprocess_cfg = serialize_preprocess(preprocess_fn, backend, cfg['input_shape'], filepath, verbose)
+        preprocess_cfg = _save_preprocess(preprocess_fn, backend, cfg['input_shape'], filepath, verbose)
         cfg['preprocess_fn'] = preprocess_cfg
 
     # Serialize kernel
     kernel = cfg.get('kernel', None)
     if kernel is not None:
         device = detector.device.type if hasattr(detector, 'device') else None
-        cfg['kernel'] = save_kernel(kernel, filepath, device, verbose)
+        cfg['kernel'] = _save_kernel(kernel, filepath, device, verbose)
         if isinstance(kernel, dict):  # serialise proj from DeepKernel
-            cfg['kernel']['proj'], _ = save_model(kernel['proj'], base_path=filepath, input_shape=cfg['input_shape'],
+            cfg['kernel']['proj'], _ = _save_model(kernel['proj'], base_path=filepath, input_shape=cfg['input_shape'],
                                                   backend=backend, verbose=verbose)
 
     # ClassifierDrift and SpotTheDiffDrift specific artefacts.
     # Serialize detector model
     model = cfg.get('model', None)
     if model is not None:
-        model_cfg, _ = save_model(model, base_path=filepath, input_shape=cfg['input_shape'],
+        model_cfg, _ = _save_model(model, base_path=filepath, input_shape=cfg['input_shape'],
                                   backend=backend, verbose=verbose)
         cfg['model'] = model_cfg
 
@@ -707,7 +707,7 @@ def save_tf_s2s(od: OutlierSeq2Seq,
         logger.warning('No `tf.keras.Model` Seq2Seq detected. No Seq2Seq model saved.')
 
 
-def serialize_preprocess(preprocess_fn: Callable,
+def _save_preprocess(preprocess_fn: Callable,
                          backend: str,
                          input_shape: Optional[tuple],
                          filepath: Path,
@@ -746,14 +746,14 @@ def serialize_preprocess(preprocess_fn: Callable,
     for k, v in func_kwargs.items():
         # Model/embedding
         if isinstance(v, SupportedModels):
-            cfg_model, cfg_embed = save_model(v, filepath, input_shape, backend, local_path, verbose)
+            cfg_model, cfg_embed = _save_model(v, filepath, input_shape, backend, local_path, verbose)
             kwargs.update({k: cfg_model})
             if cfg_embed is not None:
                 kwargs.update({'embedding': cfg_embed})
 
         # Tokenizer
         elif isinstance(v, PreTrainedTokenizerBase):
-            cfg_token = save_tokenizer(v, filepath, local_path, verbose)
+            cfg_token = _save_tokenizer(v, filepath, local_path, verbose)
             kwargs.update({k: cfg_token})
 
         # Arbitrary function
@@ -803,7 +803,7 @@ def serialize_function(func: Callable, base_path: Path, local_path: Path = Path(
     return src, kwargs
 
 
-def save_embedding(embed: tf.keras.Model,
+def _save_embedding(embed: tf.keras.Model,
                    embed_args: dict,
                    filepath: Path) -> None:
     """
@@ -840,7 +840,7 @@ def _resolve_paths(cfg: dict, absolute: bool = False) -> dict:
     return cfg
 
 
-def save_model(model: SUPPORTED_MODELS,
+def _save_model(model: SUPPORTED_MODELS,
                base_path: Path,
                input_shape: tuple,
                backend: str,
@@ -857,7 +857,7 @@ def save_model(model: SUPPORTED_MODELS,
                 embed = model.encoder.layers[0].model
                 cfg_embed.update({'type': model.encoder.layers[0].emb_type})
                 cfg_embed.update({'layers': model.encoder.layers[0].hs_emb.keywords['layers']})
-                save_embedding(embed, cfg_embed, filepath.joinpath('embedding'))
+                _save_embedding(embed, cfg_embed, filepath.joinpath('embedding'))
                 cfg_embed.update({'src': path.joinpath('embedding')})
                 # preprocessing encoder
                 inputs = Input(shape=input_shape, dtype=tf.int64)
@@ -886,7 +886,7 @@ def save_model(model: SUPPORTED_MODELS,
     return cfg_model, cfg_embed
 
 
-def save_tokenizer(tokenizer: PreTrainedTokenizerBase,
+def _save_tokenizer(tokenizer: PreTrainedTokenizerBase,
                    base_path: Path,
                    path: Path = Path('.'),
                    verbose: bool = False) -> dict:
@@ -902,7 +902,7 @@ def save_tokenizer(tokenizer: PreTrainedTokenizerBase,
     return cfg_token
 
 
-def save_kernel(kernel: Callable,
+def _save_kernel(kernel: Callable,
                 filepath: Path,
                 device: Optional[str],
                 filename: str = 'kernel.dill',
@@ -943,22 +943,22 @@ def save_kernel(kernel: Callable,
             'trainable': kernel.trainable if hasattr(kernel, 'trainable') else None
         })
 
-    elif isinstance(kernel, Callable):  # generic callable
-        with open(filepath.joinpath(filename), 'wb') as f:
-            dill.dump(kernel, f)
-        cfg_kernel.update({'src': filename})
-
     elif isinstance(kernel, dict):  # DeepKernel config dict
-        kernel_a = save_kernel(kernel['kernel_a'], filepath, device, filename='kernel_a.dill', verbose=verbose)
+        kernel_a = _save_kernel(kernel['kernel_a'], filepath, device, filename='kernel_a.dill', verbose=verbose)
         kernel_b = kernel.get('kernel_b')
         if kernel_b is not None:
-            kernel_b = save_kernel(kernel['kernel_b'], filepath, device, filename='kernel_b.dill', verbose=verbose)
+            kernel_b = _save_kernel(kernel['kernel_b'], filepath, device, filename='kernel_b.dill', verbose=verbose)
         cfg_kernel.update({
             'kernel_a': kernel_a,
             'kernel_b': kernel_b,
             'proj': kernel['proj'],
             'eps': kernel['eps']
         })
+
+    elif isinstance(kernel, Callable):  # generic callable
+        with open(filepath.joinpath(filename), 'wb') as f:
+            dill.dump(kernel, f)
+        cfg_kernel.update({'src': filename})
 
     else:  # kernel could not be saved
         raise ValueError("Could not save kernel. Is it a valid Callable or a alibi-detect registered kernel?")

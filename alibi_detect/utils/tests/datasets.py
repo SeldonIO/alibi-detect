@@ -1,11 +1,12 @@
 import numpy as np
 from pytest_cases import parametrize
+from alibi_testing.data import get_movie_sentiment_data
 
 # Note: If any of below cases become large, see https://smarie.github.io/python-pytest-cases/#c-caching-cases
 
 # Group dataset "cases" by type of data i.e. continuous, binary, categorical, mixed
 class ContinuousData:
-    # Note: we could parametrize cases here (or pass them fixtures).
+    # Note: we could parametrize cases here (and/or pass them fixtures).
     #  See https://smarie.github.io/python-pytest-cases/#case-generators
     @staticmethod
     @parametrize(data_shape=[(50, 4)])
@@ -60,3 +61,9 @@ class BinData:
         X_ref = np.random.choice([0, 1], (n_samples, input_dim), p=[0.6, 0.4])
         X_h0 = np.random.choice([0, 1], (n_samples, input_dim), p=[0.6, 0.4])
         return X_ref, X_h0
+
+
+class TextData:
+    @staticmethod
+    def movie_sentiment_data():
+        return get_movie_sentiment_data()

@@ -239,12 +239,12 @@ def _load_detector_config(cfg: Union[str, os.PathLike, dict],
     # Get kernel
     kernel = cfg.pop('kernel', None)  # Don't need to check if None as kernel=None defaults to GaussianRBF
     if isinstance(kernel, dict):
-        kernel = load_kernel(kernel, backend, cfg['device'])
+        kernel = _load_kernel(kernel, backend, cfg['device'])
 
     # Get preprocess_fn
     preprocess_fn = cfg.pop('preprocess_fn')
     if isinstance(preprocess_fn, dict):
-        preprocess_fn = load_preprocessor(preprocess_fn, backend=backend, verbose=verbose)
+        preprocess_fn = _load_preprocess(preprocess_fn, backend=backend, verbose=verbose)
 
     # Get model
     model = cfg.pop('model', None)
@@ -290,7 +290,7 @@ def init_detector(x_ref: Union[np.ndarray, list],
     return detector
 
 
-def load_kernel(cfg: dict, backend: str = 'tensorflow', device: Optional[str] = None) -> Callable:
+def _load_kernel(cfg: dict, backend: str = 'tensorflow', device: Optional[str] = None) -> Callable:
     """
     """
 
@@ -315,13 +315,13 @@ def load_kernel(cfg: dict, backend: str = 'tensorflow', device: Optional[str] = 
         # Kernel a
         kernel_a = cfg['kernel_a']
         if kernel_a is not None:
-            kernel_a = load_kernel(kernel_a, backend, device)
+            kernel_a = _load_kernel(kernel_a, backend, device)
         else:
             kernel_a = GaussianRBF_tf(trainable=True) if backend == 'tensorflow' else GaussianRBF_torch(trainable=True)
         # Kernel b
         kernel_b = cfg['kernel_b']
         if kernel_b is not None:
-            kernel_b = load_kernel(kernel_b, backend, device)
+            kernel_b = _load_kernel(kernel_b, backend, device)
         else:
             kernel_b = GaussianRBF_tf(trainable=True) if backend == 'tensorflow' else GaussianRBF_torch(trainable=True)
 
@@ -335,7 +335,7 @@ def load_kernel(cfg: dict, backend: str = 'tensorflow', device: Optional[str] = 
     return kernel
 
 
-def load_preprocessor(cfg: dict,
+def _load_preprocess(cfg: dict,
                       backend: Optional[str] = 'tensorflow',
                       verbose: bool = False) -> Optional[Callable]:
     """
@@ -354,7 +354,7 @@ def load_preprocessor(cfg: dict,
             # Final processing of model (and/or embedding)
             model = kwargs['model']
             emb = kwargs.pop('embedding')  # embedding passed to preprocess_drift as `model` therefore remove
-            model = prep_model_and_embedding(model, emb, backend=backend)
+            model = _prep_model_and_embedding(model, emb, backend=backend)
             if model is None:
                 raise ValueError("A 'model'  and/or `embedding` must be specified when "
                                  "preprocess_fn='preprocess_drift'")
@@ -385,7 +385,7 @@ def load_preprocessor(cfg: dict,
     return partial(preprocess_fn, **kwargs)
 
 
-def load_model(cfg: dict,
+def _load_model(cfg: dict,
                backend: str,
                verbose: bool = False) -> SUPPORTED_MODELS:
     # Load model
@@ -412,7 +412,7 @@ def load_model(cfg: dict,
     return model
 
 
-def load_embedding(cfg: dict,
+def _load_embedding(cfg: dict,
                    verbose: bool = False) -> TransformerEmbedding:
     src = cfg['src']
     layers = cfg['layers']
@@ -427,7 +427,7 @@ def load_embedding(cfg: dict,
     return emb
 
 
-def load_tokenizer(cfg: dict,
+def _load_tokenizer(cfg: dict,
                    verbose: bool = False) -> AutoTokenizer:
     src = cfg['src']
     kwargs = cfg['kwargs']
@@ -441,7 +441,7 @@ def load_tokenizer(cfg: dict,
     return tokenizer
 
 
-def load_optimizer(cfg: dict,
+def _load_optimizer(cfg: dict,
                    backend: str,
                    verbose: bool = False) -> Union[tf.keras.optimizers.Optimizer, Callable]:
 
@@ -453,7 +453,7 @@ def load_optimizer(cfg: dict,
     return optimizer
 
 
-def prep_model_and_embedding(model: Optional[SUPPORTED_MODELS], emb: Optional[TransformerEmbedding],
+def _prep_model_and_embedding(model: Optional[SUPPORTED_MODELS], emb: Optional[TransformerEmbedding],
                              backend: str) -> SUPPORTED_MODELS:
     """
     Function to perform final preprocessing of model before it is passed to preprocess_drift. This is separated from
@@ -567,13 +567,13 @@ def resolve_cfg(cfg: dict, config_dir: Optional[Path], verbose: bool = False) ->
         elif isinstance(src, dict):
             backend = cfg.get('backend', 'tensorflow')
             if key[-1] in ('model', 'proj'):
-                obj = load_model(src, backend=backend, verbose=verbose)
+                obj = _load_model(src, backend=backend, verbose=verbose)
             if key[-1] == 'embedding':
-                obj = load_embedding(src, verbose=verbose)
+                obj = _load_embedding(src, verbose=verbose)
             elif key[-1] == 'tokenizer':
-                obj = load_tokenizer(src, verbose=verbose)
+                obj = _load_tokenizer(src, verbose=verbose)
             elif key[-1] == 'optimizer':
-                obj = load_optimizer(src, backend=backend, verbose=verbose)
+                obj = _load_optimizer(src, backend=backend, verbose=verbose)
 
         # Put the resolved function into the cfg dict
         if obj is not None:
@@ -1151,38 +1151,6 @@ def _load_text_embed(filepath: Union[str, os.PathLike], load_dir: str = 'model')
         str(model_dir.resolve()), embedding_type=args['embedding_type'], layers=args['layers']
     )
     return emb, tokenizer
-
-
-def _init_preprocess(state_dict: Dict, model: Optional[Union[tf.keras.Model, tf.keras.Sequential]],
-                     emb: Optional[TransformerEmbedding], tokenizer: Optional[Callable], **kwargs) \
-        -> Tuple[Optional[Callable], Optional[dict]]:
-    """ Return preprocessing function and kwargs. """
-    if kwargs:  # override defaults
-        keys = list(kwargs.keys())
-        preprocess_fn = kwargs['preprocess_fn'] if 'preprocess_fn' in keys else None
-        preprocess_kwargs = kwargs['preprocess_kwargs'] if 'preprocess_kwargs' in keys else None
-        return preprocess_fn, preprocess_kwargs
-    elif model is not None and isinstance(state_dict['preprocess_fn'], Callable) \
-            and isinstance(state_dict['preprocess_kwargs'], dict):
-        preprocess_fn = state_dict['preprocess_fn']
-        preprocess_kwargs = state_dict['preprocess_kwargs']
-    else:
-        return None, None
-
-    keys = list(preprocess_kwargs.keys())
-
-    if 'model' not in keys:
-        raise ValueError('No model found for the preprocessing step.')
-
-    if preprocess_kwargs['model'] == 'UAE':
-        if emb is not None:
-            model = _Encoder(emb, mlp=model)
-            preprocess_kwargs['tokenizer'] = tokenizer
-        preprocess_kwargs['model'] = UAE(encoder_net=model)
-    else:  # incl. preprocess_kwargs['model'] == 'HiddenOutput'
-        preprocess_kwargs['model'] = model
-
-    return preprocess_fn, preprocess_kwargs
 
 
 def _init_od_mahalanobis(state_dict: Dict) -> Mahalanobis:
