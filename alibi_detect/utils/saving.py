@@ -192,20 +192,20 @@ def _save_detector_config(detector: Data, filepath: Union[str, os.PathLike], ver
         cfg['kernel'] = _save_kernel(kernel, filepath, device, verbose)
         if isinstance(kernel, dict):  # serialise proj from DeepKernel
             cfg['kernel']['proj'], _ = _save_model(kernel['proj'], base_path=filepath, input_shape=cfg['input_shape'],
-                                                  backend=backend, verbose=verbose)
+                                                   backend=backend, verbose=verbose)
 
     # ClassifierDrift and SpotTheDiffDrift specific artefacts.
     # Serialize detector model
     model = cfg.get('model', None)
     if model is not None:
         model_cfg, _ = _save_model(model, base_path=filepath, input_shape=cfg['input_shape'],
-                                  backend=backend, verbose=verbose)
+                                   backend=backend, verbose=verbose)
         cfg['model'] = model_cfg
 
     # Serialize dataset
     dataset = cfg.get('dataset', None)
     if dataset is not None:
-        dataset_cfg, dataset_kwargs = serialize_function(dataset, filepath, Path('dataset'))
+        dataset_cfg, dataset_kwargs = _serialize_function(dataset, filepath, Path('dataset'))
         cfg.update({'dataset': dataset_cfg})
         if len(dataset_kwargs) != 0:
             cfg['dataset']['kwargs'] = dataset_kwargs
@@ -213,7 +213,7 @@ def _save_detector_config(detector: Data, filepath: Union[str, os.PathLike], ver
     # Serialize reg_loss_fn
     reg_loss_fn = cfg.get('reg_loss_fn', None)
     if reg_loss_fn is not None:
-        reg_loss_fn_cfg, _ = serialize_function(reg_loss_fn, filepath, Path('reg_loss_fn'))
+        reg_loss_fn_cfg, _ = _serialize_function(reg_loss_fn, filepath, Path('reg_loss_fn'))
         cfg['reg_loss_fn'] = reg_loss_fn_cfg
 
     # Save initial_diffs
@@ -232,7 +232,7 @@ def save_config(cfg: dict, filepath: Union[str, os.PathLike]) -> dict:
     if not filepath.is_dir():
         logger.warning('Directory {} does not exist and is now created.'.format(filepath))
         filepath.mkdir(parents=True, exist_ok=True)
-    cfg = _resolve_paths(cfg)
+    cfg = _path2str(cfg)
     cfg = _replace(cfg, None, "None")  # Note: None replaced with "None" as None/null not valid TOML
     with open(filepath.joinpath('config.toml'), 'w') as f:
         toml.dump(cfg, f, encoder=toml.TomlNumpyEncoder())
@@ -708,10 +708,10 @@ def save_tf_s2s(od: OutlierSeq2Seq,
 
 
 def _save_preprocess(preprocess_fn: Callable,
-                         backend: str,
-                         input_shape: Optional[tuple],
-                         filepath: Path,
-                         verbose: bool = False) -> dict:
+                     backend: str,
+                     input_shape: Optional[tuple],
+                     filepath: Path,
+                     verbose: bool = False) -> dict:
     """
     Serializes a drift detectors preprocess_fn. Artefacts are saved to disk, and a config dict containing filepaths
     to the saved artefacts is returned.
@@ -738,7 +738,7 @@ def _save_preprocess(preprocess_fn: Callable,
     local_path = Path('preprocess_fn')
 
     # Serialize function
-    func, func_kwargs = serialize_function(preprocess_fn, filepath, local_path.joinpath('function'))
+    func, func_kwargs = _serialize_function(preprocess_fn, filepath, local_path.joinpath('function'))
     preprocess_cfg.update({'src': func})
 
     # Process partial function kwargs (if they exist)
@@ -774,7 +774,7 @@ def _save_preprocess(preprocess_fn: Callable,
     return preprocess_cfg
 
 
-def serialize_function(func: Callable, base_path: Path, local_path: Path = Path('function')) -> Tuple[str, dict]:
+def _serialize_function(func: Callable, base_path: Path, local_path: Path = Path('function')) -> Tuple[str, dict]:
 
     # If a partial, save function and kwargs
     if isinstance(func, partial):
@@ -804,8 +804,8 @@ def serialize_function(func: Callable, base_path: Path, local_path: Path = Path(
 
 
 def _save_embedding(embed: tf.keras.Model,
-                   embed_args: dict,
-                   filepath: Path) -> None:
+                    embed_args: dict,
+                    filepath: Path) -> None:
     """
     Save embeddings for text drift models.
 
@@ -829,10 +829,10 @@ def _save_embedding(embed: tf.keras.Model,
         dill.dump(embed_args, f)
 
 
-def _resolve_paths(cfg: dict, absolute: bool = False) -> dict:
+def _path2str(cfg: dict, absolute: bool = False) -> dict:
     for k, v in cfg.items():
         if isinstance(v, dict):
-            _resolve_paths(v, absolute)
+            _path2str(v, absolute)
         elif isinstance(v, Path):
             if absolute:
                 v = v.resolve()
@@ -841,11 +841,11 @@ def _resolve_paths(cfg: dict, absolute: bool = False) -> dict:
 
 
 def _save_model(model: SUPPORTED_MODELS,
-               base_path: Path,
-               input_shape: tuple,
-               backend: str,
-               path: Path = Path('.'),
-               verbose: bool = False) -> Tuple[dict, Optional[dict]]:
+                base_path: Path,
+                input_shape: tuple,
+                backend: str,
+                path: Path = Path('.'),
+                verbose: bool = False) -> Tuple[dict, Optional[dict]]:
     filepath = base_path.joinpath(path)
 
     if backend == 'tensorflow':
@@ -887,9 +887,9 @@ def _save_model(model: SUPPORTED_MODELS,
 
 
 def _save_tokenizer(tokenizer: PreTrainedTokenizerBase,
-                   base_path: Path,
-                   path: Path = Path('.'),
-                   verbose: bool = False) -> dict:
+                    base_path: Path,
+                    path: Path = Path('.'),
+                    verbose: bool = False) -> dict:
     # create folder to save model in
     filepath = base_path.joinpath(path)
     if not filepath.is_dir():
@@ -903,10 +903,10 @@ def _save_tokenizer(tokenizer: PreTrainedTokenizerBase,
 
 
 def _save_kernel(kernel: Callable,
-                filepath: Path,
-                device: Optional[str],
-                filename: str = 'kernel.dill',
-                verbose: bool = False) -> dict:
+                 filepath: Path,
+                 device: Optional[str],
+                 filename: str = 'kernel.dill',
+                 verbose: bool = False) -> dict:
     """
     Function to save kernel. If the kernel is stored in the artefact registry, the registry key (and kwargs) are
     written to config. If the kernel is a generic callable, it is pickled.
