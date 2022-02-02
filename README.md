@@ -40,6 +40,9 @@ For a thorough introduction to drift detection, check out [Protecting Your Machi
 
 
 - [Installation and Usage](#installation-and-usage)
+  - [With pip](#with-pip)
+  - [With conda](#with-conda)
+  - [Usage](#usage)   
 - [Supported Algorithms](#supported-algorithms)
   - [Outlier Detection](#outlier-detection)
   - [Adversarial Detection](#adversarial-detection)
@@ -65,20 +68,26 @@ For a thorough introduction to drift detection, check out [Protecting Your Machi
 The package, `alibi-detect` can be installed from:
 
 - PyPI or GitHub source (with `pip`)
-- Anaconda (with `conda`)
+- Anaconda (with `conda`/`mamba`)
 
-**With pip**
+### With pip
 
 - alibi-detect can be installed from [PyPI](https://pypi.org/project/alibi-detect):
 
    ```bash
    pip install alibi-detect
    ```
+   
 - Alternatively, the development version can be installed:
 
    ```bash
    pip install git+https://github.com/SeldonIO/alibi-detect.git
    ```
+
+- To install with the PyTorch backend (in addition to the default TensorFlow backend):
+  ```bash
+  pip install alibi-detect[torch]
+  ```
 
 - To use the `Prophet` time series outlier detector:
 
@@ -86,12 +95,28 @@ The package, `alibi-detect` can be installed from:
    pip install alibi-detect[prophet]
    ```
 
-**With conda**
+### With conda
 
-```sh
-conda install -c conda-forge alibi-detect
+To install from [conda-forge](https://conda-forge.org/) it is recommended to use [mamba](https://mamba.readthedocs.io/en/latest/), 
+which can be installed to the *base* conda enviroment with:
+
+```bash
+conda install mamba -n base -c conda-forge
 ```
 
+- To install alibi-detect with the default TensorFlow backend:
+
+  ```bash
+  mamba install -c conda-forge alibi-detect
+  ```
+
+- To install with the PyTorch backend:
+
+  ```bash
+  mamba install -c conda-forge alibi-detect pytorch
+  ```
+
+### Usage
 We will use the [VAE outlier detector](https://docs.seldon.io/projects/alibi-detect/en/latest/od/methods/vae.html) to illustrate the API.
 
 ```python
