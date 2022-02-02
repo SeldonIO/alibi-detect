@@ -8,20 +8,22 @@
 ![Python version](https://img.shields.io/badge/python-3.7%20%7C%203.8%20%7C%203.9-blue.svg)
 [![PyPI version](https://badge.fury.io/py/alibi-detect.svg)](https://badge.fury.io/py/alibi-detect)
 --->
-[![GitHub - License](https://img.shields.io/github/license/SeldonIO/alibi-detect?logo=github&style=flat&color=green)][#github-license]
-[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/alibi-detect?logo=pypi&style=flat&color=blue)][#pypi-package]
-[![PyPI - Package Version](https://img.shields.io/pypi/v/alibi-detect?logo=pypi&style=flat&color=orange)][#pypi-package]
-[![Conda - Platform](https://img.shields.io/conda/pn/conda-forge/alibi-detect?logo=anaconda&style=flat)][#conda-forge-package]
-[![Conda (channel only)](https://img.shields.io/conda/vn/conda-forge/alibi-detect?logo=anaconda&style=flat&color=orange)][#conda-forge-package]
-[![Conda Recipe](https://img.shields.io/static/v1?logo=conda-forge&style=flat&color=green&label=recipe&message=alibi-detect)][#conda-forge-feedstock]
-[![Documentation Status](https://readthedocs.org/projects/alibi-detect/badge/?version=latest)][#docs-package]
 [![Build Status](https://github.com/SeldonIO/alibi-detect/workflows/CI/badge.svg?branch=master)][#build-status]
+[![Documentation Status](https://readthedocs.org/projects/alibi-detect/badge/?version=latest)][#docs-package]
+![Python version](https://img.shields.io/badge/python-3.7%20%7C%203.8%20%7C%203.9-blue.svg)
+[![PyPI - Package Version](https://img.shields.io/pypi/v/alibi-detect?logo=pypi&style=flat&color=orange)][#pypi-package]
+[![Conda (channel only)](https://img.shields.io/conda/vn/conda-forge/alibi-detect?logo=anaconda&style=flat&color=orange)][#conda-forge-package]
+[![GitHub - License](https://img.shields.io/github/license/SeldonIO/alibi-detect?logo=github&style=flat&color=green)][#github-license]
 [![Slack channel](https://img.shields.io/badge/chat-on%20slack-e51670.svg)][#slack-channel]
+<!---[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/alibi-detect?logo=pypi&style=flat&color=blue)][#pypi-package]--->
+<!--- TODO switch to above auto Python version on new release (PyPi needs updating with classiferies in setup.py classifiers) --->
 
-[#github-license]: https://github.com/sugatoray/genespeak/blob/master/LICENSE
-[#pypi-package]: https://pypi.org/project/genespeak/
+<!--- Hide platform for now as platform agnostic --->
+<!--- [![Conda - Platform](https://img.shields.io/conda/pn/conda-forge/alibi-detect?logo=anaconda&style=flat)][#conda-forge-package]--->
+
+[#github-license]: https://github.com/SeldonIO/alibi-detect/blob/master/LICENSE
+[#pypi-package]: https://pypi.org/project/alibi-detect/
 [#conda-forge-package]: https://anaconda.org/conda-forge/alibi-detect
-[#conda-forge-feedstock]: https://github.com/conda-forge/alibi-detect-feedstock
 [#docs-package]: https://docs.seldon.io/projects/alibi-detect/en/latest/
 [#build-status]: https://github.com/SeldonIO/alibi-detect/actions?query=workflow%3A%22CI%22
 [#slack-channel]: https://join.slack.com/t/seldondev/shared_invite/zt-vejg6ttd-ksZiQs3O_HOtPQsen_labg
