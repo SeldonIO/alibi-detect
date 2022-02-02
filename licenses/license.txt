@@ -72,7 +72,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 
 Pillow
-8.4.0
+9.0.0
 Historical Permission Notice and Disclaimer (HPND)
 The Python Imaging Library (PIL) is
 
@@ -81,7 +81,7 @@ The Python Imaging Library (PIL) is
 
 Pillow is the friendly PIL fork. It is
 
-    Copyright © 2010-2021 by Alex Clark and contributors
+    Copyright © 2010-2022 by Alex Clark and contributors
 
 Like PIL, Pillow is licensed under the open source HPND License:
 
@@ -1002,8 +1002,8 @@ Apache Software License
 
 
 alibi-detect
-0.8.1.dev0
-Apache 2.0
+0.8.2.dev0
+Apache 2.0 License
                                  Apache License
                            Version 2.0, January 2004
                         http://www.apache.org/licenses/
@@ -1277,7 +1277,7 @@ Agreement.
 
 
 cachetools
-4.2.4
+5.0.0
 MIT License
 The MIT License (MIT)
 
@@ -1328,7 +1328,7 @@ one at http://mozilla.org/MPL/2.0/.
 
 
 charset-normalizer
-2.0.10
+2.0.11
 MIT License
 MIT License
 
@@ -1459,7 +1459,7 @@ Apache Software License
 UNKNOWN
 
 decorator
-5.1.0
+5.1.1
 BSD License
 Copyright (c) 2005-2018, Michele Simionato
 All rights reserved.
@@ -1736,7 +1736,7 @@ Apache Software License
 UNKNOWN
 
 fonttools
-4.28.5
+4.29.1
 MIT License
 MIT License
 
@@ -1762,7 +1762,7 @@ SOFTWARE.
 
 
 fsspec
-2021.11.1
+2022.1.0
 BSD License
 BSD 3-Clause License
 
@@ -1830,7 +1830,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 google-auth
-2.3.3
+2.6.0
 Apache Software License
                                  Apache License
                            Version 2.0, January 2004
@@ -2731,7 +2731,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 huggingface-hub
-0.2.1
+0.4.0
 Apache Software License
                                  Apache License
                            Version 2.0, January 2004
@@ -2998,7 +2998,7 @@ THE SOFTWARE.
 
 
 imageio
-2.13.5
+2.14.1
 BSD License
 Copyright (c) 2014-2020, imageio developers
 All rights reserved.
@@ -3027,7 +3027,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 importlib-metadata
-4.10.0
+4.10.1
 Apache Software License
 Copyright 2017-2019 Jason R. Coombs, Barry Warsaw
 
@@ -3350,7 +3350,7 @@ to indicate the copyright and license terms:
 
 
 libclang
-12.0.0
+13.0.0
 Apache Software License
 ==============================================================================
 The LLVM Project is under the Apache License v2.0 with LLVM Exceptions:
@@ -3633,7 +3633,7 @@ SOFTWARE.
 
 
 llvmlite
-0.37.0
+0.38.0
 BSD
 Copyright (c) 2014-, Continuum Analytics, Inc.
 All rights reserved.
@@ -3834,7 +3834,7 @@ NetworkX is distributed with the 3-clause BSD license.
 
 
 numba
-0.54.1
+0.55.1
 BSD License
 Copyright (c) 2012, Anaconda, Inc.
 All rights reserved.
@@ -3863,7 +3863,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 numpy
-1.20.3
+1.21.5
 BSD License
 Copyright (c) 2005-2021, NumPy Developers.
 All rights reserved.
@@ -4778,7 +4778,7 @@ Public License instead of this License.  But first, please read
 
 
 oauthlib
-3.1.1
+3.2.0
 BSD License
 Copyright (c) 2019 The OAuthlib Community
 All rights reserved.
@@ -7287,7 +7287,7 @@ under the terms of *both* these licenses.
 
 
 pandas
-1.3.5
+1.4.0
 BSD License
 BSD 3-Clause License
 
@@ -7356,7 +7356,7 @@ THE POSSIBILITY OF SUCH DAMAGE.
 
 
 protobuf
-3.19.1
+3.19.4
 3-Clause BSD License
 UNKNOWN
 
@@ -7419,7 +7419,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 
 pyparsing
-3.0.6
+3.0.7
 MIT License
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -7524,7 +7524,7 @@ DEALINGS IN THE SOFTWARE.
 
 
 regex
-2021.11.10
+2022.1.18
 Apache Software License
 This work was derived from the 're' module of CPython 2.6 and CPython 3.1,
 copyright (c) 1998-2001 by Secret Labs AB and licensed under CNRI's Python 1.6
@@ -7917,7 +7917,7 @@ Apache Software License
 
 
 requests-oauthlib
-1.3.0
+1.3.1
 BSD License
 ISC License
 
@@ -7955,7 +7955,7 @@ limitations under the License.
 
 
 sacremoses
-0.0.46
+0.0.47
 MIT License
 MIT License
 
@@ -7981,7 +7981,7 @@ SOFTWARE.
 
 
 scikit-image
-0.18.3
+0.19.1
 BSD License
 Copyright (C) 2019, the scikit-image team
 All rights reserved.
@@ -9039,7 +9039,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 tensorboard
-2.7.0
+2.8.0
 Apache Software License
 # TensorBoard License
 
@@ -10151,7 +10151,7 @@ THE SOFTWARE.
 
 
 threadpoolctl
-3.0.0
+3.1.0
 BSD License
 Copyright (c) 2019, threadpoolctl contributors
 
@@ -10214,7 +10214,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 
 tokenizers
-0.10.3
+0.11.4
 Apache Software License
 UNKNOWN
 
@@ -10306,7 +10306,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 transformers
-4.15.0
+4.16.2
 Apache Software License
 Copyright 2018- The Hugging Face team. All rights reserved.
 
@@ -10773,7 +10773,7 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 
 urllib3
-1.26.7
+1.26.8
 MIT License
 MIT License
 
