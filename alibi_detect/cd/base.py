@@ -774,6 +774,10 @@ class BaseMMDDrift(BaseDetector):
 
 
 class BaseLSDDDrift(BaseDetector):
+    # TODO: TBD: this is only created when _configure_normalization is called from backend-specific classes,
+    # is declaring it here the right thing to do?
+    _normalize: Callable
+
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
@@ -834,17 +838,17 @@ class BaseLSDDDrift(BaseDetector):
         if p_val is None:
             logger.warning('No p-value set for the drift threshold. Need to set it to detect data drift.')
 
-        # x_ref preprocessing logic
-        self.preprocess_at_pred = not preprocess_at_init and not x_ref_preprocessed and preprocess_fn is not None
-        self.preprocess_at_init = preprocess_at_init and not x_ref_preprocessed and preprocess_fn is not None
+        # x_ref preprocessing logic. Inc. preprocess_fn logic in preprocess_at_init, since preprocess_at_init includes
+        # x_ref normalizing x_ref and computing H. preprocess_at_init always True if no preprocess_fn, except for when
+        # x_ref is "preprocessed" (i.e. normalized) already.
+        self.preprocess_at_init = (preprocess_fn is None or preprocess_at_init) and not x_ref_preprocessed
         self.x_ref_preprocessed = x_ref_preprocessed
         # Check if preprocess_fn is valid
-        if (self.preprocess_at_init or self.preprocess_at_pred) \
-                and not isinstance(preprocess_fn, Callable):  # type: ignore
+        if preprocess_fn is not None and not isinstance(preprocess_fn, Callable):  # type: ignore
             raise ValueError("`preprocess_fn` is not a valid Callable.")
 
         # optionally preprocess reference data (now instead of at predict)
-        if self.preprocess_at_init:
+        if self.preprocess_at_init and preprocess_fn is not None:
             self.x_ref = preprocess_fn(x_ref)
         else:
             self.x_ref = x_ref
@@ -878,7 +882,7 @@ class BaseLSDDDrift(BaseDetector):
         """
         if isinstance(self.preprocess_fn, Callable):  # type: ignore
             x = self.preprocess_fn(x)
-            x_ref = self.preprocess_fn(self.x_ref) if self.preprocess_at_pred else self.x_ref
+            x_ref = self.preprocess_fn(self.x_ref) if not self.preprocess_at_init else self.x_ref
             return x_ref, x
         else:
             return self.x_ref, x
@@ -917,14 +921,11 @@ class BaseLSDDDrift(BaseDetector):
 
         # update reference dataset
         if isinstance(self.update_x_ref, dict):
-            if self.preprocess_fn is not None and self.preprocess_at_init:
-                x = self.preprocess_fn(x)
-                x = self._normalize(x)  # type: ignore
-            elif self.preprocess_fn is None:
-                x = self._normalize(x)  # type: ignore
-            else:
-                pass
-        self.x_ref = update_reference(self.x_ref, x, self.n, self.update_x_ref)
+            if self.preprocess_at_init:
+                if self.preprocess_fn is not None:
+                    x = self.preprocess_fn(x)
+                x = self._normalize(x)
+        self.x_ref = update_reference(self.x_ref, x, self.n, self.update_x_ref)  # type: ignore[arg-type]
         # used for reservoir sampling
         self.n += len(x)  # type: ignore
 

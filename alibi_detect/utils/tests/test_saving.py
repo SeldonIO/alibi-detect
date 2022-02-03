@@ -11,6 +11,7 @@ import dill
 import numpy as np
 import scipy
 import pytest
+import random
 from pathlib import Path
 from pytest_cases import parametrize_with_cases, parametrize, fixture, param_fixture
 from sklearn.model_selection import StratifiedKFold
@@ -59,6 +60,12 @@ N_PERMUTATIONS = 10
 LATENT_DIM = 2  # Must be less than input_dim set in ./datasets.py
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 REGISTERED_OBJECTS = registry.get_all()
+
+# Set seeds (TODO - may also need to set env variables when using cuda)
+np.random.seed(0)
+tf.random.set_seed(0)
+torch.manual_seed(0)
+random.seed(0)
 
 #  TODO: Some of the fixtures can/should be moved elsewhere (i.e. if they can be recycled for use elsewhere)
 
@@ -295,8 +302,7 @@ def test_save_mmddrift(data, preprocess_uae, backend, tmp_path):
     assert cd_load._detector.p_val == P_VAL
     assert isinstance(cd_load._detector.preprocess_fn, Callable)
     assert cd_load._detector.preprocess_fn.func.__name__ == 'preprocess_drift'
-    # assert det.predict(X_ref)['data']['p_val'] == det_load.predict(X_ref)['data']['p_val']
-    # Commented as settings tf/np seeds does not currently make deterministic
+#    assert cd.predict(X_h0)['data']['p_val'] == cd_load.predict(X_h0)['data']['p_val']  # Not deterministic
 
 
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
@@ -312,21 +318,20 @@ def test_save_lsdddrift(data, preprocess_uae, backend, tmp_path):
                    p_val=P_VAL,
                    backend=backend,
                    preprocess_fn=preprocess_uae,
-                   n_permutations=N_PERMUTATIONS,
                    preprocess_at_init=True,
+                   n_permutations=N_PERMUTATIONS,
                    )
     save_detector(cd, tmp_path)
     cd_load = load_detector(tmp_path)
 
     # assertions
-    np.testing.assert_array_equal(preprocess_uae(X_ref), cd_load._detector.x_ref)
+    np.testing.assert_almost_equal(cd._detector._normalize(preprocess_uae(X_ref)), cd_load._detector.x_ref, 10)
     assert cd_load._detector.x_ref_preprocessed
     assert cd_load._detector.n_permutations == N_PERMUTATIONS
     assert cd_load._detector.p_val == P_VAL
-#    assert isinstance(cd_load._detector.preprocess_fn, Callable)
-#    assert cd_load._detector.preprocess_fn.func.__name__ == 'preprocess_drift'
-    # assert det.predict(X_ref)['data']['p_val'] == det_load.predict(X_ref)['data']['p_val']
-    # Commented as settings tf/np seeds does not currently make deterministic
+    assert isinstance(cd_load._detector.preprocess_fn, Callable)
+    assert cd_load._detector.preprocess_fn.func.__name__ == 'preprocess_drift'
+#    assert cd.predict(X_h0)['data']['p_val'] == cd_load.predict(X_h0)['data']['p_val']  # Not deterministic
 
 
 @parametrize_with_cases("data", cases=BinData, prefix='data_')

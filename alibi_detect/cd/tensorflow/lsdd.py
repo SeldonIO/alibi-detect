@@ -80,7 +80,7 @@ class LSDDDriftTF(BaseLSDDDrift):
         )
         self.meta.update({'backend': 'tensorflow'})
 
-        if not self.preprocess_at_pred:
+        if self.preprocess_at_init:
             x_ref = tf.convert_to_tensor(self.x_ref)
             self._configure_normalization(x_ref)
             x_ref = self._normalize(x_ref)
@@ -102,7 +102,7 @@ class LSDDDriftTF(BaseLSDDDrift):
     def _configure_normalization(self, x_ref: tf.Tensor, eps: float = 1e-12):
         x_ref_means = tf.reduce_mean(x_ref, axis=0)
         x_ref_stds = tf.math.reduce_std(x_ref, axis=0)
-        self._normalize = lambda x: (x - x_ref_means)/(x_ref_stds + eps)
+        self._normalize = lambda x: (x - x_ref_means)/(x_ref_stds + eps)  # type: ignore[assignment]
 
     def _configure_kernel_centers(self, x_ref: tf.Tensor):
         "Set aside reference samples to act as kernel centers"
@@ -132,7 +132,7 @@ class LSDDDriftTF(BaseLSDDDrift):
         """
         x_ref, x = self.preprocess(x)
 
-        if self.preprocess_at_pred:
+        if not self.preprocess_at_init:
             self._configure_normalization(x_ref)
             x_ref = self._normalize(x_ref)
             self._initialize_kernel(x_ref)
