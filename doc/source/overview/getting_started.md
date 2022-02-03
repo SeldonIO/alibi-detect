@@ -2,11 +2,112 @@
 
 ## Installation
 
-alibi-detect can be installed from [PyPI](https://pypi.org/project/alibi-detect/):
+Alibi Detect can be installed from [PyPI](https://pypi.org/project/alibi-detect/) or [conda-forge](https://conda-forge.org/)
+by following the instructions below.
+
+
+``````{dropdown} Install via PyPI
+
+```{div} sd-mb-3
+- Alibi Detect can be installed from [PyPI](https://pypi.org/project/alibi-detect/) with `pip`:
+```
+
+`````{tab-set}
+
+````{tab-item} Standard
+:sync: label-standard
+:class-label: sd-pt-0
+
+```{div} sd-mb-1
+Installation with default [TensorFlow](https://www.tensorflow.org/) backend.
+```
 
 ```bash
 pip install alibi-detect
 ```
+````
+
+````{tab-item} PyTorch
+:sync: label-torch
+:class-label: sd-pt-0
+
+```{div} sd-mb-1
+Installation with [TensorFlow](https://www.tensorflow.org/) and [PyTorch](https://pytorch.org/) backends.
+```
+
+```bash
+pip install alibi-detect[torch]
+```
+
+```{note}
+If you wish to use the GPU version of PyTorch, or are installing on Windows, it is recommended to [install and test PyTorch](https://pytorch.org/get-started/locally/) 
+prior to installing alibi-detect.
+```
+````
+
+````{tab-item} Prophet
+:class-label: sd-pt-0
+
+```{div} sd-mb-1
+Installation with the [Prophet](../od/methods/prophet.ipynb) time series outlier detector enabled.
+```
+
+```bash
+pip install alibi-detect[prophet]
+```
+````
+
+`````
+``````
+
+
+``````{dropdown} Install via conda-forge
+
+```{div} sd-mb-3
+- To install the conda-forge version it is recommended to use [mamba](https://mamba.readthedocs.io/en/latest/), 
+which can be installed to the *base* conda enviroment with:
+```
+
+```bash
+conda install mamba -n base -c conda-forge
+```
+
+```{div} sd-mb-3
+- `mamba` can then be used to install alibi-detect in a conda enviroment:
+```
+
+`````{tab-set}
+
+````{tab-item} Standard
+:sync: label-standard
+:class-label: sd-pt-0
+
+Installation with default [TensorFlow](https://www.tensorflow.org/) backend.
+
+```bash
+mamba install -c conda-forge alibi-detect
+```
+````
+
+````{tab-item} PyTorch
+:sync: label-torch
+:class-label: sd-pt-0
+
+Installation with [TensorFlow](https://www.tensorflow.org/) and [PyTorch](https://pytorch.org/) backends.
+
+```bash
+mamba install -c conda-forge alibi-detect pytorch
+```
+
+```{note}
+If you wish to use the GPU version of PyTorch, or are installing on Windows, it is recommended to [install and test PyTorch](https://pytorch.org/get-started/locally/) 
+prior to installing alibi-detect.
+```
+````
+
+`````
+``````
+
 
 ## Features
 

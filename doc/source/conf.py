@@ -58,6 +58,7 @@ extensions = [
     "sphinxcontrib.bibtex",
     "nbsphinx",
     "myst_parser",
+    "sphinx_design",
 ]
 
 # -- nbsphinx settings -------------------------------------------------------

@@ -14,6 +14,8 @@ extras_require = {
         "torch": ["torch>=1.7.0"]
 }
 
+LICENSE = "Apache 2.0"
+
 setup(
     name="alibi-detect",
     author="Seldon Technologies Ltd.",
@@ -23,7 +25,7 @@ setup(
     long_description=readme(),
     long_description_content_type="text/markdown",
     url="https://github.com/SeldonIO/alibi-detect",
-    license="Apache 2.0",
+    license=LICENSE,
     packages=find_packages(),
     include_package_data=True,
     python_requires=">=3.7",
@@ -48,4 +50,14 @@ setup(
     extras_require=extras_require,
     test_suite="tests",
     zip_safe=False,
+    classifiers=[
+        "Intended Audience :: Science/Research",
+        "Operating System :: OS Independent",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        f"License :: OSI Approved :: {LICENSE} License",
+        "Topic :: Scientific/Engineering",
+    ],
 )
