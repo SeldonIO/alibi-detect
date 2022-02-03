@@ -1,13 +1,14 @@
 from functools import partial
+from typing import Callable, Type, Union
+
 import numpy as np
 import tensorflow as tf
-from typing import Callable, Union
 from alibi_detect.utils.prediction import tokenize_transformer
 
 
 def predict_batch(x: Union[list, np.ndarray, tf.Tensor], model: Union[Callable, tf.keras.Model],
                   batch_size: int = int(1e10), preprocess_fn: Callable = None,
-                  dtype: Union[np.dtype, tf.DType] = np.float32) -> Union[np.ndarray, tf.Tensor, tuple]:
+                  dtype: Union[Type[np.generic], tf.DType] = np.float32) -> Union[np.ndarray, tf.Tensor, tuple]:
     """
     Make batch predictions on a model.
 
@@ -60,7 +61,7 @@ def predict_batch(x: Union[list, np.ndarray, tf.Tensor], model: Union[Callable, 
 
 def predict_batch_transformer(x: Union[list, np.ndarray], model: tf.keras.Model, tokenizer: Callable,
                               max_len: int, batch_size: int = int(1e10),
-                              dtype: Union[np.float32, tf.DType] = np.float32) \
+                              dtype: Union[Type[np.generic], tf.DType] = np.float32) \
         -> Union[np.ndarray, tf.Tensor]:
     """
     Make batch predictions using a transformers tokenizer and model.

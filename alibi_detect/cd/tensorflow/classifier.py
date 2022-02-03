@@ -68,7 +68,7 @@ class ClassifierDriftTF(BaseClassifierDrift):
         preprocess_fn
             Function to preprocess the data before computing the data drift metrics.
         preds_type
-            Whether the model outputs 'probs' or 'logits'
+            Whether the model outputs 'probs' or 'logits'.
         binarize_preds
             Whether to test for discrepency on soft (e.g. prob/log-prob) model predictions directly
             with a K-S test or binarise to 0-1 prediction errors and apply a binomial test.
@@ -126,6 +126,10 @@ class ClassifierDriftTF(BaseClassifierDrift):
             input_shape=input_shape,
             data_type=data_type
         )
+
+        if preds_type not in ['probs', 'logits']:
+            raise ValueError("'preds_type' should be 'probs' or 'logits'")
+
         self.meta.update({'backend': 'tensorflow'})
 
         # define and compile classifier model
@@ -140,7 +144,7 @@ class ClassifierDriftTF(BaseClassifierDrift):
         if isinstance(train_kwargs, dict):
             self.train_kwargs.update(train_kwargs)
 
-    def score(self, x: np.ndarray) -> Tuple[float, float, np.ndarray, np.ndarray]:
+    def score(self, x: np.ndarray) -> Tuple[float, float, np.ndarray, np.ndarray]:  # type: ignore[override]
         """
         Compute the out-of-fold drift metric such as the accuracy from a classifier
         trained to distinguish the reference data from the data to be tested.
@@ -152,13 +156,13 @@ class ClassifierDriftTF(BaseClassifierDrift):
 
         Returns
         -------
-        p-value, a notion of distance between the trained classifier's out-of-fold performance
-        and that which we'd expect under the null assumption of no drift,
+        p-value, a notion of distance between the trained classifier's out-of-fold performance \
+        and that which we'd expect under the null assumption of no drift, \
         and the out-of-fold classifier model prediction probabilities on the reference and test data
         """
-        x_ref, x = self.preprocess(x)
+        x_ref, x = self.preprocess(x)  # type: ignore[assignment]
         n_ref, n_cur = len(x_ref), len(x)
-        x, y, splits = self.get_splits(x_ref, x)
+        x, y, splits = self.get_splits(x_ref, x)  # type: ignore[assignment]
 
         # iterate over folds: train a new model for each fold and make out-of-fold (oof) predictions
         preds_oof_list, idx_oof_list = [], []

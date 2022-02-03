@@ -236,7 +236,7 @@ class OutlierVAE(BaseDetector, FitMixin, ThresholdMixin):
         X_recon = predict_batch(X_samples, self.vae, batch_size=batch_size)
 
         # compute feature and instance level scores
-        fscore = self.feature_score(X_samples, X_recon)
+        fscore = self.feature_score(X_samples, X_recon)  # type: ignore[arg-type]
         iscore = self.instance_score(fscore, outlier_perc=outlier_perc)
 
         return fscore, iscore

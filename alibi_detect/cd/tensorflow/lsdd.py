@@ -86,10 +86,10 @@ class LSDDDriftTF(BaseLSDDDrift):
             x_ref = self._normalize(x_ref)
             self._initialize_kernel(x_ref)
             self._configure_kernel_centers(x_ref)
-            self.x_ref = x_ref.numpy()
+            self.x_ref = x_ref.numpy()  # type: ignore[union-attr]
             # For stability in high dimensions we don't divide H by (pi*sigma^2)^(d/2)
             # Results in an alternative test-stat of LSDD*(pi*sigma^2)^(d/2). Same p-vals etc.
-            self.H = GaussianRBF(np.sqrt(2.)*self.kernel.sigma)(self.kernel_centers, self.kernel_centers)
+            self.H = GaussianRBF(np.sqrt(2.) * self.kernel.sigma)(self.kernel_centers, self.kernel_centers)
 
     def _initialize_kernel(self, x_ref: tf.Tensor):
         if self.sigma is None:
@@ -102,7 +102,7 @@ class LSDDDriftTF(BaseLSDDDrift):
     def _configure_normalization(self, x_ref: tf.Tensor, eps: float = 1e-12):
         x_ref_means = tf.reduce_mean(x_ref, axis=0)
         x_ref_stds = tf.math.reduce_std(x_ref, axis=0)
-        self._normalize = lambda x: (x - x_ref_means)/(x_ref_stds + eps)  # type: ignore[assignment]
+        self._normalize = lambda x: (x - x_ref_means) / (x_ref_stds + eps)  # type: ignore[assignment]
 
     def _configure_kernel_centers(self, x_ref: tf.Tensor):
         "Set aside reference samples to act as kernel centers"
@@ -137,7 +137,7 @@ class LSDDDriftTF(BaseLSDDDrift):
             x_ref = self._normalize(x_ref)
             self._initialize_kernel(x_ref)
             self._configure_kernel_centers(x_ref)
-            self.H = GaussianRBF(np.sqrt(2.)*self.kernel.sigma)(self.kernel_centers, self.kernel_centers)
+            self.H = GaussianRBF(np.sqrt(2.) * self.kernel.sigma)(self.kernel_centers, self.kernel_centers)
 
         x = self._normalize(x)
 

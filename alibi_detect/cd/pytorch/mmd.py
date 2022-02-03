@@ -91,7 +91,8 @@ class MMDDriftTorch(BaseMMDDrift):
             self.device = torch.device('cpu')
 
         # initialize kernel
-        sigma = torch.from_numpy(sigma).to(self.device) if isinstance(sigma, np.ndarray) else None
+        sigma = torch.from_numpy(sigma).to(self.device) if isinstance(sigma,  # type: ignore[assignment]
+                                                                      np.ndarray) else None
         self.kernel = kernel(sigma) if kernel == GaussianRBF else kernel
 
         # compute kernel matrix for the reference data
@@ -126,11 +127,11 @@ class MMDDriftTorch(BaseMMDDrift):
         and the MMD^2 values from the permutation test.
         """
         x_ref, x = self.preprocess(x)
-        x_ref = torch.from_numpy(x_ref).to(self.device)
-        x = torch.from_numpy(x).to(self.device)
+        x_ref = torch.from_numpy(x_ref).to(self.device)  # type: ignore[assignment]
+        x = torch.from_numpy(x).to(self.device)  # type: ignore[assignment]
         # compute kernel matrix, MMD^2 and apply permutation test using the kernel matrix
         n = x.shape[0]
-        kernel_mat = self.kernel_matrix(x_ref, x)
+        kernel_mat = self.kernel_matrix(x_ref, x)  # type: ignore[arg-type]
         kernel_mat = kernel_mat - torch.diag(kernel_mat.diag())  # zero diagonal
         mmd2 = mmd2_from_kernel_matrix(kernel_mat, n, permute=False, zero_diag=False)
         mmd2_permuted = torch.Tensor(

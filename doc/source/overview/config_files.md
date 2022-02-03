@@ -65,7 +65,8 @@ by hand. For example, a [KSDrift](../api/alibi_detect.cd.ks.rst) detector with a
 [dill](https://github.com/uqfoundation/dill) serialized function to preprocess reference and test data can be specified 
 as:
 
-````{tabbed} Config-driven instantiation
+`````{tab-set}
+````{tab-item} Config-driven instantiation
 
 <p class="codeblock-label">config.toml</p>
 
@@ -82,7 +83,7 @@ detector = load_detector('detector_directory/')
 ```
 ````
 
-````{tabbed} Standard instantiation
+````{tab-item} Standard instantiation
 
 ```python
 import numpy as np
@@ -93,6 +94,7 @@ preprocess_fn = dill.load('detector_directory/function.dill')
 detector = MMDDrift(x_ref, p_val=0.05, preprocess_fn=preprocess_fn)
 ```
 ````
+`````
 
 The `name` field should always be the name of the detector, for example `KSDrift` or `SpotTheDiffDrift`. 
 The following fields are the args/kwargs to pass to the detector (see the drift detector 

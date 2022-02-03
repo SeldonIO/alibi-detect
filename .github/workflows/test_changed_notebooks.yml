@@ -2,6 +2,10 @@
 
 name: test_changed_notebooks
 
+defaults:
+  run:
+    shell: bash  # To override PowerShell on Windows
+
 on:
   push:
     branches:
@@ -19,10 +23,16 @@ jobs:
   test_changed_notebooks:
     if: github.event.pull_request.draft == false
 
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        python-version: [ '3.6', '3.7', '3.8', '3.9' ]
+        os: [ubuntu-latest]
+        python-version: [ '3.7', '3.8', '3.9' ]
+        include: # Run macos and windows tests on python 3.9 only
+          - os: windows-latest 
+            python-version:  '3.9'
+          - os: macos-latest 
+            python-version:  '3.9'
 
     steps:
       - name: Checkout code
@@ -43,12 +53,13 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: |
-          sudo apt-get install build-essential
-          pip install --upgrade pip
-          pip install -r requirements/dev.txt
-          pip install -e .[prophet]
-          pip install -e .[torch]
-          pip freeze
+          python -m pip install --upgrade pip setuptools wheel
+          python -m pip install -r requirements/dev.txt -r testing/requirements.txt
+          if [ "$RUNNER_OS" != "Windows" ]; then  # Skip Prophet notebooks on windows for now
+            python -m pip install -e .[prophet]
+          fi
+          python -m pip install -e .[torch]
+          python -m pip freeze
       - name: Run notebooks
         env:
           FILES: ${{ steps.changed-ipynb.outputs.all_modified_files }}

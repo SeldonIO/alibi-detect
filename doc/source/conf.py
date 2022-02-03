@@ -58,8 +58,7 @@ extensions = [
     "sphinxcontrib.bibtex",
     "nbsphinx",
     "myst_parser",
-    "sphinx_panels",
-    "sphinx_copybutton"
+    "sphinx_design",
 ]
 
 # -- nbsphinx settings -------------------------------------------------------

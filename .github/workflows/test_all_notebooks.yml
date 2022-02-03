@@ -2,6 +2,10 @@
 
 name: test_all_notebooks
 
+defaults:
+  run:
+    shell: bash  # To override PowerShell on Windows
+
 on:
   # Trigger the workflow on manual dispatch and once a week
   workflow_dispatch:
@@ -11,10 +15,16 @@ on:
 jobs:
   test_notebooks:
 
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        python-version: [ '3.6', '3.7', '3.8', '3.9' ]
+        os: [ubuntu-latest]
+        python-version: [ '3.7', '3.8', '3.9' ]
+        include: # Run macos and windows tests on python 3.9 only
+          - os: windows-latest 
+            python-version:  '3.9'
+          - os: macos-latest 
+            python-version:  '3.9'
 
     steps:
       - name: Checkout code
@@ -27,12 +37,13 @@ jobs:
 
       - name: Install dependencies
         run: |
-          sudo apt-get install build-essential
-          pip install --upgrade pip
-          pip install -r requirements/dev.txt
-          pip install -e .[prophet]
-          pip install -e .[torch]
-          pip freeze
+          python -m pip install --upgrade pip setuptools wheel
+          python -m pip install -r requirements/dev.txt -r testing/requirements.txt
+          if [ "$RUNNER_OS" != "Windows" ]; then  # Skip Prophet notebooks on windows for now
+            python -m pip install -e .[prophet]
+          fi
+          python -m pip install -e .[torch]
+          python -m pip freeze
 
       - name: Run notebooks
         run: |

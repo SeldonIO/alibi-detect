@@ -4,7 +4,6 @@ added to detectors, their tests should be moved to test_saving.py.
 """
 import numpy as np
 import pytest
-import sys
 from tempfile import TemporaryDirectory
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, InputLayer, Conv1D, Flatten
@@ -12,6 +11,7 @@ from alibi_detect.ad import AdversarialAE, ModelDistillation
 from alibi_detect.models.tensorflow.autoencoder import DecoderLSTM, EncoderLSTM
 from alibi_detect.od import (IForest, LLR, Mahalanobis, OutlierAEGMM, OutlierVAE, OutlierVAEGMM,
                              OutlierProphet, SpectralResidual, OutlierSeq2Seq, OutlierAE)
+from alibi_detect.od.prophet import PROPHET_INSTALLED
 from alibi_detect.utils.tensorflow.kernels import DeepKernel
 from alibi_detect.utils.saving import save_detector, load_detector  # type: ignore
 
@@ -107,8 +107,6 @@ detector = [
                   latent_dim=latent_dim,
                   samples=samples,
                   **kwargs),
-    OutlierProphet(threshold=.7,
-                   growth='logistic'),
     SpectralResidual(threshold=threshold,
                      window_amp=10,
                      window_local=10),
@@ -118,6 +116,11 @@ detector = [
                    threshold_net=threshold_net,
                    latent_dim=latent_dim),
 ]
+if PROPHET_INSTALLED:
+    detector.append(
+            OutlierProphet(threshold=.7,
+                           growth='logistic')
+    )
 n_tests = len(detector)
 
 
@@ -134,11 +137,6 @@ def test_save_load(select_detector):
     """
     det = select_detector
     det_name = det.meta['name']
-
-    # save and load functionality does not work for OutlierProphet and Python 3.6.
-    # https://github.com/facebook/prophet/issues/1361
-    if sys.version_info.minor == 6 and isinstance(det, OutlierProphet):
-        return
 
     with TemporaryDirectory() as temp_dir:
         temp_dir += '/'
