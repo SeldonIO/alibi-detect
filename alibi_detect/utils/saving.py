@@ -11,7 +11,8 @@ from pathlib import Path
 import tensorflow as tf
 from tensorflow.keras.layers import Input, InputLayer
 from transformers import PreTrainedTokenizerBase
-from typing import Callable, Dict, List, Optional, Tuple, Union, Literal
+from typing import Callable, Dict, List, Optional, Tuple, Union
+from alibi_detect.utils._types import Literal
 from alibi_detect.ad import AdversarialAE, ModelDistillation
 from alibi_detect.cd.tensorflow import HiddenOutput, UAE
 from alibi_detect.models.tensorflow import TransformerEmbedding

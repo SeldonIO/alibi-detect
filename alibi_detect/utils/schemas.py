@@ -1,17 +1,14 @@
 # mypy: ignore-errors
 # TODO - conditional checks depending on backend
-# TODO - defaults are currently mix of actual default and None. Doesn't matter too much as None will then be overridden
-#  by detector default kwarg anyway. We could have actual defaults here for clarity, but more maintenance. Not true?!
-#
-# TODO - similar for Optional[]. Many detector kwargs are not Optional[], but they are for config schema as detector
-#  overrides None. What do we want to put in config schema?
 # TODO - conditional backend imports (currently needs tensorflow and torch installed)
 # TODO - consider validating output of get_config calls
+
 import numpy as np
 import tensorflow as tf
 import torch
 from pydantic import BaseModel
-from typing import Optional, Union, Literal, Dict, List, Callable
+from typing import Optional, Union, Dict, List, Callable
+from alibi_detect.utils._types import Literal
 from alibi_detect.version import __version__
 from alibi_detect.cd.tensorflow import HiddenOutput, UAE
 from alibi_detect.utils.tensorflow.data import TFDataset
@@ -26,12 +23,18 @@ SupportedModels = (UAE, HiddenOutput, tf.keras.Sequential, tf.keras.Model)
 
 # Custom BaseModel so that we can set default config
 class CustomBaseModel(BaseModel):
+    """
+    Base pydantic model schema. Set our pydantic default settings in here.
+    """
     class Config:
         arbitrary_types_allowed = True
         extra = 'forbid'  # Forbid extra fields so that we catch misspelled fields
 
 
 class DetectorConfig(CustomBaseModel):
+    """
+    Base detector config schema. Only fields universal across all detectors should be defined in here.
+    """
     name: str
     version: str = __version__
     config_spec: str = __config_spec__
@@ -41,12 +44,19 @@ class DetectorConfig(CustomBaseModel):
 
 
 class ModelConfig(CustomBaseModel):
+    """
+    Unresolved schema for (ML) models. Note that the model "backend" e.g. 'tensorflow', 'pytorch', 'sklearn', is set
+    by backend in DetectorConfig.
+    """
     type: Literal['custom', 'HiddenOutput', 'UAE'] = 'custom'
     src: str
     custom_obj: Optional[dict] = None
 
 
 class EmbeddingConfig(CustomBaseModel):
+    """
+    Unresolved schema for text embeddings.
+    """
     type: Literal['pooler_output', 'last_hidden_state',
                   'hidden_state', 'hidden_state_cls']  # See alibi_detect.models.tensorflow.embedding
     layers: Optional[List[int]] = None  # TODO - add check conditional on embedding type (see docstring in above)
@@ -54,11 +64,17 @@ class EmbeddingConfig(CustomBaseModel):
 
 
 class TokenizerConfig(CustomBaseModel):
+    """
+    Unresolved schema for text tokenizers.
+    """
     src: str
     kwargs: Optional[dict] = {}
 
 
 class PreprocessConfig(CustomBaseModel):
+    """
+    Unresolved schema for preprocess_fn.
+    """
     src: str = "@cd.tensorflow.preprocess.preprocess_drift"
 
     # Below kwargs are only passed if function == @preprocess_drift
@@ -76,6 +92,9 @@ class PreprocessConfig(CustomBaseModel):
 
 
 class PreprocessConfigResolved(PreprocessConfig):
+    """
+    Resolved schema for preprocess_fn.
+    """
     src: Callable
     device: Optional[torch.device] = None  # Note: `device` resolved for preprocess_drift, but str for detectors
     model: Optional[SUPPORTED_MODELS] = None  # TODO - Not optional if src is preprocess_drift
@@ -86,6 +105,9 @@ class PreprocessConfigResolved(PreprocessConfig):
 
 
 class KernelConfig(CustomBaseModel):
+    """
+    Unresolved schema for kernels.
+    """
     src: str
 
     # Below kwargs are only passed if kernel == @GaussianRBF
@@ -97,11 +119,17 @@ class KernelConfig(CustomBaseModel):
 
 
 class KernelConfigResolved(KernelConfig):
+    """
+    Resolved schema for kernels.
+    """
     src: Callable
     sigma: Optional[np.ndarray] = None
 
 
 class DeepKernelConfig(CustomBaseModel):
+    """
+    Unresolved schema for DeepKernels (see utils.[backend].kernels.DeepKernel).
+    """
     proj: Union[str, ModelConfig]
     kernel_a: Union[str, KernelConfig] = "@utils.tensorflow.kernels.GaussianRBF"
     kernel_b: Union[str, KernelConfig, None] = None
@@ -109,12 +137,18 @@ class DeepKernelConfig(CustomBaseModel):
 
 
 class DeepKernelConfigResolved(DeepKernelConfig):
+    """
+    Resolved schema for DeepKernels (see utils.[backend].kernels.DeepKernel).
+    """
     proj: SUPPORTED_MODELS
     kernel_a: Union[Callable, KernelConfigResolved]
     kernel_b: Union[Callable, KernelConfigResolved, None] = None
 
 
 class DriftDetectorConfig(DetectorConfig):
+    """
+    Unresolved base schema for drift detectors.
+    """
     # args/kwargs shared by all drift detectors
     x_ref: str = 'x_ref.npy'
     p_val: float = .05
@@ -125,11 +159,17 @@ class DriftDetectorConfig(DetectorConfig):
 
 
 class DriftDetectorConfigResolved(DriftDetectorConfig):
+    """
+    Resolved base schema for drift detectors.
+    """
     x_ref: np.ndarray
     preprocess_fn: Union[Callable, PreprocessConfigResolved, None]
 
 
 class KSDriftConfig(DriftDetectorConfig):
+    """
+    Unresolved schema for KSDrift detector.
+    """
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
     correction: str = 'bonferroni'
@@ -138,6 +178,9 @@ class KSDriftConfig(DriftDetectorConfig):
 
 
 class ChiSquareDriftConfig(DriftDetectorConfig):
+    """
+    Unresolved schema for ChiSquareDrift detector.
+    """
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
     correction: str = 'bonferroni'
@@ -146,6 +189,9 @@ class ChiSquareDriftConfig(DriftDetectorConfig):
 
 
 class TabularDriftConfig(DriftDetectorConfig):
+    """
+    Unresolved schema for TabularDrift detector.
+    """
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
     correction: str = 'bonferroni'
@@ -155,6 +201,9 @@ class TabularDriftConfig(DriftDetectorConfig):
 
 
 class CVMDriftConfig(DriftDetectorConfig):
+    """
+    Unresolved schema for CVMDrift detector.
+    """
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
     correction: str = 'bonferroni'
@@ -162,6 +211,9 @@ class CVMDriftConfig(DriftDetectorConfig):
 
 
 class FETDriftConfig(DriftDetectorConfig):
+    """
+    Unresolved schema for FETDrift detector.
+    """
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
     correction: str = 'bonferroni'
@@ -170,6 +222,9 @@ class FETDriftConfig(DriftDetectorConfig):
 
 
 class MMDDriftConfig(DriftDetectorConfig):
+    """
+    Unresolved schema for MMDDrift detector.
+    """
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
     kernel: Union[str, KernelConfig, None] = None
@@ -180,6 +235,9 @@ class MMDDriftConfig(DriftDetectorConfig):
 
 
 class LSDDDriftConfig(DriftDetectorConfig):
+    """
+    Unresolved schema for LSDDDrift detector.
+    """
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
     sigma: Optional[List[float]] = None
@@ -190,6 +248,9 @@ class LSDDDriftConfig(DriftDetectorConfig):
 
 
 class ClassifierDriftConfig(DriftDetectorConfig):
+    """
+    Unresolved schema for ClassifierDriftDrift detector.
+    """
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
     model: Union[str, ModelConfig]
@@ -212,6 +273,9 @@ class ClassifierDriftConfig(DriftDetectorConfig):
 
 
 class SpotTheDiffDriftConfig(DriftDetectorConfig):
+    """
+    Unresolved schema for SpotTheDiffDrift detector.
+    """
     binarize_preds: bool = False
     train_size: Optional[float] = .75
     n_folds: Optional[int] = None
@@ -233,6 +297,9 @@ class SpotTheDiffDriftConfig(DriftDetectorConfig):
 
 
 class LearnedKernelDriftConfig(DriftDetectorConfig):
+    """
+    Unresolved schema for LearnedKernelDrift detector.
+    """
     kernel: Union[str, DeepKernelConfig]
     preprocess_at_init: bool = True,
     update_x_ref: Optional[Dict[str, int]] = None,
@@ -253,14 +320,23 @@ class LearnedKernelDriftConfig(DriftDetectorConfig):
 
 
 class KSDriftConfigResolved(DriftDetectorConfigResolved, KSDriftConfig):
+    """
+    Resolved schema for KSDrift detector.
+    """
     pass
 
 
 class ChiSquareDriftConfigResolved(DriftDetectorConfigResolved, ChiSquareDriftConfig):
+    """
+    Resolved schema for ChiSquareDrift detector.
+    """
     pass
 
 
 class TabularDriftConfigResolved(DriftDetectorConfigResolved, TabularDriftConfig):
+    """
+    Resolved schema for TabularDrift detector.
+    """
     pass
 
 
@@ -273,15 +349,24 @@ class FETDriftConfigResolved(DriftDetectorConfigResolved, FETDriftConfig):
 
 
 class MMDDriftConfigResolved(DriftDetectorConfigResolved, MMDDriftConfig):
+    """
+    Resolved schema for MMDDrift detector.
+    """
     kernel: Union[Callable, KernelConfigResolved, None]
     sigma: Optional[np.ndarray]
 
 
 class LSDDDriftConfigResolved(DriftDetectorConfigResolved, LSDDDriftConfig):
+    """
+    Resolved schema for LSDDDrift detector.
+    """
     sigma: Optional[np.ndarray]
 
 
 class ClassifierDriftConfigResolved(DriftDetectorConfigResolved, ClassifierDriftConfig):
+    """
+    Resolved schema for ClassifierDrift detector.
+    """
     reg_loss_fn: Optional[Callable] = None
     optimizer: Optional[tf.keras.optimizers.Optimizer] = None
     preprocess_batch_fn: Optional[Callable] = None
@@ -290,6 +375,9 @@ class ClassifierDriftConfigResolved(DriftDetectorConfigResolved, ClassifierDrift
 
 
 class SpotTheDiffDriftConfigResolved(DriftDetectorConfigResolved, SpotTheDiffDriftConfig):
+    """
+    Resolved schema for SpotTheDiffDrift detector.
+    """
     optimizer: Optional[tf.keras.optimizers.Optimizer] = None
     preprocess_batch_fn: Optional[Callable] = None
     dataset: Callable = TFDataset,
@@ -298,6 +386,9 @@ class SpotTheDiffDriftConfigResolved(DriftDetectorConfigResolved, SpotTheDiffDri
 
 
 class LearnedKernelDriftConfigResolved(DriftDetectorConfigResolved, LearnedKernelDriftConfig):
+    """
+    Resolved schema for LearnedKernelDrift detector.
+    """
     kernel: Union[Callable, DeepKernelConfigResolved]
     reg_loss_fn: Optional[Callable] = None
     optimizer: Optional[tf.keras.optimizers.Optimizer] = None
@@ -305,6 +396,7 @@ class LearnedKernelDriftConfigResolved(DriftDetectorConfigResolved, LearnedKerne
     dataset: Callable = TFDataset,
 
 
+# Unresolved schema dictionary (used in alibi_detect.utils.loading)
 DETECTOR_CONFIGS = {
     'KSDrift': KSDriftConfig,
     'ChiSquareDrift': ChiSquareDriftConfig,
@@ -319,6 +411,7 @@ DETECTOR_CONFIGS = {
 }
 
 
+# Resolved schema dictionary (used in alibi_detect.utils.loading)
 DETECTOR_CONFIGS_RESOLVED = {
     'KSDrift': KSDriftConfigResolved,
     'ChiSquareDrift': ChiSquareDriftConfigResolved,
