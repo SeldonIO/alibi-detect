@@ -261,7 +261,7 @@ def test_save_cvmdrift(data, preprocess_uae, tmp_path):
                   preprocess_fn=preprocess_uae,
                   preprocess_at_init=True,
                   )
-    save_detector(cd, tmp_path, verbose=True)
+    save_detector(cd, tmp_path)
     cd_load = load_detector(tmp_path)
 
     # Assert
@@ -521,7 +521,7 @@ def test_save_kernel(kernel, backend, tmp_path):
     # Save kernel to config
     filepath = tmp_path
     filename = 'mykernel.dill'
-    cfg_kernel = _save_kernel(kernel, filepath, device=DEVICE, filename=filename, verbose=False)
+    cfg_kernel = _save_kernel(kernel, filepath, device=DEVICE, filename=filename)
     KernelConfig(**cfg_kernel).dict()
     # TODO assertions
 
@@ -551,9 +551,9 @@ def test_save_deepkernel(deep_kernel, kernel_proj_dim, backend, tmp_path):
     # Save kernel to config
     filepath = tmp_path
     filename = 'mykernel.dill'
-    cfg_kernel = _save_kernel(cfg_kernel, filepath, device=DEVICE, filename=filename, verbose=False)
+    cfg_kernel = _save_kernel(cfg_kernel, filepath, device=DEVICE, filename=filename)
     cfg_kernel['proj'], _ = _save_model(cfg_kernel['proj'], base_path=filepath, input_shape=kernel_proj_dim,
-                                        backend=backend, verbose=False)
+                                        backend=backend)
     cfg_kernel = _path2str(cfg_kernel)
     cfg_kernel['proj'] = ModelConfig(**cfg_kernel['proj']).dict()  # Pass through ModelConfig to set `custom_obj` etc
     cfg_kernel = DeepKernelConfig(**cfg_kernel).dict()
@@ -587,8 +587,7 @@ def test_save_preprocess(data, preprocess_fn, tmp_path, backend):
     cfg_preprocess = _save_preprocess(preprocess_fn,
                                       backend=backend,
                                       input_shape=input_dim,
-                                      filepath=filepath,
-                                      verbose=False)
+                                      filepath=filepath)
     cfg_preprocess = _path2str(cfg_preprocess)
     cfg_preprocess = PreprocessConfig(**cfg_preprocess).dict()
     # TODO - assertions to test cfg_preprocess
@@ -597,7 +596,7 @@ def test_save_preprocess(data, preprocess_fn, tmp_path, backend):
     cfg = {'preprocess_fn': cfg_preprocess}
     cfg_preprocess = resolve_cfg(cfg, tmp_path)['preprocess_fn']
     cfg_preprocess = PreprocessConfigResolved(**cfg_preprocess).dict()
-    preprocess_fn_load = _load_preprocess(cfg_preprocess, backend, verbose=False)
+    preprocess_fn_load = _load_preprocess(cfg_preprocess, backend)
     if backend == 'tensorflow':
         assert isinstance(preprocess_fn_load.keywords['model'], UAE_tf)
         # NOTE: can't currently compare to original as loaded model wrapped in UAE. See note in loading.py
@@ -618,8 +617,7 @@ def test_save_preprocess_nlp(data, preprocess_fn, enc_dim, tmp_path, backend):
     cfg_preprocess = _save_preprocess(preprocess_fn,
                                       backend=backend,
                                       input_shape=enc_dim,
-                                      filepath=filepath,
-                                      verbose=False)
+                                      filepath=filepath)
     cfg_preprocess = _path2str(cfg_preprocess)
     cfg_preprocess = PreprocessConfig(**cfg_preprocess).dict()
 #    # TODO - assertions to test cfg_preprocess
@@ -627,7 +625,7 @@ def test_save_preprocess_nlp(data, preprocess_fn, enc_dim, tmp_path, backend):
     # Resolve and load preprocess config
     cfg = {'preprocess_fn': cfg_preprocess}
     cfg_preprocess = resolve_cfg(cfg, tmp_path)['preprocess_fn']
-    preprocess_fn_load = _load_preprocess(cfg_preprocess, backend, verbose=False)
+    preprocess_fn_load = _load_preprocess(cfg_preprocess, backend)
     assert isinstance(preprocess_fn_load.keywords['tokenizer'], type(preprocess_fn.keywords['tokenizer']))
     assert isinstance(preprocess_fn_load.keywords['model'], type(preprocess_fn.keywords['model']))
 
@@ -642,7 +640,7 @@ def test_save_model(data, model, backend, tmp_path):
     # Save model
     filepath = tmp_path
     input_dim = data[0].shape[1]
-    cfg_model, _ = _save_model(model, base_path=filepath, input_shape=input_dim, backend=backend, verbose=False)
+    cfg_model, _ = _save_model(model, base_path=filepath, input_shape=input_dim, backend=backend)
     cfg_model = _path2str(cfg_model)
     cfg_model = ModelConfig(**cfg_model).dict()
     assert tmp_path.joinpath('model').is_dir()
@@ -650,7 +648,7 @@ def test_save_model(data, model, backend, tmp_path):
 
     # Load model
     cfg_model['src'] = tmp_path.joinpath('model')  # Need to manually set to absolute path here
-    model_load = _load_model(cfg_model, backend=backend, verbose=False)
+    model_load = _load_model(cfg_model, backend=backend)
     assert isinstance(model_load, type(model))
     # TODO - double check why loaded model is Sequential but UAE in test_save_preprocess
     # TODO - Assertions should depend on cfg_model['type'] when more models are parametrized
@@ -673,7 +671,7 @@ def test_save_optimizer(backend):
                 'amsgrad': amsgrad
             }
         }
-        optimizer = _load_optimizer(cfg_opt, backend=backend, verbose=False)
+        optimizer = _load_optimizer(cfg_opt, backend=backend)
         print(optimizer)
         assert type(optimizer).__name__ == class_name
         assert optimizer.learning_rate == learning_rate

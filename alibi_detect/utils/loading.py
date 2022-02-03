@@ -29,9 +29,9 @@ from alibi_detect.utils.pytorch.kernels import DeepKernel as DeepKernel_torch
 import tensorflow as tf
 from tensorflow.keras import Model as KerasModel
 from tensorflow_probability.python.distributions.distribution import Distribution
-# PyTorch imports
-import torch
-import torch.nn as nn
+# # PyTorch imports  # TODO: pytorch not yet supported.
+# import torch
+# import torch.nn as nn
 # Misc imports
 from transformers import AutoTokenizer
 import numpy as np
@@ -405,10 +405,11 @@ def _load_kernel(cfg: dict, backend: str = 'tensorflow', device: Optional[str] =
             if kernel == GaussianRBF_tf:
                 sigma = tf.convert_to_tensor(sigma) if isinstance(sigma, np.ndarray) else sigma
                 kernel = kernel(sigma=sigma, trainable=cfg['trainable'])
-            elif kernel == GaussianRBF_torch:
-                torch_device = _set_device(device)
-                sigma = torch.from_numpy(sigma).to(torch_device) if isinstance(sigma, np.ndarray) else None
-                kernel = kernel(sigma=sigma, trainable=cfg['trainable'])
+            elif kernel == GaussianRBF_torch:  # TODO
+                raise NotImplementedError('Loading PyTorch kernels not currently supported.')
+#                torch_device = _set_device(device)
+#                sigma = torch.from_numpy(sigma).to(torch_device) if isinstance(sigma, np.ndarray) else None
+#                kernel = kernel(sigma=sigma, trainable=cfg['trainable'])
             else:
                 kwargs = cfg['kwargs']
                 kernel = kernel(**kwargs)
@@ -480,15 +481,16 @@ def _load_preprocess(cfg: dict,
                 if not isinstance(model, KerasModel):
                     raise ValueError('The specified model is not a compatible tensorflow model.')
                 kwargs.pop('device')
-            elif backend == 'pytorch':
-                assert preprocess_fn == preprocess_drift_torch
-                if not isinstance(model, (nn.Module, nn.Sequential)):
-                    raise ValueError('The specified model is not a compatible pytorch model.')
-                device = cfg['device']
-                if device is not None:
-                    device = torch.device('cuda' if torch.cuda.is_available() else device)
-                    kwargs.update({'model': kwargs['model'].to(device)})  # TODO - needs testing
-                    kwargs.update({'device': device})
+            elif backend == 'pytorch':  # TODO
+                raise NotImplementedError('Loading preprocess_fn for PyTorch not yet supported.')
+#                assert preprocess_fn == preprocess_drift_torch
+#                if not isinstance(model, (nn.Module, nn.Sequential)):
+#                    raise ValueError('The specified model is not a compatible pytorch model.')
+#                device = cfg['device']
+#                if device is not None:
+#                    device = torch.device('cuda' if torch.cuda.is_available() else device)
+#                    kwargs.update({'model': kwargs['model'].to(device)})
+#                    kwargs.update({'device': device})
         else:
             kwargs = cfg['kwargs']  # If generic callable, kwargs is cfg['kwargs']
 
@@ -783,9 +785,9 @@ def resolve_cfg(cfg: dict, config_dir: Optional[Path]) -> dict:
                 if Path(src).suffix == '.npy':
                     obj = np.load(src)
 
-            # Pytorch device
-            elif key[-1] == 'device':
-                obj = _set_device(src)
+#            # Pytorch device  # TODO
+#            elif key[-1] == 'device':
+#                obj = _set_device(src)
 
         # Resolve dict spec
         elif isinstance(src, dict):
@@ -820,7 +822,8 @@ def resolve_cfg(cfg: dict, config_dir: Optional[Path]) -> dict:
         val = _get_nested_value(cfg, key)
         if val is not None:
             val = val.split('.')
-            val[0] = np if val[0] == 'np' else tf if val[0] == 'tf' else torch if val[0] == 'torch' else None
+#            val[0] = np if val[0] == 'np' else tf if val[0] == 'tf' else torch if val[0] == 'torch' else None  TODO
+            val[0] = np if val[0] == 'np' else tf if val[0] == 'tf' else None
             if val[0] is None:
                 raise ValueError("`dtype` must be in format np.<dtype>, tf.<dtype> or torch.<dtype>.")
             _set_nested_value(cfg, key, getattr(val[0], val[1]))
@@ -828,26 +831,26 @@ def resolve_cfg(cfg: dict, config_dir: Optional[Path]) -> dict:
     return cfg
 
 
-def _set_device(device: Optional[str]) -> torch.device:
-    """
-    Set PyTorch device.
-
-    Parameters
-    ----------
-    device
-        String identifying the device.
-
-    Returns
-    -------
-    A set torch.device object.
-    """
-    if device is None or device in ['gpu', 'cuda']:
-        torch_device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        if torch_device.type == 'cpu':
-            logger.warning('No GPU detected, fall back on CPU.')
-    else:
-        torch_device = torch.device('cpu')
-    return torch_device
+# def _set_device(device: Optional[str]) -> torch.device:  # TODO
+#    """
+#    Set PyTorch device.
+#
+#    Parameters
+#    ----------
+#    device
+#        String identifying the device.
+#
+#    Returns
+#    -------
+#    A set torch.device object.
+#    """
+#    if device is None or device in ['gpu', 'cuda']:
+#        torch_device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+#        if torch_device.type == 'cpu':
+#            logger.warning('No GPU detected, fall back on CPU.')
+#    else:
+#        torch_device = torch.device('cpu')
+#    return torch_device
 
 
 def _load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwargs) -> Data:

@@ -4,8 +4,6 @@
 # TODO - consider validating output of get_config calls
 
 import numpy as np
-import tensorflow as tf
-import torch
 from pydantic import BaseModel
 from typing import Optional, Union, Dict, List, Callable
 from alibi_detect.utils._types import Literal
@@ -14,11 +12,21 @@ from alibi_detect.cd.tensorflow import HiddenOutput, UAE
 from alibi_detect.utils.tensorflow.data import TFDataset
 from alibi_detect.models.tensorflow import TransformerEmbedding
 from transformers import PreTrainedTokenizerBase
+from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow  # , has_sklearn
 
 __config_spec__ = "0.1.0dev"  # TODO - remove dev once config layout confirmed
 
-SUPPORTED_MODELS = Union[UAE, HiddenOutput, tf.keras.Sequential, tf.keras.Model]
-SupportedModels = (UAE, HiddenOutput, tf.keras.Sequential, tf.keras.Model)
+SUPPORTED_MODELS = Union['UAE', 'HiddenOutput', 'tf.keras.Model']
+SupportedModels = [UAE, HiddenOutput]
+if has_tensorflow:
+    import tensorflow as tf
+    SupportedModels.append(tf.keras.Model)
+if has_pytorch:
+    import torch
+#    SupportedModels.append()  # TODO
+# if has_sklearn:
+#    SupportedModels.append()  # TODO
+SupportedModels = tuple(SupportedModels)
 
 
 # Custom BaseModel so that we can set default config
@@ -96,7 +104,7 @@ class PreprocessConfigResolved(PreprocessConfig):
     Resolved schema for preprocess_fn.
     """
     src: Callable
-    device: Optional[torch.device] = None  # Note: `device` resolved for preprocess_drift, but str for detectors
+    device: Optional['torch.device'] = None  # Note: `device` resolved for preprocess_drift, but str for detectors
     model: Optional[SUPPORTED_MODELS] = None  # TODO - Not optional if src is preprocess_drift
     embedding: Optional[TransformerEmbedding] = None
     tokenizer: Optional[PreTrainedTokenizerBase] = None

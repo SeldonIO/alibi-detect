@@ -4,9 +4,15 @@ For advanced use cases, Alibi Detect features powerful configuration file based 
 **Drift detectors** can be specified with a configuration file named `config.toml` (adversarial and outlier 
 detectors coming soon!), which can then be passed to `load_detector`:
 
-````{panels}
-:column: p-1 m-1
-:card: shadow
+
+`````{grid} 2
+
+````{grid-item-card}
+:shadow: md
+:margin: 1
+:padding: 1
+:columns: auto
+
 
 **Standard instantiation**
 ^^^
@@ -18,8 +24,13 @@ from alibi_detect.cd import MMDDrift
 x_ref = np.load('detector_directory/x_ref.npy')
 detector = MMDDrift(x_ref, p_val=0.05)
 ```
+````
 
----
+````{grid-item-card}
+:shadow: md
+:margin: 1
+:padding: 1
+:columns: auto
 
 **Config-driven instantiation**
 ^^^
@@ -38,8 +49,8 @@ from alibi_detect.utils.saving import load_detector
 filepath = 'detector_directory/'
 detector = load_detector(filepath)
 ```
-
 ````
+`````
 
 Compared to *standard instantiation*, config-driven instantiation has a number of advantages:
 
@@ -155,6 +166,11 @@ The following table shows the allowable formats for all artefacts that can be sp
 |`kernel.kernel_a`         |           |✔           |✔       |✔         |
 |`kernel.kernel_b`         |           |✔           |✔       |✔         |
 |`initial_diffs`           |✔          |            |        |          |
+```
+
+```{note}
+When TensorFlow, PyTorch, or scikit-learn `model`'s are specified, the model type should be specified via the `backend` field in the *config.toml*.
+For example, if `model` is a TensorFlow model, set `backend='tensorflow'. This is the case even for detectors that don't take a `backend` kwarg.
 ```
 
 (dictionaries)=
@@ -474,9 +490,14 @@ by first adding them to the Alibi Detect artifact registry using the [registry](
 submodule. This submodule harnesses the [catalogue](https://github.com/explosion/catalogue) library to allow functions 
 to be registered with a decorator syntax:
 
-````{panels}
-:column: p-1 m-1
-:card: shadow
+
+`````{grid} 2
+
+````{grid-item-card}
+:shadow: md
+:margin: 1
+:padding: 1
+:columns: auto
 
 **Registering a function**
 ^^^
@@ -495,8 +516,13 @@ def my_function(x: np.ndarray) -> np.ndarray:
 # Load detector with config.toml file referencing "@my_function.v1"    
 detector = load_detector(filepath)
 ```
+````
 
----
+````{grid-item-card}
+:shadow: md
+:margin: 1
+:padding: 1
+:columns: auto
 
 **Specifying in a config.toml**
 ^^^
@@ -508,8 +534,8 @@ name = "MMDDrift"
 x_ref = "x_ref.npy"
 preprocess_fn = "@my_function.v1"
 ```
-
 ````
+`````
 
 Once the custom function has been registered, it can be specified in `config.toml` files via its reference string
 (with `@` prepended), for example `"@my_function.v1"` in this case. Other objects, such as custom tensorflow or 
