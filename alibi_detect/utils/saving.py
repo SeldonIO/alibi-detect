@@ -1,7 +1,5 @@
 # type: ignore
 # TODO: need to rewrite utilities using isinstance or @singledispatch for type checking to work properly
-# TODO: Need to clarify public vs private functions here
-# TODO: Add verbose functionality
 # TODO: clean up save directories, filenames etc, fix save_tf_model directory logic (see #348)
 import dill
 import toml
@@ -32,7 +30,7 @@ dill.extend(use_dill=False)
 logger = logging.getLogger(__name__)
 
 
-def save_detector(detector: Data, filepath: Union[str, os.PathLike], verbose: bool = False) -> None:
+def save_detector(detector: Data, filepath: Union[str, os.PathLike]) -> None:
     """
     Save outlier, drift or adversarial detector.
 
@@ -42,8 +40,6 @@ def save_detector(detector: Data, filepath: Union[str, os.PathLike], verbose: bo
         Detector object.
     filepath
         Save directory.
-    verbose
-        Whether to print progress messages.
     """
     if 'backend' in list(detector.meta.keys()) and detector.meta['backend'] == 'pytorch':
         raise NotImplementedError('Detectors with PyTorch backend are not yet supported.')
@@ -60,11 +56,13 @@ def save_detector(detector: Data, filepath: Union[str, os.PathLike], verbose: bo
 
     # If a drift detector, wrap drift detector save method
     if detector_name in DRIFT_DETECTORS:
-        _save_detector_config(detector, filepath, verbose=verbose)
+        _save_detector_config(detector, filepath)
 
     # Otherwise, save via the previous meta and state_dict approach
     else:
         # save metadata
+        logger.info('Saving metadata and detector to {}'.format(filepath))
+
         with open(filepath.joinpath('meta.dill'), 'wb') as f:
             dill.dump(detector.meta, f)
 
@@ -118,6 +116,8 @@ def save_detector(detector: Data, filepath: Union[str, os.PathLike], verbose: bo
         elif detector_name == 'LLR':
             save_tf_llr(detector, filepath)
 
+    logger.info('Finished saving.')
+
 
 def load_detector(filepath: Union[str, os.PathLike], **kwargs) -> Data:
     """
@@ -137,8 +137,8 @@ def load_detector(filepath: Union[str, os.PathLike], **kwargs) -> Data:
     return _load_detector(filepath, **kwargs)
 
 
-# TODO - eventually this will become save_detector (once outlier and adversarial updated to save via config.tonl)
-def _save_detector_config(detector: Data, filepath: Union[str, os.PathLike], verbose: bool = False):
+# TODO - eventually this will become save_detector (once outlier and adversarial updated to save via config.toml)
+def _save_detector_config(detector: Data, filepath: Union[str, os.PathLike]):
     """
     Save a drift detector. The detector is saved as a yaml config file. Artefacts such as
     `preprocess_fn`, models, embeddings, tokenizers etc are serialized, and their filepaths are
@@ -152,18 +152,14 @@ def _save_detector_config(detector: Data, filepath: Union[str, os.PathLike], ver
         The detector to save.
     filepath
         File path to save serialized artefacts to.
-    verbose
-        Whether to print progress messages.
     """
     # Get backend, input_shape and detector_name
     backend = detector.meta.get('backend', 'tensorflow')
-    # TODO - setting to tensorflow by default atm, but what do we do about detectors with no backend. (We still need to
-    #  know whether preprocess_fn artefacts are tensorflow or pytorch.
-    if backend == 'pytorch':
-        raise NotImplementedError('Detectors with PyTorch backend are not yet supported.')
+    if backend != 'tensorflow':
+        raise NotImplementedError("Currently, saving is only supported with backend='tensorflow'.")
     detector_name = detector.__class__.__name__
     if detector_name not in DRIFT_DETECTORS:
-        raise ValueError('{} is not supported by `save_drift_detector`.'.format(detector_name))
+        raise ValueError('{} is not supported by `save_detector`.'.format(detector_name))
 
     # Process file paths
     filepath = Path(filepath)
@@ -182,24 +178,25 @@ def _save_detector_config(detector: Data, filepath: Union[str, os.PathLike], ver
     # Save preprocess_fn
     preprocess_fn = cfg.get('preprocess_fn', None)
     if preprocess_fn is not None:
-        preprocess_cfg = _save_preprocess(preprocess_fn, backend, cfg['input_shape'], filepath, verbose)
+        logger.info('Saving the preprocess_fn function.')
+        preprocess_cfg = _save_preprocess(preprocess_fn, backend, cfg['input_shape'], filepath)
         cfg['preprocess_fn'] = preprocess_cfg
 
     # Serialize kernel
     kernel = cfg.get('kernel', None)
     if kernel is not None:
         device = detector.device.type if hasattr(detector, 'device') else None
-        cfg['kernel'] = _save_kernel(kernel, filepath, device, verbose)
+        cfg['kernel'] = _save_kernel(kernel, filepath, device=device)
         if isinstance(kernel, dict):  # serialise proj from DeepKernel
             cfg['kernel']['proj'], _ = _save_model(kernel['proj'], base_path=filepath, input_shape=cfg['input_shape'],
-                                                   backend=backend, verbose=verbose)
+                                                   backend=backend)
 
     # ClassifierDrift and SpotTheDiffDrift specific artefacts.
     # Serialize detector model
     model = cfg.get('model', None)
     if model is not None:
         model_cfg, _ = _save_model(model, base_path=filepath, input_shape=cfg['input_shape'],
-                                   backend=backend, verbose=verbose)
+                                   backend=backend)
         cfg['model'] = model_cfg
 
     # Serialize dataset
@@ -234,6 +231,7 @@ def save_config(cfg: dict, filepath: Union[str, os.PathLike]) -> dict:
         filepath.mkdir(parents=True, exist_ok=True)
     cfg = _path2str(cfg)
     cfg = _replace(cfg, None, "None")  # Note: None replaced with "None" as None/null not valid TOML
+    logger.info('Writing config to {}'.format(filepath.joinpath('config.toml')))
     with open(filepath.joinpath('config.toml'), 'w') as f:
         toml.dump(cfg, f, encoder=toml.TomlNumpyEncoder())
     return cfg
@@ -710,8 +708,7 @@ def save_tf_s2s(od: OutlierSeq2Seq,
 def _save_preprocess(preprocess_fn: Callable,
                      backend: str,
                      input_shape: Optional[tuple],
-                     filepath: Path,
-                     verbose: bool = False) -> dict:
+                     filepath: Path) -> dict:
     """
     Serializes a drift detectors preprocess_fn. Artefacts are saved to disk, and a config dict containing filepaths
     to the saved artefacts is returned.
@@ -726,8 +723,6 @@ def _save_preprocess(preprocess_fn: Callable,
         Input shape for a model (if a model exists).
     filepath
         Directory to save serialized artefacts to.
-    verbose
-        Verbose logging.
 
     Returns
     -------
@@ -746,14 +741,14 @@ def _save_preprocess(preprocess_fn: Callable,
     for k, v in func_kwargs.items():
         # Model/embedding
         if isinstance(v, SupportedModels):
-            cfg_model, cfg_embed = _save_model(v, filepath, input_shape, backend, local_path, verbose)
+            cfg_model, cfg_embed = _save_model(v, filepath, input_shape, backend, local_path)
             kwargs.update({k: cfg_model})
             if cfg_embed is not None:
                 kwargs.update({'embedding': cfg_embed})
 
         # Tokenizer
         elif isinstance(v, PreTrainedTokenizerBase):
-            cfg_token = _save_tokenizer(v, filepath, local_path, verbose)
+            cfg_token = _save_tokenizer(v, filepath, local_path)
             kwargs.update({k: cfg_token})
 
         # Arbitrary function
@@ -774,8 +769,25 @@ def _save_preprocess(preprocess_fn: Callable,
     return preprocess_cfg
 
 
-def _serialize_function(func: Callable, base_path: Path, local_path: Path = Path('function')) -> Tuple[str, dict]:
+def _serialize_function(func: Callable, base_path: Path,
+                        local_path: Path = Path('function')) -> Tuple[str, dict]:
+    """
+    Serializes a generic function. If the function is in the object registry, the registry str is returned.
+    The function is saved to dill, and if wrapped in a functools.partial, the kwargs are returned.
 
+    Parameters
+    ----------
+    func
+        The function to serialize.
+    base_path
+        Base directory to save in.
+    local_path
+        A local (relative) filepath to append to base_path. Default is 'function/'.
+
+    Returns
+    -------
+    Tuple containing a string referencing the save filepath and a dict of kwargs.
+    """
     # If a partial, save function and kwargs
     if isinstance(func, partial):
         kwargs = func.keywords
@@ -796,6 +808,7 @@ def _serialize_function(func: Callable, base_path: Path, local_path: Path = Path
         if not filepath.parent.is_dir():
             logger.warning('Directory {} does not exist and is now created.'.format(filepath.parent))
             filepath.parent.mkdir(parents=True, exist_ok=True)
+        logger.info('Saving function to {}.'.format(filepath.with_suffix('.dill')))
         with open(filepath.with_suffix('.dill'), 'wb') as f:
             dill.dump(func, f)
         src = str(local_path.with_suffix('.dill'))
@@ -824,12 +837,27 @@ def _save_embedding(embed: tf.keras.Model,
         filepath.mkdir(parents=True, exist_ok=True)
 
     # Save embedding model
+    logger.info('Saving embedding model to {}.'.format(filepath.joinpath('embedding.dill')))
     embed.save_pretrained(filepath)
     with open(filepath.joinpath('embedding.dill'), 'wb') as f:
         dill.dump(embed_args, f)
 
 
 def _path2str(cfg: dict, absolute: bool = False) -> dict:
+    """
+    Private function to traverse a config dict and convert pathlib Path's to strings.
+
+    Parameters
+    ----------
+    cfg
+        The config dict.
+    absolute
+        Whether to convert to absolute filepaths.
+
+    Returns
+    -------
+    The converted config dict.
+    """
     for k, v in cfg.items():
         if isinstance(v, dict):
             _path2str(v, absolute)
@@ -844,8 +872,29 @@ def _save_model(model: SUPPORTED_MODELS,
                 base_path: Path,
                 input_shape: tuple,
                 backend: str,
-                path: Path = Path('.'),
-                verbose: bool = False) -> Tuple[dict, Optional[dict]]:
+                path: Path = Path('.')) -> Tuple[dict, Optional[dict]]:
+    """
+    Save TensorFlow, PyTorch and Scikit-learn models (only TensorFlow currently supported). When a model has
+    a text embedding model contained within it, this is extracted and saved separately.
+
+    Parameters
+    ----------
+    model
+        The model to save.
+    base_path
+        Base filepath to save to.
+    input_shape
+        The input dimensions of the model (after the optional embedding has been applied).
+    backend
+        The backend.
+    path
+        A local (relative) filepath to append to base_path.
+
+    Returns
+    -------
+    A tuple containing the model and embedding config dicts.
+    """
+
     filepath = base_path.joinpath(path)
 
     if backend == 'tensorflow':
@@ -888,8 +937,23 @@ def _save_model(model: SUPPORTED_MODELS,
 
 def _save_tokenizer(tokenizer: PreTrainedTokenizerBase,
                     base_path: Path,
-                    path: Path = Path('.'),
-                    verbose: bool = False) -> dict:
+                    path: Path = Path('.')) -> dict:
+    """
+    Saves HuggingFace tokenizers.
+
+    Parameters
+    ----------
+    tokenizer
+        The tokenizer.
+    base_path
+        Base filepath to save to.
+    path
+        A local (relative) filepath to append to base_path.
+
+    Returns
+    -------
+    The tokenizer config dict.
+    """
     # create folder to save model in
     filepath = base_path.joinpath(path)
     if not filepath.is_dir():
@@ -897,6 +961,7 @@ def _save_tokenizer(tokenizer: PreTrainedTokenizerBase,
         filepath.mkdir(parents=True, exist_ok=True)
 
     cfg_token = {}
+    logger.info('Saving tokenizer to {}.'.format(filepath.joinpath('tokenizer')))
     tokenizer.save_pretrained(filepath.joinpath('tokenizer'))
     cfg_token.update({'src': path.joinpath('tokenizer')})
     return cfg_token
@@ -904,9 +969,8 @@ def _save_tokenizer(tokenizer: PreTrainedTokenizerBase,
 
 def _save_kernel(kernel: Callable,
                  filepath: Path,
-                 device: Optional[str],
-                 filename: str = 'kernel.dill',
-                 verbose: bool = False) -> dict:
+                 device: Optional[str] = None,
+                 filename: str = 'kernel.dill') -> dict:
     """
     Function to save kernel. If the kernel is stored in the artefact registry, the registry key (and kwargs) are
     written to config. If the kernel is a generic callable, it is pickled.
@@ -921,8 +985,6 @@ def _save_kernel(kernel: Callable,
         Device. Only needed if pytorch backend being used.
     filename
         Filename to save to (if the kernel is a generic callable).
-    verbose
-        Whether to print progress messages.
 
     Returns
     -------
@@ -944,10 +1006,10 @@ def _save_kernel(kernel: Callable,
         })
 
     elif isinstance(kernel, dict):  # DeepKernel config dict
-        kernel_a = _save_kernel(kernel['kernel_a'], filepath, device, filename='kernel_a.dill', verbose=verbose)
+        kernel_a = _save_kernel(kernel['kernel_a'], filepath, device, filename='kernel_a.dill')
         kernel_b = kernel.get('kernel_b')
         if kernel_b is not None:
-            kernel_b = _save_kernel(kernel['kernel_b'], filepath, device, filename='kernel_b.dill', verbose=verbose)
+            kernel_b = _save_kernel(kernel['kernel_b'], filepath, device, filename='kernel_b.dill')
         cfg_kernel.update({
             'kernel_a': kernel_a,
             'kernel_b': kernel_b,
@@ -956,6 +1018,7 @@ def _save_kernel(kernel: Callable,
         })
 
     elif isinstance(kernel, Callable):  # generic callable
+        logger.info('Saving kernel to {}.'.format(filepath.joinpath(filename)))
         with open(filepath.joinpath(filename), 'wb') as f:
             dill.dump(kernel, f)
         cfg_kernel.update({'src': filename})

@@ -261,7 +261,7 @@ def test_save_cvmdrift(data, preprocess_uae, tmp_path):
                   preprocess_fn=preprocess_uae,
                   preprocess_at_init=True,
                   )
-    save_detector(cd, tmp_path)
+    save_detector(cd, tmp_path, verbose=True)
     cd_load = load_detector(tmp_path)
 
     # Assert

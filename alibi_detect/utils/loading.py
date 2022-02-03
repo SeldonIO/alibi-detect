@@ -1,9 +1,7 @@
 # type: ignore
 # TODO: need to rewrite utilities using isinstance or @singledispatch for type checking to work properly
 # TODO - Need to modularise torch and tensorflow imports and use. e.g. has_tensorflow and has_pytorch etc
-# TODO - clarify public vs private functions
-# TODO - further modularisation? e.g. load_kernel_tf and load_kernel_torch? Or check that torch kernel isn't loaded
-#  with torch installed etc elsewhere...
+# TODO - further modularisation? e.g. load_kernel_tf and load_kernel_torch? Or refactor to tensorflow/ etc?
 # alibi_detect imports
 from alibi_detect.version import __version__
 from alibi_detect.ad import AdversarialAE, ModelDistillation
@@ -37,7 +35,7 @@ import torch.nn as nn
 # Misc imports
 from transformers import AutoTokenizer
 import numpy as np
-from typing import Union, Optional, Callable, Dict, List, Tuple
+from typing import Union, Optional, Callable, Dict, List, Tuple, Any
 from copy import deepcopy
 from functools import partial
 from pathlib import Path
@@ -177,7 +175,128 @@ FIELDS_TO_DTYPE = [
 ]
 
 
+def load_detector(filepath: Union[str, os.PathLike], **kwargs) -> Data:
+    """
+    Load outlier, drift or adversarial detector.
+
+    Parameters
+    ----------
+    filepath
+        Load directory.
+
+    Returns
+    -------
+    Loaded outlier or adversarial detector object.
+    """
+    filepath = Path(filepath)
+    # If reference is a 'config.toml' itself, pass to new load function
+    if filepath.name == 'config.toml':
+        return _load_detector_config(filepath)
+
+    # Otherwise, if a directory, look for meta.dill, meta.pickle or config.toml inside it
+    elif filepath.is_dir():
+        files = [str(f.name) for f in filepath.iterdir() if f.is_file()]
+        if 'config.toml' in files:
+            return _load_detector_config(filepath.joinpath('config.toml'))
+        elif 'meta.dill' in files:
+            return _load_detector_legacy(filepath, '.dill', **kwargs)
+        elif 'meta.pickle' in files:
+            return _load_detector_legacy(filepath, '.pickle', **kwargs)
+        else:
+            raise ValueError('Neither meta.dill, meta.pickle or config.toml exist in {}.'.format(filepath))
+
+    # No other file types are accepted, so if not dir raise error
+    else:
+        raise ValueError("load_detector accepts only a filepath to a directory, or a config.toml file.")
+
+
+# TODO - will eventually become load_detector
+def _load_detector_config(cfg: Union[str, os.PathLike, dict]) -> Data:
+    """
+    Loads a drift detector specified in a detector config dict. Validation is performed with pydantic.
+
+    Parameters
+    ----------
+    cfg
+        The detector config dict.
+
+    Returns
+    -------
+    The instantiated detector.
+    """
+    # Load toml if needed
+    if isinstance(cfg, (str, os.PathLike)):
+        config_file = Path(deepcopy(cfg))
+        config_dir = config_file.parent
+        cfg = read_config(config_file)
+    elif isinstance(cfg, dict):
+        config_file = None
+        config_dir = None
+    else:
+        raise ValueError('Detector `cfg` not recognised.')
+
+    # Resolve and validate config
+    cfg = validate_config(cfg)
+    logger.info('Validated unresolved config.')
+    cfg = resolve_cfg(cfg, config_dir=config_dir)
+    cfg = validate_config(cfg, resolved=True)
+    logger.info('Validated resolved config.')
+
+    # Backend and detector type
+    detector_name = cfg.get('name')
+    backend = cfg.pop('backend')  # popping so that cfg left as kwargs + `name` when passed to _init_detector
+
+    # Get x_ref
+    x_ref = cfg.pop('x_ref')
+    if isinstance(x_ref, str):  # If x_ref still a str, resolving must have failed
+        raise ValueError("Failed to resolve x_ref field.")
+
+    # Get kernel
+    kernel = cfg.pop('kernel', None)  # Don't need to check if None as kernel=None defaults to GaussianRBF
+    if isinstance(kernel, dict):
+        logger.info('Loading kernel.')
+        kernel = _load_kernel(kernel, backend, cfg['device'])
+
+    # Get preprocess_fn
+    preprocess_fn = cfg.pop('preprocess_fn')
+    if isinstance(preprocess_fn, dict):
+        logger.info('Loading preprocess_fn.')
+        preprocess_fn = _load_preprocess(preprocess_fn, backend=backend)
+
+    # Get model
+    model = cfg.pop('model', None)
+    if model is not None:
+        if not isinstance(model, SupportedModels):
+            raise ValueError(f"Failed to load the {detector_name}'s model."
+                             "Is the `model` field specified, and is the model a supported type?")
+
+    # Init detector
+    logger.info('Instantiating detector.')
+    detector = _init_detector(x_ref, cfg, preprocess_fn=preprocess_fn, model=model, kernel=kernel, backend=backend)
+
+    # Update metadata
+    detector.meta.update({'config_file': str(config_file.resolve())})
+
+    logger.info('Finished loading detector.')
+    return detector
+
+
 def validate_config(cfg: dict, resolved: bool = False) -> dict:
+    """
+    Validates a detector config dict by passing the dict to the detector's pydantic model schema.
+
+    Parameters
+    ----------
+    cfg
+        The detector config dict.
+    resolved
+        Whether the config is resolved or not. For example, if resolved=True, `x_ref` is expected to be a
+        np.ndarray, wheras if resolved=False, `x_ref` is expected to be a str.
+
+    Returns
+    -------
+    The validated config dict, with missing fields set to their default values.
+    """
     # Get detector name
     if 'name' in cfg:
         detector_name = cfg['name']
@@ -208,66 +327,35 @@ def validate_config(cfg: dict, resolved: bool = False) -> dict:
     return cfg
 
 
-def _load_detector_config(cfg: Union[str, os.PathLike, dict],
-                          verbose: bool = False) -> Data:
-    # Load toml if needed
-    if isinstance(cfg, (str, os.PathLike)):
-        config_file = Path(deepcopy(cfg))
-        config_dir = config_file.parent
-        cfg = read_config(config_file)
-        cfg = _replace(cfg, "None", None)  # TODO - move to read_config()
-    elif isinstance(cfg, dict):
-        config_file = None
-        config_dir = None
-    else:
-        raise ValueError('Detector `cfg` not recognised.')
+def _init_detector(x_ref: Union[np.ndarray, list],
+                   cfg: dict,
+                   preprocess_fn: Optional[Callable] = None,
+                   model: Optional[SUPPORTED_MODELS] = None,
+                   kernel: Optional[Callable] = None,
+                   backend: Optional[str] = 'tensorflow') -> Data:
+    """
+    Instantiates a detector (x_ref, preprocess_fn, model, etc in the dict should be fully
+    resolved runtime objects).
 
-    # Resolve and validate config
-    cfg = validate_config(cfg)
-    cfg = resolve_cfg(cfg, config_dir=config_dir, verbose=verbose)
-    cfg = validate_config(cfg, resolved=True)
+    Parameters
+    ----------
+    x_ref
+        The reference data.
+    cfg
+        The detectors config dict (with x_ref, model etc already pop'ed from it, such that what remains are the kwargs).
+    preprocess_fn
+        Optional preprocessing function.
+    model
+        Optional model (e.g. for ClassifierDrift).
+    kernel
+        Optional kernel (e.g. for MMDDrift).
+    backend
+        The backend.
 
-    # Backend and detector type
-    detector_name = cfg.get('name')
-    backend = cfg.pop('backend')  # popping so that cfg left as kwargs + `name` when passed to init_detector
-
-    # Get x_ref
-    x_ref = cfg.pop('x_ref')
-    if isinstance(x_ref, str):  # If x_ref still a str, resolving must have failed
-        raise ValueError("Failed to resolve x_ref field.")
-
-    # Get kernel
-    kernel = cfg.pop('kernel', None)  # Don't need to check if None as kernel=None defaults to GaussianRBF
-    if isinstance(kernel, dict):
-        kernel = _load_kernel(kernel, backend, cfg['device'])
-
-    # Get preprocess_fn
-    preprocess_fn = cfg.pop('preprocess_fn')
-    if isinstance(preprocess_fn, dict):
-        preprocess_fn = _load_preprocess(preprocess_fn, backend=backend, verbose=verbose)
-
-    # Get model
-    model = cfg.pop('model', None)
-    if model is not None:
-        if not isinstance(model, SupportedModels):
-            raise ValueError(f"Failed to load the {detector_name}'s model."
-                             "Is the `model` field specified, and is the model a supported type?")
-
-    # Init detector
-    detector = init_detector(x_ref, cfg, preprocess_fn=preprocess_fn, model=model, kernel=kernel, backend=backend)
-
-    # Update metadata
-    detector.meta.update({'config_file': str(config_file.resolve())})
-
-    return detector
-
-
-def init_detector(x_ref: Union[np.ndarray, list],
-                  cfg: dict,
-                  preprocess_fn: Optional[Callable] = None,
-                  model: Optional[SUPPORTED_MODELS] = None,
-                  kernel: Optional[Callable] = None,
-                  backend: Optional[str] = 'tensorflow') -> Data:
+    Returns
+    -------
+    The instantiated detector.
+    """
     detector_name = cfg.pop('name', None)
 
     # Process args
@@ -292,6 +380,20 @@ def init_detector(x_ref: Union[np.ndarray, list],
 
 def _load_kernel(cfg: dict, backend: str = 'tensorflow', device: Optional[str] = None) -> Callable:
     """
+    Loads a kernel from a kernel config dict.
+
+    Parameters
+    ----------
+    cfg
+        A kernel config dict. (see pydantic schema's).
+    backend
+        The backend.
+    device
+        The device (pytorch backend only).
+
+    Returns
+    -------
+    The kernel.
     """
 
     if 'src' in cfg:  # Standard kernel config
@@ -302,7 +404,7 @@ def _load_kernel(cfg: dict, backend: str = 'tensorflow', device: Optional[str] =
                 sigma = tf.convert_to_tensor(sigma) if isinstance(sigma, np.ndarray) else sigma
                 kernel = kernel(sigma=sigma, trainable=cfg['trainable'])
             elif kernel == GaussianRBF_torch:
-                torch_device = set_device(device)
+                torch_device = _set_device(device)
                 sigma = torch.from_numpy(sigma).to(torch_device) if isinstance(sigma, np.ndarray) else None
                 kernel = kernel(sigma=sigma, trainable=cfg['trainable'])
             else:
@@ -336,12 +438,22 @@ def _load_kernel(cfg: dict, backend: str = 'tensorflow', device: Optional[str] =
 
 
 def _load_preprocess(cfg: dict,
-                     backend: Optional[str] = 'tensorflow',
-                     verbose: bool = False) -> Optional[Callable]:
+                     backend: Optional[str] = 'tensorflow') -> Optional[Callable]:
     """
     This function builds a preprocess_fn from the preprocess dict in a detector config dict. The dict format is
-    expected to match that generated by serialize_preprocess in alibi_detect.utils.saving. The model, tokenizer and
-    preprocess_batch_fn are expected to be already resolved.
+    expected to match that generated by serialize_preprocess in alibi_detect.utils.saving (also see pydantic schema).
+    The model, tokenizer and preprocess_batch_fn are expected to be already resolved.
+
+    Parameters
+    ----------
+    cfg
+        A preprocess_fn config dict. (see pydantic schemas).
+    backend
+        The backend.
+
+    Returns
+    -------
+    The preprocess_fn function.
     """
     preprocess_fn = cfg.pop('src')
 
@@ -386,8 +498,25 @@ def _load_preprocess(cfg: dict,
 
 
 def _load_model(cfg: dict,
-                backend: str,
-                verbose: bool = False) -> SUPPORTED_MODELS:
+                backend: str) -> SUPPORTED_MODELS:
+    """
+    Loads TensorFlow, PyTorch and scikit-learn models (currently only TensorFlow supported), from a model config
+    dict.
+
+    Note: Handling of different model types ('UAE', 'HiddenOutput' and 'custom' are TBC).
+
+    Parameters
+    ----------
+    cfg
+        Model config dict. (see pydantic model schemas).
+    backend
+        The backend.
+
+    Returns
+    -------
+    The loaded model.
+    """
+
     # Load model
     src = cfg['src']
     typ = cfg['type']
@@ -412,8 +541,19 @@ def _load_model(cfg: dict,
     return model
 
 
-def _load_embedding(cfg: dict,
-                    verbose: bool = False) -> TransformerEmbedding:
+def _load_embedding(cfg: dict) -> TransformerEmbedding:
+    """
+    Load a pre-trained text embedding from an embedding config dict.
+
+    Parameters
+    ----------
+    cfg
+    An embedding config dict. (see the pydantic schemas).
+
+    Returns
+    -------
+    The loaded embedding.
+    """
     src = cfg['src']
     layers = cfg['layers']
     typ = cfg['type']
@@ -427,8 +567,19 @@ def _load_embedding(cfg: dict,
     return emb
 
 
-def _load_tokenizer(cfg: dict,
-                    verbose: bool = False) -> AutoTokenizer:
+def _load_tokenizer(cfg: dict) -> AutoTokenizer:
+    """
+    Loads a text tokenizer from a tokenizer config dict.
+
+    Parameters
+    ----------
+    cfg
+        A tokenizer config dict. (see the pydantic schemas).
+
+    Returns
+    -------
+    The loaded tokenizer.
+    """
     src = cfg['src']
     kwargs = cfg['kwargs']
     if src is None:
@@ -442,9 +593,22 @@ def _load_tokenizer(cfg: dict,
 
 
 def _load_optimizer(cfg: dict,
-                    backend: str,
-                    verbose: bool = False) -> Union[tf.keras.optimizers.Optimizer, Callable]:
+                    backend: str) -> Union[tf.keras.optimizers.Optimizer, Callable]:
+    """
+    Loads an optimzier from an optimizer config dict. When backend='tensorflow', the config dict should be in
+    the format given by tf.keras.optimizers.serialize().
 
+    Parameters
+    ----------
+    cfg
+        The optimizer config dict.
+    backend
+        The backend.
+
+    Returns
+    -------
+    The loaded optimizer.
+    """
     if backend == 'tensorflow':
         optimizer = tf.keras.optimizers.deserialize(cfg)
     else:
@@ -491,7 +655,22 @@ def _prep_model_and_embedding(model: Optional[SUPPORTED_MODELS], emb: Optional[T
     return model
 
 
-def _get_nested_value(dic, keys):
+def _get_nested_value(dic: dict, keys: list) -> Any:
+    """
+    Get a value from a nested dictionary.
+
+    Parameters
+    ----------
+    dic
+        The dictionary.
+    keys
+        List of keys to "walk" to nested value.
+        For example, to extract the value `dic['key1']['key2']['key3']`, set `keys = ['key1', 'key2', 'key3']`.
+
+    Returns
+    -------
+    The nested value specified by `keys`.
+    """
     for key in keys:
         try:
             dic = dic[key]
@@ -500,7 +679,20 @@ def _get_nested_value(dic, keys):
     return dic
 
 
-def _set_nested_value(dic, keys, value):
+def _set_nested_value(dic: dict, keys: list, value: Any):
+    """
+    Set a value in a nested dictionary.
+
+    Parameters
+    ----------
+    dic
+        The dictionary.
+    keys
+        List of keys to "walk" to nested value.
+        For example, to set the value `dic['key1']['key2']['key3']`, set `keys = ['key1', 'key2', 'key3']`.
+    value
+        The value to set.
+    """
     for key in keys[:-1]:
         dic = dic.setdefault(key, {})
     dic[keys[-1]] = value
@@ -509,24 +701,53 @@ def _set_nested_value(dic, keys, value):
 def read_config(filepath: Union[os.PathLike, str]) -> dict:
     """
     This function reads a detector toml config file and returns a dict specifying the detector.
+
+    Parameters
+    ----------
+    filepath
+        The filepath to the config.toml file.
+
+    Returns
+    -------
+        Parsed toml dictionary.
     """
     filepath = Path(filepath)
     cfg = toml.load(filepath)
     logger.info('Loaded config file from %s', str(filepath))
 
-    # Convert keys in categories_per_feature back to str
-    # TODO - this is undesirable, but currently necessary in order to use toml library, as error with toml dumping dict
-    #  with int keys.
+    # Convert keys in categories_per_feature back to str. This is undesirable, but currently necessary in order
+    # to use toml library, as error with toml dumping dict with int keys.
     if 'categories_per_feature' in cfg:
         new = {}
         for key in cfg['categories_per_feature']:
             new[int(key)] = cfg['categories_per_feature'][key]
         cfg['categories_per_feature'] = new
 
+    # This is necessary as no None/null in toml spec., and missing values are set to defaults set in pydantic models.
+    # But we sometimes to do explicitly spec as None.
+    cfg = _replace(cfg, "None", None)
+
     return cfg  # type: ignore[return-value] # TODO - toml actually returns MutableMapping, consider updating throughout
 
 
-def resolve_cfg(cfg: dict, config_dir: Optional[Path], verbose: bool = False) -> dict:
+def resolve_cfg(cfg: dict, config_dir: Optional[Path]) -> dict:
+    """
+    Resolves artefacts in a config dict. For example x_ref='x_ref.npy' is resolved by loading the np.ndarray from
+    the .npy file. For a list of fields that are resolved, see
+    https://docs.seldon.io/projects/alibi-detect/en/latest/overview/config_file.html.
+
+    Parameters
+    ----------
+    cfg
+        The unresolved config dict.
+    config_dir
+        Filepath to directory the `config.toml` is located in. Only required if different from the
+        runtime directory, and artefacts are specified with filepaths relative to the config.toml file.
+
+    Returns
+    -------
+    The resolved config dict.
+    """
     # Before main resolution, update filepaths relative to config file
     if config_dir is not None:
         for key in DIR_FIELDS:
@@ -538,6 +759,8 @@ def resolve_cfg(cfg: dict, config_dir: Optional[Path], verbose: bool = False) ->
 
     # Resolve filepaths (load files) and resolve function/object registries
     for key in FIELDS_TO_RESOLVE:
+        logger.info('Resolving config field: {}.'.format(key))
+
         src = _get_nested_value(cfg, key)
 
         obj = None
@@ -549,8 +772,7 @@ def resolve_cfg(cfg: dict, config_dir: Optional[Path], verbose: bool = False) ->
                     obj = registry.get(src)
                 else:
                     raise ValueError("Can't find %s in the custom function registry" % src)
-                if verbose:
-                    logger.info('Successfully resolved registry entry %s' % src)
+                logger.info('Successfully resolved registry entry %s' % src)
 
             # Load dill or numpy file
             elif Path(src).is_file():
@@ -561,19 +783,19 @@ def resolve_cfg(cfg: dict, config_dir: Optional[Path], verbose: bool = False) ->
 
             # Pytorch device
             elif key[-1] == 'device':
-                obj = set_device(src)
+                obj = _set_device(src)
 
         # Resolve dict spec
         elif isinstance(src, dict):
             backend = cfg.get('backend', 'tensorflow')
             if key[-1] in ('model', 'proj'):
-                obj = _load_model(src, backend=backend, verbose=verbose)
+                obj = _load_model(src, backend=backend)
             if key[-1] == 'embedding':
-                obj = _load_embedding(src, verbose=verbose)
+                obj = _load_embedding(src)
             elif key[-1] == 'tokenizer':
-                obj = _load_tokenizer(src, verbose=verbose)
+                obj = _load_tokenizer(src)
             elif key[-1] == 'optimizer':
-                obj = _load_optimizer(src, backend=backend, verbose=verbose)
+                obj = _load_optimizer(src, backend=backend)
 
         # Put the resolved function into the cfg dict
         if obj is not None:
@@ -604,7 +826,19 @@ def resolve_cfg(cfg: dict, config_dir: Optional[Path], verbose: bool = False) ->
     return cfg
 
 
-def set_device(device: Optional[str]) -> torch.device:
+def _set_device(device: Optional[str]) -> torch.device:
+    """
+    Set PyTorch device.
+
+    Parameters
+    ----------
+    device
+        String identifying the device.
+
+    Returns
+    -------
+    A set torch.device object.
+    """
     if device is None or device in ['gpu', 'cuda']:
         torch_device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         if torch_device.type == 'cpu':
@@ -612,41 +846,6 @@ def set_device(device: Optional[str]) -> torch.device:
     else:
         torch_device = torch.device('cpu')
     return torch_device
-
-
-def load_detector(filepath: Union[str, os.PathLike], **kwargs) -> Data:
-    """
-    Load outlier, drift or adversarial detector.
-
-    Parameters
-    ----------
-    filepath
-        Load directory.
-
-    Returns
-    -------
-    Loaded outlier or adversarial detector object.
-    """
-    filepath = Path(filepath)
-    # If reference is a 'config.toml' itself, pass to new load function
-    if filepath.name == 'config.toml':
-        return _load_detector_config(filepath)
-
-    # Otherwise, if a directory, look for meta.dill, meta.pickle or config.toml inside it
-    elif filepath.is_dir():
-        files = [str(f.name) for f in filepath.iterdir() if f.is_file()]
-        if 'config.toml' in files:
-            return _load_detector_config(filepath.joinpath('config.toml'))
-        elif 'meta.dill' in files:
-            return _load_detector_legacy(filepath, '.dill', **kwargs)
-        elif 'meta.pickle' in files:
-            return _load_detector_legacy(filepath, '.pickle', **kwargs)
-        else:
-            raise ValueError('Neither meta.dill, meta.pickle or config.toml exist in {}.'.format(filepath))
-
-    # No other file types are accepted, so if not dir raise error
-    else:
-        raise ValueError("load_detector accepts only a filepath to a directory, or a config.toml file.")
 
 
 def _load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwargs) -> Data:
@@ -745,6 +944,7 @@ def _load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwar
         raise NotImplementedError
 
     detector.meta = meta_dict
+    logger.info('Finished loading detector.')
     return detector
 
 
@@ -1299,6 +1499,22 @@ def load_tf_model(filepath: Union[str, os.PathLike],
 
 
 def _replace(cfg: dict, orig: Optional[str], new: Optional[str]) -> dict:
+    """
+    Recursively traverse a nested dictionary and replace values.
+
+    Parameters
+    ----------
+    cfg
+        The dictionary.
+    orig
+        Original value to search.
+    new
+        Value to replace original with.
+
+    Returns
+    -------
+    The updated dictionary.
+    """
     for k, v in cfg.items():
         if v == orig:
             cfg[k] = new
