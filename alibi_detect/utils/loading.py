@@ -245,6 +245,8 @@ def _load_detector_config(cfg: Union[str, os.PathLike, dict]) -> Data:
     # Backend and detector type
     detector_name = cfg.get('name')
     backend = cfg.pop('backend')  # popping so that cfg left as kwargs + `name` when passed to _init_detector
+    if backend.lower() != 'tensorflow':
+        raise NotImplementedError('Loading detectors with PyTorch or sklearn backend is not yet supported.')
 
     # Get x_ref
     x_ref = cfg.pop('x_ref')
