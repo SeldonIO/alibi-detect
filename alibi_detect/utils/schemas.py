@@ -192,7 +192,7 @@ class ChiSquareDriftConfig(DriftDetectorConfig):
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
     correction: str = 'bonferroni'
-    categories_per_feature: Dict[int, Union[int, List[int]]] = None,
+    categories_per_feature: Optional[Dict[int, Union[int, List[int]]]] = None,
     n_features: Optional[int] = None
 
 
@@ -203,7 +203,7 @@ class TabularDriftConfig(DriftDetectorConfig):
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
     correction: str = 'bonferroni'
-    categories_per_feature: Dict[int, Union[int, List[int], None]] = None,
+    categories_per_feature: Optional[Dict[int, Union[int, List[int], None]]] = None,
     alternative: str = 'two-sided'
     n_features: Optional[int] = None
 
