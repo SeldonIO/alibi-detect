@@ -226,6 +226,20 @@ def _save_detector_config(detector: Data, filepath: Union[str, os.PathLike]):
 
 
 def save_config(cfg: dict, filepath: Union[str, os.PathLike]) -> dict:
+    """
+    Save an unresolved detector config dict to a TOML file.
+
+    Parameters
+    ----------
+    cfg
+        Unresolved detector config dict.
+    filepath
+        Filepath to directory to save 'config.toml' file in.
+
+    Returns
+    -------
+    The unresolved config dict., with paths converted to string and None converted to "None".
+    """
     filepath = Path(filepath)
     if not filepath.is_dir():
         logger.warning('Directory {} does not exist and is now created.'.format(filepath))
