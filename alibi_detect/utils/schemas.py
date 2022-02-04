@@ -192,7 +192,7 @@ class ChiSquareDriftConfig(DriftDetectorConfig):
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
     correction: str = 'bonferroni'
-    categories_per_feature: Dict[int, Union[int, List[int]]] = None,  # noqa: E999
+    categories_per_feature: Dict[int, Union[int, List[int]]] = None
     n_features: Optional[int] = None
 
 
@@ -203,7 +203,7 @@ class TabularDriftConfig(DriftDetectorConfig):
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
     correction: str = 'bonferroni'
-    categories_per_feature: Dict[int, Union[int, List[int], None]] = None,  # noqa: E999
+    categories_per_feature: Dict[int, Union[int, List[int], None]] = None
     alternative: str = 'two-sided'
     n_features: Optional[int] = None
 
@@ -309,20 +309,20 @@ class LearnedKernelDriftConfig(DriftDetectorConfig):
     Unresolved schema for LearnedKernelDrift detector.
     """
     kernel: Union[str, DeepKernelConfig]
-    preprocess_at_init: bool = True,
-    update_x_ref: Optional[Dict[str, int]] = None,
-    n_permutations: int = 100,
-    var_reg: float = 1e-5,
+    preprocess_at_init: bool = True
+    update_x_ref: Optional[Dict[str, int]] = None
+    n_permutations: int = 100
+    var_reg: float = 1e-5
     reg_loss_fn: Optional[str] = None
-    train_size: Optional[float] = .75,
-    retrain_from_scratch: bool = True,
+    train_size: Optional[float] = .75
+    retrain_from_scratch: bool = True
     optimizer: Union[str, dict, None] = None  # dict as can pass dict to tf.keras.optimizers.deserialize
-    learning_rate: float = 1e-3,
-    batch_size: int = 32,
+    learning_rate: float = 1e-3
+    batch_size: int = 32
     preprocess_batch_fn: Optional[str] = None
-    epochs: int = 3,
-    verbose: int = 0,
-    train_kwargs: Optional[dict] = None,
+    epochs: int = 3
+    verbose: int = 0
+    train_kwargs: Optional[dict] = None
     dataset: str = '@alibi_detect.utils.tensorflow.data.TFDataset'
     device: Literal['cpu', 'cuda', None] = None
 
@@ -378,7 +378,7 @@ class ClassifierDriftConfigResolved(DriftDetectorConfigResolved, ClassifierDrift
     reg_loss_fn: Optional[Callable] = None
     optimizer: Optional[tf.keras.optimizers.Optimizer] = None
     preprocess_batch_fn: Optional[Callable] = None
-    dataset: Callable = TFDataset,
+    dataset: Callable = TFDataset
     model: Optional[SUPPORTED_MODELS] = None
 
 
@@ -388,7 +388,7 @@ class SpotTheDiffDriftConfigResolved(DriftDetectorConfigResolved, SpotTheDiffDri
     """
     optimizer: Optional[tf.keras.optimizers.Optimizer] = None
     preprocess_batch_fn: Optional[Callable] = None
-    dataset: Callable = TFDataset,
+    dataset: Callable = TFDataset
     kernel: Union[Callable, KernelConfigResolved, None]
     initial_diffs: Optional[np.ndarray] = None
 
@@ -401,7 +401,7 @@ class LearnedKernelDriftConfigResolved(DriftDetectorConfigResolved, LearnedKerne
     reg_loss_fn: Optional[Callable] = None
     optimizer: Optional[tf.keras.optimizers.Optimizer] = None
     preprocess_batch_fn: Optional[Callable] = None
-    dataset: Callable = TFDataset,
+    dataset: Callable = TFDataset
 
 
 # Unresolved schema dictionary (used in alibi_detect.utils.loading)
