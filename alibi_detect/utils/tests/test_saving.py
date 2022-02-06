@@ -483,7 +483,7 @@ def test_save_learnedkernel(data, deep_kernel, preprocess_uae, backend, tmp_path
     """
     # Detector save/load
     X_ref, X_h0 = data
-    cd = LearnedKernelDrift(X_ref[:, None, :],
+    cd = LearnedKernelDrift(X_ref,
                             deep_kernel,
                             p_val=P_VAL,
                             backend=backend,
@@ -493,8 +493,7 @@ def test_save_learnedkernel(data, deep_kernel, preprocess_uae, backend, tmp_path
     cd_load = load_detector(tmp_path)
 
     # Assert
-    x = X_ref[:, None, :]
-    np.testing.assert_array_equal(preprocess_uae(x), cd_load._detector.x_ref)
+    np.testing.assert_array_equal(preprocess_uae(X_ref), cd_load._detector.x_ref)
     assert cd_load._detector.x_ref_preprocessed
     assert cd_load._detector.p_val == P_VAL
     assert isinstance(cd_load._detector.train_kwargs, dict)
@@ -672,7 +671,6 @@ def test_save_optimizer(backend):
             }
         }
         optimizer = _load_optimizer(cfg_opt, backend=backend)
-        print(optimizer)
         assert type(optimizer).__name__ == class_name
         assert optimizer.learning_rate == learning_rate
         assert optimizer.epsilon == epsilon
