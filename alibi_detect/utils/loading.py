@@ -239,6 +239,7 @@ def _load_detector_config(cfg: Union[str, os.PathLike, dict]) -> Data:
     cfg = validate_config(cfg)
     logger.info('Validated unresolved config.')
     cfg = resolve_cfg(cfg, config_dir=config_dir)
+    print(type(cfg.get('dataset')))
     cfg = validate_config(cfg, resolved=True)
     logger.info('Validated resolved config.')
 

@@ -150,7 +150,7 @@ class LSDDDriftTorch(BaseLSDDDrift):
         x_ref = torch.from_numpy(x_ref).to(self.device)  # type: ignore[assignment]
         x = torch.from_numpy(x).to(self.device)  # type: ignore[assignment]
 
-        if self.preprocess_at_init:
+        if not self.preprocess_at_init:
             self._configure_normalization(x_ref)  # type: ignore[arg-type]
             x_ref = self._normalize(x_ref)
             self._initialize_kernel(x_ref)  # type: ignore[arg-type]

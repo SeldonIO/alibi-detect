@@ -9,7 +9,6 @@ from typing import Optional, Union, Dict, List, Callable
 from alibi_detect.utils._types import Literal
 from alibi_detect.version import __version__
 from alibi_detect.cd.tensorflow import HiddenOutput, UAE
-from alibi_detect.utils.tensorflow.data import TFDataset
 from alibi_detect.models.tensorflow import TransformerEmbedding
 from transformers import PreTrainedTokenizerBase
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow  # , has_sklearn
@@ -158,7 +157,7 @@ class DriftDetectorConfig(DetectorConfig):
     Unresolved base schema for drift detectors.
     """
     # args/kwargs shared by all drift detectors
-    x_ref: str = 'x_ref.npy'
+    x_ref: str
     p_val: float = .05
     x_ref_preprocessed: bool = False
     preprocess_fn: Union[str, PreprocessConfig, None]
@@ -170,7 +169,7 @@ class DriftDetectorConfigResolved(DriftDetectorConfig):
     """
     Resolved base schema for drift detectors.
     """
-    x_ref: np.ndarray
+    x_ref: Union[np.ndarray, list]
     preprocess_fn: Union[Callable, PreprocessConfigResolved, None]
 
 
@@ -378,7 +377,7 @@ class ClassifierDriftConfigResolved(DriftDetectorConfigResolved, ClassifierDrift
     reg_loss_fn: Optional[Callable] = None
     optimizer: Optional[tf.keras.optimizers.Optimizer] = None
     preprocess_batch_fn: Optional[Callable] = None
-    dataset: Callable = TFDataset
+    dataset: Callable
     model: Optional[SUPPORTED_MODELS] = None
 
 
@@ -388,7 +387,7 @@ class SpotTheDiffDriftConfigResolved(DriftDetectorConfigResolved, SpotTheDiffDri
     """
     optimizer: Optional[tf.keras.optimizers.Optimizer] = None
     preprocess_batch_fn: Optional[Callable] = None
-    dataset: Callable = TFDataset
+    dataset: Callable
     kernel: Union[Callable, KernelConfigResolved, None]
     initial_diffs: Optional[np.ndarray] = None
 
@@ -401,7 +400,7 @@ class LearnedKernelDriftConfigResolved(DriftDetectorConfigResolved, LearnedKerne
     reg_loss_fn: Optional[Callable] = None
     optimizer: Optional[tf.keras.optimizers.Optimizer] = None
     preprocess_batch_fn: Optional[Callable] = None
-    dataset: Callable = TFDataset
+    dataset: Callable
 
 
 # Unresolved schema dictionary (used in alibi_detect.utils.loading)

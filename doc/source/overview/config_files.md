@@ -708,46 +708,46 @@ This second level of validation can be useful as it helps detect problems with l
 sometimes time-consuming operation of instantiating the detector. 
 
 
-### Detector specification schemas
-
-Validation of detector config files is performed with [pydantic](https://pydantic-docs.helpmanual.io/). Each 
-detector's *unresolved* configuration is represented by a pydantic model, stored in `DETECTOR_CONFIGS`. Information on 
-a detector config's permitted fields and their types can be obtained via the config model's `schema` method
-(or `schema_json` if a json formatted string is preferred). For example, for the `KSDrift` detector:
-
-```python
-from alibi_detect.utils.schemas import DETECTOR_CONFIGS
-schema = DETECTOR_CONFIGS['KSDrift'].schema()
-
-```
-
-returns a dictionary with the keys `['title', 'type', 'properties', 'required', 'additionalProperties', 'definitions']`.
-The `'properties'` item is a dictionary containing all the possible fields for the detector:
-
-```python
-{'name': {'title': 'Name', 'type': 'string'},
- 'version': {'title': 'Version', 'default': '0.8.1dev', 'type': 'string'},
- 'config_spec': {'title': 'Config Spec',
-  'default': '0.1.0dev',
-  'type': 'string'},
- 'backend': {'title': 'Backend',
-  'default': 'tensorflow',
-  'enum': ['tensorflow', 'pytorch'],
-  'type': 'string'},
- 'x_ref': {'title': 'X Ref', 'default': 'x_ref.npy', 'type': 'string'},
- 'p_val': {'title': 'P Val', 'default': 0.05, 'type': 'number'},
- 'x_ref_preprocessed': {'title': 'X Ref Preprocessed',
-  'default': False,
-  'type': 'boolean'},
- ...
- }
-```
-
-Compulsory fields are listed in `'required'`, whilst additional pydantic model definitions such as 
-`ModelConfig` are stored in `'definitions'`. These additional models define the schemas for the 
-[artefact dictionaries](complex_fields). 
-
-Similarly, *resolved* detector configurations are represented by pydantic models stored in 
-`DETECTOR_CONFIGS_RESOLVED`. The difference being that for these models, artefacts are expected to have their 
-resolved types, for example `x_ref` should be a NumPy ndarray. The `schema` and `schema_json` methods can be applied 
-to these models in the same way.
+%### Detector specification schemas
+%
+%Validation of detector config files is performed with [pydantic](https://pydantic-docs.helpmanual.io/). Each 
+%detector's *unresolved* configuration is represented by a pydantic model, stored in `DETECTOR_CONFIGS`. Information on 
+%a detector config's permitted fields and their types can be obtained via the config model's `schema` method
+%(or `schema_json` if a json formatted string is preferred). For example, for the `KSDrift` detector:
+%
+%```python
+%from alibi_detect.utils.schemas import DETECTOR_CONFIGS
+%schema = DETECTOR_CONFIGS['KSDrift'].schema()
+%
+%```
+%
+%returns a dictionary with the keys `['title', 'type', 'properties', 'required', 'additionalProperties', 'definitions']`.
+%The `'properties'` item is a dictionary containing all the possible fields for the detector:
+%
+%```python
+%{'name': {'title': 'Name', 'type': 'string'},
+% 'version': {'title': 'Version', 'default': '0.8.1dev', 'type': 'string'},
+% 'config_spec': {'title': 'Config Spec',
+%  'default': '0.1.0dev',
+%  'type': 'string'},
+% 'backend': {'title': 'Backend',
+%  'default': 'tensorflow',
+%  'enum': ['tensorflow', 'pytorch'],
+%  'type': 'string'},
+% 'x_ref': {'title': 'X Ref', 'default': 'x_ref.npy', 'type': 'string'},
+% 'p_val': {'title': 'P Val', 'default': 0.05, 'type': 'number'},
+% 'x_ref_preprocessed': {'title': 'X Ref Preprocessed',
+%  'default': False,
+%  'type': 'boolean'},
+% ...
+% }
+%```
+%
+%Compulsory fields are listed in `'required'`, whilst additional pydantic model definitions such as 
+%`ModelConfig` are stored in `'definitions'`. These additional models define the schemas for the 
+%[artefact dictionaries](complex_fields). 
+%
+%Similarly, *resolved* detector configurations are represented by pydantic models stored in 
+%`DETECTOR_CONFIGS_RESOLVED`. The difference being that for these models, artefacts are expected to have their 
+%resolved types, for example `x_ref` should be a NumPy ndarray. The `schema` and `schema_json` methods can be applied 
+%to these models in the same way.
