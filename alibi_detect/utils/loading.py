@@ -12,7 +12,7 @@ from alibi_detect.cd import (ChiSquareDrift, ClassifierDrift, KSDrift, MMDDrift,
 from alibi_detect.od import (IForest, LLR, Mahalanobis, OutlierAE, OutlierAEGMM, OutlierProphet,
                              OutlierSeq2Seq, OutlierVAE, OutlierVAEGMM, SpectralResidual)
 from alibi_detect.od.llr import build_model
-from alibi_detect.cd.pytorch import preprocess_drift as preprocess_drift_torch
+# from alibi_detect.cd.pytorch import preprocess_drift as preprocess_drift_torch
 from alibi_detect.cd.tensorflow import preprocess_drift as preprocess_drift_tf
 from alibi_detect.utils.tensorflow.kernels import GaussianRBF as GaussianRBF_tf
 from alibi_detect.utils.pytorch.kernels import GaussianRBF as GaussianRBF_torch
@@ -462,7 +462,7 @@ def _load_preprocess(cfg: dict,
     preprocess_fn = cfg.pop('src')
 
     if callable(preprocess_fn):
-        if preprocess_fn == preprocess_drift_tf or preprocess_fn == preprocess_drift_torch:
+        if preprocess_fn == preprocess_drift_tf:  # or preprocess_fn == preprocess_drift_torch:
             # If preprocess_drift function, kwargs is preprocess cfg minus 'function' and 'kwargs'
             cfg.pop('kwargs')
             kwargs = cfg.copy()
