@@ -15,7 +15,7 @@ from alibi_detect.od.llr import build_model
 # from alibi_detect.cd.pytorch import preprocess_drift as preprocess_drift_torch
 from alibi_detect.cd.tensorflow import preprocess_drift as preprocess_drift_tf
 from alibi_detect.utils.tensorflow.kernels import GaussianRBF as GaussianRBF_tf
-from alibi_detect.utils.pytorch.kernels import GaussianRBF as GaussianRBF_torch
+# from alibi_detect.utils.pytorch.kernels import GaussianRBF as GaussianRBF_torch
 from alibi_detect.cd.tensorflow import UAE
 from alibi_detect.models.tensorflow import TransformerEmbedding, PixelCNN
 from alibi_detect.cd.tensorflow.preprocess import _Encoder
@@ -24,7 +24,7 @@ from alibi_detect.utils.registry import registry
 from alibi_detect.utils.schemas import DETECTOR_CONFIGS, DETECTOR_CONFIGS_RESOLVED, SUPPORTED_MODELS, SupportedModels,\
     __config_spec__
 from alibi_detect.utils.tensorflow.kernels import DeepKernel as DeepKernel_tf
-from alibi_detect.utils.pytorch.kernels import DeepKernel as DeepKernel_torch
+# from alibi_detect.utils.pytorch.kernels import DeepKernel as DeepKernel_torch
 # TensorFlow imports
 import tensorflow as tf
 from tensorflow.keras import Model as KerasModel
@@ -406,8 +406,8 @@ def _load_kernel(cfg: dict, backend: str = 'tensorflow', device: Optional[str] =
             if kernel == GaussianRBF_tf:
                 sigma = tf.convert_to_tensor(sigma) if isinstance(sigma, np.ndarray) else sigma
                 kernel = kernel(sigma=sigma, trainable=cfg['trainable'])
-            elif kernel == GaussianRBF_torch:  # TODO
-                raise NotImplementedError('Loading PyTorch kernels not currently supported.')
+#            elif kernel == GaussianRBF_torch:  # TODO
+#                raise NotImplementedError('Loading PyTorch kernels not currently supported.')
 #                torch_device = _set_device(device)
 #                sigma = torch.from_numpy(sigma).to(torch_device) if isinstance(sigma, np.ndarray) else None
 #                kernel = kernel(sigma=sigma, trainable=cfg['trainable'])
@@ -423,19 +423,21 @@ def _load_kernel(cfg: dict, backend: str = 'tensorflow', device: Optional[str] =
         if kernel_a is not None:
             kernel_a = _load_kernel(kernel_a, backend, device)
         else:
-            kernel_a = GaussianRBF_tf(trainable=True) if backend == 'tensorflow' else GaussianRBF_torch(trainable=True)
+            kernel_a = GaussianRBF_tf(trainable=True) if backend == 'tensorflow' else None
+            # GaussianRBF_torch(trainable=True)
         # Kernel b
         kernel_b = cfg['kernel_b']
         if kernel_b is not None:
             kernel_b = _load_kernel(kernel_b, backend, device)
         else:
-            kernel_b = GaussianRBF_tf(trainable=True) if backend == 'tensorflow' else GaussianRBF_torch(trainable=True)
+            kernel_b = GaussianRBF_tf(trainable=True) if backend == 'tensorflow' else None
+            # GaussianRBF_torch(trainable=True)
 
         # Assemble deep kernel
         if backend == 'tensorflow':
             kernel = DeepKernel_tf(proj, kernel_a=kernel_a, kernel_b=kernel_b, eps=eps)
         else:
-            kernel = DeepKernel_torch(proj, kernel_a=kernel_a, kernel_b=kernel_b, eps=eps)
+            kernel = None  # DeepKernel_torch(proj, kernel_a=kernel_a, kernel_b=kernel_b, eps=eps)
     else:
         raise ValueError('Unable to process kernel.)')
     return kernel
