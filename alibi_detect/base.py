@@ -78,7 +78,7 @@ class BaseDetector(ABC):
         pass
 
     @abstractmethod
-    def predict(self, X: np.ndarray):
+    def predict(self, X: np.ndarray, *args):
         pass
 
 

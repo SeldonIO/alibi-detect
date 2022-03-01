@@ -7,6 +7,7 @@ from alibi_detect.base import BaseDetector, concept_drift_dict
 from alibi_detect.cd.utils import get_input_shape, update_reference
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
 from alibi_detect.utils.statstest import fdr
+from alibi_detect.cd.domain_clf import DomainClf, SVCDomainClf
 from scipy.stats import binom_test, ks_2samp
 from sklearn.model_selection import StratifiedKFold
 
@@ -932,4 +933,181 @@ class BaseUnivariateDrift(BaseDetector):
             cd['data']['threshold'] = self.p_val if drift_type == 'feature' else threshold
         if return_distance:
             cd['data']['distance'] = dist
+        return cd
+
+
+class BaseContextAwareDrift(BaseDetector):
+    def __init__(
+            self,
+            x_ref: Union[np.ndarray, list],
+            c_ref: np.ndarray,
+            p_val: float = .05,
+            preprocess_x_ref: bool = True,
+            update_x_ref: Optional[Dict[str, int]] = None,
+            preprocess_fn: Optional[Callable] = None,
+            x_kernel: Callable = None,
+            c_kernel: Callable = None,
+            domain_clf: DomainClf = SVCDomainClf,
+            n_permutations: int = 1000,
+            cond_prop: float = 0.25,
+            lams: Optional[Tuple[float, float]] = None,
+            batch_size: Optional[int] = 256,
+            input_shape: Optional[tuple] = None,
+            data_type: Optional[str] = None,
+            verbose: bool = False
+    ) -> None:
+        """
+        Maximum Mean Discrepancy (MMD) based context aware drift detector.
+
+        Parameters
+        ----------
+        x_ref
+            Data used as reference distribution.
+        c_ref
+            Data used as context for the reference distribution.
+        p_val
+            p-value used for the significance of the permutation test.
+        preprocess_x_ref
+            Whether to already preprocess and store the reference data.
+        update_x_ref
+            Reference data can optionally be updated to the last n instances seen by the detector
+            or via reservoir sampling with size n. For the former, the parameter equals {'last': n} while
+            for reservoir sampling {'reservoir_sampling': n} is passed.
+        preprocess_fn
+            Function to preprocess the data before computing the data drift metrics.
+         x_kernel
+            Kernel defined on the input data, defaults to Gaussian RBF kernel.
+        c_kernel
+            Kernel defined on the context data, defaults to Gaussian RBF kernel.
+        domain_clf
+            Domain classifier, takes conditioning variables and their domain, and returns propensity scores (probs of
+            being test instances). Must be a subclass of DomainClf. # TODO - add link
+        n_permutations
+            Number of permutations used in the permutation test.
+        cond_prop
+            Proportion of contexts held out to condition on.
+        lams
+            Ref and test regularisation parameters. Tuned if None.
+        batch_size
+            If not None, then compute batches of MMDs at a time (rather than all at once).
+        input_shape
+            Shape of input data.
+        data_type
+            Optionally specify the data type (tabular, image or time-series). Added to metadata.
+        verbose
+            Whether or not to print progress during configuration.
+        """
+        super().__init__()
+
+        if p_val is None:
+            logger.warning('No p-value set for the drift threshold. Need to set it to detect data drift.')
+
+        # optionally already preprocess reference data
+        self.p_val = p_val
+        if preprocess_x_ref and isinstance(preprocess_fn, Callable):  # type: ignore[arg-type]
+            self.x_ref = preprocess_fn(x_ref)
+        else:
+            self.x_ref = x_ref
+        self.preprocess_x_ref = preprocess_x_ref
+        self.update_x_ref = update_x_ref
+        self.preprocess_fn = preprocess_fn
+        self.n = len(x_ref)
+        self.n_permutations = n_permutations  # nb of iterations through permutation test
+        self.c_ref = c_ref  # TODO - check c_ref and x_ref ame length
+        self.x_kernel = x_kernel
+        self.c_kernel = c_kernel
+
+        # Domain classifier
+        self.clf = domain_clf(self.c_kernel) if domain_clf == SVCDomainClf else domain_clf
+
+        # store input shape for save and load functionality
+        self.input_shape = get_input_shape(input_shape, x_ref)
+
+        # Other attributes
+        self.cond_prop = cond_prop
+        self.lams = lams
+        self.batch_size = batch_size
+        self.verbose = verbose
+
+        # set metadata
+        self.meta.update({'detector_type': 'offline', 'data_type': data_type})
+
+    def preprocess(self, x: Union[np.ndarray, list]) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Data preprocessing before computing the drift scores.
+        Parameters
+        ----------
+        x
+            Batch of instances.
+        Returns
+        -------
+        Preprocessed reference data and new instances.
+        """
+        if isinstance(self.preprocess_fn, Callable):  # type: ignore[arg-type]
+            x = self.preprocess_fn(x)
+            x_ref = self.x_ref if self.preprocess_x_ref else self.preprocess_fn(self.x_ref)
+            # TODO: TBD: similar to above, can x be a list here? x_ref is also revealed to be Any,
+            #  can we tighten the type up (e.g. by typing Callable with stricter inputs/outputs?
+            return x_ref, x  # type: ignore[return-value]
+        else:
+            return self.x_ref, x  # type: ignore[return-value]
+
+    @abstractmethod
+    def score(self, x: Union[np.ndarray, list], c: np.ndarray) -> Tuple[float, float, np.ndarray, Tuple]:
+        pass
+
+    def predict(self, x: Union[np.ndarray, list], c: np.ndarray,
+                return_p_val: bool = True, return_distance: bool = True, return_coupling: bool = False) \
+            -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:  # TODO - add c
+        """
+        Predict whether a batch of data has drifted from the reference data.  # TODO
+
+        Parameters
+        ----------
+        x
+            Batch of instances.
+        c
+            Context associated with batch of instances.
+        return_p_val
+            Whether to return the p-value of the permutation test.
+        return_distance
+            Whether to return the MMD metric between the new batch and reference data.
+        return_coupling
+            Whether to return the coupling matrices.
+
+        Returns
+        -------
+        Dictionary containing 'meta' and 'data' dictionaries.
+        'meta' has the model's metadata.
+        'data' contains the drift prediction and optionally the p-value, threshold, MMD metric and coupling matrices.
+        """
+        # compute drift scores
+        p_val, dist, dist_permutations, coupling = self.score(x, c)
+        drift_pred = int(p_val < self.p_val)
+
+        # compute distance threshold
+        idx_threshold = int(self.p_val * len(dist_permutations))
+        distance_threshold = np.sort(dist_permutations)[::-1][idx_threshold]
+
+        # update reference dataset # TODO - update c_ref too - is update_reference deterministic? Otherwise problem...
+        if isinstance(self.update_x_ref, dict) and self.preprocess_fn is not None and self.preprocess_x_ref:
+            x = self.preprocess_fn(x)
+        self.x_ref = update_reference(self.x_ref, x, self.n, self.update_x_ref)  # type: ignore[arg-type]
+        # used for reservoir sampling
+        self.n += len(x)
+
+        # populate drift dict
+        cd = concept_drift_dict()
+        cd['meta'] = self.meta
+        cd['data']['is_drift'] = drift_pred
+        if return_p_val:
+            cd['data']['p_val'] = p_val
+            cd['data']['threshold'] = self.p_val
+        if return_distance:
+            cd['data']['distance'] = dist
+            cd['data']['distance_threshold'] = distance_threshold
+        if return_coupling:
+            cd['data']['coupling_xx'] = coupling[0]
+            cd['data']['coupling_yy'] = coupling[1]
+            cd['data']['coupling_xy'] = coupling[2]
         return cd
