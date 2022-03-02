@@ -1,6 +1,6 @@
 import logging
 from abc import abstractmethod
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from typing import Callable, Dict, List, Optional, Tuple, Union, Type
 
 import numpy as np
 from alibi_detect.base import BaseDetector, concept_drift_dict
@@ -937,6 +937,8 @@ class BaseUnivariateDrift(BaseDetector):
 
 
 class BaseContextAwareDrift(BaseDetector):
+    clf: DomainClf
+
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
@@ -947,7 +949,7 @@ class BaseContextAwareDrift(BaseDetector):
             preprocess_fn: Optional[Callable] = None,
             x_kernel: Callable = None,
             c_kernel: Callable = None,
-            domain_clf: DomainClf = SVCDomainClf,
+            domain_clf: Union[Type[DomainClf], DomainClf] = SVCDomainClf,
             n_permutations: int = 1000,
             cond_prop: float = 0.25,
             lams: Optional[Tuple[float, float]] = None,
@@ -1013,12 +1015,21 @@ class BaseContextAwareDrift(BaseDetector):
         self.preprocess_fn = preprocess_fn
         self.n = len(x_ref)
         self.n_permutations = n_permutations  # nb of iterations through permutation test
-        self.c_ref = c_ref  # TODO - check c_ref and x_ref ame length
         self.x_kernel = x_kernel
         self.c_kernel = c_kernel
+        if len(c_ref) == self.n:
+            self.c_ref = c_ref
+        else:
+            raise ValueError('x_ref and c_ref should contain the same number of instances.')
 
         # Domain classifier
-        self.clf = domain_clf(self.c_kernel) if domain_clf == SVCDomainClf else domain_clf
+        if isinstance(domain_clf, DomainClf):  # domain_clf is already an instantiated DomainClf object
+            self.clf = domain_clf
+        else:  # If still a class, need to instantiate
+            self.clf = domain_clf(self.c_kernel) if domain_clf == SVCDomainClf else domain_clf()
+        # TODO: above will fail if domain_clf is not Union[Type[DomainClf], DomainClf]. We could add more checks here,
+        #  e.g. with inspect.isclass(domain_clf, DomainClf) etc, however this seems to fall under the remit of runtime
+        #  type checking?
 
         # store input shape for save and load functionality
         self.input_shape = get_input_shape(input_shape, x_ref)
@@ -1053,10 +1064,12 @@ class BaseContextAwareDrift(BaseDetector):
             return self.x_ref, x  # type: ignore[return-value]
 
     @abstractmethod
-    def score(self, x: Union[np.ndarray, list], c: np.ndarray) -> Tuple[float, float, np.ndarray, Tuple]:
+    def score(self,  # type: ignore[override]
+              x: Union[np.ndarray, list], c: np.ndarray) -> Tuple[float, float, np.ndarray, Tuple]:
         pass
 
-    def predict(self, x: Union[np.ndarray, list], c: np.ndarray,
+    def predict(self,  # type: ignore[override]
+                x: Union[np.ndarray, list], c: np.ndarray,
                 return_p_val: bool = True, return_distance: bool = True, return_coupling: bool = False) \
             -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:  # TODO - add c
         """

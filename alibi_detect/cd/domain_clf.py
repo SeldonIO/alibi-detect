@@ -13,7 +13,7 @@ class DomainClf(ABC):
     own domain (e.g. by using out-of-bag preds or cross validation).
     """
     @abstractmethod
-    def __init__(self, **kwargs: dict):
+    def __init__(self, *args, **kwargs: dict):
         raise NotImplementedError()
 
     @abstractmethod

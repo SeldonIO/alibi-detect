@@ -1,9 +1,9 @@
+#type: ignore
 import logging
 import numpy as np
 import torch
-from typing import Callable, Dict, Optional, Tuple, Union
+from typing import Callable, Dict, Optional, Tuple, Union, Type
 from alibi_detect.cd.base import BaseContextAwareDrift
-from alibi_detect.utils.pytorch.distance import mmd2_from_kernel_matrix
 from alibi_detect.cd.domain_clf import DomainClf, SVCDomainClf
 from tqdm import tqdm
 
@@ -21,7 +21,7 @@ class ContextAwareDriftTF(BaseContextAwareDrift):
             preprocess_fn: Optional[Callable] = None,
             x_kernel: Callable = None,
             c_kernel: Callable = None,
-            domain_clf: DomainClf = SVCDomainClf,
+            domain_clf: Type[DomainClf] = SVCDomainClf,
             n_permutations: int = 1000,
             cond_prop: float = 0.25,
             lams: Optional[Tuple[float, float]] = None,
@@ -104,7 +104,8 @@ class ContextAwareDriftTF(BaseContextAwareDrift):
         else:
             self.device = torch.device('cpu')
 
-    def score(self, x: Union[np.ndarray, list], c: np.ndarray) -> Tuple[float, float, np.ndarray, Tuple]:
+    def score(self,  # type: ignore[override]
+              x: Union[np.ndarray, list], c: np.ndarray) -> Tuple[float, float, np.ndarray, Tuple]:
         """
         Compute the p-value resulting from a permutation test using the maximum mean discrepancy
         as a distance measure between the reference data and the data to be tested.  # TODO
@@ -126,12 +127,11 @@ class ContextAwareDriftTF(BaseContextAwareDrift):
         x = torch.from_numpy(x).to(self.device)  # type: ignore[assignment]
 
         # Hold out a portion of contexts for conditioning on
-        n_ref = len(self.c_ref)
         n_held = int(len(c)*self.cond_prop)
         n_test = len(c) - n_held
         c, c_held = torch.split(torch.as_tensor(c), [n_test, n_held])
         x, _ = torch.split(torch.as_tensor(x), [n_test, n_held])
-        n_ref, n_test = self.n_ref, len(x)
+        n_ref, n_test = self.n, len(x)
 
         # Combine ref and test data
         x_all = np.concatenate([self.x_ref, x], axis=0)
@@ -162,7 +162,8 @@ class ContextAwareDriftTF(BaseContextAwareDrift):
 
         return p_val.numpy().item(), stat.numpy().item(), permuted_stats.numpy(), coupling_xx  ## TODO - check coupling_xx type
 
-    def _cmmd(self, K: torch.Tensor, L: torch.Tensor, bools: torch.Tensor, L_held: torch.tensor = None): # TODO - return sig
+    def _cmmd(self, K: torch.Tensor, L: torch.Tensor, bools: torch.Tensor, L_held: torch.Tensor = None) \
+            -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         See https://www.notion.so/Partial-drift-detection-6fbf17b06d7e440d998f3a0d95928a4a#c16e9f84b5954f8793a266116cc4409c and
         https://www.notion.so/Partial-drift-detection-6fbf17b06d7e440d998f3a0d95928a4a#fa19fe09942344d783ce5ee21bf8d115
@@ -205,7 +206,7 @@ class ContextAwareDriftTF(BaseContextAwareDrift):
         return stat.cpu(), coupling_xx.cpu(), coupling_yy.cpu(), coupling_xy.cpu()
 
 
-    def _pick_lam(self, lams: torch.tensor, K: torch.tensor, L: torch.tensor, n_folds: int = 5) -> torch.tensor:
+    def _pick_lam(self, lams: torch.Tensor, K: torch.Tensor, L: torch.Tensor, n_folds: int = 5) -> torch.Tensor:
         """
         The conditional mean embedding is estimated as the solution of a regularised regression problem.
         This function uses cross validation to select the regularisation param that minimises squared error on

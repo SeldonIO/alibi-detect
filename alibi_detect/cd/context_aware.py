@@ -1,6 +1,6 @@
 import logging
 import numpy as np
-from typing import Callable, Dict, Optional, Union, Tuple
+from typing import Callable, Dict, Optional, Union, Tuple, Type
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
 from alibi_detect.cd.domain_clf import DomainClf, SVCDomainClf
 
@@ -8,7 +8,7 @@ if has_pytorch:
     from alibi_detect.cd.pytorch.context_aware import ContextAwareDriftTorch
 
 if has_tensorflow:
-    from alibi_detect.cd.tensorflow.context_aware import ContextAwareDriftTF
+    from alibi_detect.cd.tensorflow.context_aware import ContextAwareDriftTF  # type: ignore  # TODO
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ class ContextAwareDrift:
             preprocess_fn: Optional[Callable] = None,
             x_kernel: Callable = None,
             c_kernel: Callable = None,
-            domain_clf: DomainClf = SVCDomainClf,
+            domain_clf: Type[DomainClf] = SVCDomainClf,
             n_permutations: int = 1000,
             cond_prop: float = 0.25,
             lams: Optional[Tuple[float, float]] = None,
@@ -99,9 +99,9 @@ class ContextAwareDrift:
             if backend == 'tensorflow':
                 from alibi_detect.utils.tensorflow.kernels import GaussianRBF
             else:
-                from alibi_detect.utils.pytorch.kernels import GaussianRBF  # type: ignore
-            kwargs.update({'x_kernel': GaussianRBF} if x_kernel is None else {'x_kernel': x_kernel})
-            kwargs.update({'c_kernel': GaussianRBF} if c_kernel is None else {'c_kernel': c_kernel})
+                from alibi_detect.utils.pytorch.kernels import GaussianRBF  # type: ignore[no-redef]
+            kwargs.update({'x_kernel': GaussianRBF} if x_kernel is None else {'x_kernel': x_kernel})  # type: ignore
+            kwargs.update({'c_kernel': GaussianRBF} if c_kernel is None else {'c_kernel': c_kernel})  # type: ignore
             # TODO - need to adjust kernels to match ones in drift-cadd repo
 
         if backend == 'tensorflow' and has_tensorflow:
@@ -138,7 +138,7 @@ class ContextAwareDrift:
         """
         return self._detector.predict(x, c, return_p_val, return_distance, return_coupling)
 
-    def score(self, x: Union[np.ndarray, list], c: np.ndarray) -> Tuple[float, float, np.ndarray]:
+    def score(self, x: Union[np.ndarray, list], c: np.ndarray) -> Tuple[float, float, np.ndarray, Tuple]:
         """
         Compute the p-value resulting from a permutation test using the maximum mean discrepancy
         as a distance measure between the reference data and the data to be tested.  # TODO
