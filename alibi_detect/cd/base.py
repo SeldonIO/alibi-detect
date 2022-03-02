@@ -977,13 +977,13 @@ class BaseContextAwareDrift(BaseDetector):
             for reservoir sampling {'reservoir_sampling': n} is passed.
         preprocess_fn
             Function to preprocess the data before computing the data drift metrics.
-         x_kernel
+        x_kernel
             Kernel defined on the input data, defaults to Gaussian RBF kernel.
         c_kernel
             Kernel defined on the context data, defaults to Gaussian RBF kernel.
         domain_clf
             Domain classifier, takes conditioning variables and their domain, and returns propensity scores (probs of
-            being test instances). Must be a subclass of DomainClf. # TODO - add link
+            being test instances). Must be a subclass of :py:class:`~alibi_detect.cd.domain_clf.DomainClf`.
         n_permutations
             Number of permutations used in the permutation test.
         cond_prop
@@ -1071,9 +1071,9 @@ class BaseContextAwareDrift(BaseDetector):
     def predict(self,  # type: ignore[override]
                 x: Union[np.ndarray, list], c: np.ndarray,
                 return_p_val: bool = True, return_distance: bool = True, return_coupling: bool = False) \
-            -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:  # TODO - add c
+            -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
         """
-        Predict whether a batch of data has drifted from the reference data.  # TODO
+        Predict whether a batch of data has drifted from the reference data, given the provided context.
 
         Parameters
         ----------

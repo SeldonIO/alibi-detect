@@ -62,7 +62,7 @@ class ContextAwareDrift:
             Kernel defined on the context data, defaults to Gaussian RBF kernel.
         domain_clf
             Domain classifier, takes conditioning variables and their domain, and returns propensity scores (probs of
-            being test instances). Must be a subclass of DomainClf. # TODO - add link
+            being test instances). Must be a subclass of :py:class:`~alibi_detect.cd.domain_clf.DomainClf`.
         n_permutations
             Number of permutations used in the permutation test.
         cond_prop
@@ -114,7 +114,7 @@ class ContextAwareDrift:
                 return_p_val: bool = True, return_distance: bool = True, return_coupling: bool = False) \
             -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
         """
-        Predict whether a batch of data has drifted from the reference data. # TODO
+        Predict whether a batch of data has drifted from the reference data, given the provided context.
 
         Parameters
         ----------
@@ -139,8 +139,8 @@ class ContextAwareDrift:
 
     def score(self, x: Union[np.ndarray, list], c: np.ndarray) -> Tuple[float, float, np.ndarray, Tuple]:
         """
-        Compute the p-value resulting from a permutation test using the maximum mean discrepancy
-        as a distance measure between the reference data and the data to be tested.  # TODO
+        Compute the MMD based conditional test statistic, and perform a conditional permutation test to obtain a
+        p-value representing the test statistic's extremity under the null hypothesis.
 
         Parameters
         ----------
@@ -151,7 +151,7 @@ class ContextAwareDrift:
 
         Returns
         -------
-        p-value obtained from the permutation test, the MMD^2 between the reference and test set, the
-        MMD^2 values from the permutation test, and the coupling matrices.
+        p-value obtained from the conditional permutation test, the MMD-ADiTT test statistic, the permuted
+        test statistics, and a tuple containing the coupling matrices (xx, yy, xy).
         """
         return self._detector.score(x, c)

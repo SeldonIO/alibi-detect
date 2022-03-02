@@ -55,7 +55,7 @@ class ContextAwareDriftTorch(BaseContextAwareDrift):
             Kernel defined on the context data, defaults to Gaussian RBF kernel.
         domain_clf
             Domain classifier, takes conditioning variables and their domain, and returns propensity scores (probs of
-            being test instances). Must be a subclass of DomainClf. # TODO - add link
+            being test instances). Must be a subclass of :py:class:`~alibi_detect.cd.domain_clf.DomainClf`.
         n_permutations
             Number of permutations used in the permutation test.
         cond_prop
@@ -106,8 +106,8 @@ class ContextAwareDriftTorch(BaseContextAwareDrift):
     def score(self,  # type: ignore[override]
               x: Union[np.ndarray, list], c: np.ndarray) -> Tuple[float, float, np.ndarray, Tuple]:
         """
-        Compute the p-value resulting from a permutation test using the maximum mean discrepancy
-        as a distance measure between the reference data and the data to be tested.  # TODO
+        Compute the MMD based conditional test statistic, and perform a conditional permutation test to obtain a
+        p-value representing the test statistic's extremity under the null hypothesis.
 
         Parameters
         ----------
@@ -118,8 +118,8 @@ class ContextAwareDriftTorch(BaseContextAwareDrift):
 
         Returns
         -------
-        p-value obtained from the permutation test, the MMD^2 between the reference and test set, the
-        MMD^2 values from the permutation test, and the coupling matrices.
+        p-value obtained from the conditional permutation test, the MMD-ADiTT test statistic, the permuted
+        test statistics, and a tuple containing the coupling matrices (xx, yy, xy).
         """
         x_ref, x = self.preprocess(x)
         x_ref = torch.from_numpy(x_ref).to(self.device)  # type: ignore[assignment]
@@ -163,8 +163,7 @@ class ContextAwareDriftTorch(BaseContextAwareDrift):
     def _cmmd(self, K: torch.Tensor, L: torch.Tensor, bools: torch.Tensor, L_held: torch.Tensor = None) \
             -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         """
-        See https://www.notion.so/Partial-drift-detection-6fbf17b06d7e440d998f3a0d95928a4a#c16e9f84b5954f8793a266116cc4409c and
-        https://www.notion.so/Partial-drift-detection-6fbf17b06d7e440d998f3a0d95928a4a#fa19fe09942344d783ce5ee21bf8d115
+        Private method to compute the MMD-ADiTT test statistic.
         """
         # Form kernel matrices
         n_ref, n_test = (bools == 0).sum(), (bools == 1).sum()
@@ -178,7 +177,7 @@ class ContextAwareDriftTorch(BaseContextAwareDrift):
             lam_0 = self._pick_lam(possible_lams, K_0, L_0, n_folds=5)
             lam_1 = self._pick_lam(possible_lams, K_1, L_1, n_folds=5)
             self.lams = (lam_0, lam_1)  # type: ignore[assignment]
-            # Ignore above as self.lams is Optional[Tuple[float, float]] in base class. TODO
+            # Ignore above as self.lams is Optional[Tuple[float, float]] in base class.
 
         # Compute stat
         L_0_inv = torch.linalg.inv(L_0 + n_ref*self.lams[0]*torch.eye(int(n_ref)).to(L_0.device))
@@ -195,7 +194,7 @@ class ContextAwareDriftTorch(BaseContextAwareDrift):
             coupling_xy = torch.stack([
                 torch.einsum('ij,ik->ijk', A_0_i, A_1_i).mean(0) for A_0_i, A_1_i in zip(A_0.split(bs), A_1.split(bs))
             ]).mean(0)
-        else:        
+        else:
             coupling_xx = torch.einsum('ij,ik->ijk', A_0, A_0).mean(0)
             coupling_yy = torch.einsum('ij,ik->ijk', A_1, A_1).mean(0)
             coupling_xy = torch.einsum('ij,ik->ijk', A_0, A_1).mean(0)
@@ -209,9 +208,10 @@ class ContextAwareDriftTorch(BaseContextAwareDrift):
     def _pick_lam(self, lams: torch.Tensor, K: torch.Tensor, L: torch.Tensor, n_folds: int = 5) -> torch.Tensor:
         """
         The conditional mean embedding is estimated as the solution of a regularised regression problem.
-        This function uses cross validation to select the regularisation param that minimises squared error on
-            the out-of-fold instances. The error is a distance in the RKHS and is therefore an MMD-like quantity itself.
-        See https://www.notion.so/Partial-drift-detection-6fbf17b06d7e440d998f3a0d95928a4a#b96a8ef13785433abc4d6a1118d4fa8a
+
+        This private method function uses cross validation to select the regularisation parameter that
+        minimises squared error on the out-of-fold instances. The error is a distance in the RKHS and is
+        therefore an MMD-like quantity itself.
         """
         n = len(L)
         fold_size = n // n_folds
@@ -223,9 +223,9 @@ class ContextAwareDriftTorch(BaseContextAwareDrift):
             n_if = len(K_if)
             L_inv_lams = torch.stack(
                 [torch.linalg.inv(L_if + n_if*lam*torch.eye(n_if).to(L.device)) for lam in lams])  # n_lam x n_if x n_if
-            KW = torch.einsum('ij,ljk->lik', K_if, L_inv_lams)  
+            KW = torch.einsum('ij,ljk->lik', K_if, L_inv_lams)
             lW = torch.einsum('ij,ljk->lik', L[inds_oof][:, inds_if], L_inv_lams)
-            lWKW = torch.einsum('lij,ljk->lik', lW, KW) 
+            lWKW = torch.einsum('lij,ljk->lik', lW, KW)
             lWKWl = torch.einsum('lkj,jk->lk', lWKW, L[inds_if][:, inds_oof])  # n_lam x n_oof
             lWk = torch.einsum('lij,ji->li', lW, K[inds_if][:, inds_oof])  # n_lam x n_oof
             kxx = torch.ones_like(lWk).to(lWk.device) * torch.max(K)

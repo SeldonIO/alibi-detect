@@ -53,7 +53,7 @@ class ContextAwareDriftTF(BaseContextAwareDrift):
             Kernel defined on the context data, defaults to Gaussian RBF kernel.
         domain_clf
             Domain classifier, takes conditioning variables and their domain, and returns propensity scores (probs of
-            being test instances). Must be a subclass of DomainClf. # TODO - add link
+            being test instances). Must be a subclass of :py:class:`~alibi_detect.cd.domain_clf.DomainClf`.
         n_permutations
             Number of permutations used in the permutation test.
         cond_prop
