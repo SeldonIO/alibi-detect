@@ -122,8 +122,6 @@ class ContextAwareDriftTorch(BaseContextAwareDrift):
         test statistics, and a tuple containing the coupling matrices (xx, yy, xy).
         """
         x_ref, x = self.preprocess(x)
-        x_ref = torch.from_numpy(x_ref).to(self.device)  # type: ignore[assignment]
-        x = torch.from_numpy(x).to(self.device)  # type: ignore[assignment]
 
         # Hold out a portion of contexts for conditioning on
         n_held = int(len(c)*self.cond_prop)
