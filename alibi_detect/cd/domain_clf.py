@@ -6,7 +6,7 @@ from sklearn.calibration import CalibratedClassifierCV
 
 
 class DomainClf(ABC):
-    """ 
+    """
     Instantiate a domain classifier that takes conditioning variables and their domain
     as input and returns propensity scores (probs of being test instances) as output.
     Should encapsulate logic to ensure an instance's propensity score doesn't depend on its
@@ -28,10 +28,10 @@ class SVCDomainClf(DomainClf):
     the objective of interest prevents overfitts. Empirically this seems to be effective.
     """
     def __init__(self,
-        c_kernel: Callable,
-        calibrate: bool = True,
-        cal_method: str = 'sigmoid',
-        clf_kwargs: dict = None):
+                 c_kernel: Callable,
+                 calibrate: bool = True,
+                 cal_method: str = 'sigmoid',
+                 clf_kwargs: dict = None):
         self.c_kernel = c_kernel
         self.calibrate = calibrate
         self.cal_method = cal_method

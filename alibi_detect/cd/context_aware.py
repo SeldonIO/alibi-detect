@@ -8,7 +8,7 @@ if has_pytorch:
     from alibi_detect.cd.pytorch.context_aware import ContextAwareDriftTorch
 
 if has_tensorflow:
-    from alibi_detect.cd.tensorflow.context_aware import ContextAwareDriftTF  # type: ignore  # TODO
+    from alibi_detect.cd.tensorflow.context_aware import ContextAwareDriftTF
 
 logger = logging.getLogger(__name__)
 
@@ -100,9 +100,8 @@ class ContextAwareDrift:
                 from alibi_detect.utils.tensorflow.kernels import GaussianRBF
             else:
                 from alibi_detect.utils.pytorch.kernels import GaussianRBF  # type: ignore[no-redef]
-            kwargs.update({'x_kernel': GaussianRBF} if x_kernel is None else {'x_kernel': x_kernel})  # type: ignore
-            kwargs.update({'c_kernel': GaussianRBF} if c_kernel is None else {'c_kernel': c_kernel})  # type: ignore
-            # TODO - need to adjust kernels to match ones in drift-cadd repo
+            kwargs.update({'x_kernel': GaussianRBF()} if x_kernel is None else {'x_kernel': x_kernel})  # type: ignore
+            kwargs.update({'c_kernel': GaussianRBF()} if c_kernel is None else {'c_kernel': c_kernel})  # type: ignore
 
         if backend == 'tensorflow' and has_tensorflow:
             kwargs.pop('device', None)
