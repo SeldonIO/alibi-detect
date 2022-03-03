@@ -18,7 +18,7 @@ class ContextAwareDrift:
             self,
             x_ref: Union[np.ndarray, list],
             c_ref: np.ndarray,
-            backend: str = 'pytorch',  # TODO - change to tf once implemented
+            backend: str = 'tensorflow',
             p_val: float = .05,
             preprocess_x_ref: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,

@@ -95,7 +95,7 @@ class ContextAwareDriftTorch(BaseContextAwareDrift):
 
         self.meta.update({'backend': 'pytorch'})
 
-        # set backend
+        # set device
         if device is None or device.lower() in ['gpu', 'cuda']:
             self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
             if self.device.type == 'cpu':
@@ -122,34 +122,32 @@ class ContextAwareDriftTorch(BaseContextAwareDrift):
         test statistics, and a tuple containing the coupling matrices (xx, yy, xy).
         """
         x_ref, x = self.preprocess(x)
+        x_ref = torch.from_numpy(x_ref).to(self.device)  # type: ignore[assignment]
+        c_ref = torch.from_numpy(self.c_ref).to(self.device)  # type: ignore[assignment]
 
         # Hold out a portion of contexts for conditioning on
         n_held = int(len(c)*self.cond_prop)
         n_test = len(c) - n_held
-        c, c_held = torch.split(torch.as_tensor(c), [n_test, n_held])
-        x, _ = torch.split(torch.as_tensor(x), [n_test, n_held])
+        c, c_held = torch.split(torch.as_tensor(c).to(self.device), [n_test, n_held])
+        x, _ = torch.split(torch.as_tensor(x).to(self.device), [n_test, n_held])
         n_ref, n_test = self.n, len(x)
+        bools = torch.cat([torch.zeros(n_ref), torch.ones(n_test)]).to(self.device)
 
-        # Combine ref and test data
-        x_all = np.concatenate([self.x_ref, x], axis=0)
-        c_all = np.concatenate([self.c_ref, c], axis=0)
+        # Compute kernel matrices
+        x_all = torch.cat([x_ref, x], dim=0)
+        c_all = torch.cat([c_ref, c], dim=0)
+        K = self.x_kernel(x_all, x_all)
+        L = self.c_kernel(c_all, c_all)
+        L_held = self.c_kernel(c_held, c_all)
 
         # Obtain n_permutations conditional reassignments
-        bools = torch.cat([torch.zeros(n_ref), torch.ones(n_test)])
-        prop_scores_np = self.clf(c_all, bools.numpy())
+        prop_scores_np = self.clf(c_all.cpu().numpy(), bools.cpu().numpy())
         prop_scores = torch.as_tensor(prop_scores_np)
         self.redrawn_bools = [torch.bernoulli(prop_scores) for _ in range(self.n_permutations)]
         iters = tqdm(self.redrawn_bools, total=self.n_permutations) if self.verbose else self.redrawn_bools
 
-        # Compute kernel matrices
-        x_all = torch.as_tensor(x_all).to(self.device)
-        c_all = torch.as_tensor(c_all).to(self.device)
-        K = self.x_kernel(x_all, x_all)
-        L = self.c_kernel(c_all, c_all)
-        L_held = self.c_kernel(c_held.to(self.device), c_all)
-
         # Compute test stat on original and reassigned data
-        stat, coupling_xx, coupling_yy, coupling_xy = self._cmmd(K, L, bools.to(self.device), L_held=L_held)
+        stat, coupling_xx, coupling_yy, coupling_xy = self._cmmd(K, L, bools, L_held=L_held)
         permuted_stats = torch.stack([self._cmmd(K, L, perm_bools, L_held=L_held)[0] for perm_bools in iters])
 
         # Compute p-value
