@@ -106,10 +106,11 @@ class ContextAwareDriftTF(BaseContextAwareDrift):
         x_ref, x = self.preprocess(x)
 
         # Hold out a portion of contexts for conditioning on
-        n_held = int(len(c) * self.cond_prop)
-        n_test = len(c) - n_held
-        c, c_held = tf.split(c, [n_test, n_held])
-        x, _ = tf.split(x, [n_test, n_held])
+        n, n_held = len(c), int(len(c)*self.cond_prop)
+        inds_held = np.random.choice(n, n_held, replace=False)
+        inds_test = np.setdiff1d(np.arange(n), inds_held)
+        c_held = c[inds_held]
+        c, x = c[inds_test], x[inds_test]
         n_ref, n_test = self.n, len(x)
         bools = tf.concat([tf.zeros(n_ref), tf.ones(n_test)], axis=0)
 

@@ -120,10 +120,11 @@ class ContextAwareDriftTorch(BaseContextAwareDrift):
         c_ref = torch.from_numpy(self.c_ref).to(self.device)  # type: ignore[assignment]
 
         # Hold out a portion of contexts for conditioning on
-        n_held = int(len(c)*self.cond_prop)
-        n_test = len(c) - n_held
-        c, c_held = torch.split(torch.as_tensor(c).to(self.device), [n_test, n_held])
-        x, _ = torch.split(torch.as_tensor(x).to(self.device), [n_test, n_held])
+        n, n_held = len(c), int(len(c)*self.cond_prop)
+        inds_held = np.random.choice(n, n_held, replace=False)
+        inds_test = np.setdiff1d(np.arange(n), inds_held)
+        c_held = torch.as_tensor(c[inds_held]).to(self.device)
+        c, x = torch.as_tensor(c[inds_test]).to(self.device), torch.as_tensor(x[inds_test]).to(self.device)
         n_ref, n_test = self.n, len(x)
         bools = torch.cat([torch.zeros(n_ref), torch.ones(n_test)]).to(self.device)
 
