@@ -1,13 +1,13 @@
 import logging
 from abc import abstractmethod
-from typing import Callable, Dict, List, Optional, Tuple, Union, Type
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 from alibi_detect.base import BaseDetector, concept_drift_dict
 from alibi_detect.cd.utils import get_input_shape, update_reference
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
 from alibi_detect.utils.statstest import fdr
-from alibi_detect.cd.domain_clf import DomainClf, SVCDomainClf
+from alibi_detect.cd.domain_clf import SVCDomainClf
 from scipy.stats import binom_test, ks_2samp
 from sklearn.model_selection import StratifiedKFold
 
@@ -937,8 +937,6 @@ class BaseUnivariateDrift(BaseDetector):
 
 
 class BaseContextAwareDrift(BaseDetector):
-    clf: DomainClf
-
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
@@ -949,7 +947,6 @@ class BaseContextAwareDrift(BaseDetector):
             preprocess_fn: Optional[Callable] = None,
             x_kernel: Callable = None,
             c_kernel: Callable = None,
-            domain_clf: Union[Type[DomainClf], DomainClf] = SVCDomainClf,
             n_permutations: int = 1000,
             cond_prop: float = 0.25,
             lams: Optional[Tuple[float, float]] = None,
@@ -981,9 +978,6 @@ class BaseContextAwareDrift(BaseDetector):
             Kernel defined on the input data, defaults to Gaussian RBF kernel.
         c_kernel
             Kernel defined on the context data, defaults to Gaussian RBF kernel.
-        domain_clf
-            Domain classifier, takes conditioning variables and their domain, and returns propensity scores (probs of
-            being test instances). Must be a subclass of :py:class:`~alibi_detect.cd.domain_clf.DomainClf`.
         n_permutations
             Number of permutations used in the permutation test.
         cond_prop
@@ -1022,14 +1016,8 @@ class BaseContextAwareDrift(BaseDetector):
         else:
             raise ValueError('x_ref and c_ref should contain the same number of instances.')
 
-        # Domain classifier
-        if isinstance(domain_clf, DomainClf):  # domain_clf is already an instantiated DomainClf object
-            self.clf = domain_clf
-        else:  # If still a class, need to instantiate
-            self.clf = domain_clf(self.c_kernel) if domain_clf == SVCDomainClf else domain_clf()
-        # TODO: above will fail if domain_clf is not Union[Type[DomainClf], DomainClf]. We could add more checks here,
-        #  e.g. with inspect.isclass(domain_clf, DomainClf) etc, however this seems to fall under the remit of runtime
-        #  type checking?
+        # Domain classifier (hardcoded for now)
+        self.clf = SVCDomainClf(self.c_kernel)
 
         # store input shape for save and load functionality
         self.input_shape = get_input_shape(input_shape, x_ref)

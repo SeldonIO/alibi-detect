@@ -1,8 +1,7 @@
 import logging
 import numpy as np
-from typing import Callable, Dict, Optional, Union, Tuple, Type
+from typing import Callable, Dict, Optional, Union, Tuple
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
-from alibi_detect.cd.domain_clf import DomainClf, SVCDomainClf
 
 if has_pytorch:
     from alibi_detect.cd.pytorch.context_aware import ContextAwareDriftTorch
@@ -25,7 +24,6 @@ class ContextAwareDrift:
             preprocess_fn: Optional[Callable] = None,
             x_kernel: Callable = None,
             c_kernel: Callable = None,
-            domain_clf: Type[DomainClf] = SVCDomainClf,
             n_permutations: int = 1000,
             cond_prop: float = 0.25,
             lams: Optional[Tuple[float, float]] = None,
@@ -60,9 +58,6 @@ class ContextAwareDrift:
             Kernel defined on the input data, defaults to Gaussian RBF kernel.
         c_kernel
             Kernel defined on the context data, defaults to Gaussian RBF kernel.
-        domain_clf
-            Domain classifier, takes conditioning variables and their domain, and returns propensity scores (probs of
-            being test instances). Must be a subclass of :py:class:`~alibi_detect.cd.domain_clf.DomainClf`.
         n_permutations
             Number of permutations used in the permutation test.
         cond_prop

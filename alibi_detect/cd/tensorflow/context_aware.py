@@ -2,9 +2,8 @@ import logging
 import numpy as np
 import tensorflow as tf
 import tensorflow_probability as tfp
-from typing import Callable, Dict, Optional, Tuple, Union, Type, List
+from typing import Callable, Dict, Optional, Tuple, Union, List
 from alibi_detect.cd.base import BaseContextAwareDrift
-from alibi_detect.cd.domain_clf import DomainClf, SVCDomainClf
 from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
@@ -21,7 +20,6 @@ class ContextAwareDriftTF(BaseContextAwareDrift):
             preprocess_fn: Optional[Callable] = None,
             x_kernel: Callable = None,
             c_kernel: Callable = None,
-            domain_clf: Type[DomainClf] = SVCDomainClf,
             n_permutations: int = 1000,
             cond_prop: float = 0.25,
             lams: Optional[Tuple[float, float]] = None,
@@ -53,9 +51,6 @@ class ContextAwareDriftTF(BaseContextAwareDrift):
             Kernel defined on the input data, defaults to Gaussian RBF kernel.
         c_kernel
             Kernel defined on the context data, defaults to Gaussian RBF kernel.
-        domain_clf
-            Domain classifier, takes conditioning variables and their domain, and returns propensity scores (probs of
-            being test instances). Must be a subclass of :py:class:`~alibi_detect.cd.domain_clf.DomainClf`.
         n_permutations
             Number of permutations used in the permutation test.
         cond_prop
@@ -80,7 +75,6 @@ class ContextAwareDriftTF(BaseContextAwareDrift):
             preprocess_fn=preprocess_fn,
             x_kernel=x_kernel,
             c_kernel=c_kernel,
-            domain_clf=domain_clf,
             n_permutations=n_permutations,
             cond_prop=cond_prop,
             lams=lams,
@@ -126,8 +120,13 @@ class ContextAwareDriftTF(BaseContextAwareDrift):
         L = self.c_kernel(c_all, c_all)
         L_held = self.c_kernel(c_held, c_all)
 
+        # Fit and calibrate the domain classifier
+        c_all_np, bools_np = c_all.numpy(), bools.numpy()
+        self.clf.fit(c_all_np, bools_np)
+        self.clf.calibrate(c_all_np, bools_np)
+
         # Obtain n_permutations conditional reassignments
-        prop_scores = self.clf(c_all.numpy(), bools.numpy())
+        prop_scores = self.clf.predict(c_all_np)
         self.redrawn_bools = [tfp.distributions.Bernoulli(probs=prop_scores).sample()
                               for _ in range(self.n_permutations)]
         iters = tqdm(self.redrawn_bools, total=self.n_permutations) if self.verbose else self.redrawn_bools
