@@ -159,10 +159,13 @@ class ContextAwareDriftTorch(BaseContextAwareDrift):
         """
         Private method to compute the MMD-ADiTT test statistic.
         """
+        # Get ref/test indices
+        idx_0, idx_1 = np.where(bools == 0)[0], np.where(bools == 1)[0]
+        n_ref, n_test = len(idx_0), len(idx_1)
+
         # Form kernel matrices
-        n_ref, n_test = (bools == 0).sum(), (bools == 1).sum()
-        L_0, L_1 = L[bools == 0][:, bools == 0], L[bools == 1][:, bools == 1]
-        K_0, K_1 = K[bools == 0][:, bools == 0], K[bools == 1][:, bools == 1]
+        L_0, L_1 = L[idx_0][:, idx_0], L[idx_1][:, idx_1]
+        K_0, K_1 = K[idx_0][:, idx_0], K[idx_1][:, idx_1]
 
         # Initialise regularisation parameters
         # Implemented only for first _cmmd call which corresponds to original window assignment
@@ -176,8 +179,8 @@ class ContextAwareDriftTorch(BaseContextAwareDrift):
         # Compute stat
         L_0_inv = torch.linalg.inv(L_0 + n_ref*self.lams[0]*torch.eye(int(n_ref)).to(L_0.device))
         L_1_inv = torch.linalg.inv(L_1 + n_test*self.lams[1]*torch.eye(int(n_test)).to(L_1.device))
-        A_0 = L_held[:, bools == 0] @ L_0_inv
-        A_1 = L_held[:, bools == 1] @ L_1_inv
+        A_0 = L_held[:, idx_0] @ L_0_inv
+        A_1 = L_held[:, idx_1] @ L_1_inv
         # Allow batches of MMDs to be computed at a time (rather than all)
         if self.batch_size is not None:
             bs = self.batch_size
@@ -192,9 +195,9 @@ class ContextAwareDriftTorch(BaseContextAwareDrift):
             coupling_xx = torch.einsum('ij,ik->ijk', A_0, A_0).mean(0)
             coupling_yy = torch.einsum('ij,ik->ijk', A_1, A_1).mean(0)
             coupling_xy = torch.einsum('ij,ik->ijk', A_0, A_1).mean(0)
-        sim_xx = (K[bools == 0][:, bools == 0]*coupling_xx).sum()
-        sim_yy = (K[bools == 1][:, bools == 1]*coupling_yy).sum()
-        sim_xy = (K[bools == 0][:, bools == 1]*coupling_xy).sum()
+        sim_xx = (K[idx_0][:, idx_0]*coupling_xx).sum()
+        sim_yy = (K[idx_1][:, idx_1]*coupling_yy).sum()
+        sim_xy = (K[idx_0][:, idx_1]*coupling_xy).sum()
         stat = sim_xx + sim_yy - 2*sim_xy
 
         return stat.cpu(), coupling_xx.cpu(), coupling_yy.cpu(), coupling_xy.cpu()

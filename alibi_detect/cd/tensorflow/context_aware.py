@@ -146,10 +146,11 @@ class ContextAwareDriftTF(BaseContextAwareDrift):
         """
         Private method to compute the MMD-ADiTT test statistic.
         """
+        # Get ref/test indices
+        idx_0, idx_1 = np.where(bools == 0)[0], np.where(bools == 1)[0]
+        n_ref, n_test = len(idx_0), len(idx_1)
+
         # Form kernel matrices
-        n_ref, n_test = tf.reduce_sum(tf.cast(bools == 0, float)), \
-            tf.reduce_sum(tf.cast(bools == 1, float))
-        idx_0, idx_1 = tf.where(bools == 0)[:, 0], tf.where(bools == 1)[:, 0]
         L_0, L_1 = tf.gather(tf.gather(L, idx_0), idx_0, axis=1), tf.gather(tf.gather(L, idx_1), idx_1, axis=1)
         K_0, K_1 = tf.gather(tf.gather(K, idx_0), idx_0, axis=1), tf.gather(tf.gather(K, idx_1), idx_1, axis=1)
         # Avoid using tf.gather_nd since this would require [n_fef, n_ref, 2] and [n_test, n_test, 2] idx tensors
