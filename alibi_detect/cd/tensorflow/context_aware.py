@@ -203,7 +203,9 @@ class ContextAwareDriftTF(BaseContextAwareDrift):
         """
         n = len(L)
         fold_size = n // n_folds
-        losses = tf.zeros_like(lams, dtype=tf.float32)
+        K, L = tf.cast(K, tf.float64), tf.cast(K, tf.float64)
+        lams = tf.cast(lams, tf.float64)
+        losses = tf.zeros_like(lams, dtype=tf.float64)
         for fold in range(n_folds):
             inds_oof = np.arange(n)[(fold*fold_size):((fold+1)*fold_size)]
             inds_if = np.setdiff1d(np.arange(n), inds_oof)
@@ -211,7 +213,7 @@ class ContextAwareDriftTF(BaseContextAwareDrift):
             L_if = tf.gather(tf.gather(L, inds_if), inds_if, axis=1)
             n_if = len(K_if)
             L_inv_lams = tf.stack(
-                [tf.linalg.inv(L_if + n_if*lam*tf.eye(n_if)) for lam in lams])  # n_lam x n_if x n_if
+                [tf.linalg.inv(L_if + n_if*lam*tf.eye(n_if, dtype=tf.float64)) for lam in lams])  # n_lam x n_if x n_if
             KW = tf.einsum('ij,ljk->lik', K_if, L_inv_lams)
             lW = tf.einsum('ij,ljk->lik', tf.gather(tf.gather(L, inds_oof), inds_if, axis=1), L_inv_lams)
             lWKW = tf.einsum('lij,ljk->lik', lW, KW)
@@ -219,7 +221,7 @@ class ContextAwareDriftTF(BaseContextAwareDrift):
             lWk = tf.einsum('lij,ji->li', lW, tf.gather(tf.gather(K, inds_if), inds_oof, axis=1))  # n_lam x n_oof
             kxx = tf.ones_like(lWk) * tf.reduce_max(K)
             losses += tf.reduce_sum(lWKWl + kxx - 2*lWk, axis=-1)
-        return lams[tf.argmin(losses)]
+        return tf.cast(lams[tf.argmin(losses)], tf.float32)
 
 
 def _split_chunks(n: int, p: int) -> List[int]:

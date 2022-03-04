@@ -213,6 +213,7 @@ class ContextAwareDriftTorch(BaseContextAwareDrift):
         """
         n = len(L)
         fold_size = n // n_folds
+        K, L = K.type(torch.float64), L.type(torch.float64)
         losses = torch.zeros_like(lams, dtype=torch.float).to(K.device)
         for fold in range(n_folds):
             inds_oof = np.arange(n)[(fold*fold_size):((fold+1)*fold_size)]
