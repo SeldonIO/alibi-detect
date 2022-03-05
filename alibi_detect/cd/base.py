@@ -936,7 +936,7 @@ class BaseUnivariateDrift(BaseDetector):
         return cd
 
 
-class BaseContextAwareDrift(BaseDetector):
+class BaseContextMMDDrift(BaseDetector):
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
@@ -948,8 +948,9 @@ class BaseContextAwareDrift(BaseDetector):
             x_kernel: Callable = None,
             c_kernel: Callable = None,
             n_permutations: int = 1000,
-            cond_prop: float = 0.25,
-            lams: Optional[Tuple[float, float]] = None,
+            prop_c_held: float = 0.25,
+            lams: Union[int, Tuple[float, float]] = 20,
+            n_folds: int = 5,
             batch_size: Optional[int] = 256,
             input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None,
@@ -980,10 +981,13 @@ class BaseContextAwareDrift(BaseDetector):
             Kernel defined on the context data, defaults to Gaussian RBF kernel.
         n_permutations
             Number of permutations used in the permutation test.
-        cond_prop
+        prop_c_held
             Proportion of contexts held out to condition on.
         lams
-            Ref and test regularisation parameters. Tuned if None.
+            Ref and test regularisation parameters. Either a tuple containing the two parameters as floats, or an
+            int I, where I defines the list of parameters to search over via `[2**(-i) for i in range(I)]`.
+        n_folds
+            Number of cross-validation folds used when tuning the regularisation parameters.
         batch_size
             If not None, then compute batches of MMDs at a time (rather than all at once).
         input_shape
@@ -1022,9 +1026,18 @@ class BaseContextAwareDrift(BaseDetector):
         # store input shape for save and load functionality
         self.input_shape = get_input_shape(input_shape, x_ref)
 
+        # Regularisation parameter tuning settings  # TODO - can remove type checks if runtime type checking implemented
+        if n_folds > 1:
+            self.n_folds = n_folds
+        else:
+            raise ValueError('The `n_folds` parameter must be > 1.')
+        if isinstance(lams, int) or isinstance(lams, tuple):
+            self.lams = lams
+        else:
+            raise ValueError('The `lam` parameter must be an int, or tuple of floats.')
+
         # Other attributes
-        self.cond_prop = cond_prop
-        self.lams = lams
+        self.prop_c_held = prop_c_held
         self.batch_size = batch_size
         self.verbose = verbose
 

@@ -2,13 +2,13 @@ import logging
 import numpy as np
 import torch
 from typing import Callable, Dict, Optional, Tuple, Union
-from alibi_detect.cd.base import BaseContextAwareDrift
+from alibi_detect.cd.base import BaseContextMMDDrift
 from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
 
 
-class ContextAwareDriftTorch(BaseContextAwareDrift):
+class ContextMMDDriftTorch(BaseContextMMDDrift):
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
@@ -20,8 +20,9 @@ class ContextAwareDriftTorch(BaseContextAwareDrift):
             x_kernel: Callable = None,
             c_kernel: Callable = None,
             n_permutations: int = 1000,
-            cond_prop: float = 0.25,
-            lams: Optional[Tuple[float, float]] = None,
+            prop_c_held: float = 0.25,
+            lams: Union[int, Tuple[float, float]] = 20,
+            n_folds: int = 5,
             batch_size: Optional[int] = 256,
             device: Optional[str] = None,
             input_shape: Optional[tuple] = None,
@@ -53,10 +54,13 @@ class ContextAwareDriftTorch(BaseContextAwareDrift):
             Kernel defined on the context data, defaults to Gaussian RBF kernel.
         n_permutations
             Number of permutations used in the permutation test.
-        cond_prop
+        prop_c_held
             Proportion of contexts held out to condition on.
         lams
-            Ref and test regularisation parameters. Tuned if None.
+            Ref and test regularisation parameters. Either a tuple containing the two parameters as floats, or an
+            int I, where I defines the list of parameters to search over via `[2**(-i) for i in range(I)]`.
+        n_folds
+            Number of cross-validation folds used when tuning the regularisation parameters.
         batch_size
             If not None, then compute batches of MMDs at a time (rather than all at once).
         device
@@ -79,8 +83,9 @@ class ContextAwareDriftTorch(BaseContextAwareDrift):
             x_kernel=x_kernel,
             c_kernel=c_kernel,
             n_permutations=n_permutations,
-            cond_prop=cond_prop,
+            prop_c_held=prop_c_held,
             lams=lams,
+            n_folds=n_folds,
             batch_size=batch_size,
             input_shape=input_shape,
             data_type=data_type,
@@ -120,7 +125,7 @@ class ContextAwareDriftTorch(BaseContextAwareDrift):
         c_ref = torch.from_numpy(self.c_ref).to(self.device)  # type: ignore[assignment]
 
         # Hold out a portion of contexts for conditioning on
-        n, n_held = len(c), int(len(c)*self.cond_prop)
+        n, n_held = len(c), int(len(c)*self.prop_c_held)
         inds_held = np.random.choice(n, n_held, replace=False)
         inds_test = np.setdiff1d(np.arange(n), inds_held)
         c_held = torch.as_tensor(c[inds_held]).to(self.device)
@@ -170,12 +175,11 @@ class ContextAwareDriftTorch(BaseContextAwareDrift):
 
         # Initialise regularisation parameters
         # Implemented only for first _cmmd call which corresponds to original window assignment
-        if self.lams is None:
-            possible_lams = torch.tensor([2**(-i) for i in range(20)]).to(K.device)  # fairly arbitrary atm # TODO
-            lam_0 = self._pick_lam(possible_lams, K_0, L_0, n_folds=5)
-            lam_1 = self._pick_lam(possible_lams, K_1, L_1, n_folds=5)
-            self.lams = (lam_0, lam_1)  # type: ignore[assignment]
-            # Ignore above as self.lams is Optional[Tuple[float, float]] in base class.
+        if isinstance(self.lams, int):
+            possible_lams = torch.tensor([2**(-i) for i in range(self.lams)]).to(K.device)
+            lam_0 = self._pick_lam(possible_lams, K_0, L_0, n_folds=self.n_folds)
+            lam_1 = self._pick_lam(possible_lams, K_1, L_1, n_folds=self.n_folds)
+            self.lams = (lam_0, lam_1)  # type: Tuple[torch.Tensor, torch.Tensor]
 
         # Compute stat
         L_0_inv = torch.linalg.inv(L_0 + n_ref*self.lams[0]*torch.eye(int(n_ref)).to(L_0.device))

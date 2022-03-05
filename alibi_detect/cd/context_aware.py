@@ -4,15 +4,15 @@ from typing import Callable, Dict, Optional, Union, Tuple
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
 
 if has_pytorch:
-    from alibi_detect.cd.pytorch.context_aware import ContextAwareDriftTorch
+    from alibi_detect.cd.pytorch.context_aware import ContextMMDDriftTorch
 
 if has_tensorflow:
-    from alibi_detect.cd.tensorflow.context_aware import ContextAwareDriftTF
+    from alibi_detect.cd.tensorflow.context_aware import ContextMMDDriftTF
 
 logger = logging.getLogger(__name__)
 
 
-class ContextAwareDrift:
+class ContextMMDDrift:
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
@@ -25,8 +25,9 @@ class ContextAwareDrift:
             x_kernel: Callable = None,
             c_kernel: Callable = None,
             n_permutations: int = 1000,
-            cond_prop: float = 0.25,
-            lams: Optional[Tuple[float, float]] = None,
+            prop_c_held: float = 0.25,
+            lams: Union[int, Tuple[float, float]] = 20,
+            n_folds: int = 5,
             batch_size: Optional[int] = 256,
             device: Optional[str] = None,
             input_shape: Optional[tuple] = None,
@@ -60,10 +61,13 @@ class ContextAwareDrift:
             Kernel defined on the context data, defaults to Gaussian RBF kernel.
         n_permutations
             Number of permutations used in the permutation test.
-        cond_prop
+        prop_c_held
             Proportion of contexts held out to condition on.
         lams
-            Ref and test regularisation parameters. Tuned if None.
+            Ref and test regularisation parameters. Either a tuple containing the two parameters as floats, or an
+            int I, where I defines the list of parameters to search over via `[2**(-i) for i in range(I)]`.
+        n_folds
+            Number of cross-validation folds used when tuning the regularisation parameters.
         batch_size
             If not None, then compute batches of MMDs at a time (rather than all at once).
         device
@@ -81,7 +85,7 @@ class ContextAwareDrift:
         backend = backend.lower()
         if backend == 'tensorflow' and not has_tensorflow or backend == 'pytorch' and not has_pytorch:
             raise ImportError(f'{backend} not installed. Cannot initialize and run the '
-                              f'ContextAwareDrift detector with {backend} backend.')
+                              f'ContextMMMDrift detector with {backend} backend.')
         elif backend not in ['tensorflow', 'pytorch']:
             raise NotImplementedError(f'{backend} not implemented. Use tensorflow or pytorch instead.')
 
@@ -100,9 +104,9 @@ class ContextAwareDrift:
 
         if backend == 'tensorflow' and has_tensorflow:
             kwargs.pop('device', None)
-            self._detector = ContextAwareDriftTF(*args, **kwargs)  # type: ignore
+            self._detector = ContextMMDDriftTF(*args, **kwargs)  # type: ignore
         else:
-            self._detector = ContextAwareDriftTorch(*args, **kwargs)  # type: ignore
+            self._detector = ContextMMDDriftTorch(*args, **kwargs)  # type: ignore
         self.meta = self._detector.meta
 
     def predict(self, x: Union[np.ndarray, list], c: np.ndarray,
