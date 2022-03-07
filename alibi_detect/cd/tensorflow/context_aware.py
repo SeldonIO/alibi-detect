@@ -4,6 +4,8 @@ import tensorflow as tf
 import tensorflow_probability as tfp
 from typing import Callable, Dict, Optional, Tuple, Union, List
 from alibi_detect.cd.base import BaseContextMMDDrift
+from alibi_detect.utils.tensorflow.kernels import GaussianRBF
+from alibi_detect.cd.domain_clf import SVCDomainClf
 from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
@@ -16,10 +18,10 @@ class ContextMMDDriftTF(BaseContextMMDDrift):
             c_ref: np.ndarray,
             p_val: float = .05,
             preprocess_x_ref: bool = True,
-            update_x_ref: Optional[Dict[str, int]] = None,
+            update_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
-            x_kernel: Callable = None,
-            c_kernel: Callable = None,
+            x_kernel: Callable = GaussianRBF,
+            c_kernel: Callable = GaussianRBF,
             n_permutations: int = 1000,
             prop_c_held: float = 0.25,
             lams: Union[int, Tuple[float, float]] = 20,
@@ -41,8 +43,8 @@ class ContextMMDDriftTF(BaseContextMMDDrift):
         p_val
             p-value used for the significance of the permutation test.
         preprocess_x_ref
-            Whether to already preprocess and store the reference data.
-        update_x_ref
+            Whether to already preprocess and store the reference data `x_ref`.
+        update_ref
             Reference data can optionally be updated to the last n instances seen by the detector
             or via reservoir sampling with size n. For the former, the parameter equals {'last': n} while
             for reservoir sampling {'reservoir_sampling': n} is passed.
@@ -75,7 +77,7 @@ class ContextMMDDriftTF(BaseContextMMDDrift):
             c_ref=c_ref,
             p_val=p_val,
             preprocess_x_ref=preprocess_x_ref,
-            update_x_ref=update_x_ref,
+            update_ref=update_ref,
             preprocess_fn=preprocess_fn,
             x_kernel=x_kernel,
             c_kernel=c_kernel,
@@ -89,6 +91,13 @@ class ContextMMDDriftTF(BaseContextMMDDrift):
             verbose=verbose
         )
         self.meta.update({'backend': 'tensorflow'})
+
+        # initialize kernel
+        self.x_kernel = x_kernel() if x_kernel == GaussianRBF else x_kernel
+        self.c_kernel = c_kernel() if c_kernel == GaussianRBF else c_kernel
+
+        # Initialize classifier (hardcoded for now)
+        self.clf = SVCDomainClf(self.c_kernel)
 
     def score(self,  # type: ignore[override]
               x: Union[np.ndarray, list], c: np.ndarray) -> Tuple[float, float, np.ndarray, Tuple]:
@@ -116,7 +125,7 @@ class ContextMMDDriftTF(BaseContextMMDDrift):
         inds_test = np.setdiff1d(np.arange(n), inds_held)
         c_held = c[inds_held]
         c, x = c[inds_test], x[inds_test]
-        n_ref, n_test = self.n, len(x)
+        n_ref, n_test = len(x_ref), len(x)
         bools = tf.concat([tf.zeros(n_ref), tf.ones(n_test)], axis=0)
 
         # Compute kernel matrices

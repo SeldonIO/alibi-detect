@@ -20,7 +20,7 @@ class ContextMMDDrift:
             backend: str = 'tensorflow',
             p_val: float = .05,
             preprocess_x_ref: bool = True,
-            update_x_ref: Optional[Dict[str, int]] = None,
+            update_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
             x_kernel: Callable = None,
             c_kernel: Callable = None,
@@ -48,8 +48,8 @@ class ContextMMDDrift:
         p_val
             p-value used for the significance of the permutation test.
         preprocess_x_ref
-            Whether to already preprocess and store the reference data.
-        update_x_ref
+            Whether to already preprocess and store the reference data `x_ref`.
+        update_ref
             Reference data can optionally be updated to the last n instances seen by the detector
             or via reservoir sampling with size n. For the former, the parameter equals {'last': n} while
             for reservoir sampling {'reservoir_sampling': n} is passed.
@@ -99,8 +99,10 @@ class ContextMMDDrift:
                 from alibi_detect.utils.tensorflow.kernels import GaussianRBF
             else:
                 from alibi_detect.utils.pytorch.kernels import GaussianRBF  # type: ignore[no-redef]
-            kwargs.update({'x_kernel': GaussianRBF()} if x_kernel is None else {'x_kernel': x_kernel})  # type: ignore
-            kwargs.update({'c_kernel': GaussianRBF()} if c_kernel is None else {'c_kernel': c_kernel})  # type: ignore
+            if x_kernel is None:
+                kwargs.update({'x_kernel': GaussianRBF})
+            if c_kernel is None:
+                kwargs.update({'c_kernel': GaussianRBF})
 
         if backend == 'tensorflow' and has_tensorflow:
             kwargs.pop('device', None)

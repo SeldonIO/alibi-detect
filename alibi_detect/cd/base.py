@@ -7,7 +7,6 @@ from alibi_detect.base import BaseDetector, concept_drift_dict
 from alibi_detect.cd.utils import get_input_shape, update_reference
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
 from alibi_detect.utils.statstest import fdr
-from alibi_detect.cd.domain_clf import SVCDomainClf
 from scipy.stats import binom_test, ks_2samp
 from sklearn.model_selection import StratifiedKFold
 
@@ -943,7 +942,7 @@ class BaseContextMMDDrift(BaseDetector):
             c_ref: np.ndarray,
             p_val: float = .05,
             preprocess_x_ref: bool = True,
-            update_x_ref: Optional[Dict[str, int]] = None,
+            update_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
             x_kernel: Callable = None,
             c_kernel: Callable = None,
@@ -968,8 +967,8 @@ class BaseContextMMDDrift(BaseDetector):
         p_val
             p-value used for the significance of the permutation test.
         preprocess_x_ref
-            Whether to already preprocess and store the reference data.
-        update_x_ref
+            Whether to already preprocess and store the reference data `x_ref`.
+        update_ref
             Reference data can optionally be updated to the last n instances seen by the detector
             or via reservoir sampling with size n. For the former, the parameter equals {'last': n} while
             for reservoir sampling {'reservoir_sampling': n} is passed.
@@ -1009,7 +1008,6 @@ class BaseContextMMDDrift(BaseDetector):
         else:
             self.x_ref = x_ref
         self.preprocess_x_ref = preprocess_x_ref
-        self.update_x_ref = update_x_ref
         self.preprocess_fn = preprocess_fn
         self.n = len(x_ref)
         self.n_permutations = n_permutations  # nb of iterations through permutation test
@@ -1019,9 +1017,6 @@ class BaseContextMMDDrift(BaseDetector):
             self.c_ref = c_ref
         else:
             raise ValueError('x_ref and c_ref should contain the same number of instances.')
-
-        # Domain classifier (hardcoded for now)
-        self.clf = SVCDomainClf(self.c_kernel)
 
         # store input shape for save and load functionality
         self.input_shape = get_input_shape(input_shape, x_ref)
@@ -1035,6 +1030,13 @@ class BaseContextMMDDrift(BaseDetector):
             self.lams = lams
         else:
             raise ValueError('The `lam` parameter must be an int, or tuple of floats.')
+
+        # Update ref attribute. Disallow res
+        self.update_ref = update_ref
+        if update_ref is not None:
+            if 'reservoir_sampling' in update_ref.keys():
+                raise ValueError("The BaseContextMMDDrift detector doesn't currently support the `reservoir_sampling` "
+                                 "option in `update_ref`.")
 
         # Other attributes
         self.prop_c_held = prop_c_held
@@ -1103,10 +1105,11 @@ class BaseContextMMDDrift(BaseDetector):
         idx_threshold = int(self.p_val * len(dist_permutations))
         distance_threshold = np.sort(dist_permutations)[::-1][idx_threshold]
 
-        # update reference dataset # TODO - update c_ref too - is update_reference deterministic? Otherwise problem...
-        if isinstance(self.update_x_ref, dict) and self.preprocess_fn is not None and self.preprocess_x_ref:
+        # update reference dataset
+        if isinstance(self.update_ref, dict) and self.preprocess_fn is not None and self.preprocess_x_ref:
             x = self.preprocess_fn(x)
-        self.x_ref = update_reference(self.x_ref, x, self.n, self.update_x_ref)  # type: ignore[arg-type]
+        self.x_ref = update_reference(self.x_ref, x, self.n, self.update_ref)  # type: ignore[arg-type]
+        self.c_ref = update_reference(self.c_ref, c, self.n, self.update_ref)  # type: ignore[arg-type]
         # used for reservoir sampling
         self.n += len(x)
 
