@@ -984,7 +984,7 @@ class BaseContextMMDDrift(BaseDetector):
             Proportion of contexts held out to condition on.
         lams
             Ref and test regularisation parameters. Either a tuple containing the two parameters as floats, or an
-            int I, where I defines the list of parameters to search over via `[2**(-i) for i in range(I)]`.
+            int defining the list of parameters to search over via `[2**(-i) for i in range(lams)]`.
         n_folds
             Number of cross-validation folds used when tuning the regularisation parameters.
         batch_size
