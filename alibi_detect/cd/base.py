@@ -1,6 +1,6 @@
 import logging
 from abc import abstractmethod
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from typing import Callable, Dict, List, Optional, Tuple, Union, Any
 
 import numpy as np
 from alibi_detect.base import BaseDetector, concept_drift_dict
@@ -936,6 +936,8 @@ class BaseUnivariateDrift(BaseDetector):
 
 
 class BaseContextMMDDrift(BaseDetector):
+    lams: Optional[Tuple[Any, Any]] = None
+
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
@@ -948,7 +950,6 @@ class BaseContextMMDDrift(BaseDetector):
             c_kernel: Callable = None,
             n_permutations: int = 1000,
             prop_c_held: float = 0.25,
-            lams: Union[int, Tuple[float, float]] = 20,
             n_folds: int = 5,
             batch_size: Optional[int] = 256,
             input_shape: Optional[tuple] = None,
@@ -982,9 +983,6 @@ class BaseContextMMDDrift(BaseDetector):
             Number of permutations used in the permutation test.
         prop_c_held
             Proportion of contexts held out to condition on.
-        lams
-            Ref and test regularisation parameters. Either a tuple containing the two parameters as floats, or an
-            int defining the list of parameters to search over via `[2**(-i) for i in range(lams)]`.
         n_folds
             Number of cross-validation folds used when tuning the regularisation parameters.
         batch_size
@@ -1021,15 +1019,12 @@ class BaseContextMMDDrift(BaseDetector):
         # store input shape for save and load functionality
         self.input_shape = get_input_shape(input_shape, x_ref)
 
-        # Regularisation parameter tuning settings  # TODO - can remove type checks if runtime type checking implemented
+        # Regularisation parameter tuning settings
         if n_folds > 1:
             self.n_folds = n_folds
         else:
             raise ValueError('The `n_folds` parameter must be > 1.')
-        if isinstance(lams, int) or isinstance(lams, tuple):
-            self.lams = lams
-        else:
-            raise ValueError('The `lam` parameter must be an int, or tuple of floats.')
+        self.lams = None
 
         # Update ref attribute. Disallow res
         self.update_ref = update_ref

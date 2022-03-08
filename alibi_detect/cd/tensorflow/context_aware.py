@@ -12,6 +12,8 @@ logger = logging.getLogger(__name__)
 
 
 class ContextMMDDriftTF(BaseContextMMDDrift):
+    lams: Optional[Tuple[tf.Tensor, tf.Tensor]]
+
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
@@ -24,7 +26,6 @@ class ContextMMDDriftTF(BaseContextMMDDrift):
             c_kernel: Callable = GaussianRBF,
             n_permutations: int = 1000,
             prop_c_held: float = 0.25,
-            lams: Union[int, Tuple[float, float]] = 20,
             n_folds: int = 5,
             batch_size: Optional[int] = 256,
             input_shape: Optional[tuple] = None,
@@ -58,9 +59,6 @@ class ContextMMDDriftTF(BaseContextMMDDrift):
             Number of permutations used in the permutation test.
         prop_c_held
             Proportion of contexts held out to condition on.
-        lams
-            Ref and test regularisation parameters. Either a tuple containing the two parameters as floats, or an
-            int defining the list of parameters to search over via `[2**(-i) for i in range(lams)]`.
         n_folds
             Number of cross-validation folds used when tuning the regularisation parameters.
         batch_size
@@ -83,7 +81,6 @@ class ContextMMDDriftTF(BaseContextMMDDrift):
             c_kernel=c_kernel,
             n_permutations=n_permutations,
             prop_c_held=prop_c_held,
-            lams=lams,
             n_folds=n_folds,
             batch_size=batch_size,
             input_shape=input_shape,
@@ -172,11 +169,11 @@ class ContextMMDDriftTF(BaseContextMMDDrift):
 
         # Initialise regularisation parameters
         # Implemented only for first _cmmd call which corresponds to original window assignment
-        if isinstance(self.lams, int):
-            possible_lams = tf.convert_to_tensor([2**(-i) for i in range(self.lams)], dtype=tf.float64)
+        if self.lams is None:
+            possible_lams = tf.convert_to_tensor([2**(-i) for i in range(20)], dtype=tf.float64)
             lam_0 = self._pick_lam(possible_lams, K_0, L_0, n_folds=self.n_folds)
             lam_1 = self._pick_lam(possible_lams, K_1, L_1, n_folds=self.n_folds)
-            self.lams = (lam_0, lam_1)  # type: Tuple[tf.Tensor, tf.Tensor]
+            self.lams = (lam_0, lam_1)
 
         # Compute stat
         L_0_inv = tf.linalg.inv(L_0 + n_ref*self.lams[0]*tf.eye(int(n_ref)))

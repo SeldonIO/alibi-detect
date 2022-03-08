@@ -26,7 +26,6 @@ class ContextMMDDrift:
             c_kernel: Callable = None,
             n_permutations: int = 1000,
             prop_c_held: float = 0.25,
-            lams: Union[int, Tuple[float, float]] = 20,
             n_folds: int = 5,
             batch_size: Optional[int] = 256,
             device: Optional[str] = None,
@@ -63,9 +62,6 @@ class ContextMMDDrift:
             Number of permutations used in the permutation test.
         prop_c_held
             Proportion of contexts held out to condition on.
-        lams
-            Ref and test regularisation parameters. Either a tuple containing the two parameters as floats, or an
-            int defining the list of parameters to search over via `[2**(-i) for i in range(lams)]`.
         n_folds
             Number of cross-validation folds used when tuning the regularisation parameters.
         batch_size
