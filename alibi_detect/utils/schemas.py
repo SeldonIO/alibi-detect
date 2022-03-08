@@ -7,13 +7,12 @@ import numpy as np
 from pydantic import BaseModel
 from typing import Optional, Union, Dict, List, Callable
 from alibi_detect.utils._types import Literal
-from alibi_detect.version import __version__
+from alibi_detect.version import __version__, __config_spec__
 from alibi_detect.cd.tensorflow import HiddenOutput, UAE
 from alibi_detect.models.tensorflow import TransformerEmbedding
 from transformers import PreTrainedTokenizerBase
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow  # , has_sklearn
 
-__config_spec__ = "0.1.0dev"  # TODO - remove dev once config layout confirmed
 
 SUPPORTED_MODELS = Union['UAE', 'HiddenOutput', 'tf.keras.Model']
 SupportedModels = [UAE, HiddenOutput]

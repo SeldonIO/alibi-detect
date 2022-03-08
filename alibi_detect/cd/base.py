@@ -1,14 +1,12 @@
 import logging
 from abc import abstractmethod
-from typing import Callable, Dict, List, Optional, Tuple, Union, Any
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
-from alibi_detect.base import BaseDetector, concept_drift_dict
+from alibi_detect.base import BaseDetector, concept_drift_dict, DriftConfigMixin
 from alibi_detect.cd.utils import get_input_shape, update_reference
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
 from alibi_detect.utils.statstest import fdr
-from alibi_detect.version import __version__
-from alibi_detect.utils.schemas import __config_spec__
 from scipy.stats import binom_test, ks_2samp
 from sklearn.model_selection import StratifiedKFold
 
@@ -21,7 +19,7 @@ if has_tensorflow:
 logger = logging.getLogger(__name__)
 
 
-class BaseClassifierDrift(BaseDetector):
+class BaseClassifierDrift(BaseDetector, DriftConfigMixin):
     model: Union['tf.keras.Model', 'torch.nn.Module']
 
     def __init__(
@@ -301,18 +299,7 @@ class BaseClassifierDrift(BaseDetector):
         -------
         The detector's configuration dictionary.
         """
-        cfg: Dict[str, Any] = {
-            'version': __version__,
-            'config_spec': __config_spec__,
-            'name': 'ClassifierDrift'
-        }
-
-        # x_ref
-        cfg.update({'x_ref': self.x_ref})
-
-        # Preprocess field
-        if self.preprocess_fn is not None:
-            cfg.update({'preprocess_fn': self.preprocess_fn})
+        cfg = self.drift_config()
 
         # Detector kwargs
         # Note: Currently write kwargs out such that load_detector will load a fresh detector. We don't (yet) write out
@@ -337,7 +324,7 @@ class BaseClassifierDrift(BaseDetector):
         return cfg
 
 
-class BaseLearnedKernelDrift(BaseDetector):
+class BaseLearnedKernelDrift(BaseDetector, DriftConfigMixin):
     kernel: Union['tf.keras.Model', 'torch.nn.Module']
 
     def __init__(
@@ -543,18 +530,7 @@ class BaseLearnedKernelDrift(BaseDetector):
         -------
         The detector's configuration dictionary.
         """
-        cfg: Dict[str, Any] = {
-            'version': __version__,
-            'config_spec': __config_spec__,
-            'name': 'LearnedKernelDrift'
-        }
-
-        # x_ref
-        cfg.update({'x_ref': self.x_ref})
-
-        # Preprocess field
-        if self.preprocess_fn is not None:
-            cfg.update({'preprocess_fn': self.preprocess_fn})
+        cfg = self.drift_config()
 
         # Detector kwargs
         # Note: Currently write kwargs out such that load_detector will load a fresh detector. We don't (yet) write out
@@ -576,7 +552,7 @@ class BaseLearnedKernelDrift(BaseDetector):
         return cfg
 
 
-class BaseMMDDrift(BaseDetector):
+class BaseMMDDrift(BaseDetector, DriftConfigMixin):
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
@@ -750,18 +726,7 @@ class BaseMMDDrift(BaseDetector):
         -------
         The detector's configuration dictionary.
         """
-        cfg: Dict[str, Any] = {
-            'version': __version__,
-            'config_spec': __config_spec__,
-            'name': 'MMDDrift'
-        }
-
-        # x_ref
-        cfg.update({'x_ref': self.x_ref})
-
-        # Preprocess field
-        if self.preprocess_fn is not None:
-            cfg.update({'preprocess_fn': self.preprocess_fn})
+        cfg = self.drift_config()
 
         # Detector field
         kwargs = {
@@ -779,7 +744,7 @@ class BaseMMDDrift(BaseDetector):
         return cfg
 
 
-class BaseLSDDDrift(BaseDetector):
+class BaseLSDDDrift(BaseDetector, DriftConfigMixin):
     # TODO: TBD: this is only created when _configure_normalization is called from backend-specific classes,
     # is declaring it here the right thing to do?
     _normalize: Callable
@@ -956,18 +921,7 @@ class BaseLSDDDrift(BaseDetector):
         -------
         The detector's configuration dictionary.
         """
-        cfg: Dict[str, Any] = {
-            'version': __version__,
-            'config_spec': __config_spec__,
-            'name': 'LSDDDrift'
-        }
-
-        # x_ref
-        cfg.update({'x_ref': self.x_ref})
-
-        # Preprocess field
-        if self.preprocess_fn is not None:
-            cfg.update({'preprocess_fn': self.preprocess_fn})
+        cfg = self.drift_config()
 
         # Detector field
         kwargs = {
@@ -988,7 +942,7 @@ class BaseLSDDDrift(BaseDetector):
         return cfg
 
 
-class BaseUnivariateDrift(BaseDetector):
+class BaseUnivariateDrift(BaseDetector, DriftConfigMixin):
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
@@ -1197,18 +1151,7 @@ class BaseUnivariateDrift(BaseDetector):
         -------
         The detector's configuration dictionary.
         """
-        cfg: Dict[str, Any] = {
-            'version': __version__,
-            'config_spec': __config_spec__,
-            'name': self.__class__.__name__
-        }
-
-        # x_ref
-        cfg.update({'x_ref': self.x_ref})
-
-        # Preprocess field
-        if self.preprocess_fn is not None:
-            cfg.update({'preprocess_fn': self.preprocess_fn})
+        cfg = self.drift_config()
 
         # Detector kwargs
         kwargs = {

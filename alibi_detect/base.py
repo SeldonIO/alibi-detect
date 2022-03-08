@@ -2,9 +2,8 @@ from abc import ABC, abstractmethod
 import copy
 import json
 import numpy as np
-from typing import Dict
-
-from alibi_detect.version import __version__
+from typing import Dict, Any, Optional, Callable
+from alibi_detect.version import __version__, __config_spec__
 
 DEFAULT_META = {
     "name": None,
@@ -92,6 +91,27 @@ class ThresholdMixin(ABC):
     @abstractmethod
     def infer_threshold(self, X: np.ndarray) -> None:
         pass
+
+
+class DriftConfigMixin:
+    x_ref: np.ndarray
+    preprocess_fn: Optional[Callable] = None,
+
+    def drift_config(self):
+        cfg: Dict[str, Any] = {
+            'version': __version__,
+            'config_spec': __config_spec__,
+            'name': self.__class__.__name__
+        }
+
+        # x_ref
+        cfg.update({'x_ref': self.x_ref})
+
+        # Preprocess field
+        if self.preprocess_fn is not None:
+            cfg.update({'preprocess_fn': self.preprocess_fn})
+
+        return cfg
 
 
 class NumpyEncoder(json.JSONEncoder):
