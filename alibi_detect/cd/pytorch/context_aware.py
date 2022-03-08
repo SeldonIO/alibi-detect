@@ -101,8 +101,8 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
             self.device = torch.device('cpu')
 
         # initialize kernel
-        self.x_kernel = x_kernel() if x_kernel == GaussianRBF else x_kernel
-        self.c_kernel = c_kernel() if c_kernel == GaussianRBF else c_kernel
+        self.x_kernel = x_kernel(init_sigma_fn=_sigma_median_diag) if x_kernel == GaussianRBF else x_kernel
+        self.c_kernel = c_kernel(init_sigma_fn=_sigma_median_diag) if c_kernel == GaussianRBF else c_kernel
 
         # Initialize classifier (hardcoded for now)
         self.clf = SVCDomainClf(self.c_kernel)
@@ -239,3 +239,27 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
             kxx = torch.ones_like(lWk).to(lWk.device) * torch.max(K)
             losses += (lWKWl + kxx - 2*lWk).sum(-1)
         return lams[torch.argmin(losses)]
+
+
+def _sigma_median_diag(x: torch.Tensor, y: torch.Tensor, dist: torch.Tensor) -> torch.Tensor:
+    """
+    Private version of the bandwidth estimation function :py:func:`~alibi_detect.utils.pytorch.kernels.sigma_median`,
+    with the +n (and -1) term excluded to account for the diagonal of the kernel matrix.
+
+    Parameters
+    ----------
+    x
+        Tensor of instances with dimension [Nx, features].
+    y
+        Tensor of instances with dimension [Ny, features].
+    dist
+        Tensor with dimensions [Nx, Ny], containing the pairwise distances between `x` and `y`.
+
+    Returns
+    -------
+    The computed bandwidth, `sigma`.
+    """
+    n = min(x.shape[0], y.shape[0])
+    n_median = (np.prod(dist.shape) - n) // 2
+    sigma = (.5 * dist.flatten().sort().values[n_median].unsqueeze(dim=-1)) ** .5
+    return sigma

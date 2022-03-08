@@ -90,8 +90,8 @@ class ContextMMDDriftTF(BaseContextMMDDrift):
         self.meta.update({'backend': 'tensorflow'})
 
         # initialize kernel
-        self.x_kernel = x_kernel() if x_kernel == GaussianRBF else x_kernel
-        self.c_kernel = c_kernel() if c_kernel == GaussianRBF else c_kernel
+        self.x_kernel = x_kernel(init_sigma_fn=_sigma_median_diag) if x_kernel == GaussianRBF else x_kernel
+        self.c_kernel = c_kernel(init_sigma_fn=_sigma_median_diag) if c_kernel == GaussianRBF else c_kernel
 
         # Initialize classifier (hardcoded for now)
         self.clf = SVCDomainClf(self.c_kernel)
@@ -254,3 +254,27 @@ def _split_chunks(n: int, p: int) -> List[int]:
     else:
         chunks = [n // p + 1] * (n % p) + [n // p] * (p - n % p)
     return chunks
+
+
+def _sigma_median_diag(x: tf.Tensor, y: tf.Tensor, dist: tf.Tensor) -> tf.Tensor:
+    """
+    Private version of the bandwidth estimation function :py:func:`~alibi_detect.utils.tensorflow.kernels.sigma_median`,
+    with the +n (and -1) term excluded to account for the diagonal of the kernel matrix.
+
+    Parameters
+    ----------
+    x
+        Tensor of instances with dimension [Nx, features].
+    y
+        Tensor of instances with dimension [Ny, features].
+    dist
+        Tensor with dimensions [Nx, Ny], containing the pairwise distances between `x` and `y`.
+
+    Returns
+    -------
+    The computed bandwidth, `sigma`.
+    """
+    n = min(x.shape[0], y.shape[0])
+    n_median = (tf.math.reduce_prod(dist.shape) - n) // 2
+    sigma = tf.expand_dims((.5 * tf.sort(tf.reshape(dist, (-1,)))[n_median]) ** .5, axis=0)
+    return sigma
