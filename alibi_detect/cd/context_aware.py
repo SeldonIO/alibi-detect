@@ -41,7 +41,7 @@ class ContextMMDDrift:
         x_ref
             Data used as reference distribution.
         c_ref
-            Data used as context for the reference distribution.
+            Context for the reference distribution.
         backend
             Backend used for the MMD implementation.
         p_val
@@ -49,9 +49,8 @@ class ContextMMDDrift:
         preprocess_x_ref
             Whether to already preprocess and store the reference data `x_ref`.
         update_ref
-            Reference data can optionally be updated to the last n instances seen by the detector
-            or via reservoir sampling with size n. For the former, the parameter equals {'last': n} while
-            for reservoir sampling {'reservoir_sampling': n} is passed.
+            Reference data can optionally be updated to the last N instances seen by the detector.
+            The parameter should be passed as a dictionary *{'last': N}*.
         preprocess_fn
             Function to preprocess the data before computing the data drift metrics.
         x_kernel
