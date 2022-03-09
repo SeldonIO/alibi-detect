@@ -33,11 +33,11 @@ preprocess = [
     (preprocess_drift, {'model': UAE}),
     (preprocess_list, None)
 ]
-update_x_ref = [{'last': 750}, None]
+update_ref = [{'last': 750}, None]
 preprocess_x_ref = [True, False]
 n_permutations = [10]
 tests_context_mmddrift = list(product(n_features, n_enc, preprocess,
-                              n_permutations, update_x_ref, preprocess_x_ref))
+                              n_permutations, update_ref, preprocess_x_ref))
 n_tests = len(tests_context_mmddrift)
 
 
@@ -48,7 +48,7 @@ def context_mmd_params(request):
 
 @pytest.mark.parametrize('context_mmd_params', list(range(n_tests)), indirect=True)
 def test_context_mmd(context_mmd_params):
-    n_features, n_enc, preprocess, n_permutations, update_x_ref, preprocess_x_ref = context_mmd_params
+    n_features, n_enc, preprocess, n_permutations, update_ref, preprocess_x_ref = context_mmd_params
 
     np.random.seed(0)
 
@@ -86,7 +86,7 @@ def test_context_mmd(context_mmd_params):
         c_ref=c_ref,
         p_val=.05,
         preprocess_x_ref=preprocess_x_ref if isinstance(preprocess_fn, Callable) else False,
-        update_x_ref=update_x_ref,
+        update_ref=update_ref,
         preprocess_fn=preprocess_fn,
         n_permutations=n_permutations
     )
@@ -97,11 +97,11 @@ def test_context_mmd(context_mmd_params):
     assert preds['data']['distance'] is None
     assert isinstance(preds['data']['coupling_xy'], np.ndarray)
 
-    if isinstance(update_x_ref, dict):
-        k = list(update_x_ref.keys())[0]
+    if isinstance(update_ref, dict):
+        k = list(update_ref.keys())[0]
         assert cd.n == len(x) + len(x_ref)
-        assert cd.x_ref.shape[0] == min(update_x_ref[k], len(x) + len(x_ref))
-        assert cd.c_ref.shape[0] == min(update_x_ref[k], len(x) + len(c_ref))
+        assert cd.x_ref.shape[0] == min(update_ref[k], len(x) + len(x_ref))
+        assert cd.c_ref.shape[0] == min(update_ref[k], len(x) + len(c_ref))
 
     c_h1 = np.random.randn(*(n, 1)).astype(np.float32)
     x_h1 = c_h1 + np.random.randn(*(n, n_features)).astype(np.float32)
