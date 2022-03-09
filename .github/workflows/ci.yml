@@ -14,8 +14,12 @@ on:
     branches:
       - master
     types: [opened, synchronize, reopened, ready_for_review]
+  # Trigger workflow once per week
   schedule:
     - cron: '0 0 * * *'
+  # Trigger the workflow on manual dispatch
+  workflow_dispatch:
+
 
 jobs:
   build:
