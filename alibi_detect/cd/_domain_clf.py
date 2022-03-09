@@ -5,9 +5,11 @@ from sklearn.svm import SVC
 from sklearn.calibration import CalibratedClassifierCV
 
 
-class DomainClf(ABC):
+class _DomainClf(ABC):
     """
-    Base class for domain classifiers used in :py:class:`~alibi_detect.cd.ContextAwareDrift`.
+    Base class for domain classifiers used in :py:class:`~alibi_detect.cd.ContextAwareDrift`.The `SVCDomainClf` is
+    currently hardcoded into the detector. Therefore, for now, these classes (and the domain_clf submodule) are
+    kept private. This is subject to change in the future.
 
     The classifiers should be fit on conditioning variables `c_all` and their domain `bools` as input (`0` for ref, `1`
     test). They should predict propensity scores (probability of being test instances) as output.
@@ -30,7 +32,7 @@ class DomainClf(ABC):
         raise NotImplementedError()
 
 
-class SVCDomainClf(DomainClf):
+class _SVCDomainClf(_DomainClf):
     def __init__(self,
                  c_kernel: Callable,
                  cal_method: str = 'sigmoid',

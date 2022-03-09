@@ -5,7 +5,7 @@ import tensorflow_probability as tfp
 from typing import Callable, Dict, Optional, Tuple, Union, List
 from alibi_detect.cd.base import BaseContextMMDDrift
 from alibi_detect.utils.tensorflow.kernels import GaussianRBF
-from alibi_detect.cd.domain_clf import SVCDomainClf
+from alibi_detect.cd._domain_clf import _SVCDomainClf
 from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
@@ -93,7 +93,7 @@ class ContextMMDDriftTF(BaseContextMMDDrift):
         self.c_kernel = c_kernel(init_sigma_fn=_sigma_median_diag) if c_kernel == GaussianRBF else c_kernel
 
         # Initialize classifier (hardcoded for now)
-        self.clf = SVCDomainClf(self.c_kernel)
+        self.clf = _SVCDomainClf(self.c_kernel)
 
     def score(self,  # type: ignore[override]
               x: Union[np.ndarray, list], c: np.ndarray) -> Tuple[float, float, np.ndarray, Tuple]:
@@ -213,6 +213,8 @@ class ContextMMDDriftTF(BaseContextMMDDrift):
         n = len(L)
         fold_size = n // n_folds
         K, L = tf.cast(K, tf.float64), tf.cast(K, tf.float64)
+        perm = tf.random.shuffle(range(n))
+        K, L = tf.gather(tf.gather(K, perm), perm, axis=1), tf.gather(tf.gather(L, perm), perm, axis=1)
         losses = tf.zeros_like(lams, dtype=tf.float64)
         for fold in range(n_folds):
             inds_oof = np.arange(n)[(fold*fold_size):((fold+1)*fold_size)]
@@ -273,7 +275,6 @@ def _sigma_median_diag(x: tf.Tensor, y: tf.Tensor, dist: tf.Tensor) -> tf.Tensor
     -------
     The computed bandwidth, `sigma`.
     """
-    n = min(x.shape[0], y.shape[0])
-    n_median = (tf.math.reduce_prod(dist.shape) - n) // 2
+    n_median = tf.math.reduce_prod(dist.shape) // 2
     sigma = tf.expand_dims((.5 * tf.sort(tf.reshape(dist, (-1,)))[n_median]) ** .5, axis=0)
     return sigma
