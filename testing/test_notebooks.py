@@ -42,7 +42,7 @@ EXCLUDE_NOTEBOOKS = {
     # the following require complex dependencies
     'cd_mol.ipynb',  # complex to install pytorch-geometric
 }
-if PROPHET_INSTALLED:
+if not PROPHET_INSTALLED:
     EXCLUDE_NOTEBOOKS.add('od_prophet_weather.ipynb')  # Exclude if fbprophet not installed i.e. on Windows
 
 EXECUTE_NOTEBOOKS = ALL_NOTEBOOKS - EXCLUDE_NOTEBOOKS
