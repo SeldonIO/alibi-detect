@@ -11,7 +11,7 @@ class _DomainClf(ABC):
     currently hardcoded into the detector. Therefore, for now, these classes (and the domain_clf submodule) are
     kept private. This is subject to change in the future.
 
-    The classifiers should be fit on conditioning variables `c_all` and their domain `bools` as input (`0` for ref, `1`
+    The classifiers should be fit on conditioning variables `x` and their domain `y` (`0` for ref, `1`
     test). They should predict propensity scores (probability of being test instances) as output.
     Classifiers should possess a calibrate method to calibrate the propensity scores.
     """
@@ -20,21 +20,21 @@ class _DomainClf(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def fit(self, c_all: np.ndarray, bools: np.ndarray):
+    def fit(self, x: np.ndarray, y: np.ndarray):
         raise NotImplementedError()
 
     @abstractmethod
-    def calibrate(self, c_all: np.ndarray, bools: np.ndarray):
+    def calibrate(self, x: np.ndarray, y: np.ndarray):
         raise NotImplementedError()
 
     @abstractmethod
-    def predict(self, c_all: np.ndarray) -> np.ndarray:
+    def predict(self, x: np.ndarray) -> np.ndarray:
         raise NotImplementedError()
 
 
 class _SVCDomainClf(_DomainClf):
     def __init__(self,
-                 c_kernel: Callable,
+                 kernel: Callable,
                  cal_method: str = 'sigmoid',
                  clf_kwargs: dict = None):
         """
@@ -44,7 +44,7 @@ class _SVCDomainClf(_DomainClf):
 
         Parameters
         ----------
-        c_kernel
+        kernel
             Kernel used to pre-compute the kernel matrix from data matrices.
         cal_method
             The method to be used to calibrate the detector. This should be a method accepted by the scikit-learn
@@ -52,52 +52,52 @@ class _SVCDomainClf(_DomainClf):
         clf_kwargs
             A dictionary of keyword arguments to be passed to the :py:class:`~sklearn.svm.SVC` classifier.
         """
-        self.c_kernel = c_kernel
+        self.kernel = kernel
         self.cal_method = cal_method
         clf_kwargs = clf_kwargs or {}
-        self.clf = SVC(kernel=self.c_kernel, **clf_kwargs)
+        self.clf = SVC(kernel=self.kernel, **clf_kwargs)
 
-    def fit(self, c_all: np.ndarray, bools: np.ndarray):
+    def fit(self, x: np.ndarray, y: np.ndarray):
         """
         Method to fit the classifier.
 
         Parameters
         ----------
-        c_all
+        x
             Array containing conditioning variables for each instance.
-        bools
+        y
             Boolean array marking the domain each instance belongs to (`0` for reference, `1` for test).
         """
         clf = self.clf
-        clf.fit(c_all, bools)
+        clf.fit(x, y)
         self.clf = clf
 
-    def calibrate(self, c_all: np.ndarray, bools: np.ndarray):
+    def calibrate(self, x: np.ndarray, y: np.ndarray):
         """
         Method to calibrate the classifier's predicted probabilities.
 
         Parameters
         ----------
-        c_all
+        x
             Array containing conditioning variables for each instance.
-        bools
+        y
             Boolean array marking the domain each instance belongs to (`0` for reference, `1` for test).
         """
         clf = CalibratedClassifierCV(self.clf, method=self.cal_method, cv='prefit')
-        clf.fit(c_all, bools)
+        clf.fit(x, y)
         self.clf = clf
 
-    def predict(self,  c_all: np.ndarray) -> np.ndarray:
+    def predict(self,  x: np.ndarray) -> np.ndarray:
         """
         The classifier's predict method.
 
         Parameters
         ----------
-        c_all
+        x
             Array containing conditioning variables for each instance.
 
         Returns
         -------
         Propensity scores (the probability of being test instances).
         """
-        return self.clf.predict_proba(c_all)[:, 1]
+        return self.clf.predict_proba(x)[:, 1]
