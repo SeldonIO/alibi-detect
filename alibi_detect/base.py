@@ -95,7 +95,7 @@ class ThresholdMixin(ABC):
 
 class DriftConfigMixin:
     x_ref: np.ndarray
-    preprocess_fn: Optional[Callable] = None,
+    preprocess_fn: Optional[Callable] = None
 
     def drift_config(self):
         cfg: Dict[str, Any] = {

@@ -81,7 +81,7 @@ bibtex_default_style = 'unsrtalpha'
 # apidoc settings
 apidoc_module_dir = "../../alibi_detect"
 apidoc_output_dir = "api"
-apidoc_excluded_paths = ["**/*test*", "utils/config.py"]
+apidoc_excluded_paths = ["**/*test*"]
 apidoc_module_first = True
 apidoc_separate_modules = True
 apidoc_extra_args = ["-d 6"]
@@ -108,8 +108,6 @@ autodoc_mock_imports = [
     "transformers",
     "tqdm",
     "dill",
-    "pydantic",
-    "catalogue",
     "numba"
 ]
 
@@ -173,7 +171,7 @@ html_theme_options = {"logo_only": True}
 html_static_path = ["_static"]
 
 # override default theme width
-html_css_files = ['theme_overrides.css', 'code_blocks.css'] # override wide tables in RTD theme
+html_css_files = ['theme_overrides.css'] # override wide tables in RTD theme
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.
