@@ -105,7 +105,7 @@ class ClassifierUncertaintyDrift:
             self._detector = KSDrift(
                 x_ref=x_ref,
                 p_val=p_val,
-                preprocess_x_ref=True,
+                preprocess_at_init=True,
                 update_x_ref=update_x_ref,
                 preprocess_fn=preprocess_fn,
                 data_type=data_type
@@ -114,7 +114,7 @@ class ClassifierUncertaintyDrift:
             self._detector = ChiSquareDrift(
                 x_ref=x_ref,
                 p_val=p_val,
-                preprocess_x_ref=True,
+                preprocess_at_init=True,
                 update_x_ref=update_x_ref,
                 preprocess_fn=preprocess_fn,
                 data_type=data_type
@@ -261,7 +261,7 @@ class RegressorUncertaintyDrift:
         self._detector = KSDrift(
             x_ref=x_ref,
             p_val=p_val,
-            preprocess_x_ref=True,
+            preprocess_at_init=True,
             update_x_ref=update_x_ref,
             preprocess_fn=preprocess_fn,
             data_type=data_type
