@@ -2,13 +2,38 @@ import numpy as np
 import torch
 from torch import nn
 from . import distance
-from typing import Optional, Union
+from typing import Optional, Union, Callable
+
+
+def sigma_median(x: torch.Tensor, y: torch.Tensor, dist: torch.Tensor) -> torch.Tensor:
+    """
+    Bandwidth estimation using the median heuristic :cite:t:`Gretton2012`.
+
+    Parameters
+    ----------
+    x
+        Tensor of instances with dimension [Nx, features].
+    y
+        Tensor of instances with dimension [Ny, features].
+    dist
+        Tensor with dimensions [Nx, Ny], containing the pairwise distances between `x` and `y`.
+
+    Returns
+    -------
+    The computed bandwidth, `sigma`.
+    """
+    n = min(x.shape[0], y.shape[0])
+    n = n if (x[:n] == y[:n]).all() and x.shape == y.shape else 0
+    n_median = n + (np.prod(dist.shape) - n) // 2 - 1
+    sigma = (.5 * dist.flatten().sort().values[n_median].unsqueeze(dim=-1)) ** .5
+    return sigma
 
 
 class GaussianRBF(nn.Module):
     def __init__(
         self,
         sigma: Optional[torch.Tensor] = None,
+        init_sigma_fn: Callable = sigma_median,
         trainable: bool = False
     ) -> None:
         """
@@ -21,8 +46,12 @@ class GaussianRBF(nn.Module):
         sigma
             Bandwidth used for the kernel. Needn't be specified if being inferred or trained.
             Can pass multiple values to eval kernel with and then average.
+        init_sigma_fn
+            Function used to compute the bandwidth `sigma`. Used when `sigma` is to be inferred.
+            The function's signature should match :py:func:`~alibi_detect.utils.pytorch.kernels.sigma_median`,
+            meaning that it should take in the tensors `x`, `y` and `dist` and return `sigma`.
         trainable
-            Whether or not to track gradients w.r.t. sigma to allow it to be trained.
+            Whether or not to track gradients w.r.t. `sigma` to allow it to be trained.
         """
         super().__init__()
         if sigma is None:
@@ -32,23 +61,23 @@ class GaussianRBF(nn.Module):
             sigma = sigma.reshape(-1)  # [Ns,]
             self.log_sigma = nn.Parameter(sigma.log(), requires_grad=trainable)
             self.init_required = False
+        self.init_sigma_fn = init_sigma_fn
         self.trainable = trainable
 
     @property
     def sigma(self) -> torch.Tensor:
         return self.log_sigma.exp()
 
-    def forward(self, x: torch.Tensor, y: torch.Tensor, infer_sigma: bool = False) -> torch.Tensor:
+    def forward(self, x: Union[np.ndarray, torch.Tensor], y: Union[np.ndarray, torch.Tensor],
+                infer_sigma: bool = False) -> torch.Tensor:
 
+        x, y = torch.as_tensor(x), torch.as_tensor(y)
         dist = distance.squared_pairwise_distance(x.flatten(1), y.flatten(1))  # [Nx, Ny]
 
         if infer_sigma or self.init_required:
             if self.trainable and infer_sigma:
                 raise ValueError("Gradients cannot be computed w.r.t. an inferred sigma value")
-            n = min(x.shape[0], y.shape[0])
-            n = n if (x[:n] == y[:n]).all() and x.shape == y.shape else 0
-            n_median = n + (np.prod(dist.shape) - n) // 2 - 1
-            sigma = (.5 * dist.flatten().sort().values[n_median].unsqueeze(dim=-1)) ** .5
+            sigma = self.init_sigma_fn(x, y, dist)
             with torch.no_grad():
                 self.log_sigma.copy_(sigma.log().clone())
             self.init_required = False

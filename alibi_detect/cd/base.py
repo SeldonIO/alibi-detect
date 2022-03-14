@@ -1,6 +1,6 @@
 import logging
 from abc import abstractmethod
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from typing import Callable, Dict, List, Optional, Tuple, Union, Any
 
 import numpy as np
 from alibi_detect.base import BaseDetector, concept_drift_dict
@@ -932,4 +932,193 @@ class BaseUnivariateDrift(BaseDetector):
             cd['data']['threshold'] = self.p_val if drift_type == 'feature' else threshold
         if return_distance:
             cd['data']['distance'] = dist
+        return cd
+
+
+class BaseContextMMDDrift(BaseDetector):
+    lams: Optional[Tuple[Any, Any]] = None
+
+    def __init__(
+            self,
+            x_ref: Union[np.ndarray, list],
+            c_ref: np.ndarray,
+            p_val: float = .05,
+            preprocess_x_ref: bool = True,
+            update_ref: Optional[Dict[str, int]] = None,
+            preprocess_fn: Optional[Callable] = None,
+            x_kernel: Callable = None,
+            c_kernel: Callable = None,
+            n_permutations: int = 1000,
+            prop_c_held: float = 0.25,
+            n_folds: int = 5,
+            batch_size: Optional[int] = 256,
+            input_shape: Optional[tuple] = None,
+            data_type: Optional[str] = None,
+            verbose: bool = False
+    ) -> None:
+        """
+        Maximum Mean Discrepancy (MMD) based context aware drift detector.
+
+        Parameters
+        ----------
+        x_ref
+            Data used as reference distribution.
+        c_ref
+            Context for the reference distribution.
+        p_val
+            p-value used for the significance of the permutation test.
+        preprocess_x_ref
+            Whether to already preprocess and store the reference data `x_ref`.
+        update_ref
+            Reference data can optionally be updated to the last N instances seen by the detector.
+            The parameter should be passed as a dictionary *{'last': N}*.
+        preprocess_fn
+            Function to preprocess the data before computing the data drift metrics.
+        x_kernel
+            Kernel defined on the input data, defaults to Gaussian RBF kernel.
+        c_kernel
+            Kernel defined on the context data, defaults to Gaussian RBF kernel.
+        n_permutations
+            Number of permutations used in the permutation test.
+        prop_c_held
+            Proportion of contexts held out to condition on.
+        n_folds
+            Number of cross-validation folds used when tuning the regularisation parameters.
+        batch_size
+            If not None, then compute batches of MMDs at a time (rather than all at once).
+        input_shape
+            Shape of input data.
+        data_type
+            Optionally specify the data type (tabular, image or time-series). Added to metadata.
+        verbose
+            Whether or not to print progress during configuration.
+        """
+        super().__init__()
+
+        if p_val is None:
+            logger.warning('No p-value set for the drift threshold. Need to set it to detect data drift.')
+
+        # optionally already preprocess reference data
+        self.p_val = p_val
+        if preprocess_x_ref and isinstance(preprocess_fn, Callable):  # type: ignore[arg-type]
+            self.x_ref = preprocess_fn(x_ref)
+        else:
+            self.x_ref = x_ref
+        self.preprocess_x_ref = preprocess_x_ref
+        self.preprocess_fn = preprocess_fn
+        self.n = len(x_ref)
+        self.n_permutations = n_permutations  # nb of iterations through permutation test
+        self.x_kernel = x_kernel
+        self.c_kernel = c_kernel
+        if len(c_ref) == self.n:
+            self.c_ref = c_ref
+        else:
+            raise ValueError('x_ref and c_ref should contain the same number of instances.')
+
+        # store input shape for save and load functionality
+        self.input_shape = get_input_shape(input_shape, x_ref)
+
+        # Regularisation parameter tuning settings
+        if n_folds > 1:
+            self.n_folds = n_folds
+        else:
+            raise ValueError('The `n_folds` parameter must be > 1.')
+        self.lams = None
+
+        # Update ref attribute. Disallow res
+        self.update_ref = update_ref
+        if update_ref is not None:
+            if 'reservoir_sampling' in update_ref.keys():
+                raise ValueError("The BaseContextMMDDrift detector doesn't currently support the `reservoir_sampling` "
+                                 "option in `update_ref`.")
+
+        # Other attributes
+        self.prop_c_held = prop_c_held
+        self.batch_size = batch_size
+        self.verbose = verbose
+
+        # set metadata
+        self.meta.update({'detector_type': 'offline', 'data_type': data_type})
+
+    def preprocess(self, x: Union[np.ndarray, list]) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Data preprocessing before computing the drift scores.
+        Parameters
+        ----------
+        x
+            Batch of instances.
+        Returns
+        -------
+        Preprocessed reference data and new instances.
+        """
+        if isinstance(self.preprocess_fn, Callable):  # type: ignore[arg-type]
+            x = self.preprocess_fn(x)
+            x_ref = self.x_ref if self.preprocess_x_ref else self.preprocess_fn(self.x_ref)
+            # TODO: TBD: similar to above, can x be a list here? x_ref is also revealed to be Any,
+            #  can we tighten the type up (e.g. by typing Callable with stricter inputs/outputs?
+            return x_ref, x  # type: ignore[return-value]
+        else:
+            return self.x_ref, x  # type: ignore[return-value]
+
+    @abstractmethod
+    def score(self,  # type: ignore[override]
+              x: Union[np.ndarray, list], c: np.ndarray) -> Tuple[float, float, np.ndarray, Tuple]:
+        pass
+
+    def predict(self,  # type: ignore[override]
+                x: Union[np.ndarray, list], c: np.ndarray,
+                return_p_val: bool = True, return_distance: bool = True, return_coupling: bool = False) \
+            -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
+        """
+        Predict whether a batch of data has drifted from the reference data, given the provided context.
+
+        Parameters
+        ----------
+        x
+            Batch of instances.
+        c
+            Context associated with batch of instances.
+        return_p_val
+            Whether to return the p-value of the permutation test.
+        return_distance
+            Whether to return the MMD metric between the new batch and reference data.
+        return_coupling
+            Whether to return the coupling matrices.
+
+        Returns
+        -------
+        Dictionary containing 'meta' and 'data' dictionaries.
+        'meta' has the model's metadata.
+        'data' contains the drift prediction and optionally the p-value, threshold, MMD metric and coupling matrices.
+        """
+        # compute drift scores
+        p_val, dist, dist_permutations, coupling = self.score(x, c)
+        drift_pred = int(p_val < self.p_val)
+
+        # compute distance threshold
+        idx_threshold = int(self.p_val * len(dist_permutations))
+        distance_threshold = np.sort(dist_permutations)[::-1][idx_threshold]
+
+        # update reference dataset
+        if isinstance(self.update_ref, dict) and self.preprocess_fn is not None and self.preprocess_x_ref:
+            x = self.preprocess_fn(x)
+        self.x_ref = update_reference(self.x_ref, x, self.n, self.update_ref)  # type: ignore[arg-type]
+        self.c_ref = update_reference(self.c_ref, c, self.n, self.update_ref)  # type: ignore[arg-type]
+        # used for reservoir sampling
+        self.n += len(x)
+
+        # populate drift dict
+        cd = concept_drift_dict()
+        cd['meta'] = self.meta
+        cd['data']['is_drift'] = drift_pred
+        if return_p_val:
+            cd['data']['p_val'] = p_val
+            cd['data']['threshold'] = self.p_val
+        if return_distance:
+            cd['data']['distance'] = dist
+            cd['data']['distance_threshold'] = distance_threshold
+        if return_coupling:
+            cd['data']['coupling_xx'] = coupling[0]
+            cd['data']['coupling_yy'] = coupling[1]
+            cd['data']['coupling_xy'] = coupling[2]
         return cd
