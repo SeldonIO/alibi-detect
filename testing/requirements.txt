@@ -3,7 +3,7 @@
 # `test_changed_notebooks` github workflows. The dependencies of notebooks excluded 
 # from testing (see `EXCLUDE_NOTEBOOKS` in `testing/test_notebooks.py`) are not 
 # included here.
-alibi<1.0.0
+alibi @ git+https://github.com/SeldonIO/alibi@master#egg=alibi # use master instead of PyPi to ensure most up-to-date deps
 seaborn>=0.9.0
 nlp>=0.3.0
 torchvision>=0.8.0
