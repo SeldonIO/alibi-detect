@@ -214,8 +214,10 @@ class ClassifierDriftTorch(BaseClassifierDrift):
         """
         Get the detector's configuration dictionary.
 
+        Not yet implemented for `ClassifierDrift` with the pytorch backend.
+
         Returns
         -------
         The detector's configuration dictionary.
         """
-        raise RuntimeError("get_config not yet implemented for ClassifierDrift with pytorch backend.")
+        raise NotImplementedError("get_config not yet implemented for ClassifierDrift with pytorch backend.")

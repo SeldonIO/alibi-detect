@@ -136,9 +136,6 @@ class MMDDriftTF(BaseMMDDrift):
         """
         cfg = super().get_config()
 
-        # backend
-        cfg.update({'backend': 'tensorflow'})
-
         # kernel logic
         if isinstance(self.kernel, GaussianRBF):
             # If default kernel, we don't need to spec

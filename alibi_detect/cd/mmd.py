@@ -100,7 +100,6 @@ class MMDDrift:
         else:
             self._detector = MMDDriftTorch(*args, **kwargs)  # type: ignore
         self.meta = self._detector.meta
-        self._detector.backend = backend
 
     def predict(self, x: Union[np.ndarray, list], return_p_val: bool = True, return_distance: bool = True) \
             -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:

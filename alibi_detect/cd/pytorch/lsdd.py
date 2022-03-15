@@ -179,19 +179,10 @@ class LSDDDriftTorch(BaseLSDDDrift):
         """
         Get the detector's configuration dictionary.
 
+        Not yet implemented for `LSDDDrift` with the pytorch backend.
+
         Returns
         -------
         The detector's configuration dictionary.
         """
-        cfg = super().get_config()
-
-        # backend
-        cfg.update({'backend': 'pytorch'})
-
-        # Detector kwargs
-        kwargs = {
-                'device': self.device
-        }
-        cfg.update(kwargs)
-
-        return cfg
+        raise NotImplementedError("get_config not yet implemented for LSDDDrift with pytorch backend.")

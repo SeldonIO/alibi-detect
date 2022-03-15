@@ -94,6 +94,10 @@ class ThresholdMixin(ABC):
 
 
 class DriftConfigMixin:
+    """
+    A mixin class to be used by detector `get_config` methods. The `drift_config` method defines the initial
+    generic configuration dict for all detectors, which is then fully populated by a detector's get_config method(s).
+    """
     x_ref: np.ndarray
     preprocess_fn: Optional[Callable] = None
 

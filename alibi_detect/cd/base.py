@@ -317,7 +317,8 @@ class BaseClassifierDrift(BaseDetector, DriftConfigMixin):
             'retrain_from_scratch': self.retrain_from_scratch,
             'seed': self.skf.random_state if self.skf is not None else 0,
             'input_shape': self.input_shape,
-            'data_type': self.meta['data_type']
+            'data_type': self.meta['data_type'],
+            'backend': self.meta['backend'],
         }
         cfg.update(kwargs)
 
@@ -545,7 +546,8 @@ class BaseLearnedKernelDrift(BaseDetector, DriftConfigMixin):
             'train_size': self.train_size,
             'retrain_from_scratch': self.retrain_from_scratch,
             'input_shape': self.input_shape,
-            'data_type': self.meta['data_type']
+            'data_type': self.meta['data_type'],
+            'backend': self.meta['backend'],
         }
         cfg.update(kwargs)
 
@@ -737,7 +739,8 @@ class BaseMMDDrift(BaseDetector, DriftConfigMixin):
             'configure_kernel_from_x_ref': not self.infer_sigma,
             'n_permutations': self.n_permutations,
             'input_shape': self.input_shape,
-            'data_type': self.meta['data_type']
+            'data_type': self.meta['data_type'],
+            'backend': self.meta['backend'],
         }
         cfg.update(kwargs)
 
@@ -934,8 +937,8 @@ class BaseLSDDDrift(BaseDetector, DriftConfigMixin):
             'n_kernel_centers': self.n_kernel_centers,
             'lambda_rd_max': self.lambda_rd_max,
             'input_shape': self.input_shape,
-            'data_type': self.meta['data_type']
-
+            'data_type': self.meta['data_type'],
+            'backend': self.meta['backend'],
         }
         cfg.update(kwargs)
 

@@ -237,8 +237,7 @@ class LearnedKernelDriftTF(BaseLearnedKernelDrift):
         """
         cfg = super().get_config()
 
-        # backend
-        cfg.update({'backend': 'tensorflow'})
+        # Train kwargs
         train_kwargs = self.train_kwargs.copy()  # copy so that .pop() only affects copy
 
 #        # Optimizer (OK to do here as doesn't save anything to file)

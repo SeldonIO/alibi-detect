@@ -167,11 +167,4 @@ class LSDDDriftTF(BaseLSDDDrift):
         """
         cfg = super().get_config()
 
-        # backend
-        cfg.update({'backend': 'tensorflow'})
-
-        # Detector kwargs (currently empty)
-        # kwargs = {}
-        # cfg.update(kwargs)
-
         return cfg

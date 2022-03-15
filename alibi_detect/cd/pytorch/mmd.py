@@ -145,33 +145,10 @@ class MMDDriftTorch(BaseMMDDrift):
     def get_config(self) -> dict:
         """
         Get the detector's configuration dictionary.
+        Not yet implemented for `MMDDrift` with the pytorch backend.
 
         Returns
         -------
         The detector's configuration dictionary.
         """
-        cfg = super().get_config()
-
-        # backend
-        cfg.update({'backend': 'pytorch'})
-
-        # kernel logic
-        if isinstance(self.kernel, GaussianRBF):
-            # If default kernel, we don't need to spec
-            sigma = self.kernel.sigma.cpu() if self.device.type == 'cuda' else self.kernel.sigma
-            sigma = sigma.numpy().tolist() if not self.infer_sigma else None
-            kernel = None
-        else:
-            # Else if non-default kernel, we need to spec, but sigma is irrelevant
-            sigma = None
-            kernel = self.kernel
-
-        # Detector kwargs
-        kwargs = {
-            'kernel': kernel,
-            'sigma': sigma,
-            'device': self.device
-        }
-        cfg.update(kwargs)
-
-        return cfg
+        raise NotImplementedError("get_config not yet implemented for MMDDrift with pytorch backend.")

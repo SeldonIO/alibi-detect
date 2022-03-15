@@ -231,9 +231,10 @@ class SpotTheDiffDriftTorch:
     def get_config(self) -> dict:
         """
         Get the detector's configuration dictionary.
+        Not yet implemented for `SpotTheDiffDrift` with the pytorch backend.
 
         Returns
         -------
         The detector's configuration dictionary.
         """
-        raise RuntimeError("get_config not yet implemented for SpotTheDiffDrift with pytorch backend.")
+        raise NotImplementedError("get_config not yet implemented for SpotTheDiffDrift with pytorch backend.")
