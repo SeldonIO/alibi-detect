@@ -139,7 +139,7 @@ class MMDDriftTF(BaseMMDDrift):
         # kernel logic
         if isinstance(self.kernel, GaussianRBF):
             # If default kernel, we don't need to spec
-            sigma = self.kernel.sigma.numpy().tolist() if not self.infer_sigma else None
+            sigma = self.kernel.sigma.numpy() if not self.infer_sigma else None
             kernel = None
         else:
             # Else if non-default kernel, we need to spec, but sigma is irrelevant

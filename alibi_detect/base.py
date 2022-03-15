@@ -102,16 +102,23 @@ class DriftConfigMixin:
     preprocess_fn: Optional[Callable] = None
 
     def drift_config(self):
+        name = self.__class__.__name__
+        # strip off any backend suffix
+        backends = ['TF', 'Torch', 'Sklearn']
+        for backend in backends:
+            if name.endswith(backend):
+                name = name[:-len(backend)]
+        # Populate config dict
         cfg: Dict[str, Any] = {
             'version': __version__,
             'config_spec': __config_spec__,
-            'name': self.__class__.__name__
+            'name': name
         }
 
-        # x_ref
+        # Add x_ref
         cfg.update({'x_ref': self.x_ref})
 
-        # Preprocess field
+        # Add preprocess_fn field
         if self.preprocess_fn is not None:
             cfg.update({'preprocess_fn': self.preprocess_fn})
 
