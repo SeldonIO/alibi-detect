@@ -2,9 +2,8 @@ from abc import ABC, abstractmethod
 import copy
 import json
 import numpy as np
-from typing import Dict
-
-from alibi_detect.version import __version__
+from typing import Dict, Any, Optional, Callable
+from alibi_detect.version import __version__, __config_spec__
 
 DEFAULT_META = {
     "name": None,
@@ -53,7 +52,7 @@ def concept_drift_dict():
 
 
 class BaseDetector(ABC):
-    """ Base class for outlier detection algorithms. """
+    """ Base class for outlier, adversarial and drift detection algorithms. """
 
     def __init__(self):
         self.meta = copy.deepcopy(DEFAULT_META)
@@ -92,6 +91,31 @@ class ThresholdMixin(ABC):
     @abstractmethod
     def infer_threshold(self, X: np.ndarray) -> None:
         pass
+
+
+class DriftConfigMixin:
+    """
+    A mixin class to be used by detector `get_config` methods. The `drift_config` method defines the initial
+    generic configuration dict for all detectors, which is then fully populated by a detector's get_config method(s).
+    """
+    x_ref: np.ndarray
+    preprocess_fn: Optional[Callable] = None
+
+    def drift_config(self):
+        cfg: Dict[str, Any] = {
+            'version': __version__,
+            'config_spec': __config_spec__,
+            'name': self.__class__.__name__
+        }
+
+        # x_ref
+        cfg.update({'x_ref': self.x_ref})
+
+        # Preprocess field
+        if self.preprocess_fn is not None:
+            cfg.update({'preprocess_fn': self.preprocess_fn})
+
+        return cfg
 
 
 class NumpyEncoder(json.JSONEncoder):

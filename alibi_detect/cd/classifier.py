@@ -23,7 +23,8 @@ class ClassifierDrift:
             model: Union[ClassifierMixin, Callable],
             backend: str = 'tensorflow',
             p_val: float = .05,
-            preprocess_x_ref: bool = True,
+            x_ref_preprocessed: bool = False,
+            preprocess_at_init: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
             preds_type: str = 'probs',
@@ -43,6 +44,7 @@ class ClassifierDrift:
             device: Optional[str] = None,
             dataset: Optional[Callable] = None,
             dataloader: Optional[Callable] = None,
+            input_shape: Optional[tuple] = None,
             use_calibration: bool = False,
             calibration_kwargs: Optional[dict] = None,
             data_type: Optional[str] = None
@@ -62,8 +64,13 @@ class ClassifierDrift:
             Backend used for the training loop implementation. Supported: 'tensorflow' | 'pytorch' | 'sklearn'.
         p_val
             p-value used for the significance of the test.
-        preprocess_x_ref
-            Whether to already preprocess and store the reference data.
+        x_ref_preprocessed
+            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
+            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
+            data will also be preprocessed.
+        preprocess_at_init
+            Whether to preprocess the reference data when the detector is instantiated. Otherwise, the reference
+            data will be preprocessed at prediction time. Only applies if `x_ref_preprocessed=False`.
         update_x_ref
             Reference data can optionally be updated to the last `n` instances seen by the detector
             or via reservoir sampling with size `n`. For the former, the parameter equals `{'last': n}` while
@@ -118,6 +125,8 @@ class ClassifierDrift:
             Dataset object used during training. Only relevant for 'tensorflow' and 'pytorch' backends.
         dataloader
             Dataloader object used during training. Only relevant for 'pytorch' backend.
+        input_shape
+            Shape of input data.
         use_calibration
             Whether to use calibration. Calibration can be used on top of any model.
             Only relevant for 'sklearn' backend.
@@ -198,3 +207,13 @@ class ClassifierDrift:
         prediction probabilities on the reference and test data, and the trained model. \
         """
         return self._detector.predict(x, return_p_val, return_distance, return_probs, return_model)
+
+    def get_config(self) -> dict:
+        """
+        Get the detector's configuration dictionary.
+
+        Returns
+        -------
+        The detector's configuration dictionary.
+        """
+        return self._detector.get_config()

@@ -230,6 +230,16 @@ class CVMDriftOnline(BaseUniDriftOnline):
         drift_pred = int((max_stats > thresholds).any())
         return drift_pred
 
+    def get_config(self) -> dict:
+        """
+        Get the detector's configuration dictionary. Not yet implemented for `CVMDriftOnline`.
+
+        Returns
+        -------
+        The detector's configuration dictionary.
+        """
+        raise NotImplementedError("get_config not yet implemented for `CVMDriftOnline`.")
+
 
 @nb.njit(parallel=False, cache=True)
 def _normalise_stats(stats: np.ndarray, n: int, ws: int) -> np.ndarray:
