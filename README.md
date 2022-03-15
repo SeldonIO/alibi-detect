@@ -146,25 +146,25 @@ The following tables show the advised use cases for each algorithm. The column *
 
 ### Outlier Detection
 
-| Detector              | Tabular | Image | Time Series | Text  | Categorical Features | Online | Feature Level |
-| :---                  |  :---:  | :---: |   :---:     | :---: |   :---:              | :---:  | :---:         |
-| Isolation Forest      | ✔       |      |            |      |  ✔                   |       |              |
-| Mahalanobis Distance  | ✔       |      |            |      |  ✔                   |  ✔     |              |
-| AE                    | ✔       | ✔     |            |     |                     |       |  ✔            |
-| VAE                   | ✔       | ✔     |            |      |                     |      |  ✔            |
-| AEGMM                 | ✔       | ✔     |            |      |                     |       |              |
-| VAEGMM                | ✔       | ✔     |            |      |                     |       |              |
-| Likelihood Ratios     | ✔       | ✔     |  ✔          |      |  ✔                   |       |  ✔            |
-| Prophet               |        |      |  ✔          |      |                     |       |              |
-| Spectral Residual     |        |      |  ✔          |      |                     |  ✔     |  ✔            |
-| Seq2Seq               |        |      |  ✔          |      |                     |       |  ✔            |
+| Detector             | Tabular | Image | Time Series | Text | Categorical Features | Online | Feature Level |
+|:---------------------|:-------:|:-----:|:-----------:|:----:|:--------------------:|:------:|:-------------:|
+| Isolation Forest     |    ✔    |       |             |      |          ✔           |        |               |
+| Mahalanobis Distance |    ✔    |       |             |      |          ✔           |   ✔    |               |
+| AE                   |    ✔    |   ✔   |             |      |                      |        |       ✔       |
+| VAE                  |    ✔    |   ✔   |             |      |                      |        |       ✔       |
+| AEGMM                |    ✔    |   ✔   |             |      |                      |        |               |
+| VAEGMM               |    ✔    |   ✔   |             |      |                      |        |               |
+| Likelihood Ratios    |    ✔    |   ✔   |      ✔      |      |          ✔           |        |       ✔       |
+| Prophet              |         |       |      ✔      |      |                      |        |               |
+| Spectral Residual    |         |       |      ✔      |      |                      |   ✔    |       ✔       |
+| Seq2Seq              |         |       |      ✔      |      |                      |        |       ✔       |
 
 ### Adversarial Detection
 
-| Detector           | Tabular | Image | Time Series | Text  | Categorical Features | Online | Feature Level |
-| :---               |  :---:  | :---: |   :---:     | :---: |   :---:              | :---:  | :---:         |
-| Adversarial AE     | ✔       | ✔     |            |      |                     |       |              |
-| Model distillation | ✔       | ✔     |  ✔          |  ✔    |  ✔                   |       |              |
+| Detector           | Tabular | Image | Time Series | Text | Categorical Features | Online | Feature Level |
+| :---               |  :---:  | :---: |:-----------:|:----:|:--------------------:|:------:|:-------------:|
+| Adversarial AE     | ✔       | ✔     |             |      |                      |        |               |
+| Model distillation | ✔       | ✔     |      ✔      |  ✔   |          ✔           |        |               |
 
 
 ### Drift Detection
