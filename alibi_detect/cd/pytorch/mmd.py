@@ -5,16 +5,19 @@ from typing import Callable, Dict, Optional, Tuple, Union
 from alibi_detect.cd.base import BaseMMDDrift
 from alibi_detect.utils.pytorch.distance import mmd2_from_kernel_matrix
 from alibi_detect.utils.pytorch.kernels import GaussianRBF
+from alibi_detect.utils.warnings import deprecated_alias
 
 logger = logging.getLogger(__name__)
 
 
 class MMDDriftTorch(BaseMMDDrift):
+    @deprecated_alias(preprocess_x_ref='preprocess_at_init')
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
             p_val: float = .05,
-            preprocess_x_ref: bool = True,
+            x_ref_preprocessed: bool = False,
+            preprocess_at_init: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
             kernel: Callable = GaussianRBF,
@@ -34,8 +37,13 @@ class MMDDriftTorch(BaseMMDDrift):
             Data used as reference distribution.
         p_val
             p-value used for the significance of the permutation test.
-        preprocess_x_ref
-            Whether to already preprocess and store the reference data.
+        x_ref_preprocessed
+            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
+            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
+            data will also be preprocessed.
+        preprocess_at_init
+            Whether to preprocess the reference data when the detector is instantiated. Otherwise, the reference
+            data will be preprocessed at prediction time. Only applies if `x_ref_preprocessed=False`.
         update_x_ref
             Reference data can optionally be updated to the last n instances seen by the detector
             or via reservoir sampling with size n. For the former, the parameter equals {'last': n} while
@@ -62,7 +70,8 @@ class MMDDriftTorch(BaseMMDDrift):
         super().__init__(
             x_ref=x_ref,
             p_val=p_val,
-            preprocess_x_ref=preprocess_x_ref,
+            x_ref_preprocessed=x_ref_preprocessed,
+            preprocess_at_init=preprocess_at_init,
             update_x_ref=update_x_ref,
             preprocess_fn=preprocess_fn,
             sigma=sigma,
@@ -132,3 +141,14 @@ class MMDDriftTorch(BaseMMDDrift):
             mmd2, mmd2_permuted = mmd2.cpu(), mmd2_permuted.cpu()
         p_val = (mmd2 <= mmd2_permuted).float().mean()
         return p_val.numpy().item(), mmd2.numpy().item(), mmd2_permuted.numpy()
+
+    def get_config(self) -> dict:
+        """
+        Get the detector's configuration dictionary.
+        Not yet implemented for `MMDDrift` with the pytorch backend.
+
+        Returns
+        -------
+        The detector's configuration dictionary.
+        """
+        raise NotImplementedError("get_config not yet implemented for MMDDrift with pytorch backend.")
