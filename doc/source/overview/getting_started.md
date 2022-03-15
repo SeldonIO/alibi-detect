@@ -154,6 +154,9 @@ alibi_detect.cd.__all__
 ['ChiSquareDrift',
  'ClassifierDrift',
  'ClassifierUncertaintyDrift',
+ 'ContextMMDDrift',
+ 'CVMDrift',
+ 'FETDrift',
  'KSDrift',
  'LearnedKernelDrift',
  'LSDDDrift',
@@ -196,29 +199,34 @@ Similar for **adversarial detection**:
 * [Model Distillation Detector](../ad/methods/modeldistillation.ipynb)
 
 And **data drift**:
-    
-* [Kolmogorov-Smirnov Drift Detector](../cd/methods/ksdrift.ipynb)
-
-* [Least-Squares Density Difference Drift Detector](../cd/methods/lsdddrift.ipynb)
-
-* [Maximum Mean Discrepancy (MMD) Drift Detector](../cd/methods/mmddrift.ipynb)
-
-* [Learned Kernel MMD Drift Detector](../cd/methods/learnedkerneldrift.ipynb)
 
 * [Chi-Squared Drift Detector](../cd/methods/chisquaredrift.ipynb)
 
-* [Mixed-type Tabular Data Drift Detector](../cd/methods/tabulardrift.ipynb)
-
 * [Classifier Drift Detector](../cd/methods/classifierdrift.ipynb)
-
-* [Spot-the-diff Drift Detector](../cd/methods/spotthediffdrift.ipynb)
 
 * [Classifier and Regressor Uncertainty Drift Detectors](../cd/methods/modeluncdrift.ipynb)
 
-* [Online Maximum Mean Discrepancy Drift Detector](../cd/methods/onlinemmddrift.ipynb)
+* [Context-aware Drift Detector](../cd/methods/contextmmddrift.ipynb)
+
+* [Cramér-von Mises Drift Detector](../cd/methods/cvmdrift.html)
+
+* [Fisher's Exact Test Drift Detector](../cd/methods/fetdrift.html)
+
+* [Kolmogorov-Smirnov Drift Detector](../cd/methods/ksdrift.ipynb)
+
+* [Learned Kernel MMD Drift Detector](../cd/methods/learnedkerneldrift.ipynb)
+
+* [Least-Squares Density Difference Drift Detector](../cd/methods/lsdddrift.ipynb)
 
 * [Online Least-Squares Density Difference Drift Detector](../cd/methods/onlinelsdddrift.ipynb)
 
+* [Maximum Mean Discrepancy (MMD) Drift Detector](../cd/methods/mmddrift.ipynb)
+
+* [Online Maximum Mean Discrepancy Drift Detector](../cd/methods/onlinemmddrift.ipynb)
+
+* [Spot-the-diff Drift Detector](../cd/methods/spotthediffdrift.ipynb)
+
+* [Mixed-type Tabular Data Drift Detector](../cd/methods/tabulardrift.ipynb)
 
 ## Basic Usage
 
