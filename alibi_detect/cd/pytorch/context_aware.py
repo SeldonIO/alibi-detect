@@ -170,7 +170,7 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
         Private method to compute the MMD-ADiTT test statistic.
         """
         # Get ref/test indices
-        idx_0, idx_1 = np.where(bools == 0)[0], np.where(bools == 1)[0]
+        idx_0, idx_1 = torch.where(bools == 0)[0], torch.where(bools == 1)[0]
         n_ref, n_test = len(idx_0), len(idx_1)
 
         # Form kernel matrices
