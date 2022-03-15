@@ -170,12 +170,13 @@ The following tables show the advised use cases for each algorithm. The column *
 ### Drift Detection
 
 | Detector                         | Tabular | Image | Time Series | Text  | Categorical Features | Online | Feature Level |
-| :---                             |  :---:  | :---: |   :---:     | :---: |   :---:              | :---:  | :---:         |
+|:---------------------------------|  :---:  | :---: |   :---:     | :---: |   :---:              | :---:  | :---:         |
 | Kolmogorov-Smirnov               | ✔       | ✔     |             | ✔     | ✔                    |        | ✔             |
 | Cramér-von Mises                 | ✔       | ✔     |             |       |                      | ✔      | ✔             |
 | Fisher's Exact Test              | ✔       |       |             |       | ✔                    | ✔      | ✔             |
-| Maximum Mean Discrepancy         | ✔       | ✔     |             | ✔     | ✔                    | ✔      |               |
+| Maximum Mean Discrepancy (MMD)   | ✔       | ✔     |             | ✔     | ✔                    | ✔      |               |
 | Learned Kernel MMD               | ✔       | ✔     |             | ✔     | ✔                    |        |               |
+| Context-aware MMD                | ✔       | ✔     |  ✔          | ✔     | ✔                    |        |               |
 | Least-Squares Density Difference | ✔       | ✔     |             | ✔     | ✔                    | ✔      |               |
 | Chi-Squared                      | ✔       |       |             |       | ✔                    |        | ✔             |
 | Mixed-type tabular data          | ✔       |       |             |       | ✔                    |        | ✔             |
@@ -279,6 +280,9 @@ Check the example notebooks (e.g. [CIFAR10](https://docs.seldon.io/projects/alib
 
 - [Learned Kernel MMD](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/learnedkerneldrift.html) ([Liu et al, 2020](https://arxiv.org/abs/2002.09116))
   - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_clf_cifar10.html)
+
+- [Context-aware MMD](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/contextmmddrift.html)
+  - Example: [ECG](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_context_ecg.html), [news topics](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_context_20newsgroup.html)
 
 - [Chi-Squared](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/chisquaredrift.html)
    - Example: [Income Prediction](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_chi2ks_adult.html)
