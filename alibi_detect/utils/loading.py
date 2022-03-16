@@ -1,6 +1,5 @@
-# type: ignore
-from alibi_detect.version import __version__
-from alibi_detect.utils.schemas import DETECTOR_CONFIGS, DETECTOR_CONFIGS_RESOLVED, __config_spec__
+from alibi_detect.version import __version__, __config_spec__
+from alibi_detect.utils.schemas import DETECTOR_CONFIGS, DETECTOR_CONFIGS_RESOLVED  # type: ignore[attr-defined]
 import warnings
 
 
@@ -29,11 +28,11 @@ def validate_config(cfg: dict, resolved: bool = False) -> dict:
     # Validate detector specific config
     if detector_name in DETECTOR_CONFIGS.keys():
         if resolved:
-            cfg = DETECTOR_CONFIGS_RESOLVED[detector_name](**cfg).dict()  # type: ignore[attr-defined]
+            cfg = DETECTOR_CONFIGS_RESOLVED[detector_name](**cfg).dict()
         else:
-            cfg = DETECTOR_CONFIGS[detector_name](**cfg).dict()  # type: ignore[attr-defined]
+            cfg = DETECTOR_CONFIGS[detector_name](**cfg).dict()
     else:
-        raise ValueError('Loading the specified detector from a config.toml is not yet supported.')
+        raise ValueError(f'Loading the {detector_name} detector from a config.toml is not yet supported.')
 
     # check version
     version = cfg.pop('version', None)
