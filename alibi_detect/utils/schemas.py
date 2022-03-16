@@ -13,7 +13,9 @@ from transformers import PreTrainedTokenizerBase
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow  # , has_sklearn
 
 
-SUPPORTED_MODELS = Union['UAE', 'HiddenOutput', 'tf.keras.Model']
+# Populate supported models
+# SupportedModels is a tuple of the real class types, to be used in isinstance() in saving.py and loading.py.
+# SUPPORTED_MODELS is a typing.Union of the same model types, to be used in type hints.
 SupportedModels = [UAE, HiddenOutput]
 if has_tensorflow:
     import tensorflow as tf
@@ -24,6 +26,7 @@ if has_pytorch:
 # if has_sklearn:
 #    SupportedModels.append()  # TODO
 SupportedModels = tuple(SupportedModels)
+SUPPORTED_MODELS = Union[SupportedModels]
 
 
 # Custom BaseModel so that we can set default config
