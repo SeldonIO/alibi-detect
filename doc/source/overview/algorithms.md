@@ -32,7 +32,7 @@ The following tables summarize the advised use cases for the current algorithms.
 | [Cramér-von Mises](../cd/methods/cvmdrift.ipynb)                  |✔|✔| | | |✔|✔|
 | [Fisher's Exact Test](../cd/methods/fetdrift.ipynb)               |✔| | | |✔|✔|✔|
 | [Least-Squares Density Difference](../cd/methods/lsdddrift.ipynb) |✔|✔| |✔|✔|✔| |
-| [Maximum Mean Discrepancy](../cd/methods/mmddrift.ipynb)          |✔|✔| |✔|✔|✔| |
+| [Maximum Mean Discrepancy (MMD)](../cd/methods/mmddrift.ipynb)    |✔|✔| |✔|✔|✔| |
 | [Learned Kernel MMD](../cd/methods/learnedkerneldrift.ipynb)      |✔|✔|✔|✔|✔| | |
 | [Context-aware MMD](../cd/methods/contextmmddrift.ipynb)          |✔|✔|✔|✔|✔| | | |
 | [Chi-Squared](../cd/methods/chisquaredrift.ipynb)                 |✔| | | |✔| |✔|
