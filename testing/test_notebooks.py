@@ -34,6 +34,8 @@ EXCLUDE_NOTEBOOKS = {
     'od_llr_genome.ipynb',
     'od_llr_mnist.ipynb',
     'od_seq2seq_synth.ipynb',
+    'cd_context_20newsgroup.ipynb',
+    'cd_context_ecg.ipynb',
     # the following requires a k8s cluster
     'alibi_detect_deploy.ipynb',
     # the following require downloading large datasets
