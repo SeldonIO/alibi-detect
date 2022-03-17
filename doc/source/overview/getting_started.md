@@ -208,9 +208,9 @@ And **data drift**:
 
 * [Context-aware Drift Detector](../cd/methods/contextmmddrift.ipynb)
 
-* [Cramér-von Mises Drift Detector](../cd/methods/cvmdrift.html)
+* [Cramér-von Mises Drift Detector](../cd/methods/cvmdrift.ipynb)
 
-* [Fisher's Exact Test Drift Detector](../cd/methods/fetdrift.html)
+* [Fisher's Exact Test Drift Detector](../cd/methods/fetdrift.ipynb)
 
 * [Kolmogorov-Smirnov Drift Detector](../cd/methods/ksdrift.ipynb)
 
