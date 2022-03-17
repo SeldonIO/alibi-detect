@@ -36,6 +36,7 @@ EXCLUDE_NOTEBOOKS = {
     'od_seq2seq_synth.ipynb',
     'cd_context_20newsgroup.ipynb',
     'cd_context_ecg.ipynb',
+    'cd_text_imdb.ipynb',
     # the following requires a k8s cluster
     'alibi_detect_deploy.ipynb',
     # the following require downloading large datasets
@@ -44,7 +45,7 @@ EXCLUDE_NOTEBOOKS = {
     # the following require complex dependencies
     'cd_mol.ipynb',  # complex to install pytorch-geometric
 }
-if PROPHET_INSTALLED:
+if not PROPHET_INSTALLED:
     EXCLUDE_NOTEBOOKS.add('od_prophet_weather.ipynb')  # Exclude if fbprophet not installed i.e. on Windows
 
 EXECUTE_NOTEBOOKS = ALL_NOTEBOOKS - EXCLUDE_NOTEBOOKS
