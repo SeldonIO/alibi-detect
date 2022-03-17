@@ -121,8 +121,8 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
 
         Returns
         -------
-        p-value obtained from the conditional permutation test, the MMD-ADiTT test statistic, the permuted
-        test statistics, and a tuple containing the coupling matrices (xx, yy, xy).
+        p-value obtained from the conditional permutation test, the conditional MMD test statistic, the permuted
+        test statistics, and a tuple containing the coupling matrices (Wref,ref, Wtest,test, Wref,test).
         """
         x_ref, x = self.preprocess(x)
         x_ref = torch.from_numpy(x_ref).to(self.device)  # type: ignore[assignment]

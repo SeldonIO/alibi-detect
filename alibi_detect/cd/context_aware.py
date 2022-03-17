@@ -121,7 +121,7 @@ class ContextMMDDrift:
         return_p_val
             Whether to return the p-value of the permutation test.
         return_distance
-            Whether to return the MMD metric between the new batch and reference data.
+            Whether to return the conditional MMD test statistic between the new batch and reference data.
         return_coupling
             Whether to return the coupling matrices.
 
@@ -129,7 +129,8 @@ class ContextMMDDrift:
         -------
         Dictionary containing 'meta' and 'data' dictionaries.
         'meta' has the model's metadata.
-        'data' contains the drift prediction and optionally the p-value, threshold, MMD metric and coupling matrices.
+        'data' contains the drift prediction and optionally the p-value, threshold, conditional MMD test statistic
+        and coupling matrices.
         """
         return self._detector.predict(x, c, return_p_val, return_distance, return_coupling)
 
@@ -147,7 +148,7 @@ class ContextMMDDrift:
 
         Returns
         -------
-        p-value obtained from the conditional permutation test, the MMD-ADiTT test statistic, the permuted
-        test statistics, and a tuple containing the coupling matrices (xx, yy, xy).
+        p-value obtained from the conditional permutation test, the conditional MMD test statistic, the permuted
+        test statistics, and a tuple containing the coupling matrices (Wref,ref, Wtest,test, Wref,test).
         """
         return self._detector.score(x, c)
