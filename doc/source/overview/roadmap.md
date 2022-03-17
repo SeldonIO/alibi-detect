@@ -19,6 +19,6 @@ It will also be possible to combine different algorithms in ensemble detectors.
 The library **currently** covers both online and offline **outlier** detection algorithms for 
 tabular data, images and time series as well as offline **adversarial** detectors for 
 tabular data and images. Current **drift** detection capabilities cover almost any data modality such as mixed type tabular data, 
-text, images or graphs, both in the online and offline setting. Furthermore, Alibi Detect provides supervised (*concept*) drift and context-aware drift detectors.
+text, images or graphs, both in the online and offline setting. Furthermore, Alibi Detect provides supervised drift and context-aware drift detectors.
 
-The **near term** focus will be onextending save/load functionality for PyTorch detectors, and adding outlier detectors for text and mixed data types.
+The **near term** focus will be on extending save/load functionality for PyTorch detectors, and adding outlier detectors for text and mixed data types.

@@ -33,7 +33,9 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
             verbose: bool = False
     ) -> None:
         """
-        Maximum Mean Discrepancy (MMD) based context aware drift detector.
+        A context-aware drift detector based on a conditional analogue of the maximum mean discrepancy (MMD).
+        Only detects differences between samples that can not be attributed to differences between associated
+        sets of contexts. p-values are computed using a conditional permutation test.
 
         Parameters
         ----------
@@ -121,8 +123,8 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
 
         Returns
         -------
-        p-value obtained from the conditional permutation test, the MMD-ADiTT test statistic, the permuted
-        test statistics, and a tuple containing the coupling matrices (xx, yy, xy).
+        p-value obtained from the conditional permutation test, the conditional MMD test statistic, the permuted
+        test statistics, and a tuple containing the coupling matrices (Wref,ref, Wtest,test, Wref,test).
         """
         x_ref, x = self.preprocess(x)
         x_ref = torch.from_numpy(x_ref).to(self.device)  # type: ignore[assignment]
