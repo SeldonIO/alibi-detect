@@ -135,13 +135,14 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
         inds_held = np.random.choice(n, n_held, replace=False)
         inds_test = np.setdiff1d(np.arange(n), inds_held)
         c_held = torch.as_tensor(c[inds_held]).to(self.device)
-        c, x = torch.as_tensor(c[inds_test]).to(self.device), torch.as_tensor(x[inds_test]).to(self.device)
+        c = torch.as_tensor(c[inds_test]).to(self.device)  # type: ignore[assignment]
+        x = torch.as_tensor(x[inds_test]).to(self.device)  # type: ignore[assignment]
         n_ref, n_test = len(x_ref), len(x)
         bools = torch.cat([torch.zeros(n_ref), torch.ones(n_test)]).to(self.device)
 
         # Compute kernel matrices
-        x_all = torch.cat([x_ref, x], dim=0)
-        c_all = torch.cat([c_ref, c], dim=0)
+        x_all = torch.cat([x_ref, x], dim=0)  # type: ignore[list-item]
+        c_all = torch.cat([c_ref, c], dim=0)  # type: ignore[list-item]
         K = self.x_kernel(x_all, x_all)
         L = self.c_kernel(c_all, c_all)
         L_held = self.c_kernel(c_held, c_all)
