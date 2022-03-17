@@ -34,7 +34,9 @@ class ContextMMDDrift:
             verbose: bool = False
     ) -> None:
         """
-        Maximum Mean Discrepancy (MMD) based context aware drift detector.
+        A context-aware drift detector based on a conditional analogue of the maximum mean discrepancy (MMD).
+        Only detects differences between samples that can not be attributed to differences between associated
+        sets of contexts. p-values are computed using a conditional permutation test.
 
         Parameters
         ----------
