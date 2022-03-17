@@ -1,12 +1,41 @@
 import tensorflow as tf
 import numpy as np
 from . import distance
-from typing import Optional, Union
+from typing import Optional, Union, Callable
 from scipy.special import logit
 
 
+def sigma_median(x: tf.Tensor, y: tf.Tensor, dist: tf.Tensor) -> tf.Tensor:
+    """
+    Bandwidth estimation using the median heuristic :cite:t:`Gretton2012`.
+
+    Parameters
+    ----------
+    x
+        Tensor of instances with dimension [Nx, features].
+    y
+        Tensor of instances with dimension [Ny, features].
+    dist
+        Tensor with dimensions [Nx, Ny], containing the pairwise distances between `x` and `y`.
+
+    Returns
+    -------
+    The computed bandwidth, `sigma`.
+    """
+    n = min(x.shape[0], y.shape[0])
+    n = n if tf.reduce_all(x[:n] == y[:n]) and x.shape == y.shape else 0
+    n_median = n + (tf.math.reduce_prod(dist.shape) - n) // 2 - 1
+    sigma = tf.expand_dims((.5 * tf.sort(tf.reshape(dist, (-1,)))[n_median]) ** .5, axis=0)
+    return sigma
+
+
 class GaussianRBF(tf.keras.Model):
-    def __init__(self, sigma: Optional[tf.Tensor] = None, trainable: bool = False) -> None:
+    def __init__(
+            self,
+            sigma: Optional[tf.Tensor] = None,
+            init_sigma_fn: Callable = sigma_median,
+            trainable: bool = False
+    ) -> None:
         """
         Gaussian RBF kernel: k(x,y) = exp(-(1/(2*sigma^2)||x-y||^2). A forward pass takes
         a batch of instances x [Nx, features] and y [Ny, features] and returns the kernel
@@ -17,6 +46,10 @@ class GaussianRBF(tf.keras.Model):
         sigma
             Bandwidth used for the kernel. Needn't be specified if being inferred or trained.
             Can pass multiple values to eval kernel with and then average.
+        init_sigma_fn
+            Function used to compute the bandwidth `sigma`. Used when `sigma` is to be inferred.
+            The function's signature should match :py:func:`~alibi_detect.utils.tensorflow.kernels.sigma_median`,
+            meaning that it should take in the tensors `x`, `y` and `dist` and return `sigma`.
         trainable
             Whether or not to track gradients w.r.t. sigma to allow it to be trained.
         """
@@ -29,6 +62,7 @@ class GaussianRBF(tf.keras.Model):
             sigma = tf.cast(tf.reshape(sigma, (-1,)), dtype=tf.keras.backend.floatx())  # [Ns,]
             self.log_sigma = tf.Variable(tf.math.log(sigma), trainable=trainable)
             self.init_required = False
+        self.init_sigma_fn = init_sigma_fn
         self.trainable = trainable
 
     @property
@@ -43,10 +77,7 @@ class GaussianRBF(tf.keras.Model):
         if infer_sigma or self.init_required:
             if self.trainable and infer_sigma:
                 raise ValueError("Gradients cannot be computed w.r.t. an inferred sigma value")
-            n = min(x.shape[0], y.shape[0])
-            n = n if tf.reduce_all(x[:n] == y[:n]) and x.shape == y.shape else 0
-            n_median = n + (tf.math.reduce_prod(dist.shape) - n) // 2 - 1
-            sigma = tf.expand_dims((.5 * tf.sort(tf.reshape(dist, (-1,)))[n_median]) ** .5, axis=0)
+            sigma = self.init_sigma_fn(x, y, dist)
             self.log_sigma.assign(tf.math.log(sigma))
             self.init_required = False
 
