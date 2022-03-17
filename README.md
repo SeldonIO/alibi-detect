@@ -270,8 +270,10 @@ Check the example notebooks (e.g. [CIFAR10](https://docs.seldon.io/projects/alib
    - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_ks_cifar10.html), [molecular graphs](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_mol.html), [movie reviews](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_text_imdb.html)
 
 - [Cramér-von Mises](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/cvmdrift.html)
+  - Example: [Penguins](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_supervised_penguins.html)
 
 - [Fisher's Exact Test](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/fetdrift.html)
+  - Example: [Penguins](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_supervised_penguins.html)
 
 - [Least-Squares Density Difference](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/lsdddrift.html) ([Bu et al, 2016](https://alippi.faculty.polimi.it/articoli/A%20Pdf%20free%20Change%20Detection%20Test%20Based%20on%20Density%20Difference%20Estimation.pdf))
 
@@ -281,7 +283,7 @@ Check the example notebooks (e.g. [CIFAR10](https://docs.seldon.io/projects/alib
 - [Learned Kernel MMD](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/learnedkerneldrift.html) ([Liu et al, 2020](https://arxiv.org/abs/2002.09116))
   - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_clf_cifar10.html)
 
-- [Context-aware MMD](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/contextmmddrift.html)
+- [Context-aware MMD](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/contextmmddrift.html) ([Cobb and Van Looveren, 2022](https://arxiv.org/abs/2203.08644))
   - Example: [ECG](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_context_ecg.html), [news topics](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_context_20newsgroup.html)
 
 - [Chi-Squared](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/chisquaredrift.html)
