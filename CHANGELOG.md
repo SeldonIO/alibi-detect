@@ -4,12 +4,12 @@
 [Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.8.1...v0.9.0)
 
 ### Added
-- Added the [ContextMMDDrift](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/contextmmddrift.html) detector; a context-aware maximum mean discrepancy drift detector ([Cobb and Van Looveren, 2022](https://arxiv.org/abs/2203.08644)) is a kernel based method for detecting drift in a manner that can take relevant context into account.
+- Added the [ContextMMDDrift](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/contextmmddrift.html) detector. The context-aware maximum mean discrepancy drift detector ([Cobb and Van Looveren, 2022](https://arxiv.org/abs/2203.08644)) is a kernel based method for detecting drift in a manner that can take relevant context into account.
 - The maximum `tensorflow` version has been bumped from 2.7 to 2.8 ([#444](https://github.com/SeldonIO/alibi-detect/pull/444)).
 
 ### Fixed
-- Fixed an issue experienced when the [Model uncertainty based drift detection...  ](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_model_unc_cifar10_wine.html) example is run on GPU's ([#445](https://github.com/SeldonIO/alibi-detect/pull/445)).
-- Fixed an issue with the [Text drift detection on IMDB...](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_text_imdb.html) example to allow PyTorch to be used ([#438](https://github.com/SeldonIO/alibi-detect/pull/438)).
+- Fixed an issue experienced when the [Model uncertainty based drift detection](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_model_unc_cifar10_wine.html) example is run on GPU's ([#445](https://github.com/SeldonIO/alibi-detect/pull/445)).
+- Fixed an issue with the [Text drift detection on IMDB](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_text_imdb.html) example to allow PyTorch to be used ([#438](https://github.com/SeldonIO/alibi-detect/pull/438)).
 
 ## [v0.8.1](https://github.com/SeldonIO/alibi-detect/tree/v0.8.1) (2022-01-18)
 [Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.8.0...v0.8.1)
