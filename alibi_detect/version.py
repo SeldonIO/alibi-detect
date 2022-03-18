@@ -3,4 +3,4 @@
 # 2) we can import it in setup.py for the same reason
 # 3) we can import it into your module module
 __version__ = "0.8.2dev"
-__config_spec__ = "0.1.0dev"  # TODO - remove dev once config layout confirmed
+__config_spec__ = "0.1"

@@ -39,6 +39,7 @@ def validate_config(cfg: dict, resolved: bool = False) -> dict:
     if version is not None and version != __version__:
         warnings.warn(f'Config is from version {version} but current version is '
                       f'{__version__}. This may lead to breaking code or invalid results.')
+        cfg['version_warning'] = True
 
     # Check config specification version
     config_spec = cfg.pop('config_spec', None)
@@ -46,4 +47,6 @@ def validate_config(cfg: dict, resolved: bool = False) -> dict:
         warnings.warn(f'Config has specification {version} when the installed '
                       f'alibi-detect version expects specification {__config_spec__}.'
                       'This may lead to breaking code or invalid results.')
+        cfg['version_warning'] = True
+
     return cfg
