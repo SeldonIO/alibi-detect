@@ -1,32 +1,30 @@
 # type: ignore[assignment]
 # TODO - conditional checks depending on backend
 # TODO - consider validating output of get_config calls
-
+# TODO check https://pydantic-docs.helpmanual.io/usage/postponed_annotations/ - think OK but test
 import numpy as np
 from pydantic import BaseModel
 from typing import Optional, Union, Dict, List, Callable
 from alibi_detect.utils._types import Literal
 from alibi_detect.version import __version__, __config_spec__
-from alibi_detect.cd.tensorflow import HiddenOutput, UAE
 from alibi_detect.models.tensorflow import TransformerEmbedding
 from transformers import PreTrainedTokenizerBase
-from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow  # , has_sklearn
+from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
 
-
-# Populate supported models
-# SupportedModels is a tuple of the real class types, to be used in isinstance() in saving.py and loading.py.
-# SUPPORTED_MODELS is a typing.Union of the same model types, to be used in type hints.
-SupportedModels = [UAE, HiddenOutput]
+# SupportedModels_types is a tuple of possible models (conditional on installed deps). This is used in isinstance() etc.
+SupportedModels = []
 if has_tensorflow:
     import tensorflow as tf
-    SupportedModels.append(tf.keras.Model)
+    from alibi_detect.cd.tensorflow import UAE, HiddenOutput
+    SupportedModels += [tf.keras.Model, UAE, HiddenOutput]
 if has_pytorch:
     import torch
 #    SupportedModels.append()  # TODO
 # if has_sklearn:
+#    import sklearn
 #    SupportedModels.append()  # TODO
 SupportedModels = tuple(SupportedModels)
-SUPPORTED_MODELS = Union[SupportedModels]
+SupportedModels_py = Union[SupportedModels]  # only for use with pydantic. NOT to be used with mypy (as not static)
 
 
 # Custom BaseModel so that we can set default config
@@ -106,7 +104,7 @@ class PreprocessConfigResolved(PreprocessConfig):
     """
     src: Callable
     device: Optional['torch.device'] = None  # Note: `device` resolved for preprocess_drift, but str for detectors
-    model: Optional[SUPPORTED_MODELS] = None  # TODO - Not optional if src is preprocess_drift
+    model: Optional[SupportedModels_py] = None  # TODO - Not optional if src is preprocess_drift
     embedding: Optional[TransformerEmbedding] = None
     tokenizer: Optional[PreTrainedTokenizerBase] = None
     preprocess_batch_fn: Optional[Callable] = None
@@ -149,7 +147,7 @@ class DeepKernelConfigResolved(DeepKernelConfig):
     """
     Resolved schema for DeepKernels (see utils.[backend].kernels.DeepKernel).
     """
-    proj: SUPPORTED_MODELS
+    proj: SupportedModels_py
     kernel_a: Union[Callable, KernelConfigResolved]
     kernel_b: Optional[Union[Callable, KernelConfigResolved]] = None
 
@@ -377,17 +375,17 @@ class ClassifierDriftConfigResolved(DriftDetectorConfigResolved, ClassifierDrift
     Resolved schema for ClassifierDrift detector.
     """
     reg_loss_fn: Optional[Callable] = None
-    optimizer: Optional[tf.keras.optimizers.Optimizer] = None
+    optimizer: Optional['tf.keras.optimizers.Optimizer'] = None
     preprocess_batch_fn: Optional[Callable] = None
     dataset: Optional[Callable] = None
-    model: Optional[SUPPORTED_MODELS] = None
+    model: Optional[SupportedModels_py] = None
 
 
 class SpotTheDiffDriftConfigResolved(DriftDetectorConfigResolved, SpotTheDiffDriftConfig):
     """
     Resolved schema for SpotTheDiffDrift detector.
     """
-    optimizer: Optional[tf.keras.optimizers.Optimizer] = None
+    optimizer: Optional['tf.keras.optimizers.Optimizer'] = None
     preprocess_batch_fn: Optional[Callable] = None
     dataset: Optional[Callable] = None
     kernel: Optional[Union[Callable, KernelConfigResolved]] = None
@@ -400,7 +398,7 @@ class LearnedKernelDriftConfigResolved(DriftDetectorConfigResolved, LearnedKerne
     """
     kernel: Optional[Union[Callable, DeepKernelConfigResolved]] = None
     reg_loss_fn: Optional[Callable] = None
-    optimizer: Optional[tf.keras.optimizers.Optimizer] = None
+    optimizer: Optional['tf.keras.optimizers.Optimizer'] = None
     preprocess_batch_fn: Optional[Callable] = None
     dataset: Optional[Callable] = None
 

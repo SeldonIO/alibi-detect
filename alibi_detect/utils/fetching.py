@@ -514,7 +514,7 @@ def fetch_detector(filepath: Union[str, os.PathLike],
         if model_type == 'weights':
             kwargs = get_pixelcnn_default_kwargs()
     detector = load_detector(filepath, **kwargs)
-    return detector
+    return detector  # type: ignore[return-value] # Since load_detector returns drift detectors but "Data" doesn't inc.
 
 
 def _join_url(base: str, parts: Union[str, List[str]]) -> str:
