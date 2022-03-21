@@ -23,13 +23,6 @@ class ContinuousData:
 #        X_ref = np.random.rand(n_samples)
 #        X_h0 = np.random.rand(n_samples)
 #        return X_ref, X_h0
-#
-#    @staticmethod  # TODO - Add if we decide to support lists
-#    def data_synthetic_list():
-#        n_samples = 50
-#        X_ref = list(np.random.rand(n_samples))
-#        X_h0 = list(np.random.rand(n_samples))
-#        return X_ref, X_h0
 
 
 class CategoricalData:
