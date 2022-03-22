@@ -2,7 +2,7 @@
 """
 Tests for saving/loading of detectors via config.toml files.
 
-Internal functions such as save_kernel/load_kernel etc are also tested.
+Internal functions such as save_kernel/load_kernel_config etc are also tested.
 """
 # TODO - test pytorch save/load functionality
 from functools import partial
@@ -28,9 +28,9 @@ from alibi_detect.utils.tensorflow.kernels import DeepKernel as DeepKernel_tf, G
 from alibi_detect.utils.pytorch.kernels import DeepKernel as DeepKernel_pt, GaussianRBF as GaussianRBF_pt
 from alibi_detect.utils.registry import registry
 from alibi_detect.utils.saving import (save_detector, _save_kernel, _save_preprocess,
-                                       _save_model, _path2str, _serialize_function)  # type: ignore
-from alibi_detect.utils.loading import (load_detector, _load_kernel, resolve_cfg, _load_preprocess,
-                                        _load_model, _load_optimizer, _set_nested_value, _replace,
+                                       _save_model_config, _path2str, _serialize_function)  # type: ignore
+from alibi_detect.utils.loading import (load_detector, _load_kernel_config, resolve_cfg, _load_preprocess,
+                                        _load_model_config, _load_optimizer, _set_nested_value, _replace,
                                         _get_nested_value)  # type: ignore
 from alibi_detect.utils.schemas import (
     KernelConfig, KernelConfigResolved,
@@ -513,7 +513,7 @@ def test_save_learnedkernel(data, deep_kernel, preprocess_uae, backend, tmp_path
 )
 def test_save_kernel(kernel, backend, tmp_path):
     """
-    Unit test for _save/_load_kernel, when kernel is a GaussianRBF kernel.
+    Unit test for _save/_load_kernel_config, when kernel is a GaussianRBF kernel.
 
     Kernels are saved and then loaded, with assertions to check equivalence.
     """
@@ -528,7 +528,7 @@ def test_save_kernel(kernel, backend, tmp_path):
     cfg = {'kernel': cfg_kernel}
     cfg_kernel = _path2str(resolve_cfg(cfg, tmp_path)['kernel'])
     cfg_kernel = KernelConfigResolved(**cfg_kernel).dict()
-    kernel_loaded = _load_kernel(cfg_kernel, backend=backend, device=DEVICE)
+    kernel_loaded = _load_kernel_config(cfg_kernel, backend=backend, device=DEVICE)
     assert type(kernel_loaded) == type(kernel)
     np.testing.assert_array_equal(np.array(kernel_loaded.sigma), np.array(cfg_kernel['sigma']))
     assert kernel_loaded.trainable == cfg_kernel['trainable']
@@ -536,7 +536,7 @@ def test_save_kernel(kernel, backend, tmp_path):
 
 def test_save_deepkernel(deep_kernel, kernel_proj_dim, backend, tmp_path):
     """
-    Unit test for _save/_load_kernel, when kernel is a DeepKernel kernel.
+    Unit test for _save/_load_kernel_config, when kernel is a DeepKernel kernel.
 
     Kernels are saved and then loaded, with assertions to check equivalence.
     """
@@ -551,8 +551,8 @@ def test_save_deepkernel(deep_kernel, kernel_proj_dim, backend, tmp_path):
     filepath = tmp_path
     filename = 'mykernel.dill'
     cfg_kernel = _save_kernel(cfg_kernel, filepath, device=DEVICE, filename=filename)
-    cfg_kernel['proj'], _ = _save_model(cfg_kernel['proj'], base_path=filepath, input_shape=kernel_proj_dim,
-                                        backend=backend)
+    cfg_kernel['proj'], _ = _save_model_config(cfg_kernel['proj'], base_path=filepath, input_shape=kernel_proj_dim,
+                                               backend=backend)
     cfg_kernel = _path2str(cfg_kernel)
     cfg_kernel['proj'] = ModelConfig(**cfg_kernel['proj']).dict()  # Pass through ModelConfig to set `custom_obj` etc
     cfg_kernel = DeepKernelConfig(**cfg_kernel).dict()
@@ -562,7 +562,7 @@ def test_save_deepkernel(deep_kernel, kernel_proj_dim, backend, tmp_path):
     cfg = {'kernel': cfg_kernel}
     cfg_kernel = resolve_cfg(cfg, tmp_path)['kernel']
     cfg_kernel = DeepKernelConfigResolved(**cfg_kernel).dict()
-    kernel_loaded = _load_kernel(cfg_kernel, backend=backend, device=DEVICE)
+    kernel_loaded = _load_kernel_config(cfg_kernel, backend=backend, device=DEVICE)
     assert isinstance(kernel_loaded.proj, (torch.nn.Module, tf.keras.Model))
     np.testing.assert_almost_equal(kernel_loaded.eps, deep_kernel.eps, 4)
     assert kernel_loaded.kernel_a.sigma == deep_kernel.kernel_a.sigma
@@ -576,7 +576,7 @@ def test_save_preprocess(data, preprocess_fn, tmp_path, backend):
     Unit test for _save_preprocess and _load_preprocess, with continuous data.
 
     preprocess_fn's are saved (serialized) and then loaded, with assertions to check equivalence.
-    Note: _save_model, _save_embedding, _save_tokenizer, _load_model, _load_embedding, _load_tokenizer and
+    Note: _save_model, _save_embedding, _save_tokenizer, _load_model_config, _load_embedding, _load_tokenizer and
      _prep_model_and_embedding are all well covered by this test.
     """
     # Save preprocess_fn to config
@@ -608,7 +608,7 @@ def test_save_preprocess_nlp(data, preprocess_fn, enc_dim, tmp_path, backend):
     """
     Unit test for _save_preprocess and _load_preprocess, with text data.
 
-    Note: _save_model, _save_embedding, _save_tokenizer, _load_model, _load_embedding, _load_tokenizer and
+    Note: _save_model, _save_embedding, _save_tokenizer, _load_model_config, _load_embedding, _load_tokenizer and
      _prep_model_and_embedding are all covered by this test.
     """
     # Save preprocess_fn to config
@@ -634,12 +634,12 @@ def test_save_preprocess_nlp(data, preprocess_fn, enc_dim, tmp_path, backend):
 @parametrize('model', [uae_model])
 def test_save_model(data, model, backend, tmp_path):
     """
-    Unit test for _save_model and _load_model.
+    Unit test for _save_model and _load_model_config.
     """
     # Save model
     filepath = tmp_path
     input_dim = data[0].shape[1]
-    cfg_model, _ = _save_model(model, base_path=filepath, input_shape=input_dim, backend=backend)
+    cfg_model, _ = _save_model_config(model, base_path=filepath, input_shape=input_dim, backend=backend)
     cfg_model = _path2str(cfg_model)
     cfg_model = ModelConfig(**cfg_model).dict()
     assert tmp_path.joinpath('model').is_dir()
@@ -647,7 +647,7 @@ def test_save_model(data, model, backend, tmp_path):
 
     # Load model
     cfg_model['src'] = tmp_path.joinpath('model')  # Need to manually set to absolute path here
-    model_load = _load_model(cfg_model, backend=backend)
+    model_load = _load_model_config(cfg_model, backend=backend)
     assert isinstance(model_load, type(model))
     # TODO - double check why loaded model is Sequential but UAE in test_save_preprocess
     # TODO - Assertions should depend on cfg_model['type'] when more models are parametrized

@@ -1,15 +1,17 @@
 # type: ignore[assignment]
+# Above is needed to avoid mypy throwing up errors due to pydantic model fields being redefined in inherited
+# pydantic models. Could be avoided if we allow-redefinition, or else avoid redefinition (would increase duplication).
+
 # TODO - conditional checks depending on backend
 # TODO - consider validating output of get_config calls
-# TODO check https://pydantic-docs.helpmanual.io/usage/postponed_annotations/ - think OK but test
 import numpy as np
 from pydantic import BaseModel
-from typing import Optional, Union, Dict, List, Callable
+from typing import Optional, Union, Dict, List, Callable, Any
 from alibi_detect.utils._types import Literal
 from alibi_detect.version import __version__, __config_spec__
 from alibi_detect.models.tensorflow import TransformerEmbedding
 from transformers import PreTrainedTokenizerBase
-from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
+from alibi_detect.utils.frameworks import has_tensorflow
 
 # SupportedModels_types is a tuple of possible models (conditional on installed deps). This is used in isinstance() etc.
 SupportedModels = []
@@ -17,8 +19,8 @@ if has_tensorflow:
     import tensorflow as tf
     from alibi_detect.cd.tensorflow import UAE, HiddenOutput
     SupportedModels += [tf.keras.Model, UAE, HiddenOutput]
-if has_pytorch:
-    import torch
+# if has_pytorch:
+#    import torch
 #    SupportedModels.append()  # TODO
 # if has_sklearn:
 #    import sklearn
@@ -103,7 +105,8 @@ class PreprocessConfigResolved(PreprocessConfig):
     Resolved schema for preprocess_fn.
     """
     src: Callable
-    device: Optional['torch.device'] = None  # Note: `device` resolved for preprocess_drift, but str for detectors
+    # device: Optional['torch.device'] = None  # Note: `device` resolved for preprocess_drift, but str for detectors
+    device: Optional[Any] = None  # TODO: Set as none for now. Think about how to handle ForwardRef when torch missing
     model: Optional[SupportedModels_py] = None  # TODO - Not optional if src is preprocess_drift
     embedding: Optional[TransformerEmbedding] = None
     tokenizer: Optional[PreTrainedTokenizerBase] = None
