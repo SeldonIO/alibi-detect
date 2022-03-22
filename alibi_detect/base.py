@@ -122,6 +122,9 @@ class DriftConfigMixin:
         if self.preprocess_fn is not None:
             cfg.update({'preprocess_fn': self.preprocess_fn})
 
+        # Add version_warning if it exists
+        cfg.update({'version_warning': self.meta.get('version_warning', False)})
+
         return cfg
 
 

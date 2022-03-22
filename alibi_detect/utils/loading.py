@@ -126,29 +126,26 @@ def load_detector(filepath: Union[str, os.PathLike], **kwargs) -> Detectors:
 
 
 # TODO - will eventually become load_detector
-def _load_detector_config(cfg: Union[str, os.PathLike, dict]) -> Detectors:
+def _load_detector_config(filepath: Union[str, os.PathLike]) -> Detectors:
     """
     Loads a drift detector specified in a detector config dict. Validation is performed with pydantic.
 
     Parameters
     ----------
-    cfg
-        The detector config dict.
+    filepath
+        Directory containing the `config.toml` file.
 
     Returns
     -------
     The instantiated detector.
     """
     # Load toml if needed
-    if isinstance(cfg, (str, os.PathLike)):
-        config_file = Path(deepcopy(cfg))
+    if isinstance(filepath, (str, os.PathLike)):
+        config_file = Path(deepcopy(filepath))
         config_dir = config_file.parent
         cfg = read_config(config_file)
-    elif isinstance(cfg, dict):
-        config_file = None
-        config_dir = None
     else:
-        raise ValueError('Detector `cfg` not recognised.')
+        raise ValueError("`filepath` should point to a directory containing a 'config.toml' file.")
 
     # Resolve and validate config
     cfg = validate_config(cfg)

@@ -34,6 +34,12 @@ def validate_config(cfg: dict, resolved: bool = False) -> dict:
     else:
         raise ValueError(f'Loading the {detector_name} detector from a config.toml is not yet supported.')
 
+    # Raise warning if config file already contains a version_warning
+    version_warning = cfg.get('version_warning', False)
+    if version_warning:
+        warnings.warn('The config file appears to be have been generated from a detector which may have been '
+                      'loaded with a version mismatch. This may lead to breaking code or invalid results.')
+
     # check version
     version = cfg.pop('version', None)
     if version is not None and version != __version__:

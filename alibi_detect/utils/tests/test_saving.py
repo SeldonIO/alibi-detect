@@ -28,10 +28,10 @@ from alibi_detect.utils.tensorflow.kernels import DeepKernel as DeepKernel_tf, G
 from alibi_detect.utils.pytorch.kernels import DeepKernel as DeepKernel_pt, GaussianRBF as GaussianRBF_pt
 from alibi_detect.utils.registry import registry
 from alibi_detect.utils.saving import (save_detector, _save_kernel, _save_preprocess,
-                                       _save_model_config, _path2str, _serialize_function)  # type: ignore
+                                       _save_model_config, _path2str, _serialize_function, save_config)  # type: ignore
 from alibi_detect.utils.loading import (load_detector, _load_kernel_config, resolve_cfg, _load_preprocess,
                                         _load_model_config, _load_optimizer, _set_nested_value, _replace,
-                                        _get_nested_value)  # type: ignore
+                                        _get_nested_value, read_config)  # type: ignore
 from alibi_detect.utils.schemas import (
     KernelConfig, KernelConfigResolved,
     DeepKernelConfig, DeepKernelConfigResolved,
@@ -503,6 +503,34 @@ def test_save_learnedkernel(data, deep_kernel, preprocess_uae, backend, tmp_path
         assert isinstance(cd_load._detector.kernel, DeepKernel_pt)
 
 # TODO - checks for modeluncertainty detectors
+
+
+@parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
+def test_version_warning(data, tmp_path):
+    """
+    Test that a version mismatch warning is raised if a detector is loaded from a config generated with a
+    different alibi_detect version, then saved, then loaded again (warning is still expected on final load).
+
+    This is only tested on one detector since the functionality lies outside of the actual detector classes.
+    """
+    X_ref, X_h0 = data
+    cd = KSDrift(X_ref, p_val=P_VAL)
+    # First save (just to create a config)
+    save_detector(cd, tmp_path)
+    # Emulate version mismatch
+    cfg = read_config(tmp_path.joinpath('config.toml'))
+    cfg['version'] = '0.1.x'
+    _ = save_config(cfg, tmp_path)
+    # Reload and save again
+    cd = load_detector(tmp_path)
+    save_detector(cd, tmp_path)
+    # Check saved config contains a "version_warning"
+    cfg = read_config(tmp_path.joinpath('config.toml'))
+    assert cfg.get('version_warning', False)
+    # Final load (we expect a warning to be raised here)
+    with pytest.warns(Warning):  # error will be raised if a warning IS NOT raised
+        cd_new = load_detector(tmp_path)
+        assert cd_new.meta.get('version_warning', False)
 
 
 @parametrize('kernel', [
