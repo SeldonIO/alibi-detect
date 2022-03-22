@@ -13,6 +13,11 @@ import dill  # dispatch table setting not done here as done in top-level saving.
 from alibi_detect.ad import AdversarialAE, ModelDistillation
 from alibi_detect.od import (IForest, LLR, Mahalanobis, OutlierAE, OutlierAEGMM, OutlierProphet,
                              OutlierSeq2Seq, OutlierVAE, OutlierVAEGMM, SpectralResidual)
+from alibi_detect.cd import ChiSquareDrift, TabularDrift, KSDrift, ClassifierDrift, MMDDrift
+from alibi_detect.cd.tensorflow.classifier import ClassifierDriftTF
+from alibi_detect.cd.tensorflow.mmd import MMDDriftTF
+from alibi_detect.utils.tensorflow.kernels import GaussianRBF
+from functools import partial
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +57,7 @@ def save_model_config(model: Callable,
             embed = model.encoder.layers[0].model
             cfg_embed.update({'type': model.encoder.layers[0].emb_type})
             cfg_embed.update({'layers': model.encoder.layers[0].hs_emb.keywords['layers']})
-            _save_embedding(embed, cfg_embed, filepath.joinpath('embedding'))
+            save_embedding(embed, cfg_embed, filepath.joinpath('embedding'))
             cfg_embed.update({'src': path.joinpath('embedding')})
             # preprocessing encoder
             inputs = Input(shape=input_shape, dtype=tf.int64)
@@ -71,15 +76,15 @@ def save_model_config(model: Callable,
         model = model
         cfg_model.update({'type': 'custom'})
 
-    save_tf_model(model, filepath=filepath, save_dir='model')
+    save_model(model, filepath=filepath, save_dir='model')
     cfg_model.update({'src': path.joinpath('model')})
     return cfg_model, cfg_embed
 
 
-def save_tf_model(model: tf.keras.Model,
-                  filepath: Union[str, os.PathLike],
-                  save_dir: Union[str, os.PathLike] = 'model',
-                  save_format: Literal['tf', 'h5'] = 'h5') -> None:  # TODO - change to tf, later PR
+def save_model(model: tf.keras.Model,
+               filepath: Union[str, os.PathLike],
+               save_dir: Union[str, os.PathLike] = 'model',
+               save_format: Literal['tf', 'h5'] = 'h5') -> None:  # TODO - change to tf, later PR
     """
     Save TensorFlow model.
 
@@ -112,9 +117,9 @@ def save_tf_model(model: tf.keras.Model,
 
 # Note: save_embedding is backend agnostic, but can't be put in utils/saving.py due to circular import.
 #  Hence it will need to be duplicated in utils/pytorch/_saving.py, or moved to a 3rd file.
-def _save_embedding(embed: TransformerEmbedding,
-                    embed_args: dict,
-                    filepath: Path) -> None:
+def save_embedding(embed: TransformerEmbedding,
+                   embed_args: dict,
+                   filepath: Path) -> None:
     """
     Save embeddings for text drift models.
 
@@ -143,7 +148,7 @@ def _save_embedding(embed: TransformerEmbedding,
 # TODO: Everything below here is legacy saving code, and will be removed in the future
 #######################################################################################################
 def save_detector_legacy(detector, filepath):
-    detector_name = detector.__class__.__name__
+    detector_name = detector.meta['name']
 
     # save metadata
     logger.info('Saving metadata and detector to {}'.format(filepath))
@@ -151,58 +156,335 @@ def save_detector_legacy(detector, filepath):
     with open(filepath.joinpath('meta.dill'), 'wb') as f:
         dill.dump(detector.meta, f)
 
-    # save outlier detector specific parameters
+    # save detector specific parameters
     if isinstance(detector, OutlierAE):
-        state_dict = _state_ae(detector)
+        state_dict = state_ae(detector)
     elif isinstance(detector, OutlierVAE):
-        state_dict = _state_vae(detector)
+        state_dict = state_vae(detector)
     elif isinstance(detector, Mahalanobis):
-        state_dict = _state_mahalanobis(detector)
+        state_dict = state_mahalanobis(detector)
     elif isinstance(detector, IForest):
-        state_dict = _state_iforest(detector)
+        state_dict = state_iforest(detector)
+    elif isinstance(detector, ChiSquareDrift):
+        state_dict, model, embed, embed_args, tokenizer = state_chisquaredrift(detector)
+    elif isinstance(detector, ClassifierDrift):
+        state_dict, clf_drift, model, embed, embed_args, tokenizer = state_classifierdrift(detector)
+    elif isinstance(detector, TabularDrift):
+        state_dict, model, embed, embed_args, tokenizer = state_tabulardrift(detector)
+    elif isinstance(detector, KSDrift):
+        state_dict, model, embed, embed_args, tokenizer = state_ksdrift(detector)
+    elif isinstance(detector, MMDDrift):
+        state_dict, model, embed, embed_args, tokenizer = state_mmddrift(detector)
     elif isinstance(detector, OutlierAEGMM):
-        state_dict = _state_aegmm(detector)
+        state_dict = state_aegmm(detector)
     elif isinstance(detector, OutlierVAEGMM):
-        state_dict = _state_vaegmm(detector)
+        state_dict = state_vaegmm(detector)
     elif isinstance(detector, AdversarialAE):
-        state_dict = _state_adv_ae(detector)
+        state_dict = state_adv_ae(detector)
     elif isinstance(detector, ModelDistillation):
-        state_dict = _state_adv_md(detector)
+        state_dict = state_adv_md(detector)
     elif isinstance(detector, OutlierProphet):
-        state_dict = _state_prophet(detector)
+        state_dict = state_prophet(detector)
     elif isinstance(detector, SpectralResidual):
-        state_dict = _state_sr(detector)
+        state_dict = state_sr(detector)
     elif isinstance(detector, OutlierSeq2Seq):
-        state_dict = _state_s2s(detector)
+        state_dict = state_s2s(detector)
     elif isinstance(detector, LLR):
-        state_dict = _state_llr(detector)
+        state_dict = state_llr(detector)
+    else:
+        raise NotImplementedError('The %s detector does not have a legacy save method.' % detector_name)
 
     with open(filepath.joinpath(detector_name + '.dill'), 'wb') as f:
         dill.dump(state_dict, f)
 
-    # save outlier detector specific TensorFlow models
+    # save detector specific TensorFlow models
     if isinstance(detector, OutlierAE):
         save_tf_ae(detector, filepath)
     elif isinstance(detector, OutlierVAE):
         save_tf_vae(detector, filepath)
+    elif isinstance(detector, (ChiSquareDrift, ClassifierDrift, KSDrift, MMDDrift, TabularDrift)):
+        if model is not None:
+            save_model(model, filepath, save_dir='encoder')
+        if embed is not None:
+            save_embedding(embed, embed_args, filepath)
+        if tokenizer is not None:
+            tokenizer.save_pretrained(filepath.joinpath('model'))
+        if detector_name == 'ClassifierDriftTF':
+            save_model(clf_drift, filepath, save_dir='clf_drift')
     elif isinstance(detector, OutlierAEGMM):
         save_tf_aegmm(detector, filepath)
     elif isinstance(detector, OutlierVAEGMM):
         save_tf_vaegmm(detector, filepath)
     elif isinstance(detector, AdversarialAE):
         save_tf_ae(detector, filepath)
-        save_tf_model(detector.model, filepath)
+        save_model(detector.model, filepath)
         save_tf_hl(detector.model_hl, filepath)
     elif isinstance(detector, ModelDistillation):
-        save_tf_model(detector.distilled_model, filepath, save_dir='distilled_model')
-        save_tf_model(detector.model, filepath, save_dir='model')
+        save_model(detector.distilled_model, filepath, save_dir='distilled_model')
+        save_model(detector.model, filepath, save_dir='model')
     elif isinstance(detector, OutlierSeq2Seq):
         save_tf_s2s(detector, filepath)
     elif isinstance(detector, LLR):
         save_tf_llr(detector, filepath)
 
 
-def _state_iforest(od: IForest) -> Dict:
+def preprocess_step_drift(cd: Union[ChiSquareDrift, ClassifierDriftTF, KSDrift, MMDDriftTF, TabularDrift]) \
+        -> Tuple[
+            Optional[Callable], Dict, Optional[Union[tf.keras.Model, tf.keras.Sequential]],
+            Optional[TransformerEmbedding], Dict, Optional[Callable], bool
+        ]:
+    # note: need to be able to dill tokenizers other than transformers
+    preprocess_fn, preprocess_kwargs = None, {}
+    model, embed, embed_args, tokenizer, load_emb = None, None, {}, None, False
+    if isinstance(cd.preprocess_fn, partial):
+        preprocess_fn = cd.preprocess_fn.func
+        for k, v in cd.preprocess_fn.keywords.items():
+            if isinstance(v, UAE):
+                if isinstance(v.encoder.layers[0], TransformerEmbedding):  # text drift
+                    # embedding
+                    embed = v.encoder.layers[0].model
+                    embed_args = dict(
+                        embedding_type=v.encoder.layers[0].emb_type,
+                        layers=v.encoder.layers[0].hs_emb.keywords['layers']
+                    )
+                    load_emb = True
+
+                    # preprocessing encoder
+                    inputs = Input(shape=cd.input_shape, dtype=tf.int64)
+                    v.encoder.call(inputs)
+                    shape_enc = (v.encoder.layers[0].output.shape[-1],)
+                    layers = [InputLayer(input_shape=shape_enc)] + v.encoder.layers[1:]
+                    model = tf.keras.Sequential(layers)
+                    _ = model(tf.zeros((1,) + shape_enc))
+                else:
+                    model = v.encoder
+                preprocess_kwargs['model'] = 'UAE'
+            elif isinstance(v, HiddenOutput):
+                model = v.model
+                preprocess_kwargs['model'] = 'HiddenOutput'
+            elif isinstance(v, (tf.keras.Sequential, tf.keras.Model)):
+                model = v
+                preprocess_kwargs['model'] = 'custom'
+            elif hasattr(v, '__module__'):
+                if 'transformers' in v.__module__:  # transformers tokenizer
+                    tokenizer = v
+                    preprocess_kwargs[k] = v.__module__
+            else:
+                preprocess_kwargs[k] = v
+    elif callable(cd.preprocess_fn):
+        preprocess_fn = cd.preprocess_fn
+    return preprocess_fn, preprocess_kwargs, model, embed, embed_args, tokenizer, load_emb
+
+
+def state_chisquaredrift(cd: ChiSquareDrift) -> Tuple[
+            Dict, Optional[Union[tf.keras.Model, tf.keras.Sequential]],
+            Optional[TransformerEmbedding], Optional[Dict], Optional[Callable]
+        ]:
+    """
+    Chi-Squared drift detector parameters to save.
+    Parameters
+    ----------
+    cd
+        Drift detection object.
+    """
+    preprocess_fn, preprocess_kwargs, model, embed, embed_args, tokenizer, load_emb = \
+        preprocess_step_drift(cd)
+    state_dict = {
+        'args':
+            {
+                'x_ref': cd.x_ref
+            },
+        'kwargs':
+            {
+                'p_val': cd.p_val,
+                'categories_per_feature': cd.x_ref_categories,
+                'x_ref_preprocessed': True,
+                'preprocess_at_init': cd.preprocess_at_init,
+                'update_x_ref': cd.update_x_ref,
+                'correction': cd.correction,
+                'n_features': cd.n_features,
+                'input_shape': cd.input_shape,
+            },
+        'other':
+            {
+                'n': cd.n,
+                'load_text_embedding': load_emb,
+                'preprocess_fn': preprocess_fn,
+                'preprocess_kwargs': preprocess_kwargs
+            }
+    }
+    return state_dict, model, embed, embed_args, tokenizer
+
+
+def state_classifierdrift(cd: ClassifierDrift) -> Tuple[
+            Dict, Union[tf.keras.Sequential, tf.keras.Model],
+            Optional[Union[tf.keras.Model, tf.keras.Sequential]],
+            Optional[TransformerEmbedding], Optional[Dict], Optional[Callable]
+        ]:
+    """
+    Classifier-based drift detector parameters to save.
+    Parameters
+    ----------
+    cd
+        Drift detection object.
+    """
+    preprocess_fn, preprocess_kwargs, model, embed, embed_args, tokenizer, load_emb = \
+        preprocess_step_drift(cd._detector)
+    cd._detector.train_kwargs['optimizer'] = tf.keras.optimizers.serialize(cd._detector.train_kwargs['optimizer'])
+    state_dict = {
+        'args':
+            {
+                'x_ref': cd._detector.x_ref,
+            },
+        'kwargs':
+            {
+                'p_val': cd._detector.p_val,
+                'x_ref_preprocessed': True,
+                'preprocess_at_init': cd._detector.preprocess_at_init,
+                'update_x_ref': cd._detector.update_x_ref,
+                'preds_type': cd._detector.preds_type,
+                'binarize_preds': cd._detector.binarize_preds,
+                'train_size': cd._detector.train_size,
+                'train_kwargs': cd._detector.train_kwargs,
+            },
+        'other':
+            {
+                'n': cd._detector.n,
+                'skf': cd._detector.skf,
+                'load_text_embedding': load_emb,
+                'preprocess_fn': preprocess_fn,
+                'preprocess_kwargs': preprocess_kwargs
+            }
+    }
+    return state_dict, cd._detector.model, model, embed, embed_args, tokenizer
+
+
+def state_tabulardrift(cd: TabularDrift) -> Tuple[
+            Dict, Optional[Union[tf.keras.Model, tf.keras.Sequential]],
+            Optional[TransformerEmbedding], Optional[Dict], Optional[Callable]
+        ]:
+    """
+    Tabular drift detector parameters to save.
+    Parameters
+    ----------
+    cd
+        Drift detection object.
+    """
+    preprocess_fn, preprocess_kwargs, model, embed, embed_args, tokenizer, load_emb = \
+        preprocess_step_drift(cd)
+    state_dict = {
+        'args':
+            {
+                'x_ref': cd.x_ref
+            },
+        'kwargs':
+            {
+                'p_val': cd.p_val,
+                'categories_per_feature': cd.x_ref_categories,
+                'x_ref_preprocessed': True,
+                'preprocess_at_init': cd.preprocess_at_init,
+                'update_x_ref': cd.update_x_ref,
+                'correction': cd.correction,
+                'alternative': cd.alternative,
+                'n_features': cd.n_features,
+                'input_shape': cd.input_shape,
+            },
+        'other':
+            {
+                'n': cd.n,
+                'load_text_embedding': load_emb,
+                'preprocess_fn': preprocess_fn,
+                'preprocess_kwargs': preprocess_kwargs
+            }
+    }
+    return state_dict, model, embed, embed_args, tokenizer
+
+
+def state_ksdrift(cd: KSDrift) -> Tuple[
+            Dict, Optional[Union[tf.keras.Model, tf.keras.Sequential]],
+            Optional[TransformerEmbedding], Optional[Dict], Optional[Callable]
+        ]:
+    """
+    K-S drift detector parameters to save.
+    Parameters
+    ----------
+    cd
+        Drift detection object.
+    """
+    preprocess_fn, preprocess_kwargs, model, embed, embed_args, tokenizer, load_emb = \
+        preprocess_step_drift(cd)
+    state_dict = {
+        'args':
+            {
+                'x_ref': cd.x_ref
+            },
+        'kwargs':
+            {
+                'p_val': cd.p_val,
+                'x_ref_preprocessed': True,
+                'preprocess_at_init': cd.preprocess_at_init,
+                'update_x_ref': cd.update_x_ref,
+                'correction': cd.correction,
+                'alternative': cd.alternative,
+                'n_features': cd.n_features,
+                'input_shape': cd.input_shape,
+            },
+        'other':
+            {
+                'n': cd.n,
+                'load_text_embedding': load_emb,
+                'preprocess_fn': preprocess_fn,
+                'preprocess_kwargs': preprocess_kwargs
+            }
+    }
+    return state_dict, model, embed, embed_args, tokenizer
+
+
+def state_mmddrift(cd: MMDDrift) -> Tuple[
+            Dict, Optional[Union[tf.keras.Model, tf.keras.Sequential]],
+            Optional[TransformerEmbedding], Optional[Dict], Optional[Callable]
+        ]:
+    """
+    MMD drift detector parameters to save.
+    Note: only GaussianRBF kernel supported.
+    Parameters
+    ----------
+    cd
+        Drift detection object.
+    """
+    preprocess_fn, preprocess_kwargs, model, embed, embed_args, tokenizer, load_emb = \
+        preprocess_step_drift(cd._detector)
+    if not isinstance(cd._detector.kernel, GaussianRBF):
+        logger.warning('Currently only the default GaussianRBF kernel is supported.')
+    sigma = cd._detector.kernel.sigma.numpy() if not cd._detector.infer_sigma else None
+    state_dict = {
+        'args':
+            {
+                'x_ref': cd._detector.x_ref,
+            },
+        'kwargs':
+            {
+                'p_val': cd._detector.p_val,
+                'x_ref_preprocessed': True,
+                'preprocess_at_init': cd._detector.preprocess_at_init,
+                'update_x_ref': cd._detector.update_x_ref,
+                'sigma': sigma,
+                'configure_kernel_from_x_ref': not cd._detector.infer_sigma,
+                'n_permutations': cd._detector.n_permutations,
+                'input_shape': cd._detector.input_shape,
+            },
+        'other':
+            {
+                'n': cd._detector.n,
+                'load_text_embedding': load_emb,
+                'preprocess_fn': preprocess_fn,
+                'preprocess_kwargs': preprocess_kwargs
+            }
+    }
+    return state_dict, model, embed, embed_args, tokenizer
+
+
+def state_iforest(od: IForest) -> Dict:
     """
     Isolation forest parameters to save.
 
@@ -216,7 +498,7 @@ def _state_iforest(od: IForest) -> Dict:
     return state_dict
 
 
-def _state_mahalanobis(od: Mahalanobis) -> Dict:
+def state_mahalanobis(od: Mahalanobis) -> Dict:
     """
     Mahalanobis parameters to save.
 
@@ -240,7 +522,7 @@ def _state_mahalanobis(od: Mahalanobis) -> Dict:
     return state_dict
 
 
-def _state_ae(od: OutlierAE) -> Dict:
+def state_ae(od: OutlierAE) -> Dict:
     """
     OutlierAE parameters to save.
 
@@ -253,7 +535,7 @@ def _state_ae(od: OutlierAE) -> Dict:
     return state_dict
 
 
-def _state_vae(od: OutlierVAE) -> Dict:
+def state_vae(od: OutlierVAE) -> Dict:
     """
     OutlierVAE parameters to save.
 
@@ -270,7 +552,7 @@ def _state_vae(od: OutlierVAE) -> Dict:
     return state_dict
 
 
-def _state_aegmm(od: OutlierAEGMM) -> Dict:
+def state_aegmm(od: OutlierAEGMM) -> Dict:
     """
     OutlierAEGMM parameters to save.
 
@@ -293,7 +575,7 @@ def _state_aegmm(od: OutlierAEGMM) -> Dict:
     return state_dict
 
 
-def _state_vaegmm(od: OutlierVAEGMM) -> Dict:
+def state_vaegmm(od: OutlierVAEGMM) -> Dict:
     """
     OutlierVAEGMM parameters to save.
 
@@ -319,7 +601,7 @@ def _state_vaegmm(od: OutlierVAEGMM) -> Dict:
     return state_dict
 
 
-def _state_adv_ae(ad: AdversarialAE) -> Dict:
+def state_adv_ae(ad: AdversarialAE) -> Dict:
     """
     AdversarialAE parameters to save.
 
@@ -335,7 +617,7 @@ def _state_adv_ae(ad: AdversarialAE) -> Dict:
     return state_dict
 
 
-def _state_adv_md(md: ModelDistillation) -> Dict:
+def state_adv_md(md: ModelDistillation) -> Dict:
     """
     ModelDistillation parameters to save.
 
@@ -350,7 +632,7 @@ def _state_adv_md(md: ModelDistillation) -> Dict:
     return state_dict
 
 
-def _state_prophet(od: OutlierProphet) -> Dict:
+def state_prophet(od: OutlierProphet) -> Dict:
     """
     OutlierProphet parameters to save.
 
@@ -364,7 +646,7 @@ def _state_prophet(od: OutlierProphet) -> Dict:
     return state_dict
 
 
-def _state_sr(od: SpectralResidual) -> Dict:
+def state_sr(od: SpectralResidual) -> Dict:
     """
     Spectral residual parameters to save.
 
@@ -381,7 +663,7 @@ def _state_sr(od: SpectralResidual) -> Dict:
     return state_dict
 
 
-def _state_s2s(od: OutlierSeq2Seq) -> Dict:
+def state_s2s(od: OutlierSeq2Seq) -> Dict:
     """
     OutlierSeq2Seq parameters to save.
 
@@ -398,7 +680,7 @@ def _state_s2s(od: OutlierSeq2Seq) -> Dict:
     return state_dict
 
 
-def _state_llr(od: LLR) -> Dict:
+def state_llr(od: LLR) -> Dict:
     """
     LLR parameters to save.
 

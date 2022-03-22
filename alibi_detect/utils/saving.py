@@ -1,5 +1,3 @@
-# TODO: need to rewrite utilities using isinstance or @singledispatch for type checking to work properly
-# TODO: clean up save directories, filenames etc, fix save_tf_model directory logic (see #348)
 import dill
 import toml
 import numpy as np
@@ -23,7 +21,7 @@ dill.extend(use_dill=False)
 logger = logging.getLogger(__name__)
 
 
-def save_detector(detector: Detectors, filepath: Union[str, os.PathLike]) -> None:
+def save_detector(detector: Detectors, filepath: Union[str, os.PathLike], legacy: bool = False) -> None:
     """
     Save outlier, drift or adversarial detector.
 
@@ -33,6 +31,8 @@ def save_detector(detector: Detectors, filepath: Union[str, os.PathLike]) -> Non
         Detector object.
     filepath
         Save directory.
+    legacy
+        Whether to save in the legacy .dill format instead of via a config.toml file. Default is `False`.
     """
     if 'backend' in list(detector.meta.keys()) and detector.meta['backend'] in ['pytorch', 'sklearn']:
         raise NotImplementedError('Saving detectors with PyTorch or sklearn backend is not yet supported.')
@@ -48,14 +48,14 @@ def save_detector(detector: Detectors, filepath: Union[str, os.PathLike]) -> Non
         filepath.mkdir(parents=True, exist_ok=True)
 
     # If a drift detector, wrap drift detector save method
-    if hasattr(detector, 'get_config'):
+    if hasattr(detector, 'get_config') and not legacy:
         _save_detector_config(detector, filepath)
 
     # Otherwise, save via the previous meta and state_dict approach
     else:
         save_detector_legacy(detector, filepath)
 
-    logger.info('Finished saving.')
+    logger.info('finished saving.')
 
 
 def load_detector(filepath: Union[str, os.PathLike], **kwargs) -> Detectors:

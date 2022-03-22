@@ -1,6 +1,4 @@
-# TODO: need to rewrite utilities using isinstance or @singledispatch for type checking to work properly
 # TODO - Need to modularise torch and tensorflow imports and use. e.g. has_tensorflow and has_pytorch etc
-# TODO - further modularisation? e.g. load_kernel_tf and load_kernel_torch? Or refactor to tensorflow/ etc?
 from alibi_detect.utils.registry import registry
 from alibi_detect.utils.schemas import SupportedModels  # type: ignore[attr-defined]
 from alibi_detect.utils.validate import validate_config
