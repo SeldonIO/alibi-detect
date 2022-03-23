@@ -28,7 +28,7 @@ from alibi_detect.utils.tensorflow.kernels import DeepKernel as DeepKernel_tf, G
 from alibi_detect.utils.pytorch.kernels import DeepKernel as DeepKernel_pt, GaussianRBF as GaussianRBF_pt
 from alibi_detect.utils.registry import registry
 from alibi_detect.utils.saving import (save_detector, _save_kernel, _save_preprocess,
-                                       _save_model_config, _path2str, _serialize_function, save_config)  # type: ignore
+                                       _save_model_config, _path2str, _serialize_function, write_config)  # type: ignore
 from alibi_detect.utils.loading import (load_detector, _load_kernel_config, resolve_cfg, _load_preprocess,
                                         _load_model_config, _load_optimizer, _set_nested_value, _replace,
                                         _get_nested_value, read_config)  # type: ignore
@@ -520,7 +520,7 @@ def test_version_warning(data, tmp_path):
     # Emulate version mismatch
     cfg = read_config(tmp_path.joinpath('config.toml'))
     cfg['version'] = '0.1.x'
-    _ = save_config(cfg, tmp_path)
+    _ = write_config(cfg, tmp_path)
     # Reload and save again
     cd = load_detector(tmp_path)
     save_detector(cd, tmp_path)

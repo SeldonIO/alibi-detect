@@ -162,10 +162,10 @@ def _save_detector_config(detector: Detectors, filepath: Union[str, os.PathLike]
         cfg.update({'initial_diffs': 'initial_diffs.npy'})
 
     # Save config
-    save_config(cfg, filepath)
+    write_config(cfg, filepath)
 
 
-def save_config(cfg: dict, filepath: Union[str, os.PathLike]) -> dict:
+def write_config(cfg: dict, filepath: Union[str, os.PathLike]) -> dict:
     """
     Save an unresolved detector config dict to a TOML file.
 
