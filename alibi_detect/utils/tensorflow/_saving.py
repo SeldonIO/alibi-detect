@@ -68,13 +68,10 @@ def save_model_config(model: Callable,
             _ = model(tf.zeros((1,) + shape_enc))
         else:
             model = model.encoder
-        cfg_model.update({'type': 'UAE'})
     elif isinstance(model, HiddenOutput):
         model = model.model
-        cfg_model.update({'type': 'HiddenOutput'})
     elif isinstance(model, (tf.keras.Sequential, tf.keras.Model)):
         model = model
-        cfg_model.update({'type': 'custom'})
 
     save_model(model, filepath=filepath, save_dir='model')
     cfg_model.update({'src': path.joinpath('model')})

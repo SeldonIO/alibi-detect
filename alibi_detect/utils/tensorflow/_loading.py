@@ -2,7 +2,6 @@ from pathlib import Path
 import tensorflow as tf
 import os
 from typing import Union, Optional, Callable, Dict, List, Tuple, get_args
-from alibi_detect.utils._types import Literal
 from alibi_detect.cd.tensorflow import UAE
 from alibi_detect.cd.tensorflow.preprocess import _Encoder
 from alibi_detect.models.tensorflow import TransformerEmbedding
@@ -68,7 +67,6 @@ Detectors = Union[
 def load_model(filepath: Union[str, os.PathLike],
                load_dir: str = 'model',
                custom_objects: dict = None,
-               typ: Literal['UAE', 'HiddenOutput', 'custom'] = 'custom'
                ) -> Optional[tf.keras.Model]:
     """
     Load TensorFlow model.
@@ -81,8 +79,6 @@ def load_model(filepath: Union[str, os.PathLike],
         Name of saved model folder within the filepath directory.
     custom_objects
         Optional custom objects when loading the TensorFlow model.
-    typ
-        The model type. TODO
 
     Returns
     -------
@@ -99,19 +95,12 @@ def load_model(filepath: Union[str, os.PathLike],
         logger.warning('No model found in {}.'.format(model_dir))
         return None
     model = tf.keras.models.load_model(model_dir.joinpath('model.h5'), custom_objects=custom_objects)
-    # Applying postprocessing to model
-    if typ == 'UAE':
-        model = UAE(encoder_net=model)
-    elif typ == 'HiddenOutput' or typ == 'custom':
-        pass
-    else:
-        raise ValueError("Model 'type' not recognised.")
     return model
 
 
 def prep_model_and_emb(model: Optional[Callable], emb: Optional[TransformerEmbedding]) -> Callable:
     """
-    Function to perform final preprocessing of model before it is passed to preprocess_drift.
+    Function to perform final preprocessing of model (and/or embedding) before it is passed to preprocess_drift.
 
     Parameters
     ----------
@@ -129,11 +118,10 @@ def prep_model_and_emb(model: Optional[Callable], emb: Optional[TransformerEmbed
         model = model.encoder if isinstance(model, UAE) else model  # This is to avoid nesting UAE's
         if emb is not None:
             model = _Encoder(emb, mlp=model)
-        model = UAE(encoder_net=model)  # TODO - do we want to wrap model in UAE? Not always necessary...
-    # If no model exists, store embedding in model (both may be None)
+            model = UAE(encoder_net=model)
+    # If no model exists, store embedding as model
     else:
         model = emb
-
     if model is None:
         raise ValueError("A 'model'  and/or `embedding` must be specified when "
                          "preprocess_fn='preprocess_drift'")

@@ -57,9 +57,11 @@ class ModelConfig(CustomBaseModel):
     Unresolved schema for (ML) models. Note that the model "backend" e.g. 'tensorflow', 'pytorch', 'sklearn', is set
     by backend in DetectorConfig.
     """
-    type: Literal['custom', 'HiddenOutput', 'UAE'] = 'custom'
     src: str
     custom_obj: Optional[dict] = None
+    # layer: Optional[int] = None
+    # TODO - could do with adding above to choose hidden layers to extract from spec'd model.
+    #  But need to mod HiddenOutput so that full model is saved and layer info written (instead of extracted model).
 
 
 class EmbeddingConfig(CustomBaseModel):

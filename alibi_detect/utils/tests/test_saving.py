@@ -4,7 +4,8 @@ Tests for saving/loading of detectors via config.toml files.
 
 Internal functions such as save_kernel/load_kernel_config etc are also tested.
 """
-# TODO - test pytorch save/load functionality
+# TODO future - test pytorch save/load functionality
+# TODO (could/should also add tests to backend-specific submodules)
 from functools import partial
 
 import dill
@@ -22,8 +23,9 @@ from packaging import version
 from transformers import AutoTokenizer
 from alibi_detect.models.tensorflow import TransformerEmbedding as TransformerEmbedding_tf
 from alibi_detect.models.pytorch import TransformerEmbedding as TransformerEmbedding_pt
-from alibi_detect.cd.tensorflow import preprocess_drift as preprocess_drift_tf, UAE as UAE_tf
-from alibi_detect.cd.pytorch import preprocess_drift as preprocess_drift_pt
+from alibi_detect.cd.tensorflow import preprocess_drift as preprocess_drift_tf, UAE as UAE_tf, \
+    HiddenOutput as HiddenOutput_tf
+from alibi_detect.cd.pytorch import preprocess_drift as preprocess_drift_pt, HiddenOutput as HiddenOutput_pt
 from alibi_detect.utils.tensorflow.kernels import DeepKernel as DeepKernel_tf, GaussianRBF as GaussianRBF_tf
 from alibi_detect.utils.pytorch.kernels import DeepKernel as DeepKernel_pt, GaussianRBF as GaussianRBF_pt
 from alibi_detect.utils.registry import registry
@@ -61,19 +63,19 @@ LATENT_DIM = 2  # Must be less than input_dim set in ./datasets.py
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 REGISTERED_OBJECTS = registry.get_all()
 
-# Set seeds (TODO - may also need to set env variables when using cuda)
+# Set seeds
 np.random.seed(0)
 tf.random.set_seed(0)
 torch.manual_seed(0)
 random.seed(0)
 
-#  TODO: Some of the fixtures can/should be moved elsewhere (i.e. if they can be recycled for use elsewhere)
+# TODO - future: Some of the fixtures can/should be moved elsewhere (i.e. if they can be recycled for use elsewhere)
 
 
 @fixture
-def uae_model(backend, current_cases):
+def custom_model(backend, current_cases):
     """
-    Untrained Autoencoder of given input dimension and backend.
+    An untrained autoencoder of given input dimension and backend (this is a "custom" model, NOT an Alibi Detect UAE).
     """
     _, _, data_params = current_cases["data"]
     _, input_dim = data_params['data_shape']
@@ -92,14 +94,14 @@ def uae_model(backend, current_cases):
 
 
 @fixture
-def preprocess_uae(uae_model, backend):
+def preprocess_custom(custom_model, backend):
     """
     Preprocess function with Untrained Autoencoder.
     """
     if backend == 'tensorflow':
-        preprocess_fn = partial(preprocess_drift_tf, model=uae_model)
+        preprocess_fn = partial(preprocess_drift_tf, model=custom_model)
     else:
-        preprocess_fn = partial(preprocess_drift_pt, model=uae_model)
+        preprocess_fn = partial(preprocess_drift_pt, model=custom_model)
     return preprocess_fn
 
 
@@ -115,7 +117,7 @@ def kernel(request, backend):
     elif backend == 'pytorch':
         kernel = GaussianRBF_pt(sigma=sigma, trainable=trainable)
     else:
-        raise ValueError('preprocess_uae `backend` not valid.')
+        raise ValueError('`backend` not valid.')
     return kernel
 
 
@@ -143,7 +145,7 @@ def build_deep_kernel(backend, current_cases):
     elif backend == 'pytorch':
         raise NotImplementedError('`pytorch` tests not implemented.')
     else:
-        raise ValueError('preprocess_uae `backend` not valid.')
+        raise ValueError('`backend` not valid.')
     return deep_kernel, input_dim
 
 
@@ -161,7 +163,7 @@ def classifier(backend, current_cases):
     elif backend == 'pytorch':
         raise NotImplementedError('`pytorch` tests not implemented.')
     else:
-        raise ValueError('preprocess_uae `backend` not valid.')
+        raise ValueError('`backend` not valid.')
     return model
 
 
@@ -217,10 +219,26 @@ def preprocess_nlp(embedding, tokenizer, current_cases, backend):
     return preprocess_fn
 
 
-@parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
-def test_save_ksdrift(data, preprocess_uae, tmp_path):
+@fixture
+def preprocess_hiddenoutput(classifier, current_cases, backend):
     """
-    Test KSDrift on continuous datasets, with UAE as preprocess_fn.
+    Preprocess function to extract the softmax layer of a classifier (with the HiddenOutput utility function).
+    """
+    if backend == 'tensorflow':
+        model = HiddenOutput_tf(classifier, layer=-1)
+        preprocess_fn = partial(preprocess_drift_tf, model=model)
+    else:
+        model = HiddenOutput_pt(classifier, layer=-1)
+        preprocess_fn = partial(preprocess_drift_pt, model=model)
+    return preprocess_fn
+
+
+@parametrize('preprocess_fn', [preprocess_custom, preprocess_hiddenoutput])
+@parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
+def test_save_ksdrift(data, preprocess_fn, tmp_path):
+    """
+    Test KSDrift on continuous datasets, with UAE and classifier softmax output as preprocess_fn's. Only this
+    detector is tested with preprocessing strategies, as other detectors should see the same preprocess_fn output.
 
     Detector is saved and then loaded, with assertions checking that the reinstantiated detector is equivalent.
     """
@@ -228,14 +246,14 @@ def test_save_ksdrift(data, preprocess_uae, tmp_path):
     X_ref, X_h0 = data
     cd = KSDrift(X_ref,
                  p_val=P_VAL,
-                 preprocess_fn=preprocess_uae,
+                 preprocess_fn=preprocess_fn,
                  preprocess_at_init=True,
                  )
     save_detector(cd, tmp_path)
     cd_load = load_detector(tmp_path)
 
     # Assert
-    np.testing.assert_array_equal(preprocess_uae(X_ref), cd_load.x_ref)
+    np.testing.assert_array_equal(preprocess_fn(X_ref), cd_load.x_ref)
     assert cd_load.x_ref_preprocessed
     assert cd_load.n_features == LATENT_DIM
     assert cd_load.p_val == P_VAL
@@ -248,7 +266,7 @@ def test_save_ksdrift(data, preprocess_uae, tmp_path):
 @pytest.mark.skipif(version.parse(scipy.__version__) < version.parse('1.7.0'),
                     reason="Requires scipy version >= 1.7.0")
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
-def test_save_cvmdrift(data, preprocess_uae, tmp_path):
+def test_save_cvmdrift(data, preprocess_custom, tmp_path):
     """
     Test CVMDrift on continuous datasets, with UAE as preprocess_fn.
 
@@ -258,14 +276,14 @@ def test_save_cvmdrift(data, preprocess_uae, tmp_path):
     X_ref, X_h0 = data
     cd = CVMDrift(X_ref,
                   p_val=P_VAL,
-                  preprocess_fn=preprocess_uae,
+                  preprocess_fn=preprocess_custom,
                   preprocess_at_init=True,
                   )
     save_detector(cd, tmp_path)
     cd_load = load_detector(tmp_path)
 
     # Assert
-    np.testing.assert_array_equal(preprocess_uae(X_ref), cd_load.x_ref)
+    np.testing.assert_array_equal(preprocess_custom(X_ref), cd_load.x_ref)
     assert cd_load.x_ref_preprocessed
     assert cd_load.n_features == LATENT_DIM
     assert cd_load.p_val == P_VAL
@@ -276,7 +294,7 @@ def test_save_cvmdrift(data, preprocess_uae, tmp_path):
 
 
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
-def test_save_mmddrift(data, preprocess_uae, backend, tmp_path):
+def test_save_mmddrift(data, preprocess_custom, backend, tmp_path):
     """
     Test MMDDrift on continuous datasets, with UAE as preprocess_fn.
 
@@ -287,7 +305,7 @@ def test_save_mmddrift(data, preprocess_uae, backend, tmp_path):
     cd = MMDDrift(X_ref,
                   p_val=P_VAL,
                   backend=backend,
-                  preprocess_fn=preprocess_uae,
+                  preprocess_fn=preprocess_custom,
                   n_permutations=N_PERMUTATIONS,
                   preprocess_at_init=True,
                   )
@@ -295,7 +313,7 @@ def test_save_mmddrift(data, preprocess_uae, backend, tmp_path):
     cd_load = load_detector(tmp_path)
 
     # assertions
-    np.testing.assert_array_equal(preprocess_uae(X_ref), cd_load._detector.x_ref)
+    np.testing.assert_array_equal(preprocess_custom(X_ref), cd_load._detector.x_ref)
     assert cd_load._detector.x_ref_preprocessed
     assert not cd_load._detector.infer_sigma
     assert cd_load._detector.n_permutations == N_PERMUTATIONS
@@ -306,7 +324,7 @@ def test_save_mmddrift(data, preprocess_uae, backend, tmp_path):
 
 
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
-def test_save_lsdddrift(data, preprocess_uae, backend, tmp_path):
+def test_save_lsdddrift(data, preprocess_custom, backend, tmp_path):
     """
     Test LSDDDrift on continuous datasets, with UAE as preprocess_fn.
 
@@ -317,7 +335,7 @@ def test_save_lsdddrift(data, preprocess_uae, backend, tmp_path):
     cd = LSDDDrift(X_ref,
                    p_val=P_VAL,
                    backend=backend,
-                   preprocess_fn=preprocess_uae,
+                   preprocess_fn=preprocess_custom,
                    preprocess_at_init=True,
                    n_permutations=N_PERMUTATIONS,
                    )
@@ -325,7 +343,7 @@ def test_save_lsdddrift(data, preprocess_uae, backend, tmp_path):
     cd_load = load_detector(tmp_path)
 
     # assertions
-    np.testing.assert_almost_equal(cd._detector._normalize(preprocess_uae(X_ref)), cd_load._detector.x_ref, 10)
+    np.testing.assert_almost_equal(cd._detector._normalize(preprocess_custom(X_ref)), cd_load._detector.x_ref, 10)
     assert cd_load._detector.x_ref_preprocessed
     assert cd_load._detector.n_permutations == N_PERMUTATIONS
     assert cd_load._detector.p_val == P_VAL
@@ -443,7 +461,7 @@ def test_save_classifierdrift(data, classifier, backend, tmp_path):
 
 
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
-def test_save_spotthediff(data, classifier, preprocess_uae, backend, tmp_path):
+def test_save_spotthediff(data, classifier, preprocess_custom, backend, tmp_path):
     """
     Test SpotTheDiffDrift on continuous datasets, with UAE as preprocess_fn.
 
@@ -456,12 +474,12 @@ def test_save_spotthediff(data, classifier, preprocess_uae, backend, tmp_path):
                           n_folds=5,
                           train_size=None,
                           backend=backend,
-                          preprocess_fn=preprocess_uae)
+                          preprocess_fn=preprocess_custom)
     save_detector(cd, tmp_path)
     cd_load = load_detector(tmp_path)
 
     # Assert
-    np.testing.assert_array_equal(preprocess_uae(X_ref), cd_load._detector._detector.x_ref)
+    np.testing.assert_array_equal(preprocess_custom(X_ref), cd_load._detector._detector.x_ref)
     assert isinstance(cd_load._detector._detector.skf, StratifiedKFold)
     assert cd_load._detector._detector.x_ref_preprocessed
     assert cd_load._detector._detector.p_val == P_VAL
@@ -475,7 +493,7 @@ def test_save_spotthediff(data, classifier, preprocess_uae, backend, tmp_path):
 
 
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
-def test_save_learnedkernel(data, deep_kernel, preprocess_uae, backend, tmp_path):
+def test_save_learnedkernel(data, deep_kernel, preprocess_custom, backend, tmp_path):
     """
     Test LearnedKernelDrift on continuous datasets, with UAE as preprocess_fn.
 
@@ -487,13 +505,13 @@ def test_save_learnedkernel(data, deep_kernel, preprocess_uae, backend, tmp_path
                             deep_kernel,
                             p_val=P_VAL,
                             backend=backend,
-                            preprocess_fn=preprocess_uae,
+                            preprocess_fn=preprocess_custom,
                             train_size=0.7)
     save_detector(cd, tmp_path)
     cd_load = load_detector(tmp_path)
 
     # Assert
-    np.testing.assert_array_equal(preprocess_uae(X_ref), cd_load._detector.x_ref)
+    np.testing.assert_array_equal(preprocess_custom(X_ref), cd_load._detector.x_ref)
     assert cd_load._detector.x_ref_preprocessed
     assert cd_load._detector.p_val == P_VAL
     assert isinstance(cd_load._detector.train_kwargs, dict)
@@ -502,7 +520,7 @@ def test_save_learnedkernel(data, deep_kernel, preprocess_uae, backend, tmp_path
     else:
         assert isinstance(cd_load._detector.kernel, DeepKernel_pt)
 
-# TODO - checks for modeluncertainty detectors
+# TODO - checks for modeluncertainty detectors - once save/load implemented for them
 
 
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
@@ -549,13 +567,16 @@ def test_save_kernel(kernel, backend, tmp_path):
     filepath = tmp_path
     filename = 'mykernel.dill'
     cfg_kernel = _save_kernel(kernel, filepath, device=DEVICE, filename=filename)
-    KernelConfig(**cfg_kernel).dict()
-    # TODO assertions
+    KernelConfig(**cfg_kernel)  # Passing through the pydantic validator gives a degree of testing
+    assert cfg_kernel['src'] == '@utils.' + backend + '.kernels.GaussianRBF'
+    assert cfg_kernel['trainable'] == kernel.trainable
+    if not kernel.trainable:
+        np.testing.assert_almost_equal(cfg_kernel['sigma'], kernel.sigma, 6)
 
     # Resolve and load config
     cfg = {'kernel': cfg_kernel}
     cfg_kernel = _path2str(resolve_cfg(cfg, tmp_path)['kernel'])
-    cfg_kernel = KernelConfigResolved(**cfg_kernel).dict()
+    cfg_kernel = KernelConfigResolved(**cfg_kernel).dict()  # pydantic validation
     kernel_loaded = _load_kernel_config(cfg_kernel, backend=backend, device=DEVICE)
     assert type(kernel_loaded) == type(kernel)
     np.testing.assert_array_equal(np.array(kernel_loaded.sigma), np.array(cfg_kernel['sigma']))
@@ -583,13 +604,16 @@ def test_save_deepkernel(deep_kernel, kernel_proj_dim, backend, tmp_path):
                                                backend=backend)
     cfg_kernel = _path2str(cfg_kernel)
     cfg_kernel['proj'] = ModelConfig(**cfg_kernel['proj']).dict()  # Pass through ModelConfig to set `custom_obj` etc
-    cfg_kernel = DeepKernelConfig(**cfg_kernel).dict()
-    # TODO add more assertions here
+    cfg_kernel = DeepKernelConfig(**cfg_kernel).dict()  # pydantic validation
+    assert cfg_kernel['proj']['src'] == 'model'
+    assert cfg_kernel['proj']['custom_obj'] is None
+    assert pytest.approx(cfg_kernel['eps'], deep_kernel.eps, 4)
+    assert cfg_kernel['kernel_a']['trainable'] and cfg_kernel['kernel_b']['trainable']
 
     # Resolve and load config
     cfg = {'kernel': cfg_kernel}
     cfg_kernel = resolve_cfg(cfg, tmp_path)['kernel']
-    cfg_kernel = DeepKernelConfigResolved(**cfg_kernel).dict()
+    cfg_kernel = DeepKernelConfigResolved(**cfg_kernel).dict()  # pydantic validation
     kernel_loaded = _load_kernel_config(cfg_kernel, backend=backend, device=DEVICE)
     assert isinstance(kernel_loaded.proj, (torch.nn.Module, tf.keras.Model))
     np.testing.assert_almost_equal(kernel_loaded.eps, deep_kernel.eps, 4)
@@ -597,7 +621,7 @@ def test_save_deepkernel(deep_kernel, kernel_proj_dim, backend, tmp_path):
     assert kernel_loaded.kernel_b.sigma == deep_kernel.kernel_b.sigma
 
 
-@parametrize('preprocess_fn', [preprocess_uae])
+@parametrize('preprocess_fn', [preprocess_custom, preprocess_hiddenoutput])
 @parametrize_with_cases("data", cases=ContinuousData.data_synthetic_nd, prefix='data_')
 def test_save_preprocess(data, preprocess_fn, tmp_path, backend):
     """
@@ -616,18 +640,19 @@ def test_save_preprocess(data, preprocess_fn, tmp_path, backend):
                                       input_shape=input_dim,
                                       filepath=filepath)
     cfg_preprocess = _path2str(cfg_preprocess)
-    cfg_preprocess = PreprocessConfig(**cfg_preprocess).dict()
-    # TODO - assertions to test cfg_preprocess
+    cfg_preprocess = PreprocessConfig(**cfg_preprocess).dict()  # pydantic validation
+    assert cfg_preprocess['src'] == '@cd.' + backend + '.preprocess.preprocess_drift'
+    assert cfg_preprocess['model']['src'] == 'preprocess_fn/model'
+    # TODO - check layer details here once implemented
 
     # Resolve and load preprocess config
     cfg = {'preprocess_fn': cfg_preprocess}
     cfg_preprocess = resolve_cfg(cfg, tmp_path)['preprocess_fn']
-    cfg_preprocess = PreprocessConfigResolved(**cfg_preprocess).dict()
+    cfg_preprocess = PreprocessConfigResolved(**cfg_preprocess).dict()  # pydantic validation
     preprocess_fn_load = _load_preprocess(cfg_preprocess, backend)
     if backend == 'tensorflow':
-        assert isinstance(preprocess_fn_load.keywords['model'], UAE_tf)
-        # NOTE: can't currently compare to original as loaded model wrapped in UAE. See note in loading.py
-    # TODO - more post loading assertions
+        assert preprocess_fn_load.func.__name__ == 'preprocess_drift'
+        assert isinstance(preprocess_fn_load.keywords['model'], tf.keras.Model)
 
 
 @parametrize('preprocess_fn', [preprocess_nlp])
@@ -646,20 +671,28 @@ def test_save_preprocess_nlp(data, preprocess_fn, enc_dim, tmp_path, backend):
                                       input_shape=enc_dim,
                                       filepath=filepath)
     cfg_preprocess = _path2str(cfg_preprocess)
-    cfg_preprocess = PreprocessConfig(**cfg_preprocess).dict()
-#    # TODO - assertions to test cfg_preprocess
-#
+    cfg_preprocess = PreprocessConfig(**cfg_preprocess).dict()  # pydantic validation
+    assert cfg_preprocess['src'] == '@cd.' + backend + '.preprocess.preprocess_drift'
+    assert cfg_preprocess['model']['src'] == 'preprocess_fn/model'
+    assert cfg_preprocess['embedding']['src'] == 'preprocess_fn/embedding'
+    assert cfg_preprocess['tokenizer']['src'] == 'preprocess_fn/tokenizer'
+
     # Resolve and load preprocess config
     cfg = {'preprocess_fn': cfg_preprocess}
     cfg_preprocess = resolve_cfg(cfg, tmp_path)['preprocess_fn']
+    cfg_preprocess = PreprocessConfigResolved(**cfg_preprocess).dict()
     preprocess_fn_load = _load_preprocess(cfg_preprocess, backend)
     assert isinstance(preprocess_fn_load.keywords['tokenizer'], type(preprocess_fn.keywords['tokenizer']))
     assert isinstance(preprocess_fn_load.keywords['model'], type(preprocess_fn.keywords['model']))
+    embedding = preprocess_fn.keywords['model'].encoder.layers[0]
+    embedding_load = preprocess_fn_load.keywords['model'].encoder.layers[0]
+    assert isinstance(embedding_load.model, type(embedding.model))
+    assert embedding_load.emb_type == embedding.emb_type
+    assert embedding_load.hs_emb.keywords['layers'] == embedding.hs_emb.keywords['layers']
 
 
-# TODO - test loading of UAE and HiddenOutput etc? Pending further discussion (no UAE for pytorch etc)
 @parametrize_with_cases("data", cases=ContinuousData.data_synthetic_nd, prefix='data_')
-@parametrize('model', [uae_model])
+@parametrize('model', [custom_model])
 def test_save_model(data, model, backend, tmp_path):
     """
     Unit test for _save_model and _load_model_config.
@@ -677,8 +710,7 @@ def test_save_model(data, model, backend, tmp_path):
     cfg_model['src'] = tmp_path.joinpath('model')  # Need to manually set to absolute path here
     model_load = _load_model_config(cfg_model, backend=backend)
     assert isinstance(model_load, type(model))
-    # TODO - double check why loaded model is Sequential but UAE in test_save_preprocess
-    # TODO - Assertions should depend on cfg_model['type'] when more models are parametrized
+    # TODO - test layer once implemented
 
 
 def test_save_optimizer(backend):
@@ -802,7 +834,3 @@ def test_registry_get():
     for k, v in REGISTERED_OBJECTS.items():
         obj = registry.get(k)
         assert type(obj) == type(v)
-
-
-# TODO - could do with a final test to check resolve_cfg works with all registered functions, file types etc.
-#  wait until after design finalised!
