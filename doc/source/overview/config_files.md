@@ -45,7 +45,7 @@ p_val = 0.05
 ```
 
 ```python
-from alibi_detect.utils.saving import load_detector
+from alibi_detect.utils.loading import load_detector
 filepath = 'detector_directory/'
 detector = load_detector(filepath)
 ```
@@ -89,7 +89,7 @@ preprocess_fn = "function.dill"
 ```
 
 ```python
-from alibi_detect.utils.saving import load_detector
+from alibi_detect.utils.loading import load_detector
 detector = load_detector('detector_directory/')
 ```
 ````
@@ -505,7 +505,7 @@ to be registered with a decorator syntax:
 ```python
 import numpy as np
 from alibi_detect.utils.registry import registry
-from alibi_detect.utils.saving import load_detector
+from alibi_detect.utils.loading import load_detector
 
 # Register a simple function
 @registry.register('my_function.v1')
@@ -633,7 +633,7 @@ layers = [-1, -2, -3, -4, -5, -6, -7, -8]
 %
 %```python
 %from alibi_detect.utils.fetching import fetch_config
-%from alibi_detect.utils.saving import load_detector
+%from alibi_detect.utils.loading import load_detector
 %filepath = 'IMDB_example_MMD/'
 %fetch_config('imdb_mmd', filepath)
 %detector = load_detector(filepath)
