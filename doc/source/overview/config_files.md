@@ -119,12 +119,6 @@ isn't included in the config file. This is because in the config file, **relativ
 location of the config.toml file** (absolute filepaths can also be used). 
 ```
 
-```{warning}
-Sometimes, fields representing kwargs need to be set to `None`. However, unspecified fields are set to a detector's 
-default kwargs (or for [Artefact dictionaries](dictionaries), the defaults shown in the tables). To set 
-fields as `None`, specify them as the string `"None"`. 
-```
-
 (complex_fields)=
 ## Specifying artefacts
 
@@ -269,12 +263,6 @@ A `model` dictionary may be used to specify a model within a `preprocess_fn`, or
 * - src
   - Filepath to directory storing the model (relative to the `config.toml` file, or absolute). 
   -
-* - type
-  - The type of model to be loaded. Options:
-  <br/> - `"custom"`: A generic custom model. 
-  <br/> - `"HiddenOutput"`: An Alibi Detect [HiddenOutput](../api/alibi_detect.cd.tensorflow.rst) model. 
-  <br/> - `"UAE"`: An Alibi Detect [UAE](../api/alibi_detect.cd.tensorflow.rst) model. 
-  - `"custom"`
 * - custom_obj
   - Dictionary of custom objects. Passed to the tensorflow 
   [load_model](https://www.tensorflow.org/api_docs/python/tf/keras/models/load_model) function.
@@ -290,7 +278,6 @@ model stored in `model/`.
 
 ```toml
 [model]
-type = "custom"
 src = "model"
 ```
 
@@ -452,7 +439,6 @@ sigma = [ 1.2,]
 trainable = false
 
 [kernel.proj]
-type = "custom"
 src = "model/"
 ```
 
@@ -751,3 +737,10 @@ sometimes time-consuming operation of instantiating the detector.
 %`DETECTOR_CONFIGS_RESOLVED`. The difference being that for these models, artefacts are expected to have their 
 %resolved types, for example `x_ref` should be a NumPy ndarray. The `schema` and `schema_json` methods can be applied 
 %to these models in the same way.
+
+
+```{note}
+Sometimes, fields representing kwargs need to be set to `None`. However, unspecified fields are set to a detector's 
+default kwargs (or for [Artefact dictionaries](dictionaries), the defaults shown in the tables). To set 
+fields as `None`, specify them as the string `"None"`. 
+```
