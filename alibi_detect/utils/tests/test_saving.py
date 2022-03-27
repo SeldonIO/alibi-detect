@@ -167,9 +167,10 @@ def classifier(backend, current_cases):
     return model
 
 
-@fixture(unpack_into=('tokenizer, embedding, enc_dim'))
+@fixture(unpack_into=('tokenizer, embedding, max_len, enc_dim'))
 @parametrize('model_name, max_len', [('bert-base-cased', 100)])
-def nlp_embedding_and_tokenizer(model_name, max_len, backend):
+@parametrize('uae', [True, False])
+def nlp_embedding_and_tokenizer(model_name, max_len, uae, backend):
     """
     A fixture to build nlp embedding and tokenizer models based on the HuggingFace pre-trained models.
     """
@@ -189,33 +190,35 @@ def nlp_embedding_and_tokenizer(model_name, max_len, backend):
 
     if backend == 'tf':
         embedding = TransformerEmbedding_tf(model_name, emb_type, layers)
-        x_emb = embedding(tokens)
-        shape = (x_emb.shape[1],)
-        embedding = UAE_tf(input_layer=embedding, shape=shape, enc_dim=enc_dim)
+        if uae:
+            x_emb = embedding(tokens)
+            shape = (x_emb.shape[1],)
+            embedding = UAE_tf(input_layer=embedding, shape=shape, enc_dim=enc_dim)
     else:
         embedding = TransformerEmbedding_pt(model_name, emb_type, layers)
-        x_emb = embedding(tokens)
-        emb_dim = x_emb.shape[1]
-        device = torch.device(DEVICE)
-        embedding = torch.nn.Sequential(
-            embedding,
-            torch.nn.Linear(emb_dim, 256),
-            torch.nn.ReLU(),
-            torch.nn.Linear(256, enc_dim)
-        ).to(device).eval()
+        if uae:
+            x_emb = embedding(tokens)
+            emb_dim = x_emb.shape[1]
+            device = torch.device(DEVICE)
+            embedding = torch.nn.Sequential(
+                embedding,
+                torch.nn.Linear(emb_dim, 256),
+                torch.nn.ReLU(),
+                torch.nn.Linear(256, enc_dim)
+            ).to(device).eval()
 
-    return tokenizer, embedding, enc_dim
+    return tokenizer, embedding, max_len, enc_dim
 
 
 @fixture
-def preprocess_nlp(embedding, tokenizer, current_cases, backend):
+def preprocess_nlp(embedding, tokenizer, current_cases, max_len, backend):
     """
     Preprocess function with Untrained Autoencoder.
     """
     if backend == 'tensorflow':
-        preprocess_fn = partial(preprocess_drift_tf, model=embedding, tokenizer=tokenizer)
+        preprocess_fn = partial(preprocess_drift_tf, model=embedding, tokenizer=tokenizer, max_len=max_len)
     else:
-        preprocess_fn = partial(preprocess_drift_pt, model=embedding, tokenizer=tokenizer)
+        preprocess_fn = partial(preprocess_drift_pt, model=embedding, tokenizer=tokenizer, max_len=max_len)
     return preprocess_fn
 
 
@@ -256,6 +259,40 @@ def test_save_ksdrift(data, preprocess_fn, tmp_path):
     np.testing.assert_array_equal(preprocess_fn(X_ref), cd_load.x_ref)
     assert cd_load.x_ref_preprocessed
     assert cd_load.n_features == LATENT_DIM
+    assert cd_load.p_val == P_VAL
+    assert isinstance(cd_load.preprocess_fn, Callable)
+    assert cd_load.preprocess_fn.func.__name__ == 'preprocess_drift'
+    np.testing.assert_array_equal(cd.predict(X_h0)['data']['p_val'],  # only do for deterministic detectors
+                                  cd_load.predict(X_h0)['data']['p_val'])
+
+
+@parametrize('preprocess_fn', [preprocess_nlp])
+@parametrize_with_cases("data", cases=TextData.movie_sentiment_data, prefix='data_')
+def test_save_ksdrift_nlp(data, preprocess_fn, max_len, enc_dim, tmp_path):
+    """
+    Test KSDrift on continuous datasets, with UAE and classifier softmax output as preprocess_fn's. Only this
+    detector is tested with embedding and embedding+uae, as other detectors should see the same preprocessed data.
+
+    Detector is saved and then loaded, with assertions checking that the reinstantiated detector is equivalent.
+    """
+    # Detector save/load
+    X_ref, X_h0 = data['X_train'][:5], data['X_test'][:5]
+    cd = KSDrift(X_ref,
+                 p_val=P_VAL,
+                 preprocess_fn=preprocess_fn,
+                 preprocess_at_init=True,
+                 input_shape=(max_len,)
+                 )
+    save_detector(cd, tmp_path, legacy=False)
+    cd_load = load_detector(tmp_path)
+
+    # Assert
+    np.testing.assert_array_equal(preprocess_fn(X_ref), cd_load.x_ref)
+    assert cd_load.x_ref_preprocessed
+    if isinstance(preprocess_fn.keywords['model'], (TransformerEmbedding_tf, TransformerEmbedding_pt)):
+        assert cd_load.n_features == 768  # hardcoded to bert-base-cased for now
+    else:
+        assert cd_load.n_features == enc_dim  # encoder dim
     assert cd_load.p_val == P_VAL
     assert isinstance(cd_load.preprocess_fn, Callable)
     assert cd_load.preprocess_fn.func.__name__ == 'preprocess_drift'
@@ -657,7 +694,7 @@ def test_save_preprocess(data, preprocess_fn, tmp_path, backend):
 
 @parametrize('preprocess_fn', [preprocess_nlp])
 @parametrize_with_cases("data", cases=TextData.movie_sentiment_data, prefix='data_')
-def test_save_preprocess_nlp(data, preprocess_fn, enc_dim, tmp_path, backend):
+def test_save_preprocess_nlp(data, preprocess_fn, max_len, tmp_path, backend):
     """
     Unit test for _save_preprocess and _load_preprocess, with text data.
 
@@ -668,14 +705,17 @@ def test_save_preprocess_nlp(data, preprocess_fn, enc_dim, tmp_path, backend):
     filepath = tmp_path
     cfg_preprocess = _save_preprocess(preprocess_fn,
                                       backend=backend,
-                                      input_shape=enc_dim,
+                                      input_shape=max_len,
                                       filepath=filepath)
     cfg_preprocess = _path2str(cfg_preprocess)
     cfg_preprocess = PreprocessConfig(**cfg_preprocess).dict()  # pydantic validation
     assert cfg_preprocess['src'] == '@cd.' + backend + '.preprocess.preprocess_drift'
-    assert cfg_preprocess['model']['src'] == 'preprocess_fn/model'
     assert cfg_preprocess['embedding']['src'] == 'preprocess_fn/embedding'
     assert cfg_preprocess['tokenizer']['src'] == 'preprocess_fn/tokenizer'
+    if isinstance(preprocess_fn.keywords['model'], (TransformerEmbedding_tf, TransformerEmbedding_pt)):
+        assert cfg_preprocess['model'] is None
+    else:
+        assert cfg_preprocess['model']['src'] == 'preprocess_fn/model'
 
     # Resolve and load preprocess config
     cfg = {'preprocess_fn': cfg_preprocess}
@@ -684,8 +724,12 @@ def test_save_preprocess_nlp(data, preprocess_fn, enc_dim, tmp_path, backend):
     preprocess_fn_load = _load_preprocess(cfg_preprocess, backend)
     assert isinstance(preprocess_fn_load.keywords['tokenizer'], type(preprocess_fn.keywords['tokenizer']))
     assert isinstance(preprocess_fn_load.keywords['model'], type(preprocess_fn.keywords['model']))
-    embedding = preprocess_fn.keywords['model'].encoder.layers[0]
-    embedding_load = preprocess_fn_load.keywords['model'].encoder.layers[0]
+    if isinstance(preprocess_fn.keywords['model'], (TransformerEmbedding_tf, TransformerEmbedding_pt)):
+        embedding = preprocess_fn.keywords['model']
+        embedding_load = preprocess_fn_load.keywords['model']
+    else:
+        embedding = preprocess_fn.keywords['model'].encoder.layers[0]
+        embedding_load = preprocess_fn_load.keywords['model'].encoder.layers[0]
     assert isinstance(embedding_load.model, type(embedding.model))
     assert embedding_load.emb_type == embedding.emb_type
     assert embedding_load.hs_emb.keywords['layers'] == embedding.hs_emb.keywords['layers']
@@ -693,7 +737,8 @@ def test_save_preprocess_nlp(data, preprocess_fn, enc_dim, tmp_path, backend):
 
 @parametrize_with_cases("data", cases=ContinuousData.data_synthetic_nd, prefix='data_')
 @parametrize('model', [custom_model])
-def test_save_model(data, model, backend, tmp_path):
+@parametrize('layer', [None, -1])
+def test_save_model(data, model, layer, backend, tmp_path):
     """
     Unit test for _save_model and _load_model_config.
     """
@@ -706,11 +751,17 @@ def test_save_model(data, model, backend, tmp_path):
     assert tmp_path.joinpath('model').is_dir()
     assert tmp_path.joinpath('model/model.h5').is_file()
 
-    # Load model
+    # Adjust config
     cfg_model['src'] = tmp_path.joinpath('model')  # Need to manually set to absolute path here
+    if layer is not None:
+        cfg_model['layer'] = layer
+
+    # Load model
     model_load = _load_model_config(cfg_model, backend=backend)
-    assert isinstance(model_load, type(model))
-    # TODO - test layer once implemented
+    if layer is None:
+        assert isinstance(model_load, type(model))
+    else:
+        assert isinstance(model_load, (HiddenOutput_tf, HiddenOutput_pt))
 
 
 def test_save_optimizer(backend):

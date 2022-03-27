@@ -59,9 +59,8 @@ class ModelConfig(CustomBaseModel):
     """
     src: str
     custom_obj: Optional[dict] = None
-    # layer: Optional[int] = None
+    layer: Optional[int] = None
     # TODO - could do with adding above to choose hidden layers to extract from spec'd model.
-    #  But need to mod HiddenOutput so that full model is saved and layer info written (instead of extracted model).
 
 
 class EmbeddingConfig(CustomBaseModel):

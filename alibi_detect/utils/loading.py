@@ -344,12 +344,13 @@ def _load_model_config(cfg: dict,
     # Load model
     src = cfg['src']
     custom_obj = cfg['custom_obj']
+    layer = cfg['layer']
     src = Path(src)
     if not src.is_dir():
         raise FileNotFoundError("Compatible model not found at %s" % str(src.resolve()))
 
     if backend == 'tensorflow':
-        model = load_model_tf(src, load_dir='.', custom_objects=custom_obj)
+        model = load_model_tf(src, load_dir='.', custom_objects=custom_obj, layer=layer)
     else:
         raise NotImplementedError('Loading of pytorch models not currently supported')
 

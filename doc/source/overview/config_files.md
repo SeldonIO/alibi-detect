@@ -263,6 +263,12 @@ A `model` dictionary may be used to specify a model within a `preprocess_fn`, or
 * - src
   - Filepath to directory storing the model (relative to the `config.toml` file, or absolute). 
   -
+  
+* - layer
+  - Optional index of hidden layer to extract. If not `None`, a 
+  [HiddenOutput](../api/alibi_detect.cd.tensorflow.preprocess.rst) model is returned.
+  - `None`
+  
 * - custom_obj
   - Dictionary of custom objects. Passed to the tensorflow 
   [load_model](https://www.tensorflow.org/api_docs/python/tf/keras/models/load_model) function.

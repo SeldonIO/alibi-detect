@@ -2,7 +2,7 @@ from pathlib import Path
 import tensorflow as tf
 import os
 from typing import Union, Optional, Callable, Dict, List, Tuple, get_args
-from alibi_detect.cd.tensorflow import UAE
+from alibi_detect.cd.tensorflow import UAE, HiddenOutput
 from alibi_detect.cd.tensorflow.preprocess import _Encoder
 from alibi_detect.models.tensorflow import TransformerEmbedding
 from alibi_detect.utils.tensorflow.kernels import GaussianRBF, DeepKernel
@@ -27,7 +27,6 @@ from tensorflow_probability.python.distributions.distribution import Distributio
 from transformers import AutoTokenizer
 from functools import partial
 import dill
-
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +66,7 @@ Detectors = Union[
 def load_model(filepath: Union[str, os.PathLike],
                load_dir: str = 'model',
                custom_objects: dict = None,
+               layer: Optional[int] = None,
                ) -> Optional[tf.keras.Model]:
     """
     Load TensorFlow model.
@@ -79,12 +79,15 @@ def load_model(filepath: Union[str, os.PathLike],
         Name of saved model folder within the filepath directory.
     custom_objects
         Optional custom objects when loading the TensorFlow model.
+    layer
+        Optional index of a hidden layer to extract. If not `None`, a
+        :py:class:`~alibi_detect.cd.tensorflow.HiddenOutput` model is returned.
 
     Returns
     -------
     Loaded model.
     """
-    # TODO - update to accept tf format - later PR?
+    # TODO - update this to accept tf format - later PR.
     model_dir = Path(filepath).joinpath(load_dir)
     # Check if path exists
     if not model_dir.is_dir():
@@ -95,6 +98,9 @@ def load_model(filepath: Union[str, os.PathLike],
         logger.warning('No model found in {}.'.format(model_dir))
         return None
     model = tf.keras.models.load_model(model_dir.joinpath('model.h5'), custom_objects=custom_objects)
+    # Optionally extract hidden layer
+    if isinstance(layer, int):
+        model = HiddenOutput(model, layer=layer)
     return model
 
 
@@ -113,9 +119,9 @@ def prep_model_and_emb(model: Optional[Callable], emb: Optional[TransformerEmbed
     -------
     The final model ready to passed to preprocess_drift.
     """
-    # If a model exists, process it
+    # If a model exists, process it (and embedding)
     if model is not None:
-        model = model.encoder if isinstance(model, UAE) else model  # This is to avoid nesting UAE's
+        model = model.encoder if isinstance(model, UAE) else model  # This is to avoid nesting UAE's already a UAE
         if emb is not None:
             model = _Encoder(emb, mlp=model)
             model = UAE(encoder_net=model)

@@ -48,17 +48,13 @@ def save_model_config(model: Callable,
 
     filepath = base_path.joinpath(path)
 
-    cfg_model = {}  # type: Dict[str, Any]
+    cfg_model = None  # type: Optional[Dict[str, Any]]
     cfg_embed = None  # type: Optional[Dict[str, Any]]
     if isinstance(model, UAE):
-        if isinstance(model.encoder.layers[0], TransformerEmbedding):  # text drift
+        if isinstance(model.encoder.layers[0], TransformerEmbedding):  # if UAE contains embedding and encoder
             # embedding
-            cfg_embed = {}
-            embed = model.encoder.layers[0].model
-            cfg_embed.update({'type': model.encoder.layers[0].emb_type})
-            cfg_embed.update({'layers': model.encoder.layers[0].hs_emb.keywords['layers']})
-            save_embedding(embed, cfg_embed, filepath.joinpath('embedding'))
-            cfg_embed.update({'src': path.joinpath('embedding')})
+            embed = model.encoder.layers[0]
+            cfg_embed = save_embedding_config(embed, filepath.joinpath('embedding'))
             # preprocessing encoder
             inputs = Input(shape=input_shape, dtype=tf.int64)
             model.encoder.call(inputs)
@@ -66,15 +62,21 @@ def save_model_config(model: Callable,
             layers = [InputLayer(input_shape=shape_enc)] + model.encoder.layers[1:]
             model = tf.keras.Sequential(layers)
             _ = model(tf.zeros((1,) + shape_enc))
-        else:
+        else:  # If UAE is simply an encoder
             model = model.encoder
+    elif isinstance(model, TransformerEmbedding):
+        cfg_embed = save_embedding_config(model, filepath.joinpath('embedding'))
+        model = None
     elif isinstance(model, HiddenOutput):
         model = model.model
-    elif isinstance(model, (tf.keras.Sequential, tf.keras.Model)):
+    elif isinstance(model, tf.keras.Model):  # This must be last as TransferEmbedding is a tf.keras.Model
         model = model
+    else:
+        raise ValueError('Model not recognised, cannot save.')
 
-    save_model(model, filepath=filepath, save_dir='model')
-    cfg_model.update({'src': path.joinpath('model')})
+    if model is not None:
+        save_model(model, filepath=filepath, save_dir='model')
+        cfg_model = {'src': path.joinpath('model')}
     return cfg_model, cfg_embed
 
 
@@ -112,11 +114,39 @@ def save_model(model: tf.keras.Model,
         logger.warning('No `tf.keras.Model` or `tf.keras.Sequential` detected. No model saved.')
 
 
-# Note: save_embedding is backend agnostic, but can't be put in utils/saving.py due to circular import.
-#  Hence it will need to be duplicated in utils/pytorch/_saving.py, or moved to a 3rd file.
-def save_embedding(embed: TransformerEmbedding,
-                   embed_args: dict,
-                   filepath: Path) -> None:
+def save_embedding_config(embed: TransformerEmbedding,
+                          filepath: Path) -> dict:
+    """
+    Save embeddings for text drift models.
+
+    Parameters
+    ----------
+    embed
+        Embedding model.
+    filepath
+        The save directory.
+    """
+    # create folder to save model in
+    if not filepath.is_dir():
+        logger.warning('Directory {} does not exist and is now created.'.format(filepath))
+        filepath.mkdir(parents=True, exist_ok=True)
+
+    # Populate config dict
+    cfg_embed = {}
+    cfg_embed.update({'type': embed.emb_type})
+    cfg_embed.update({'layers': embed.hs_emb.keywords['layers']})
+    cfg_embed.update({'src': 'preprocess_fn/embedding'})
+
+    # Save embedding model
+    logger.info('Saving embedding model to {}.'.format(filepath))
+    embed.model.save_pretrained(filepath)
+
+    return cfg_embed
+
+
+def save_embedding_legacy(embed: TransformerEmbedding,
+                          embed_args: dict,
+                          filepath: Path) -> None:
     """
     Save embeddings for text drift models.
 
@@ -203,7 +233,7 @@ def save_detector_legacy(detector, filepath):
         if model is not None:
             save_model(model, filepath, save_dir='encoder')
         if embed is not None:
-            save_embedding(embed, embed_args, filepath)
+            save_embedding_legacy(embed, embed_args, filepath)
         if tokenizer is not None:
             tokenizer.save_pretrained(filepath.joinpath('model'))
         if detector_name == 'ClassifierDriftTF':
