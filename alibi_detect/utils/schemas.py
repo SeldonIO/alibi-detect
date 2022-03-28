@@ -58,9 +58,8 @@ class ModelConfig(CustomBaseModel):
     by backend in DetectorConfig.
     """
     src: str
-    custom_obj: Optional[dict] = None
+    custom_objects: Optional[dict] = None
     layer: Optional[int] = None
-    # TODO - could do with adding above to choose hidden layers to extract from spec'd model.
 
 
 class EmbeddingConfig(CustomBaseModel):

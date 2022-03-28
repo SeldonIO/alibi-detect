@@ -343,7 +343,7 @@ def _load_model_config(cfg: dict,
 
     # Load model
     src = cfg['src']
-    custom_obj = cfg['custom_obj']
+    custom_obj = cfg['custom_objects']
     layer = cfg['layer']
     src = Path(src)
     if not src.is_dir():

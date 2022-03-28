@@ -271,7 +271,8 @@ A `model` dictionary may be used to specify a model within a `preprocess_fn`, or
   
 * - custom_obj
   - Dictionary of custom objects. Passed to the tensorflow 
-  [load_model](https://www.tensorflow.org/api_docs/python/tf/keras/models/load_model) function.
+  [load_model](https://www.tensorflow.org/api_docs/python/tf/keras/models/load_model) function. This can be used to
+  pass custom registered functions and classes to a model.
   - `None`
 ```
 

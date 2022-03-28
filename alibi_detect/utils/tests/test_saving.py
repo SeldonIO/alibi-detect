@@ -640,10 +640,10 @@ def test_save_deepkernel(deep_kernel, kernel_proj_dim, backend, tmp_path):
     cfg_kernel['proj'], _ = _save_model_config(cfg_kernel['proj'], base_path=filepath, input_shape=kernel_proj_dim,
                                                backend=backend)
     cfg_kernel = _path2str(cfg_kernel)
-    cfg_kernel['proj'] = ModelConfig(**cfg_kernel['proj']).dict()  # Pass through ModelConfig to set `custom_obj` etc
+    cfg_kernel['proj'] = ModelConfig(**cfg_kernel['proj']).dict()  # Pass thru ModelConfig to set `custom_objects` etc
     cfg_kernel = DeepKernelConfig(**cfg_kernel).dict()  # pydantic validation
     assert cfg_kernel['proj']['src'] == 'model'
-    assert cfg_kernel['proj']['custom_obj'] is None
+    assert cfg_kernel['proj']['custom_objects'] is None
     assert pytest.approx(cfg_kernel['eps'], deep_kernel.eps, 4)
     assert cfg_kernel['kernel_a']['trainable'] and cfg_kernel['kernel_b']['trainable']
 
