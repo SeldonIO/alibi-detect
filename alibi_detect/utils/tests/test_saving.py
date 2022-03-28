@@ -470,13 +470,14 @@ def test_save_tabulardrift(data, tmp_path):
 
 
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
-def test_save_classifierdrift(data, classifier, backend, tmp_path):
+def test_save_classifierdrift(data, preprocess_custom, classifier, backend, tmp_path):
     """ Test ClassifierDrift on continuous datasets."""
     # Detector save/load
     X_ref, X_h0 = data
     cd = ClassifierDrift(X_ref,
                          model=classifier,
                          p_val=P_VAL,
+                         preprocess_fn=preprocess_custom,
                          n_folds=5,
                          backend=backend,
                          train_size=None)
@@ -484,9 +485,9 @@ def test_save_classifierdrift(data, classifier, backend, tmp_path):
     cd_load = load_detector(tmp_path)
 
     # Assert
-    np.testing.assert_array_equal(X_ref, cd_load._detector.x_ref)
+    np.testing.assert_array_equal(preprocess_custom(X_ref), cd_load._detector.x_ref)
     assert isinstance(cd_load._detector.skf, StratifiedKFold)
-    assert not cd_load._detector.x_ref_preprocessed
+    assert cd_load._detector.x_ref_preprocessed
     assert cd_load._detector.p_val == P_VAL
     assert isinstance(cd_load._detector.train_kwargs, dict)
     if backend == 'tensorflow':
