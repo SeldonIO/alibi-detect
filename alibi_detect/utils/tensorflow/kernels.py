@@ -108,7 +108,6 @@ class DeepKernel(tf.keras.Model):
         The kernel to apply to the projected inputs. Defaults to a Gaussian RBF with trainable bandwidth.
     kernel_b
         The kernel to apply to the raw inputs. Defaults to a Gaussian RBF with trainable bandwidth.
-        Set to None in order to use only the deep component (i.e. eps=0).
     eps
         The proportion (in [0,1]) of weight to assign to the kernel applied to raw inputs. This can be
         either specified or set to 'trainable'. Only relavent is kernel_b is not None.
@@ -117,14 +116,14 @@ class DeepKernel(tf.keras.Model):
     def __init__(
         self,
         proj: tf.keras.Model,
-        kernel_a: Optional[tf.keras.Model] = None,
-        kernel_b: Optional[tf.keras.Model] = None,
+        kernel_a: Union[tf.keras.Model, str] = 'rbf',
+        kernel_b: Optional[Union[tf.keras.Model, str]] = 'rbf',
         eps: Union[float, str] = 'trainable'
     ) -> None:
         super().__init__()
-        if kernel_a is None:
+        if kernel_a == 'rbf':
             kernel_a = GaussianRBF(trainable=True)
-        if kernel_b is None:
+        if kernel_b == 'rbf':
             kernel_b = GaussianRBF(trainable=True)
         self.config = {'proj': proj, 'kernel_a': kernel_a, 'kernel_b': kernel_b, 'eps': eps}
         self.kernel_a = kernel_a
