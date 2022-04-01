@@ -118,7 +118,7 @@ def batch_compute_kernel_matrix(
 def linear_mmd2(x: torch.Tensor,
                 y: torch.Tensor,
                 kernel: Callable,
-                permute: bool = False) -> float:
+                permute: bool = False) -> torch.Tensor:
     """
     Compute maximum mean discrepancy (MMD^2) between 2 samples x and y with the
     linear-time estimator.
@@ -133,6 +133,9 @@ def linear_mmd2(x: torch.Tensor,
         Kernel function.
     permute
         Whether to permute the row indices. Used for permutation tests.
+    Returns
+    -------
+    MMD^2 between the samples.
     """
     n = np.shape(x)[0]
     m = np.shape(y)[0]
@@ -153,7 +156,7 @@ def linear_mmd2(x: torch.Tensor,
         k_yz = kernel(y_hat[0::2, :], x_hat[1::2, :], diag=True)
 
     h = k_xx + k_yy - k_xy - k_yz
-    return torch.sum(h) / (n / 2)
+    return h.sum() / (n / 2.)
 
 
 def mmd2_from_kernel_matrix(kernel_mat: torch.Tensor,

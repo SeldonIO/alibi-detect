@@ -116,8 +116,8 @@ class MMDDriftTF(BaseMMDDrift):
             n_hat = int(np.floor(min(n, m) / 2) * 2)
             x_ref = x_ref[:n_hat, :]
             x = x[:n_hat, :]
-            mmd2 = linear_mmd2(x_ref, x, self.kernel, permute=False).numpy()
-            mmd2_permuted = np.array([linear_mmd2(x_ref, x, self.kernel, permute=True).numpy()
+            mmd2 = linear_mmd2(x_ref, x, self.kernel, permute=False)
+            mmd2_permuted = np.array([linear_mmd2(x_ref, x, self.kernel, permute=True)
                                       for _ in range(self.n_permutations)])
             p_val = (mmd2 <= mmd2_permuted).mean()
         elif self.estimator == 'quad':
