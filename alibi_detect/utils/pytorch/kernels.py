@@ -68,16 +68,25 @@ class GaussianRBF(nn.Module):
     def sigma(self) -> torch.Tensor:
         return self.log_sigma.exp()
 
-    def forward(self, x: Union[np.ndarray, torch.Tensor], y: Union[np.ndarray, torch.Tensor],
-                infer_sigma: bool = False) -> torch.Tensor:
+    def forward(self, x: Union[np.ndarray, torch.Tensor], 
+                y: Union[np.ndarray, torch.Tensor],
+                infer_sigma: bool = False,
+                diag: bool = False) -> torch.Tensor:
 
         x, y = torch.as_tensor(x), torch.as_tensor(y)
-        dist = distance.squared_pairwise_distance(x.flatten(1), y.flatten(1))  # [Nx, Ny]
+        if not diag:
+            dist = distance.squared_pairwise_distance(x.flatten(1), y.flatten(1))  # [Nx, Ny]
+        else:
+            dist = distance.squared_distance(x.flatten(1), y.flatten(1))  # [N, 1]
 
         if infer_sigma or self.init_required:
             if self.trainable and infer_sigma:
                 raise ValueError("Gradients cannot be computed w.r.t. an inferred sigma value")
-            sigma = self.init_sigma_fn(x, y, dist)
+            if not diag:
+                dist_hat = dist
+            else:
+                dist_hat = distance.squared_pairwise_distance(x.flatten(1), y.flatten(1))
+            sigma = self.init_sigma_fn(x, y, dist_hat)
             with torch.no_grad():
                 self.log_sigma.copy_(sigma.log().clone())
             self.init_required = False

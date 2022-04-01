@@ -3,7 +3,7 @@ import numpy as np
 import tensorflow as tf
 from typing import Callable, Dict, Optional, Tuple, Union
 from alibi_detect.cd.base import BaseMMDDrift
-from alibi_detect.utils.tensorflow.distance import mmd2_from_kernel_matrix
+from alibi_detect.utils.tensorflow.distance import mmd2_from_kernel_matrix, linear_mmd2
 from alibi_detect.utils.tensorflow.kernels import GaussianRBF
 
 logger = logging.getLogger(__name__)
@@ -14,6 +14,7 @@ class MMDDriftTF(BaseMMDDrift):
             self,
             x_ref: Union[np.ndarray, list],
             p_val: float = .05,
+            estimator: str = 'quad',
             preprocess_x_ref: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
@@ -33,6 +34,8 @@ class MMDDriftTF(BaseMMDDrift):
             Data used as reference distribution.
         p_val
             p-value used for the significance of the permutation test.
+        estimator
+            Estimator used for the MMD^2 computation {'quad', 'linear'}.
         preprocess_x_ref
             Whether to already preprocess and store the reference data.
         update_x_ref
@@ -58,6 +61,7 @@ class MMDDriftTF(BaseMMDDrift):
         super().__init__(
             x_ref=x_ref,
             p_val=p_val,
+            estimator=estimator,
             preprocess_x_ref=preprocess_x_ref,
             update_x_ref=update_x_ref,
             preprocess_fn=preprocess_fn,
@@ -107,12 +111,21 @@ class MMDDriftTF(BaseMMDDrift):
         x_ref, x = self.preprocess(x)
         # compute kernel matrix, MMD^2 and apply permutation test using the kernel matrix
         n = x.shape[0]
-        kernel_mat = self.kernel_matrix(x_ref, x)
-        kernel_mat = kernel_mat - tf.linalg.diag(tf.linalg.diag_part(kernel_mat))  # zero diagonal
-        mmd2 = mmd2_from_kernel_matrix(kernel_mat, n, permute=False, zero_diag=False).numpy()
-        mmd2_permuted = np.array(
-            [mmd2_from_kernel_matrix(kernel_mat, n, permute=True, zero_diag=False).numpy()
-             for _ in range(self.n_permutations)]
-        )
-        p_val = (mmd2 <= mmd2_permuted).mean()
+        m = x_ref.shape[0]
+        if self.estimator == 'linear':
+            n_hat = int(np.floor(min(n, m) / 2) * 2)
+            x_ref = x_ref[:n_hat, :]
+            x = x[:n_hat, :]
+            mmd2 = linear_mmd2(x_ref, x, self.kernel, permute=False).numpy()
+            mmd2_permuted = np.array([linear_mmd2(x_ref, x, self.kernel, permute=True).numpy()
+                                      for _ in range(self.n_permutations)])
+            p_val = (mmd2 <= mmd2_permuted).mean() 
+        elif self.estimator == 'quad':
+            kernel_mat = self.kernel_matrix(x_ref, x)
+            kernel_mat = kernel_mat - tf.linalg.diag(tf.linalg.diag_part(kernel_mat))  # zero diagonal
+            mmd2 = mmd2_from_kernel_matrix(kernel_mat, n, permute=False, zero_diag=False).numpy()
+            mmd2_permuted = np.array(
+                [mmd2_from_kernel_matrix(kernel_mat, n, permute=True, zero_diag=False).numpy()
+                for _ in range(self.n_permutations)])
+            p_val = (mmd2 <= mmd2_permuted).mean()        
         return p_val, mmd2, mmd2_permuted

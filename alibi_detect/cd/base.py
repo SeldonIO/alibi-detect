@@ -452,6 +452,7 @@ class BaseMMDDrift(BaseDetector):
             self,
             x_ref: Union[np.ndarray, list],
             p_val: float = .05,
+            estimator: str = 'quad',
             preprocess_x_ref: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
@@ -504,6 +505,7 @@ class BaseMMDDrift(BaseDetector):
 
         # optionally already preprocess reference data
         self.p_val = p_val
+        self.estimator = estimator
         if preprocess_x_ref and isinstance(preprocess_fn, Callable):  # type: ignore[arg-type]
             self.x_ref = preprocess_fn(x_ref)
         else:
