@@ -30,6 +30,28 @@ def squared_pairwise_distance(x: torch.Tensor, y: torch.Tensor, a_min: float = 1
     return dist.clamp_min_(a_min)
 
 
+def squared_distance(x: torch.Tensor, y: torch.Tensor, a_min: float = 1e-30) -> torch.Tensor:
+    """
+    PyTorch squared Euclidean distance between samples x and y.
+
+    Parameters
+    ----------
+    x
+        Batch of instances of shape [N, features].
+    y
+        Batch of instances of shape [N, features].
+    a_min
+        Lower bound to clip distance values.
+    Returns
+    -------
+    Squared Euclidean distance [N, 1].
+    """
+    x2 = x.pow(2).sum(dim=-1, keepdim=True)
+    y2 = y.pow(2).sum(dim=-1, keepdim=True)
+    dist = x2 + y2 - (2 * x * y).sum(dim=-1, keepdim=True)
+    return dist.clamp_min_(a_min)
+
+
 def batch_compute_kernel_matrix(
     x: Union[list, np.ndarray, torch.Tensor],
     y: Union[list, np.ndarray, torch.Tensor],
@@ -93,8 +115,52 @@ def batch_compute_kernel_matrix(
     return k_mat
 
 
-def mmd2_from_kernel_matrix(kernel_mat: torch.Tensor, m: int, permute: bool = False,
-                            zero_diag: bool = True) -> torch.Tensor:
+def linear_mmd2(x: torch.Tensor, 
+                y: torch.Tensor, 
+                kernel: Callable,
+                permute: bool = False) -> float:
+    """
+    Compute maximum mean discrepancy (MMD^2) between 2 samples x and y with the 
+    linear-time estimator.
+    
+    Parameters
+    ----------
+    x
+        Batch of instances of shape [Nx, features].
+    y
+        Batch of instances of shape [Ny, features].
+    kernel
+        Kernel function.
+    permute
+        Whether to permute the row indices. Used for permutation tests.
+    """
+    n = np.shape(x)[0]
+    m = np.shape(y)[0]
+    if n != m:
+        raise RuntimeError("Linear-time estimator requires equal size samples")
+    if not permute:
+        k_xx = kernel(x=x[0::2, :], y=x[1::2, :], diag=True)
+        k_yy = kernel(x=y[0::2, :], y=y[1::2, :], diag=True)
+        k_xy = kernel(x=x[0::2, :], y=y[1::2, :], diag=True)
+        k_yz = kernel(x=y[0::2, :], y=x[1::2, :], diag=True)
+    else:
+        idx = np.random.permutation(m + n)
+        xy = torch.cat([x, y], dim=0)[idx, :]
+        x_hat, y_hat = xy[:n, :], xy[n:, :]
+        k_xx = kernel(x_hat[0::2, :], x_hat[1::2, :], diag=True)
+        k_yy = kernel(y_hat[0::2, :], y_hat[1::2, :], diag=True)
+        k_xy = kernel(x_hat[0::2, :], y_hat[1::2, :], diag=True)
+        k_yz = kernel(y_hat[0::2, :], x_hat[1::2, :], diag=True)
+        
+    h = k_xx + k_yy - k_xy - k_yz
+    return torch.sum(h) / (n / 2)
+
+
+def mmd2_from_kernel_matrix(kernel_mat: torch.Tensor, 
+                            m: int, 
+                            permute: bool = False,
+                            zero_diag: bool = True,
+                            estimator: str = 'quad') -> torch.Tensor:
     """
     Compute maximum mean discrepancy (MMD^2) between 2 samples x and y from the
     full kernel matrix between the samples.

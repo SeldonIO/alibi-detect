@@ -18,6 +18,7 @@ class MMDDrift:
             x_ref: Union[np.ndarray, list],
             backend: str = 'tensorflow',
             p_val: float = .05,
+            estimator: str = 'quad',
             preprocess_x_ref: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
@@ -40,6 +41,8 @@ class MMDDrift:
             Backend used for the MMD implementation.
         p_val
             p-value used for the significance of the permutation test.
+        estimator
+            Estimator used for the MMD^2 computation {'quad', 'linear'}.
         preprocess_x_ref
             Whether to already preprocess and store the reference data.
         update_x_ref
