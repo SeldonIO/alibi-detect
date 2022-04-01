@@ -122,28 +122,27 @@ class MMDDriftTorch(BaseMMDDrift):
         and the MMD^2 values from the permutation test.
         """
         x_ref, x = self.preprocess(x)
-        x_ref = torch.from_numpy(x_ref).to(self.device)  # type: ignore[assignment]
-        x = torch.from_numpy(x).to(self.device)  # type: ignore[assignment]
-        # compute kernel matrix, MMD^2 and apply permutation test using the kernel matrix
         n = x.shape[0]
         m = x_ref.shape[0]
         if self.estimator == 'linear':
             n_hat = int(np.floor(min(n, m) / 2) * 2)
-            x_ref = x_ref[:n_hat, :]
-            x = x[:n_hat, :]
-            mmd2 = linear_mmd2(x_ref, x, self.kernel, permute=False)
-            mmd2_permuted = torch.tensor([linear_mmd2(x_ref, x, self.kernel, permute=True)
+            x_ref = torch.from_numpy(x_ref[:n_hat, :]).to(self.device)  # type: ignore[assignment]
+            x = torch.from_numpy(x[:n_hat, :]).to(self.device)  # type: ignore[assignment]
+            mmd2 = linear_mmd2(x_ref, x, self.kernel, permute=False)  # type: ignore[arg-type]
+            mmd2_permuted = torch.tensor([linear_mmd2(x_ref, x, self.kernel, permute=True)  # type: ignore[arg-type]
                                           for _ in range(self.n_permutations)])
-            p_val = (mmd2 <= mmd2_permuted).float().mean()
         elif self.estimator == 'quad':
+            x_ref = torch.from_numpy(x_ref).to(self.device)  # type: ignore[assignment]
+            x = torch.from_numpy(x).to(self.device)  # type: ignore[assignment]
+            # compute kernel matrix, MMD^2 and apply permutation test using the kernel matrix
             kernel_mat = self.kernel_matrix(x_ref, x)  # type: ignore[arg-type]
             kernel_mat = kernel_mat - torch.diag(kernel_mat.diag())  # zero diagonal
-            mmd2 = mmd2_from_kernel_matrix(kernel_mat, n, permute=False, zero_diag=False)
+            mmd2 = mmd2_from_kernel_matrix(kernel_mat, n, permute=False, zero_diag=False)  # type: ignore[assignment]
             mmd2_permuted = torch.Tensor(
                 [mmd2_from_kernel_matrix(kernel_mat, n, permute=True, zero_diag=False)
                  for _ in range(self.n_permutations)]
             )
-            if self.device.type == 'cuda':
-                mmd2, mmd2_permuted = mmd2.cpu(), mmd2_permuted.cpu()
-            p_val = (mmd2 <= mmd2_permuted).float().mean()
+        if self.device.type == 'cuda':
+            mmd2, mmd2_permuted = mmd2.cpu(), mmd2_permuted.cpu()
+        p_val = (mmd2 <= mmd2_permuted).float().mean()
         return p_val.numpy().item(), mmd2.numpy().item(), mmd2_permuted.numpy()
