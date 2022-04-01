@@ -1,5 +1,11 @@
 # Change Log
 
+## [v0.9.1](https://github.com/SeldonIO/alibi-detect/tree/v0.9.1) (2022-04-01)
+[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.9.0...v0.9.1)
+
+### Fixed
+- Fixed an issue whereby simply importing the library in any capacity caused tensorflow to occupy all available GPU memory. This was due to the instantiation of `tf.keras.Model` objects within a class definition (`GaussianRBF` objects within the `DeepKernel` class).
+
 ## [v0.9.0](https://github.com/SeldonIO/alibi-detect/tree/v0.9.0) (2022-03-17)
 [Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.8.1...v0.9.0)
 
