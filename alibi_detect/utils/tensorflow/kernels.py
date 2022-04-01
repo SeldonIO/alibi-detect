@@ -108,6 +108,7 @@ class DeepKernel(tf.keras.Model):
         The kernel to apply to the projected inputs. Defaults to a Gaussian RBF with trainable bandwidth.
     kernel_b
         The kernel to apply to the raw inputs. Defaults to a Gaussian RBF with trainable bandwidth.
+        Set to None in order to use only the deep component (i.e. eps=0).
     eps
         The proportion (in [0,1]) of weight to assign to the kernel applied to raw inputs. This can be
         either specified or set to 'trainable'. Only relavent is kernel_b is not None.
