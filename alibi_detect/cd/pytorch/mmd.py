@@ -126,8 +126,13 @@ class MMDDriftTorch(BaseMMDDrift):
         m = x_ref.shape[0]
         if self.estimator == 'linear':
             n_hat = int(np.floor(min(n, m) / 2) * 2)
+<<<<<<< .merge_file_a03956
             x_ref = torch.from_numpy(x_ref[:n_hat, :]).to(self.device)  # type: ignore[assignment]
             x = torch.from_numpy(x[:n_hat, :]).to(self.device)  # type: ignore[assignment]
+=======
+            x_ref = torch.from_numpy(x_ref[:n_hat, :]).to(self.device) # type: ignore[assignment]
+            x = torch.from_numpy(x[:n_hat, :]).to(self.device) # type: ignore[assignment]
+>>>>>>> .merge_file_a26104
             mmd2 = linear_mmd2(x_ref, x, self.kernel, permute=False)  # type: ignore[arg-type]
             mmd2_permuted = torch.tensor([linear_mmd2(x_ref, x, self.kernel, permute=True)  # type: ignore[arg-type]
                                           for _ in range(self.n_permutations)])
