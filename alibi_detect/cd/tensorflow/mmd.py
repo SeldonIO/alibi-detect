@@ -119,13 +119,13 @@ class MMDDriftTF(BaseMMDDrift):
             mmd2 = linear_mmd2(x_ref, x, self.kernel, permute=False).numpy()
             mmd2_permuted = np.array([linear_mmd2(x_ref, x, self.kernel, permute=True).numpy()
                                       for _ in range(self.n_permutations)])
-            p_val = (mmd2 <= mmd2_permuted).mean() 
+            p_val = (mmd2 <= mmd2_permuted).mean()
         elif self.estimator == 'quad':
             kernel_mat = self.kernel_matrix(x_ref, x)
             kernel_mat = kernel_mat - tf.linalg.diag(tf.linalg.diag_part(kernel_mat))  # zero diagonal
             mmd2 = mmd2_from_kernel_matrix(kernel_mat, n, permute=False, zero_diag=False).numpy()
             mmd2_permuted = np.array(
                 [mmd2_from_kernel_matrix(kernel_mat, n, permute=True, zero_diag=False).numpy()
-                for _ in range(self.n_permutations)])
-            p_val = (mmd2 <= mmd2_permuted).mean()        
+                 for _ in range(self.n_permutations)])
+            p_val = (mmd2 <= mmd2_permuted).mean()
         return p_val, mmd2, mmd2_permuted

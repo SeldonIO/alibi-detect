@@ -68,7 +68,7 @@ class GaussianRBF(nn.Module):
     def sigma(self) -> torch.Tensor:
         return self.log_sigma.exp()
 
-    def forward(self, x: Union[np.ndarray, torch.Tensor], 
+    def forward(self, x: Union[np.ndarray, torch.Tensor],
                 y: Union[np.ndarray, torch.Tensor],
                 infer_sigma: bool = False,
                 diag: bool = False) -> torch.Tensor:

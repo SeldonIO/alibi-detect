@@ -115,14 +115,14 @@ def batch_compute_kernel_matrix(
     return k_mat
 
 
-def linear_mmd2(x: torch.Tensor, 
-                y: torch.Tensor, 
+def linear_mmd2(x: torch.Tensor,
+                y: torch.Tensor,
                 kernel: Callable,
                 permute: bool = False) -> float:
     """
-    Compute maximum mean discrepancy (MMD^2) between 2 samples x and y with the 
+    Compute maximum mean discrepancy (MMD^2) between 2 samples x and y with the
     linear-time estimator.
-    
+
     Parameters
     ----------
     x
@@ -151,13 +151,13 @@ def linear_mmd2(x: torch.Tensor,
         k_yy = kernel(y_hat[0::2, :], y_hat[1::2, :], diag=True)
         k_xy = kernel(x_hat[0::2, :], y_hat[1::2, :], diag=True)
         k_yz = kernel(y_hat[0::2, :], x_hat[1::2, :], diag=True)
-        
+
     h = k_xx + k_yy - k_xy - k_yz
     return torch.sum(h) / (n / 2)
 
 
-def mmd2_from_kernel_matrix(kernel_mat: torch.Tensor, 
-                            m: int, 
+def mmd2_from_kernel_matrix(kernel_mat: torch.Tensor,
+                            m: int,
                             permute: bool = False,
                             zero_diag: bool = True,
                             estimator: str = 'quad') -> torch.Tensor:

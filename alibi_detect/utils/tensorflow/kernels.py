@@ -69,7 +69,7 @@ class GaussianRBF(tf.keras.Model):
     def sigma(self) -> tf.Tensor:
         return tf.math.exp(self.log_sigma)
 
-    def call(self, x: tf.Tensor, y: tf.Tensor, 
+    def call(self, x: tf.Tensor, y: tf.Tensor,
              infer_sigma: bool = False,
              diag: bool = False) -> tf.Tensor:
         y = tf.cast(y, x.dtype)
@@ -86,7 +86,7 @@ class GaussianRBF(tf.keras.Model):
                 dist_hat = dist
             else:
                 dist_hat = distance.squared_pairwise_distance(x, y)
-            sigma = self.init_sigma_fn(x, y, dist)
+            sigma = self.init_sigma_fn(x, y, dist_hat)
             self.log_sigma.assign(tf.math.log(sigma))
             self.init_required = False
 

@@ -31,7 +31,7 @@ def squared_pairwise_distance(x: tf.Tensor, y: tf.Tensor, a_min: float = 1e-30, 
     return tf.clip_by_value(dist, a_min, a_max)
 
 
-def squared_distance(x: tf.Tensor, y: tf.Tensor, 
+def squared_distance(x: tf.Tensor, y: tf.Tensor,
                      a_min: float = 1e-30, a_max: float = 1e30) -> tf.Tensor:
     """
     TensorFlow squared Euclidean distance between samples x and y.
@@ -109,14 +109,14 @@ def batch_compute_kernel_matrix(
     return k_mat
 
 
-def linear_mmd2(x: tf.Tensor, 
-                y: tf.Tensor, 
+def linear_mmd2(x: tf.Tensor,
+                y: tf.Tensor,
                 kernel: Callable,
                 permute: bool = False) -> float:
     """
-    Compute maximum mean discrepancy (MMD^2) between 2 samples x and y with the 
+    Compute maximum mean discrepancy (MMD^2) between 2 samples x and y with the
     linear-time estimator.
-    
+
     Parameters
     ----------
     x
@@ -145,13 +145,13 @@ def linear_mmd2(x: tf.Tensor,
         k_yy = kernel(y_hat[0::2, :], y_hat[1::2, :], diag=True)
         k_xy = kernel(x_hat[0::2, :], y_hat[1::2, :], diag=True)
         k_yz = kernel(y_hat[0::2, :], x_hat[1::2, :], diag=True)
-        
+
     h = k_xx + k_yy - k_xy - k_yz
     return tf.reduce_sum(h) / (n / 2)
 
 
-def mmd2_from_kernel_matrix(kernel_mat: tf.Tensor, 
-                            m: int, 
+def mmd2_from_kernel_matrix(kernel_mat: tf.Tensor,
+                            m: int,
                             permute: bool = False,
                             zero_diag: bool = True) -> tf.Tensor:
     """

@@ -135,12 +135,13 @@ class MMDDriftTorch(BaseMMDDrift):
             mmd2_permuted = torch.tensor([linear_mmd2(x_ref, x, self.kernel, permute=True)
                                           for _ in range(self.n_permutations)])
             p_val = (mmd2 <= mmd2_permuted).float().mean()
-        elif self.estimator == 'quad': 
+        elif self.estimator == 'quad':
             kernel_mat = self.kernel_matrix(x_ref, x)  # type: ignore[arg-type]
             kernel_mat = kernel_mat - torch.diag(kernel_mat.diag())  # zero diagonal
             mmd2 = mmd2_from_kernel_matrix(kernel_mat, n, permute=False, zero_diag=False)
             mmd2_permuted = torch.Tensor(
-                [mmd2_from_kernel_matrix(kernel_mat, n, permute=True, zero_diag=False) for _ in range(self.n_permutations)]
+                [mmd2_from_kernel_matrix(kernel_mat, n, permute=True, zero_diag=False)
+                 for _ in range(self.n_permutations)]
             )
             if self.device.type == 'cuda':
                 mmd2, mmd2_permuted = mmd2.cpu(), mmd2_permuted.cpu()
