@@ -4,10 +4,10 @@ from typing import Callable, Dict, Optional, Union, Tuple
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
 
 if has_pytorch:
-    from alibi_detect.cd.pytorch.mmd import MMDDriftTorch
+    from alibi_detect.cd.pytorch.mmd import MMDDriftTorch, LinearTimeDriftTorch
 
 if has_tensorflow:
-    from alibi_detect.cd.tensorflow.mmd import MMDDriftTF
+    from alibi_detect.cd.tensorflow.mmd import MMDDriftTF, LinearTimeMMDDriftTF
 
 logger = logging.getLogger(__name__)
 
@@ -79,7 +79,7 @@ class MMDDrift:
 
         kwargs = locals()
         args = [kwargs['x_ref']]
-        pop_kwargs = ['self', 'x_ref', 'backend', '__class__']
+        pop_kwargs = ['self', 'x_ref', 'backend', '__class__', 'estimator']
         [kwargs.pop(k, None) for k in pop_kwargs]
 
         if kernel is None:
@@ -91,9 +91,19 @@ class MMDDrift:
 
         if backend == 'tensorflow' and has_tensorflow:
             kwargs.pop('device', None)
-            self._detector = MMDDriftTF(*args, **kwargs)  # type: ignore
+            if estimator == 'quad':
+                self._detector = MMDDriftTF(*args, **kwargs)  # type: ignore
+            elif estimator == 'linear':
+                self._detector = LinearTimeMMDDriftTF(*args, **kwargs)  # type: ignore
+            else:
+                raise NotImplementedError(f'{estimator} not implemented. Use quad or linear instead.')
         else:
-            self._detector = MMDDriftTorch(*args, **kwargs)  # type: ignore
+            if estimator == 'quad':
+                self._detector = MMDDriftTorch(*args, **kwargs)  # type: ignore
+            elif estimator == 'linear':
+                self._detector = LinearTimeDriftTorch(*args, **kwargs)  # type: ignore
+            else:
+                raise NotImplementedError(f'{estimator} not implemented. Use quad or linear instead.')
         self.meta = self._detector.meta
 
     def predict(self, x: Union[np.ndarray, list], return_p_val: bool = True, return_distance: bool = True) \
