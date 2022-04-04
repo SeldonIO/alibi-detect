@@ -49,7 +49,7 @@
 "packaging","Apache Software License; BSD License"
 "pandas","BSD License"
 "partd","BSD"
-"protobuf","3-Clause BSD License"
+"protobuf","BSD-3-Clause"
 "pyasn1","BSD License"
 "pyasn1-modules","BSD License"
 "pyparsing","MIT License"

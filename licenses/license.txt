@@ -72,7 +72,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 
 Pillow
-9.0.1
+9.1.0
 Historical Permission Notice and Disclaimer (HPND)
 The Python Imaging Library (PIL) is
 
@@ -762,7 +762,7 @@ SOFTWARE.
 
 
 Werkzeug
-2.0.3
+2.1.1
 BSD License
 Copyright 2007 Pallets
 
@@ -1002,7 +1002,7 @@ Apache Software License
 
 
 alibi-detect
-0.9.1.dev0
+0.9.2.dev0
 Apache Software License
                                  Apache License
                            Version 2.0, January 2004
@@ -1353,7 +1353,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 click
-8.0.4
+8.1.2
 BSD License
 Copyright 2014 Pallets
 
@@ -1736,7 +1736,7 @@ Apache Software License
 UNKNOWN
 
 fonttools
-4.30.0
+4.31.2
 MIT License
 MIT License
 
@@ -1762,7 +1762,7 @@ SOFTWARE.
 
 
 fsspec
-2022.2.0
+2022.3.0
 BSD License
 BSD 3-Clause License
 
@@ -1830,7 +1830,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 google-auth
-2.6.0
+2.6.2
 Apache Software License
                                  Apache License
                            Version 2.0, January 2004
@@ -3274,7 +3274,7 @@ limitations under the License.
    END OF TERMS AND CONDITIONS
 
 kiwisolver
-1.4.0
+1.4.2
 BSD License
 =========================
  The Kiwi licensing terms
@@ -7287,7 +7287,7 @@ under the terms of *both* these licenses.
 
 
 pandas
-1.4.1
+1.4.2
 BSD License
 BSD 3-Clause License
 
@@ -7356,8 +7356,8 @@ THE POSSIBILITY OF SUCH DAMAGE.
 
 
 protobuf
-3.19.4
-3-Clause BSD License
+3.20.0
+BSD-3-Clause
 UNKNOWN
 
 pyasn1
@@ -7500,7 +7500,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 The above BSD License Applies to all code, even that also covered by Apache 2.0.
 
 pytz
-2021.3
+2022.1
 MIT License
 Copyright (c) 2003-2019 Stuart Bishop <stuart@stuartbishop.net>
 
@@ -10145,7 +10145,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 tifffile
-2022.3.16
+2022.3.25
 BSD License
 BSD 3-Clause License
 
@@ -10218,7 +10218,7 @@ DAMAGE.
 
 
 tqdm
-4.63.0
+4.64.0
 MIT License; Mozilla Public License 2.0 (MPL 2.0)
 `tqdm` is a product of collaborative work.
 Unless otherwise stated, all authors (see commit logs) retain copyright
@@ -10794,7 +10794,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 
 zipp
-3.7.0
+3.8.0
 MIT License
 Copyright Jason R. Coombs
 
