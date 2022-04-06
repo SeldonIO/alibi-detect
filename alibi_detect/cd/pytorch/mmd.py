@@ -1,5 +1,6 @@
 import logging
 import numpy as np
+import scipy.stats as stats
 import torch
 from typing import Callable, Dict, Optional, Tuple, Union
 from alibi_detect.cd.base import BaseMMDDrift
@@ -14,7 +15,6 @@ class MMDDriftTorch(BaseMMDDrift):
             self,
             x_ref: Union[np.ndarray, list],
             p_val: float = .05,
-            estimator: Optional[str] = 'quad',
             preprocess_x_ref: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
@@ -35,8 +35,6 @@ class MMDDriftTorch(BaseMMDDrift):
             Data used as reference distribution.
         p_val
             p-value used for the significance of the permutation test.
-        estimator
-            Estimator used for the MMD^2 computation {'quad', 'linear'}.
         preprocess_x_ref
             Whether to already preprocess and store the reference data.
         update_x_ref
@@ -65,7 +63,6 @@ class MMDDriftTorch(BaseMMDDrift):
         super().__init__(
             x_ref=x_ref,
             p_val=p_val,
-            estimator=estimator,
             preprocess_x_ref=preprocess_x_ref,
             update_x_ref=update_x_ref,
             preprocess_fn=preprocess_fn,
@@ -253,10 +250,12 @@ class LinearTimeDriftTorch(BaseMMDDrift):
         n_hat = int(np.floor(min(n, m) / 2) * 2)
         x_ref = torch.from_numpy(x_ref[:n_hat, :]).to(self.device)  # type: ignore[assignment]
         x = torch.from_numpy(x[:n_hat, :]).to(self.device)  # type: ignore[assignment]
-        mmd2 = linear_mmd2(x_ref, x, self.kernel, permute=False)  # type: ignore[arg-type]
-        mmd2_permuted = torch.tensor([linear_mmd2(x_ref, x, self.kernel, permute=True)  # type: ignore[arg-type]
-                                      for _ in range(self.n_permutations)])
+        mmd2, var_mmd2 = linear_mmd2(x_ref, x, self.kernel)  # type: ignore[arg-type]
         if self.device.type == 'cuda':
-            mmd2, mmd2_permuted = mmd2.cpu(), mmd2_permuted.cpu()
-        p_val = (mmd2 <= mmd2_permuted).float().mean()
-        return p_val.numpy().item(), mmd2.numpy().item(), mmd2_permuted.numpy()
+            mmd2 = mmd2.cpu()
+        mmd2 = mmd2.numpy().item()
+        var_mmd2 = var_mmd2.numpy().item()
+        std_mmd2 = np.sqrt(var_mmd2)
+        p_val = 1 - stats.norm.cdf(mmd2 * np.sqrt(n_hat), loc=0., scale=std_mmd2*np.sqrt(2))
+        distance_threshold = stats.norm.ppf(1 - self.p_val, loc=0., scale=std_mmd2*np.sqrt(2))
+        return p_val, mmd2 * np.sqrt(n_hat), distance_threshold

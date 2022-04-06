@@ -112,7 +112,7 @@ def batch_compute_kernel_matrix(
 def linear_mmd2(x: tf.Tensor,
                 y: tf.Tensor,
                 kernel: Callable,
-                permute: bool = False) -> tf.Tensor:
+                permute: bool = False) -> Tuple[tf.Tensor, tf.Tensor]:
     """
     Compute maximum mean discrepancy (MMD^2) between 2 samples x and y with the
     linear-time estimator.
@@ -147,7 +147,9 @@ def linear_mmd2(x: tf.Tensor,
         k_yz = kernel(y_hat[0::2, :], x_hat[1::2, :], diag=True)
 
     h = k_xx + k_yy - k_xy - k_yz
-    return (tf.reduce_sum(h) / (n / 2.))
+    mmd2 = (tf.reduce_sum(h) / (n / 2.))
+    var_mmd2 = (tf.reduce_sum(h ** 2) / (n / 2.)) - (mmd2 ** 2)
+    return mmd2, var_mmd2
 
 
 def mmd2_from_kernel_matrix(kernel_mat: tf.Tensor,

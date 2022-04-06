@@ -1,5 +1,6 @@
 import logging
 import numpy as np
+import scipy.stats as stats
 import tensorflow as tf
 from typing import Callable, Dict, Optional, Tuple, Union
 from alibi_detect.cd.base import BaseMMDDrift
@@ -128,7 +129,6 @@ class LinearTimeMMDDriftTF(BaseMMDDrift):
             kernel: Callable = GaussianRBF,
             sigma: Optional[np.ndarray] = None,
             configure_kernel_from_x_ref: bool = True,
-            n_permutations: int = 100,
             input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None
     ) -> None:
@@ -171,7 +171,6 @@ class LinearTimeMMDDriftTF(BaseMMDDrift):
             preprocess_fn=preprocess_fn,
             sigma=sigma,
             configure_kernel_from_x_ref=configure_kernel_from_x_ref,
-            n_permutations=n_permutations,
             input_shape=input_shape,
             data_type=data_type
         )
@@ -219,8 +218,10 @@ class LinearTimeMMDDriftTF(BaseMMDDrift):
         n_hat = int(np.floor(min(n, m) / 2) * 2)
         x_ref = x_ref[:n_hat, :]
         x = x[:n_hat, :]
-        mmd2 = linear_mmd2(x_ref, x, self.kernel, permute=False).numpy()
-        mmd2_permuted = np.array([linear_mmd2(x_ref, x, self.kernel, permute=True).numpy()
-                                  for _ in range(self.n_permutations)])
-        p_val = (mmd2 <= mmd2_permuted).mean()
-        return p_val, mmd2, mmd2_permuted
+        mmd2, var_mmd2 = linear_mmd2(x_ref, x, self.kernel, permute=False)
+        mmd2 = mmd2.numpy()
+        var_mmd2 = var_mmd2.numpy()
+        std_mmd2 = np.sqrt(var_mmd2)
+        p_val = 1 - stats.norm.cdf(mmd2 * np.sqrt(n_hat), loc=0., scale=std_mmd2*np.sqrt(2))
+        distance_threshold = stats.norm.ppf(1 - self.p_val, loc=0., scale=std_mmd2*np.sqrt(2))
+        return p_val, mmd2 * np.sqrt(n_hat), distance_threshold

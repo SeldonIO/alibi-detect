@@ -452,7 +452,6 @@ class BaseMMDDrift(BaseDetector):
             self,
             x_ref: Union[np.ndarray, list],
             p_val: float = .05,
-            estimator: str = 'quad',
             preprocess_x_ref: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
@@ -505,7 +504,6 @@ class BaseMMDDrift(BaseDetector):
 
         # optionally already preprocess reference data
         self.p_val = p_val
-        self.estimator = estimator
         if preprocess_x_ref and isinstance(preprocess_fn, Callable):  # type: ignore[arg-type]
             self.x_ref = preprocess_fn(x_ref)
         else:
@@ -572,12 +570,16 @@ class BaseMMDDrift(BaseDetector):
         'data' contains the drift prediction and optionally the p-value, threshold and MMD metric.
         """
         # compute drift scores
-        p_val, dist, dist_permutations = self.score(x)
-        drift_pred = int(p_val < self.p_val)
+        p_val, dist, tmp_v = self.score(x)
+        if len(np.shape(tmp_v)) > 0:
+            dist_permutations = tmp_v
+            # compute distance threshold
+            idx_threshold = int(self.p_val * len(dist_permutations))
+            distance_threshold = np.sort(dist_permutations)[::-1][idx_threshold]
+        else:
+            distance_threshold = tmp_v
 
-        # compute distance threshold
-        idx_threshold = int(self.p_val * len(dist_permutations))
-        distance_threshold = np.sort(dist_permutations)[::-1][idx_threshold]
+        drift_pred = int(p_val < self.p_val)
 
         # update reference dataset
         if isinstance(self.update_x_ref, dict) and self.preprocess_fn is not None and self.preprocess_x_ref:

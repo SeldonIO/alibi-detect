@@ -94,6 +94,7 @@ class MMDDrift:
             if estimator == 'quad':
                 self._detector = MMDDriftTF(*args, **kwargs)  # type: ignore
             elif estimator == 'linear':
+                kwargs.pop('n_permutations', None)
                 self._detector = LinearTimeMMDDriftTF(*args, **kwargs)  # type: ignore
             else:
                 raise NotImplementedError(f'{estimator} not implemented. Use quad or linear instead.')
@@ -101,6 +102,7 @@ class MMDDrift:
             if estimator == 'quad':
                 self._detector = MMDDriftTorch(*args, **kwargs)  # type: ignore
             elif estimator == 'linear':
+                kwargs.pop('n_permutations', None)
                 self._detector = LinearTimeDriftTorch(*args, **kwargs)  # type: ignore
             else:
                 raise NotImplementedError(f'{estimator} not implemented. Use quad or linear instead.')
