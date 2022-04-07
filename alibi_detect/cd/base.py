@@ -134,7 +134,10 @@ class BaseClassifierDrift(BaseDetector):
                    x_ref: Union[np.ndarray, list],
                    x: Union[np.ndarray, list],
                    return_splits: bool = True
-                   ) -> Tuple[Union[np.ndarray, list], np.ndarray, Optional[List[Tuple[np.ndarray, np.ndarray]]]]:
+                   ) -> Union[
+                        Tuple[Union[np.ndarray, list], np.ndarray],
+                        Tuple[Union[np.ndarray, list], np.ndarray, Optional[List[Tuple[np.ndarray, np.ndarray]]]]
+                    ]:
         """
         Split reference and test data in train and test folds used by the classifier.
 
@@ -160,7 +163,7 @@ class BaseClassifierDrift(BaseDetector):
             x = x_ref + x
 
         if not return_splits:
-            return x, y, None
+            return x, y
 
         # random shuffle if stratified folds are not used
         n_tot = len(x)

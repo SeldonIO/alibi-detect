@@ -239,7 +239,7 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
     def _score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, np.ndarray, np.ndarray]:
         x_ref, x = self.preprocess(x)
         n_ref, n_cur = len(x_ref), len(x)
-        x, y, splits = self.get_splits(x_ref, x)
+        x, y, splits = self.get_splits(x_ref, x, return_splits=True)
 
         # iterate over folds: train a new model for each fold and make out-of-fold (oof) predictions
         probs_oof_list, idx_oof_list = [], []
@@ -267,16 +267,15 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
 
     def _score_rf(self, x: Union[np.ndarray, list]) -> Tuple[float, float, np.ndarray, np.ndarray]:
         x_ref, x = self.preprocess(x)
-        x, y, _ = self.get_splits(x_ref, x, return_splits=False)
+        x, y = self.get_splits(x_ref, x, return_splits=False)
         self.model.fit(x, y)
-        # it is possible that some inputs do not have OOB scores. This is probably means that too few trees were
-        # used to compute any reliable estimates. In this case shall we raise an error or keep going by
-        # selecting only not NaN? Now we select the not NaN.
+        # it is possible that some inputs do not have OOB scores. This is probably means
+        # that too few trees were used to compute any reliable estimates.
         index_oob = np.where(np.all(~np.isnan(self.model.oob_decision_function_), axis=1))[0]
         probs_oob = self.model.oob_decision_function_[index_oob]
         y_oob = y[index_oob]
         # comparison due to ordering in get_split (i.e, x = [x_ref, x])
         n_ref = np.sum(index_oob < len(x_ref)).item()
-        n_cur = np.sum(index_oob >= len(x_ref)).item()
-        p_val, dist = self.test_probs(y_oob, probs_oob, n_ref, n_cur)
+        n_test = np.sum(index_oob >= len(x_ref)).item()
+        p_val, dist = self.test_probs(y_oob, probs_oob, n_ref, n_test)
         return p_val, dist, probs_oob[:n_ref, 1], probs_oob[n_ref:, 1]
