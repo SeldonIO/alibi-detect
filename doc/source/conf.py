@@ -59,6 +59,7 @@ extensions = [
     "nbsphinx",
     "myst_parser",
     "sphinx_design",
+    "sphinxcontrib.autodoc_pydantic"
 ]
 
 # -- nbsphinx settings -------------------------------------------------------
@@ -78,6 +79,7 @@ for nb_file in nb_files:
 bibtex_bibfiles = ['refs.bib']
 bibtex_default_style = 'unsrtalpha'
 
+# -- Other settings ----------------------------------------------------------
 # apidoc settings
 apidoc_module_dir = "../../alibi_detect"
 apidoc_output_dir = "api"
@@ -108,10 +110,18 @@ autodoc_mock_imports = [
     "transformers",
     "tqdm",
     "dill",
-    "pydantic",
-    "catalogue",
     "numba"
 ]
+
+# autodoc defaults
+autodoc_default_options = {
+    'inherited-members': 'BaseModel',  # List any base classes we DON'T want to inherit from (i.e. pydantic BaseModel). Is there a better way?
+}
+
+# Autodoc pydantic settings
+autodoc_pydantic_model_show_json = False
+autodoc_pydantic_model_show_config = False
+autodoc_pydantic_model_show_config_summary = False
 
 # Napoleon settings
 napoleon_google_docstring = False
@@ -323,16 +333,16 @@ myst_enable_extensions = [
 # Create heading anchors for h1 to h3 (useful for local toc's)
 myst_heading_anchors = 3
 
-# Below code fixes a problem with sphinx>=3.2.0 processing functions with
-# torch.jit.script decorator. Probably occuring because torch is being mocked
-# (see https://github.com/sphinx-doc/sphinx/issues/6709).
-def call_mock(self, *args, **kw):
-    from types import FunctionType, MethodType
-    if args and type(args[0]) in [type, FunctionType, MethodType]:
-        # Appears to be a decorator, pass through unchanged
-        return args[0]
-    return self
-
-from sphinx.ext.autodoc.mock import _MockObject
-_MockObject.__call__ = call_mock
+## Below code fixes a problem with sphinx>=3.2.0 processing functions with
+## torch.jit.script decorator. Probably occuring because torch is being mocked
+## (see https://github.com/sphinx-doc/sphinx/issues/6709).
+#def call_mock(self, *args, **kw):
+#    from types import FunctionType, MethodType
+#    if args and type(args[0]) in [type, FunctionType, MethodType]:
+#        # Appears to be a decorator, pass through unchanged
+#        return args[0]
+#    return self
+#
+#from sphinx.ext.autodoc.mock import _MockObject
+#_MockObject.__call__ = call_mock
 
