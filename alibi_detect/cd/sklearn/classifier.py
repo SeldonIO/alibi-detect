@@ -239,7 +239,7 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
     def _score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, np.ndarray, np.ndarray]:
         x_ref, x = self.preprocess(x)
         n_ref, n_cur = len(x_ref), len(x)
-        x, y, splits = self.get_splits(x_ref, x, return_splits=True)
+        x, y, splits = self.get_splits(x_ref, x, return_splits=True)  # type: ignore
 
         # iterate over folds: train a new model for each fold and make out-of-fold (oof) predictions
         probs_oof_list, idx_oof_list = [], []
@@ -267,7 +267,7 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
 
     def _score_rf(self, x: Union[np.ndarray, list]) -> Tuple[float, float, np.ndarray, np.ndarray]:
         x_ref, x = self.preprocess(x)
-        x, y = self.get_splits(x_ref, x, return_splits=False)
+        x, y = self.get_splits(x_ref, x, return_splits=False)  # type: ignore
         self.model.fit(x, y)
         # it is possible that some inputs do not have OOB scores. This is probably means
         # that too few trees were used to compute any reliable estimates.
@@ -276,6 +276,6 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
         y_oob = y[index_oob]
         # comparison due to ordering in get_split (i.e, x = [x_ref, x])
         n_ref = np.sum(index_oob < len(x_ref)).item()
-        n_test = np.sum(index_oob >= len(x_ref)).item()
-        p_val, dist = self.test_probs(y_oob, probs_oob, n_ref, n_test)
+        n_cur = np.sum(index_oob >= len(x_ref)).item()
+        p_val, dist = self.test_probs(y_oob, probs_oob, n_ref, n_cur)
         return p_val, dist, probs_oob[:n_ref, 1], probs_oob[n_ref:, 1]
