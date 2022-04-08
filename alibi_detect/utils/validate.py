@@ -19,11 +19,12 @@ def validate_config(cfg: dict, resolved: bool = False) -> dict:
     -------
     The validated config dict, with missing fields set to their default values.
     """
-    # Get detector name
+    # Get detector name and meta
     if 'name' in cfg:
         detector_name = cfg['name']
     else:
         raise ValueError('`name` missing from config.toml.')
+    meta = cfg.pop('meta', {})
 
     # Validate detector specific config
     if detector_name in DETECTOR_CONFIGS.keys():
@@ -35,24 +36,24 @@ def validate_config(cfg: dict, resolved: bool = False) -> dict:
         raise ValueError(f'Loading the {detector_name} detector from a config.toml is not yet supported.')
 
     # Raise warning if config file already contains a version_warning
-    version_warning = cfg.get('version_warning', False)
+    version_warning = meta.pop('version_warning', False)
     if version_warning:
         warnings.warn('The config file appears to be have been generated from a detector which may have been '
                       'loaded with a version mismatch. This may lead to breaking code or invalid results.')
 
     # check version
-    version = cfg.pop('version', None)
+    version = meta.pop('version', None)
     if version is not None and version != __version__:
         warnings.warn(f'Config is from version {version} but current version is '
                       f'{__version__}. This may lead to breaking code or invalid results.')
-        cfg['version_warning'] = True
+        cfg['meta'].update({'version_warning': True})
 
     # Check config specification version
-    config_spec = cfg.pop('config_spec', None)
+    config_spec = meta.pop('config_spec', None)
     if config_spec is not None and config_spec != __config_spec__:
         warnings.warn(f'Config has specification {version} when the installed '
                       f'alibi-detect version expects specification {__config_spec__}.'
                       'This may lead to breaking code or invalid results.')
-        cfg['version_warning'] = True
+        cfg['meta'].update({'version_warning': True})
 
     return cfg

@@ -1,6 +1,6 @@
 # TODO - Need to modularise torch and tensorflow imports and use. e.g. has_tensorflow and has_pytorch etc
 from alibi_detect.utils.registry import registry
-from alibi_detect.utils.schemas import SupportedModels  # type: ignore[attr-defined]
+from alibi_detect.utils.schemas import SupportedModels
 from alibi_detect.utils.validate import validate_config
 from alibi_detect.utils.tensorflow._loading import load_model as load_model_tf, \
     prep_model_and_emb as prep_model_and_emb_tf, load_kernel_config as load_kernel_config_tf, \
@@ -9,7 +9,7 @@ from alibi_detect.utils.tensorflow._loading import load_model as load_model_tf, 
 import tensorflow as tf  # TODO - this is currently only required for FIELDS_TO_DTYPE conversion. Remove in future.
 from transformers import AutoTokenizer
 import numpy as np
-from typing import Union, Optional, Callable, Any
+from typing import Union, Optional, Callable, Any, List
 from copy import deepcopy
 from functools import partial
 from pathlib import Path
@@ -224,11 +224,11 @@ def _init_detector(x_ref: Union[np.ndarray, list],
     -------
     The instantiated detector.
     """
-    detector_name = cfg.pop('name', None)
-    version_warning = cfg.pop('version_warning', False)
+    detector_name = cfg.pop('name')
+    version_warning = cfg.pop('meta')['version_warning']
 
     # Process args
-    args = [x_ref]
+    args = [x_ref]  # type: List[Any]
     if model is not None:
         args.append(model)
 

@@ -108,12 +108,8 @@ class DriftConfigMixin:
         for backend in backends:
             if name.endswith(backend):
                 name = name[:-len(backend)]
-        # Populate config dict
-        cfg: Dict[str, Any] = {
-            'version': __version__,
-            'config_spec': __config_spec__,
-            'name': name
-        }
+        # Init config dict
+        cfg: Dict[str, Any] = {'name': name}
 
         # Add x_ref
         cfg.update({'x_ref': self.x_ref})
@@ -122,8 +118,13 @@ class DriftConfigMixin:
         if self.preprocess_fn is not None:
             cfg.update({'preprocess_fn': self.preprocess_fn})
 
-        # Add version_warning if it exists
-        cfg.update({'version_warning': self.meta.get('version_warning', False)})
+        # Populate meta dict and add to config
+        cfg_meta = {
+            'version': __version__,
+            'config_spec': __config_spec__,
+            'version_warning': self.meta.get('version_warning', False)
+        }
+        cfg.update({'meta': cfg_meta})
 
         return cfg
 

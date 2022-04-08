@@ -160,23 +160,21 @@ def load_kernel_config(cfg: dict) -> Callable:
                 kernel = kernel(**kwargs)
 
     elif 'proj' in cfg:  # DeepKernel config
-        proj = cfg['proj']
-        eps = cfg['eps']
         # Kernel a
         kernel_a = cfg['kernel_a']
-        if kernel_a is not None:
-            kernel_a = load_kernel_config(kernel_a)
-        else:
-            kernel_a = GaussianRBF(trainable=True)
+        if kernel_a == GaussianRBF:  # If uninstantiated GaussianRBF (the default, instantiate as trainable)
+            cfg['kernel_a'] = GaussianRBF(trainable=True)
+        elif isinstance(kernel_a, dict):  # If still a kernel config dict, load
+            cfg['kernel_a'] = load_kernel_config(kernel_a)
         # Kernel b
         kernel_b = cfg['kernel_b']
-        if kernel_b is not None:
-            kernel_b = load_kernel_config(kernel_b)
-        else:
-            kernel_b = GaussianRBF(trainable=True)
+        if kernel_b == GaussianRBF:  # If uninstantiated GaussianRBF (the default, instantiate as trainable)
+            cfg['kernel_b'] = GaussianRBF(trainable=True)
+        elif isinstance(kernel_b, dict):  # If still a kernel config dict, load
+            cfg['kernel_b'] = load_kernel_config(kernel_b)
 
         # Assemble deep kernel
-        kernel = DeepKernel(proj, kernel_a=kernel_a, kernel_b=kernel_b, eps=eps)
+        kernel = DeepKernel.from_config(cfg)
     else:
         raise ValueError('Unable to process kernel.)')
     return kernel

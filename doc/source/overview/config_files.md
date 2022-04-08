@@ -144,27 +144,27 @@ The following table shows the allowable formats for all artefacts that can be sp
 ```{table} Possible artefact formats
 :name: all-artefacts-table
 
-|Field                     |.npy file  |.dill file  |Registry|Dictionary| 
-|:-------------------------|:---------:|:----------:|:------:|:--------:|
-|`x_ref`                   |✔          |            |        |          |
-|`optimizer`               |           |✔           |✔       |          |
-|`reg_loss_fn`             |           |✔           |✔       |          |
-|`model`                   |           |            |✔       |✔         |
-|`preprocess_fn`           |           |✔           |✔       |✔         |
-|`preprocess_fn.model`     |           |            |✔       |✔         |
-|`preprocess_fn.embedding` |           |            |✔       |✔         |
-|`preprocess_fn.tokenizer` |           |            |✔       |✔         |
-|`dataset`                 |           |✔           |✔       |✔         |
-|`kernel`                  |           |✔           |✔       |✔         |
-|`kernel.proj`             |           |            |✔       |✔         |
-|`kernel.kernel_a`         |           |✔           |✔       |✔         |
-|`kernel.kernel_b`         |           |✔           |✔       |✔         |
-|`initial_diffs`           |✔          |            |        |          |
+|Field                     |.npy file  |.dill file  |Registry|Config Dictionary                                        | 
+|:-------------------------|:---------:|:----------:|:------:|:-------------------------------------------------------:|
+|`x_ref`                   |✔          |            |        |                                                         |
+|`reg_loss_fn`             |           |✔           |✔       |                                                         |
+|`dataset`                 |           |✔           |✔       |                                                         |
+|`initial_diffs`           |✔          |            |        |                                                         |
+|`model`                   |           |            |✔       |{class}`~alibi_detect.utils.schemas.ModelConfig`         |
+|`preprocess_fn`           |           |✔           |✔       |{class}`~alibi_detect.utils.schemas.PreprocessConfig`    |
+|`preprocess_fn.model`     |           |            |✔       |{class}`~alibi_detect.utils.schemas.ModelConfig`         |
+|`preprocess_fn.embedding` |           |            |✔       |{class}`~alibi_detect.utils.schemas.EmbeddingConfig`     |
+|`preprocess_fn.tokenizer` |           |            |✔       |{class}`~alibi_detect.utils.schemas.TokenizerConfig`     |
+|`kernel`                  |           |✔           |✔       |{class}`~alibi_detect.utils.schemas.KernelConfig`/{class}`~alibi_detect.utils.schemas.DeepKernelConfig`|
+|`kernel.proj`             |           |            |✔       |{class}`~alibi_detect.utils.schemas.ModelConfig`         |
+|`kernel.kernel_a`         |           |✔           |✔       |{class}`~alibi_detect.utils.schemas.KernelConfig`        |
+|`kernel.kernel_b`         |           |✔           |✔       |{class}`~alibi_detect.utils.schemas.KernelConfig`        |
+|`optimizer`               |           |✔           |✔       |✔                                                        |
 ```
 
 ```{note}
 When TensorFlow, PyTorch, or scikit-learn `model`'s are specified, the model type should be specified via the `backend` field in the *config.toml*.
-For example, if `model` is a TensorFlow model, set `backend='tensorflow'. This is the case even for detectors that don't take a `backend` kwarg.
+For example, if `model` is a TensorFlow model, set `backend='tensorflow'`. This is the case even for detectors that don't take a `backend` kwarg.
 ```
 
 (dictionaries)=
