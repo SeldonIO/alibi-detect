@@ -24,7 +24,6 @@ def validate_config(cfg: dict, resolved: bool = False) -> dict:
         detector_name = cfg['name']
     else:
         raise ValueError('`name` missing from config.toml.')
-    meta = cfg.pop('meta', {})
 
     # Validate detector specific config
     if detector_name in DETECTOR_CONFIGS.keys():
@@ -35,21 +34,24 @@ def validate_config(cfg: dict, resolved: bool = False) -> dict:
     else:
         raise ValueError(f'Loading the {detector_name} detector from a config.toml is not yet supported.')
 
+    # Get meta data
+    meta = cfg.get('meta')
+    version_warning = meta.get('version_warning', False)
+    version = meta.get('version', None)
+    config_spec = meta.get('config_spec', None)
+
     # Raise warning if config file already contains a version_warning
-    version_warning = meta.pop('version_warning', False)
     if version_warning:
         warnings.warn('The config file appears to be have been generated from a detector which may have been '
                       'loaded with a version mismatch. This may lead to breaking code or invalid results.')
 
     # check version
-    version = meta.pop('version', None)
     if version is not None and version != __version__:
         warnings.warn(f'Config is from version {version} but current version is '
                       f'{__version__}. This may lead to breaking code or invalid results.')
         cfg['meta'].update({'version_warning': True})
 
     # Check config specification version
-    config_spec = meta.pop('config_spec', None)
     if config_spec is not None and config_spec != __config_spec__:
         warnings.warn(f'Config has specification {version} when the installed '
                       f'alibi-detect version expects specification {__config_spec__}.'

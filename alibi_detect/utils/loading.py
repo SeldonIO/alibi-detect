@@ -225,7 +225,7 @@ def _init_detector(x_ref: Union[np.ndarray, list],
     The instantiated detector.
     """
     detector_name = cfg.pop('name')
-    version_warning = cfg.pop('meta')['version_warning']
+    version_warning = cfg.pop('meta', None)['version_warning']  # meta is pop'd as don't want to pass as kwarg
 
     # Process args
     args = [x_ref]  # type: List[Any]

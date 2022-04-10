@@ -575,14 +575,14 @@ def test_version_warning(data, tmp_path):
     save_detector(cd, tmp_path)
     # Emulate version mismatch
     cfg = read_config(tmp_path.joinpath('config.toml'))
-    cfg['version'] = '0.1.x'
+    cfg['meta']['version'] = '0.1.x'
     _ = write_config(cfg, tmp_path)
     # Reload and save again
     cd = load_detector(tmp_path)
     save_detector(cd, tmp_path)
     # Check saved config contains a "version_warning"
     cfg = read_config(tmp_path.joinpath('config.toml'))
-    assert cfg.get('version_warning', False)
+    assert cfg['meta']['version_warning']
     # Final load (we expect a warning to be raised here)
     with pytest.warns(Warning):  # error will be raised if a warning IS NOT raised
         cd_new = load_detector(tmp_path)

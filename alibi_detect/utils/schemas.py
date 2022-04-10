@@ -65,16 +65,27 @@ class DetectorConfig(CustomBaseModel):
     backend: Literal['tensorflow', 'pytorch', 'sklearn'] = Field('tensorflow', description='The detector backend.')
     # Note: Although not all detectors have a backend, we define in base class as `backend` also determines
     #  whether tf or torch models used for preprocess_fn.
-    meta: Optional[MetaData] = Field(None, description='Config metadata. Should not be edited.')
+    meta: Optional[MetaData] = Field(MetaData, description='Config metadata. Should not be edited.')
 
 
 class ModelConfig(CustomBaseModel):
     """
     Unresolved schema for (ML) models. Note that the model "backend" e.g. 'tensorflow', 'pytorch', 'sklearn', is set
     by `backend` in :class:`DetectorConfig`.
+
+    Examples
+    --------
+    A TensorFlow classifier model stored in the `model/` directory, with the softmax layer extracted:
+
+    .. code-block :: toml
+
+        [model]
+        src = "model/"
+        layer = -1
     """
     src: str = Field(..., description='Filepath to directory storing the model (relative to the `config.toml` '
-                                      'file, or absolute).')
+                                      'file, or absolute). At present, TensorFlow models must be stored in '
+                                      'H5 format <https://www.tensorflow.org/guide/keras/save_and_serialize#keras_h5_format>`_.')  # noqa: E501
     custom_objects: Optional[dict] \
         = Field(None, description='Dictionary of custom objects. Passed to the tensorflow '
                                   '`load_model <https://www.tensorflow.org/api_docs/python/tf/keras/models/load_model>`_ '  # noqa: E501
@@ -87,7 +98,20 @@ class ModelConfig(CustomBaseModel):
 
 class EmbeddingConfig(CustomBaseModel):
     """
-    Unresolved schema for text embedding models. Currently, only HuggingFace transformer models are supported.
+    Unresolved schema for text embedding models. Currently, only pre-trained
+    `HuggingFace transformer <https://github.com/huggingface/transformers>`_ models are supported.
+
+    Examples
+    --------
+    Using the hidden states at the output of each layer of the
+    `BERT base <https://huggingface.co/bert-base-cased>`_ model as text embeddings:
+
+    .. code-block :: toml
+
+        [embedding]
+        src = "bert-base-cased"
+        type = "hidden_state"
+        layers = [-1, -2, -3, -4, -5, -6, -7, -8]
     """
     type: Literal['pooler_output', 'last_hidden_state', 'hidden_state', 'hidden_state_cls'] \
         = Field(..., description='The type of embedding to be loaded. See `embedding_type` in '
@@ -102,7 +126,22 @@ class EmbeddingConfig(CustomBaseModel):
 
 class TokenizerConfig(CustomBaseModel):
     """
-    Unresolved schema for text tokenizers. Currently, only HuggingFace tokenizer models are supported.
+    Unresolved schema for text tokenizers. Currently, only pre-trained
+    `HuggingFace tokenizer <https://github.com/huggingface/tokenizers>`_ models are supported.
+
+    Examples
+    --------
+    `BERT base <https://huggingface.co/bert-base-cased>`_ tokenizer with additional keyword arguments passed to the
+    HuggingFace :meth:`~transformers.AutoTokenizer.from_pretrained` method:
+
+     .. code-block :: toml
+
+        [tokenizer]
+        src = "bert-base-cased"
+
+        [tokenizer.kwargs]
+        use_fast = false
+        force_download = true
     """
     src: str \
         = Field(..., description='Model name e.g. `"bert-base-cased"`, or a filepath to directory storing the '
@@ -121,6 +160,37 @@ class PreprocessConfig(CustomBaseModel):
     If `src` specifies a generic Python function, the dictionary specified by `kwargs` is passed to it. Otherwise,
     if `src` specifies :func:`~alibi_detect.cd.tensorflow.preprocess.preprocess_drift`
     (`src='@cd.tensorflow.preprocess.preprocess_drift'`), all fields (except `kwargs`) are passed to it.
+
+    Examples
+    --------
+    Preprocessor with a `model`, text `embedding` and `tokenizer` passed to
+    :func:`~alibi_detect.cd.tensorflow.preprocess.preprocess_drift`:
+
+    .. code-block :: toml
+
+        [preprocess_fn]
+        src = "@cd.tensorflow.preprocess.preprocess_drift"
+        batch_size = 32
+        max_len = 100
+        tokenizer.src = "tokenizer/"  # TokenizerConfig
+
+        [preprocess_fn.model]
+        # ModelConfig
+        src = "model/"
+
+        [preprocess_fn.embedding]
+        # EmbeddingConfig
+        src = "embedding/"
+        type = "hidden_state"
+        layers = [-1, -2, -3, -4, -5, -6, -7, -8]
+
+    A serialized Python function with keyword arguments passed to it:
+
+    .. code-block :: toml
+
+        [preprocess_fn]
+        src = 'myfunction.dill'
+        kwargs = {'kwarg1'=0.7, 'kwarg2'=true}
     """
     src: str \
         = Field("'@cd.tensorflow.preprocess.preprocess_drift'",
@@ -203,6 +273,28 @@ class KernelConfig(CustomBaseModel):
 
     If `src` specifies a :class:`~alibi_detect.utils.tensorflow.GaussianRBF` kernel, the `sigma` and `trainable` fields
     are passed to it. Otherwise, the `kwargs` field is passed.
+
+    Examples
+    --------
+    A :class:`~alibi_detect.utils.tensorflow.GaussianRBF` kernel, with three different bandwidths:
+
+    .. code-block :: toml
+
+        [kernel]
+        src = "@alibi_detect.utils.tensorflow.GaussianRBF"
+        trainable = false
+        sigma = [0.1, 0.2, 0.3]
+
+    A serialized kernel with keyword arguments passed:
+
+    .. code-block :: toml
+
+        [kernel]
+        src = "mykernel.dill"
+
+        [kernel.kwargs]
+        sigma = 0.42
+        custom_setting = "xyz"
     """
     src: str = Field(..., description='A string referencing a filepath to a serialized kernel in `.dill` format, or '
                                       'an object registry reference.')
@@ -242,6 +334,29 @@ class KernelConfigResolved(CustomBaseModel):
 class DeepKernelConfig(CustomBaseModel):
     """
     Unresolved schema for :class:`~alibi_detect.utils.tensorflow.kernels.DeepKernel`'s.
+
+    Examples
+    --------
+    A :class:`~alibi_detect.utils.tensorflow.DeepKernel`, with a trainable
+    :class:`~alibi_detect.utils.tensorflow.GaussianRBF` kernel applied to the projected inputs and a custom
+    serialized kernel applied to the raw inputs:
+
+    .. code-block :: toml
+
+        [kernel]
+        eps = 0.01
+
+        [kernel.kernel_a]
+        src = "@utils.tensorflow.kernels.GaussianRBF"
+        trainable = true
+
+        [kernel.kernel_b]
+        src = "custom_kernel.dill"
+        sigma = [ 1.2,]
+        trainable = false
+
+        [kernel.proj]
+        src = "model/"
     """
     proj: Union[str, ModelConfig] \
         = Field(..., description='The projection to be applied to the inputs before applying `kernel_a`. This should '
@@ -727,7 +842,7 @@ DETECTOR_CONFIGS = {
     'ClassifierDrift': ClassifierDriftConfig,
     'SpotTheDiffDrift': SpotTheDiffDriftConfig,
     'LearnedKernelDrift': LearnedKernelDriftConfig
-}  # type:
+}
 
 
 # Resolved schema dictionary (used in alibi_detect.utils.loading)

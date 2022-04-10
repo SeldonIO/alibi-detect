@@ -33,8 +33,11 @@ def test_validate_config(select_cfg):
     cfg_full = validate_config(cfg, resolved=True)
     print(cfg_full)
 
-    # Check cfg is returned with meta==None
-    assert cfg_full.pop('meta', True) is None
+    # Check cfg is returned with correct metadata
+    meta = cfg_full.get('meta')  # pop as don't want to compare meta to cfg in next bit
+    assert meta['version'] == __version__
+    assert meta['config_spec'] == __config_spec__
+    assert not meta.pop('version_warning')  # pop this one to remove from next check
 
     # Check remaining values of items in cfg unchanged
     for k, v in cfg.items():
@@ -44,18 +47,17 @@ def test_validate_config(select_cfg):
     cfg_unres = cfg.copy()
     cfg_unres['x_ref'] = 'x_ref.npy'
     _ = validate_config(cfg_unres)
-    print(cfg_unres)
     assert not cfg.get('meta').get('version_warning')
 
     # Check warning raised and warning field added if version or config_spec different
     cfg_err = cfg.copy()
-    cfg_err['version'] = '0.1.x'
+    cfg_err['meta']['version'] = '0.1.x'
     with pytest.warns(Warning):  # error will be raised if a warning IS NOT raised
         cfg_err = validate_config(cfg_err, resolved=True)
     assert cfg_err.get('meta').get('version_warning')
 
     cfg_err = cfg.copy()
-    cfg_err['config_spec'] = '0.x'
+    cfg_err['meta']['config_spec'] = '0.x'
     with pytest.warns(Warning):  # error will be raised if a warning IS NOT raised
         cfg_err = validate_config(cfg_err, resolved=True)
     assert cfg_err.get('meta').get('version_warning')
