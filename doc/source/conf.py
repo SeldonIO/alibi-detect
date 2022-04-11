@@ -57,7 +57,6 @@ extensions = [
     "nbsphinx",
     "myst_parser",
     "sphinx_design",
-    "sphinxcontrib.autodoc_pydantic",
     "autoapi.extension"
 ]
 
