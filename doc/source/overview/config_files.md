@@ -73,7 +73,7 @@ detector to {func}`~alibi_detect.utils.saving.save_detector`.
 ## Configuration file layout
 
 All detector configuration files follow a consistent layout, simplifying the process of writing simple config files
-by hand. For example, a [KSDrift](../api/alibi_detect.cd.ks.rst) detector with a 
+by hand. For example, a {class}`~alibi_detect.cd.KSDrift` detector with a 
 [dill](https://github.com/uqfoundation/dill) serialized function to preprocess reference and test data can be specified 
 as:
 
@@ -109,10 +109,11 @@ detector = MMDDrift(x_ref, p_val=0.05, preprocess_fn=preprocess_fn)
 `````
 
 The `name` field should always be the name of the detector, for example `KSDrift` or `SpotTheDiffDrift`. 
-The following fields are the args/kwargs to pass to the detector (see the drift detector 
-[api docs](../api/alibi_detect.cd.rst) for a full list of permissible args/kwargs for each detector). All config fields
+The following fields are the args/kwargs to pass to the detector (see the {mod}`alibi_detect.cd` docs
+for a full list of permissible args/kwargs for each detector). All config fields
 follow this convention, however as discussed in [Specifying artefacts](complex_fields), some fields can be 
 more complex than others. 
+
 
 ```{note}
 In the  above example `config.toml`, `x_ref` and `preprocess_fn` are stored in `detector_directory/`, but this directory
@@ -138,9 +139,9 @@ Depending on their type, artefacts can be specified in `config.toml` in a number
 numpy [npy](https://numpy.org/devdocs/reference/generated/numpy.lib.format.html) files.
 
 - **Function/object registry**: As discussed in [Registering artefacts](registering_artefacts), functions and other 
-objects defined at runtime can be registered using `alibi_detect.utils.registry, allowing them to be specified 
+objects defined at runtime can be registered using `alibi_detect.utils.registry`, allowing them to be specified 
 in the config file without having to serialise them. For convenience a number of Alibi Detect functions such as 
-[preprocess_drift](../api/alibi_detect.cd.tensorflow.preprocess.rst) are also pre-registered. 
+{func}`~alibi_detect.cd.tensorflow.preprocess.preprocess_drift` are also pre-registered. 
 
 - **Dictionaries**: More complex artefacts are specified via nested dictionaries, usually containing a `src` field and 
 additional option/setting fields. Sometimes these fields may be nested artefact dictionaries themselves. See 
@@ -210,7 +211,7 @@ src = "model/"
 ```
 
 Each artefact dictionary has an associated pydantic model which is used for [validation of config files](validation). 
-The [documentation](../api/alibi_detect.utils.schemas.rst) for these pydantic models provides a description of the 
+The [documentation](../api/alibi_detect/utils/schemas/index.rst) for these pydantic models provides a description of the 
 permissible fields for each artefact dictionary. For examples of how the artefact dictionaries can be used in practice, 
 see {ref}`examples`.
 
@@ -219,7 +220,7 @@ see {ref}`examples`.
 ### Registering artefacts
 
 Custom artefacts defined in Python code may be specified in the config file without the need to serialise them, 
-by first adding them to the Alibi Detect artifact registry using the [registry](../api/alibi_detect.utils.registry.rst) 
+by first adding them to the Alibi Detect artifact registry using the {mod}`alibi_detect.utils.registry` 
 submodule. This submodule harnesses the [catalogue](https://github.com/explosion/catalogue) library to allow functions 
 to be registered with a decorator syntax:
 
@@ -306,10 +307,10 @@ objects can be listed with `registry.get_all()`. For example, `registry.find("my
 For convenience, Alibi Detect also pre-registers a number of commonly used utility functions and objects.
 
 | Function/Class                                                       | Registry reference*                           | Tensorflow | Pytorch | 
-|:---------------------------------------------------------------------|:----------------------------------------------|------------|---------|
-| [preprocess_drift](../api/alibi_detect.cd.tensorflow.preprocess.rst) | `'@cd.[backend].preprocess.preprocess_drift'` | ✔           | ✔       |
-| [GaussianRBF](../api/alibi_detect.utils.tensorflow.kernels.rst)      | `'@utils.[backend].kernels.GaussianRBF'`      | ✔           | ✔       |
-| [TFDataset](../api/alibi_detect.utils.tensorflow.data.rst)           | `'@utils.tensorflow.data.TFDataset'`          | ✔           |         |
+:------------------------------------------------------------------- --|:----------------------------------------------|------------|---------|
+| {func}`~alibi_detect.cd.tensorflow.preprocess.preprocess_drift`      | `'@cd.[backend].preprocess.preprocess_drift'` | ✔          | ✔       |
+| {class}`~alibi_detect.utils.tensorflow.kernels.GaussianRBF`          | `'@utils.[backend].kernels.GaussianRBF'`      | ✔          | ✔       |
+| {class}`~alibi_detect.utils.tensorflow.data.TFDataset`               | `'@utils.tensorflow.data.TFDataset'`          | ✔          |         |
 
 **For backend-specific functions/classes, [backend] should be replaced the desired backend e.g. `tensorflow` or `pytorch`.*
 
@@ -328,7 +329,7 @@ to be easily specified for preprocessing, as demonstrated in the [IMDB example](
 (imdb_example)=
 ### Drift detection on text data
 
-This example presents a configuration for the [MMDDrift](../api/alibi_detect.cd.mmd.rst) detector used in
+This example presents a configuration for the {class}`~alibi_detect.cd.MMDDrift` detector used in
 [Text drift detection on IMDB movie reviews](../examples/cd_text_imdb.ipynb). The detector will pass the input text 
 data through a `preprocess_fn` step consisting of a `tokenizer`, `embedding` and `model`. A
 [Untrained AutoEncoder (UAE)](https://docs.seldon.io/projects/alibi-detect/en/latest/api/alibi_detect.cd.tensorflow.html?highlight=uae#alibi_detect.cd.tensorflow.UAE)

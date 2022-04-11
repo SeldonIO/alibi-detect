@@ -17,18 +17,18 @@ The `resolved` kwarg of :func:`~alibi_detect.utils.validate.validate_config` det
 # TODO - conditional checks depending on backend etc
 # TODO - consider validating output of get_config calls
 import numpy as np
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from typing import Optional, Union, Dict, List, Callable, Any
 from alibi_detect.utils._types import Literal
 from alibi_detect.version import __version__, __config_spec__
 from alibi_detect.models.tensorflow import TransformerEmbedding
 from alibi_detect.utils.frameworks import has_tensorflow
-
+from alibi_detect.cd.tensorflow import UAE as UAE_tf, HiddenOutput as HiddenOutput_tf
+from transformers import PreTrainedTokenizerBase
 SupportedModels_li = []
 if has_tensorflow:
     import tensorflow as tf
-    from alibi_detect.cd.tensorflow import UAE, HiddenOutput
-    SupportedModels_li += [tf.keras.Model, UAE, HiddenOutput]
+    SupportedModels_li += [tf.keras.Model, UAE_tf, HiddenOutput_tf]
 # if has_pytorch:
 #    import torch
 #    SupportedModels_li.append()  # TODO
@@ -37,8 +37,9 @@ if has_tensorflow:
 #    SupportedModels_li.append()  # TODO
 # SupportedModels is a tuple of possible models (conditional on installed deps). This is used in isinstance() etc.
 SupportedModels = tuple(SupportedModels_li)
-# SupportedModels_py is a typing Union only for use with pydantic. NOT to be used with mypy (as not static)
-SupportedModels_py = Union[SupportedModels]  # type: ignore[valid-type]
+# SupportedModels_py is a typing Union for use with pydantic. We include all optional deps in here so that they
+# are all documented in the api docs (where the optional deps are not installed at build time)
+SupportedModels_py = Union['tf.keras.Model', UAE_tf, HiddenOutput_tf]
 
 
 # Custom BaseModel so that we can set default config
@@ -61,11 +62,14 @@ class DetectorConfig(CustomBaseModel):
     """
     Base detector config schema. Only fields universal across all detectors are defined here.
     """
-    name: str = Field(..., description='Name of the detector e.g. `MMDDrift`.')
-    backend: Literal['tensorflow', 'pytorch', 'sklearn'] = Field('tensorflow', description='The detector backend.')
+    name: str
+    "Name of the detector e.g. `MMDDrift`."
+    backend: Literal['tensorflow', 'pytorch', 'sklearn'] = 'tensorflow'
+    "The detector backend."
+    meta: Optional[MetaData] = MetaData()
+    "Config metadata. Should not be edited."
     # Note: Although not all detectors have a backend, we define in base class as `backend` also determines
     #  whether tf or torch models used for preprocess_fn.
-    meta: Optional[MetaData] = Field(MetaData, description='Config metadata. Should not be edited.')
 
 
 class ModelConfig(CustomBaseModel):
@@ -83,17 +87,23 @@ class ModelConfig(CustomBaseModel):
         src = "model/"
         layer = -1
     """
-    src: str = Field(..., description='Filepath to directory storing the model (relative to the `config.toml` '
-                                      'file, or absolute). At present, TensorFlow models must be stored in '
-                                      'H5 format <https://www.tensorflow.org/guide/keras/save_and_serialize#keras_h5_format>`_.')  # noqa: E501
-    custom_objects: Optional[dict] \
-        = Field(None, description='Dictionary of custom objects. Passed to the tensorflow '
-                                  '`load_model <https://www.tensorflow.org/api_docs/python/tf/keras/models/load_model>`_ '  # noqa: E501
-                                  'function. This can be used to pass custom registered functions and classes to '
-                                  'a model.')
-    layer: Optional[int] \
-        = Field(None, description='Optional index of hidden layer to extract. If not `None`, a '
-                                  ':class:`~alibi_detect.cd.tensorflow.preprocess.HiddenOutput` model is returned.')
+    src: str
+    """
+    Filepath to directory storing the model (relative to the `config.toml` file, or absolute). At present,
+    TensorFlow models must be stored in
+    `H5 format <https://www.tensorflow.org/guide/keras/save_and_serialize#keras_h5_format>`_.
+    """
+    custom_objects: Optional[dict] = None
+    """
+    Dictionary of custom objects. Passed to the tensorflow
+    `load_model <https://www.tensorflow.org/api_docs/python/tf/keras/models/load_model>`_ function. This can be
+    used to pass custom registered functions and classes to a model.
+    """
+    layer: Optional[int] = None
+    """
+    Optional index of hidden layer to extract. If not `None`, a
+    :class:`~alibi_detect.cd.tensorflow.preprocess.HiddenOutput` model is returned.
+    """
 
 
 class EmbeddingConfig(CustomBaseModel):
@@ -113,15 +123,19 @@ class EmbeddingConfig(CustomBaseModel):
         type = "hidden_state"
         layers = [-1, -2, -3, -4, -5, -6, -7, -8]
     """
-    type: Literal['pooler_output', 'last_hidden_state', 'hidden_state', 'hidden_state_cls'] \
-        = Field(..., description='The type of embedding to be loaded. See `embedding_type` in '
-                                 ':class:`~alibi_detect.models.tensorflow.embedding.TransformerEmbedding`.')
-    layers: Optional[List[int]] \
-        = Field(None, description='List specifying the hidden layers to be used to extract the embedding. ')
+    type: Literal['pooler_output', 'last_hidden_state', 'hidden_state', 'hidden_state_cls']
+    """
+    The type of embedding to be loaded. See `embedding_type` in
+    :class:`~alibi_detect.models.tensorflow.embedding.TransformerEmbedding`.
+    """
+    layers: Optional[List[int]] = None
+    "List specifying the hidden layers to be used to extract the embedding."
     # TODO - add check conditional on embedding type (see docstring in above)
-    src: str \
-        = Field(..., description='Model name e.g. `"bert-base-cased"`, or a filepath to directory storing the model to '
-                                 'extract embeddings from (relative to the `config.toml` file, or absolute).')
+    src: str
+    """
+    Model name e.g. `"bert-base-cased"`, or a filepath to directory storing the model to extract embeddings from
+    (relative to the `config.toml` file, or absolute).
+    """
 
 
 class TokenizerConfig(CustomBaseModel):
@@ -143,13 +157,13 @@ class TokenizerConfig(CustomBaseModel):
         use_fast = false
         force_download = true
     """
-    src: str \
-        = Field(..., description='Model name e.g. `"bert-base-cased"`, or a filepath to directory storing the '
-                                 'tokenizer model (relative to the `config.toml` file, or absolute). Passed to'
-                                 'passed to :meth:`transformers.AutoTokenizer.from_pretrained`.')
-    kwargs: Optional[dict] \
-        = Field({}, description='Dictionary of keyword arguments to pass to '
-                                ':meth:`transformers.AutoTokenizer.from_pretrained`.')
+    src: str
+    """
+    Model name e.g. `"bert-base-cased"`, or a filepath to directory storing the tokenizer model (relative to the
+    `config.toml` file, or absolute). Passed to passed to :meth:`transformers.AutoTokenizer.from_pretrained`.
+    """
+    kwargs: Optional[dict] = {}
+    "Dictionary of keyword arguments to pass to :meth:`transformers.AutoTokenizer.from_pretrained`."
 
 
 class PreprocessConfig(CustomBaseModel):
@@ -192,40 +206,55 @@ class PreprocessConfig(CustomBaseModel):
         src = 'myfunction.dill'
         kwargs = {'kwarg1'=0.7, 'kwarg2'=true}
     """
-    src: str \
-        = Field("'@cd.tensorflow.preprocess.preprocess_drift'",
-                description='The preprocessing function. A string referencing a filepath to a serialized function in '
-                            '`.dill` format, or an object registry reference.')
+    src: str = "@cd.tensorflow.preprocess.preprocess_drift"
+    """
+    The preprocessing function. A string referencing a filepath to a serialized function in `dill` format, or an
+    object registry reference.
+    """
 
     # Below kwargs are only passed if src == @preprocess_drift
-    model: Optional[Union[str, ModelConfig]] \
-        = Field(None, description=' Model used for preprocessing. Either an object registry reference, '
-                                  'or a :class:`~alibi_detect.utils.schemas.ModelConfig`.')
+    model: Optional[Union[str, ModelConfig]] = None
+    """
+    Model used for preprocessing. Either an object registry reference, or a
+    :class:`~alibi_detect.utils.schemas.ModelConfig`.
+    """
+
     # TODO - make model required field when src is preprocess_drift
-    embedding: Optional[Union[str, EmbeddingConfig]] \
-        = Field(None, description='A text embedding model. Either a string referencing a HuggingFace transformer model'
-                                  'name, an object registry reference, or a '
-                                  ':class:`~alibi_detect.utils.schemas.EmbeddingConfig`. If `model=None`, the '
-                                  '`embedding` is passed to '
-                                  ':func:`~alibi_detect.cd.tensorflow.preprocess.preprocess_drift` as `model`. '
-                                  'Otherwise, the `model` is chained to the output of the `embedding` as an additional '
-                                  'preprocessing step.')
-    tokenizer: Optional[Union[str, TokenizerConfig]] \
-        = Field(None, description='Optional tokenizer for text drift. Either a string referencing a HuggingFace '
-                                  'tokenizer model name, or a :class:`~alibi_detect.utils.schemas.TokenizerConfig`.')
-    device: Optional[Literal['cpu', 'cuda']] \
-        = Field(None, description="Device type used. The default `None` tries to use the GPU and falls back on CPU if "
-                                  "needed. Only relevant if `src='@cd.torch.preprocess.preprocess_drift'`.")
-    preprocess_batch_fn: Optional[str] \
-        = Field(None, description='Optional batch preprocessing function. For example to convert a list of objects to '
-                                  'a batch which can be processed by the `model`.')
-    max_len: Optional[int] = Field(None, description='Optional max token length for text drift.')
-    batch_size: Optional[int] = Field(int(1e10), description='Batch size used during prediction.')
-    dtype: Optional[str] = Field(None, description="Model output type, e.g. `'np.float32'` or `'torch.float32'`.")
+    embedding: Optional[Union[str, EmbeddingConfig]] = None
+    """
+    A text embedding model. Either a string referencing a HuggingFace transformer model name, an object registry
+    reference, or a :class:`~alibi_detect.utils.schemas.EmbeddingConfig`. If `model=None`, the `embedding` is passed to
+    :func:`~alibi_detect.cd.tensorflow.preprocess.preprocess_drift` as `model`. Otherwise, the `model` is chained to
+    the output of the `embedding` as an additional preprocessing step.
+    """
+    tokenizer: Optional[Union[str, TokenizerConfig]] = None
+    """
+    Optional tokenizer for text drift. Either a string referencing a HuggingFace tokenizer model name, or a
+    :class:`~alibi_detect.utils.schemas.TokenizerConfig`.
+    """
+    device: Optional[Literal['cpu', 'cuda']] = None
+    """
+    Device type used. The default `None` tries to use the GPU and falls back on CPU if needed. Only relevant if
+    `src='@cd.torch.preprocess.preprocess_drift'`
+    """
+    preprocess_batch_fn: Optional[str] = None
+    """
+    Optional batch preprocessing function. For example to convert a list of objects to a batch which can be processed
+    by the `model`.
+    """
+    max_len: Optional[int] = None
+    "Optional max token length for text drift."
+    batch_size: Optional[int] = int(1e10)
+    "Batch size used during prediction."
+    dtype: Optional[str] = None
+    "Model output type, e.g. `'np.float32'` or `'torch.float32'`"
 
     # Additional kwargs
-    kwargs: dict = Field({}, description='Dictionary of keyword arguments to be passed to the function specified by '
-                                         '`src`. Only used if `src` specifies a generic Python function.')
+    kwargs: dict = {}
+    """
+    Dictionary of keyword arguments to be passed to the function specified by `src`. Only used if `src` specifies a
+    generic Python function.
+    """
 
 
 class PreprocessConfigResolved(CustomBaseModel):
@@ -237,34 +266,44 @@ class PreprocessConfigResolved(CustomBaseModel):
     if `src` is a :func:`~alibi_detect.cd.tensorflow.preprocess.preprocess_drift` function, all fields
     (except `kwargs`) are passed to it.
     """
-    src: Callable \
-        = Field(..., description='The preprocessing function.')
+    src: Callable
+    "The preprocessing function."
 
     # Below kwargs are only passed if src == @preprocess_drift
-    model: Optional[SupportedModels_py] \
-        = Field(None, description='Model used for preprocessing.')
-    embedding: Optional[TransformerEmbedding] \
-        = Field(None, description='A text embedding model. If `model=None`, the `embedding` is passed to '
-                                  ':func:`~alibi_detect.cd.tensorflow.preprocess.preprocess_drift` as `model`. '
-                                  'Otherwise, the `model` is chained to the output of the `embedding` as an additional '
-                                  'preprocessing step.')  # TODO - Not optional if src is preprocess_drift
-    tokenizer: Optional[Callable] = Field(None, description='Optional tokenizer for text drift.')
-    # TODO - typing as PreTrainedTokenizerBase currently causes docs issues, so relaxing to Callable for now
-    device: Optional[Any] \
-        = Field(None, description='Device type used. The default `None` tries to use the GPU and falls back on CPU if '
-                                  'needed. Only relevant if function is '
-                                  ':func:`~alibi_detect.cd.pytorch.preprocess.preprocess_drift`.')
-    # TODO: Set as Any and None for now. Think about how to handle ForwardRef when torch missing
-    preprocess_batch_fn: Optional[Callable] \
-        = Field(None, description='Optional batch preprocessing function. For example to convert a list of objects to '
-                                  'a batch which can be processed by the `model`.')
-    max_len: Optional[int] = Field(None, description='Optional max token length for text drift.')
-    batch_size: Optional[int] = Field(int(1e10), description='Batch size used during prediction.')
-    dtype: Optional[str] = Field(None, description="Model output type, e.g. `'np.float32'` or `'torch.float32'`.")
+    model: Optional[SupportedModels_py] = None
+    "Model used for preprocessing."
+    embedding: Optional[TransformerEmbedding] = None
+    """
+    A text embedding model. If `model=None`, the `embedding` is passed to
+    :func:`~alibi_detect.cd.tensorflow.preprocess.preprocess_drift` as `model`. Otherwise, the `model` is chained to
+    the output of the `embedding` as an additional preprocessing step.')
+    """
+    tokenizer: Optional[PreTrainedTokenizerBase] = None
+    "Optional tokenizer for text drift."
+    device: Optional[Any] = None
+    """
+    Device type used. The default `None` tries to use the GPU and falls back on CPU if needed. Only relevant if
+    function is :func:`~alibi_detect.cd.pytorch.preprocess.preprocess_drift`.
+    """
+    # TODO: Set as Any and None for now. Clarify when pytorch implemented
+    preprocess_batch_fn: Optional[Callable] = None
+    """
+    Optional batch preprocessing function. For example to convert a list of objects to a batch which can be processed
+    by the `model`.
+    """
+    max_len: Optional[int] = None
+    "Optional max token length for text drift."
+    batch_size: Optional[int] = int(1e10)
+    "Batch size used during prediction."
+    dtype: Optional[str] = None
+    "Model output type, e.g. `'np.float32'` or `'torch.float32'`."
 
     # Additional kwargs
-    kwargs: dict = Field({}, description='Dictionary of keyword arguments to be passed to the function specified by '
-                                         '`src`. Only used if `src` specifies a generic Python function.')
+    kwargs: dict = {}
+    """
+    Dictionary of keyword arguments to be passed to the function specified by `src`. Only used if `src` specifies a
+    generic Python function.
+    """
 
 
 class KernelConfig(CustomBaseModel):
@@ -296,18 +335,21 @@ class KernelConfig(CustomBaseModel):
         sigma = 0.42
         custom_setting = "xyz"
     """
-    src: str = Field(..., description='A string referencing a filepath to a serialized kernel in `.dill` format, or '
-                                      'an object registry reference.')
+    src: str
+    "A string referencing a filepath to a serialized kernel in `.dill` format, or an object registry reference."
 
     # Below kwargs are only passed if kernel == @GaussianRBF
-    sigma: Optional[List[float]] \
-        = Field(None, description='Bandwidth used for the kernel. Needn’t be specified if being inferred or trained. '
-                                  'Can pass multiple values to eval kernel with and then average.')
-    trainable: bool = Field(False, description='Whether or not to track gradients w.r.t. sigma to allow it to be '
-                                               'trained.')
+    sigma: Optional[List[float]] = None
+    """
+    Bandwidth used for the kernel. Needn’t be specified if being inferred or trained. Can pass multiple values to eval
+    kernel with and then average.
+    """
+    trainable: bool = False
+    "Whether or not to track gradients w.r.t. sigma to allow it to be trained."
 
     # Additional kwargs
-    kwargs: dict = Field({}, description='Dictionary of keyword arguments to pass to the kernel.')
+    kwargs: dict = {}
+    "Dictionary of keyword arguments to pass to the kernel."
 
 
 class KernelConfigResolved(CustomBaseModel):
@@ -317,18 +359,22 @@ class KernelConfigResolved(CustomBaseModel):
     If `src` is a :class:`~alibi_detect.utils.tensorflow.GaussianRBF` kernel, the `sigma` and `trainable` fields
     are passed to it. Otherwise, the `kwargs` field is passed.
     """
-    src: Callable = Field(..., description='The kernel.')
+    src: Callable
+    "The kernel."
 
     # Below kwargs are only passed if kernel == @GaussianRBF
-    sigma: Optional[np.ndarray] \
-        = Field(None, description='Bandwidth used for the kernel. Needn’t be specified if being inferred or trained. '
-                                  'Can pass multiple values to eval kernel with and then average.')
+    sigma: Optional[np.ndarray] = None
+    """
+    Bandwidth used for the kernel. Needn’t be specified if being inferred or trained. Can pass multiple values to eval
+    kernel with and then average.
+    """
 
-    trainable: bool = Field(False, description='Whether or not to track gradients w.r.t. sigma to allow it to be '
-                                               'trained.')
+    trainable: bool = False
+    "Whether or not to track gradients w.r.t. sigma to allow it to be trained."
 
     # Additional kwargs
-    kwargs: dict = Field({}, description='Dictionary of keyword arguments to pass to the kernel.')
+    kwargs: dict = {}
+    "Dictionary of keyword arguments to pass to the kernel."
 
 
 class DeepKernelConfig(CustomBaseModel):
@@ -358,42 +404,47 @@ class DeepKernelConfig(CustomBaseModel):
         [kernel.proj]
         src = "model/"
     """
-    proj: Union[str, ModelConfig] \
-        = Field(..., description='The projection to be applied to the inputs before applying `kernel_a`. This should '
-                                 'be a Tensorflow or PyTorch model, specified as an object registry reference, or a '
-                                 ':class:`~alibi_detect.utils.schemas.ModelConfig`.')
-    kernel_a: Union[str, KernelConfig] \
-        = Field("@utils.tensorflow.kernels.GaussianRBF",
-                description='The kernel to apply to the projected inputs. Defaults to a '
-                            ':class:`~alibi_detect.utils.tensorflow.kernels.GaussianRBF` with trainable bandwidth.')
-    kernel_b: Optional[Union[str, KernelConfig]] \
-        = Field("@utils.tensorflow.kernels.GaussianRBF",
-                description='The kernel to apply to the raw inputs. Defaults to a '
-                            ':class:`~alibi_detect.utils.tensorflow.kernels.GaussianRBF` with trainable bandwidth. '
-                            'Set to `None` in order to use only the deep component (i.e. `eps=0`).')
-    eps: Union[float, str] \
-        = Field('trainable', description="The proportion (in [0,1]) of weight to assign to the kernel applied to raw "
-                                         "inputs. This can be either specified or set to `'trainable'`. Only relevant "
-                                         "is `kernel_b` is not `None`.")
+    proj: Union[str, ModelConfig]
+    """
+    The projection to be applied to the inputs before applying `kernel_a`. This should be a Tensorflow or PyTorch
+    model, specified as an object registry reference, or a :class:`~alibi_detect.utils.schemas.ModelConfig`.
+    """
+    kernel_a: Union[str, KernelConfig] = "@utils.tensorflow.kernels.GaussianRBF"
+    """
+    The kernel to apply to the projected inputs. Defaults to a
+    :class:`~alibi_detect.utils.tensorflow.kernels.GaussianRBF` with trainable bandwidth.
+    """
+    kernel_b: Optional[Union[str, KernelConfig]] = "@utils.tensorflow.kernels.GaussianRBF"
+    """
+    The kernel to apply to the raw inputs. Defaults to a :class:`~alibi_detect.utils.tensorflow.kernels.GaussianRBF`
+    with trainable bandwidth. Set to `None` in order to use only the deep component (i.e. `eps=0`).
+    """
+    eps: Union[float, str] = 'trainable'
+    """
+    The proportion (in [0,1]) of weight to assign to the kernel applied to raw inputs. This can be either specified or
+    set to `'trainable'`. Only relevant is `kernel_b` is not `None`.
+    """
 
 
 class DeepKernelConfigResolved(CustomBaseModel):
     """
     Resolved schema for :class:`~alibi_detect.utils.tensorflow.kernels.DeepKernel`'s.
     """
-    proj: SupportedModels_py = Field(..., description='The projection to be applied to the inputs before applying '
-                                                      '`kernel_a`. This should be a Tensorflow or PyTorch model.')
-    kernel_a: Union[Callable, KernelConfigResolved] \
-        = Field(..., description='The kernel to apply to the projected inputs.')
-    kernel_b: Optional[Union[Callable, KernelConfigResolved]] \
-        = Field(..., description='The kernel to apply to the raw inputs. Set to None in order to use only the deep '
-                                 'component (i.e. eps=0).')
+    proj: SupportedModels_py
+    """
+    The projection to be applied to the inputs before applying `kernel_a`. This should be a Tensorflow or PyTorch model.
+    """
+    kernel_a: Union[Callable, KernelConfigResolved]
+    "The kernel to apply to the projected inputs."
+    kernel_b: Optional[Union[Callable, KernelConfigResolved]]
+    "The kernel to apply to the raw inputs. Set to None in order to use only the deep component (i.e. eps=0)."
     # TODO - would be good to set kernel defaults to GaussianRBF(trainable=True). But not clear
     #  how to do this and handle TensorFlow vs PyTorch (especially w/ optional deps)
-    eps: Union[float, str]  \
-        = Field('trainable', description="The proportion (in [0,1]) of weight to assign to the kernel applied to raw "
-                                         "inputs. This can be either specified or set to `'trainable'`. Only relevant "
-                                         "is `kernel_b` is not `None`.")
+    eps: Union[float, str] = 'trainable'
+    """
+    The proportion (in [0,1]) of weight to assign to the kernel applied to raw inputs. This can be either specified or
+    set to `'trainable'`. Only relevant is `kernel_b` is not `None`.
+    """
 
 
 class DriftDetectorConfig(DetectorConfig):
@@ -401,21 +452,24 @@ class DriftDetectorConfig(DetectorConfig):
     Unresolved base schema for drift detectors.
     """
     # args/kwargs shared by all drift detectors
-    x_ref: str = Field(..., description='Data used as reference distribution. Should be a string referencing a '
-                                        'NumPy `.npy` file.')
-    p_val: float = Field(.05, description='p-value threshold used for significance of the statistical test.')
-    x_ref_preprocessed: bool \
-        = Field(False, description='Whether or not the reference data x_ref has already been preprocessed. If True, '
-                                   'the reference data will be skipped and preprocessing will only be applied to the '
-                                   'test data passed to predict.')
-    preprocess_fn: Optional[Union[str, PreprocessConfig]] \
-        = Field(None, description='Function to preprocess the data before computing the data drift metrics. Either a '
-                                  'string referencing a serialized function in `.dill` format, an object registry '
-                                  'reference, or a :class:`~alibi_detect.utils.schemas.PreprocessConfig`.')
-    input_shape: Optional[tuple] = Field(None, description='Optionally pass the shape of the input data. Used when '
-                                                           'saving detectors.')
-    data_type: Optional[str] = Field(None, description="Specify data type added to the metadata. E.g. `‘tabular’` "
-                                                       "or `‘image’`.")
+    x_ref: str
+    "Data used as reference distribution. Should be a string referencing a NumPy `.npy` file."
+    p_val: float = .05
+    "p-value threshold used for significance of the statistical test."
+    x_ref_preprocessed: bool = False
+    """
+    Whether or not the reference data x_ref has already been preprocessed. If True, the reference data will be skipped
+    and preprocessing will only be applied to the test data passed to predict.
+    """
+    preprocess_fn: Optional[Union[str, PreprocessConfig]] = None
+    """
+    Function to preprocess the data before computing the data drift metrics. A string referencing a serialized function
+    in `.dill` format, an object registry reference, or a :class:`~alibi_detect.utils.schemas.PreprocessConfig`.
+    """
+    input_shape: Optional[tuple] = None
+    "Optionally pass the shape of the input data. Used when saving detectors."
+    data_type: Optional[str] = None
+    "Specify data type added to the metadata. E.g. `‘tabular’`or `‘image’`."
 
 
 class DriftDetectorConfigResolved(DetectorConfig):
@@ -423,18 +477,21 @@ class DriftDetectorConfigResolved(DetectorConfig):
     Resolved base schema for drift detectors.
     """
     # args/kwargs shared by all drift detectors
-    x_ref: Union[np.ndarray, list] = Field(..., description='Data used as reference distribution.')
-    p_val: float = Field(.05, description='p-value threshold used for significance of the statistical test.')
-    x_ref_preprocessed: bool \
-        = Field(False, description='Whether or not the reference data x_ref has already been preprocessed. If True, '
-                                   'the reference data will be skipped and preprocessing will only be applied to the '
-                                   'test data passed to predict.')
-    preprocess_fn: Optional[Union[Callable, PreprocessConfigResolved]] \
-        = Field(None, description='Function to preprocess the data before computing the data drift metrics.')
-    input_shape: Optional[tuple] = Field(None, description='Optionally pass the shape of the input data. Used when '
-                                                           'saving detectors.')
-    data_type: Optional[str] = Field(None, description="Specify data type added to the metadata. E.g. `‘tabular’` "
-                                                       "or `‘image’`.")
+    x_ref: Union[np.ndarray, list]
+    "Data used as reference distribution."
+    p_val: float = .05
+    "p-value threshold used for significance of the statistical test."
+    x_ref_preprocessed: bool = False
+    """
+    Whether or not the reference data x_ref has already been preprocessed. If True, the reference data will be skipped
+    and preprocessing will only be applied to the test data passed to predict.
+    """
+    preprocess_fn: Optional[Union[Callable, PreprocessConfigResolved]] = None
+    "Function to preprocess the data before computing the data drift metrics."
+    input_shape: Optional[tuple] = None
+    "Optionally pass the shape of the input data. Used when saving detectors."
+    data_type: Optional[str] = None
+    "Specify data type added to the metadata. E.g. `‘tabular’` or `‘image’`."
 
 
 class KSDriftConfig(DriftDetectorConfig):

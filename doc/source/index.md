@@ -68,7 +68,7 @@ models/overview
 :caption: API reference
 :maxdepth: 1
 
-API reference <api/modules>
+api/alibi_detect/index
 ```
 
 ```{toctree}
