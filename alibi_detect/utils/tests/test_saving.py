@@ -28,7 +28,7 @@ from alibi_detect.cd.tensorflow import preprocess_drift as preprocess_drift_tf, 
 from alibi_detect.cd.pytorch import preprocess_drift as preprocess_drift_pt, HiddenOutput as HiddenOutput_pt
 from alibi_detect.utils.tensorflow.kernels import DeepKernel as DeepKernel_tf, GaussianRBF as GaussianRBF_tf
 from alibi_detect.utils.pytorch.kernels import DeepKernel as DeepKernel_pt, GaussianRBF as GaussianRBF_pt
-from alibi_detect.utils.registry import registry
+from alibi_detect.registry import registry
 from alibi_detect.utils.saving import (save_detector, _save_kernel, _save_preprocess,
                                        _save_model_config, _path2str, _serialize_function, write_config)  # type: ignore
 from alibi_detect.utils.loading import (load_detector, _load_kernel_config, resolve_cfg, _load_preprocess,

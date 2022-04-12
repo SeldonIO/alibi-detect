@@ -9,7 +9,7 @@ from transformers import PreTrainedTokenizerBase
 from typing import Callable, Optional, Tuple, Union, get_args
 from alibi_detect.utils.loading import Detectors, _replace
 from alibi_detect.utils.schemas import SupportedModels
-from alibi_detect.utils.registry import registry
+from alibi_detect.registry import registry
 from alibi_detect.utils.loading import load_detector as _load_detector  # TODO: Remove in future
 from alibi_detect.utils.tensorflow._saving import save_model_config as save_model_config_tf, save_detector_legacy
 import warnings

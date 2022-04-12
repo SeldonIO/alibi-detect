@@ -139,7 +139,7 @@ Depending on their type, artefacts can be specified in `config.toml` in a number
 numpy [npy](https://numpy.org/devdocs/reference/generated/numpy.lib.format.html) files.
 
 - **Function/object registry**: As discussed in [Registering artefacts](registering_artefacts), functions and other 
-objects defined at runtime can be registered using `alibi_detect.utils.registry`, allowing them to be specified 
+objects defined at runtime can be registered using `alibi_detect.registry`, allowing them to be specified 
 in the config file without having to serialise them. For convenience a number of Alibi Detect functions such as 
 {func}`~alibi_detect.cd.tensorflow.preprocess.preprocess_drift` are also pre-registered. 
 
@@ -220,7 +220,7 @@ see {ref}`examples`.
 ### Registering artefacts
 
 Custom artefacts defined in Python code may be specified in the config file without the need to serialise them, 
-by first adding them to the Alibi Detect artifact registry using the {mod}`alibi_detect.utils.registry` 
+by first adding them to the Alibi Detect artefact registry using the {mod}`alibi_detect.registry` 
 submodule. This submodule harnesses the [catalogue](https://github.com/explosion/catalogue) library to allow functions 
 to be registered with a decorator syntax:
 
@@ -238,7 +238,7 @@ to be registered with a decorator syntax:
 
 ```python
 import numpy as np
-from alibi_detect.utils.registry import registry
+from alibi_detect.registry import registry
 from alibi_detect.utils.loading import load_detector
 
 # Register a simple function
@@ -279,7 +279,7 @@ encoder model:
 ```python
 import tensorflow as tf
 from tensorflow.keras.layers import Conv2D, Dense, Flatten, InputLayer
-from alibi_detect.utils.registry import registry
+from alibi_detect.registry import registry
 
 encoder_net = tf.keras.Sequential(
   [
@@ -314,7 +314,7 @@ For convenience, Alibi Detect also pre-registers a number of commonly used utili
 
 **For backend-specific functions/classes, [backend] should be replaced the desired backend e.g. `tensorflow` or `pytorch`.*
 
-These can be used in `config.toml` files without the need to explicitly import `alibi_detect.utils.registry`. 
+These can be used in `config.toml` files without the need to explicitly import `alibi_detect.registry`. 
 Of particular importance are the `preprocess_drift` utility functions, which allows models, tokenizers and embeddings
 to be easily specified for preprocessing, as demonstrated in the [IMDB example](imdb_example).
 

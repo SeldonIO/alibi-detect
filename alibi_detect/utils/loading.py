@@ -1,5 +1,5 @@
 # TODO - Need to modularise torch and tensorflow imports and use. e.g. has_tensorflow and has_pytorch etc
-from alibi_detect.utils.registry import registry
+from alibi_detect.registry import registry
 from alibi_detect.utils.schemas import SupportedModels
 from alibi_detect.utils.validate import validate_config
 from alibi_detect.utils.tensorflow._loading import load_model as load_model_tf, \
@@ -52,7 +52,11 @@ FIELDS_TO_RESOLVE = [
     ['initial_diffs']
 ]
 
-# Directories to amend before resolving config (fields to prepend config file dir to)
+# Directories to amend before resolving config (fields to prepend config file dir to).
+# e.g. in a `config.toml` stored in `filepath='my_detector'` we might have `preprocess_fn.model.src = 'model/'.
+# Before resolution, we need to update `preprocess_fn.model.src` to be relative to runtime dir i.e. 'my_detector/model/'
+# Note some fields in FIELDS_TO_RESOLVE are missing from DIR_FIELDS, since some fields cannot be spec'd as directories.
+# e.g. embedding cannot be spec'd directly as a .dill file reference, it must be an EmbeddingConfig.
 DIR_FIELDS = [
     ['preprocess_fn'],
     ['preprocess_fn', 'src'],
@@ -69,19 +73,6 @@ DIR_FIELDS = [
     ['kernel', 'kernel_a', 'src'],
     ['kernel', 'kernel_b', 'src'],
     ['initial_diffs']
-]
-
-# Fields to convert from list to tuple in resolve_cfg
-FIELDS_TO_TUPLE = [
-    ['detector', 'kwargs', 'input_shape']
-]
-
-# Fields to convert from list to np.ndarray in resolve_cfg
-FIELDS_TO_ARRAY = [
-    ['sigma'],
-    ['kernel', 'sigma'],
-    ['kernel', 'kernel_a', 'sigma'],
-    ['kernel', 'kernel_b', 'sigma'],
 ]
 
 # Fields to convert from str to np.dtype
@@ -572,18 +563,6 @@ def resolve_cfg(cfg: dict, config_dir: Optional[Path]) -> dict:
         # Put the resolved function into the cfg dict
         if obj is not None:
             _set_nested_value(cfg, key, obj)
-
-    # Convert selected lists to tuples
-    for key in FIELDS_TO_TUPLE:
-        val = _get_nested_value(cfg, key)
-        if val is not None:
-            _set_nested_value(cfg, key, tuple(val))
-
-    # Convert selected lists to np.ndarray's
-    for key in FIELDS_TO_ARRAY:
-        val = _get_nested_value(cfg, key)
-        if val is not None:
-            _set_nested_value(cfg, key, np.array(val))
 
     # Convert selected str's to required dtype's
     for key in FIELDS_TO_DTYPE:

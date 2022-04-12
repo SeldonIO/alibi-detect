@@ -18,8 +18,8 @@ The `resolved` kwarg of :func:`~alibi_detect.utils.validate.validate_config` det
 # TODO - consider validating output of get_config calls
 import numpy as np
 from pydantic import BaseModel
-from typing import Optional, Union, Dict, List, Callable, Any
-from alibi_detect.utils._types import Literal
+from typing import Optional, Union, Dict, List, Callable, Any, Type
+from alibi_detect.utils._types import Literal, NDArray
 from alibi_detect.version import __version__, __config_spec__
 from alibi_detect.models.tensorflow import TransformerEmbedding
 from alibi_detect.utils.frameworks import has_tensorflow
@@ -339,7 +339,7 @@ class KernelConfig(CustomBaseModel):
     "A string referencing a filepath to a serialized kernel in `.dill` format, or an object registry reference."
 
     # Below kwargs are only passed if kernel == @GaussianRBF
-    sigma: Optional[List[float]] = None
+    sigma: Optional[NDArray[float]] = None
     """
     Bandwidth used for the kernel. Needn’t be specified if being inferred or trained. Can pass multiple values to eval
     kernel with and then average.
@@ -363,7 +363,7 @@ class KernelConfigResolved(CustomBaseModel):
     "The kernel."
 
     # Below kwargs are only passed if kernel == @GaussianRBF
-    sigma: Optional[np.ndarray] = None
+    sigma: Optional[NDArray[float]] = None
     """
     Bandwidth used for the kernel. Needn’t be specified if being inferred or trained. Can pass multiple values to eval
     kernel with and then average.
@@ -656,7 +656,7 @@ class MMDDriftConfig(DriftDetectorConfig):
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
     kernel: Optional[Union[str, KernelConfig]] = None
-    sigma: Optional[List[float]] = None
+    sigma: Optional[NDArray[float]] = None
     configure_kernel_from_x_ref: bool = True
     n_permutations: int = 100
     device: Optional[Literal['cpu', 'cuda']] = None
@@ -673,7 +673,7 @@ class MMDDriftConfigResolved(DriftDetectorConfigResolved):
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
     kernel: Optional[Union[Callable, KernelConfigResolved]] = None
-    sigma: Optional[np.ndarray] = None
+    sigma: Optional[NDArray[float]] = None
     configure_kernel_from_x_ref: bool = True
     n_permutations: int = 100
     device: Optional[Literal['cpu', 'cuda']] = None
@@ -689,7 +689,7 @@ class LSDDDriftConfig(DriftDetectorConfig):
     """
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
-    sigma: Optional[List[float]] = None
+    sigma: Optional[NDArray[float]] = None
     n_permutations: int = 100
     n_kernel_centers: Optional[int] = None
     lambda_rd_max: float = 0.2
@@ -706,7 +706,7 @@ class LSDDDriftConfigResolved(DriftDetectorConfigResolved):
     """
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
-    sigma: Optional[np.ndarray] = None
+    sigma: Optional[NDArray[float]] = None
     n_permutations: int = 100
     n_kernel_centers: Optional[int] = None
     lambda_rd_max: float = 0.2
@@ -899,7 +899,7 @@ DETECTOR_CONFIGS = {
     'ClassifierDrift': ClassifierDriftConfig,
     'SpotTheDiffDrift': SpotTheDiffDriftConfig,
     'LearnedKernelDrift': LearnedKernelDriftConfig
-}
+}  # type: Dict[str, Type[DriftDetectorConfig]]
 
 
 # Resolved schema dictionary (used in alibi_detect.utils.loading)
@@ -914,4 +914,4 @@ DETECTOR_CONFIGS_RESOLVED = {
     'ClassifierDrift': ClassifierDriftConfigResolved,
     'SpotTheDiffDrift': SpotTheDiffDriftConfigResolved,
     'LearnedKernelDrift': LearnedKernelDriftConfigResolved
-}
+}  # type: Dict[str, Type[DriftDetectorConfigResolved]]
