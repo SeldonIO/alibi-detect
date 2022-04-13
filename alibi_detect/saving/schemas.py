@@ -247,7 +247,7 @@ class PreprocessConfig(CustomBaseModel):
     batch_size: Optional[int] = int(1e10)
     "Batch size used during prediction."
     dtype: Optional[str] = None
-    "Model output type, e.g. `'np.float32'` or `'torch.float32'`"
+    "Model output type, e.g. `'tf.float32'`"
 
     # Additional kwargs
     kwargs: dict = {}
@@ -295,8 +295,8 @@ class PreprocessConfigResolved(CustomBaseModel):
     "Optional max token length for text drift."
     batch_size: Optional[int] = int(1e10)
     "Batch size used during prediction."
-    dtype: Optional[str] = None
-    "Model output type, e.g. `'np.float32'` or `'torch.float32'`."
+    dtype: Optional[Union['tf.DType', np.dtype, type]] = None  # TODO - add pytorch
+    "Model output type, e.g. `tf.float32`"
 
     # Additional kwargs
     kwargs: dict = {}

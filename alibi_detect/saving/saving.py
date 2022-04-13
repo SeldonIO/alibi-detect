@@ -100,7 +100,7 @@ def _save_detector_config(detector: Detectors, filepath: Union[str, os.PathLike]
     preprocess_fn = cfg.get('preprocess_fn', None)
     if preprocess_fn is not None:
         logger.info('Saving the preprocess_fn function.')
-        preprocess_cfg = _save_preprocess(preprocess_fn, backend, cfg['input_shape'], filepath)
+        preprocess_cfg = _save_preprocess_config(preprocess_fn, backend, cfg['input_shape'], filepath)
         cfg['preprocess_fn'] = preprocess_cfg
 
     # Serialize kernel
@@ -108,7 +108,7 @@ def _save_detector_config(detector: Detectors, filepath: Union[str, os.PathLike]
     if kernel is not None:
         device = getattr(detector, 'device', None)
         device = device.type if device is not None else None
-        cfg['kernel'] = _save_kernel(kernel, filepath, device=device)
+        cfg['kernel'] = _save_kernel_config(kernel, filepath, device=device)
         if isinstance(kernel, dict):  # serialise proj from DeepKernel
             cfg['kernel']['proj'], _ = _save_model_config(kernel['proj'], base_path=filepath,
                                                           input_shape=cfg['input_shape'], backend=backend)
@@ -172,10 +172,10 @@ def write_config(cfg: dict, filepath: Union[str, os.PathLike]) -> dict:
     return cfg
 
 
-def _save_preprocess(preprocess_fn: Callable,
-                     backend: str,
-                     input_shape: Optional[tuple],
-                     filepath: Path) -> dict:
+def _save_preprocess_config(preprocess_fn: Callable,
+                            backend: str,
+                            input_shape: Optional[tuple],
+                            filepath: Path) -> dict:
     """
     Serializes a drift detectors preprocess_fn. Artefacts are saved to disk, and a config dict containing filepaths
     to the saved artefacts is returned.
@@ -215,7 +215,7 @@ def _save_preprocess(preprocess_fn: Callable,
 
         # Tokenizer
         elif isinstance(v, PreTrainedTokenizerBase):
-            cfg_token = _save_tokenizer(v, filepath, local_path)
+            cfg_token = _save_tokenizer_config(v, filepath, local_path)
             kwargs.update({k: cfg_token})
 
         # Arbitrary function
@@ -340,9 +340,9 @@ def _save_model_config(model: Callable,
         raise NotImplementedError("Saving of pytorch models is not yet implemented.")
 
 
-def _save_tokenizer(tokenizer: PreTrainedTokenizerBase,
-                    base_path: Path,
-                    path: Path = Path('.')) -> dict:
+def _save_tokenizer_config(tokenizer: PreTrainedTokenizerBase,
+                           base_path: Path,
+                           path: Path = Path('.')) -> dict:
     """
     Saves HuggingFace tokenizers.
 
@@ -372,10 +372,10 @@ def _save_tokenizer(tokenizer: PreTrainedTokenizerBase,
     return cfg_token
 
 
-def _save_kernel(kernel: Callable,
-                 filepath: Path,
-                 device: Optional[str] = None,
-                 filename: str = 'kernel.dill') -> dict:
+def _save_kernel_config(kernel: Callable,
+                        filepath: Path,
+                        device: Optional[str] = None,
+                        filename: str = 'kernel.dill') -> dict:
     """
     Function to save kernel. If the kernel is stored in the artefact registry, the registry key (and kwargs) are
     written to config. If the kernel is a generic callable, it is pickled.
@@ -411,10 +411,10 @@ def _save_kernel(kernel: Callable,
         })
 
     elif isinstance(kernel, dict):  # DeepKernel config dict
-        kernel_a = _save_kernel(kernel['kernel_a'], filepath, device, filename='kernel_a.dill')
+        kernel_a = _save_kernel_config(kernel['kernel_a'], filepath, device, filename='kernel_a.dill')
         kernel_b = kernel.get('kernel_b')
         if kernel_b is not None:
-            kernel_b = _save_kernel(kernel['kernel_b'], filepath, device, filename='kernel_b.dill')
+            kernel_b = _save_kernel_config(kernel['kernel_b'], filepath, device, filename='kernel_b.dill')
         cfg_kernel.update({
             'kernel_a': kernel_a,
             'kernel_b': kernel_b,

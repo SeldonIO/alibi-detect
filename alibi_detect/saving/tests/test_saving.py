@@ -28,11 +28,12 @@ from alibi_detect.cd.tensorflow import preprocess_drift as preprocess_drift_tf, 
 from alibi_detect.cd.pytorch import preprocess_drift as preprocess_drift_pt, HiddenOutput as HiddenOutput_pt
 from alibi_detect.utils.tensorflow.kernels import DeepKernel as DeepKernel_tf, GaussianRBF as GaussianRBF_tf
 from alibi_detect.utils.pytorch.kernels import DeepKernel as DeepKernel_pt, GaussianRBF as GaussianRBF_pt
-from alibi_detect.saving import save_detector, write_config, load_detector, read_config, resolve_config, registry
-from alibi_detect.saving.saving import (_save_kernel, _save_preprocess, _save_model_config, _path2str,
+from alibi_detect.saving import (save_detector, write_config, load_detector, read_config, resolve_config, registry)
+from alibi_detect.saving.saving import (_save_kernel_config, _save_preprocess_config, _save_model_config, _path2str,
                                         _serialize_function)  # type: ignore
-from alibi_detect.saving.loading import (_load_kernel_config, _load_preprocess, _load_model_config, _load_optimizer,
-                                         _set_nested_value, _replace, _get_nested_value)  # type: ignore
+from alibi_detect.saving.loading import (_load_kernel_config, _load_preprocess_config, _load_model_config,
+                                         _load_optimizer_config, _set_nested_value, _replace,
+                                         _get_nested_value, _set_dtypes)  # type: ignore
 from alibi_detect.saving.schemas import (
     KernelConfig, KernelConfigResolved,
     DeepKernelConfig, DeepKernelConfigResolved,
@@ -280,7 +281,7 @@ def test_save_ksdrift_nlp(data, preprocess_fn, max_len, enc_dim, tmp_path):
                  p_val=P_VAL,
                  preprocess_fn=preprocess_fn,
                  preprocess_at_init=True,
-                 input_shape=(max_len,)
+                 input_shape=(max_len,),
                  )
     save_detector(cd, tmp_path, legacy=False)
     cd_load = load_detector(tmp_path)
@@ -439,6 +440,7 @@ def test_save_chisquaredrift(data, tmp_path):
     assert isinstance(cd_load.x_ref_categories, dict)
     np.testing.assert_array_equal(cd.predict(X_h0)['data']['p_val'],  # only do for deterministic detectors
                                   cd_load.predict(X_h0)['data']['p_val'])
+    assert cd_load.x_ref_categories == cd.x_ref_categories
 
 
 @parametrize_with_cases("data", cases=MixedData, prefix='data_')
@@ -466,6 +468,7 @@ def test_save_tabulardrift(data, tmp_path):
     assert isinstance(cd_load.x_ref_categories, dict)
     np.testing.assert_array_equal(cd.predict(X_h0)['data']['p_val'],  # only do for deterministic detectors
                                   cd_load.predict(X_h0)['data']['p_val'])
+    assert cd_load.x_ref_categories == cd.x_ref_categories
 
 
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
@@ -627,7 +630,7 @@ def test_save_kernel(kernel, backend, tmp_path):
     # Save kernel to config
     filepath = tmp_path
     filename = 'mykernel.dill'
-    cfg_kernel = _save_kernel(kernel, filepath, device=DEVICE, filename=filename)
+    cfg_kernel = _save_kernel_config(kernel, filepath, device=DEVICE, filename=filename)
     KernelConfig(**cfg_kernel)  # Passing through the pydantic validator gives a degree of testing
     assert cfg_kernel['src'] == '@utils.' + backend + '.kernels.GaussianRBF'
     assert cfg_kernel['trainable'] == kernel.trainable
@@ -660,7 +663,7 @@ def test_save_deepkernel(deep_kernel, kernel_proj_dim, backend, tmp_path):
     # Save kernel to config
     filepath = tmp_path
     filename = 'mykernel.dill'
-    cfg_kernel = _save_kernel(cfg_kernel, filepath, device=DEVICE, filename=filename)
+    cfg_kernel = _save_kernel_config(cfg_kernel, filepath, device=DEVICE, filename=filename)
     cfg_kernel['proj'], _ = _save_model_config(cfg_kernel['proj'], base_path=filepath, input_shape=kernel_proj_dim,
                                                backend=backend)
     cfg_kernel = _path2str(cfg_kernel)
@@ -686,20 +689,20 @@ def test_save_deepkernel(deep_kernel, kernel_proj_dim, backend, tmp_path):
 @parametrize_with_cases("data", cases=ContinuousData.data_synthetic_nd, prefix='data_')
 def test_save_preprocess(data, preprocess_fn, tmp_path, backend):
     """
-    Unit test for _save_preprocess and _load_preprocess, with continuous data.
+    Unit test for _save_preprocess_config and _load_preprocess_config, with continuous data.
 
     preprocess_fn's are saved (serialized) and then loaded, with assertions to check equivalence.
-    Note: _save_model, _save_embedding, _save_tokenizer, _load_model_config, _load_embedding, _load_tokenizer and
-     _prep_model_and_embedding are all well covered by this test.
+    Note: _save_model_config, _save_embedding_config, _save_tokenizer_config, _load_model_config,
+     _load_embedding_config, _load_tokenizer_config and _prep_model_and_embedding are all well covered by this test.
     """
     # Save preprocess_fn to config
     filepath = tmp_path
     X_ref, X_h0 = data
     input_dim = X_ref.shape[1]
-    cfg_preprocess = _save_preprocess(preprocess_fn,
-                                      backend=backend,
-                                      input_shape=input_dim,
-                                      filepath=filepath)
+    cfg_preprocess = _save_preprocess_config(preprocess_fn,
+                                             backend=backend,
+                                             input_shape=input_dim,
+                                             filepath=filepath)
     cfg_preprocess = _path2str(cfg_preprocess)
     cfg_preprocess = PreprocessConfig(**cfg_preprocess).dict()  # pydantic validation
     assert cfg_preprocess['src'] == '@cd.' + backend + '.preprocess.preprocess_drift'
@@ -710,7 +713,7 @@ def test_save_preprocess(data, preprocess_fn, tmp_path, backend):
     cfg = {'preprocess_fn': cfg_preprocess}
     cfg_preprocess = resolve_config(cfg, tmp_path)['preprocess_fn']
     cfg_preprocess = PreprocessConfigResolved(**cfg_preprocess).dict()  # pydantic validation
-    preprocess_fn_load = _load_preprocess(cfg_preprocess, backend)
+    preprocess_fn_load = _load_preprocess_config(cfg_preprocess, backend)
     if backend == 'tensorflow':
         assert preprocess_fn_load.func.__name__ == 'preprocess_drift'
         assert isinstance(preprocess_fn_load.keywords['model'], tf.keras.Model)
@@ -720,17 +723,17 @@ def test_save_preprocess(data, preprocess_fn, tmp_path, backend):
 @parametrize_with_cases("data", cases=TextData.movie_sentiment_data, prefix='data_')
 def test_save_preprocess_nlp(data, preprocess_fn, max_len, tmp_path, backend):
     """
-    Unit test for _save_preprocess and _load_preprocess, with text data.
+    Unit test for _save_preprocess_config and _load_preprocess_config, with text data.
 
-    Note: _save_model, _save_embedding, _save_tokenizer, _load_model_config, _load_embedding, _load_tokenizer and
-     _prep_model_and_embedding are all covered by this test.
+    Note: _save_model_config, _save_embedding_config, _save_tokenizer_config, _load_model_config,
+     _load_embedding_config, _load_tokenizer_config and _prep_model_and_embedding are all covered by this test.
     """
     # Save preprocess_fn to config
     filepath = tmp_path
-    cfg_preprocess = _save_preprocess(preprocess_fn,
-                                      backend=backend,
-                                      input_shape=max_len,
-                                      filepath=filepath)
+    cfg_preprocess = _save_preprocess_config(preprocess_fn,
+                                             backend=backend,
+                                             input_shape=max_len,
+                                             filepath=filepath)
     cfg_preprocess = _path2str(cfg_preprocess)
     cfg_preprocess = PreprocessConfig(**cfg_preprocess).dict()  # pydantic validation
     assert cfg_preprocess['src'] == '@cd.' + backend + '.preprocess.preprocess_drift'
@@ -745,7 +748,7 @@ def test_save_preprocess_nlp(data, preprocess_fn, max_len, tmp_path, backend):
     cfg = {'preprocess_fn': cfg_preprocess}
     cfg_preprocess = resolve_config(cfg, tmp_path)['preprocess_fn']
     cfg_preprocess = PreprocessConfigResolved(**cfg_preprocess).dict()
-    preprocess_fn_load = _load_preprocess(cfg_preprocess, backend)
+    preprocess_fn_load = _load_preprocess_config(cfg_preprocess, backend)
     assert isinstance(preprocess_fn_load.keywords['tokenizer'], type(preprocess_fn.keywords['tokenizer']))
     assert isinstance(preprocess_fn_load.keywords['model'], type(preprocess_fn.keywords['model']))
     if isinstance(preprocess_fn.keywords['model'], (TransformerEmbedding_tf, TransformerEmbedding_pt)):
@@ -764,7 +767,7 @@ def test_save_preprocess_nlp(data, preprocess_fn, max_len, tmp_path, backend):
 @parametrize('layer', [None, -1])
 def test_save_model(data, model, layer, backend, tmp_path):
     """
-    Unit test for _save_model and _load_model_config.
+    Unit test for _save_model_config and _load_model_config.
     """
     # Save model
     filepath = tmp_path
@@ -805,7 +808,7 @@ def test_save_optimizer(backend):
                 'amsgrad': amsgrad
             }
         }
-        optimizer = _load_optimizer(cfg_opt, backend=backend)
+        optimizer = _load_optimizer_config(cfg_opt, backend=backend)
         assert type(optimizer).__name__ == class_name
         assert optimizer.learning_rate == learning_rate
         assert optimizer.epsilon == epsilon
@@ -909,3 +912,24 @@ def test_registry_get():
     for k, v in REGISTERED_OBJECTS.items():
         obj = registry.get(k)
         assert type(obj) == type(v)
+
+
+def test_set_dtypes(backend):
+    """
+    Unit test to test _set_dtypes.
+    """
+    if backend == 'tensorflow':
+        dtype = 'tf.float32'
+    elif backend == 'pytorch':
+        dtype = 'torch.float32'
+    cfg = {
+        'preprocess_fn': {
+            'dtype': dtype
+        }
+    }
+    _set_dtypes(cfg)
+    dtype_resolved = cfg['preprocess_fn']['dtype']
+    if backend == 'tensorflow':
+        assert dtype_resolved == tf.float32
+    elif backend == 'pytorch':
+        assert dtype_resolved == torch.float32
