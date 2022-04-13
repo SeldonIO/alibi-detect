@@ -4,55 +4,62 @@ Tests for saving/loading of detectors via config.toml files.
 
 Internal functions such as save_kernel/load_kernel_config etc are also tested.
 """
+import random
 # TODO future - test pytorch save/load functionality
 # TODO (could/should also add tests to backend-specific submodules)
 from functools import partial
+from pathlib import Path
+from typing import Callable
 
 import dill
 import numpy as np
-import scipy
 import pytest
-import random
-from pathlib import Path
-from pytest_cases import parametrize_with_cases, parametrize, fixture, param_fixture
-from sklearn.model_selection import StratifiedKFold
+import scipy
 import tensorflow as tf
 import torch
-from typing import Callable
+from datasets import (BinData, CategoricalData, ContinuousData, MixedData,
+                      TextData)
 from packaging import version
+from pytest_cases import (fixture, param_fixture, parametrize,
+                          parametrize_with_cases)
+from sklearn.model_selection import StratifiedKFold
 from transformers import AutoTokenizer
-from alibi_detect.models.tensorflow import TransformerEmbedding as TransformerEmbedding_tf
-from alibi_detect.models.pytorch import TransformerEmbedding as TransformerEmbedding_pt
-from alibi_detect.cd.tensorflow import preprocess_drift as preprocess_drift_tf, UAE as UAE_tf, \
-    HiddenOutput as HiddenOutput_tf
-from alibi_detect.cd.pytorch import preprocess_drift as preprocess_drift_pt, HiddenOutput as HiddenOutput_pt
-from alibi_detect.utils.tensorflow.kernels import DeepKernel as DeepKernel_tf, GaussianRBF as GaussianRBF_tf
-from alibi_detect.utils.pytorch.kernels import DeepKernel as DeepKernel_pt, GaussianRBF as GaussianRBF_pt
-from alibi_detect.saving import (save_detector, write_config, load_detector, read_config, resolve_config, registry)
-from alibi_detect.saving.saving import (_save_kernel_config, _save_preprocess_config, _save_model_config, _path2str,
-                                        _serialize_function)  # type: ignore
-from alibi_detect.saving.loading import (_load_kernel_config, _load_preprocess_config, _load_model_config,
-                                         _load_optimizer_config, _set_nested_value, _replace,
-                                         _get_nested_value, _set_dtypes)  # type: ignore
-from alibi_detect.saving.schemas import (
-    KernelConfig, KernelConfigResolved,
-    DeepKernelConfig, DeepKernelConfigResolved,
-    PreprocessConfig, PreprocessConfigResolved,
-    ModelConfig
-)
-from alibi_detect.cd import (
-    ChiSquareDrift,
-    ClassifierDrift,
-    KSDrift,
-    MMDDrift,
-    TabularDrift,
-    FETDrift,
-    LSDDDrift,
-    SpotTheDiffDrift,
-    LearnedKernelDrift,
-    #  ClassifierUncertaintyDrift,
-)
-from datasets import ContinuousData, BinData, CategoricalData, MixedData, TextData
+
+from alibi_detect.cd import (ChiSquareDrift,  # ClassifierUncertaintyDrift,
+                             ClassifierDrift, FETDrift, KSDrift,
+                             LearnedKernelDrift, LSDDDrift, MMDDrift,
+                             SpotTheDiffDrift, TabularDrift)
+from alibi_detect.cd.pytorch import HiddenOutput as HiddenOutput_pt
+from alibi_detect.cd.pytorch import preprocess_drift as preprocess_drift_pt
+from alibi_detect.cd.tensorflow import UAE as UAE_tf
+from alibi_detect.cd.tensorflow import HiddenOutput as HiddenOutput_tf
+from alibi_detect.cd.tensorflow import preprocess_drift as preprocess_drift_tf
+from alibi_detect.models.pytorch import \
+    TransformerEmbedding as TransformerEmbedding_pt
+from alibi_detect.models.tensorflow import \
+    TransformerEmbedding as TransformerEmbedding_tf
+from alibi_detect.saving import (load_detector, read_config, registry,
+                                 resolve_config, save_detector, write_config)
+from alibi_detect.saving.loading import (_get_nested_value,  # type: ignore
+                                         _load_kernel_config,
+                                         _load_model_config,
+                                         _load_optimizer_config,
+                                         _load_preprocess_config, _replace,
+                                         _set_dtypes, _set_nested_value)
+from alibi_detect.saving.saving import _serialize_function  # type: ignore
+from alibi_detect.saving.saving import (_path2str, _save_kernel_config,
+                                        _save_model_config,
+                                        _save_preprocess_config)
+from alibi_detect.saving.schemas import (DeepKernelConfig,
+                                         DeepKernelConfigResolved,
+                                         KernelConfig, KernelConfigResolved,
+                                         ModelConfig, PreprocessConfig,
+                                         PreprocessConfigResolved)
+from alibi_detect.utils.pytorch.kernels import DeepKernel as DeepKernel_pt
+from alibi_detect.utils.pytorch.kernels import GaussianRBF as GaussianRBF_pt
+from alibi_detect.utils.tensorflow.kernels import DeepKernel as DeepKernel_tf
+from alibi_detect.utils.tensorflow.kernels import GaussianRBF as GaussianRBF_tf
+
 if version.parse(scipy.__version__) >= version.parse('1.7.0'):
     from alibi_detect.cd import CVMDrift
 

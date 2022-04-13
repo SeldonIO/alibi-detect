@@ -1,6 +1,8 @@
-from alibi_detect.version import __version__, __config_spec__
-from alibi_detect.saving.schemas import DETECTOR_CONFIGS, DETECTOR_CONFIGS_RESOLVED  # type: ignore[attr-defined]
 import warnings
+
+from alibi_detect.saving.schemas import (  # type: ignore[attr-defined]
+    DETECTOR_CONFIGS, DETECTOR_CONFIGS_RESOLVED)
+from alibi_detect.version import __config_spec__, __version__
 
 
 def validate_config(cfg: dict, resolved: bool = False) -> dict:

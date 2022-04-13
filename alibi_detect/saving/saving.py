@@ -1,17 +1,21 @@
-import dill
-import toml
-import numpy as np
-from functools import partial
 import logging
 import os
-from pathlib import Path
-from transformers import PreTrainedTokenizerBase
-from typing import Callable, Optional, Tuple, Union, get_args
-from alibi_detect.saving.loading import Detector, _replace
-from alibi_detect.saving.schemas import SupportedModels
-from alibi_detect.saving.registry import registry
-from alibi_detect.saving.tensorflow._saving import save_model_config as save_model_config_tf, save_detector_legacy
 import warnings
+from functools import partial
+from pathlib import Path
+from typing import Callable, Optional, Tuple, Union, get_args
+
+import dill
+import numpy as np
+import toml
+from transformers import PreTrainedTokenizerBase
+
+from alibi_detect.saving.loading import Detector, _replace
+from alibi_detect.saving.registry import registry
+from alibi_detect.saving.schemas import SupportedModels
+from alibi_detect.saving.tensorflow._saving import save_detector_legacy
+from alibi_detect.saving.tensorflow._saving import \
+    save_model_config as save_model_config_tf
 
 # do not extend pickle dispatch table so as not to change pickle behaviour
 dill.extend(use_dill=False)

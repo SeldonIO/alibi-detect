@@ -1,32 +1,39 @@
-from pathlib import Path
-import tensorflow as tf
-import os
-from typing import Union, Optional, Callable, Dict, List, Tuple, get_args
-from alibi_detect.cd.tensorflow import UAE, HiddenOutput
-from alibi_detect.cd.tensorflow.preprocess import _Encoder
-from alibi_detect.models.tensorflow import TransformerEmbedding
-from alibi_detect.utils.tensorflow.kernels import GaussianRBF, DeepKernel
-import numpy as np
 import logging
+import os
 import warnings
-# Below imports are used for legacy loading, and will be removed (or moved to utils/loading.py) in the future
-from alibi_detect.version import __version__
+from functools import partial
+from pathlib import Path
+from typing import Callable, Dict, List, Optional, Tuple, Union, get_args
+
+import dill
+import numpy as np
+import tensorflow as tf
+from tensorflow_probability.python.distributions.distribution import \
+    Distribution
+from transformers import AutoTokenizer
+
 from alibi_detect.ad import AdversarialAE, ModelDistillation
 from alibi_detect.ad.adversarialae import DenseHidden
-from alibi_detect.cd import (ChiSquareDrift, ClassifierDrift, KSDrift, MMDDrift, LSDDDrift, TabularDrift,
-                             CVMDrift, FETDrift, SpotTheDiffDrift, ClassifierUncertaintyDrift,
-                             RegressorUncertaintyDrift, LearnedKernelDrift)
-from alibi_detect.od import (IForest, LLR, Mahalanobis, OutlierAE, OutlierAEGMM, OutlierProphet,
-                             OutlierSeq2Seq, OutlierVAE, OutlierVAEGMM, SpectralResidual)
+from alibi_detect.cd import (ChiSquareDrift, ClassifierDrift,
+                             ClassifierUncertaintyDrift, CVMDrift, FETDrift,
+                             KSDrift, LearnedKernelDrift, LSDDDrift, MMDDrift,
+                             RegressorUncertaintyDrift, SpotTheDiffDrift,
+                             TabularDrift)
+from alibi_detect.cd.tensorflow import UAE, HiddenOutput
 from alibi_detect.cd.tensorflow.classifier import ClassifierDriftTF
 from alibi_detect.cd.tensorflow.mmd import MMDDriftTF
+from alibi_detect.cd.tensorflow.preprocess import _Encoder
+from alibi_detect.models.tensorflow import PixelCNN, TransformerEmbedding
+from alibi_detect.models.tensorflow.autoencoder import (AE, AEGMM, VAE, VAEGMM,
+                                                        DecoderLSTM,
+                                                        EncoderLSTM, Seq2Seq)
+from alibi_detect.od import (LLR, IForest, Mahalanobis, OutlierAE,
+                             OutlierAEGMM, OutlierProphet, OutlierSeq2Seq,
+                             OutlierVAE, OutlierVAEGMM, SpectralResidual)
 from alibi_detect.od.llr import build_model
-from alibi_detect.models.tensorflow import PixelCNN
-from alibi_detect.models.tensorflow.autoencoder import AE, AEGMM, DecoderLSTM, EncoderLSTM, Seq2Seq, VAE, VAEGMM
-from tensorflow_probability.python.distributions.distribution import Distribution
-from transformers import AutoTokenizer
-from functools import partial
-import dill
+from alibi_detect.utils.tensorflow.kernels import DeepKernel, GaussianRBF
+# Below imports are used for legacy loading, and will be removed (or moved to utils/loading.py) in the future
+from alibi_detect.version import __version__
 
 logger = logging.getLogger(__name__)
 

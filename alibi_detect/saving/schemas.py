@@ -14,17 +14,21 @@ The `resolved` kwarg of :func:`~alibi_detect.utils.validate.validate_config` det
     detector's api docs for a full description of each arg/kwarg.
 """
 
+from typing import Any, Callable, Dict, List, Optional, Type, Union
+
 # TODO - conditional checks depending on backend etc
 # TODO - consider validating output of get_config calls
 import numpy as np
 from pydantic import BaseModel
-from typing import Optional, Union, Dict, List, Callable, Any, Type
-from alibi_detect.utils._types import Literal, NDArray
-from alibi_detect.version import __version__, __config_spec__
-from alibi_detect.models.tensorflow import TransformerEmbedding
-from alibi_detect.utils.frameworks import has_tensorflow
-from alibi_detect.cd.tensorflow import UAE as UAE_tf, HiddenOutput as HiddenOutput_tf
 from transformers import PreTrainedTokenizerBase
+
+from alibi_detect.cd.tensorflow import UAE as UAE_tf
+from alibi_detect.cd.tensorflow import HiddenOutput as HiddenOutput_tf
+from alibi_detect.models.tensorflow import TransformerEmbedding
+from alibi_detect.utils._types import Literal, NDArray
+from alibi_detect.utils.frameworks import has_tensorflow
+from alibi_detect.version import __config_spec__, __version__
+
 SupportedModels_list = []
 if has_tensorflow:
     import tensorflow as tf

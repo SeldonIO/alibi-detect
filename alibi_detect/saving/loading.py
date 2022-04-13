@@ -1,20 +1,30 @@
 # TODO - Need to modularise torch and tensorflow imports and use. e.g. has_tensorflow and has_pytorch etc
-from alibi_detect.saving.registry import registry
-from alibi_detect.saving.validate import validate_config
-from alibi_detect.saving.tensorflow._loading import load_model as load_model_tf, \
-    prep_model_and_emb as prep_model_and_emb_tf, load_kernel_config as load_kernel_config_tf, \
-    load_optimizer as load_optimizer_tf, load_embedding as load_embedding_tf, load_detector_legacy, Detector
-import tensorflow as tf  # TODO - this is currently only required for FIELDS_TO_DTYPE conversion. Remove in future.
-from transformers import AutoTokenizer
-import numpy as np
-from typing import Union, Optional, Callable, Any, List
-from functools import partial
-from pathlib import Path
-import dill
-import os
-import toml
-from importlib import import_module
 import logging
+import os
+from functools import partial
+from importlib import import_module
+from pathlib import Path
+from typing import Any, Callable, List, Optional, Union
+
+import dill
+import numpy as np
+import tensorflow as tf  # TODO - this is currently only required for FIELDS_TO_DTYPE conversion. Remove in future.
+import toml
+from transformers import AutoTokenizer
+
+from alibi_detect.saving.registry import registry
+from alibi_detect.saving.tensorflow._loading import (Detector,
+                                                     load_detector_legacy)
+from alibi_detect.saving.tensorflow._loading import \
+    load_embedding as load_embedding_tf
+from alibi_detect.saving.tensorflow._loading import \
+    load_kernel_config as load_kernel_config_tf
+from alibi_detect.saving.tensorflow._loading import load_model as load_model_tf
+from alibi_detect.saving.tensorflow._loading import \
+    load_optimizer as load_optimizer_tf
+from alibi_detect.saving.tensorflow._loading import \
+    prep_model_and_emb as prep_model_and_emb_tf
+from alibi_detect.saving.validate import validate_config
 
 logger = logging.getLogger(__name__)
 

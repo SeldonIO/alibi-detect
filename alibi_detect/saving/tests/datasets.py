@@ -1,6 +1,6 @@
 import numpy as np
-from pytest_cases import parametrize
 from alibi_testing.data import get_movie_sentiment_data
+from pytest_cases import parametrize
 
 # Note: If any of below cases become large, see https://smarie.github.io/python-pytest-cases/#c-caching-cases
 
