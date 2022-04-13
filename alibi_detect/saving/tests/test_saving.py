@@ -560,6 +560,30 @@ def test_save_learnedkernel(data, deep_kernel, preprocess_custom, backend, tmp_p
 # TODO - checks for modeluncertainty detectors - once save/load implemented for them
 
 
+@parametrize_with_cases("data", cases=ContinuousData.data_synthetic_nd)
+def test_load_absolute(data, tmp_path):
+    """
+    Test that load_detector() works with absolute paths in config.
+    """
+    # Init detector and save
+    X_ref, X_h0 = data
+    cd = KSDrift(X_ref, p_val=P_VAL)
+    save_detector(cd, tmp_path)
+    # Write a new cfg file elsewhere, with x_ref reference inside it an absolute path to original x_ref location
+    cfg = read_config(tmp_path.joinpath('config.toml'))
+    x_ref_path = tmp_path.joinpath(Path(cfg['x_ref'])).resolve()  # Absolute path for x_ref
+    cfg['x_ref'] = x_ref_path
+    new_cfg_dir = tmp_path.joinpath('new_config_dir')
+    new_cfg_dir.mkdir()
+    write_config(cfg, new_cfg_dir)
+
+    # Reload
+    cd_new = load_detector(new_cfg_dir)
+
+    # Assertions
+    np.testing.assert_array_equal(cd.x_ref, cd_new.x_ref)
+
+
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
 def test_version_warning(data, tmp_path):
     """
