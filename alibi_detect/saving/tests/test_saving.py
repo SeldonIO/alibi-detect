@@ -211,19 +211,30 @@ def nlp_embedding_and_tokenizer(model_name, max_len, uae, backend):
 
 
 @fixture
-def preprocess_nlp(embedding, tokenizer, current_cases, max_len, backend):
+def preprocess_batch(x: np.ndarray):
+    """
+    Dummy function to test serialization of generic Python function within preprocess_fn.
+    """
+    assert isinstance(x, np.ndarray)
+    return x
+
+
+@fixture
+def preprocess_nlp(embedding, tokenizer, max_len, backend):
     """
     Preprocess function with Untrained Autoencoder.
     """
     if backend == 'tensorflow':
-        preprocess_fn = partial(preprocess_drift_tf, model=embedding, tokenizer=tokenizer, max_len=max_len)
+        preprocess_fn = partial(preprocess_drift_tf, model=embedding, tokenizer=tokenizer,
+                                max_len=max_len, preprocess_batch_fn=preprocess_batch)
     else:
-        preprocess_fn = partial(preprocess_drift_pt, model=embedding, tokenizer=tokenizer, max_len=max_len)
+        preprocess_fn = partial(preprocess_drift_pt, model=embedding, tokenizer=tokenizer, max_len=max_len,
+                                preprocess_batch_fn=preprocess_batch)
     return preprocess_fn
 
 
 @fixture
-def preprocess_hiddenoutput(classifier, current_cases, backend):
+def preprocess_hiddenoutput(classifier, backend):
     """
     Preprocess function to extract the softmax layer of a classifier (with the HiddenOutput utility function).
     """

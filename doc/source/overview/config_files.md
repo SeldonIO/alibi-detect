@@ -192,7 +192,8 @@ kwargs = {'kwarg1'=42, 'kwarg2'=false}
 Here, the `preprocess_fn` field is a {class}`~alibi_detect.saving.schemas.PreprocessConfig` artefact dictionary.
 In this example, specifying the `preprocess_fn` function as a dictionary allows us to specify additional `kwarg`'s to 
 be passed to the function upon loading. This example also demonstrates the flexibility of the TOML format, with
-dictionaries able to be specified with {} brackets or by sections demarcated with [] brackets.
+dictionaries able to be specified with {} brackets or by sections demarcated with [] brackets (see the 
+[TOML documentation](https://toml.io/en/) for more details on the TOML format).
 
 Other config fields in the {ref}`all-artefacts-table` table can be specified via artefact dictionaries in a similar way. 
 For example, the `model`, `preprocess_fn.model` and `kernel.proj` fields can be set as TensorFlow (and soon PyTorch) 
@@ -416,10 +417,11 @@ bad_field
   extra fields not permitted (type=value_error.extra)
 ```
 
-Validating at this stage is useful at errors can be caught before the sometimes time-consuming operation of 
-resolving the config dictionary, which involves loading each artefact in the dictionary. The *resolved* config 
-dictionary is then also passed through {func}`~alibi_detect.saving.validate_config`, and this second 
-validation can also be done explicitly:
+Validating at this stage is useful as errors can be caught before the sometimes time-consuming operation of 
+resolving the config dictionary, which involves loading each artefact in the dictionary 
+({func}`~alibi_detect.saving.read_config` and {func}`~alibi_detect.saving.resolve_config` can be used to manually read 
+and resolve a config for debugging). The *resolved* config dictionary is then also passed through 
+{func}`~alibi_detect.saving.validate_config`, and this second validation can also be done explicitly:
 
 ```python
 import numpy as np

@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 
 # This list is currently defined in here to avoid circular dependency (it is needed in saving/loading.py). Once the
 # legacy loading support is removed, this will be moved to utils/loading.py
-Detectors = Union[
+Detector = Union[
     AdversarialAE,
     ChiSquareDrift,
     ClassifierDrift,
@@ -67,7 +67,7 @@ def load_model(filepath: Union[str, os.PathLike],
                load_dir: str = 'model',
                custom_objects: dict = None,
                layer: Optional[int] = None,
-               ) -> Optional[tf.keras.Model]:
+               ) -> tf.keras.Model:
     """
     Load TensorFlow model.
 
@@ -89,14 +89,9 @@ def load_model(filepath: Union[str, os.PathLike],
     """
     # TODO - update this to accept tf format - later PR.
     model_dir = Path(filepath).joinpath(load_dir)
-    # Check if path exists
-    if not model_dir.is_dir():
-        logger.warning('Directory {} does not exist.'.format(model_dir))
-        return None
     # Check if model exists
     if 'model.h5' not in [f.name for f in model_dir.glob('[!.]*.h5')]:
-        logger.warning('No model found in {}.'.format(model_dir))
-        return None
+        raise FileNotFoundError(f'No .h5 file found in {model_dir}.')
     model = tf.keras.models.load_model(model_dir.joinpath('model.h5'), custom_objects=custom_objects)
     # Optionally extract hidden layer
     if isinstance(layer, int):
@@ -176,7 +171,8 @@ def load_kernel_config(cfg: dict) -> Callable:
         # Assemble deep kernel
         kernel = DeepKernel.from_config(cfg)
     else:
-        raise ValueError('Unable to process kernel.)')
+        raise ValueError('Unable to process kernel. The kernel config dict must either be a `KernelConfig` with a '
+                         '`src` field, or a `DeepkernelConfig` with a `proj` field.)')
     return kernel
 
 
@@ -224,7 +220,7 @@ def load_embedding(src: str, embedding_type, layers) -> TransformerEmbedding:
 #######################################################################################################
 # TODO: Everything below here is legacy loading code, and will be removed in the future
 #######################################################################################################
-def load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwargs) -> Detectors:
+def load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwargs) -> Detector:
     """
     Legacy function to load outlier, drift or adversarial detectors stored dill or pickle files.
 
@@ -253,7 +249,7 @@ def load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwarg
     # check if path exists
     filepath = Path(filepath)
     if not filepath.is_dir():
-        raise ValueError(f'{filepath} does not exist.')
+        raise FileNotFoundError(f'{filepath} does not exist.')
 
     # load metadata
     meta_dict = dill.load(open(filepath.joinpath('meta' + suffix), 'rb'))
@@ -271,14 +267,14 @@ def load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwarg
         raise NotImplementedError('Detectors with PyTorch backend are not yet supported.')
 
     detector_name = meta_dict['name']
-    if detector_name not in [detector.__name__ for detector in get_args(Detectors)]:
-        raise ValueError(f'{detector_name} is not supported by `load_detector`.')
+    if detector_name not in [detector.__name__ for detector in get_args(Detector)]:
+        raise NotImplementedError(f'{detector_name} is not supported by `load_detector`.')
 
     # load outlier detector specific parameters
     state_dict = dill.load(open(filepath.joinpath(detector_name + suffix), 'rb'))
 
     # initialize detector
-    detector = None  # type: Optional[Detectors]  # to avoid mypy errors
+    detector = None  # type: Optional[Detector]  # to avoid mypy errors
     if detector_name == 'OutlierAE':
         ae = load_tf_ae(filepath)
         detector = init_od_ae(state_dict, ae)

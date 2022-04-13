@@ -3,13 +3,11 @@ from alibi_detect.saving.registry import registry
 from alibi_detect.saving.validate import validate_config
 from alibi_detect.saving.tensorflow._loading import load_model as load_model_tf, \
     prep_model_and_emb as prep_model_and_emb_tf, load_kernel_config as load_kernel_config_tf, \
-    load_optimizer as load_optimizer_tf, load_embedding as load_embedding_tf, load_detector_legacy, Detectors
-#  from alibi_detect.utils.pytorch._loading import set_device
+    load_optimizer as load_optimizer_tf, load_embedding as load_embedding_tf, load_detector_legacy, Detector
 import tensorflow as tf  # TODO - this is currently only required for FIELDS_TO_DTYPE conversion. Remove in future.
 from transformers import AutoTokenizer
 import numpy as np
 from typing import Union, Optional, Callable, Any, List
-from copy import deepcopy
 from functools import partial
 from pathlib import Path
 import dill
@@ -38,6 +36,7 @@ FIELDS_TO_RESOLVE = [
     ['preprocess_fn', 'model'],
     ['preprocess_fn', 'embedding'],
     ['preprocess_fn', 'tokenizer'],
+    ['preprocess_fn', 'preprocess_batch_fn'],
     ['x_ref'],
     ['model'],
     ['optimizer'],
@@ -62,6 +61,7 @@ DIR_FIELDS = [
     ['preprocess_fn', 'model', 'src'],
     ['preprocess_fn', 'embedding', 'src'],
     ['preprocess_fn', 'tokenizer', 'src'],
+    ['preprocess_fn', 'preprocess_batch_fn'],
     ['x_ref'],
     ['model', 'src'],
     ['kernel'],
@@ -80,7 +80,7 @@ FIELDS_TO_DTYPE = [
 ]
 
 
-def load_detector(filepath: Union[str, os.PathLike], **kwargs) -> Detectors:
+def load_detector(filepath: Union[str, os.PathLike], **kwargs) -> Detector:
     """
     Load outlier, drift or adversarial detector.
 
@@ -116,7 +116,7 @@ def load_detector(filepath: Union[str, os.PathLike], **kwargs) -> Detectors:
 
 
 # TODO - will eventually become load_detector
-def _load_detector_config(filepath: Union[str, os.PathLike]) -> Detectors:
+def _load_detector_config(filepath: Union[str, os.PathLike]) -> Detector:
     """
     Loads a drift detector specified in a detector config dict. Validation is performed with pydantic.
 
@@ -131,7 +131,7 @@ def _load_detector_config(filepath: Union[str, os.PathLike]) -> Detectors:
     """
     # Load toml if needed
     if isinstance(filepath, (str, os.PathLike)):
-        config_file = Path(deepcopy(filepath))
+        config_file = Path(filepath)
         config_dir = config_file.parent
         cfg = read_config(config_file)
     else:
@@ -171,9 +171,6 @@ def _load_detector_config(filepath: Union[str, os.PathLike]) -> Detectors:
     logger.info('Instantiating detector.')
     detector = _init_detector(x_ref, cfg, preprocess_fn=preprocess_fn, model=model, kernel=kernel, backend=backend)
 
-    # Update metadata
-    detector.meta.update({'config_file': str(config_file.resolve())})
-
     logger.info('Finished loading detector.')
     return detector
 
@@ -183,7 +180,7 @@ def _init_detector(x_ref: Union[np.ndarray, list],
                    preprocess_fn: Optional[Callable] = None,
                    model: Optional[Callable] = None,
                    kernel: Optional[Callable] = None,
-                   backend: Optional[str] = 'tensorflow') -> Detectors:
+                   backend: Optional[str] = 'tensorflow') -> Detector:
     """
     Instantiates a detector (x_ref, preprocess_fn, model, etc in the dict should be fully
     resolved runtime objects).
@@ -330,7 +327,8 @@ def _load_model_config(cfg: dict,
     layer = cfg['layer']
     src = Path(src)
     if not src.is_dir():
-        raise FileNotFoundError(f"Compatible model not found at {str(src.resolve())}")
+        raise FileNotFoundError("The `src` field is not a recognised directory. It should be a directory containing "
+                                "a compatible model.")
 
     if backend == 'tensorflow':
         model = load_model_tf(src, load_dir='.', custom_objects=custom_obj, layer=layer)
@@ -465,13 +463,13 @@ def _set_dtypes(cfg: dict):
     for key in FIELDS_TO_DTYPE:
         val = _get_nested_value(cfg, key)
         if val is not None:
-            val = val.split('.')
+            lib, dtype, *_ = val.split('.')
             # val[0] = np if val[0] == 'np' else tf if val[0] == 'tf' else torch if val[0] == 'torch' else None
             # TODO - add above back in once optional deps are handled properly
-            val[0] = np if val[0] == 'np' else tf if val[0] == 'tf' else None
-            if val[0] is None:
+            lib = np if lib == 'np' else tf if lib == 'tf' else None
+            if lib is None:
                 raise ValueError("`dtype` must be in format np.<dtype>, tf.<dtype> or torch.<dtype>.")
-            _set_nested_value(cfg, key, getattr(val[0], val[1]))
+            _set_nested_value(cfg, key, getattr(lib, dtype))
 
 
 def read_config(filepath: Union[os.PathLike, str]) -> dict:

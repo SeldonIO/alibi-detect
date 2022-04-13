@@ -1,4 +1,5 @@
 from alibi_detect.saving import validate_config
+from alibi_detect.saving.saving import X_REF_FILENAME
 from alibi_detect.version import __version__, __config_spec__
 from pydantic import ValidationError
 import pytest
@@ -43,7 +44,7 @@ def test_validate_config(select_cfg):
 
     # Check original cfg doesn't raise errors in the unresolved case
     cfg_unres = cfg.copy()
-    cfg_unres['x_ref'] = 'x_ref.npy'
+    cfg_unres['x_ref'] = X_REF_FILENAME
     _ = validate_config(cfg_unres)
     assert not cfg.get('meta').get('version_warning')
 

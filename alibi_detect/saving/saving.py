@@ -7,19 +7,21 @@ import os
 from pathlib import Path
 from transformers import PreTrainedTokenizerBase
 from typing import Callable, Optional, Tuple, Union, get_args
-from alibi_detect.saving.loading import Detectors, _replace
+from alibi_detect.saving.loading import Detector, _replace
 from alibi_detect.saving.schemas import SupportedModels
 from alibi_detect.saving.registry import registry
 from alibi_detect.saving.tensorflow._saving import save_model_config as save_model_config_tf, save_detector_legacy
-
+import warnings
 
 # do not extend pickle dispatch table so as not to change pickle behaviour
 dill.extend(use_dill=False)
 
 logger = logging.getLogger(__name__)
 
+X_REF_FILENAME = 'x_ref.npy'
 
-def save_detector(detector: Detectors, filepath: Union[str, os.PathLike], legacy: bool = False) -> None:
+
+def save_detector(detector: Detector, filepath: Union[str, os.PathLike], legacy: bool = False) -> None:
     """
     Save outlier, drift or adversarial detector.
 
@@ -31,13 +33,17 @@ def save_detector(detector: Detectors, filepath: Union[str, os.PathLike], legacy
         Save directory.
     legacy
         Whether to save in the legacy .dill format instead of via a config.toml file. Default is `False`.
+        This option will be removed in a future version.
     """
+    if legacy:
+        warnings.warn('The `legacy` option will be removed in a future version.', DeprecationWarning)
+
     if 'backend' in list(detector.meta.keys()) and detector.meta['backend'] in ['pytorch', 'sklearn']:
         raise NotImplementedError('Saving detectors with PyTorch or sklearn backend is not yet supported.')
 
     detector_name = detector.__class__.__name__
-    if detector_name not in [detector.__name__ for detector in get_args(Detectors)]:
-        raise ValueError(f'{detector_name} is not supported by `save_detector`.')
+    if detector_name not in [detector.__name__ for detector in get_args(Detector)]:
+        raise NotImplementedError(f'{detector_name} is not supported by `save_detector`.')
 
     # check if path exists
     filepath = Path(filepath)
@@ -57,7 +63,7 @@ def save_detector(detector: Detectors, filepath: Union[str, os.PathLike], legacy
 
 
 # TODO - eventually this will become save_detector (once outlier and adversarial updated to save via config.toml)
-def _save_detector_config(detector: Detectors, filepath: Union[str, os.PathLike]):
+def _save_detector_config(detector: Detector, filepath: Union[str, os.PathLike]):
     """
     Save a drift detector. The detector is saved as a yaml config file. Artefacts such as
     `preprocess_fn`, models, embeddings, tokenizers etc are serialized, and their filepaths are
@@ -87,14 +93,14 @@ def _save_detector_config(detector: Detectors, filepath: Union[str, os.PathLike]
     # Get the detector config (with artefacts still within it)
     cfg = getattr(detector, 'get_config', None)
     if cfg is not None:
-        cfg = cfg()  # TODO - can just do detector.get_config() once all Detectors have a .get_config()
+        cfg = cfg()  # TODO - can just do detector.get_config() once all detectors have a .get_config()
     else:
-        raise ValueError(f'{detector_name} is not supported by `save_detector`.')
+        raise NotImplementedError(f'{detector_name} is not supported by `save_detector`.')
 
     # Save x_ref
-    save_path = filepath.joinpath('x_ref.npy')
+    save_path = filepath.joinpath(X_REF_FILENAME)
     np.save(str(save_path), cfg['x_ref'])
-    cfg.update({'x_ref': 'x_ref.npy'})
+    cfg.update({'x_ref': X_REF_FILENAME})
 
     # Save preprocess_fn
     preprocess_fn = cfg.get('preprocess_fn', None)
@@ -145,7 +151,7 @@ def _save_detector_config(detector: Detectors, filepath: Union[str, os.PathLike]
     write_config(cfg, filepath)
 
 
-def write_config(cfg: dict, filepath: Union[str, os.PathLike]) -> dict:
+def write_config(cfg: dict, filepath: Union[str, os.PathLike]):
     """
     Save an unresolved detector config dict to a TOML file.
 
@@ -155,10 +161,6 @@ def write_config(cfg: dict, filepath: Union[str, os.PathLike]) -> dict:
         Unresolved detector config dict.
     filepath
         Filepath to directory to save 'config.toml' file in.
-
-    Returns
-    -------
-    The unresolved config dict., with paths converted to string and None converted to "None".
     """
     filepath = Path(filepath)
     if not filepath.is_dir():
@@ -169,7 +171,6 @@ def write_config(cfg: dict, filepath: Union[str, os.PathLike]) -> dict:
     logger.info('Writing config to {}'.format(filepath.joinpath('config.toml')))
     with open(filepath.joinpath('config.toml'), 'w') as f:
         toml.dump(cfg, f, encoder=toml.TomlNumpyEncoder())  # type: ignore[call-arg, attr-defined]
-    return cfg
 
 
 def _save_preprocess_config(preprocess_fn: Callable,
@@ -220,9 +221,8 @@ def _save_preprocess_config(preprocess_fn: Callable,
 
         # Arbitrary function
         elif callable(v):
-            with open(filepath.joinpath(k + '.dill'), 'wb') as f:
-                dill.dump(v, f)
-            kwargs.update({k: local_path.joinpath(k + '.dill')})
+            src, _ = _serialize_function(v, filepath, local_path)
+            kwargs.update({k: src})
 
         # Put remaining kwargs directly into cfg
         else:
@@ -270,7 +270,7 @@ def _serialize_function(func: Callable, base_path: Path,
 
     # Otherwise, save as dill
     else:
-        # create folder to save model in
+        # create folder to save func in
         filepath = base_path.joinpath(local_path)
         if not filepath.parent.is_dir():
             logger.warning('Directory {} does not exist and is now created.'.format(filepath.parent))

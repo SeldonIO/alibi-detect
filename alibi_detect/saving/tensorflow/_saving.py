@@ -90,7 +90,7 @@ def save_model(model: tf.keras.Model,
     Parameters
     ----------
     model
-        tf.keras.Model or tf.keras.Sequential.
+        The tf.keras.Model to save.
     filepath
         Save directory.
     save_dir
@@ -105,13 +105,13 @@ def save_model(model: tf.keras.Model,
         logger.warning('Directory {} does not exist and is now created.'.format(model_path))
         model_path.mkdir(parents=True, exist_ok=True)
 
-    # save classification model
+    # save model
     model_path = model_path.joinpath('model.h5') if save_format == 'h5' else model_path
 
-    if isinstance(model, tf.keras.Model) or isinstance(model, tf.keras.Sequential):
+    if isinstance(model, tf.keras.Model):
         model.save(model_path, save_format=save_format)
     else:
-        logger.warning('No `tf.keras.Model` or `tf.keras.Sequential` detected. No model saved.')
+        raise ValueError('The extracted model to save is not a `tf.keras.Model`. Cannot save.')
 
 
 def save_embedding_config(embed: TransformerEmbedding,
@@ -257,7 +257,7 @@ def save_detector_legacy(detector, filepath):
 
 def preprocess_step_drift(cd: Union[ChiSquareDrift, ClassifierDriftTF, KSDrift, MMDDriftTF, TabularDrift]) \
         -> Tuple[
-            Optional[Callable], Dict, Optional[Union[tf.keras.Model, tf.keras.Sequential]],
+            Optional[Callable], Dict, Optional[tf.keras.Model],
             Optional[TransformerEmbedding], Dict, Optional[Callable], bool
         ]:
     # note: need to be able to dill tokenizers other than transformers
@@ -289,7 +289,7 @@ def preprocess_step_drift(cd: Union[ChiSquareDrift, ClassifierDriftTF, KSDrift, 
             elif isinstance(v, HiddenOutput):
                 model = v.model
                 preprocess_kwargs['model'] = 'HiddenOutput'
-            elif isinstance(v, (tf.keras.Sequential, tf.keras.Model)):
+            elif isinstance(v, tf.keras.Model):
                 model = v
                 preprocess_kwargs['model'] = 'custom'
             elif hasattr(v, '__module__'):
@@ -304,7 +304,7 @@ def preprocess_step_drift(cd: Union[ChiSquareDrift, ClassifierDriftTF, KSDrift, 
 
 
 def state_chisquaredrift(cd: ChiSquareDrift) -> Tuple[
-            Dict, Optional[Union[tf.keras.Model, tf.keras.Sequential]],
+            Dict, Optional[tf.keras.Model],
             Optional[TransformerEmbedding], Optional[Dict], Optional[Callable]
         ]:
     """
@@ -344,8 +344,8 @@ def state_chisquaredrift(cd: ChiSquareDrift) -> Tuple[
 
 
 def state_classifierdrift(cd: ClassifierDrift) -> Tuple[
-            Dict, Union[tf.keras.Sequential, tf.keras.Model],
-            Optional[Union[tf.keras.Model, tf.keras.Sequential]],
+            Dict, tf.keras.Model,
+            Optional[tf.keras.Model],
             Optional[TransformerEmbedding], Optional[Dict], Optional[Callable]
         ]:
     """
@@ -387,7 +387,7 @@ def state_classifierdrift(cd: ClassifierDrift) -> Tuple[
 
 
 def state_tabulardrift(cd: TabularDrift) -> Tuple[
-            Dict, Optional[Union[tf.keras.Model, tf.keras.Sequential]],
+            Dict, Optional[tf.keras.Model],
             Optional[TransformerEmbedding], Optional[Dict], Optional[Callable]
         ]:
     """
@@ -428,7 +428,7 @@ def state_tabulardrift(cd: TabularDrift) -> Tuple[
 
 
 def state_ksdrift(cd: KSDrift) -> Tuple[
-            Dict, Optional[Union[tf.keras.Model, tf.keras.Sequential]],
+            Dict, Optional[tf.keras.Model],
             Optional[TransformerEmbedding], Optional[Dict], Optional[Callable]
         ]:
     """
@@ -468,7 +468,7 @@ def state_ksdrift(cd: KSDrift) -> Tuple[
 
 
 def state_mmddrift(cd: MMDDrift) -> Tuple[
-            Dict, Optional[Union[tf.keras.Model, tf.keras.Sequential]],
+            Dict, Optional[tf.keras.Model],
             Optional[TransformerEmbedding], Optional[Dict], Optional[Callable]
         ]:
     """
