@@ -253,7 +253,7 @@ def load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwarg
     # check if path exists
     filepath = Path(filepath)
     if not filepath.is_dir():
-        raise ValueError('{} does not exist.'.format(filepath))
+        raise ValueError(f'{filepath} does not exist.')
 
     # load metadata
     meta_dict = dill.load(open(filepath.joinpath('meta' + suffix), 'rb'))
@@ -272,7 +272,7 @@ def load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwarg
 
     detector_name = meta_dict['name']
     if detector_name not in [detector.__name__ for detector in get_args(Detectors)]:
-        raise ValueError('{} is not supported by `load_detector`.'.format(detector_name))
+        raise ValueError(f'{detector_name} is not supported by `load_detector`.')
 
     # load outlier detector specific parameters
     state_dict = dill.load(open(filepath.joinpath(detector_name + suffix), 'rb'))

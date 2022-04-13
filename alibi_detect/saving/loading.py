@@ -109,7 +109,7 @@ def load_detector(filepath: Union[str, os.PathLike], **kwargs) -> Detectors:
         elif 'meta.pickle' in files:
             return load_detector_legacy(filepath, '.pickle', **kwargs)
         else:
-            raise ValueError('Neither meta.dill, meta.pickle or config.toml exist in {}.'.format(filepath))
+            raise ValueError(f'Neither meta.dill, meta.pickle or config.toml exist in {filepath}.')
 
     # No other file types are accepted, so if not dir raise error
     else:
@@ -235,7 +235,7 @@ def _init_detector(x_ref: Union[np.ndarray, list],
     klass = getattr(import_module('alibi_detect.cd'), detector_name)
     detector = klass(*args, **cfg)
     detector.meta['version_warning'] = version_warning  # Insert here to avoid needing to add as kwarg
-    logger.info('Instantiated drift detector %s', detector_name)
+    logger.info('Instantiated drift detector {}'.format(detector_name))
     return detector
 
 
@@ -338,7 +338,7 @@ def _load_model_config(cfg: dict,
     layer = cfg['layer']
     src = Path(src)
     if not src.is_dir():
-        raise FileNotFoundError("Compatible model not found at %s" % str(src.resolve()))
+        raise FileNotFoundError(f"Compatible model not found at {str(src.resolve())}")
 
     if backend == 'tensorflow':
         model = load_model_tf(src, load_dir='.', custom_objects=custom_obj, layer=layer)
@@ -476,7 +476,7 @@ def read_config(filepath: Union[os.PathLike, str]) -> dict:
     filepath = Path(filepath)
 
     cfg = dict(toml.load(filepath))  # toml.load types return as MutableMapping, force to dict
-    logger.info('Loaded config file from %s', str(filepath))
+    logger.info('Loaded config file from {}'.format(str(filepath)))
 
     # Convert keys in categories_per_feature back to str. This is undesirable, but currently necessary in order
     # to use toml library, as error with toml dumping dict with int keys.
@@ -534,8 +534,8 @@ def resolve_config(cfg: dict, config_dir: Optional[Path]) -> dict:
                 if src in registry.get_all():
                     obj = registry.get(src)
                 else:
-                    raise ValueError("Can't find %s in the custom function registry" % src)
-                logger.info('Successfully resolved registry entry %s' % src)
+                    raise ValueError("Can't find {} in the custom function registry".format(src))
+                logger.info('Successfully resolved registry entry {}'.format(src))
 
             # Load dill or numpy file
             elif Path(src).is_file():

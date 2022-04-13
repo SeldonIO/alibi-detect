@@ -37,7 +37,7 @@ def save_detector(detector: Detectors, filepath: Union[str, os.PathLike], legacy
 
     detector_name = detector.__class__.__name__
     if detector_name not in [detector.__name__ for detector in get_args(Detectors)]:
-        raise ValueError('{} is not supported by `save_detector`.'.format(detector_name))
+        raise ValueError(f'{detector_name} is not supported by `save_detector`.')
 
     # check if path exists
     filepath = Path(filepath)
@@ -89,7 +89,7 @@ def _save_detector_config(detector: Detectors, filepath: Union[str, os.PathLike]
     if cfg is not None:
         cfg = cfg()  # TODO - can just do detector.get_config() once all Detectors have a .get_config()
     else:
-        raise ValueError('{} is not supported by `save_detector`.'.format(detector_name))
+        raise ValueError(f'{detector_name} is not supported by `save_detector`.')
 
     # Save x_ref
     save_path = filepath.joinpath('x_ref.npy')
