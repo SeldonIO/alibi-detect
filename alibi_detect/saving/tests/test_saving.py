@@ -951,3 +951,23 @@ def test_set_dtypes(backend):
         assert dtype_resolved == tf.float32
     elif backend == 'pytorch':
         assert dtype_resolved == torch.float32
+
+
+def test_cleanup(tmp_path):
+    """
+    Test that the filepath given to save_detector is deleted in the event of an error whilst saving.
+    Also check that the error is caught and raised.
+    """
+    # Detector save/load
+    X_ref = np.random.normal(size=(5, 1))
+    cd = KSDrift(X_ref)
+
+    # Add a garbage preprocess_fn to cause an error
+    cd.preprocess_fn = cd.x_ref
+
+    # Save, catch and check error
+    with pytest.raises(ValueError):
+        save_detector(cd, tmp_path)
+
+    # Check `filepath` is deleted
+    assert not tmp_path.is_dir()

@@ -1,5 +1,6 @@
 import logging
 import os
+import shutil
 import warnings
 from functools import partial
 from pathlib import Path
@@ -49,21 +50,61 @@ def save_detector(detector: Detector, filepath: Union[str, os.PathLike], legacy:
     if detector_name not in [detector.__name__ for detector in get_args(Detector)]:
         raise NotImplementedError(f'{detector_name} is not supported by `save_detector`.')
 
-    # check if path exists
+    # Get a list of all existing files in `filepath` (so we know what not to cleanup if an error occurs)
     filepath = Path(filepath)
-    if not filepath.is_dir():
-        logger.warning('Directory {} does not exist and is now created.'.format(filepath))
-        filepath.mkdir(parents=True, exist_ok=True)
+    orig_files = set(filepath.iterdir())
 
-    # If a drift detector, wrap drift detector save method
-    if hasattr(detector, 'get_config') and not legacy:
-        _save_detector_config(detector, filepath)
+    # Saving is wrapped in a try, with cleanup in except. To prevent a half-saved detector remaining upon error.
+    # Cleanup is only performed if `filepath` was a new directory, so that we avoid unintentionally deleting the
+    # `filepath` directory if it contains other items unrelated to saving.
+    # TODO - we could delete in a more targeted fashion if we maintain a manifest of all possible files/dirs written
+    try:
+        # Create directory if it doesn't exist
+        if not filepath.is_dir():
+            logger.warning('Directory {} does not exist and is now created.'.format(filepath))
+            filepath.mkdir(parents=True, exist_ok=True)
 
-    # Otherwise, save via the previous meta and state_dict approach
-    else:
-        save_detector_legacy(detector, filepath)
+        # If a drift detector, wrap drift detector save method
+        if hasattr(detector, 'get_config') and not legacy:
+            _save_detector_config(detector, filepath)
+
+        # Otherwise, save via the previous meta and state_dict approach
+        else:
+            save_detector_legacy(detector, filepath)
+
+    except Exception as error:
+        _cleanup_filepath(orig_files, filepath)
+        print('Saving failed due to the following error. Files/directories have been cleaned up.')
+        raise error
 
     logger.info('finished saving.')
+
+
+def _cleanup_filepath(orig_files: set, filepath: Path):
+    """
+    Cleans up the `filepath` directory in the event of a saving failure.
+
+    Parameters
+    ----------
+    orig_files
+        Set of original files (not to delete).
+    filepath
+        The directory to clean up.
+    """
+    # Find new files
+    new_files = set(filepath.iterdir())
+    files_to_rm = new_files - orig_files
+    # Delete new files
+    for file in files_to_rm:
+        if file.is_dir():
+            shutil.rmtree(file)
+        elif file.is_file():
+            file.unlink()
+
+    # Delete filepath directory if it is now empty
+    if filepath is not None:
+        if not any(filepath.iterdir()):
+            filepath.rmdir()
 
 
 # TODO - eventually this will become save_detector (once outlier and adversarial updated to save via config.toml)
