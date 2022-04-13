@@ -32,7 +32,9 @@ if NumpyVersion(np.__version__) < "1.22.0":
             return _validate(cls, val, field)
 
     class PotentialNDArray(Generic[T], np.ndarray):
-        """Like NDArray, but validation errors result in None."""
+        """
+        Like NDArray, but validation errors result in None.
+        """
 
         @classmethod
         def __get_validators__(cls):
@@ -47,6 +49,9 @@ if NumpyVersion(np.__version__) < "1.22.0":
 
 else:
     class NDArray(Generic[T], np.ndarray[Any, T]):  # type: ignore[no-redef]
+        """
+        A Generic pydantic model to validate (and coerce) np.ndarray's.
+        """
         @classmethod
         def __get_validators__(cls):
             yield cls.validate
@@ -56,6 +61,9 @@ else:
             return _validate(cls, val, field)
 
     class PotentialNDArray(Generic[T], np.ndarray[Any, T]):  # type: ignore[no-redef]
+        """
+        Like NDArray, but validation errors result in None.
+        """
         @classmethod
         def __get_validators__(cls):
             yield cls.validate

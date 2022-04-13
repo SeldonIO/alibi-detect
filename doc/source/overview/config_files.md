@@ -306,11 +306,11 @@ objects can be listed with `registry.get_all()`. For example, `registry.find("my
  
 For convenience, Alibi Detect also pre-registers a number of commonly used utility functions and objects.
 
-| Function/Class                                                       | Registry reference*                           | Tensorflow | Pytorch | 
-:------------------------------------------------------------------- --|:----------------------------------------------|------------|---------|
-| {func}`~alibi_detect.cd.tensorflow.preprocess.preprocess_drift`      | `'@cd.[backend].preprocess.preprocess_drift'` | ✔          | ✔       |
-| {class}`~alibi_detect.utils.tensorflow.kernels.GaussianRBF`          | `'@utils.[backend].kernels.GaussianRBF'`      | ✔          | ✔       |
-| {class}`~alibi_detect.utils.tensorflow.data.TFDataset`               | `'@utils.tensorflow.data.TFDataset'`          | ✔          |         |
+| Function/Class                                                        | Registry reference*                           | Tensorflow  | Pytorch  | 
+|:----------------------------------------------------------------------|:----------------------------------------------|:-----------:|:--------:|
+| {func}`~alibi_detect.cd.tensorflow.preprocess.preprocess_drift`       | `'@cd.[backend].preprocess.preprocess_drift'` |      ✔      |    ✔     |
+| {class}`~alibi_detect.utils.tensorflow.kernels.GaussianRBF`           | `'@utils.[backend].kernels.GaussianRBF'`      |      ✔      |    ✔     |
+| {class}`~alibi_detect.utils.tensorflow.data.TFDataset`                | `'@utils.tensorflow.data.TFDataset'`          |      ✔      |          |
 
 **For backend-specific functions/classes, [backend] should be replaced the desired backend e.g. `tensorflow` or `pytorch`.*
 

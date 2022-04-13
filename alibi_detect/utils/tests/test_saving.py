@@ -31,7 +31,7 @@ from alibi_detect.utils.pytorch.kernels import DeepKernel as DeepKernel_pt, Gaus
 from alibi_detect.registry import registry
 from alibi_detect.utils.saving import (save_detector, _save_kernel, _save_preprocess,
                                        _save_model_config, _path2str, _serialize_function, write_config)  # type: ignore
-from alibi_detect.utils.loading import (load_detector, _load_kernel_config, resolve_cfg, _load_preprocess,
+from alibi_detect.utils.loading import (load_detector, _load_kernel_config, resolve_config, _load_preprocess,
                                         _load_model_config, _load_optimizer, _set_nested_value, _replace,
                                         _get_nested_value, read_config)  # type: ignore
 from alibi_detect.utils.schemas import (
@@ -613,7 +613,7 @@ def test_save_kernel(kernel, backend, tmp_path):
 
     # Resolve and load config
     cfg = {'kernel': cfg_kernel}
-    cfg_kernel = _path2str(resolve_cfg(cfg, tmp_path)['kernel'])
+    cfg_kernel = _path2str(resolve_config(cfg, tmp_path)['kernel'])
     cfg_kernel = KernelConfigResolved(**cfg_kernel).dict()  # pydantic validation
     kernel_loaded = _load_kernel_config(cfg_kernel, backend=backend, device=DEVICE)
     assert type(kernel_loaded) == type(kernel)
@@ -650,7 +650,7 @@ def test_save_deepkernel(deep_kernel, kernel_proj_dim, backend, tmp_path):
 
     # Resolve and load config
     cfg = {'kernel': cfg_kernel}
-    cfg_kernel = resolve_cfg(cfg, tmp_path)['kernel']
+    cfg_kernel = resolve_config(cfg, tmp_path)['kernel']
     cfg_kernel = DeepKernelConfigResolved(**cfg_kernel).dict()  # pydantic validation
     kernel_loaded = _load_kernel_config(cfg_kernel, backend=backend, device=DEVICE)
     assert isinstance(kernel_loaded.proj, (torch.nn.Module, tf.keras.Model))
@@ -685,7 +685,7 @@ def test_save_preprocess(data, preprocess_fn, tmp_path, backend):
 
     # Resolve and load preprocess config
     cfg = {'preprocess_fn': cfg_preprocess}
-    cfg_preprocess = resolve_cfg(cfg, tmp_path)['preprocess_fn']
+    cfg_preprocess = resolve_config(cfg, tmp_path)['preprocess_fn']
     cfg_preprocess = PreprocessConfigResolved(**cfg_preprocess).dict()  # pydantic validation
     preprocess_fn_load = _load_preprocess(cfg_preprocess, backend)
     if backend == 'tensorflow':
@@ -720,7 +720,7 @@ def test_save_preprocess_nlp(data, preprocess_fn, max_len, tmp_path, backend):
 
     # Resolve and load preprocess config
     cfg = {'preprocess_fn': cfg_preprocess}
-    cfg_preprocess = resolve_cfg(cfg, tmp_path)['preprocess_fn']
+    cfg_preprocess = resolve_config(cfg, tmp_path)['preprocess_fn']
     cfg_preprocess = PreprocessConfigResolved(**cfg_preprocess).dict()
     preprocess_fn_load = _load_preprocess(cfg_preprocess, backend)
     assert isinstance(preprocess_fn_load.keywords['tokenizer'], type(preprocess_fn.keywords['tokenizer']))

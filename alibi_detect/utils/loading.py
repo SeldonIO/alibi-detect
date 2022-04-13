@@ -31,7 +31,7 @@ REQUIRES_BACKEND = [
     'SpotTheDiffDrift'
 ]
 
-# Fields to resolve in resolve_cfg ("resolve" meaning either load local artefact or resolve @registry, conversion to
+# Fields to resolve in resolve_config ("resolve" meaning either load local artefact or resolve @registry, conversion to
 # tuple, np.ndarray and np.dtype are dealt with separately).
 FIELDS_TO_RESOLVE = [
     ['preprocess_fn'],
@@ -141,7 +141,7 @@ def _load_detector_config(filepath: Union[str, os.PathLike]) -> Detectors:
     # Resolve and validate config
     cfg = validate_config(cfg)
     logger.info('Validated unresolved config.')
-    cfg = resolve_cfg(cfg, config_dir=config_dir)
+    cfg = resolve_config(cfg, config_dir=config_dir)
     cfg = validate_config(cfg, resolved=True)
     logger.info('Validated resolved config.')
 
@@ -286,7 +286,7 @@ def _load_preprocess(cfg: dict,
 
     if callable(preprocess_fn):
         if preprocess_fn.__name__ == 'preprocess_drift':
-            # If preprocess_drift function, kwargs is preprocess cfg minus 'function' and 'kwargs'
+            # If preprocess_drift function, kwargs is preprocess cfg minus 'src' and 'kwargs'
             cfg.pop('kwargs')
             kwargs = cfg.copy()
 
@@ -343,7 +343,7 @@ def _load_model_config(cfg: dict,
     if backend == 'tensorflow':
         model = load_model_tf(src, load_dir='.', custom_objects=custom_obj, layer=layer)
     else:
-        raise NotImplementedError('Loading of pytorch models not currently supported')
+        raise NotImplementedError('Loading of pytorch and sklearn models not currently supported')
 
     return model
 
@@ -487,13 +487,13 @@ def read_config(filepath: Union[os.PathLike, str]) -> dict:
         cfg['categories_per_feature'] = new
 
     # This is necessary as no None/null in toml spec., and missing values are set to defaults set in pydantic models.
-    # But we sometimes to do explicitly spec as None.
+    # But we sometimes need to explicitly spec as None.
     cfg = _replace(cfg, "None", None)
 
     return cfg
 
 
-def resolve_cfg(cfg: dict, config_dir: Optional[Path]) -> dict:
+def resolve_config(cfg: dict, config_dir: Optional[Path]) -> dict:
     """
     Resolves artefacts in a config dict. For example x_ref='x_ref.npy' is resolved by loading the np.ndarray from
     the .npy file. For a list of fields that are resolved, see

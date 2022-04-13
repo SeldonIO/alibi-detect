@@ -25,21 +25,21 @@ from alibi_detect.models.tensorflow import TransformerEmbedding
 from alibi_detect.utils.frameworks import has_tensorflow
 from alibi_detect.cd.tensorflow import UAE as UAE_tf, HiddenOutput as HiddenOutput_tf
 from transformers import PreTrainedTokenizerBase
-SupportedModels_li = []
+SupportedModels_list = []
 if has_tensorflow:
     import tensorflow as tf
-    SupportedModels_li += [tf.keras.Model, UAE_tf, HiddenOutput_tf]
+    SupportedModels_list += [tf.keras.Model, UAE_tf, HiddenOutput_tf]
 # if has_pytorch:
 #    import torch
-#    SupportedModels_li.append()  # TODO
+#    SupportedModels_list.append()  # TODO
 # if has_sklearn:
 #    import sklearn
-#    SupportedModels_li.append()  # TODO
+#    SupportedModels_list.append()  # TODO
 # SupportedModels is a tuple of possible models (conditional on installed deps). This is used in isinstance() etc.
-SupportedModels = tuple(SupportedModels_li)
-# SupportedModels_py is a typing Union for use with pydantic. We include all optional deps in here so that they
+SupportedModels = tuple(SupportedModels_list)
+# SupportedModels_types is a typing Union for use with pydantic. We include all optional deps in here so that they
 # are all documented in the api docs (where the optional deps are not installed at build time)
-SupportedModels_py = Union['tf.keras.Model', UAE_tf, HiddenOutput_tf]
+SupportedModels_types = Union['tf.keras.Model', UAE_tf, HiddenOutput_tf]
 
 
 # Custom BaseModel so that we can set default config
@@ -270,7 +270,7 @@ class PreprocessConfigResolved(CustomBaseModel):
     "The preprocessing function."
 
     # Below kwargs are only passed if src == @preprocess_drift
-    model: Optional[SupportedModels_py] = None
+    model: Optional[SupportedModels_types] = None
     "Model used for preprocessing."
     embedding: Optional[TransformerEmbedding] = None
     """
@@ -430,7 +430,7 @@ class DeepKernelConfigResolved(CustomBaseModel):
     """
     Resolved schema for :class:`~alibi_detect.utils.tensorflow.kernels.DeepKernel`'s.
     """
-    proj: SupportedModels_py
+    proj: SupportedModels_types
     """
     The projection to be applied to the inputs before applying `kernel_a`. This should be a Tensorflow or PyTorch model.
     """
@@ -754,7 +754,7 @@ class ClassifierDriftConfigResolved(DriftDetectorConfigResolved):
     """
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
-    model: Optional[SupportedModels_py] = None
+    model: Optional[SupportedModels_types] = None
     preds_type: Literal['probs', 'logits'] = 'probs'
     binarize_preds: bool = False
     reg_loss_fn: Optional[Callable] = None
