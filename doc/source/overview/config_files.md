@@ -2,7 +2,7 @@
 
 For advanced use cases, Alibi Detect features powerful configuration file based functionality. As shown below,
 **Drift detectors** can be specified with a configuration file named `config.toml` (adversarial and outlier 
-detectors coming soon!), which can then be passed to {func}`~alibi_detect.utils.loading.load_detector`:
+detectors coming soon!), which can then be passed to {func}`~alibi_detect.saving.load_detector`:
 
 
 `````{grid} 2
@@ -45,7 +45,7 @@ p_val = 0.05
 ```
 
 ```python
-from alibi_detect.utils.loading import load_detector
+from alibi_detect.saving import load_detector
 filepath = 'detector_directory/'
 detector = load_detector(filepath)
 ```
@@ -59,16 +59,16 @@ previously created detectors.
 - **Flexible artefact specification**: Artefacts such as datasets and models can be specified as locally serialized
 objects, or as runtime registered objects (see [Specifying complex fields](complex_fields)). Multiple detectors can 
 share the same artefacts, and they can be easily swapped.
-- **Editable**: Config files written by the {func}`~alibi_detect.utils.saving.save_detector` function can be edited 
+- **Editable**: Config files written by the {func}`~alibi_detect.saving.save_detector` function can be edited 
 prior to reloading.
-- **Inbuilt validation**: The {func}`~alibi_detect.utils.loading.load_detector` function uses
+- **Inbuilt validation**: The {func}`~alibi_detect.saving.load_detector` function uses
 [pydantic](https://pydantic-docs.helpmanual.io/) to validate detector configurations, improving reliability.
 
 In what follows, the Alibi Detect config files are explored in some detail. To get a general idea 
 of the expected layout of a config file, readers can also skip ahead to [Example config files](examples) for examples of
 config files for some common use cases. Alternatively, to obtain a fully populated config file for reference, users
 can run one of the [example notebooks](../cd/examples.md) and generate a config file by passing an instantiated 
-detector to {func}`~alibi_detect.utils.saving.save_detector`.
+detector to {func}`~alibi_detect.saving.save_detector`.
 
 ## Configuration file layout
 
@@ -90,7 +90,7 @@ preprocess_fn = "function.dill"
 ```
 
 ```python
-from alibi_detect.utils.loading import load_detector
+from alibi_detect.saving import load_detector
 detector = load_detector('detector_directory/')
 ```
 ````
@@ -139,7 +139,7 @@ Depending on their type, artefacts can be specified in `config.toml` in a number
 numpy [npy](https://numpy.org/devdocs/reference/generated/numpy.lib.format.html) files.
 
 - **Function/object registry**: As discussed in [Registering artefacts](registering_artefacts), functions and other 
-objects defined at runtime can be registered using `alibi_detect.registry`, allowing them to be specified 
+objects defined at runtime can be registered using {func}`alibi_detect.saving.registry`, allowing them to be specified 
 in the config file without having to serialise them. For convenience a number of Alibi Detect functions such as 
 {func}`~alibi_detect.cd.tensorflow.preprocess.preprocess_drift` are also pre-registered. 
 
@@ -158,15 +158,15 @@ The following table shows the allowable formats for all possible config file art
 |`reg_loss_fn`             |           |✔           |✔                                |                                                                                                          |
 |`dataset`                 |           |✔           |✔                                |                                                                                                          |
 |`initial_diffs`           |✔          |            |                                 |                                                                                                          |
-|`model`                   |           |            |✔                                |{class}`~alibi_detect.utils.schemas.ModelConfig`                                                          |
-|`preprocess_fn`           |           |✔           |✔                                |{class}`~alibi_detect.utils.schemas.PreprocessConfig`                                                     |
-|`preprocess_fn.model`     |           |            |✔                                |{class}`~alibi_detect.utils.schemas.ModelConfig`                                                          |
-|`preprocess_fn.embedding` |           |            |✔                                |{class}`~alibi_detect.utils.schemas.EmbeddingConfig`                                                      |
-|`preprocess_fn.tokenizer` |           |            |✔                                |{class}`~alibi_detect.utils.schemas.TokenizerConfig`                                                      |
-|`kernel`                  |           |✔           |✔                                |{class}`~alibi_detect.utils.schemas.KernelConfig` or {class}`~alibi_detect.utils.schemas.DeepKernelConfig`|
-|`kernel.proj`             |           |            |✔                                |{class}`~alibi_detect.utils.schemas.ModelConfig`                                                          |
-|`kernel.kernel_a`         |           |✔           |✔                                |{class}`~alibi_detect.utils.schemas.KernelConfig`                                                         |
-|`kernel.kernel_b`         |           |✔           |✔                                |{class}`~alibi_detect.utils.schemas.KernelConfig`                                                         |
+|`model`                   |           |            |✔                                |{class}`~alibi_detect.saving.schemas.ModelConfig`                                                          |
+|`preprocess_fn`           |           |✔           |✔                                |{class}`~alibi_detect.saving.schemas.PreprocessConfig`                                                     |
+|`preprocess_fn.model`     |           |            |✔                                |{class}`~alibi_detect.saving.schemas.ModelConfig`                                                          |
+|`preprocess_fn.embedding` |           |            |✔                                |{class}`~alibi_detect.saving.schemas.EmbeddingConfig`                                                      |
+|`preprocess_fn.tokenizer` |           |            |✔                                |{class}`~alibi_detect.saving.schemas.TokenizerConfig`                                                      |
+|`kernel`                  |           |✔           |✔                                |{class}`~alibi_detect.saving.schemas.KernelConfig` or {class}`~alibi_detect.saving.schemas.DeepKernelConfig`|
+|`kernel.proj`             |           |            |✔                                |{class}`~alibi_detect.saving.schemas.ModelConfig`                                                          |
+|`kernel.kernel_a`         |           |✔           |✔                                |{class}`~alibi_detect.saving.schemas.KernelConfig`                                                         |
+|`kernel.kernel_b`         |           |✔           |✔                                |{class}`~alibi_detect.saving.schemas.KernelConfig`                                                         |
 |`optimizer`               |           |✔           |✔                                | Dictionary in the format expected by [tf.keras.optimizers.deserialize](https://www.tensorflow.org/api_docs/python/tf/keras/optimizers/deserialize) |
 ```
 
@@ -189,14 +189,14 @@ src = "function.dill"
 kwargs = {'kwarg1'=42, 'kwarg2'=false}
 ```
 
-Here, the `preprocess_fn` field is a {class}`~alibi_detect.utils.schemas.PreprocessConfig` artefact dictionary.
+Here, the `preprocess_fn` field is a {class}`~alibi_detect.saving.schemas.PreprocessConfig` artefact dictionary.
 In this example, specifying the `preprocess_fn` function as a dictionary allows us to specify additional `kwarg`'s to 
 be passed to the function upon loading. This example also demonstrates the flexibility of the TOML format, with
 dictionaries able to be specified with {} brackets or by sections demarcated with [] brackets.
 
 Other config fields in the {ref}`all-artefacts-table` table can be specified via artefact dictionaries in a similar way. 
 For example, the `model`, `preprocess_fn.model` and `kernel.proj` fields can be set as TensorFlow (and soon PyTorch) 
-models via the {class}`~alibi_detect.utils.schemas.ModelConfig` dictionary. This is seen in the following example, 
+models via the {class}`~alibi_detect.saving.schemas.ModelConfig` dictionary. This is seen in the following example, 
 where a `preprocess_fn` is specified with a TensorFlow `model`.
 
 <p class="codeblock-label">config.toml (excerpt)</p>
@@ -211,7 +211,7 @@ src = "model/"
 ```
 
 Each artefact dictionary has an associated pydantic model which is used for [validation of config files](validation). 
-The [documentation](../api/alibi_detect/utils/schemas/index.rst) for these pydantic models provides a description of the 
+The [documentation](../api/alibi_detect/saving/schemas/index.rst) for these pydantic models provides a description of the 
 permissible fields for each artefact dictionary. For examples of how the artefact dictionaries can be used in practice, 
 see {ref}`examples`.
 
@@ -220,7 +220,7 @@ see {ref}`examples`.
 ### Registering artefacts
 
 Custom artefacts defined in Python code may be specified in the config file without the need to serialise them, 
-by first adding them to the Alibi Detect artefact registry using the {mod}`alibi_detect.registry` 
+by first adding them to the Alibi Detect artefact registry using the {mod}`alibi_detect.saving.registry` 
 submodule. This submodule harnesses the [catalogue](https://github.com/explosion/catalogue) library to allow functions 
 to be registered with a decorator syntax:
 
@@ -238,8 +238,7 @@ to be registered with a decorator syntax:
 
 ```python
 import numpy as np
-from alibi_detect.registry import registry
-from alibi_detect.utils.loading import load_detector
+from alibi_detect.saving import registry, load_detector
 
 # Register a simple function
 @registry.register('my_function.v1')
@@ -279,7 +278,7 @@ encoder model:
 ```python
 import tensorflow as tf
 from tensorflow.keras.layers import Conv2D, Dense, Flatten, InputLayer
-from alibi_detect.registry import registry
+from alibi_detect.saving import registry
 
 encoder_net = tf.keras.Sequential(
   [
@@ -314,9 +313,9 @@ For convenience, Alibi Detect also pre-registers a number of commonly used utili
 
 **For backend-specific functions/classes, [backend] should be replaced the desired backend e.g. `tensorflow` or `pytorch`.*
 
-These can be used in `config.toml` files without the need to explicitly import `alibi_detect.registry`. 
-Of particular importance are the `preprocess_drift` utility functions, which allows models, tokenizers and embeddings
-to be easily specified for preprocessing, as demonstrated in the [IMDB example](imdb_example).
+These can be used in `config.toml` files. Of particular importance are the `preprocess_drift` utility functions, 
+which allows models, tokenizers and embeddings to be easily specified for preprocessing, as demonstrated in the 
+[IMDB example](imdb_example).
 
 (examples)=
 ## Example config files
@@ -366,7 +365,7 @@ layers = [-1, -2, -3, -4, -5, -6, -7, -8]
 %
 %```python
 %from alibi_detect.utils.fetching import fetch_config
-%from alibi_detect.utils.loading import load_detector
+%from alibi_detect.saving import load_detector
 %filepath = 'IMDB_example_MMD/'
 %fetch_config('imdb_mmd', filepath)
 %detector = load_detector(filepath)
@@ -380,19 +379,19 @@ layers = [-1, -2, -3, -4, -5, -6, -7, -8]
 (validation)=
 ## Validating config files
 
-When {func}`~alibi_detect.utils.loading.load_detector` is called, the {func}`~alibi_detect.utils.loading.validate_config`
+When {func}`~alibi_detect.saving.load_detector` is called, the {func}`~alibi_detect.saving.validate_config`
 utility function is used internally to validate the given detector configuration. This allows any problems with the 
 configuration to be detected prior to sometimes time-consuming operations of loading artefacts and instantiating the 
-detector. {func}`~alibi_detect.utils.loading.validate_config` can also be used by devs working with Alibi Detect config 
+detector. {func}`~alibi_detect.saving.validate_config` can also be used by devs working with Alibi Detect config 
 dictionaries. 
 
-Under-the-hood, {func}`~alibi_detect.utils.loading.load_detector` parses the `config.toml` file into a *unresolved* 
-config dictionary. It then passes this *dict* through {func}`~alibi_detect.utils.loading.validate_config`, to check for 
+Under-the-hood, {func}`~alibi_detect.saving.load_detector` parses the `config.toml` file into a *unresolved* 
+config dictionary. It then passes this *dict* through {func}`~alibi_detect.saving.validate_config`, to check for 
 errors such as incorrectly named fields, and incorrect types. If working directly with config dictionaries, the same 
 process can be done explicitly, for example:
 
 ```python
-from alibi_detect.utils.loading import validate_config
+from alibi_detect.saving import validate_config
 
 # Define a simple config dict
 cfg = {
@@ -419,12 +418,12 @@ bad_field
 
 Validating at this stage is useful at errors can be caught before the sometimes time-consuming operation of 
 resolving the config dictionary, which involves loading each artefact in the dictionary. The *resolved* config 
-dictionary is then also passed through {func}`~alibi_detect.utils.loading.validate_config`, and this second 
+dictionary is then also passed through {func}`~alibi_detect.saving.validate_config`, and this second 
 validation can also be done explicitly:
 
 ```python
 import numpy as np
-from alibi_detect.utils.loading import validate_config
+from alibi_detect.saving import validate_config
 
 # Create some reference data
 x_ref = np.random.normal(size=(100,5))
@@ -440,7 +439,7 @@ cfg = {
 validate_config(cfg, resolved=True)
 ```
 
-Note that since `resolved=True`, {func}`~alibi_detect.utils.loading.validate_config` is now expecting `x_ref` to be a 
+Note that since `resolved=True`, {func}`~alibi_detect.saving.validate_config` is now expecting `x_ref` to be a 
 Numpy ndarray instead of a string. This second level of validation can be useful as it helps detect problems with loaded 
 artefacts before attempting the sometimes time-consuming operation of instantiating the detector. 
 
@@ -452,7 +451,7 @@ artefacts before attempting the sometimes time-consuming operation of instantiat
 %(or `schema_json` if a json formatted string is preferred). For example, for the `KSDrift` detector:
 %
 %```python
-%from alibi_detect.utils.schemas import DETECTOR_CONFIGS
+%from alibi_detect.saving.schemas import DETECTOR_CONFIGS
 %schema = DETECTOR_CONFIGS['KSDrift'].schema()
 %
 %```

@@ -1,4 +1,4 @@
-from alibi_detect.utils.loading import validate_config
+from alibi_detect.saving import validate_config
 from alibi_detect.version import __version__, __config_spec__
 from pydantic import ValidationError
 import pytest
@@ -29,9 +29,7 @@ def test_validate_config(select_cfg):
 
     # Original cfg
     # Check original cfg doesn't raise errors
-    print(cfg)
     cfg_full = validate_config(cfg, resolved=True)
-    print(cfg_full)
 
     # Check cfg is returned with correct metadata
     meta = cfg_full.get('meta')  # pop as don't want to compare meta to cfg in next bit

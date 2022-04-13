@@ -1,8 +1,8 @@
 # TODO - Need to modularise torch and tensorflow imports and use. e.g. has_tensorflow and has_pytorch etc
-from alibi_detect.registry import registry
-from alibi_detect.utils.schemas import SupportedModels
-from alibi_detect.utils.validate import validate_config
-from alibi_detect.utils.tensorflow._loading import load_model as load_model_tf, \
+from alibi_detect.saving.registry import registry
+from alibi_detect.saving.schemas import SupportedModels
+from alibi_detect.saving.validate import validate_config
+from alibi_detect.saving.tensorflow._loading import load_model as load_model_tf, \
     prep_model_and_emb as prep_model_and_emb_tf, load_kernel_config as load_kernel_config_tf, \
     load_optimizer as load_optimizer_tf, load_embedding as load_embedding_tf, load_detector_legacy, Detectors
 #  from alibi_detect.utils.pytorch._loading import set_device

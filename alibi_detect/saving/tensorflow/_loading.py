@@ -31,7 +31,7 @@ import dill
 logger = logging.getLogger(__name__)
 
 
-# This list is currently defined in here to avoid circular dependency (it is needed in utils/loading.py). Once the
+# This list is currently defined in here to avoid circular dependency (it is needed in saving/loading.py). Once the
 # legacy loading support is removed, this will be moved to utils/loading.py
 Detectors = Union[
     AdversarialAE,
@@ -243,8 +243,7 @@ def load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwarg
     -------
     Loaded outlier or adversarial detector object.
     """
-    warnings.warn(' Loading of meta.dill and meta.pickle files will be removed in a future version.',
-                  DeprecationWarning, 3)
+    warnings.warn('Loading of meta.dill and meta.pickle files will be removed in a future version.', DeprecationWarning)
 
     if kwargs:
         k = list(kwargs.keys())

@@ -28,13 +28,12 @@ from alibi_detect.cd.tensorflow import preprocess_drift as preprocess_drift_tf, 
 from alibi_detect.cd.pytorch import preprocess_drift as preprocess_drift_pt, HiddenOutput as HiddenOutput_pt
 from alibi_detect.utils.tensorflow.kernels import DeepKernel as DeepKernel_tf, GaussianRBF as GaussianRBF_tf
 from alibi_detect.utils.pytorch.kernels import DeepKernel as DeepKernel_pt, GaussianRBF as GaussianRBF_pt
-from alibi_detect.registry import registry
-from alibi_detect.utils.saving import (save_detector, _save_kernel, _save_preprocess,
-                                       _save_model_config, _path2str, _serialize_function, write_config)  # type: ignore
-from alibi_detect.utils.loading import (load_detector, _load_kernel_config, resolve_config, _load_preprocess,
-                                        _load_model_config, _load_optimizer, _set_nested_value, _replace,
-                                        _get_nested_value, read_config)  # type: ignore
-from alibi_detect.utils.schemas import (
+from alibi_detect.saving import save_detector, write_config, load_detector, read_config, resolve_config, registry
+from alibi_detect.saving.saving import (_save_kernel, _save_preprocess, _save_model_config, _path2str,
+                                        _serialize_function)  # type: ignore
+from alibi_detect.saving.loading import (_load_kernel_config, _load_preprocess, _load_model_config, _load_optimizer,
+                                         _set_nested_value, _replace, _get_nested_value)  # type: ignore
+from alibi_detect.saving.schemas import (
     KernelConfig, KernelConfigResolved,
     DeepKernelConfig, DeepKernelConfigResolved,
     PreprocessConfig, PreprocessConfigResolved,
