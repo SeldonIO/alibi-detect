@@ -17,6 +17,7 @@ methods/classifierdrift.ipynb
 methods/spotthediffdrift.ipynb
 methods/modeluncdrift.ipynb
 methods/tabulardrift.ipynb
+methods/contextmmddrift.ipynb
 ```
 
 ## Online

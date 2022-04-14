@@ -43,6 +43,7 @@ def identity_fn(x: Union[np.ndarray, list]) -> np.ndarray:
 @pytest.mark.parametrize('update_x_ref', [{'last': 1000}, {'reservoir_sampling': 1000}])
 def test_clfdrift_calibration(model, preds_type, p_val, n, n_features, binarize_preds, n_folds, train_size,
                               preprocess_batch, update_x_ref, use_calibration, calibration_kwargs):
+    """Testing calibration for various models and configurations."""
     np.random.seed(0)
 
     x_ref = np.random.randn(n, n_features)
@@ -83,7 +84,7 @@ def test_clfdrift_calibration(model, preds_type, p_val, n, n_features, binarize_
     assert preds_1['data']['distance'] >= 0
 
     assert preds_0['data']['distance'] < preds_1['data']['distance']
-    assert cd.meta['params']['preds_type'] == 'probs'
+    assert cd.meta['params']['preds_type'] == preds_type
     assert cd.meta['params']['binarize_preds '] == binarize_preds
 
 
@@ -99,6 +100,7 @@ def test_clfdrift_calibration(model, preds_type, p_val, n, n_features, binarize_
 @pytest.mark.parametrize('n_folds', [2, 5])
 @pytest.mark.parametrize('preds_type', ['scores'])
 def test_clfdrift_scores(model, p_val, n, n_features, binarize_preds, n_folds, preds_type):
+    """Testing classifier drift based on the scores (i.e. `decision_function`) for various models."""
     np.random.seed(0)
 
     x_ref = np.random.randn(n, n_features)
@@ -124,7 +126,7 @@ def test_clfdrift_scores(model, p_val, n, n_features, binarize_preds, n_folds, p
     assert preds_1['data']['distance'] >= 0
 
     assert preds_0['data']['distance'] < preds_1['data']['distance']
-    assert cd.meta['params']['preds_type'] == 'scores'
+    assert cd.meta['params']['preds_type'] == preds_type
     assert cd.meta['params']['binarize_preds '] == binarize_preds
 
 
@@ -133,8 +135,10 @@ def test_clfdrift_scores(model, p_val, n, n_features, binarize_preds, n_folds, p
 @pytest.mark.parametrize('use_calibration', [False])
 @pytest.mark.parametrize('binarize_preds', [False])
 def test_clone1(model, preds_type, use_calibration, binarize_preds):
-    # should raise an error because the models do NOT support `predict_proba`, `use_calibration=False`
-    # and we are interested in the probabilities due to `binarize_preds=False`
+    """
+    Checks if an `AttributeError` is raised because the models do NOT support `predict_proba`,
+    ``use_calibration=False`` and we are interested in the probabilities due to ``binarize_preds=False``.
+    """
     with pytest.raises(AttributeError):
         ClassifierDriftSklearn(x_ref=np.random.randn(100, 5),
                                model=model,
@@ -155,7 +159,7 @@ def test_clone1(model, preds_type, use_calibration, binarize_preds):
 @pytest.mark.parametrize('use_calibration', [False])
 @pytest.mark.parametrize('binarize_preds', [True])
 def test_clone2(model, preds_type, use_calibration, binarize_preds):
-    # should not raise an error because `binarize_preds=True` and we only need access to `predict` method.
+    """Checks if no error is raised because ``binarize_preds=True`` and we only need access to the `predict` method."""
     ClassifierDriftSklearn(x_ref=np.random.randn(100, 5),
                            model=model,
                            preds_type=preds_type,
@@ -175,7 +179,9 @@ def test_clone2(model, preds_type, use_calibration, binarize_preds):
 @pytest.mark.parametrize('use_calibration', [True])
 @pytest.mark.parametrize('binarize_preds', [False, True])
 def test_clone3(model, preds_type, use_calibration, binarize_preds):
-    # should NOT raise an error because of the `use_calibration=True` which makes possible `preds_types='probs'`
+    """
+    Checks if NO error is raised because of the ``use_calibration=True`` which makes possible ``preds_types='probs'``.
+    """
     ClassifierDriftSklearn(x_ref=np.random.randn(100, 5),
                            model=model,
                            preds_type=preds_type,
@@ -193,7 +199,7 @@ def test_clone3(model, preds_type, use_calibration, binarize_preds):
 @pytest.mark.parametrize('use_calibration', [False, True])
 @pytest.mark.parametrize('binarize_preds', [False])
 def test_clone4(model, preds_type, use_calibration, binarize_preds):
-    # should raise an error because the classifiers do not support decision function
+    """Checks if an `AttributeError` is raised because the classifiers do not support `decision_function`."""
     with pytest.raises(AttributeError):
         ClassifierDriftSklearn(x_ref=np.random.randn(100, 5),
                                model=model,
@@ -212,7 +218,9 @@ def test_clone4(model, preds_type, use_calibration, binarize_preds):
 @pytest.mark.parametrize('use_calibration', [False, True])
 @pytest.mark.parametrize('binarize_preds', [True])
 def test_clone5(model, preds_type, use_calibration, binarize_preds):
-    # should raise an error because of `binarize_preds=True` which conflicts with `preds_types='scores'`
+    """
+    Checks if `ValueError` is raised because of ``binarize_preds=True`` which conflicts with ``preds_types='scores'``.
+    """
     with pytest.raises(ValueError):
         ClassifierDriftSklearn(x_ref=np.random.randn(100, 5),
                                model=model,
@@ -226,6 +234,10 @@ def test_clone5(model, preds_type, use_calibration, binarize_preds):
 @pytest.mark.parametrize('use_calibration', [False])
 @pytest.mark.parametrize('binarize_preds', [True])
 def test_predict_proba1(model, preds_type, use_calibration, binarize_preds):
+    """
+    Checks if the `aux_predict_proba` is set properly to the model's `predict` when ``preds_type=probs``
+    and ``binarize_preds=True``.
+    """
     drift_detector = ClassifierDriftSklearn(x_ref=np.random.randn(100, 5),
                                             model=model,
                                             preds_type=preds_type,
@@ -253,6 +265,10 @@ def test_predict_proba1(model, preds_type, use_calibration, binarize_preds):
 @pytest.mark.parametrize('use_calibration', [False])
 @pytest.mark.parametrize('binarize_preds', [False])
 def test_predict_proba2(model, pred_types, use_calibration, binarize_preds):
+    """
+    Checks if the `aux_predict_proba` is set properly to the model's `decision_function` when ``preds_type=scores``
+    and ``binarize_preds=False``.
+    """
     drift_detector = ClassifierDriftSklearn(x_ref=np.random.randn(100, 5),
                                             model=model,
                                             preds_type=pred_types,
@@ -270,3 +286,98 @@ def test_predict_proba2(model, pred_types, use_calibration, binarize_preds):
     # check if predict matches the new predict_proba
     np.testing.assert_allclose(internal_model.decision_function(x_te),
                                internal_model.aux_predict_proba(x_te)[:, 1])
+
+
+@pytest.mark.parametrize('model', [RandomForestClassifier(n_estimators=100)])
+@pytest.mark.parametrize('p_val', [0.05])
+@pytest.mark.parametrize('n', [500, 1000])
+@pytest.mark.parametrize('n_features', [4])
+@pytest.mark.parametrize('n_folds', [2, 5])
+@pytest.mark.parametrize('preds_type', ['probs'])
+@pytest.mark.parametrize('binarize_preds, use_calibration, use_oob', [(False, False, False),
+                                                                      (False, False, True),
+                                                                      (False, True, False),
+                                                                      (True, False, False),
+                                                                      (True, False, True),
+                                                                      (True, True, False)])
+def test_rf_oob(model, p_val, n, n_features, n_folds, preds_type, binarize_preds, use_calibration, use_oob):
+    """
+    Checks if all valid combination of `binarize_preds`, `use_calibration` and `use_oob` when ``preds_type='probs'``
+    are working properly.
+    """
+    np.random.seed(0)
+
+    x_ref = np.random.randn(n, n_features)
+    x_test0 = np.random.randn(n, n_features)
+    x_test1 = np.random.randn(n, n_features) + 1
+    cd = ClassifierDriftSklearn(
+        x_ref=x_ref,
+        preds_type=preds_type,
+        model=model,
+        p_val=p_val,
+        n_folds=n_folds,
+        binarize_preds=binarize_preds,
+        use_calibration=use_calibration,
+        use_oob=use_oob
+    )
+
+    preds_0 = cd.predict(x_test0)
+    assert cd.n == len(x_test0) + len(x_ref)
+    assert preds_0['data']['is_drift'] == 0
+    assert preds_0['data']['distance'] >= 0
+
+    preds_1 = cd.predict(x_test1)
+    assert cd.n == len(x_test1) + len(x_test0) + len(x_ref)
+    assert preds_1['data']['is_drift'] == 1
+    assert preds_1['data']['distance'] >= 0
+
+    assert preds_0['data']['distance'] < preds_1['data']['distance']
+    assert cd.meta['params']['preds_type'] == preds_type
+    assert cd.meta['params']['binarize_preds '] == binarize_preds
+
+
+@pytest.mark.parametrize('model', [LogisticRegression(),
+                                   GradientBoostingClassifier(),
+                                   AdaBoostClassifier()])
+@pytest.mark.parametrize('preds_type', ['probs'])
+@pytest.mark.parametrize('use_oob', [True])
+def test_clone_rf1(model, preds_type, use_oob):
+    """Check if `ValueError` is raised because ``use_oob=True`` and the model is not a RandomForest."""
+    with pytest.raises(ValueError):
+        ClassifierDriftSklearn(x_ref=np.random.randn(100, 5),
+                               model=model,
+                               preds_type=preds_type,
+                               use_oob=use_oob)
+
+
+@pytest.mark.parametrize('model', [RandomForestClassifier()])
+@pytest.mark.parametrize('preds_type', ['probs'])
+@pytest.mark.parametrize('use_calibration', [False, True])
+@pytest.mark.parametrize('use_oob', [True])
+def test_clone_rf2(model, preds_type, use_calibration, use_oob):
+    """
+    Checks that ``use_oob=True`` works when ``preds_type='probs'`` for a RandomForest model with or
+    without calibration.
+    """
+    cd = ClassifierDriftSklearn(x_ref=np.random.randn(100, 5),
+                                model=model,
+                                preds_type=preds_type,
+                                use_calibration=use_calibration,
+                                use_oob=use_oob)
+
+    assert cd.model.oob_score
+    assert cd.model.bootstrap
+    assert not cd.use_calibration   # should be set to `False` when `use_oob=True`
+
+
+@pytest.mark.parametrize('model', [RandomForestClassifier(oob_score=True),
+                                   RandomForestClassifier(oob_score=False)])
+@pytest.mark.parametrize('preds_type', ['probs'])
+@pytest.mark.parametrize('use_oob', [False])
+def test_clone_rf3(model, preds_type, use_oob):
+    """Checks if the `oob_score` is set automatically to ``False`` when ``use_oob=False``."""
+    cd = ClassifierDriftSklearn(x_ref=np.random.randn(100, 5),
+                                model=model,
+                                preds_type=preds_type,
+                                use_oob=use_oob)
+    assert not cd.model.oob_score

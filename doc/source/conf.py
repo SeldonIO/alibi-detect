@@ -256,7 +256,10 @@ epub_exclude_files = ["search.html"]
 # -- Options for intersphinx extension ---------------------------------------
 
 # Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {"https://docs.python.org/": None}
+intersphinx_mapping = {
+        'python': ('https://docs.python.org/', None),
+        'sklearn': ('https://scikit-learn.org/stable/', None),
+        }
 
 # -- Options for todo extension ----------------------------------------------
 
@@ -307,7 +310,7 @@ StandaloneHTMLBuilder.supported_image_types = [
 ]
 
 # -- myst-parser configuration -----------------------------------------------
-# See https://myst-parser.readthedocs.io/en/latest/syntax/optional.html for 
+# See https://myst-parser.readthedocs.io/en/stable/syntax/optional.html for 
 # details of available extensions.
 myst_enable_extensions = [
     "dollarmath",

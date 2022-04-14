@@ -168,7 +168,7 @@ class ClassifierDriftTorch(BaseClassifierDrift):
         """
         x_ref, x = self.preprocess(x)
         n_ref, n_cur = len(x_ref), len(x)
-        x, y, splits = self.get_splits(x_ref, x)
+        x, y, splits = self.get_splits(x_ref, x)  # type: ignore
 
         # iterate over folds: train a new model for each fold and make out-of-fold (oof) predictions
         preds_oof_list, idx_oof_list = [], []
