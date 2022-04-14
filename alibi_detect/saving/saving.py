@@ -55,9 +55,6 @@ def save_detector(detector: Detector, filepath: Union[str, os.PathLike], legacy:
     orig_files = set(filepath.iterdir())
 
     # Saving is wrapped in a try, with cleanup in except. To prevent a half-saved detector remaining upon error.
-    # Cleanup is only performed if `filepath` was a new directory, so that we avoid unintentionally deleting the
-    # `filepath` directory if it contains other items unrelated to saving.
-    # TODO - we could delete in a more targeted fashion if we maintain a manifest of all possible files/dirs written
     try:
         # Create directory if it doesn't exist
         if not filepath.is_dir():
@@ -74,8 +71,7 @@ def save_detector(detector: Detector, filepath: Union[str, os.PathLike], legacy:
 
     except Exception as error:
         _cleanup_filepath(orig_files, filepath)
-        print('Saving failed due to the following error. Files/directories have been cleaned up.')
-        raise error
+        raise RuntimeError(f'Saving failed. The save directory {filepath} has been cleaned.') from error
 
     logger.info('finished saving.')
 

@@ -966,7 +966,7 @@ def test_cleanup(tmp_path):
     cd.preprocess_fn = cd.x_ref
 
     # Save, catch and check error
-    with pytest.raises(ValueError):
+    with pytest.raises(RuntimeError):
         save_detector(cd, tmp_path)
 
     # Check `filepath` is deleted
