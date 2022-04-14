@@ -44,7 +44,6 @@ release = __version__
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    "sphinx.ext.autodoc",
     "sphinx.ext.doctest",
     "sphinx.ext.intersphinx",
     "sphinx.ext.todo",
@@ -53,12 +52,12 @@ extensions = [
     "sphinx.ext.ifconfig",
     "sphinx.ext.viewcode",
     "sphinx.ext.napoleon",
-    "sphinx_autodoc_typehints",
-    "sphinxcontrib.apidoc",  # automatically generate API docs, see https://github.com/rtfd/readthedocs.org/issues/1139
+    "sphinx.ext.autodoc.typehints",  # still used with autoapi
     "sphinxcontrib.bibtex",
     "nbsphinx",
     "myst_parser",
     "sphinx_design",
+    "autoapi.extension"
 ]
 
 # -- nbsphinx settings -------------------------------------------------------
@@ -78,38 +77,17 @@ for nb_file in nb_files:
 bibtex_bibfiles = ['refs.bib']
 bibtex_default_style = 'unsrtalpha'
 
-# apidoc settings
-apidoc_module_dir = "../../alibi_detect"
-apidoc_output_dir = "api"
-apidoc_excluded_paths = ["**/*test*"]
-apidoc_module_first = True
-apidoc_separate_modules = True
-apidoc_extra_args = ["-d 6"]
-
-# mock imports
-autodoc_mock_imports = [
-    "pandas",
-    "sklearn",
-    "skimage",
-    "requests",
-    "cv2",
-    "bs4",
-    "keras",
-    "seaborn",
-    "PIL",
-    "tensorflow",
-    "spacy",
-    "numpy",
-    "tensorflow_probability",
-    "scipy",
-    "matplotlib",
-    "fbprophet",
-    "torch",
-    "transformers",
-    "tqdm",
-    "dill",
-    "numba"
-]
+# -- Other settings ----------------------------------------------------------
+# autoapi settings
+autoapi_type = 'python'
+autoapi_dirs = ['../../alibi_detect/']
+autoapi_root = 'api'  # rename api directory from 'autoapi' to 'api'
+autoapi_add_toctree_entry = False  # Don't add toctree entry as we enter it manually in top-level index.rst
+autoapi_keep_files = True  # Keep api files after building api docs as we ref to them elsewhere in docs
+autoapi_ignore = ["**/test_*"]  # Don't document tests in api docs
+autoapi_options = ['members', 'show-inheritance', 'imported-members', 'undoc-members']
+autoapi_python_class_content = 'both'
+autodoc_typehints = 'description'
 
 # Napoleon settings
 napoleon_google_docstring = False
@@ -323,17 +301,4 @@ myst_enable_extensions = [
 
 # Create heading anchors for h1 to h3 (useful for local toc's)
 myst_heading_anchors = 3
-
-# Below code fixes a problem with sphinx>=3.2.0 processing functions with
-# torch.jit.script decorator. Probably occuring because torch is being mocked
-# (see https://github.com/sphinx-doc/sphinx/issues/6709).
-def call_mock(self, *args, **kw):
-    from types import FunctionType, MethodType
-    if args and type(args[0]) in [type, FunctionType, MethodType]:
-        # Appears to be a decorator, pass through unchanged
-        return args[0]
-    return self
-
-from sphinx.ext.autodoc.mock import _MockObject
-_MockObject.__call__ = call_mock
 
