@@ -1495,7 +1495,7 @@ BSD License
 UNKNOWN
 
 dm-tree
-0.1.6
+0.1.7
 Apache Software License
 
                                  Apache License
@@ -1736,7 +1736,7 @@ Apache Software License
 UNKNOWN
 
 fonttools
-4.31.2
+4.32.0
 MIT License
 MIT License
 
@@ -1830,7 +1830,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 google-auth
-2.6.2
+2.6.4
 Apache Software License
                                  Apache License
                            Version 2.0, January 2004
@@ -2731,7 +2731,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 huggingface-hub
-0.4.0
+0.5.1
 Apache Software License
                                  Apache License
                            Version 2.0, January 2004
@@ -2998,9 +2998,9 @@ THE SOFTWARE.
 
 
 imageio
-2.16.1
+2.16.2
 BSD License
-Copyright (c) 2014-2020, imageio developers
+Copyright (c) 2014-2022, imageio developers
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -3792,7 +3792,7 @@ Licensee agrees to be bound by the terms and conditions of this License
 Agreement.
 
 networkx
-2.7.1
+2.8
 BSD License
 NetworkX is distributed with the 3-clause BSD license.
 
@@ -3863,7 +3863,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 numpy
-1.21.5
+1.21.6
 BSD License
 Copyright (c) 2005-2021, NumPy Developers.
 All rights reserved.
@@ -7419,7 +7419,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 
 pyparsing
-3.0.7
+3.0.8
 MIT License
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -10082,7 +10082,7 @@ Apache Software License
 
 
 tensorflow-probability
-0.12.2
+0.16.0
 Apache Software License
 UNKNOWN
 
@@ -10145,7 +10145,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 tifffile
-2022.3.25
+2022.4.8
 BSD License
 BSD 3-Clause License
 
@@ -10180,7 +10180,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 
 tokenizers
-0.11.6
+0.12.1
 Apache Software License
 UNKNOWN
 
@@ -10272,7 +10272,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 transformers
-4.17.0
+4.18.0
 Apache Software License
 Copyright 2018- The Hugging Face team. All rights reserved.
 
