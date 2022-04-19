@@ -42,7 +42,10 @@ class MMDDrift:
         p_val
             p-value used for the significance of the permutation test.
         estimator
-            Estimator used for the MMD^2 computation {'quad', 'linear'}.
+            Estimator used for the MMD^2 computation {'quad', 'linear'}. 'Quad' is the default and
+            uses the quadratic u-statistics on each square kernel matrix. 'Linear' uses the linear
+            time estimator as in Gretton et al. (2014), and the threshold is computed using the Gaussian
+            asympotic distribution under null.
         preprocess_x_ref
             Whether to already preprocess and store the reference data.
         update_x_ref

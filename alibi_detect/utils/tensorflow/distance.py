@@ -109,10 +109,11 @@ def batch_compute_kernel_matrix(
     return k_mat
 
 
-def linear_mmd2(x: tf.Tensor,
-                y: tf.Tensor,
-                kernel: Callable,
-                permute: bool = False) -> Tuple[tf.Tensor, tf.Tensor]:
+def linear_mmd2(
+    x: tf.Tensor,
+    y: tf.Tensor,
+    kernel: Callable
+) -> Tuple[tf.Tensor, tf.Tensor]:
     """
     Compute maximum mean discrepancy (MMD^2) between 2 samples x and y with the
     linear-time estimator.
@@ -132,30 +133,22 @@ def linear_mmd2(x: tf.Tensor,
     m = np.shape(y)[0]
     if n != m:
         raise RuntimeError("Linear-time estimator requires equal size samples")
-    if not permute:
-        k_xx = kernel(x=x[0::2, :], y=x[1::2, :], diag=True)
-        k_yy = kernel(x=y[0::2, :], y=y[1::2, :], diag=True)
-        k_xy = kernel(x=x[0::2, :], y=y[1::2, :], diag=True)
-        k_yz = kernel(x=y[0::2, :], y=x[1::2, :], diag=True)
-    else:
-        idx = np.random.permutation(m + n)
-        xy = tf.gather(tf.concat([x, y], axis=0), idx)
-        x_hat, y_hat = xy[:n, :], xy[n:, :]
-        k_xx = kernel(x_hat[0::2, :], x_hat[1::2, :], diag=True)
-        k_yy = kernel(y_hat[0::2, :], y_hat[1::2, :], diag=True)
-        k_xy = kernel(x_hat[0::2, :], y_hat[1::2, :], diag=True)
-        k_yz = kernel(y_hat[0::2, :], x_hat[1::2, :], diag=True)
-
+    k_xx = kernel(x=x[0::2, :], y=x[1::2, :], pairwise=False)
+    k_yy = kernel(x=y[0::2, :], y=y[1::2, :], pairwise=False)
+    k_xy = kernel(x=x[0::2, :], y=y[1::2, :], pairwise=False)
+    k_yz = kernel(x=y[0::2, :], y=x[1::2, :], pairwise=False)
     h = k_xx + k_yy - k_xy - k_yz
-    mmd2 = (tf.reduce_sum(h) / (n / 2.))
-    var_mmd2 = (tf.reduce_sum(h ** 2) / (n / 2.)) - (mmd2 ** 2)
+    mmd2 = tf.reduce_mean(h)
+    var_mmd2 = tf.math.reduce_sum(h ** 2) / ((n / 2.) - 1) - (mmd2 ** 2)
     return mmd2, var_mmd2
 
 
-def mmd2_from_kernel_matrix(kernel_mat: tf.Tensor,
-                            m: int,
-                            permute: bool = False,
-                            zero_diag: bool = True) -> tf.Tensor:
+def mmd2_from_kernel_matrix(
+    kernel_mat: tf.Tensor,
+    m: int,
+    permute: bool = False,
+    zero_diag: bool = True
+) -> tf.Tensor:
     """
     Compute maximum mean discrepancy (MMD^2) between 2 samples x and y from the
     full kernel matrix between the samples.

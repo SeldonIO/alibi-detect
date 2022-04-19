@@ -218,10 +218,11 @@ class LinearTimeMMDDriftTF(BaseMMDDrift):
         n_hat = int(np.floor(min(n, m) / 2) * 2)
         x_ref = x_ref[:n_hat, :]
         x = x[:n_hat, :]
-        mmd2, var_mmd2 = linear_mmd2(x_ref, x, self.kernel, permute=False)
+        mmd2, var_mmd2 = linear_mmd2(x_ref, x, self.kernel)
         mmd2 = mmd2.numpy()
         var_mmd2 = var_mmd2.numpy()
         std_mmd2 = np.sqrt(var_mmd2)
-        p_val = 1 - stats.norm.cdf(mmd2 * np.sqrt(n_hat), loc=0., scale=std_mmd2*np.sqrt(2))
-        distance_threshold = stats.norm.ppf(1 - self.p_val, loc=0., scale=std_mmd2*np.sqrt(2))
-        return p_val, mmd2 * np.sqrt(n_hat), distance_threshold
+        t = mmd2 / (std_mmd2 / np.sqrt(n_hat / 2.))
+        p_val = 1 - stats.t.cdf(t, df=(n_hat / 2.) - 1)
+        distance_threshold = stats.t.ppf(1 - self.p_val, df=(n_hat / 2.) - 1)
+        return p_val, t, distance_threshold

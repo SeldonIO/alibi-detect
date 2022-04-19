@@ -256,6 +256,7 @@ class LinearTimeDriftTorch(BaseMMDDrift):
         mmd2 = mmd2.numpy().item()
         var_mmd2 = var_mmd2.numpy().item()
         std_mmd2 = np.sqrt(var_mmd2)
-        p_val = 1 - stats.norm.cdf(mmd2 * np.sqrt(n_hat), loc=0., scale=std_mmd2*np.sqrt(2))
-        distance_threshold = stats.norm.ppf(1 - self.p_val, loc=0., scale=std_mmd2*np.sqrt(2))
-        return p_val, mmd2 * np.sqrt(n_hat), distance_threshold
+        t = mmd2 / (std_mmd2 / np.sqrt(n_hat / 2.))
+        p_val = 1 - stats.t.cdf(t, df=(n_hat / 2.) - 1)
+        distance_threshold = stats.t.ppf(1 - self.p_val, df=(n_hat / 2.) - 1)
+        return p_val, t, distance_threshold

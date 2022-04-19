@@ -71,10 +71,10 @@ class GaussianRBF(tf.keras.Model):
 
     def call(self, x: tf.Tensor, y: tf.Tensor,
              infer_sigma: bool = False,
-             diag: bool = False) -> tf.Tensor:
+             pairwise: bool = True) -> tf.Tensor:
         y = tf.cast(y, x.dtype)
         x, y = tf.reshape(x, (x.shape[0], -1)), tf.reshape(y, (y.shape[0], -1))  # flatten
-        if not diag:
+        if pairwise:
             dist = distance.squared_pairwise_distance(x, y)  # [Nx, Ny]
         else:
             dist = distance.squared_distance(x, y)  # [Nx]
@@ -82,11 +82,10 @@ class GaussianRBF(tf.keras.Model):
         if infer_sigma or self.init_required:
             if self.trainable and infer_sigma:
                 raise ValueError("Gradients cannot be computed w.r.t. an inferred sigma value")
-            if not diag:
-                dist_hat = dist
+            if pairwise:
+                sigma = self.init_sigma_fn(x, y, dist)
             else:
-                dist_hat = distance.squared_pairwise_distance(x, y)
-            sigma = self.init_sigma_fn(x, y, dist_hat)
+                sigma = tf.expand_dims((.5 * tf.sort(tf.reshape(dist, (-1,)))[dist.shape[0] // 2 - 1]) ** .5, axis=0)
             self.log_sigma.assign(tf.math.log(sigma))
             self.init_required = False
 

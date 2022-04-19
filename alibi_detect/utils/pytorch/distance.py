@@ -115,9 +115,11 @@ def batch_compute_kernel_matrix(
     return k_mat
 
 
-def linear_mmd2(x: torch.Tensor,
-                y: torch.Tensor,
-                kernel: Callable) -> Tuple[torch.Tensor, torch.Tensor]:
+def linear_mmd2(
+    x: torch.Tensor,
+    y: torch.Tensor,
+    kernel: Callable
+) -> Tuple[torch.Tensor, torch.Tensor]:
     """
     Compute maximum mean discrepancy (MMD^2) between 2 samples x and y with the
     linear-time estimator.
@@ -138,21 +140,23 @@ def linear_mmd2(x: torch.Tensor,
     m = np.shape(y)[0]
     if n != m:
         raise RuntimeError("Linear-time estimator requires equal size samples")
-    k_xx = kernel(x=x[0::2, :], y=x[1::2, :], diag=True)
-    k_yy = kernel(x=y[0::2, :], y=y[1::2, :], diag=True)
-    k_xy = kernel(x=x[0::2, :], y=y[1::2, :], diag=True)
-    k_yz = kernel(x=y[0::2, :], y=x[1::2, :], diag=True)
+    k_xx = kernel(x=x[0::2, :], y=x[1::2, :], pairwise=False)
+    k_yy = kernel(x=y[0::2, :], y=y[1::2, :], pairwise=False)
+    k_xy = kernel(x=x[0::2, :], y=y[1::2, :], pairwise=False)
+    k_yz = kernel(x=y[0::2, :], y=x[1::2, :], pairwise=False)
 
     h = k_xx + k_yy - k_xy - k_yz
-    mmd2 = h.sum() / (n / 2.)
-    var_mmd2 = ((h * h).sum() / (n / 2.)) - (mmd2 ** 2)
+    mmd2 = h.mean()
+    var_mmd2 = torch.var(h, unbiased=True)
     return mmd2, var_mmd2
 
 
-def mmd2_from_kernel_matrix(kernel_mat: torch.Tensor,
-                            m: int,
-                            permute: bool = False,
-                            zero_diag: bool = True) -> torch.Tensor:
+def mmd2_from_kernel_matrix(
+    kernel_mat: torch.Tensor,
+    m: int,
+    permute: bool = False,
+    zero_diag: bool = True
+) -> torch.Tensor:
     """
     Compute maximum mean discrepancy (MMD^2) between 2 samples x and y from the
     full kernel matrix between the samples.
