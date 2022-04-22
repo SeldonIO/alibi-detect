@@ -89,7 +89,7 @@ class MMDDriftTF(BaseMMDDrift):
         kernel_mat = tf.concat([tf.concat([k_xx, k_xy], 1), tf.concat([tf.transpose(k_xy, (1, 0)), k_yy], 1)], 0)
         return kernel_mat
 
-    def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, np.ndarray]:
+    def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, float]:
         """
         Compute the p-value resulting from a permutation test using the maximum mean discrepancy
         as a distance measure between the reference data and the data to be tested.
@@ -118,4 +118,5 @@ class MMDDriftTF(BaseMMDDrift):
         # compute distance threshold
         idx_threshold = int(self.p_val * len(mmd2_permuted))
         distance_threshold = np.sort(mmd2_permuted)[::-1][idx_threshold]
+        print(type(p_val), type(mmd2), type(distance_threshold))
         return p_val, mmd2, distance_threshold
