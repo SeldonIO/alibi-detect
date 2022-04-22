@@ -101,8 +101,8 @@ class MMDDriftTF(BaseMMDDrift):
 
         Returns
         -------
-        p-value obtained from the permutation test, the MMD^2 between the reference and test set
-        and the MMD^2 values from the permutation test.
+        p-value obtained from the permutation test, the MMD^2 between the reference and test set,
+        and the MMD^2 threshold above which drift is flagged.
         """
         x_ref, x = self.preprocess(x)
         # compute kernel matrix, MMD^2 and apply permutation test using the kernel matrix
@@ -115,4 +115,7 @@ class MMDDriftTF(BaseMMDDrift):
              for _ in range(self.n_permutations)]
         )
         p_val = (mmd2 <= mmd2_permuted).mean()
-        return p_val, mmd2, mmd2_permuted
+        # compute distance threshold
+        idx_threshold = int(self.p_val * len(mmd2_permuted))
+        distance_threshold = np.sort(mmd2_permuted)[::-1][idx_threshold]
+        return p_val, mmd2, distance_threshold
