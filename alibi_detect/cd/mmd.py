@@ -146,6 +146,7 @@ class MMDDrift:
         Returns
         -------
         p-value obtained from the permutation test, the MMD^2 between the reference and test set
-        and the MMD^2 values from the permutation test.
+        and the MMD^2 values from the qudratic permutation test, or the threshold for the given
+        significance level for the linear time test.
         """
         return self._detector.score(x)

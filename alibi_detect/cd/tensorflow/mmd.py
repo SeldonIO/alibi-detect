@@ -208,8 +208,8 @@ class LinearTimeMMDDriftTF(BaseMMDDrift):
 
         Returns
         -------
-        p-value obtained from the permutation test, the MMD^2 between the reference and test set
-        and the MMD^2 values from the permutation test.
+        p-value obtained from the null hypothesis, the MMD^2 between the reference and test set
+        and the MMD^2 threshold for the given significance level.
         """
         x_ref, x = self.preprocess(x)
         # compute kernel matrix, MMD^2 and apply permutation test using the kernel matrix
