@@ -13,7 +13,7 @@ on:
   pull_request:
     branches:
       - master
-      - 'features/*'
+      - 'feature/*'
     types: [opened, synchronize, reopened, ready_for_review]
   # Trigger workflow once per week
   schedule:
