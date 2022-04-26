@@ -1,6 +1,8 @@
-from alibi_detect.version import __version__, __config_spec__
-from alibi_detect.utils.schemas import DETECTOR_CONFIGS, DETECTOR_CONFIGS_RESOLVED  # type: ignore[attr-defined]
 import warnings
+
+from alibi_detect.saving.schemas import (  # type: ignore[attr-defined]
+    DETECTOR_CONFIGS, DETECTOR_CONFIGS_RESOLVED)
+from alibi_detect.version import __config_spec__, __version__
 
 
 def validate_config(cfg: dict, resolved: bool = False) -> dict:
@@ -19,7 +21,7 @@ def validate_config(cfg: dict, resolved: bool = False) -> dict:
     -------
     The validated config dict, with missing fields set to their default values.
     """
-    # Get detector name
+    # Get detector name and meta
     if 'name' in cfg:
         detector_name = cfg['name']
     else:
@@ -34,19 +36,28 @@ def validate_config(cfg: dict, resolved: bool = False) -> dict:
     else:
         raise ValueError(f'Loading the {detector_name} detector from a config.toml is not yet supported.')
 
+    # Get meta data
+    meta = cfg.get('meta')
+    version_warning = meta.get('version_warning', False)
+    version = meta.get('version', None)
+    config_spec = meta.get('config_spec', None)
+
+    # Raise warning if config file already contains a version_warning
+    if version_warning:
+        warnings.warn('The config file appears to be have been generated from a detector which may have been '
+                      'loaded with a version mismatch. This may lead to breaking code or invalid results.')
+
     # check version
-    version = cfg.pop('version', None)
     if version is not None and version != __version__:
         warnings.warn(f'Config is from version {version} but current version is '
                       f'{__version__}. This may lead to breaking code or invalid results.')
-        cfg['version_warning'] = True
+        cfg['meta'].update({'version_warning': True})
 
     # Check config specification version
-    config_spec = cfg.pop('config_spec', None)
     if config_spec is not None and config_spec != __config_spec__:
         warnings.warn(f'Config has specification {version} when the installed '
                       f'alibi-detect version expects specification {__config_spec__}.'
                       'This may lead to breaking code or invalid results.')
-        cfg['version_warning'] = True
+        cfg['meta'].update({'version_warning': True})
 
     return cfg
