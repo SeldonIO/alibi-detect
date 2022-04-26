@@ -17,7 +17,7 @@ from alibi_detect.models.tensorflow.autoencoder import DecoderLSTM, EncoderLSTM
 from alibi_detect.od import (IForest, LLR, Mahalanobis, OutlierAEGMM, OutlierVAE, OutlierVAEGMM,
                              OutlierProphet, SpectralResidual, OutlierSeq2Seq, OutlierAE)
 from alibi_detect.od.prophet import PROPHET_INSTALLED
-from alibi_detect.utils.saving import save_detector, load_detector  # type: ignore
+from alibi_detect.saving import save_detector, load_detector
 
 input_dim = 4
 latent_dim = 2

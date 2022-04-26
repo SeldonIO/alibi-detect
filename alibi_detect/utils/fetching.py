@@ -14,7 +14,7 @@ from alibi_detect.ad import AdversarialAE, ModelDistillation
 from alibi_detect.models.tensorflow import PixelCNN
 from alibi_detect.od import (IForest, LLR, Mahalanobis, OutlierAE, OutlierAEGMM, OutlierProphet,
                              OutlierSeq2Seq, OutlierVAE, OutlierVAEGMM, SpectralResidual)
-from alibi_detect.utils.saving import load_detector  # type: ignore
+from alibi_detect.saving import load_detector
 
 # do not extend pickle dispatch table so as not to change pickle behaviour
 dill.extend(use_dill=False)
