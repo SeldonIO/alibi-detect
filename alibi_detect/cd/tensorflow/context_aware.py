@@ -156,7 +156,7 @@ class ContextMMDDriftTF(BaseContextMMDDrift):
         # compute distance threshold
         idx_threshold = int(self.p_val * len(permuted_stats))
         distance_threshold = np.sort(permuted_stats)[::-1][idx_threshold]
-        return p_val.numpy().item(), stat.numpy().item(), distance_threshold.numpy(), coupling
+        return p_val.numpy().item(), stat.numpy().item(), distance_threshold, coupling
 
     def _cmmd(self, K: tf.Tensor, L: tf.Tensor, bools: tf.Tensor, L_held: tf.Tensor = None) \
             -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
