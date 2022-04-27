@@ -144,8 +144,8 @@ class LSDDDriftTF(BaseLSDDDrift):
         lsdd_permuted, _, lsdd = permed_lsdds(  # type: ignore
             k_all_c, x_perms, y_perms, self.H, lam_rd_max=self.lambda_rd_max, return_unpermed=True
         )
+        p_val = tf.reduce_mean(tf.cast(lsdd <= lsdd_permuted, float))
+
         idx_threshold = int(self.p_val * len(lsdd_permuted))
         distance_threshold = np.sort(lsdd_permuted)[::-1][idx_threshold]
-
-        p_val = tf.reduce_mean(tf.cast(lsdd <= lsdd_permuted, float))
         return float(p_val), float(lsdd), float(distance_threshold)
