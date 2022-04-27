@@ -1063,7 +1063,7 @@ class BaseContextMMDDrift(BaseDetector):
 
     @abstractmethod
     def score(self,  # type: ignore[override]
-              x: Union[np.ndarray, list], c: np.ndarray) -> Tuple[float, float, np.ndarray, Tuple]:
+              x: Union[np.ndarray, list], c: np.ndarray) -> Tuple[float, float, float, Tuple]:
         pass
 
     def predict(self,  # type: ignore[override]
@@ -1094,12 +1094,8 @@ class BaseContextMMDDrift(BaseDetector):
         and coupling matrices.
         """
         # compute drift scores
-        p_val, dist, dist_permutations, coupling = self.score(x, c)
+        p_val, dist, distance_threshold, coupling = self.score(x, c)
         drift_pred = int(p_val < self.p_val)
-
-        # compute distance threshold
-        idx_threshold = int(self.p_val * len(dist_permutations))
-        distance_threshold = np.sort(dist_permutations)[::-1][idx_threshold]
 
         # update reference dataset
         if isinstance(self.update_ref, dict) and self.preprocess_fn is not None and self.preprocess_x_ref:
