@@ -118,5 +118,4 @@ class MMDDriftTF(BaseMMDDrift):
         # compute distance threshold
         idx_threshold = int(self.p_val * len(mmd2_permuted))
         distance_threshold = np.sort(mmd2_permuted)[::-1][idx_threshold]
-        print(type(p_val), type(mmd2), type(distance_threshold))
         return p_val, mmd2, distance_threshold
