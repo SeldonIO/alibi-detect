@@ -134,8 +134,8 @@ class LSDDDriftTorch(BaseLSDDDrift):
 
         Returns
         -------
-        p-value obtained from the permutation test, the LSDD between the reference and test set
-        and the LSDD values from the permutation test.
+        p-value obtained from the permutation test, the LSDD between the reference and test set,
+        and the LSDD threshold above which drift is flagged.
         """
         x_ref, x = self.preprocess(x)
         x_ref = torch.from_numpy(x_ref).to(self.device)  # type: ignore[assignment]
@@ -162,6 +162,8 @@ class LSDDDriftTorch(BaseLSDDDrift):
         lsdd_permuted, _, lsdd = permed_lsdds(  # type: ignore
             k_all_c, x_perms, y_perms, self.H, lam_rd_max=self.lambda_rd_max, return_unpermed=True
         )
+        idx_threshold = int(self.p_val * len(lsdd_permuted))
+        distance_threshold = torch.sort(lsdd_permuted, descending=True).values[idx_threshold]
 
         p_val = (lsdd <= lsdd_permuted).float().mean()
-        return float(p_val.cpu()), float(lsdd.cpu().numpy()), lsdd_permuted.cpu().numpy()
+        return float(p_val.cpu()), float(lsdd.cpu().numpy()), distance_threshold.cpu().numpy()

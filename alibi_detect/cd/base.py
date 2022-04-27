@@ -703,7 +703,7 @@ class BaseLSDDDrift(BaseDetector):
             return self.x_ref, x  # type: ignore[return-value]
 
     @abstractmethod
-    def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, np.ndarray]:
+    def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, float]:
         pass
 
     def predict(self, x: Union[np.ndarray, list], return_p_val: bool = True, return_distance: bool = True) \
@@ -727,12 +727,8 @@ class BaseLSDDDrift(BaseDetector):
         'data' contains the drift prediction and optionally the p-value, threshold and LSDD metric.
         """
         # compute drift scores
-        p_val, dist, dist_permutations = self.score(x)
+        p_val, dist, distance_threshold = self.score(x)
         drift_pred = int(p_val < self.p_val)
-
-        # compute distance threshold
-        idx_threshold = int(self.p_val * len(dist_permutations))
-        distance_threshold = np.sort(dist_permutations)[::-1][idx_threshold]
 
         # update reference dataset
         if isinstance(self.update_x_ref, dict):
