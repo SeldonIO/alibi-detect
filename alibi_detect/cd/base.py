@@ -759,6 +759,10 @@ class BaseMMDDrift(BaseDetector, DriftConfigMixin):
 
         return cfg
 
+    @classmethod
+    @abstractmethod
+    def from_config(cls, config: dict):  # TODO Tighten config type?
+        pass
 
 class BaseLSDDDrift(BaseDetector, DriftConfigMixin):
     # TODO: TBD: this is only created when _configure_normalization is called from backend-specific classes,
@@ -1185,7 +1189,7 @@ class BaseUnivariateDrift(BaseDetector, DriftConfigMixin):
         return cfg
 
 
-class BaseContextMMDDrift(BaseDetector):
+class BaseContextMMDDrift(BaseDetector, DriftConfigMixin):
     lams: Optional[Tuple[Any, Any]] = None
 
     def __init__(
@@ -1193,7 +1197,8 @@ class BaseContextMMDDrift(BaseDetector):
             x_ref: Union[np.ndarray, list],
             c_ref: np.ndarray,
             p_val: float = .05,
-            preprocess_x_ref: bool = True,
+            x_ref_preprocessed: bool = False,
+            preprocess_at_init: bool = True,
             update_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
             x_kernel: Callable = None,
@@ -1217,8 +1222,13 @@ class BaseContextMMDDrift(BaseDetector):
             Context for the reference distribution.
         p_val
             p-value used for the significance of the permutation test.
-        preprocess_x_ref
-            Whether to already preprocess and store the reference data `x_ref`.
+        x_ref_preprocessed
+            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
+            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
+            data will also be preprocessed.
+        preprocess_at_init
+            Whether to preprocess the reference data when the detector is instantiated. Otherwise, the reference
+            data will be preprocessed at prediction time. Only applies if `x_ref_preprocessed=False`.
         update_ref
             Reference data can optionally be updated to the last N instances seen by the detector.
             The parameter should be passed as a dictionary *{'last': N}*.
@@ -1248,13 +1258,23 @@ class BaseContextMMDDrift(BaseDetector):
         if p_val is None:
             logger.warning('No p-value set for the drift threshold. Need to set it to detect data drift.')
 
-        # optionally already preprocess reference data
-        self.p_val = p_val
-        if preprocess_x_ref and isinstance(preprocess_fn, Callable):  # type: ignore[arg-type]
+        # x_ref preprocessing logic
+        self.preprocess_at_pred = not preprocess_at_init and not x_ref_preprocessed and preprocess_fn is not None
+        self.preprocess_at_init = preprocess_at_init and not x_ref_preprocessed and preprocess_fn is not None
+        self.x_ref_preprocessed = x_ref_preprocessed
+        # Check if preprocess_fn is valid
+        if (self.preprocess_at_init or self.preprocess_at_pred) \
+                and not isinstance(preprocess_fn, Callable):  # type: ignore[arg-type]
+            raise ValueError("`preprocess_fn` is not a valid Callable.")
+
+        # optionally preprocess reference data (now instead of at predict)
+        if self.preprocess_at_init:
             self.x_ref = preprocess_fn(x_ref)
         else:
             self.x_ref = x_ref
-        self.preprocess_x_ref = preprocess_x_ref
+
+        # Other attributes
+        self.p_val = p_val
         self.preprocess_fn = preprocess_fn
         self.n = len(x_ref)
         self.n_permutations = n_permutations  # nb of iterations through permutation test
@@ -1303,7 +1323,7 @@ class BaseContextMMDDrift(BaseDetector):
         """
         if isinstance(self.preprocess_fn, Callable):  # type: ignore[arg-type]
             x = self.preprocess_fn(x)
-            x_ref = self.x_ref if self.preprocess_x_ref else self.preprocess_fn(self.x_ref)
+            x_ref = self.preprocess_fn(self.x_ref) if self.preprocess_at_pred else self.x_ref
             # TODO: TBD: similar to above, can x be a list here? x_ref is also revealed to be Any,
             #  can we tighten the type up (e.g. by typing Callable with stricter inputs/outputs?
             return x_ref, x  # type: ignore[return-value]
@@ -1351,7 +1371,7 @@ class BaseContextMMDDrift(BaseDetector):
         distance_threshold = np.sort(dist_permutations)[::-1][idx_threshold]
 
         # update reference dataset
-        if isinstance(self.update_ref, dict) and self.preprocess_fn is not None and self.preprocess_x_ref:
+        if isinstance(self.update_ref, dict) and self.preprocess_at_init:
             x = self.preprocess_fn(x)
         self.x_ref = update_reference(self.x_ref, x, self.n, self.update_ref)  # type: ignore[arg-type]
         self.c_ref = update_reference(self.c_ref, c, self.n, self.update_ref)  # type: ignore[arg-type]
@@ -1374,3 +1394,32 @@ class BaseContextMMDDrift(BaseDetector):
             cd['data']['coupling_xy'] = coupling[2]
         return cd
 
+    @abstractmethod
+    def get_config(self) -> dict:
+        """
+        Get the detector's configuration dictionary.
+
+        Returns
+        -------
+        The detector's configuration dictionary.
+        """
+        cfg = self.drift_config()
+        cfg.update({'c_ref': self.c_ref})
+
+        # Detector field
+        kwargs = {
+            'p_val': self.p_val,
+            'x_ref_preprocessed': self.preprocess_at_init or self.x_ref_preprocessed,
+            'preprocess_at_init': self.preprocess_at_init,
+            'update_ref': self.update_ref,
+            'n_permutations': self.n_permutations,
+            'prop_c_held': self.prop_c_held,
+            'n_folds': self.n_folds,
+            'batch_size': self.batch_size,
+            'input_shape': self.input_shape,
+            'data_type': self.meta['data_type'],
+            'backend': self.meta['backend'],
+        }
+        cfg.update(kwargs)
+
+        return cfg

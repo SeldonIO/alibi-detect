@@ -5,6 +5,7 @@ import tensorflow_probability as tfp
 from typing import Callable, Dict, Optional, Tuple, Union, List
 from alibi_detect.cd.base import BaseContextMMDDrift
 from alibi_detect.utils.tensorflow.kernels import GaussianRBF
+from alibi_detect.utils.warnings import deprecated_alias
 from alibi_detect.cd._domain_clf import _SVCDomainClf
 from tqdm import tqdm
 
@@ -14,12 +15,14 @@ logger = logging.getLogger(__name__)
 class ContextMMDDriftTF(BaseContextMMDDrift):
     lams: Optional[Tuple[tf.Tensor, tf.Tensor]]
 
+    @deprecated_alias(preprocess_x_ref='preprocess_at_init')
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
             c_ref: np.ndarray,
             p_val: float = .05,
-            preprocess_x_ref: bool = True,
+            x_ref_preprocessed: bool = False,
+            preprocess_at_init: bool = True,
             update_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
             x_kernel: Callable = GaussianRBF,
@@ -45,8 +48,13 @@ class ContextMMDDriftTF(BaseContextMMDDrift):
             Context for the reference distribution.
         p_val
             p-value used for the significance of the permutation test.
-        preprocess_x_ref
-            Whether to already preprocess and store the reference data `x_ref`.
+        x_ref_preprocessed
+            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
+            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
+            data will also be preprocessed.
+        preprocess_at_init
+            Whether to preprocess the reference data when the detector is instantiated. Otherwise, the reference
+            data will be preprocessed at prediction time. Only applies if `x_ref_preprocessed=False`.
         update_ref
             Reference data can optionally be updated to the last N instances seen by the detector.
             The parameter should be passed as a dictionary *{'last': N}*.
@@ -75,7 +83,8 @@ class ContextMMDDriftTF(BaseContextMMDDrift):
             x_ref=x_ref,
             c_ref=c_ref,
             p_val=p_val,
-            preprocess_x_ref=preprocess_x_ref,
+            x_ref_preprocessed=x_ref_preprocessed,
+            preprocess_at_init=preprocess_at_init,
             update_ref=update_ref,
             preprocess_fn=preprocess_fn,
             x_kernel=x_kernel,
@@ -153,6 +162,29 @@ class ContextMMDDriftTF(BaseContextMMDDrift):
         coupling = (coupling_xx.numpy(), coupling_yy.numpy(), coupling_xy.numpy())
 
         return p_val.numpy().item(), stat.numpy().item(), permuted_stats.numpy(), coupling
+
+    def get_config(self) -> dict:
+        """
+        Get the detector's configuration dictionary.
+
+        Returns
+        -------
+        The detector's configuration dictionary.
+        """
+        cfg = super().get_config()
+
+        # kernel logic (if default kernel don't need to save)
+        x_kernel = None if isinstance(self.x_kernel, GaussianRBF) else self.x_kernel
+        c_kernel = None if isinstance(self.c_kernel, GaussianRBF) else self.c_kernel
+
+        # Detector kwargs
+        kwargs = {
+            'x_kernel': x_kernel,
+            'c_kernel': c_kernel
+        }
+        cfg.update(kwargs)
+
+        return cfg
 
     def _cmmd(self, K: tf.Tensor, L: tf.Tensor, bools: tf.Tensor, L_held: tf.Tensor = None) \
             -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:

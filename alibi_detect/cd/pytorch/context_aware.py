@@ -4,6 +4,7 @@ import torch
 from typing import Callable, Dict, Optional, Tuple, Union
 from alibi_detect.cd.base import BaseContextMMDDrift
 from alibi_detect.utils.pytorch.kernels import GaussianRBF
+from alibi_detect.utils.warnings import deprecated_alias
 from alibi_detect.cd._domain_clf import _SVCDomainClf
 from tqdm import tqdm
 
@@ -13,12 +14,14 @@ logger = logging.getLogger(__name__)
 class ContextMMDDriftTorch(BaseContextMMDDrift):
     lams: Optional[Tuple[torch.Tensor, torch.Tensor]] = None
 
+    @deprecated_alias(preprocess_x_ref='preprocess_at_init')
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
             c_ref: np.ndarray,
             p_val: float = .05,
-            preprocess_x_ref: bool = True,
+            x_ref_preprocessed: bool = False,
+            preprocess_at_init: bool = True,
             update_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
             x_kernel: Callable = GaussianRBF,
@@ -45,8 +48,13 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
             Context for the reference distribution.
         p_val
             p-value used for the significance of the permutation test.
-        preprocess_x_ref
-            Whether to already preprocess and store the reference data `x_ref`.
+        x_ref_preprocessed
+            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
+            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
+            data will also be preprocessed.
+        preprocess_at_init
+            Whether to preprocess the reference data when the detector is instantiated. Otherwise, the reference
+            data will be preprocessed at prediction time. Only applies if `x_ref_preprocessed=False`.
         update_ref
             Reference data can optionally be updated to the last N instances seen by the detector.
             The parameter should be passed as a dictionary *{'last': N}*.
@@ -78,7 +86,8 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
             x_ref=x_ref,
             c_ref=c_ref,
             p_val=p_val,
-            preprocess_x_ref=preprocess_x_ref,
+            x_ref_preprocessed=x_ref_preprocessed,
+            preprocess_at_init=preprocess_at_init,
             update_ref=update_ref,
             preprocess_fn=preprocess_fn,
             x_kernel=x_kernel,
@@ -166,6 +175,17 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
         coupling = (coupling_xx.numpy(), coupling_yy.numpy(), coupling_xy.numpy())
 
         return p_val.numpy().item(), stat.numpy().item(), permuted_stats.numpy(), coupling
+
+    def get_config(self) -> dict:
+        """
+        Get the detector's configuration dictionary.
+        Not yet implemented for `ContextMMDDrift` with the pytorch backend.
+
+        Returns
+        -------
+        The detector's configuration dictionary.
+        """
+        raise NotImplementedError("get_config not yet implemented for ContextMMDDrift with pytorch backend.")
 
     def _cmmd(self, K: torch.Tensor, L: torch.Tensor, bools: torch.Tensor, L_held: torch.Tensor = None) \
             -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:

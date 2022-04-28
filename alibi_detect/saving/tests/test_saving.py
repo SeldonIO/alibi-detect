@@ -28,7 +28,7 @@ from transformers import AutoTokenizer
 from alibi_detect.cd import (ChiSquareDrift,  # ClassifierUncertaintyDrift,
                              ClassifierDrift, FETDrift, KSDrift,
                              LearnedKernelDrift, LSDDDrift, MMDDrift,
-                             SpotTheDiffDrift, TabularDrift)
+                             SpotTheDiffDrift, TabularDrift, ContextMMDDrift)
 from alibi_detect.cd.pytorch import HiddenOutput as HiddenOutput_pt
 from alibi_detect.cd.pytorch import preprocess_drift as preprocess_drift_pt
 from alibi_detect.cd.tensorflow import UAE as UAE_tf
@@ -579,6 +579,37 @@ def test_save_learnedkernel(data, deep_kernel, preprocess_custom, backend, tmp_p
         assert isinstance(cd_load._detector.kernel, DeepKernel_pt)
 
 # TODO - checks for modeluncertainty detectors - once save/load implemented for them
+
+@parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
+def test_save_contextmmddrift(data, preprocess_custom, backend, tmp_path):
+    """
+    Test ContextMMDDrift on continuous datasets, with UAE as preprocess_fn.
+
+    Detector is saved and then loaded, with assertions checking that the reinstantiated detector is equivalent.
+    """
+    # Detector save/load
+    X_ref, X_h0 = data
+    C_ref = X_ref[:, 0] + 1
+    cd = ContextMMDDrift(X_ref,
+                         C_ref,
+                         p_val=P_VAL,
+                         backend=backend,
+                         preprocess_fn=preprocess_custom,
+                         n_permutations=N_PERMUTATIONS,
+                         preprocess_at_init=True,
+                         )
+    save_detector(cd, tmp_path)
+    cd_load = load_detector(tmp_path)
+
+    # assertions
+    np.testing.assert_array_equal(preprocess_custom(X_ref), cd_load._detector.x_ref)
+    assert cd_load._detector.x_ref_preprocessed
+    assert not cd_load._detector.infer_sigma
+    assert cd_load._detector.n_permutations == N_PERMUTATIONS
+    assert cd_load._detector.p_val == P_VAL
+    assert isinstance(cd_load._detector.preprocess_fn, Callable)
+    assert cd_load._detector.preprocess_fn.func.__name__ == 'preprocess_drift'
+#    assert cd.predict(X_h0)['data']['p_val'] == cd_load.predict(X_h0)['data']['p_val']  # Not deterministic
 
 
 @parametrize_with_cases("data", cases=ContinuousData.data_synthetic_nd)

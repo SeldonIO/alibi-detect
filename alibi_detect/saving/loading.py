@@ -48,10 +48,13 @@ FIELDS_TO_RESOLVE = [
     ['preprocess_fn', 'tokenizer'],
     ['preprocess_fn', 'preprocess_batch_fn'],
     ['x_ref'],
+    ['c_ref'],
     ['model'],
     ['optimizer'],
     ['reg_loss_fn'],
     ['kernel'],
+    ['x_kernel'],
+    ['c_kernel'],
     ['dataset'],
     ['kernel', 'src'],
     ['kernel', 'proj'],
@@ -66,16 +69,17 @@ FIELDS_TO_RESOLVE = [
 # Note some fields in FIELDS_TO_RESOLVE are missing from DIR_FIELDS, since some fields cannot be spec'd as directories.
 # e.g. embedding cannot be spec'd directly as a .dill file reference, it must be an EmbeddingConfig.
 DIR_FIELDS = [
-    ['preprocess_fn'],
-    ['preprocess_fn', 'src'],
+    ['preprocess_fn'], ['preprocess_fn', 'src'],
     ['preprocess_fn', 'model', 'src'],
     ['preprocess_fn', 'embedding', 'src'],
     ['preprocess_fn', 'tokenizer', 'src'],
     ['preprocess_fn', 'preprocess_batch_fn'],
     ['x_ref'],
+    ['c_ref'],
     ['model', 'src'],
-    ['kernel'],
-    ['kernel', 'src'],
+    ['kernel'], ['kernel', 'src'],
+    ['x_kernel'], ['x_kernel', 'src'],
+    ['c_kernel'], ['c_kernel', 'src'],
     ['optimizer'],
     ['reg_loss_fn'],
     ['kernel', 'proj', 'src'],
@@ -159,10 +163,10 @@ def _load_detector_config(filepath: Union[str, os.PathLike]) -> Detector:
     if backend.lower() != 'tensorflow':
         raise NotImplementedError('Loading detectors with PyTorch or sklearn backend is not yet supported.')
 
-    # Get x_ref
+    # Get x_ref # TODO - remove
     x_ref = cfg.pop('x_ref')
 
-    # Get kernel
+    # Get kernel # TODO - need to x_kernel and c_kernel - but remove anyway?
     kernel = cfg.pop('kernel', None)  # Don't need to check if None as kernel=None defaults to GaussianRBF
     if isinstance(kernel, dict):
         logger.info('Loading kernel.')
@@ -173,6 +177,9 @@ def _load_detector_config(filepath: Union[str, os.PathLike]) -> Detector:
     if isinstance(preprocess_fn, dict):
         logger.info('Loading preprocess_fn.')
         preprocess_fn = _load_preprocess_config(preprocess_fn, backend=backend)
+
+    # TODO - Once we've validated config and fully resolved the model/kernel configs etc, can we not just do
+    #  something like detector.from_config()?
 
     # Get model
     model = cfg.pop('model', None)
@@ -562,7 +569,9 @@ def resolve_config(cfg: dict, config_dir: Optional[Path]) -> dict:
 #            elif key[-1] == 'device':
 #                obj = set_device(src)
 
-        # Resolve dict spec
+        # Resolve artefact dicts (dicts which have a resolved config schema, such as PreprocessConfig and KernelConfig,
+        # are not resolved into objects here, since they are yet to undergo a further validation step). Instead, only
+        # their components, such as `src`, are resolved above.
         elif isinstance(src, dict):
             backend = cfg.get('backend', 'tensorflow')
             if key[-1] in ('model', 'proj'):

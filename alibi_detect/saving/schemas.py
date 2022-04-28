@@ -891,6 +891,49 @@ class LearnedKernelDriftConfigResolved(DriftDetectorConfigResolved):
     device: Optional[Literal['cpu', 'cuda']] = None
 
 
+class ContextMMDDriftConfig(DriftDetectorConfig):
+    """
+    Unresolved schema for the
+    `ContextMMDDrift <https://docs.seldon.io/projects/alibi-detect/en/stable/cd/methods/contextmmddrift.html>`_
+    detector.
+
+    Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
+    :class:`~alibi_detect.cd.ContextMMDDrift` documentation for a description of each field.
+    """
+    c_ref: str
+    preprocess_at_init: bool = True
+    update_ref: Optional[Dict[str, int]] = None
+    x_kernel: Optional[Union[str, KernelConfig]] = None
+    c_kernel: Optional[Union[str, KernelConfig]] = None
+    n_permutations: int = 100
+    prop_c_held: float = 0.25,
+    n_folds: int = 5,
+    batch_size: Optional[int] = 256,
+    verbose: bool = False
+    device: Optional[Literal['cpu', 'cuda']] = None
+
+
+class ContextMMDDriftConfigResolved(DriftDetectorConfigResolved):
+    """
+    Resolved schema for the
+    `MMDDrift <https://docs.seldon.io/projects/alibi-detect/en/stable/cd/methods/mmddrift.html>`_ detector.
+
+    Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
+    :class:`~alibi_detect.cd.MMDDrift` documentation for a description of each field.
+    """
+    c_ref: np.ndarray
+    preprocess_at_init: bool = True
+    update_ref: Optional[Dict[str, int]] = None
+    x_kernel: Optional[Union[Callable, KernelConfigResolved]] = None
+    c_kernel: Optional[Union[Callable, KernelConfigResolved]] = None
+    n_permutations: int = 100
+    prop_c_held: float = 0.25,
+    n_folds: int = 5,
+    batch_size: Optional[int] = 256,
+    verbose: bool = False
+    device: Optional[Literal['cpu', 'cuda']] = None
+
+
 # Unresolved schema dictionary (used in alibi_detect.utils.loading)
 DETECTOR_CONFIGS = {
     'KSDrift': KSDriftConfig,
@@ -902,7 +945,8 @@ DETECTOR_CONFIGS = {
     'LSDDDrift': LSDDDriftConfig,
     'ClassifierDrift': ClassifierDriftConfig,
     'SpotTheDiffDrift': SpotTheDiffDriftConfig,
-    'LearnedKernelDrift': LearnedKernelDriftConfig
+    'LearnedKernelDrift': LearnedKernelDriftConfig,
+    'ContextMMDDrift': ContextMMDDriftConfig
 }  # type: Dict[str, Type[DriftDetectorConfig]]
 
 
@@ -917,5 +961,6 @@ DETECTOR_CONFIGS_RESOLVED = {
     'LSDDDrift': LSDDDriftConfigResolved,
     'ClassifierDrift': ClassifierDriftConfigResolved,
     'SpotTheDiffDrift': SpotTheDiffDriftConfigResolved,
-    'LearnedKernelDrift': LearnedKernelDriftConfigResolved
+    'LearnedKernelDrift': LearnedKernelDriftConfigResolved,
+    'ContextMMDDrift': ContextMMDDriftConfigResolved
 }  # type: Dict[str, Type[DriftDetectorConfigResolved]]

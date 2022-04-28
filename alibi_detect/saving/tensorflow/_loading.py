@@ -18,7 +18,7 @@ from alibi_detect.cd import (ChiSquareDrift, ClassifierDrift,
                              ClassifierUncertaintyDrift, CVMDrift, FETDrift,
                              KSDrift, LearnedKernelDrift, LSDDDrift, MMDDrift,
                              RegressorUncertaintyDrift, SpotTheDiffDrift,
-                             TabularDrift)
+                             TabularDrift, ContextMMDDrift)
 from alibi_detect.cd.tensorflow import UAE, HiddenOutput
 from alibi_detect.cd.tensorflow.classifier import ClassifierDriftTF
 from alibi_detect.cd.tensorflow.mmd import MMDDriftTF
@@ -65,6 +65,7 @@ Detector = Union[
     ClassifierUncertaintyDrift,
     RegressorUncertaintyDrift,
     LearnedKernelDrift,
+    ContextMMDDrift,
     MMDDriftTF,  # TODO - remove when legacy loading removed
     ClassifierDriftTF  # TODO - remove when legacy loading removed
 ]

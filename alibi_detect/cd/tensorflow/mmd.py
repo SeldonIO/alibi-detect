@@ -154,3 +154,10 @@ class MMDDriftTF(BaseMMDDrift):
         cfg.update(kwargs)
 
         return cfg
+
+    @classmethod
+    def from_config(cls, config: dict):  # TODO Tighten config type?
+        """
+        TODO
+        """
+        return cls(**config)
