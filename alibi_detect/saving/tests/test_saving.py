@@ -50,11 +50,7 @@ from alibi_detect.saving.saving import _serialize_function  # type: ignore
 from alibi_detect.saving.saving import (_path2str, _save_kernel_config,
                                         _save_model_config,
                                         _save_preprocess_config)
-from alibi_detect.saving.schemas import (DeepKernelConfig,
-                                         DeepKernelConfigResolved,
-                                         KernelConfig, KernelConfigResolved,
-                                         ModelConfig, PreprocessConfig,
-                                         PreprocessConfigResolved)
+from alibi_detect.saving.schemas import DeepKernelConfig, KernelConfig, ModelConfig, PreprocessConfig
 from alibi_detect.utils.pytorch.kernels import DeepKernel as DeepKernel_pt
 from alibi_detect.utils.pytorch.kernels import GaussianRBF as GaussianRBF_pt
 from alibi_detect.utils.tensorflow.kernels import DeepKernel as DeepKernel_tf
@@ -117,12 +113,11 @@ def kernel(request, backend):
     """
     Gaussian RBF kernel for given backend.
     """
-    sigma = request.param['sigma']
-    trainable = request.param['trainable']
+    kernel_kwargs = request.param
     if backend == 'tensorflow':
-        kernel = GaussianRBF_tf(sigma=sigma, trainable=trainable)
+        kernel = GaussianRBF_tf(**kernel_kwargs) if kernel_kwargs is not None else GaussianRBF_tf
     elif backend == 'pytorch':
-        kernel = GaussianRBF_pt(sigma=sigma, trainable=trainable)
+        kernel = GaussianRBF_pt(**kernel_kwargs) if kernel_kwargs is not None else GaussianRBF_pt
     else:
         raise ValueError('`backend` not valid.')
     return kernel
@@ -580,8 +575,13 @@ def test_save_learnedkernel(data, deep_kernel, preprocess_custom, backend, tmp_p
 
 # TODO - checks for modeluncertainty detectors - once save/load implemented for them
 
+@parametrize('kernel', [
+        None,  # detector's default kernels
+        {'sigma': 0.5, 'trainable': False},  # custom kernels
+    ], indirect=True
+)
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
-def test_save_contextmmddrift(data, preprocess_custom, backend, tmp_path):
+def test_save_contextmmddrift(data, preprocess_custom, kernel, backend, tmp_path):
     """
     Test ContextMMDDrift on continuous datasets, with UAE as preprocess_fn.
 
@@ -597,18 +597,24 @@ def test_save_contextmmddrift(data, preprocess_custom, backend, tmp_path):
                          preprocess_fn=preprocess_custom,
                          n_permutations=N_PERMUTATIONS,
                          preprocess_at_init=True,
+                         x_kernel=kernel,
+                         c_kernel=kernel
                          )
     save_detector(cd, tmp_path)
     cd_load = load_detector(tmp_path)
 
     # assertions
     np.testing.assert_array_equal(preprocess_custom(X_ref), cd_load._detector.x_ref)
+    np.testing.assert_array_equal(C_ref, cd_load._detector.c_ref)
     assert cd_load._detector.x_ref_preprocessed
-    assert not cd_load._detector.infer_sigma
     assert cd_load._detector.n_permutations == N_PERMUTATIONS
     assert cd_load._detector.p_val == P_VAL
     assert isinstance(cd_load._detector.preprocess_fn, Callable)
     assert cd_load._detector.preprocess_fn.func.__name__ == 'preprocess_drift'
+    print(cd._detector.x_kernel.sigma, cd_load._detector.x_kernel.sigma)
+    print(cd._detector.x_kernel.init_sigma_fn, cd_load._detector.x_kernel.init_sigma_fn)
+    assert cd._detector.x_kernel.sigma == cd_load._detector.x_kernel.sigma
+    assert cd._detector.x_kernel.init_sigma_fn == cd_load._detector.x_kernel.init_sigma_fn
 #    assert cd.predict(X_h0)['data']['p_val'] == cd_load.predict(X_h0)['data']['p_val']  # Not deterministic
 
 
@@ -689,7 +695,6 @@ def test_save_kernel(kernel, backend, tmp_path):
     # Resolve and load config
     cfg = {'kernel': cfg_kernel}
     cfg_kernel = _path2str(resolve_config(cfg, tmp_path)['kernel'])
-    cfg_kernel = KernelConfigResolved(**cfg_kernel).dict()  # pydantic validation
     kernel_loaded = _load_kernel_config(cfg_kernel, backend=backend, device=DEVICE)
     assert type(kernel_loaded) == type(kernel)
     np.testing.assert_array_equal(np.array(kernel_loaded.sigma), np.array(cfg_kernel['sigma']))
@@ -726,7 +731,6 @@ def test_save_deepkernel(deep_kernel, kernel_proj_dim, backend, tmp_path):
     # Resolve and load config
     cfg = {'kernel': cfg_kernel}
     cfg_kernel = resolve_config(cfg, tmp_path)['kernel']
-    cfg_kernel = DeepKernelConfigResolved(**cfg_kernel).dict()  # pydantic validation
     kernel_loaded = _load_kernel_config(cfg_kernel, backend=backend, device=DEVICE)
     assert isinstance(kernel_loaded.proj, (torch.nn.Module, tf.keras.Model))
     np.testing.assert_almost_equal(kernel_loaded.eps, deep_kernel.eps, 4)
@@ -761,7 +765,6 @@ def test_save_preprocess(data, preprocess_fn, tmp_path, backend):
     # Resolve and load preprocess config
     cfg = {'preprocess_fn': cfg_preprocess}
     cfg_preprocess = resolve_config(cfg, tmp_path)['preprocess_fn']
-    cfg_preprocess = PreprocessConfigResolved(**cfg_preprocess).dict()  # pydantic validation
     preprocess_fn_load = _load_preprocess_config(cfg_preprocess, backend)
     if backend == 'tensorflow':
         assert preprocess_fn_load.func.__name__ == 'preprocess_drift'
@@ -796,7 +799,6 @@ def test_save_preprocess_nlp(data, preprocess_fn, max_len, tmp_path, backend):
     # Resolve and load preprocess config
     cfg = {'preprocess_fn': cfg_preprocess}
     cfg_preprocess = resolve_config(cfg, tmp_path)['preprocess_fn']
-    cfg_preprocess = PreprocessConfigResolved(**cfg_preprocess).dict()
     preprocess_fn_load = _load_preprocess_config(cfg_preprocess, backend)
     assert isinstance(preprocess_fn_load.keywords['tokenizer'], type(preprocess_fn.keywords['tokenizer']))
     assert isinstance(preprocess_fn_load.keywords['model'], type(preprocess_fn.keywords['model']))

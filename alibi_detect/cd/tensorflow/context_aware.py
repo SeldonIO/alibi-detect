@@ -173,14 +173,10 @@ class ContextMMDDriftTF(BaseContextMMDDrift):
         """
         cfg = super().get_config()
 
-        # kernel logic (if default kernel don't need to save)
-        x_kernel = None if isinstance(self.x_kernel, GaussianRBF) else self.x_kernel
-        c_kernel = None if isinstance(self.c_kernel, GaussianRBF) else self.c_kernel
-
         # Detector kwargs
         kwargs = {
-            'x_kernel': x_kernel,
-            'c_kernel': c_kernel
+            'x_kernel': self.x_kernel,
+            'c_kernel': self.c_kernel
         }
         cfg.update(kwargs)
 

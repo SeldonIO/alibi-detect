@@ -4,7 +4,7 @@ import os
 from functools import partial
 from importlib import import_module
 from pathlib import Path
-from typing import Any, Callable, List, Optional, Union
+from typing import Any, Callable, Optional, Union
 
 import dill
 import numpy as np
@@ -28,63 +28,31 @@ from alibi_detect.saving.validate import validate_config
 
 logger = logging.getLogger(__name__)
 
-REQUIRES_BACKEND = [
-    'ClassifierDrift',
-    'ClassifierUncertaintyDrift',
-    'LearnedKernelDrift',
-    'LSDDDrift',
-    'MMDDrift',
-    'RegressorUncertaintyDrift',
-    'SpotTheDiffDrift'
-]
 
 # Fields to resolve in resolve_config ("resolve" meaning either load local artefact or resolve @registry, conversion to
 # tuple, np.ndarray and np.dtype are dealt with separately).
+# Note: For fields consisting of nested dicts, they must be listed in order from deepest to shallowest, so that the
+# deepest fields are resolved first. e.g. 'preprocess_fn.src' must be resolved before 'preprocess_fn'.
 FIELDS_TO_RESOLVE = [
-    ['preprocess_fn'],
     ['preprocess_fn', 'src'],
     ['preprocess_fn', 'model'],
     ['preprocess_fn', 'embedding'],
     ['preprocess_fn', 'tokenizer'],
     ['preprocess_fn', 'preprocess_batch_fn'],
+    ['preprocess_fn'],
     ['x_ref'],
     ['c_ref'],
     ['model'],
     ['optimizer'],
     ['reg_loss_fn'],
-    ['kernel'],
-    ['x_kernel'],
-    ['c_kernel'],
     ['dataset'],
     ['kernel', 'src'],
     ['kernel', 'proj'],
     ['kernel', 'kernel_a', 'src'],
     ['kernel', 'kernel_b', 'src'],
-    ['initial_diffs']
-]
-
-# Directories to amend before resolving config (fields to prepend config file dir to).
-# e.g. in a `config.toml` stored in `filepath='my_detector'` we might have `preprocess_fn.model.src = 'model/'.
-# Before resolution, we need to update `preprocess_fn.model.src` to be relative to runtime dir i.e. 'my_detector/model/'
-# Note some fields in FIELDS_TO_RESOLVE are missing from DIR_FIELDS, since some fields cannot be spec'd as directories.
-# e.g. embedding cannot be spec'd directly as a .dill file reference, it must be an EmbeddingConfig.
-DIR_FIELDS = [
-    ['preprocess_fn'], ['preprocess_fn', 'src'],
-    ['preprocess_fn', 'model', 'src'],
-    ['preprocess_fn', 'embedding', 'src'],
-    ['preprocess_fn', 'tokenizer', 'src'],
-    ['preprocess_fn', 'preprocess_batch_fn'],
-    ['x_ref'],
-    ['c_ref'],
-    ['model', 'src'],
-    ['kernel'], ['kernel', 'src'],
-    ['x_kernel'], ['x_kernel', 'src'],
-    ['c_kernel'], ['c_kernel', 'src'],
-    ['optimizer'],
-    ['reg_loss_fn'],
-    ['kernel', 'proj', 'src'],
-    ['kernel', 'kernel_a', 'src'],
-    ['kernel', 'kernel_b', 'src'],
+    ['kernel'],
+    ['x_kernel'],
+    ['c_kernel'],
     ['initial_diffs']
 ]
 
@@ -163,59 +131,21 @@ def _load_detector_config(filepath: Union[str, os.PathLike]) -> Detector:
     if backend.lower() != 'tensorflow':
         raise NotImplementedError('Loading detectors with PyTorch or sklearn backend is not yet supported.')
 
-    # Get x_ref # TODO - remove
-    x_ref = cfg.pop('x_ref')
-
-    # Get kernel # TODO - need to x_kernel and c_kernel - but remove anyway?
-    kernel = cfg.pop('kernel', None)  # Don't need to check if None as kernel=None defaults to GaussianRBF
-    if isinstance(kernel, dict):
-        logger.info('Loading kernel.')
-        kernel = _load_kernel_config(kernel, backend, cfg['device'])
-
-    # Get preprocess_fn
-    preprocess_fn = cfg.pop('preprocess_fn')
-    if isinstance(preprocess_fn, dict):
-        logger.info('Loading preprocess_fn.')
-        preprocess_fn = _load_preprocess_config(preprocess_fn, backend=backend)
-
-    # TODO - Once we've validated config and fully resolved the model/kernel configs etc, can we not just do
-    #  something like detector.from_config()?
-
-    # Get model
-    model = cfg.pop('model', None)
-
-    # Init detector
+    # Init detector from config
     logger.info('Instantiating detector.')
-    detector = _init_detector(x_ref, cfg, preprocess_fn=preprocess_fn, model=model, kernel=kernel, backend=backend)
-
+    detector = _init_detector(cfg)
     logger.info('Finished loading detector.')
     return detector
 
 
-def _init_detector(x_ref: Union[np.ndarray, list],
-                   cfg: dict,
-                   preprocess_fn: Optional[Callable] = None,
-                   model: Optional[Callable] = None,
-                   kernel: Optional[Callable] = None,
-                   backend: Optional[str] = 'tensorflow') -> Detector:
+def _init_detector(cfg: dict) -> Detector:
     """
-    Instantiates a detector (x_ref, preprocess_fn, model, etc in the dict should be fully
-    resolved runtime objects).
+    Instantiates a detector from a fully resolved config dictionary.
 
     Parameters
     ----------
-    x_ref
-        The reference data.
     cfg
-        The detectors config dict (with x_ref, model etc already pop'ed from it, such that what remains are the kwargs).
-    preprocess_fn
-        Optional preprocessing function.
-    model
-        Optional model (e.g. for ClassifierDrift).
-    kernel
-        Optional kernel (e.g. for MMDDrift).
-    backend
-        The backend.
+        The detector's resolved config dictionary.
 
     Returns
     -------
@@ -224,28 +154,15 @@ def _init_detector(x_ref: Union[np.ndarray, list],
     detector_name = cfg.pop('name')
     version_warning = cfg.pop('meta', None)['version_warning']  # meta is pop'd as don't want to pass as kwarg
 
-    # Process args
-    args = [x_ref]  # type: List[Any]
-    if model is not None:
-        args.append(model)
-
-    # Process kwargs (cfg should just be kwargs by this point)
-    if detector_name in REQUIRES_BACKEND:
-        cfg.update({'backend': backend})
-    if preprocess_fn is not None:
-        cfg.update({'preprocess_fn': preprocess_fn})
-    if kernel is not None:
-        cfg.update({'kernel': kernel})
-
     # Instantiate the detector
     klass = getattr(import_module('alibi_detect.cd'), detector_name)
-    detector = klass(*args, **cfg)
+    detector = klass.from_config(cfg)
     detector.meta['version_warning'] = version_warning  # Insert here to avoid needing to add as kwarg
     logger.info('Instantiated drift detector {}'.format(detector_name))
     return detector
 
 
-def _load_kernel_config(cfg: dict, backend: str = 'tensorflow', device: Optional[str] = None) -> Callable:
+def _load_kernel_config(cfg: dict, backend: str = 'tensorflow') -> Callable:
     """
     Loads a kernel from a kernel config dict.
 
@@ -534,22 +451,17 @@ def resolve_config(cfg: dict, config_dir: Optional[Path]) -> dict:
     """
     # Before main resolution, update filepaths relative to config file
     if config_dir is not None:
-        for key in DIR_FIELDS:
-            src = _get_nested_value(cfg, key)
-            if isinstance(src, str):
-                src = config_dir.joinpath(Path(src))
-                if src.is_file() or src.is_dir():
-                    _set_nested_value(cfg, key, str(src))
+        _prepend_cfg_filepaths(cfg, config_dir)
 
     # Resolve filepaths (load files) and resolve function/object registries
     for key in FIELDS_TO_RESOLVE:
         logger.info('Resolving config field: {}.'.format(key))
-
         src = _get_nested_value(cfg, key)
-
         obj = None
-        # Resolve runtime registered function/object
+
+        # Resolve string references to registered objects and filepaths
         if isinstance(src, str):
+            # Resolve registry references
             if src.startswith('@'):
                 src = src[1:]
                 if src in registry.get_all():
@@ -558,16 +470,12 @@ def resolve_config(cfg: dict, config_dir: Optional[Path]) -> dict:
                     raise ValueError("Can't find {} in the custom function registry".format(src))
                 logger.info('Successfully resolved registry entry {}'.format(src))
 
-            # Load dill or numpy file
+            # Resolve dill or numpy file references
             elif Path(src).is_file():
                 if Path(src).suffix == '.dill':
                     obj = dill.load(open(src, 'rb'))
                 if Path(src).suffix == '.npy':
                     obj = np.load(src)
-
-#            # Pytorch device  # TODO
-#            elif key[-1] == 'device':
-#                obj = set_device(src)
 
         # Resolve artefact dicts (dicts which have a resolved config schema, such as PreprocessConfig and KernelConfig,
         # are not resolved into objects here, since they are yet to undergo a further validation step). Instead, only
@@ -582,12 +490,16 @@ def resolve_config(cfg: dict, config_dir: Optional[Path]) -> dict:
                 obj = _load_tokenizer_config(src)
             elif key[-1] == 'optimizer':
                 obj = _load_optimizer_config(src, backend)
+            elif key[-1] == 'preprocess_fn':
+                obj = _load_preprocess_config(src, backend)
+            elif key[-1] in ('kernel', 'x_kernel', 'c_kernel'):
+                obj = _load_kernel_config(src, backend)
 
         # Put the resolved function into the cfg dict
         if obj is not None:
             _set_nested_value(cfg, key, obj)
 
-    # Convert selected str's to required dtype's
+    # Convert selected str's to required dtype's (all other type coercion is performed by pydantic later)
     _set_dtypes(cfg)
 
     return cfg
@@ -616,3 +528,27 @@ def _replace(cfg: dict, orig: Optional[str], new: Optional[str]) -> dict:
         elif isinstance(v, dict):
             _replace(v, orig, new)
     return cfg
+
+
+def _prepend_cfg_filepaths(cfg: dict, prepend_dir: Path):
+    """
+    Recursively traverse through a nested dictionary and prepend a directory to any filepaths.
+
+    Parameters
+    ----------
+    cfg
+        The dictionary.
+    prepend_dir
+        The filepath to prepend to any filepaths in the dictionary.
+
+    Returns
+    -------
+    The updated config dictionary.
+    """
+    for k, v in cfg.items():
+        if isinstance(v, str):
+            v = prepend_dir.joinpath(Path(v))
+            if v.is_file() or v.is_dir():  # Update if prepending config_dir made config value a real filepath
+                cfg[k] = str(v)
+        elif isinstance(v, dict):
+            _prepend_cfg_filepaths(v, prepend_dir)

@@ -759,10 +759,6 @@ class BaseMMDDrift(BaseDetector, DriftConfigMixin):
 
         return cfg
 
-    @classmethod
-    @abstractmethod
-    def from_config(cls, config: dict):  # TODO Tighten config type?
-        pass
 
 class BaseLSDDDrift(BaseDetector, DriftConfigMixin):
     # TODO: TBD: this is only created when _configure_normalization is called from backend-specific classes,

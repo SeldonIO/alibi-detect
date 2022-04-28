@@ -54,7 +54,7 @@ class GaussianRBF(tf.keras.Model):
             Whether or not to track gradients w.r.t. sigma to allow it to be trained.
         """
         super().__init__()
-        self.config = {'sigma': sigma, 'trainable': trainable}
+        self.config = {'sigma': sigma, 'trainable': trainable, 'init_sigma_fn': init_sigma_fn}
         if sigma is None:
             self.log_sigma = tf.Variable(np.empty(1), dtype=tf.keras.backend.floatx(), trainable=trainable)
             self.init_required = True

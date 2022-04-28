@@ -172,3 +172,16 @@ class ContextMMDDrift:
         The detector's configuration dictionary.
         """
         return self._detector.get_config()
+
+    @classmethod
+    def from_config(cls, config: dict):
+        """
+        Instantiate a :class:`~alibi_detect.cd.ContextMMDDrift` detector from a fully resolved (and validated) config
+        dictionary.
+
+        Parameters
+        ----------
+        config
+            A config dictionary matching the :class:`~alibi_detect.saving.schemas.ContextMMDDriftConfig` schema.
+        """
+        return cls(**config)

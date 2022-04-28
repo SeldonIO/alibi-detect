@@ -24,6 +24,7 @@ dill.extend(use_dill=False)
 logger = logging.getLogger(__name__)
 
 X_REF_FILENAME = 'x_ref.npy'
+C_REF_FILENAME = 'c_ref.npy'
 
 
 def save_detector(detector: Detector, filepath: Union[str, os.PathLike], legacy: bool = False) -> None:
@@ -143,6 +144,13 @@ def _save_detector_config(detector: Detector, filepath: Union[str, os.PathLike])
     np.save(str(save_path), cfg['x_ref'])
     cfg.update({'x_ref': X_REF_FILENAME})
 
+    # Save c_ref
+    c_ref = cfg.get('c_ref', None)
+    if c_ref is not None:
+        save_path = filepath.joinpath(C_REF_FILENAME)
+        np.save(str(save_path), cfg['c_ref'])
+        cfg.update({'c_ref': C_REF_FILENAME})
+
     # Save preprocess_fn
     preprocess_fn = cfg.get('preprocess_fn', None)
     if preprocess_fn is not None:
@@ -150,15 +158,16 @@ def _save_detector_config(detector: Detector, filepath: Union[str, os.PathLike])
         preprocess_cfg = _save_preprocess_config(preprocess_fn, backend, cfg['input_shape'], filepath)
         cfg['preprocess_fn'] = preprocess_cfg
 
-    # Serialize kernel
-    kernel = cfg.get('kernel', None)
-    if kernel is not None:
-        device = getattr(detector, 'device', None)
-        device = device.type if device is not None else None
-        cfg['kernel'] = _save_kernel_config(kernel, filepath, device=device)
-        if isinstance(kernel, dict):  # serialise proj from DeepKernel
-            cfg['kernel']['proj'], _ = _save_model_config(kernel['proj'], base_path=filepath,
-                                                          input_shape=cfg['input_shape'], backend=backend)
+    # Serialize kernels
+    for kernel_str in ('kernel', 'x_kernel', 'c_kernel'):
+        kernel = cfg.get(kernel_str, None)
+        if kernel is not None:
+            device = getattr(detector, 'device', None)
+            device = device.type if device is not None else None
+            cfg[kernel_str] = _save_kernel_config(kernel, filepath, device=device)
+            if isinstance(kernel, dict):  # serialise proj from DeepKernel
+                cfg[kernel_str]['proj'], _ = _save_model_config(kernel['proj'], base_path=filepath,
+                                                                input_shape=cfg['input_shape'], backend=backend)
 
     # ClassifierDrift and SpotTheDiffDrift specific artefacts.
     # Serialize detector model
@@ -463,7 +472,7 @@ def _save_kernel_config(kernel: Callable,
             'eps': kernel['eps']
         })
 
-    elif callable(kernel):  # generic callable
+    elif callable(kernel):  # generic callable # TODO - NOT a generic callable. Need to change to tf.keras.Model!
         logger.info('Saving kernel to {}.'.format(filepath.joinpath(filename)))
         with open(filepath.joinpath(filename), 'wb') as f:
             dill.dump(kernel, f)

@@ -136,28 +136,11 @@ class MMDDriftTF(BaseMMDDrift):
         """
         cfg = super().get_config()
 
-        # kernel logic
-        if isinstance(self.kernel, GaussianRBF):
-            # If default kernel, we don't need to spec
-            sigma = self.kernel.sigma.numpy() if not self.infer_sigma else None
-            kernel = None
-        else:
-            # Else if non-default kernel, we need to spec, but sigma is irrelevant
-            sigma = None
-            kernel = self.kernel
-
         # Detector kwargs
         kwargs = {
-            'kernel': kernel,
-            'sigma': sigma
+            'kernel': self.kernel.get_config(),
+            'sigma': self.kernel.sigma.numpy()
         }
         cfg.update(kwargs)
 
         return cfg
-
-    @classmethod
-    def from_config(cls, config: dict):  # TODO Tighten config type?
-        """
-        TODO
-        """
-        return cls(**config)

@@ -261,55 +261,6 @@ class PreprocessConfig(CustomBaseModel):
     """
 
 
-class PreprocessConfigResolved(CustomBaseModel):
-    """
-    Resolved schema for drift detector preprocess functions, to be passed to a detector's `preprocess_fn` kwarg.
-    Once loaded, the function is wrapped in a :func:`~functools.partial`, to be evaluated within the detector.
-
-    If `src` is a generic Python function, the dictionary specified by `kwargs` is passed to it. Otherwise,
-    if `src` is a :func:`~alibi_detect.cd.tensorflow.preprocess.preprocess_drift` function, all fields
-    (except `kwargs`) are passed to it.
-    """
-    src: Callable
-    "The preprocessing function."
-
-    # Below kwargs are only passed if src == @preprocess_drift
-    model: Optional[SupportedModels_types] = None
-    "Model used for preprocessing."
-    embedding: Optional[TransformerEmbedding] = None
-    """
-    A text embedding model. If `model=None`, the `embedding` is passed to
-    :func:`~alibi_detect.cd.tensorflow.preprocess.preprocess_drift` as `model`. Otherwise, the `model` is chained to
-    the output of the `embedding` as an additional preprocessing step.')
-    """
-    tokenizer: Optional[PreTrainedTokenizerBase] = None
-    "Optional tokenizer for text drift."
-    device: Optional[Any] = None
-    """
-    Device type used. The default `None` tries to use the GPU and falls back on CPU if needed. Only relevant if
-    function is :func:`~alibi_detect.cd.pytorch.preprocess.preprocess_drift`.
-    """
-    # TODO: Set as Any and None for now. Clarify when pytorch implemented
-    preprocess_batch_fn: Optional[Callable] = None
-    """
-    Optional batch preprocessing function. For example to convert a list of objects to a batch which can be processed
-    by the `model`.
-    """
-    max_len: Optional[int] = None
-    "Optional max token length for text drift."
-    batch_size: Optional[int] = int(1e10)
-    "Batch size used during prediction."
-    dtype: Optional[Union['tf.DType', np.dtype, type]] = None  # TODO - add pytorch
-    "Model output type, e.g. `tf.float32`"
-
-    # Additional kwargs
-    kwargs: dict = {}
-    """
-    Dictionary of keyword arguments to be passed to the function specified by `src`. Only used if `src` specifies a
-    generic Python function.
-    """
-
-
 class KernelConfig(CustomBaseModel):
     """
     Unresolved schema for kernels, to be passed to a detector's `kernel` kwarg.
@@ -348,31 +299,6 @@ class KernelConfig(CustomBaseModel):
     Bandwidth used for the kernel. Needn’t be specified if being inferred or trained. Can pass multiple values to eval
     kernel with and then average.
     """
-    trainable: bool = False
-    "Whether or not to track gradients w.r.t. sigma to allow it to be trained."
-
-    # Additional kwargs
-    kwargs: dict = {}
-    "Dictionary of keyword arguments to pass to the kernel."
-
-
-class KernelConfigResolved(CustomBaseModel):
-    """
-    Resolved schema for kernels, to be passed to a detector's `kernel` kwarg.
-
-    If `src` is a :class:`~alibi_detect.utils.tensorflow.GaussianRBF` kernel, the `sigma` and `trainable` fields
-    are passed to it. Otherwise, the `kwargs` field is passed.
-    """
-    src: Callable
-    "The kernel."
-
-    # Below kwargs are only passed if kernel == @GaussianRBF
-    sigma: Optional[NDArray[float]] = None
-    """
-    Bandwidth used for the kernel. Needn’t be specified if being inferred or trained. Can pass multiple values to eval
-    kernel with and then average.
-    """
-
     trainable: bool = False
     "Whether or not to track gradients w.r.t. sigma to allow it to be trained."
 
@@ -430,27 +356,6 @@ class DeepKernelConfig(CustomBaseModel):
     """
 
 
-class DeepKernelConfigResolved(CustomBaseModel):
-    """
-    Resolved schema for :class:`~alibi_detect.utils.tensorflow.kernels.DeepKernel`'s.
-    """
-    proj: SupportedModels_types
-    """
-    The projection to be applied to the inputs before applying `kernel_a`. This should be a Tensorflow or PyTorch model.
-    """
-    kernel_a: Union[Callable, KernelConfigResolved]
-    "The kernel to apply to the projected inputs."
-    kernel_b: Optional[Union[Callable, KernelConfigResolved]]
-    "The kernel to apply to the raw inputs. Set to None in order to use only the deep component (i.e. eps=0)."
-    # TODO - would be good to set kernel defaults to GaussianRBF(trainable=True). But not clear
-    #  how to do this and handle TensorFlow vs PyTorch (especially w/ optional deps)
-    eps: Union[float, str] = 'trainable'
-    """
-    The proportion (in [0,1]) of weight to assign to the kernel applied to raw inputs. This can be either specified or
-    set to `'trainable'`. Only relevant is `kernel_b` is not `None`.
-    """
-
-
 class DriftDetectorConfig(DetectorConfig):
     """
     Unresolved base schema for drift detectors.
@@ -490,7 +395,7 @@ class DriftDetectorConfigResolved(DetectorConfig):
     Whether or not the reference data x_ref has already been preprocessed. If True, the reference data will be skipped
     and preprocessing will only be applied to the test data passed to predict.
     """
-    preprocess_fn: Optional[Union[Callable, PreprocessConfigResolved]] = None
+    preprocess_fn: Optional[Callable] = None
     "Function to preprocess the data before computing the data drift metrics."
     input_shape: Optional[tuple] = None
     "Optionally pass the shape of the input data. Used when saving detectors."
@@ -676,7 +581,7 @@ class MMDDriftConfigResolved(DriftDetectorConfigResolved):
     """
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
-    kernel: Optional[Union[Callable, KernelConfigResolved]] = None
+    kernel: Optional[Callable] = None
     sigma: Optional[NDArray[float]] = None
     configure_kernel_from_x_ref: bool = True
     n_permutations: int = 100
@@ -828,7 +733,7 @@ class SpotTheDiffDriftConfigResolved(DriftDetectorConfigResolved):
     verbose: int = 0
     train_kwargs: Optional[dict] = None
     dataset: Optional[Callable] = None
-    kernel: Optional[Union[Callable, KernelConfigResolved]] = None
+    kernel: Optional[Callable] = None
     n_diffs: int = 1
     initial_diffs: Optional[np.ndarray] = None
     l1_reg: float = 0.01
@@ -872,7 +777,7 @@ class LearnedKernelDriftConfigResolved(DriftDetectorConfigResolved):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.LearnedKernelDrift` documentation for a description of each field.
     """
-    kernel: Optional[Union[Callable, DeepKernelConfigResolved]] = None
+    kernel: Optional[Callable] = None
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
     n_permutations: int = 100
@@ -924,8 +829,8 @@ class ContextMMDDriftConfigResolved(DriftDetectorConfigResolved):
     c_ref: np.ndarray
     preprocess_at_init: bool = True
     update_ref: Optional[Dict[str, int]] = None
-    x_kernel: Optional[Union[Callable, KernelConfigResolved]] = None
-    c_kernel: Optional[Union[Callable, KernelConfigResolved]] = None
+    x_kernel: Optional[Callable] = None
+    c_kernel: Optional[Callable] = None
     n_permutations: int = 100
     prop_c_held: float = 0.25,
     n_folds: int = 5,
