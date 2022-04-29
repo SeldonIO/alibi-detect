@@ -220,7 +220,7 @@ def write_config(cfg: dict, filepath: Union[str, os.PathLike]):
     cfg = _replace(cfg, None, "None")  # Note: None replaced with "None" as None/null not valid TOML
     logger.info('Writing config to {}'.format(filepath.joinpath('config.toml')))
     with open(filepath.joinpath('config.toml'), 'w') as f:
-        toml.dump(cfg, f, encoder=toml.TomlNumpyEncoder())  # type: ignore[call-arg, attr-defined]
+        toml.dump(cfg, f, encoder=toml.TomlNumpyEncoder())  # type: ignore[misc]
 
 
 def _save_preprocess_config(preprocess_fn: Callable,
@@ -422,7 +422,7 @@ def _save_tokenizer_config(tokenizer: PreTrainedTokenizerBase,
     return cfg_token
 
 
-def _save_kernel_config(kernel: Union[Callable, dict],  # TODO: once get_config moved, remove dict
+def _save_kernel_config(kernel: Callable,
                         base_path: Path,
                         local_path: Path = Path('.')) -> dict:
     """
@@ -442,8 +442,8 @@ def _save_kernel_config(kernel: Union[Callable, dict],  # TODO: once get_config 
     -------
     The kernel config dictionary.
     """
-    # if already a DeepKernel config dict, save kernel_a and kernel_b
-    if isinstance(kernel, dict):  # DeepKernel config dict  # TODO:  run get_config here instead of in LearnedKernel
+    # if a DeepKernel
+    if hasattr(kernel, 'proj'):
         kernel_a = _save_kernel_config(kernel['kernel_a'], base_path, Path('kernel_a'))
         kernel_b = kernel.get('kernel_b')
         if kernel_b is not None:
@@ -455,7 +455,7 @@ def _save_kernel_config(kernel: Union[Callable, dict],  # TODO: once get_config 
             'eps': kernel['eps']
         }
 
-    # If still a callable, serialize the class to disk and get config
+    # If any other kernel, serialize the class to disk and get config
     else:
         if hasattr(kernel, 'get_config'):
             cfg_kernel = kernel.get_config()

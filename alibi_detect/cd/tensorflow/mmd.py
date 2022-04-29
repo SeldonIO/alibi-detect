@@ -143,5 +143,4 @@ class MMDDriftTF(BaseMMDDrift):
         }
         cfg.update(kwargs)
 
-
         return cfg

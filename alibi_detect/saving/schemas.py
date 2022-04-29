@@ -14,17 +14,15 @@ The `resolved` kwarg of :func:`~alibi_detect.utils.validate.validate_config` det
     detector's api docs for a full description of each arg/kwarg.
 """
 
-from typing import Any, Callable, Dict, List, Optional, Type, Union
+from typing import Callable, Dict, List, Optional, Type, Union
 
 # TODO - conditional checks depending on backend etc
 # TODO - consider validating output of get_config calls
 import numpy as np
 from pydantic import BaseModel
-from transformers import PreTrainedTokenizerBase
 
 from alibi_detect.cd.tensorflow import UAE as UAE_tf
 from alibi_detect.cd.tensorflow import HiddenOutput as HiddenOutput_tf
-from alibi_detect.models.tensorflow import TransformerEmbedding
 from alibi_detect.utils._types import Literal, NDArray
 from alibi_detect.utils.frameworks import has_tensorflow
 from alibi_detect.version import __config_spec__, __version__
@@ -818,9 +816,9 @@ class ContextMMDDriftConfig(DriftDetectorConfig):
     x_kernel: Optional[Union[str, KernelConfig]] = None
     c_kernel: Optional[Union[str, KernelConfig]] = None
     n_permutations: int = 100
-    prop_c_held: float = 0.25,
-    n_folds: int = 5,
-    batch_size: Optional[int] = 256,
+    prop_c_held: float = 0.25
+    n_folds: int = 5
+    batch_size: Optional[int] = 256
     verbose: bool = False
     device: Optional[Literal['cpu', 'cuda']] = None
 
@@ -839,9 +837,9 @@ class ContextMMDDriftConfigResolved(DriftDetectorConfigResolved):
     x_kernel: Optional[Callable] = None
     c_kernel: Optional[Callable] = None
     n_permutations: int = 100
-    prop_c_held: float = 0.25,
-    n_folds: int = 5,
-    batch_size: Optional[int] = 256,
+    prop_c_held: float = 0.25
+    n_folds: int = 5
+    batch_size: Optional[int] = 256
     verbose: bool = False
     device: Optional[Literal['cpu', 'cuda']] = None
 

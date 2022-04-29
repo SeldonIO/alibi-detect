@@ -298,4 +298,3 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
         The detector's configuration dictionary.
         """
         raise NotImplementedError("get_config not yet implemented for `ClassifierDrift` with sklearn backend.")
-

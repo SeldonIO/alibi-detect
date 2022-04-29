@@ -18,7 +18,6 @@ import scipy
 import tensorflow as tf
 import torch
 
-import alibi_detect.saving.registry
 from datasets import (BinData, CategoricalData, ContinuousData, MixedData,
                       TextData)
 from packaging import version
@@ -576,6 +575,7 @@ def test_save_learnedkernel(data, deep_kernel, preprocess_custom, backend, tmp_p
         assert isinstance(cd_load._detector.kernel, DeepKernel_pt)
 
 # TODO - checks for modeluncertainty detectors - once save/load implemented for them
+
 
 @parametrize('kernel', [
         None,  # detector's default kernels
