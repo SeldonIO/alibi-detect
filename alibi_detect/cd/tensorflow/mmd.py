@@ -138,9 +138,10 @@ class MMDDriftTF(BaseMMDDrift):
 
         # Detector kwargs
         kwargs = {
-            'kernel': self.kernel.get_config(),
+            'kernel': self.kernel,
             'sigma': self.kernel.sigma.numpy()
         }
         cfg.update(kwargs)
+
 
         return cfg

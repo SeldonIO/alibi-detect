@@ -265,8 +265,8 @@ class KernelConfig(CustomBaseModel):
     """
     Unresolved schema for kernels, to be passed to a detector's `kernel` kwarg.
 
-    If `src` specifies a :class:`~alibi_detect.utils.tensorflow.GaussianRBF` kernel, the `sigma` and `trainable` fields
-    are passed to it. Otherwise, the `kwargs` field is passed.
+    If `src` specifies a :class:`~alibi_detect.utils.tensorflow.GaussianRBF` kernel, the `sigma`, `trainable` and
+    `init_sigma_fn` fields are passed to it. Otherwise, the `kwargs` field is passed.
 
     Examples
     --------
@@ -301,6 +301,13 @@ class KernelConfig(CustomBaseModel):
     """
     trainable: bool = False
     "Whether or not to track gradients w.r.t. sigma to allow it to be trained."
+
+    init_sigma_fn: Optional[str] = None
+    """
+    Function used to compute the bandwidth `sigma`. Used when `sigma` is to be inferred. The function's signature
+    should match :py:func:`~alibi_detect.utils.tensorflow.kernels.sigma_median`. If `None`, it is set to
+    :func:`~alibi_detect.utils.tensorflow.kernels.sigma_median`.
+    """
 
     # Additional kwargs
     kwargs: dict = {}

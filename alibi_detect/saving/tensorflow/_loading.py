@@ -147,11 +147,12 @@ def load_kernel_config(cfg: dict) -> Callable:
     cfg
         A kernel config dict. (see pydantic schema's).
 
+    print(cfg_kernel)
     Returns
     -------
     The kernel.
     """
-    if 'src' in cfg:  # Standard kernel config
+    if 'src' in cfg:  # Standard kernel config  # TODO - could move all this to kernel.from_config()
         kernel = cfg['src']
         sigma = cfg['sigma']
         if callable(kernel):

@@ -33,7 +33,7 @@ class GaussianRBF(tf.keras.Model):
     def __init__(
             self,
             sigma: Optional[tf.Tensor] = None,
-            init_sigma_fn: Callable = sigma_median,
+            init_sigma_fn: Optional[Callable] = None,
             trainable: bool = False
     ) -> None:
         """
@@ -49,11 +49,13 @@ class GaussianRBF(tf.keras.Model):
         init_sigma_fn
             Function used to compute the bandwidth `sigma`. Used when `sigma` is to be inferred.
             The function's signature should match :py:func:`~alibi_detect.utils.tensorflow.kernels.sigma_median`,
-            meaning that it should take in the tensors `x`, `y` and `dist` and return `sigma`.
+            meaning that it should take in the tensors `x`, `y` and `dist` and return `sigma`. If `None`, it is set to
+            :func:`~alibi_detect.utils.tensorflow.kernels.sigma_median`.
         trainable
             Whether or not to track gradients w.r.t. sigma to allow it to be trained.
         """
         super().__init__()
+        init_sigma_fn = sigma_median if init_sigma_fn is None else init_sigma_fn
         self.config = {'sigma': sigma, 'trainable': trainable, 'init_sigma_fn': init_sigma_fn}
         if sigma is None:
             self.log_sigma = tf.Variable(np.empty(1), dtype=tf.keras.backend.floatx(), trainable=trainable)

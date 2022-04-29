@@ -3,6 +3,7 @@ import numpy as np
 from typing import Callable, Dict, Optional, Union, Tuple
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
 from alibi_detect.utils.warnings import deprecated_alias
+# from alibi_detect.saving.validate import validate_config
 
 if has_pytorch:
     from alibi_detect.cd.pytorch.mmd import MMDDriftTorch
@@ -148,7 +149,9 @@ class MMDDrift:
         -------
         The detector's configuration dictionary.
         """
-        return self._detector.get_config()
+        cfg = self._detector.get_config()
+#        validate_config(cfg, resolved=True)  # TODO - need to fix circular dependency by changing Detector in loading
+        return cfg
 
     @classmethod
     def from_config(cls, config: dict):

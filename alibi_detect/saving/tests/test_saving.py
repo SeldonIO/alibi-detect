@@ -17,6 +17,8 @@ import pytest
 import scipy
 import tensorflow as tf
 import torch
+
+import alibi_detect.saving.registry
 from datasets import (BinData, CategoricalData, ContinuousData, MixedData,
                       TextData)
 from packaging import version
@@ -45,8 +47,8 @@ from alibi_detect.saving.loading import (_get_nested_value,  # type: ignore
                                          _load_model_config,
                                          _load_optimizer_config,
                                          _load_preprocess_config, _replace,
-                                         _set_dtypes, _set_nested_value)
-from alibi_detect.saving.saving import _serialize_function  # type: ignore
+                                         _set_dtypes, _set_nested_value, _prepend_cfg_filepaths)
+from alibi_detect.saving.saving import _serialize_object  # type: ignore
 from alibi_detect.saving.saving import (_path2str, _save_kernel_config,
                                         _save_model_config,
                                         _save_preprocess_config)
@@ -671,34 +673,43 @@ def test_version_warning(data, tmp_path):
 
 
 @parametrize('kernel', [
-        {'sigma': 0.5, 'trainable': False},
-        {'sigma': [0.5, 0.8], 'trainable': False},
-        {'sigma': None, 'trainable': True}
+        {'sigma': 0.5, 'trainable': False, 'init_sigma_fn': None},
+        {'sigma': [0.5, 0.8], 'trainable': False, 'init_sigma_fn': None},
+        {'sigma': None, 'trainable': True, 'init_sigma_fn': None},
     ], indirect=True
 )
-def test_save_kernel(kernel, backend, tmp_path):
+@parametrize('use_register', [True, False])
+def test_save_kernel(kernel, use_register, backend, tmp_path):
     """
     Unit test for _save/_load_kernel_config, when kernel is a GaussianRBF kernel.
 
     Kernels are saved and then loaded, with assertions to check equivalence.
     """
+    # If use_register False, overwrite GaussianRBF's from object registry to force kernel to be saved to disk
+    if not use_register:
+        registry.register('utils.' + backend + '.kernels.GaussianRBF', func="NULL")
+
     # Save kernel to config
     filepath = tmp_path
-    filename = 'mykernel.dill'
-    cfg_kernel = _save_kernel_config(kernel, filepath, device=DEVICE, filename=filename)
+    filename = 'mykernel'
+    cfg_kernel = _save_kernel_config(kernel, filepath, filename)
     KernelConfig(**cfg_kernel)  # Passing through the pydantic validator gives a degree of testing
-    assert cfg_kernel['src'] == '@utils.' + backend + '.kernels.GaussianRBF'
+    if use_register:
+        assert cfg_kernel['src'] == '@utils.' + backend + '.kernels.GaussianRBF'
+    else:
+        assert Path(cfg_kernel['src']).suffix == '.dill'
     assert cfg_kernel['trainable'] == kernel.trainable
     if not kernel.trainable:
         np.testing.assert_almost_equal(cfg_kernel['sigma'], kernel.sigma, 6)
 
-    # Resolve and load config
-    cfg = {'kernel': cfg_kernel}
-    cfg_kernel = _path2str(resolve_config(cfg, tmp_path)['kernel'])
-    kernel_loaded = _load_kernel_config(cfg_kernel, backend=backend, device=DEVICE)
+    # Resolve and load config (_load_kernel_config is called within resolve_config)
+    cfg = {'kernel': cfg_kernel, 'backend': backend}
+    _prepend_cfg_filepaths(cfg, tmp_path)
+    kernel_loaded = resolve_config(cfg, tmp_path)['kernel']
     assert type(kernel_loaded) == type(kernel)
-    np.testing.assert_array_equal(np.array(kernel_loaded.sigma), np.array(cfg_kernel['sigma']))
-    assert kernel_loaded.trainable == cfg_kernel['trainable']
+    np.testing.assert_array_almost_equal(np.array(kernel_loaded.sigma), np.array(kernel.sigma), -5)
+    assert kernel_loaded.trainable == kernel.trainable
+    assert kernel_loaded.init_sigma_fn == kernel.init_sigma_fn
 
 
 def test_save_deepkernel(deep_kernel, kernel_proj_dim, backend, tmp_path):
@@ -717,7 +728,7 @@ def test_save_deepkernel(deep_kernel, kernel_proj_dim, backend, tmp_path):
     # Save kernel to config
     filepath = tmp_path
     filename = 'mykernel.dill'
-    cfg_kernel = _save_kernel_config(cfg_kernel, filepath, device=DEVICE, filename=filename)
+    cfg_kernel = _save_kernel_config(cfg_kernel, filepath, filename)
     cfg_kernel['proj'], _ = _save_model_config(cfg_kernel['proj'], base_path=filepath, input_shape=kernel_proj_dim,
                                                backend=backend)
     cfg_kernel = _path2str(cfg_kernel)
@@ -731,7 +742,7 @@ def test_save_deepkernel(deep_kernel, kernel_proj_dim, backend, tmp_path):
     # Resolve and load config
     cfg = {'kernel': cfg_kernel}
     cfg_kernel = resolve_config(cfg, tmp_path)['kernel']
-    kernel_loaded = _load_kernel_config(cfg_kernel, backend=backend, device=DEVICE)
+    kernel_loaded = _load_kernel_config(cfg_kernel, backend=backend)
     assert isinstance(kernel_loaded.proj, (torch.nn.Module, tf.keras.Model))
     np.testing.assert_almost_equal(kernel_loaded.eps, deep_kernel.eps, 4)
     assert kernel_loaded.kernel_a.sigma == deep_kernel.kernel_a.sigma
@@ -935,7 +946,7 @@ def test_serialize_function_partial(function, tmp_path):
     Unit tests for _serialize_function, with a functools.partial function.
     """
     partial_func = partial(function, invert=False, add=1.0)
-    src, kwargs = _serialize_function(partial_func, base_path=tmp_path, local_path=Path('function'))
+    src, kwargs = _serialize_object(partial_func, base_path=tmp_path, local_path=Path('function'))
     filepath = tmp_path.joinpath('function.dill')
     assert filepath.is_file()
     with open(filepath, 'rb') as f:
@@ -950,7 +961,7 @@ def test_serialize_function_registry(tmp_path):
     """
     registry_ref = 'cd.tensorflow.preprocess.preprocess_drift'
     function = registry.get(registry_ref)
-    src, kwargs = _serialize_function(function, base_path=tmp_path)
+    src, kwargs = _serialize_object(function, base_path=tmp_path, local_path=Path('function'))
     assert kwargs == {}
     assert src == '@' + registry_ref
 
