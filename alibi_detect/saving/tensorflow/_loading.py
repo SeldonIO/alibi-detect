@@ -152,33 +152,27 @@ def load_kernel_config(cfg: dict) -> Callable:
     -------
     The kernel.
     """
-    if 'src' in cfg:  # Standard kernel config  # TODO - could move all this to kernel.from_config()
-        kernel = cfg['src']
-        sigma = cfg['sigma']
-        if callable(kernel):
-            if kernel.__name__ == 'GaussianRBF':
-                sigma = tf.convert_to_tensor(sigma) if isinstance(sigma, np.ndarray) else sigma
-                kernel = kernel(sigma=sigma, trainable=cfg['trainable'])
-            else:
-                kwargs = cfg['kwargs']
-                kernel = kernel(**kwargs)
+    if 'src' in cfg:  # Standard kernel config
+        kernel = cfg.pop('src')
+        if hasattr(kernel, 'from_config'):
+            kernel = kernel.from_config(cfg)
 
-    elif 'proj' in cfg:  # DeepKernel config
-        # Kernel a
-        kernel_a = cfg['kernel_a']
-        if kernel_a == GaussianRBF:  # If uninstantiated GaussianRBF (the default, instantiate as trainable)
-            cfg['kernel_a'] = GaussianRBF(trainable=True)
-        elif isinstance(kernel_a, dict):  # If still a kernel config dict, load
-            cfg['kernel_a'] = load_kernel_config(kernel_a)
-        # Kernel b
-        kernel_b = cfg['kernel_b']
-        if kernel_b == GaussianRBF:  # If uninstantiated GaussianRBF (the default, instantiate as trainable)
-            cfg['kernel_b'] = GaussianRBF(trainable=True)
-        elif isinstance(kernel_b, dict):  # If still a kernel config dict, load
-            cfg['kernel_b'] = load_kernel_config(kernel_b)
-
-        # Assemble deep kernel
-        kernel = DeepKernel.from_config(cfg)
+#    elif 'proj' in cfg:  # DeepKernel config
+#        # Kernel a
+#        kernel_a = cfg['kernel_a']
+#        if kernel_a == GaussianRBF:  # If uninstantiated GaussianRBF (the default, instantiate as trainable)
+#            cfg['kernel_a'] = GaussianRBF(trainable=True)
+#        elif isinstance(kernel_a, dict):  # If still a kernel config dict, load
+#            cfg['kernel_a'] = load_kernel_config(kernel_a)
+#        # Kernel b
+#        kernel_b = cfg['kernel_b']
+#        if kernel_b == GaussianRBF:  # If uninstantiated GaussianRBF (the default, instantiate as trainable)
+#            cfg['kernel_b'] = GaussianRBF(trainable=True)
+#        elif isinstance(kernel_b, dict):  # If still a kernel config dict, load
+#            cfg['kernel_b'] = load_kernel_config(kernel_b)
+#
+#        # Assemble deep kernel
+#        kernel = DeepKernel.from_config(cfg)
     else:
         raise ValueError('Unable to process kernel. The kernel config dict must either be a `KernelConfig` with a '
                          '`src` field, or a `DeepkernelConfig` with a `proj` field.)')

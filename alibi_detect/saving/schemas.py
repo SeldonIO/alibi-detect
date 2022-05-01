@@ -54,6 +54,16 @@ class CustomBaseModel(BaseModel):
         extra = 'forbid'  # Forbid extra fields so that we catch misspelled fields
 
 
+# Custom BaseModel with additional kwarg's allowed
+class CustomBaseModelWithKwargs(BaseModel):
+    """
+    Base pydantic model schema. The default pydantic settings are set here.
+    """
+    class Config:
+        arbitrary_types_allowed = True  # since we have np.ndarray's etc
+        extra = 'allow'  # Allow extra fields
+
+
 class MetaData(CustomBaseModel):
     version: str = __version__
     config_spec: str = __config_spec__
@@ -259,12 +269,12 @@ class PreprocessConfig(CustomBaseModel):
     """
 
 
-class KernelConfig(CustomBaseModel):
+class KernelConfig(CustomBaseModelWithKwargs):
     """
     Unresolved schema for kernels, to be passed to a detector's `kernel` kwarg.
 
     If `src` specifies a :class:`~alibi_detect.utils.tensorflow.GaussianRBF` kernel, the `sigma`, `trainable` and
-    `init_sigma_fn` fields are passed to it. Otherwise, the `kwargs` field is passed.
+    `init_sigma_fn` fields are passed to it. Otherwise, all fields except `src` are passed as kwargs.
 
     Examples
     --------
@@ -283,8 +293,6 @@ class KernelConfig(CustomBaseModel):
 
         [kernel]
         src = "mykernel.dill"
-
-        [kernel.kwargs]
         sigma = 0.42
         custom_setting = "xyz"
     """
@@ -306,10 +314,6 @@ class KernelConfig(CustomBaseModel):
     should match :py:func:`~alibi_detect.utils.tensorflow.kernels.sigma_median`. If `None`, it is set to
     :func:`~alibi_detect.utils.tensorflow.kernels.sigma_median`.
     """
-
-    # Additional kwargs
-    kwargs: dict = {}
-    "Dictionary of keyword arguments to pass to the kernel."
 
 
 class DeepKernelConfig(CustomBaseModel):

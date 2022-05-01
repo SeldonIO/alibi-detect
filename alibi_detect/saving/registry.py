@@ -7,13 +7,15 @@ if has_tensorflow:
         preprocess_drift as preprocess_drift_tf
     from alibi_detect.utils.tensorflow.data import TFDataset as TFDataset_tf
     from alibi_detect.utils.tensorflow.kernels import \
-        GaussianRBF as GaussianRBF_tf
+        GaussianRBF as GaussianRBF_tf, sigma_median as sigma_median_tf
+    from alibi_detect.cd.tensorflow.context_aware import _sigma_median_diag as _sigma_median_diag_tf
 
 if has_pytorch:
     from alibi_detect.cd.pytorch import \
         preprocess_drift as preprocess_drift_torch
     from alibi_detect.utils.pytorch.kernels import \
-        GaussianRBF as GaussianRBF_torch
+        GaussianRBF as GaussianRBF_torch, sigma_median as sigma_median_torch
+    from alibi_detect.cd.pytorch.context_aware import _sigma_median_diag as _sigma_median_diag_torch
 
 # Create registry
 registry = catalogue.create("alibi_detect", "registry")
@@ -21,9 +23,13 @@ registry = catalogue.create("alibi_detect", "registry")
 # Register alibi-detect classes/functions
 if has_tensorflow:
     registry.register('utils.tensorflow.kernels.GaussianRBF', func=GaussianRBF_tf)
+    registry.register('utils.tensorflow.kernels.sigma_median', func=sigma_median_tf)
+    registry.register('cd.tensorflow.context_aware._sigma_median_diag', func=_sigma_median_diag_tf)
     registry.register('cd.tensorflow.preprocess.preprocess_drift', func=preprocess_drift_tf)
     registry.register('utils.tensorflow.data.TFDataset', func=TFDataset_tf)
 
 if has_pytorch:
     registry.register('utils.pytorch.kernels.GaussianRBF', func=GaussianRBF_torch)
+    registry.register('utils.pytorch.kernels.sigma_median', func=sigma_median_torch)
+    registry.register('cd.pytorch.context_aware._sigma_median_diag', func=_sigma_median_diag_torch)
     registry.register('utils.pytorch.preprocess.preprocess_drift', func=preprocess_drift_torch)

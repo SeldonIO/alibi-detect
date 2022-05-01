@@ -163,7 +163,7 @@ def _save_detector_config(detector: Detector, filepath: Union[str, os.PathLike])
     for kernel_str in ('kernel', 'x_kernel', 'c_kernel'):
         kernel = cfg.get(kernel_str, None)
         if kernel is not None:
-            cfg[kernel_str] = _save_kernel_config(kernel, filepath)
+            cfg[kernel_str] = _save_kernel_config(kernel, filepath, Path(kernel_str))
             if isinstance(kernel, dict):  # serialise proj from DeepKernel
                 cfg[kernel_str]['proj'], _ = _save_model_config(kernel['proj'], base_path=filepath,
                                                                 input_shape=cfg['input_shape'], backend=backend)
@@ -461,9 +461,7 @@ def _save_kernel_config(kernel: Callable,
             cfg_kernel = kernel.get_config()
         else:
             raise AttributeError("The detector's `kernel` must have a .get_config() method for it to be saved.")
-        cfg_kernel['src'], _ = _serialize_object(kernel.__class__, base_path, Path('kernel/kernel'))
-#        if cfg_kernel['sigma'] is not None:  # TODO: below could be offloaded to kernel .save method
-#            cfg_kernel['sigma'] = cfg_kernel['sigma'].tolist()
+        cfg_kernel['src'], _ = _serialize_object(kernel.__class__, base_path, local_path.joinpath('kernel'))
         cfg_kernel['init_sigma_fn'], _ = _serialize_object(cfg_kernel['init_sigma_fn'], base_path,
-                                                           Path('kernel/init_sigma_fn'))
+                                                           local_path.joinpath('init_sigma_fn'))
     return cfg_kernel

@@ -48,10 +48,15 @@ FIELDS_TO_RESOLVE = [
     ['dataset'],
     ['kernel', 'src'],
     ['kernel', 'proj'],
+    ['kernel', 'init_sigma_fn'],
     ['kernel', 'kernel_a', 'src'],
     ['kernel', 'kernel_b', 'src'],
     ['kernel'],
+    ['x_kernel', 'src'],
+    ['x_kernel', 'init_sigma_fn'],
     ['x_kernel'],
+    ['c_kernel', 'src'],
+    ['c_kernel', 'init_sigma_fn'],
     ['c_kernel'],
     ['initial_diffs']
 ]

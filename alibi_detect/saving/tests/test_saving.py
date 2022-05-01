@@ -20,6 +20,7 @@ import torch
 
 from datasets import (BinData, CategoricalData, ContinuousData, MixedData,
                       TextData)
+from alibi_detect.utils.random import fixed_seed  # Absolute import as likely move this submodule in future
 from packaging import version
 from pytest_cases import (fixture, param_fixture, parametrize,
                           parametrize_with_cases)
@@ -116,9 +117,9 @@ def kernel(request, backend):
     """
     kernel_kwargs = request.param
     if backend == 'tensorflow':
-        kernel = GaussianRBF_tf(**kernel_kwargs) if kernel_kwargs is not None else GaussianRBF_tf
+        kernel = GaussianRBF_tf if kernel_kwargs == "GaussianRBF" else GaussianRBF_tf(**kernel_kwargs)
     elif backend == 'pytorch':
-        kernel = GaussianRBF_pt(**kernel_kwargs) if kernel_kwargs is not None else GaussianRBF_pt
+        kernel = GaussianRBF_pt if kernel_kwargs == "GaussianRBF" else GaussianRBF_pt(**kernel_kwargs)
     else:
         raise ValueError('`backend` not valid.')
     return kernel
@@ -344,8 +345,13 @@ def test_save_cvmdrift(data, preprocess_custom, tmp_path):
                                   cd_load.predict(X_h0)['data']['p_val'])
 
 
+@parametrize('kernel', [
+        "GaussianRBF",  # pass kernel as a class (and specify sigma via sigma kwarg)
+        {'sigma': 0.5, 'trainable': False},  # pass kernel as object
+    ], indirect=True
+)
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
-def test_save_mmddrift(data, preprocess_custom, backend, tmp_path):
+def test_save_mmddrift(data, kernel, preprocess_custom, backend, tmp_path, seed):
     """
     Test MMDDrift on continuous datasets, with UAE as preprocess_fn.
 
@@ -359,9 +365,20 @@ def test_save_mmddrift(data, preprocess_custom, backend, tmp_path):
                   preprocess_fn=preprocess_custom,
                   n_permutations=N_PERMUTATIONS,
                   preprocess_at_init=True,
+                  kernel=kernel,
+                  configure_kernel_from_x_ref=False,
+                  sigma=np.array([0.5])
                   )
+
+    # Make prediction (need to do this so that sigma is inferred and we can compare later)
+    with fixed_seed(seed):
+        preds = cd.predict(X_h0)
+
+    # Save/load and make another prediction
     save_detector(cd, tmp_path)
     cd_load = load_detector(tmp_path)
+    with fixed_seed(seed):
+        preds_load = cd_load.predict(X_h0)
 
     # assertions
     np.testing.assert_array_equal(preprocess_custom(X_ref), cd_load._detector.x_ref)
@@ -371,7 +388,9 @@ def test_save_mmddrift(data, preprocess_custom, backend, tmp_path):
     assert cd_load._detector.p_val == P_VAL
     assert isinstance(cd_load._detector.preprocess_fn, Callable)
     assert cd_load._detector.preprocess_fn.func.__name__ == 'preprocess_drift'
-#    assert cd.predict(X_h0)['data']['p_val'] == cd_load.predict(X_h0)['data']['p_val']  # Not deterministic
+    assert cd._detector.kernel.sigma == cd_load._detector.kernel.sigma
+    assert cd._detector.kernel.init_sigma_fn == cd_load._detector.kernel.init_sigma_fn
+    assert preds['data']['p_val'] == preds_load['data']['p_val']
 
 
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
@@ -578,20 +597,20 @@ def test_save_learnedkernel(data, deep_kernel, preprocess_custom, backend, tmp_p
 
 
 @parametrize('kernel', [
-        None,  # detector's default kernels
-        {'sigma': 0.5, 'trainable': False},  # custom kernels
+        "GaussianRBF",  # pass GaussianRBF kernel class (this will use the context specific _sigma_median_diag fn)
+        {'sigma': 0.5, 'trainable': False},  # pass kernels as GaussianRBF objects, with default sigma_median fn
     ], indirect=True
 )
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
-def test_save_contextmmddrift(data, preprocess_custom, kernel, backend, tmp_path):
+def test_save_contextmmddrift(data, preprocess_custom, kernel, backend, tmp_path, seed):
     """
     Test ContextMMDDrift on continuous datasets, with UAE as preprocess_fn.
 
     Detector is saved and then loaded, with assertions checking that the reinstantiated detector is equivalent.
     """
-    # Detector save/load
+    # Detector init
     X_ref, X_h0 = data
-    C_ref = X_ref[:, 0] + 1
+    C_ref, C_h0 = (X_ref[:, 0] + 1).reshape(-1, 1), (X_h0[:, 0] + 1).reshape(-1, 1)
     cd = ContextMMDDrift(X_ref,
                          C_ref,
                          p_val=P_VAL,
@@ -602,8 +621,15 @@ def test_save_contextmmddrift(data, preprocess_custom, kernel, backend, tmp_path
                          x_kernel=kernel,
                          c_kernel=kernel
                          )
+    # Make prediction (need to do this so that sigma is inferred and we can compare later)
+    with fixed_seed(seed):
+        preds = cd.predict(X_h0, C_h0)
+
+    # Save/load and make another prediction
     save_detector(cd, tmp_path)
     cd_load = load_detector(tmp_path)
+    with fixed_seed(seed):
+        preds_load = cd_load.predict(X_h0, C_h0)
 
     # assertions
     np.testing.assert_array_equal(preprocess_custom(X_ref), cd_load._detector.x_ref)
@@ -613,11 +639,9 @@ def test_save_contextmmddrift(data, preprocess_custom, kernel, backend, tmp_path
     assert cd_load._detector.p_val == P_VAL
     assert isinstance(cd_load._detector.preprocess_fn, Callable)
     assert cd_load._detector.preprocess_fn.func.__name__ == 'preprocess_drift'
-    print(cd._detector.x_kernel.sigma, cd_load._detector.x_kernel.sigma)
-    print(cd._detector.x_kernel.init_sigma_fn, cd_load._detector.x_kernel.init_sigma_fn)
     assert cd._detector.x_kernel.sigma == cd_load._detector.x_kernel.sigma
     assert cd._detector.x_kernel.init_sigma_fn == cd_load._detector.x_kernel.init_sigma_fn
-#    assert cd.predict(X_h0)['data']['p_val'] == cd_load.predict(X_h0)['data']['p_val']  # Not deterministic
+    assert preds['data']['p_val'] == preds_load['data']['p_val']
 
 
 @parametrize_with_cases("data", cases=ContinuousData.data_synthetic_nd)

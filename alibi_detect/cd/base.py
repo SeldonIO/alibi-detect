@@ -749,7 +749,7 @@ class BaseMMDDrift(BaseDetector, DriftConfigMixin):
             'x_ref_preprocessed': self.preprocess_at_init or self.x_ref_preprocessed,
             'preprocess_at_init': self.preprocess_at_init,
             'update_x_ref': self.update_x_ref,
-            'configure_kernel_from_x_ref': not self.infer_sigma,
+            'configure_kernel_from_x_ref': self.infer_sigma,
             'n_permutations': self.n_permutations,
             'input_shape': self.input_shape,
             'data_type': self.meta['data_type'],

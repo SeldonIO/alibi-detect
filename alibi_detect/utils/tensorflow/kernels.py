@@ -89,10 +89,24 @@ class GaussianRBF(tf.keras.Model):
         return tf.reduce_mean(kernel_mat, axis=0)  # [Nx, Ny]
 
     def get_config(self) -> dict:
-        return self.config
+        """
+        Returns a serializable config dict (excluding the input_sigma_fn, which is serialized in alibi_detect.saving).
+        """
+        cfg = self.config.copy()
+        if isinstance(cfg['sigma'], tf.Tensor):
+            cfg['sigma'] = cfg['sigma'].numpy()
+        return cfg
 
     @classmethod
     def from_config(cls, config):
+        """
+        Instantiates a kernel from a config dictionary.
+
+        Parameters
+        ----------
+        config
+            A kernel config dictionary.
+        """
         return cls(**config)
 
 
