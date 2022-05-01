@@ -277,7 +277,7 @@ def test_save_ksdrift(data, preprocess_fn, tmp_path):
     assert cd_load.p_val == P_VAL
     assert isinstance(cd_load.preprocess_fn, Callable)
     assert cd_load.preprocess_fn.func.__name__ == 'preprocess_drift'
-    np.testing.assert_array_equal(cd.predict(X_h0)['data']['p_val'],  # only do for deterministic detectors
+    np.testing.assert_array_equal(cd.predict(X_h0)['data']['p_val'],
                                   cd_load.predict(X_h0)['data']['p_val'])
 
 
@@ -311,7 +311,7 @@ def test_save_ksdrift_nlp(data, preprocess_fn, max_len, enc_dim, tmp_path):
     assert cd_load.p_val == P_VAL
     assert isinstance(cd_load.preprocess_fn, Callable)
     assert cd_load.preprocess_fn.func.__name__ == 'preprocess_drift'
-    np.testing.assert_array_equal(cd.predict(X_h0)['data']['p_val'],  # only do for deterministic detectors
+    np.testing.assert_array_equal(cd.predict(X_h0)['data']['p_val'],
                                   cd_load.predict(X_h0)['data']['p_val'])
 
 
@@ -341,7 +341,7 @@ def test_save_cvmdrift(data, preprocess_custom, tmp_path):
     assert cd_load.p_val == P_VAL
     assert isinstance(cd_load.preprocess_fn, Callable)
     assert cd_load.preprocess_fn.func.__name__ == 'preprocess_drift'
-    np.testing.assert_array_equal(cd.predict(X_h0)['data']['p_val'],  # only do for deterministic detectors
+    np.testing.assert_array_equal(cd.predict(X_h0)['data']['p_val'],
                                   cd_load.predict(X_h0)['data']['p_val'])
 
 
@@ -394,7 +394,7 @@ def test_save_mmddrift(data, kernel, preprocess_custom, backend, tmp_path, seed)
 
 
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
-def test_save_lsdddrift(data, preprocess_custom, backend, tmp_path):
+def test_save_lsdddrift(data, preprocess_custom, backend, tmp_path, seed):
     """
     Test LSDDDrift on continuous datasets, with UAE as preprocess_fn.
 
@@ -409,17 +409,28 @@ def test_save_lsdddrift(data, preprocess_custom, backend, tmp_path):
                    preprocess_at_init=True,
                    n_permutations=N_PERMUTATIONS,
                    )
+
+    # Make prediction
+    with fixed_seed(seed):
+        preds = cd.predict(X_h0)
+
+    # Save/load and make another prediction
     save_detector(cd, tmp_path)
     cd_load = load_detector(tmp_path)
+    with fixed_seed(seed):
+        preds_load = cd_load.predict(X_h0)
 
     # assertions
-    np.testing.assert_almost_equal(cd._detector._normalize(preprocess_custom(X_ref)), cd_load._detector.x_ref, 10)
+    np.testing.assert_almost_equal(preprocess_custom(X_ref), cd_load._detector.x_ref, 5)
     assert cd_load._detector.x_ref_preprocessed
     assert cd_load._detector.n_permutations == N_PERMUTATIONS
     assert cd_load._detector.p_val == P_VAL
     assert isinstance(cd_load._detector.preprocess_fn, Callable)
     assert cd_load._detector.preprocess_fn.func.__name__ == 'preprocess_drift'
-#    assert cd.predict(X_h0)['data']['p_val'] == cd_load.predict(X_h0)['data']['p_val']  # Not deterministic
+    pytest.approx(preds['data']['distance'], preds_load['data']['distance'], abs=-5)
+    print(preds['data'])
+    print(preds_load['data'])
+    assert preds['data']['p_val'] == preds_load['data']['p_val']
 
 
 @parametrize_with_cases("data", cases=BinData, prefix='data_')
@@ -445,7 +456,7 @@ def test_save_fetdrift(data, tmp_path):
     assert cd_load.n_features == input_dim
     assert cd_load.p_val == P_VAL
     assert cd_load.alternative == 'less'
-    np.testing.assert_array_equal(cd.predict(X_h0)['data']['p_val'],  # only do for deterministic detectors
+    np.testing.assert_array_equal(cd.predict(X_h0)['data']['p_val'],
                                   cd_load.predict(X_h0)['data']['p_val'])
 
 
@@ -471,7 +482,7 @@ def test_save_chisquaredrift(data, tmp_path):
     assert cd_load.n_features == input_dim
     assert cd_load.p_val == P_VAL
     assert isinstance(cd_load.x_ref_categories, dict)
-    np.testing.assert_array_equal(cd.predict(X_h0)['data']['p_val'],  # only do for deterministic detectors
+    np.testing.assert_array_equal(cd.predict(X_h0)['data']['p_val'],
                                   cd_load.predict(X_h0)['data']['p_val'])
     assert cd_load.x_ref_categories == cd.x_ref_categories
 
@@ -499,7 +510,7 @@ def test_save_tabulardrift(data, tmp_path):
     assert cd_load.n_features == input_dim
     assert cd_load.p_val == P_VAL
     assert isinstance(cd_load.x_ref_categories, dict)
-    np.testing.assert_array_equal(cd.predict(X_h0)['data']['p_val'],  # only do for deterministic detectors
+    np.testing.assert_array_equal(cd.predict(X_h0)['data']['p_val'],
                                   cd_load.predict(X_h0)['data']['p_val'])
     assert cd_load.x_ref_categories == cd.x_ref_categories
 

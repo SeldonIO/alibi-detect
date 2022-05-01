@@ -764,6 +764,7 @@ class BaseLSDDDrift(BaseDetector, DriftConfigMixin):
     # TODO: TBD: this is only created when _configure_normalization is called from backend-specific classes,
     # is declaring it here the right thing to do?
     _normalize: Callable
+    _unnormalize: Callable
 
     def __init__(
             self,
@@ -825,10 +826,10 @@ class BaseLSDDDrift(BaseDetector, DriftConfigMixin):
         if p_val is None:
             logger.warning('No p-value set for the drift threshold. Need to set it to detect data drift.')
 
-        # x_ref preprocessing logic. Inc. preprocess_fn logic in preprocess_at_init, since preprocess_at_init includes
-        # x_ref normalizing x_ref and computing H. preprocess_at_init always True if no preprocess_fn, except for when
-        # x_ref is "preprocessed" (i.e. normalized) already.
-        self.preprocess_at_init = (preprocess_fn is None or preprocess_at_init) and not x_ref_preprocessed
+        # x_ref preprocessing logic (preprocess_at_* are not set to False depending on preprocess_fn validity, since
+        # preprocessing also includes normalizing x_ref and computing `H`.
+        self.preprocess_at_pred = not preprocess_at_init and not x_ref_preprocessed
+        self.preprocess_at_init = preprocess_at_init and not x_ref_preprocessed
         self.x_ref_preprocessed = x_ref_preprocessed
         # Check if preprocess_fn is valid
         if preprocess_fn is not None and not isinstance(preprocess_fn, Callable):  # type: ignore[arg-type]
@@ -869,7 +870,7 @@ class BaseLSDDDrift(BaseDetector, DriftConfigMixin):
         """
         if isinstance(self.preprocess_fn, Callable):  # type: ignore[arg-type]
             x = self.preprocess_fn(x)
-            x_ref = self.preprocess_fn(self.x_ref) if not self.preprocess_at_init else self.x_ref
+            x_ref = self.preprocess_fn(self.x_ref) if self.preprocess_at_pred else self.x_ref
             return x_ref, x  # type: ignore[return-value]
         else:
             return self.x_ref, x  # type: ignore[return-value]
@@ -938,6 +939,7 @@ class BaseLSDDDrift(BaseDetector, DriftConfigMixin):
         The detector's configuration dictionary.
         """
         cfg = self.drift_config()
+        cfg['x_ref'] = self._unnormalize(cfg['x_ref']).numpy()
 
         # Detector field
         kwargs = {
