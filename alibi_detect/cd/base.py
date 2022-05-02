@@ -764,13 +764,11 @@ class BaseLSDDDrift(BaseDetector, DriftConfigMixin):
     # TODO: TBD: this is only created when _configure_normalization is called from backend-specific classes,
     # is declaring it here the right thing to do?
     _normalize: Callable
-    _unnormalize: Callable
 
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
             p_val: float = .05,
-            x_ref_preprocessed: bool = False,
             preprocess_at_init: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
@@ -779,7 +777,8 @@ class BaseLSDDDrift(BaseDetector, DriftConfigMixin):
             n_kernel_centers: Optional[int] = None,
             lambda_rd_max: float = 0.2,
             input_shape: Optional[tuple] = None,
-            data_type: Optional[str] = None
+            data_type: Optional[str] = None,
+            enable_config: bool = True
     ) -> None:
         """
         Least-squares Density Difference (LSDD) base data drift detector using a permutation test.
@@ -790,13 +789,9 @@ class BaseLSDDDrift(BaseDetector, DriftConfigMixin):
             Data used as reference distribution.
         p_val
             p-value used for the significance of the permutation test.
-        x_ref_preprocessed
-            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
-            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
-            data will also be preprocessed.
         preprocess_at_init
             Whether to preprocess the reference data when the detector is instantiated. Otherwise, the reference
-            data will be preprocessed at prediction time. Only applies if `x_ref_preprocessed=False`.
+            data will be preprocessed at prediction time.
         update_x_ref
             Reference data can optionally be updated to the last n instances seen by the detector
             or via reservoir sampling with size n. For the former, the parameter equals {'last': n} while
@@ -820,17 +815,22 @@ class BaseLSDDDrift(BaseDetector, DriftConfigMixin):
             Shape of input data.
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
+        enable_config
+            Store config data at detector instantiation. This must be set to `True` in order for :meth:`~get_config`
+            and :func:`alibi_detect.saving.save_detector` to be used. Since the original `x_ref` data must be stored,
+            this can be set to `False` if memory is limited.
         """
         super().__init__()
+        # Set config (need to set here before x_ref preprocessed, instead of in subclasses)
+        if enable_config:
+            self._set_config(locals())
 
         if p_val is None:
             logger.warning('No p-value set for the drift threshold. Need to set it to detect data drift.')
 
-        # x_ref preprocessing logic (preprocess_at_* are not set to False depending on preprocess_fn validity, since
-        # preprocessing also includes normalizing x_ref and computing `H`.
-        self.preprocess_at_pred = not preprocess_at_init and not x_ref_preprocessed
-        self.preprocess_at_init = preprocess_at_init and not x_ref_preprocessed
-        self.x_ref_preprocessed = x_ref_preprocessed
+        # x_ref preprocessing logic
+        self.preprocess_at_init = preprocess_at_init
+        self.enable_config = enable_config
         # Check if preprocess_fn is valid
         if preprocess_fn is not None and not isinstance(preprocess_fn, Callable):  # type: ignore[arg-type]
             raise ValueError("`preprocess_fn` is not a valid Callable.")
@@ -870,7 +870,7 @@ class BaseLSDDDrift(BaseDetector, DriftConfigMixin):
         """
         if isinstance(self.preprocess_fn, Callable):  # type: ignore[arg-type]
             x = self.preprocess_fn(x)
-            x_ref = self.preprocess_fn(self.x_ref) if self.preprocess_at_pred else self.x_ref
+            x_ref = self.preprocess_fn(self.x_ref) if not self.preprocess_at_init else self.x_ref
             return x_ref, x  # type: ignore[return-value]
         else:
             return self.x_ref, x  # type: ignore[return-value]
@@ -928,36 +928,6 @@ class BaseLSDDDrift(BaseDetector, DriftConfigMixin):
             cd['data']['distance'] = dist
             cd['data']['distance_threshold'] = distance_threshold
         return cd
-
-    @abstractmethod
-    def get_config(self) -> dict:
-        """
-        Get the detector's configuration dictionary.
-
-        Returns
-        -------
-        The detector's configuration dictionary.
-        """
-        cfg = self.drift_config()
-        cfg['x_ref'] = self._unnormalize(cfg['x_ref']).numpy()
-
-        # Detector field
-        kwargs = {
-            'p_val': self.p_val,
-            'x_ref_preprocessed': self.preprocess_at_init or self.x_ref_preprocessed,
-            'preprocess_at_init': self.preprocess_at_init,
-            'update_x_ref': self.update_x_ref,
-            'sigma': self.sigma,
-            'n_permutations': self.n_permutations,
-            'n_kernel_centers': self.n_kernel_centers,
-            'lambda_rd_max': self.lambda_rd_max,
-            'input_shape': self.input_shape,
-            'data_type': self.meta['data_type'],
-            'backend': self.meta['backend'],
-        }
-        cfg.update(kwargs)
-
-        return cfg
 
 
 class BaseUnivariateDrift(BaseDetector, DriftConfigMixin):

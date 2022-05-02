@@ -17,7 +17,6 @@ class LSDDDrift:
             x_ref: Union[np.ndarray, list],
             backend: str = 'tensorflow',
             p_val: float = .05,
-            x_ref_preprocessed: bool = False,
             preprocess_at_init: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
@@ -27,7 +26,8 @@ class LSDDDrift:
             lambda_rd_max: float = 0.2,
             device: Optional[str] = None,
             input_shape: Optional[tuple] = None,
-            data_type: Optional[str] = None
+            data_type: Optional[str] = None,
+            enable_config: bool = True
     ) -> None:
         """
         Least-squares density difference (LSDD) data drift detector using a permutation test.
@@ -40,10 +40,6 @@ class LSDDDrift:
             Backend used for the LSDD implementation.
         p_val
             p-value used for the significance of the permutation test.
-        x_ref_preprocessed
-            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
-            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
-            data will also be preprocessed.
         preprocess_at_init
             Whether to preprocess the reference data when the detector is instantiated. Otherwise, the reference
             data will be preprocessed at prediction time. Only applies if `x_ref_preprocessed=False`.
@@ -73,6 +69,10 @@ class LSDDDrift:
             Shape of input data.
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
+        enable_config
+            Store config data at detector instantiation. This must be set to `True` in order for :meth:`~get_config`
+            and :func:`alibi_detect.saving.save_detector` to be used. Since the original `x_ref` data must be stored,
+            this can be set to `False` if memory is limited.
         """
         super().__init__()
 

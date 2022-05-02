@@ -454,6 +454,9 @@ def resolve_config(cfg: dict, config_dir: Optional[Path]) -> dict:
     -------
     The resolved config dict.
     """
+    # Convert selected str's to required dtype's (all other type coercion is performed by pydantic)
+    _set_dtypes(cfg)
+
     # Before main resolution, update filepaths relative to config file
     if config_dir is not None:
         _prepend_cfg_filepaths(cfg, config_dir)
@@ -503,9 +506,6 @@ def resolve_config(cfg: dict, config_dir: Optional[Path]) -> dict:
         # Put the resolved function into the cfg dict
         if obj is not None:
             _set_nested_value(cfg, key, obj)
-
-    # Convert selected str's to required dtype's (all other type coercion is performed by pydantic later)
-    _set_dtypes(cfg)
 
     return cfg
 

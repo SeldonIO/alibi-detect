@@ -13,7 +13,6 @@ class LSDDDriftTF(BaseLSDDDrift):
             self,
             x_ref: Union[np.ndarray, list],
             p_val: float = .05,
-            x_ref_preprocessed: bool = False,
             preprocess_at_init: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
@@ -22,7 +21,8 @@ class LSDDDriftTF(BaseLSDDDrift):
             n_kernel_centers: Optional[int] = None,
             lambda_rd_max: float = 0.2,
             input_shape: Optional[tuple] = None,
-            data_type: Optional[str] = None
+            data_type: Optional[str] = None,
+            enable_config: bool = True
     ) -> None:
         """
         Least-squares density difference (LSDD) data drift detector using a permutation test.
@@ -33,13 +33,9 @@ class LSDDDriftTF(BaseLSDDDrift):
             Data used as reference distribution.
         p_val
             p-value used for the significance of the permutation test.
-        x_ref_preprocessed
-            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
-            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
-            data will also be preprocessed.
         preprocess_at_init
             Whether to preprocess the reference data when the detector is instantiated. Otherwise, the reference
-            data will be preprocessed at prediction time. Only applies if `x_ref_preprocessed=False`.
+            data will be preprocessed at prediction time.
         update_x_ref
             Reference data can optionally be updated to the last n instances seen by the detector
             or via reservoir sampling with size n. For the former, the parameter equals {'last': n} while
@@ -63,11 +59,14 @@ class LSDDDriftTF(BaseLSDDDrift):
             Shape of input data.
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
+        enable_config
+            Store config data at detector instantiation. This must be set to `True` in order for :meth:`~get_config`
+            and :func:`alibi_detect.saving.save_detector` to be used. Since the original `x_ref` data must be stored,
+            this can be set to `False` if memory is limited.
         """
         super().__init__(
             x_ref=x_ref,
             p_val=p_val,
-            x_ref_preprocessed=x_ref_preprocessed,
             preprocess_at_init=preprocess_at_init,
             update_x_ref=update_x_ref,
             preprocess_fn=preprocess_fn,
@@ -76,11 +75,17 @@ class LSDDDriftTF(BaseLSDDDrift):
             n_kernel_centers=n_kernel_centers,
             lambda_rd_max=lambda_rd_max,
             input_shape=input_shape,
-            data_type=data_type
+            data_type=data_type,
+            enable_config=enable_config
         )
-        self.meta.update({'backend': 'tensorflow'})
+        backend = 'tensorflow'
+        self.meta.update({'backend': backend})
 
-        if self.preprocess_at_init:
+        # Update config with any kwarg's missing from parent class (where ._set_config was called)
+        if enable_config:
+            self._set_config(locals())
+
+        if self.preprocess_at_init or self.preprocess_fn is None:
             x_ref = tf.convert_to_tensor(self.x_ref)
             self._configure_normalization(x_ref)
             x_ref = self._normalize(x_ref)
@@ -103,7 +108,6 @@ class LSDDDriftTF(BaseLSDDDrift):
         x_ref_means = tf.reduce_mean(x_ref, axis=0)
         x_ref_stds = tf.math.reduce_std(x_ref, axis=0)
         self._normalize = lambda x: (x - x_ref_means) / (x_ref_stds + eps)  # type: ignore[assignment]
-        self._unnormalize = lambda x: x * (x_ref_stds + eps) + x_ref_means  # type: ignore[assignment]
 
     def _configure_kernel_centers(self, x_ref: tf.Tensor):
         "Set aside reference samples to act as kernel centers"
@@ -133,7 +137,7 @@ class LSDDDriftTF(BaseLSDDDrift):
         """
         x_ref, x = self.preprocess(x)
 
-        if not self.preprocess_at_init:
+        if self.preprocess_fn is not None and self.preprocess_at_init is False:
             self._configure_normalization(x_ref)
             x_ref = self._normalize(x_ref)
             self._initialize_kernel(x_ref)
@@ -157,15 +161,3 @@ class LSDDDriftTF(BaseLSDDDrift):
 
         p_val = tf.reduce_mean(tf.cast(lsdd <= lsdd_permuted, float))
         return float(p_val), float(lsdd), lsdd_permuted.numpy()
-
-    def get_config(self) -> dict:
-        """
-        Get the detector's configuration dictionary.
-
-        Returns
-        -------
-        The detector's configuration dictionary.
-        """
-        cfg = super().get_config()
-
-        return cfg

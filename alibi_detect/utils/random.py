@@ -1,6 +1,7 @@
 from contextlib import contextmanager
 import random
 import numpy as np
+import os
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
 
 if has_tensorflow:
@@ -13,6 +14,7 @@ def reseed(seed):
     """
     Sets the Python, NumPy, TensorFlow and PyTorch random seeds (if installed).
     """
+    os.environ['PYTHONHASHSEED'] = str(seed)
     random.seed(seed)
     np.random.seed(seed)
     if has_tensorflow:
@@ -29,8 +31,8 @@ def fixed_seed(seed: int):
 
     Example
     -------
-    dd = cd.MMDDrift(X_ref)
     with fixed_seed(seed):
+        dd = cd.LSDDDrift(X_ref)
         p_val = dd.predict(X_h0)['data']['p_val']
     """
     reseed(seed)

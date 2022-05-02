@@ -258,7 +258,7 @@ class PreprocessConfig(CustomBaseModel):
     "Optional max token length for text drift."
     batch_size: Optional[int] = int(1e10)
     "Batch size used during prediction."
-    dtype: Optional[str] = None
+    dtype: str = "np.float32"
     "Model output type, e.g. `'tf.float32'`"
 
     # Additional kwargs
@@ -374,11 +374,6 @@ class DriftDetectorConfig(DetectorConfig):
     "Data used as reference distribution. Should be a string referencing a NumPy `.npy` file."
     p_val: float = .05
     "p-value threshold used for significance of the statistical test."
-    x_ref_preprocessed: bool = False
-    """
-    Whether or not the reference data x_ref has already been preprocessed. If True, the reference data will be skipped
-    and preprocessing will only be applied to the test data passed to predict.
-    """
     preprocess_fn: Optional[Union[str, PreprocessConfig]] = None
     """
     Function to preprocess the data before computing the data drift metrics. A string referencing a serialized function
@@ -388,6 +383,12 @@ class DriftDetectorConfig(DetectorConfig):
     "Optionally pass the shape of the input data. Used when saving detectors."
     data_type: Optional[str] = None
     "Specify data type added to the metadata. E.g. `‘tabular’`or `‘image’`."
+    enable_config: bool = True
+    """
+    Store config data at detector instantiation. This must be set to `True` in order for :meth:`~get_config` and 
+    :func:`alibi_detect.saving.save_detector` to be used. Since the original `x_ref` data must be stored, this can be 
+    set to `False` if memory is limited.
+    """
 
 
 class DriftDetectorConfigResolved(DetectorConfig):
@@ -399,17 +400,18 @@ class DriftDetectorConfigResolved(DetectorConfig):
     "Data used as reference distribution."
     p_val: float = .05
     "p-value threshold used for significance of the statistical test."
-    x_ref_preprocessed: bool = False
-    """
-    Whether or not the reference data x_ref has already been preprocessed. If True, the reference data will be skipped
-    and preprocessing will only be applied to the test data passed to predict.
-    """
     preprocess_fn: Optional[Callable] = None
     "Function to preprocess the data before computing the data drift metrics."
     input_shape: Optional[tuple] = None
     "Optionally pass the shape of the input data. Used when saving detectors."
     data_type: Optional[str] = None
     "Specify data type added to the metadata. E.g. `‘tabular’` or `‘image’`."
+    enable_config: bool = True
+    """
+    Store config data at detector instantiation. This must be set to `True` in order for :meth:`~get_config` and 
+    :func:`alibi_detect.saving.save_detector` to be used. Since the original `x_ref` data must be stored, this can be 
+    set to `False` if memory is limited.
+    """
 
 
 class KSDriftConfig(DriftDetectorConfig):

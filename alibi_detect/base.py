@@ -99,34 +99,47 @@ class DriftConfigMixin:
     generic configuration dict for all detectors, which is then fully populated by a detector's get_config method(s).
     """
     x_ref: np.ndarray
-    preprocess_fn: Optional[Callable] = None
+    enable_config: bool = True
 
-    def drift_config(self):
-        name = self.__class__.__name__
-        # strip off any backend suffix
-        backends = ['TF', 'Torch', 'Sklearn']
-        for backend in backends:
-            if name.endswith(backend):
-                name = name[:-len(backend)]
-        # Init config dict
-        cfg: Dict[str, Any] = {'name': name}
+    def get_config(self) -> dict:  # TODO - move to BaseDetector once config save/load implemented for non-drift
+        """
+        Get the detector's configuration dictionary.
 
-        # Add x_ref
-        cfg.update({'x_ref': self.x_ref})
+        Returns
+        -------
+        The detector's configuration dictionary.
+        """
+        if self.enable_config:
+            return self.config
+        else:
+            raise ValueError('The detector must be instantiated with `enable_config=True` in order for the '
+                             '`get_config` method to be used.')
 
-        # Add preprocess_fn field
-        if self.preprocess_fn is not None:
-            cfg.update({'preprocess_fn': self.preprocess_fn})
+    def _set_config(self, inputs):  # TODO - move to BaseDetector once config save/load implemented for non-drift
+        if not hasattr(self, 'config'):  # init config if it doesn't already exist
+            name = self.__class__.__name__
+            # strip off any backend suffix
+            backends = ['TF', 'Torch', 'Sklearn']
+            for backend in backends:
+                if name.endswith(backend):
+                    name = name[:-len(backend)]
+            # Init config dict
+            cfg: Dict[str, Any] = {'name': name}
 
-        # Populate meta dict and add to config
-        cfg_meta = {
-            'version': __version__,
-            'config_spec': __config_spec__,
-            'version_warning': self.meta.get('version_warning', False)
-        }
-        cfg.update({'meta': cfg_meta})
+            # Populate meta dict and add to config
+            cfg_meta = {
+                'version': __version__,
+                'config_spec': __config_spec__,
+                'version_warning': self.meta.get('version_warning', False)
+            }
+            cfg.update({'meta': cfg_meta})
+            self.config = cfg
 
-        return cfg
+        # args and kwargs
+        pop_inputs = ['self', '__class__']
+        pop_inputs += self.config.keys()  # Adding self.config.keys() avoids overwriting existing config
+        [inputs.pop(k, None) for k in pop_inputs]
+        self.config.update(inputs)
 
 
 class NumpyEncoder(json.JSONEncoder):

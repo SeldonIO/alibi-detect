@@ -4,7 +4,6 @@ Tests for saving/loading of detectors via config.toml files.
 
 Internal functions such as save_kernel/load_kernel_config etc are also tested.
 """
-import random
 # TODO future - test pytorch save/load functionality
 # TODO (could/should also add tests to backend-specific submodules)
 from functools import partial
@@ -68,14 +67,7 @@ LATENT_DIM = 2  # Must be less than input_dim set in ./datasets.py
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 REGISTERED_OBJECTS = registry.get_all()
 
-# Set seeds
-np.random.seed(0)
-tf.random.set_seed(0)
-torch.manual_seed(0)
-random.seed(0)
-
 # TODO - future: Some of the fixtures can/should be moved elsewhere (i.e. if they can be recycled for use elsewhere)
-
 
 @fixture
 def custom_model(backend, current_cases):
@@ -214,8 +206,7 @@ def nlp_embedding_and_tokenizer(model_name, max_len, uae, backend):
     return tokenizer, embedding, max_len, enc_dim
 
 
-@fixture
-def preprocess_batch(x: np.ndarray):
+def preprocess_dummy(x: np.ndarray):
     """
     Dummy function to test serialization of generic Python function within preprocess_fn.
     """
@@ -230,10 +221,10 @@ def preprocess_nlp(embedding, tokenizer, max_len, backend):
     """
     if backend == 'tensorflow':
         preprocess_fn = partial(preprocess_drift_tf, model=embedding, tokenizer=tokenizer,
-                                max_len=max_len, preprocess_batch_fn=preprocess_batch)
+                                max_len=max_len, preprocess_batch_fn=preprocess_dummy)
     else:
         preprocess_fn = partial(preprocess_drift_pt, model=embedding, tokenizer=tokenizer, max_len=max_len,
-                                preprocess_batch_fn=preprocess_batch)
+                                preprocess_batch_fn=preprocess_dummy)
     return preprocess_fn
 
 
@@ -400,36 +391,32 @@ def test_save_lsdddrift(data, preprocess_custom, backend, tmp_path, seed):
 
     Detector is saved and then loaded, with assertions checking that the reinstantiated detector is equivalent.
     """
-    # Detector save/load
+    # Init detector then save
     X_ref, X_h0 = data
-    cd = LSDDDrift(X_ref,
-                   p_val=P_VAL,
-                   backend=backend,
-                   preprocess_fn=preprocess_custom,
-                   preprocess_at_init=True,
-                   n_permutations=N_PERMUTATIONS,
-                   )
-
-    # Make prediction
-    with fixed_seed(seed):
+    with fixed_seed(seed):  # Init and predict with a fixed random state
+        cd = LSDDDrift(X_ref,
+                       p_val=P_VAL,
+                       backend=backend,
+                       preprocess_fn=preprocess_dummy,  # TODO - use of preprocess_custom breaks determinism.
+                       preprocess_at_init=True,
+                       n_permutations=N_PERMUTATIONS,
+                       enable_config=True
+                       )
         preds = cd.predict(X_h0)
-
-    # Save/load and make another prediction
     save_detector(cd, tmp_path)
-    cd_load = load_detector(tmp_path)
-    with fixed_seed(seed):
+
+    # Load and make predictions
+    with fixed_seed(seed):  # Again, load and predict with fixed random state
+        cd_load = load_detector(tmp_path)
         preds_load = cd_load.predict(X_h0)
 
     # assertions
-    np.testing.assert_almost_equal(preprocess_custom(X_ref), cd_load._detector.x_ref, 5)
-    assert cd_load._detector.x_ref_preprocessed
+    np.testing.assert_array_equal(cd._detector.x_ref, cd_load._detector.x_ref)
     assert cd_load._detector.n_permutations == N_PERMUTATIONS
     assert cd_load._detector.p_val == P_VAL
     assert isinstance(cd_load._detector.preprocess_fn, Callable)
-    assert cd_load._detector.preprocess_fn.func.__name__ == 'preprocess_drift'
-    pytest.approx(preds['data']['distance'], preds_load['data']['distance'], abs=-5)
-    print(preds['data'])
-    print(preds_load['data'])
+    assert cd_load._detector.preprocess_fn.func.__name__ == 'preprocess_dummy'
+    assert preds['data']['distance'] == preds_load['data']['distance']
     assert preds['data']['p_val'] == preds_load['data']['p_val']
 
 
