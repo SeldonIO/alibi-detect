@@ -19,7 +19,7 @@ import torch
 
 from datasets import (BinData, CategoricalData, ContinuousData, MixedData,
                       TextData)
-from alibi_detect.utils.random import fixed_seed  # Absolute import as likely move this submodule in future
+from alibi_detect.utils._random import fixed_seed
 from packaging import version
 from pytest_cases import (fixture, param_fixture, parametrize,
                           parametrize_with_cases)
@@ -68,6 +68,7 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 REGISTERED_OBJECTS = registry.get_all()
 
 # TODO - future: Some of the fixtures can/should be moved elsewhere (i.e. if they can be recycled for use elsewhere)
+
 
 @fixture
 def custom_model(backend, current_cases):
