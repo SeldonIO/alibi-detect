@@ -4,7 +4,6 @@ from alibi_detect.cd import FETDrift
 from itertools import product
 
 n, n_test = 500, 200
-np.random.seed(0)
 
 alternative = ['less', 'greater', 'two-sided']
 n_features = [2]  # TODO - test 1D case once BaseUnivariateDrift updated
@@ -19,6 +18,7 @@ def fetdrift_params(request):
 
 @pytest.mark.parametrize('fetdrift_params', list(range(n_tests)), indirect=True)
 def test_fetdrift(fetdrift_params):
+    np.random.seed(0)
     alternative, n_feat = fetdrift_params
 
     # Reference data

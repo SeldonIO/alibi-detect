@@ -1,4 +1,4 @@
-from alibi_detect.utils.random import set_seed, get_seed, fixed_seed
+from alibi_detect.utils._random import set_seed, get_seed, fixed_seed
 import numpy as np
 import tensorflow as tf
 import torch
