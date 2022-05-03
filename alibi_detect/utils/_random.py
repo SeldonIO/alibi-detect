@@ -40,7 +40,7 @@ def get_seed() -> int:
 
     Example
     -------
-    >>> from alibi_detect.utils.random import set_seed, get_seed
+    >>> from alibi_detect.utils._random import set_seed, get_seed
     >>> set_seed(42)
     >>> get_seed()
     42

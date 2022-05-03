@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from itertools import product
 from alibi_detect.cd import CVMDriftOnline
-from alibi_detect.utils.random import fixed_seed
+from alibi_detect.utils._random import fixed_seed
 
 
 n, n_test = 200, 500

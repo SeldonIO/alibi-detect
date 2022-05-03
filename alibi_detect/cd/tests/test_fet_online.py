@@ -3,7 +3,7 @@ import pytest
 from functools import partial
 from itertools import product
 from alibi_detect.cd import FETDriftOnline
-from alibi_detect.utils.random import fixed_seed
+from alibi_detect.utils._random import fixed_seed
 
 n = 250
 n_inits, n_reps = 3, 100
