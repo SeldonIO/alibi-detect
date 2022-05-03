@@ -24,6 +24,7 @@ def set_seed(seed: int):
     seed
         Value of the random seed to set.
     """
+    seed = max(seed, 0)  # TODO: This is a fix to allow --randomly-seed=0 in setup.cfg. To be removed in future
     setattr(_module_pointer, '_seed', seed)
     os.environ['PYTHONHASHSEED'] = str(seed)
     random.seed(seed)
