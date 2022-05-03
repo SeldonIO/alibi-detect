@@ -406,12 +406,9 @@ def test_save_lsdddrift(data, preprocess_custom, backend, tmp_path, seed):
         preds = cd.predict(X_h0)
     save_detector(cd, tmp_path)
 
-    np.random.seed(0)
-
     # Load and make predictions
     with fixed_seed(seed):  # Again, load and predict with fixed random state
-        detector = load_detector(tmp_path)
-        cd_load = detector
+        cd_load = load_detector(tmp_path)
         preds_load = cd_load.predict(X_h0)
 
     # assertions

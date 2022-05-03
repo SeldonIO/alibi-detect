@@ -258,7 +258,7 @@ class PreprocessConfig(CustomBaseModel):
     "Optional max token length for text drift."
     batch_size: Optional[int] = int(1e10)
     "Batch size used during prediction."
-    dtype: str = str(np.float32)
+    dtype: str = 'np.float32'
     "Model output type, e.g. `'tf.float32'`"
 
     # Additional kwargs
