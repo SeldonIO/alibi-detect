@@ -3,7 +3,6 @@ import pytest
 from functools import partial
 from itertools import product
 from alibi_detect.cd import FETDriftOnline
-from alibi_detect.utils._random import fixed_seed
 
 n = 250
 n_inits, n_reps = 3, 100
@@ -28,18 +27,18 @@ def test_fetdriftonline(fetdriftonline_params):
     alternative, n_feat = fetdriftonline_params
 
     # Reference data
+    np.random.seed(0)
     p_h0 = 0.5
-    with fixed_seed(0):
-        x_ref = np.random.choice((0, 1), (n, n_feat), p=[1 - p_h0, p_h0]).squeeze()  # squeeze to test vec input when 1D
-        x_h0 = partial(np.random.choice, (0, 1), size=n_feat, p=[1-p_h0, p_h0])
+    x_ref = np.random.choice((0, 1), (n, n_feat), p=[1 - p_h0, p_h0]).squeeze()  # squeeze to test vec input in 1D case
+    x_h0 = partial(np.random.choice, (0, 1), size=n_feat, p=[1-p_h0, p_h0])
 
     detection_times_h0 = []
     detection_times_h1 = []
     for init in range(n_inits):
         # Instantiate detector
-        with fixed_seed(init+1):
-            cd = FETDriftOnline(x_ref=x_ref, ert=ert, window_sizes=window_sizes,
-                                n_bootstraps=n_bootstraps, alternative=alternative)
+        np.random.seed(init+1)
+        cd = FETDriftOnline(x_ref=x_ref, ert=ert, window_sizes=window_sizes,
+                            n_bootstraps=n_bootstraps, alternative=alternative)
 
         # Reference data
         count = 0
@@ -56,12 +55,10 @@ def test_fetdriftonline(fetdriftonline_params):
         # Drifted data
         if alternative == 'less':
             p_h1 = 0.1
-            with fixed_seed(0):
-                x_h1 = partial(np.random.choice, (0, 1), size=n_feat, p=[1-p_h1, p_h1])
+            x_h1 = partial(np.random.choice, (0, 1), size=n_feat, p=[1-p_h1, p_h1])
         else:
             p_h1 = 0.9
-            with fixed_seed(0):
-                x_h1 = partial(np.random.choice, (0, 1), size=n_feat, p=[1-p_h1, p_h1])
+            x_h1 = partial(np.random.choice, (0, 1), size=n_feat, p=[1-p_h1, p_h1])
 
         cd.reset()
         count = 0

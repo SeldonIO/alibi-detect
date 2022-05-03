@@ -6,6 +6,7 @@ if version.parse(scipy.__version__) >= version.parse('1.7.0'):
     from alibi_detect.cd import CVMDrift
 
 n, n_test = 500, 200
+np.random.seed(0)
 
 n_features = [2]  # TODO - test 1D case once BaseUnivariateDrift updated
 tests_cvmdrift = list(n_features)
@@ -21,7 +22,6 @@ def cvmdrift_params(request):
                     reason="Requires scipy version >= 1.7.0")
 @pytest.mark.parametrize('cvmdrift_params', list(range(n_tests)), indirect=True)
 def test_cvmdrift(cvmdrift_params):
-    np.random.seed(0)
     n_feat = cvmdrift_params
 
     # Reference data

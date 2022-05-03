@@ -2,12 +2,11 @@ import numpy as np
 import pytest
 from itertools import product
 from alibi_detect.cd import CVMDriftOnline
-from alibi_detect.utils._random import fixed_seed
-
 
 n, n_test = 200, 500
 n_bootstraps = 1000
 ert = 50
+np.random.seed(0)
 
 window_sizes = [[10], [10, 20]]
 batch_size = [None, int(n_bootstraps/4)]
@@ -27,14 +26,15 @@ def test_cvmdriftonline(cvmdriftonline_params):
     window_sizes, batch_size, n_feat = cvmdriftonline_params
 
     # Reference data
-    with fixed_seed(0):
-        x_ref = np.random.normal(0, 1, size=(n, n_feat)).squeeze()  # squeeze to test vec input in 1D case
-        x_h0 = np.random.normal(0, 1, size=(n_test, n_feat))
-        x_h1 = np.random.normal(1, 1, size=(n_test, n_feat))
+    x_ref = np.random.normal(0, 1, size=(n, n_feat)).squeeze()  # squeeze to test vec input in 1D case
 
     # Instantiate detector
     cd = CVMDriftOnline(x_ref=x_ref, ert=ert, window_sizes=window_sizes,
                         n_bootstraps=n_bootstraps, batch_size=batch_size)
+
+    # Test predict
+    x_h0 = np.random.normal(0, 1, size=(n_test, n_feat))
+    x_h1 = np.random.normal(1, 1, size=(n_test, n_feat))
 
     # Reference data
     detection_times_h0 = []
