@@ -2,7 +2,12 @@ from contextlib import contextmanager
 import random
 import numpy as np
 import os
+import sys
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
+
+# Pointer to the alibi_detect module. Used to set a global seed variable.
+_module_pointer = sys.modules[__name__]
+setattr(_module_pointer, '_seed', None)
 
 if has_tensorflow:
     import tensorflow as tf
@@ -10,10 +15,16 @@ if has_pytorch:
     import torch
 
 
-def set_seed(seed):
+def set_seed(seed: int):
     """
     Sets the Python, NumPy, TensorFlow and PyTorch random seeds (if installed).
+
+    Parameters
+    ----------
+    seed
+        Value of the random seed to set.
     """
+    setattr(_module_pointer, '_seed', seed)
     os.environ['PYTHONHASHSEED'] = str(seed)
     random.seed(seed)
     np.random.seed(seed)
@@ -29,33 +40,36 @@ def get_seed() -> int:
 
     Example
     -------
-    from alibi_detect.utils import set_seed, get_seed
-    set_seed(42)
-    get_seed()
-    >>> 42
+    >>> from alibi_detect.utils.random import set_seed, get_seed
+    >>> set_seed(42)
+    >>> get_seed()
+    42
     """
-    return np.random.get_state()[1][0]  # type: ignore[index]
+    if _module_pointer._seed is not None:
+        return _module_pointer._seed
+    else:
+        raise RuntimeError('`set_seed` must be called before `get_seed` can be called.')
 
 
 @contextmanager
 def fixed_seed(seed: int):
     """
-    A context manager to run with a requested random seed (applied to all the RNG's set by
-    :func:`alibi_detect.utils.random.set_seeds`).
+    A context manager to run with a requested random seed (applied to all the RNG's set by :func:`set_seed`).
+
+    Parameters
+    ----------
+    seed
+        Value of the random seed to set in the isolated context.
 
     Example
     -------
-    set_seed(0)
-    with fixed_seed(42):
-        dd = cd.LSDDDrift(X_ref)  # seeds equal 42 here
-        p_val = dd.predict(X_h0)['data']['p_val']
-    # seeds equal 0 here
+    .. code-block :: python
 
-    Warning
-    -------
-    To ensure random seeds are reset to their original values upon exit of the context manager, it is
-    recommended to use :func:`alibi_detect.utils.random.set_seed` rather than `tf.random.set_seed` etc
-    individually when using this context manager.
+        set_seed(0)
+        with fixed_seed(42):
+            dd = cd.LSDDDrift(X_ref)  # seeds equal 42 here
+            p_val = dd.predict(X_h0)['data']['p_val']
+        # seeds equal 0 here
     """
     orig_seed = get_seed()
     set_seed(seed)
