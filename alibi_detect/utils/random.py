@@ -10,7 +10,7 @@ if has_pytorch:
     import torch
 
 
-def set_seeds(seed):
+def reseed(seed):
     """
     Sets the Python, NumPy, TensorFlow and PyTorch random seeds (if installed).
     """
@@ -27,11 +27,11 @@ def set_seeds(seed):
 def fixed_seed(seed: int):
     """
     A context manager to run with a requested random seed (applied to all the RNG's set by
-    :func:`alibi_detect.utils.random.set_seeds`).
+    :func:`alibi_detect.utils.random.reseed`).
 
     Example
     -------
-    set_seeds(0)
+    reseed(0)
     with fixed_seed(42):
         dd = cd.LSDDDrift(X_ref)  # seed = 42 here
         p_val = dd.predict(X_h0)['data']['p_val']
@@ -40,13 +40,13 @@ def fixed_seed(seed: int):
     Warning
     -------
     To ensure random seeds are reset to their original values upon exit of the context manager, it is
-    recommended to use :func:`alibi_detect.utils.random.set_seeds` rather than `tf.random.set_seed` etc
+    recommended to use :func:`alibi_detect.utils.random.reseed` rather than `tf.random.set_seed` etc
     individually when using this context manager.
     """
-    orig_seed = np.random.get_state()[1][0]
-    set_seeds(seed)
+    orig_seed = np.random.get_state()[1][0]  # type: ignore[index]
+    reseed(seed)
     try:
         yield
     finally:
-        set_seeds(orig_seed)
+        reseed(orig_seed)
 
