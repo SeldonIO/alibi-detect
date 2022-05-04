@@ -12,7 +12,6 @@ class TabularDrift(BaseUnivariateDrift):
             x_ref: Union[np.ndarray, list],
             p_val: float = .05,
             categories_per_feature: Dict[int, Optional[int]] = None,
-            x_ref_preprocessed: bool = False,
             preprocess_at_init: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
@@ -20,7 +19,8 @@ class TabularDrift(BaseUnivariateDrift):
             alternative: str = 'two-sided',
             n_features: Optional[int] = None,
             input_shape: Optional[tuple] = None,
-            data_type: Optional[str] = None
+            data_type: Optional[str] = None,
+            enable_config: bool = True
     ) -> None:
         """
         Mixed-type tabular data drift detector with Bonferroni or False Discovery Rate (FDR)
@@ -45,13 +45,9 @@ class TabularDrift(BaseUnivariateDrift):
             values for the feature are [0, ..., N-1]. You can also explicitly pass the possible categories in the
             Dict[int, List[int]] format, e.g. {0: [0, 1, 2], 3: [0, 55]}. Note that the categories can be
             arbitrary int values.
-         x_ref_preprocessed
-            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
-            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
-            data will also be preprocessed.
         preprocess_at_init
             Whether to preprocess the reference data when the detector is instantiated. Otherwise, the reference
-            data will be preprocessed at prediction time. Only applies if `x_ref_preprocessed=False`.
+            data will be preprocessed at prediction time.
         update_x_ref
             Reference data can optionally be updated to the last n instances seen by the detector
             or via reservoir sampling with size n. For the former, the parameter equals {'last': n} while
@@ -71,21 +67,28 @@ class TabularDrift(BaseUnivariateDrift):
             Shape of input data.
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
+        enable_config
+            Store config data at detector instantiation. this must be set to `true` in order for
+            :meth:`~alibi_detect.base.DriftConfigMixin.get_config` and :func:`alibi_detect.saving.save_detector` to
+            be used. Since the original `x_ref` data must be stored, this can be set to `false` if memory is limited.
         """
         super().__init__(
             x_ref=x_ref,
             p_val=p_val,
-            x_ref_preprocessed=x_ref_preprocessed,
             preprocess_at_init=preprocess_at_init,
             update_x_ref=update_x_ref,
             preprocess_fn=preprocess_fn,
             correction=correction,
             n_features=n_features,
             input_shape=input_shape,
-            data_type=data_type
+            data_type=data_type,
+            enable_config=enable_config
         )
-        self.alternative = alternative
+        # Update config
+        if enable_config:
+            self._set_config(locals())
 
+        self.alternative = alternative
         self.x_ref_categories, self.cat_vars = {}, []  # no categorical features assumed present
         if isinstance(categories_per_feature, dict):
             vals = list(categories_per_feature.values())
@@ -146,27 +149,3 @@ class TabularDrift(BaseUnivariateDrift):
         Utility method for getting the counts of categories for each categorical variable.
         """
         return {f: [(x[:, f] == v).sum() for v in vals] for f, vals in categories.items()}
-
-    def get_config(self) -> dict:
-        """
-        Get the detector's configuration dictionary.
-
-        Returns
-        -------
-        The detector's configuration dictionary.
-        """
-        cfg = super().get_config()
-
-        # Prep categories_per_feature. NOTE - toml can't write dict with int keys. See loading.read_detector_config
-        categories_per_feature = {}
-        for key in self.x_ref_categories.keys():
-            categories_per_feature[str(key)] = self.x_ref_categories[key]
-
-        # Detector kwargs
-        kwargs = {
-            'categories_per_feature': categories_per_feature,
-            'alternative': self.alternative,
-        }
-        cfg.update(kwargs)
-
-        return cfg

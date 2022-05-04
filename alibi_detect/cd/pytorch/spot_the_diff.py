@@ -17,7 +17,6 @@ class SpotTheDiffDriftTorch:
             self,
             x_ref: np.ndarray,
             p_val: float = .05,
-            x_ref_preprocessed: bool = False,
             preprocess_fn: Optional[Callable] = None,
             kernel: Optional[nn.Module] = None,
             n_diffs: int = 1,
@@ -58,10 +57,6 @@ class SpotTheDiffDriftTorch:
             Data used as reference distribution.
         p_val
             p-value used for the significance of the test.
-        x_ref_preprocessed
-            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
-            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
-            data will also be preprocessed.
         preprocess_fn
             Function to preprocess the data before computing the data drift metrics.
         kernel
@@ -121,9 +116,9 @@ class SpotTheDiffDriftTorch:
         if n_folds is not None and n_folds > 1:
             logger.warning("When using multiple folds the returned diffs will correspond to the final fold only.")
 
-        if not x_ref_preprocessed and preprocess_fn is not None:
+        if preprocess_fn is not None:
             x_ref_proc = preprocess_fn(x_ref)
-        elif not x_ref_preprocessed and preprocess_batch_fn is not None:
+        elif preprocess_batch_fn is not None:
             x_ref_proc = predict_batch(
                 x_ref, lambda x: x, preprocess_fn=preprocess_batch_fn,
                 device=torch.device('cpu'), batch_size=batch_size
@@ -146,7 +141,6 @@ class SpotTheDiffDriftTorch:
             x_ref=x_ref,
             model=model,
             p_val=p_val,
-            x_ref_preprocessed=x_ref_preprocessed,
             preprocess_at_init=True,
             update_x_ref=None,
             preprocess_fn=preprocess_fn,
@@ -227,14 +221,3 @@ class SpotTheDiffDriftTorch:
         if not return_model:
             del preds['data']['model']
         return preds
-
-    def get_config(self) -> dict:
-        """
-        Get the detector's configuration dictionary.
-        Not yet implemented for `SpotTheDiffDrift` with the pytorch backend.
-
-        Returns
-        -------
-        The detector's configuration dictionary.
-        """
-        raise NotImplementedError("get_config not yet implemented for SpotTheDiffDrift with pytorch backend.")

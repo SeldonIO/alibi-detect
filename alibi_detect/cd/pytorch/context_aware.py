@@ -20,7 +20,6 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
             x_ref: Union[np.ndarray, list],
             c_ref: np.ndarray,
             p_val: float = .05,
-            x_ref_preprocessed: bool = False,
             preprocess_at_init: bool = True,
             update_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
@@ -33,7 +32,7 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
             device: Optional[str] = None,
             input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None,
-            verbose: bool = False
+            verbose: bool = False,
     ) -> None:
         """
         A context-aware drift detector based on a conditional analogue of the maximum mean discrepancy (MMD).
@@ -48,13 +47,9 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
             Context for the reference distribution.
         p_val
             p-value used for the significance of the permutation test.
-        x_ref_preprocessed
-            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
-            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
-            data will also be preprocessed.
         preprocess_at_init
             Whether to preprocess the reference data when the detector is instantiated. Otherwise, the reference
-            data will be preprocessed at prediction time. Only applies if `x_ref_preprocessed=False`.
+            data will be preprocessed at prediction time.
         update_ref
             Reference data can optionally be updated to the last N instances seen by the detector.
             The parameter should be passed as a dictionary *{'last': N}*.
@@ -86,7 +81,6 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
             x_ref=x_ref,
             c_ref=c_ref,
             p_val=p_val,
-            x_ref_preprocessed=x_ref_preprocessed,
             preprocess_at_init=preprocess_at_init,
             update_ref=update_ref,
             preprocess_fn=preprocess_fn,
@@ -98,7 +92,7 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
             batch_size=batch_size,
             input_shape=input_shape,
             data_type=data_type,
-            verbose=verbose
+            verbose=verbose,
         )
         self.meta.update({'backend': 'pytorch'})
 
@@ -175,17 +169,6 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
         coupling = (coupling_xx.numpy(), coupling_yy.numpy(), coupling_xy.numpy())
 
         return p_val.numpy().item(), stat.numpy().item(), permuted_stats.numpy(), coupling
-
-    def get_config(self) -> dict:
-        """
-        Get the detector's configuration dictionary.
-        Not yet implemented for `ContextMMDDrift` with the pytorch backend.
-
-        Returns
-        -------
-        The detector's configuration dictionary.
-        """
-        raise NotImplementedError("get_config not yet implemented for ContextMMDDrift with pytorch backend.")
 
     def _cmmd(self, K: torch.Tensor, L: torch.Tensor, bools: torch.Tensor, L_held: torch.Tensor = None) \
             -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:

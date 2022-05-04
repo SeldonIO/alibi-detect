@@ -659,8 +659,12 @@ class ClassifierDriftConfig(DriftDetectorConfig):
     epochs: int = 3
     verbose: int = 0
     train_kwargs: Optional[dict] = None
-    dataset: str = '@alibi_detect.utils.tensorflow.data.TFDataset'
+    dataset: Optional[str] = None
     device: Optional[Literal['cpu', 'cuda']] = None
+    dataloader: Optional[str] = None  # TODO: placeholder, will need to be updated fo pytorch implementation
+    use_calibration: bool = False
+    calibration_kwargs: Optional[dict] = None
+    use_oob: bool = False
 
 
 class ClassifierDriftConfigResolved(DriftDetectorConfigResolved):
@@ -691,6 +695,10 @@ class ClassifierDriftConfigResolved(DriftDetectorConfigResolved):
     train_kwargs: Optional[dict] = None
     dataset: Optional[Callable] = None
     device: Optional[Literal['cpu', 'cuda']] = None
+    dataloader: Optional[Callable] = None  # TODO: placeholder, will need to be updated fo pytorch implementation
+    use_calibration: bool = False
+    calibration_kwargs: Optional[dict] = None
+    use_oob: bool = False
 
 
 class SpotTheDiffDriftConfig(DriftDetectorConfig):
@@ -714,12 +722,13 @@ class SpotTheDiffDriftConfig(DriftDetectorConfig):
     epochs: int = 3
     verbose: int = 0
     train_kwargs: Optional[dict] = None
-    dataset: str = '@alibi_detect.utils.tensorflow.data.TFDataset'
+    dataset: str = None
     kernel: Optional[Union[str, KernelConfig]] = None
     n_diffs: int = 1
     initial_diffs: Optional[str] = None
     l1_reg: float = 0.01
     device: Optional[Literal['cpu', 'cuda']] = None
+    dataloader: Optional[str] = None  # TODO: placeholder, will need to be updated fo pytorch implementation
 
 
 class SpotTheDiffDriftConfigResolved(DriftDetectorConfigResolved):
@@ -749,6 +758,7 @@ class SpotTheDiffDriftConfigResolved(DriftDetectorConfigResolved):
     initial_diffs: Optional[np.ndarray] = None
     l1_reg: float = 0.01
     device: Optional[Literal['cpu', 'cuda']] = None
+    dataloader: Optional[Callable] = None  # TODO: placeholder, will need to be updated fo pytorch implementation
 
 
 class LearnedKernelDriftConfig(DriftDetectorConfig):

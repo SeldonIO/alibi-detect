@@ -2,6 +2,7 @@ import numpy as np
 from typing import Callable, Dict, Optional, Union, Tuple
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
 from alibi_detect.utils.warnings import deprecated_alias
+from alibi_detect.base import DriftConfigMixin
 
 if has_pytorch:
     from alibi_detect.cd.pytorch.lsdd import LSDDDriftTorch
@@ -10,7 +11,7 @@ if has_tensorflow:
     from alibi_detect.cd.tensorflow.lsdd import LSDDDriftTF
 
 
-class LSDDDrift:
+class LSDDDrift(DriftConfigMixin):
     @deprecated_alias(preprocess_x_ref='preprocess_at_init')
     def __init__(
             self,
@@ -70,11 +71,16 @@ class LSDDDrift:
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         enable_config
-            Store config data at detector instantiation. This must be set to `True` in order for :meth:`~get_config`
-            and :func:`alibi_detect.saving.save_detector` to be used. Since the original `x_ref` data must be stored,
-            this can be set to `False` if memory is limited.
+            Store config data at detector instantiation. this must be set to `true` in order for
+            :meth:`~alibi_detect.base.DriftConfigMixin.get_config` and :func:`alibi_detect.saving.save_detector` to
+            be used. Since the original `x_ref` data must be stored, this can be set to `false` if memory is limited.
         """
         super().__init__()
+
+        # Set config
+        if enable_config:
+            inputs = locals()
+            self._set_config(inputs)
 
         backend = backend.lower()
         if backend == 'tensorflow' and not has_tensorflow or backend == 'pytorch' and not has_pytorch:
@@ -85,7 +91,7 @@ class LSDDDrift:
 
         kwargs = locals()
         args = [kwargs['x_ref']]
-        pop_kwargs = ['self', 'x_ref', 'backend', '__class__']
+        pop_kwargs = ['self', 'x_ref', 'backend', 'enable_config', '__class__', 'inputs']
         [kwargs.pop(k, None) for k in pop_kwargs]
 
         if backend == 'tensorflow' and has_tensorflow:
@@ -94,6 +100,9 @@ class LSDDDrift:
         else:
             self._detector = LSDDDriftTorch(*args, **kwargs)  # type: ignore
         self.meta = self._detector.meta
+        # Set config again to include self.meta
+        if enable_config:
+            self._set_config(inputs)
 
     def predict(self, x: Union[np.ndarray, list], return_p_val: bool = True, return_distance: bool = True) \
             -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
@@ -133,26 +142,3 @@ class LSDDDrift:
         and the LSDD values from the permutation test.
         """
         return self._detector.score(x)
-
-    def get_config(self) -> dict:
-        """
-        Get the detector's configuration dictionary.
-
-        Returns
-        -------
-        The detector's configuration dictionary.
-        """
-        return self._detector.get_config()
-
-    @classmethod
-    def from_config(cls, config: dict):
-        """
-        Instantiate a :class:`~alibi_detect.cd.LSDDDrift` detector from a fully resolved (and validated) config
-        dictionary.
-
-        Parameters
-        ----------
-        config
-            A config dictionary matching the :class:`~alibi_detect.saving.schemas.LSDDDriftConfig` schema.
-        """
-        return cls(**config)

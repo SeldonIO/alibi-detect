@@ -95,8 +95,7 @@ class ThresholdMixin(ABC):
 
 class DriftConfigMixin:
     """
-    A mixin class to be used by detector `get_config` methods. The `drift_config` method defines the initial
-    generic configuration dict for all detectors, which is then fully populated by a detector's get_config method(s).
+    A mixin class containing methods related to a drift detector's configuration dictionary.
     """
     x_ref: np.ndarray
     enable_config: bool = True
@@ -115,6 +114,18 @@ class DriftConfigMixin:
             raise ValueError('The detector must be instantiated with `enable_config=True` in order for the '
                              '`get_config` method to be used.')
 
+    @classmethod
+    def from_config(cls, config: dict):
+        """
+        Instantiate a drift detector from a fully resolved (and validated) config dictionary.
+
+        Parameters
+        ----------
+        config
+            A config dictionary matching the schema's in :class:`~alibi_detect.saving.schemas`.
+        """
+        return cls(**config)
+
     def _set_config(self, inputs):  # TODO - move to BaseDetector once config save/load implemented for non-drift
         if not hasattr(self, 'config'):  # init config if it doesn't already exist
             name = self.__class__.__name__
@@ -127,16 +138,17 @@ class DriftConfigMixin:
             cfg: Dict[str, Any] = {'name': name}
 
             # Populate meta dict and add to config
-            cfg_meta = {
-                'version': __version__,
-                'config_spec': __config_spec__,
-                'version_warning': self.meta.get('version_warning', False)
-            }
-            cfg.update({'meta': cfg_meta})
+            if hasattr(self, 'meta'):
+                cfg_meta = {
+                    'version': __version__,
+                    'config_spec': __config_spec__,
+                    'version_warning': self.meta.get('version_warning', False)
+                }
+                cfg.update({'meta': cfg_meta})
             self.config = cfg
 
         # args and kwargs
-        pop_inputs = ['self', '__class__']
+        pop_inputs = ['self', '__class__', 'inputs']
         pop_inputs += self.config.keys()  # Adding self.config.keys() avoids overwriting existing config
         [inputs.pop(k, None) for k in pop_inputs]
         self.config.update(inputs)

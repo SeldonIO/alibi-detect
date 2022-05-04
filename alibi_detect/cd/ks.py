@@ -11,7 +11,6 @@ class KSDrift(BaseUnivariateDrift):
             self,
             x_ref: Union[np.ndarray, list],
             p_val: float = .05,
-            x_ref_preprocessed: bool = False,
             preprocess_at_init: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
@@ -19,7 +18,8 @@ class KSDrift(BaseUnivariateDrift):
             alternative: str = 'two-sided',
             n_features: Optional[int] = None,
             input_shape: Optional[tuple] = None,
-            data_type: Optional[str] = None
+            data_type: Optional[str] = None,
+            enable_config: bool = True
     ) -> None:
         """
         Kolmogorov-Smirnov (K-S) data drift detector with Bonferroni or False Discovery Rate (FDR)
@@ -32,13 +32,9 @@ class KSDrift(BaseUnivariateDrift):
         p_val
             p-value used for significance of the K-S test for each feature. If the FDR correction method
             is used, this corresponds to the acceptable q-value.
-        x_ref_preprocessed
-            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
-            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
-            data will also be preprocessed.
         preprocess_at_init
             Whether to preprocess the reference data when the detector is instantiated. Otherwise, the reference
-            data will be preprocessed at prediction time. Only applies if `x_ref_preprocessed=False`.
+            data will be preprocessed at prediction time.
         update_x_ref
             Reference data can optionally be updated to the last n instances seen by the detector
             or via reservoir sampling with size n. For the former, the parameter equals {'last': n} while
@@ -58,19 +54,27 @@ class KSDrift(BaseUnivariateDrift):
             Shape of input data.
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
+        enable_config
+            Store config data at detector instantiation. this must be set to `true` in order for
+            :meth:`~alibi_detect.base.DriftConfigMixin.get_config` and :func:`alibi_detect.saving.save_detector` to
+            be used. Since the original `x_ref` data must be stored, this can be set to `false` if memory is limited.
         """
         super().__init__(
             x_ref=x_ref,
             p_val=p_val,
-            x_ref_preprocessed=x_ref_preprocessed,
             preprocess_at_init=preprocess_at_init,
             update_x_ref=update_x_ref,
             preprocess_fn=preprocess_fn,
             correction=correction,
             n_features=n_features,
             input_shape=input_shape,
-            data_type=data_type
+            data_type=data_type,
+            enable_config=enable_config
         )
+        # Update config
+        if enable_config:
+            self._set_config(locals())
+
         self.alternative = alternative
 
     def feature_score(self, x_ref: np.ndarray, x: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
@@ -96,21 +100,3 @@ class KSDrift(BaseUnivariateDrift):
             # TODO: update to 'exact' when bug fix is released in scipy 1.5
             dist[f], p_val[f] = ks_2samp(x_ref[:, f], x[:, f], alternative=self.alternative, mode='asymp')
         return p_val, dist
-
-    def get_config(self) -> dict:
-        """
-        Get the detector's configuration dictionary.
-
-        Returns
-        -------
-        The detector's configuration dictionary.
-        """
-        cfg = super().get_config()
-
-        # Detector kwargs
-        kwargs = {
-            'alternative': self.alternative,
-        }
-        cfg.update(kwargs)
-
-        return cfg

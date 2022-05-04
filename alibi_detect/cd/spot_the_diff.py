@@ -1,6 +1,7 @@
 import numpy as np
 from typing import Callable, Dict, Optional, Union
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
+from alibi_detect.base import DriftConfigMixin
 
 if has_pytorch:
     from alibi_detect.cd.pytorch.spot_the_diff import SpotTheDiffDriftTorch
@@ -12,13 +13,12 @@ if has_tensorflow:
     from alibi_detect.utils.tensorflow.data import TFDataset
 
 
-class SpotTheDiffDrift:
+class SpotTheDiffDrift(DriftConfigMixin):
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
             backend: str = 'tensorflow',
             p_val: float = .05,
-            x_ref_preprocessed: bool = False,
             preprocess_fn: Optional[Callable] = None,
             kernel: Callable = None,
             n_diffs: int = 1,
@@ -40,7 +40,8 @@ class SpotTheDiffDrift:
             dataset: Optional[Callable] = None,
             dataloader: Optional[Callable] = None,
             input_shape: Optional[tuple] = None,
-            data_type: Optional[str] = None
+            data_type: Optional[str] = None,
+            enable_config: bool = True
     ) -> None:
         """
         Classifier-based drift detector with a classifier of form y = a + b_1*k(x,w_1) + ... + b_J*k(x,w_J),
@@ -61,10 +62,6 @@ class SpotTheDiffDrift:
             Backend used for the training loop implementation.
         p_val
             p-value used for the significance of the test.
-        x_ref_preprocessed
-            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
-            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
-            data will also be preprocessed.
         preprocess_fn
             Function to preprocess the data before computing the data drift metrics.
         kernel
@@ -118,8 +115,17 @@ class SpotTheDiffDrift:
             Shape of input data.
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
+        enable_config
+            Store config data at detector instantiation. this must be set to `true` in order for
+            :meth:`~alibi_detect.base.DriftConfigMixin.get_config` and :func:`alibi_detect.saving.save_detector` to
+            be used. Since the original `x_ref` data must be stored, this can be set to `false` if memory is limited.
         """
         super().__init__()
+
+        # Set config
+        if enable_config:
+            inputs = locals()
+            self._set_config(inputs)
 
         backend = backend.lower()
         if backend == 'tensorflow' and not has_tensorflow or backend == 'pytorch' and not has_pytorch:
@@ -130,7 +136,7 @@ class SpotTheDiffDrift:
 
         kwargs = locals()
         args = [kwargs['x_ref']]
-        pop_kwargs = ['self', 'x_ref',  'backend', '__class__']
+        pop_kwargs = ['self', 'x_ref',  'backend', 'enable_config', '__class__', 'inputs']
         if kwargs['optimizer'] is None:
             pop_kwargs += ['optimizer']
         [kwargs.pop(k, None) for k in pop_kwargs]
@@ -148,6 +154,9 @@ class SpotTheDiffDrift:
                 kwargs.update({'dataloader': DataLoader})
             self._detector = SpotTheDiffDriftTorch(*args, **kwargs)  # type: ignore
         self.meta = self._detector.meta
+        # Set config again to include self.meta
+        if enable_config:
+            self._set_config(inputs)
 
     def predict(
         self, x: np.ndarray,  return_p_val: bool = True, return_distance: bool = True,
@@ -181,13 +190,3 @@ class SpotTheDiffDrift:
         data, and the trained model.
         """
         return self._detector.predict(x, return_p_val, return_distance, return_probs, return_model)
-
-    def get_config(self) -> dict:
-        """
-        Get the detector's configuration dictionary.
-
-        Returns
-        -------
-        The detector's configuration dictionary.
-        """
-        return self._detector.get_config()

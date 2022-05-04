@@ -108,13 +108,14 @@ def kernel(request, backend):
     """
     Gaussian RBF kernel for given backend.
     """
-    kernel_kwargs = request.param
-    if backend == 'tensorflow':
-        kernel = GaussianRBF_tf if kernel_kwargs == "GaussianRBF" else GaussianRBF_tf(**kernel_kwargs)
-    elif backend == 'pytorch':
-        kernel = GaussianRBF_pt if kernel_kwargs == "GaussianRBF" else GaussianRBF_pt(**kernel_kwargs)
-    else:
-        raise ValueError('`backend` not valid.')
+    kernel = request.param
+    if kernel is not None:
+        if backend == 'tensorflow':
+            kernel = GaussianRBF_tf(**kernel)
+        elif backend == 'pytorch':
+            kernel = GaussianRBF_pt(**kernel)
+        else:
+            raise ValueError('`backend` not valid.')
     return kernel
 
 
@@ -264,7 +265,6 @@ def test_save_ksdrift(data, preprocess_fn, tmp_path):
 
     # Assert
     np.testing.assert_array_equal(preprocess_fn(X_ref), cd_load.x_ref)
-    assert cd_load.x_ref_preprocessed
     assert cd_load.n_features == LATENT_DIM
     assert cd_load.p_val == P_VAL
     assert isinstance(cd_load.preprocess_fn, Callable)
@@ -295,7 +295,6 @@ def test_save_ksdrift_nlp(data, preprocess_fn, max_len, enc_dim, tmp_path):
 
     # Assert
     np.testing.assert_array_equal(preprocess_fn(X_ref), cd_load.x_ref)
-    assert cd_load.x_ref_preprocessed
     if isinstance(preprocess_fn.keywords['model'], (TransformerEmbedding_tf, TransformerEmbedding_pt)):
         assert cd_load.n_features == 768  # hardcoded to bert-base-cased for now
     else:
@@ -328,7 +327,6 @@ def test_save_cvmdrift(data, preprocess_custom, tmp_path):
 
     # Assert
     np.testing.assert_array_equal(preprocess_custom(X_ref), cd_load.x_ref)
-    assert cd_load.x_ref_preprocessed
     assert cd_load.n_features == LATENT_DIM
     assert cd_load.p_val == P_VAL
     assert isinstance(cd_load.preprocess_fn, Callable)
@@ -338,7 +336,7 @@ def test_save_cvmdrift(data, preprocess_custom, tmp_path):
 
 
 @parametrize('kernel', [
-        "GaussianRBF",  # pass kernel as a class (and specify sigma via sigma kwarg)
+        None,  # Use default kernel
         {'sigma': 0.5, 'trainable': False},  # pass kernel as object
     ], indirect=True
 )
@@ -349,32 +347,29 @@ def test_save_mmddrift(data, kernel, preprocess_custom, backend, tmp_path, seed)
 
     Detector is saved and then loaded, with assertions checking that the reinstantiated detector is equivalent.
     """
-    # Detector save/load
+    # Init detector and make predictions
     X_ref, X_h0 = data
-    cd = MMDDrift(X_ref,
-                  p_val=P_VAL,
-                  backend=backend,
-                  preprocess_fn=preprocess_custom,
-                  n_permutations=N_PERMUTATIONS,
-                  preprocess_at_init=True,
-                  kernel=kernel,
-                  configure_kernel_from_x_ref=False,
-                  sigma=np.array([0.5])
-                  )
-
-    # Make prediction (need to do this so that sigma is inferred and we can compare later)
     with fixed_seed(seed):
+        cd = MMDDrift(X_ref,
+                      p_val=P_VAL,
+                      backend=backend,
+                      preprocess_fn=preprocess_custom,
+                      n_permutations=N_PERMUTATIONS,
+                      preprocess_at_init=True,
+                      kernel=kernel,
+                      configure_kernel_from_x_ref=False,
+                      sigma=np.array([0.5])
+                      )
         preds = cd.predict(X_h0)
-
-    # Save/load and make another prediction
     save_detector(cd, tmp_path)
-    cd_load = load_detector(tmp_path)
+
+    # Load and make predictions
     with fixed_seed(seed):
+        cd_load = load_detector(tmp_path)
         preds_load = cd_load.predict(X_h0)
 
     # assertions
     np.testing.assert_array_equal(preprocess_custom(X_ref), cd_load._detector.x_ref)
-    assert cd_load._detector.x_ref_preprocessed
     assert not cd_load._detector.infer_sigma
     assert cd_load._detector.n_permutations == N_PERMUTATIONS
     assert cd_load._detector.p_val == P_VAL
@@ -388,11 +383,11 @@ def test_save_mmddrift(data, kernel, preprocess_custom, backend, tmp_path, seed)
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
 def test_save_lsdddrift(data, preprocess_custom, backend, tmp_path, seed):
     """
-    Test LSDDDrift on continuous datasets, with UAE as preprocess_fn.
+    Test LSDDDrift on continuous datasets.
 
     Detector is saved and then loaded, with assertions checking that the reinstantiated detector is equivalent.
     """
-    # Init detector then save
+    # Init detector and make predictions
     X_ref, X_h0 = data
     with fixed_seed(seed):  # Init and predict with a fixed random state
         cd = LSDDDrift(X_ref,
@@ -466,7 +461,6 @@ def test_save_chisquaredrift(data, tmp_path):
 
     # Assert
     np.testing.assert_array_equal(X_ref, cd_load.x_ref)
-    assert not cd_load.x_ref_preprocessed
     assert cd_load.n_features == input_dim
     assert cd_load.p_val == P_VAL
     assert isinstance(cd_load.x_ref_categories, dict)
@@ -494,7 +488,6 @@ def test_save_tabulardrift(data, tmp_path):
 
     # Assert
     np.testing.assert_array_equal(X_ref, cd_load.x_ref)
-    assert not cd_load.x_ref_preprocessed
     assert cd_load.n_features == input_dim
     assert cd_load.p_val == P_VAL
     assert isinstance(cd_load.x_ref_categories, dict)
@@ -504,64 +497,74 @@ def test_save_tabulardrift(data, tmp_path):
 
 
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
-def test_save_classifierdrift(data, preprocess_custom, classifier, backend, tmp_path):
+def test_save_classifierdrift(data, classifier, backend, tmp_path, seed):
     """ Test ClassifierDrift on continuous datasets."""
-    # Detector save/load
+    # Init detector and predict
     X_ref, X_h0 = data
-    cd = ClassifierDrift(X_ref,
-                         model=classifier,
-                         p_val=P_VAL,
-                         preprocess_fn=preprocess_custom,
-                         n_folds=5,
-                         backend=backend,
-                         train_size=None)
+    with fixed_seed(seed):
+        cd = ClassifierDrift(X_ref,
+                             model=classifier,
+                             p_val=P_VAL,
+                             n_folds=5,
+                             backend=backend,
+                             train_size=None)
+        preds = cd.predict(X_h0)
     save_detector(cd, tmp_path)
-    cd_load = load_detector(tmp_path)
+
+    # Load detector and make another prediction
+    with fixed_seed(seed):
+        cd_load = load_detector(tmp_path)
+        preds_load = cd_load.predict(X_h0)
 
     # Assert
-    np.testing.assert_array_equal(preprocess_custom(X_ref), cd_load._detector.x_ref)
+    np.testing.assert_array_equal(X_ref, cd_load._detector.x_ref)
     assert isinstance(cd_load._detector.skf, StratifiedKFold)
-    assert cd_load._detector.x_ref_preprocessed
     assert cd_load._detector.p_val == P_VAL
     assert isinstance(cd_load._detector.train_kwargs, dict)
     if backend == 'tensorflow':
         assert isinstance(cd_load._detector.model, tf.keras.Model)
     else:
         pass  # TODO
-#    np.testing.assert_array_equal(cd.predict(X_h0)['data']['p_val'],  # only do for deterministic detectors
-#                                  cd_load.predict(X_h0)['data']['p_val'])
+    # TODO: detectors involving tensorflow model's still aren't deterministic - investigate in future
+#    assert preds['data']['distance'] == preds_load['data']['distance']
+#    assert preds['data']['p_val'] == preds_load['data']['p_val']
 
 
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
-def test_save_spotthediff(data, classifier, preprocess_custom, backend, tmp_path):
+def test_save_spotthediff(data, classifier, backend, tmp_path, seed):
     """
-    Test SpotTheDiffDrift on continuous datasets, with UAE as preprocess_fn.
+    Test SpotTheDiffDrift on continuous datasets.
 
     Detector is saved and then loaded, with assertions checking that the reinstantiated detector is equivalent.
     """
-    # Detector save/load
+    # Init detector and predict
     X_ref, X_h0 = data
-    cd = SpotTheDiffDrift(X_ref,
-                          p_val=P_VAL,
-                          n_folds=5,
-                          train_size=None,
-                          backend=backend,
-                          preprocess_fn=preprocess_custom)
+    with fixed_seed(seed):
+        cd = SpotTheDiffDrift(X_ref,
+                              p_val=P_VAL,
+                              n_folds=5,
+                              train_size=None,
+                              backend=backend)
+        preds = cd.predict(X_h0)
     save_detector(cd, tmp_path)
-    cd_load = load_detector(tmp_path)
+
+    # Load detector and make another prediction
+    with fixed_seed(seed):
+        cd_load = load_detector(tmp_path)
+        preds_load = cd_load.predict(X_h0)
 
     # Assert
-    np.testing.assert_array_equal(preprocess_custom(X_ref), cd_load._detector._detector.x_ref)
+    np.testing.assert_array_equal(X_ref, cd_load._detector._detector.x_ref)
     assert isinstance(cd_load._detector._detector.skf, StratifiedKFold)
-    assert cd_load._detector._detector.x_ref_preprocessed
     assert cd_load._detector._detector.p_val == P_VAL
-    assert isinstance(cd_load._detector._detector.preprocess_fn, Callable)
-    assert cd_load._detector._detector.preprocess_fn.func.__name__ == 'preprocess_drift'
     assert isinstance(cd_load._detector._detector.train_kwargs, dict)
     if backend == 'tensorflow':
         assert isinstance(cd_load._detector._detector.model, tf.keras.Model)
     else:
         pass  # TODO
+    # TODO: detectors involving tensorflow model's still aren't deterministic - investigate in future
+    #    assert preds['data']['distance'] == preds_load['data']['distance']
+    #    assert preds['data']['p_val'] == preds_load['data']['p_val']
 
 
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
@@ -596,50 +599,50 @@ def test_save_learnedkernel(data, deep_kernel, preprocess_custom, backend, tmp_p
 
 
 @parametrize('kernel', [
-        "GaussianRBF",  # pass GaussianRBF kernel class (this will use the context specific _sigma_median_diag fn)
+        None,  # Default kernel
         {'sigma': 0.5, 'trainable': False},  # pass kernels as GaussianRBF objects, with default sigma_median fn
     ], indirect=True
 )
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
-def test_save_contextmmddrift(data, preprocess_custom, kernel, backend, tmp_path, seed):
+def test_save_contextmmddrift(data, kernel, backend, tmp_path, seed):
     """
     Test ContextMMDDrift on continuous datasets, with UAE as preprocess_fn.
 
     Detector is saved and then loaded, with assertions checking that the reinstantiated detector is equivalent.
     """
-    # Detector init
+    # Init detector and make predictions
     X_ref, X_h0 = data
     C_ref, C_h0 = (X_ref[:, 0] + 1).reshape(-1, 1), (X_h0[:, 0] + 1).reshape(-1, 1)
-    cd = ContextMMDDrift(X_ref,
-                         C_ref,
-                         p_val=P_VAL,
-                         backend=backend,
-                         preprocess_fn=preprocess_custom,
-                         n_permutations=N_PERMUTATIONS,
-                         preprocess_at_init=True,
-                         x_kernel=kernel,
-                         c_kernel=kernel
-                         )
-    # Make prediction (need to do this so that sigma is inferred and we can compare later)
     with fixed_seed(seed):
+        cd = ContextMMDDrift(X_ref,
+                             C_ref,
+                             p_val=P_VAL,
+                             backend=backend,
+                             preprocess_fn=preprocess_dummy,
+                             n_permutations=N_PERMUTATIONS,
+                             preprocess_at_init=True,
+                             x_kernel=kernel,
+                             c_kernel=kernel
+                             )
         preds = cd.predict(X_h0, C_h0)
-
-    # Save/load and make another prediction
     save_detector(cd, tmp_path)
-    cd_load = load_detector(tmp_path)
+
+    # Load and make another prediction
     with fixed_seed(seed):
+        cd_load = load_detector(tmp_path)
         preds_load = cd_load.predict(X_h0, C_h0)
 
     # assertions
-    np.testing.assert_array_equal(preprocess_custom(X_ref), cd_load._detector.x_ref)
+    np.testing.assert_array_equal(X_ref, cd_load._detector.x_ref)
     np.testing.assert_array_equal(C_ref, cd_load._detector.c_ref)
-    assert cd_load._detector.x_ref_preprocessed
     assert cd_load._detector.n_permutations == N_PERMUTATIONS
     assert cd_load._detector.p_val == P_VAL
     assert isinstance(cd_load._detector.preprocess_fn, Callable)
-    assert cd_load._detector.preprocess_fn.func.__name__ == 'preprocess_drift'
-    assert cd._detector.x_kernel.sigma == cd_load._detector.x_kernel.sigma
+    assert cd_load._detector.preprocess_fn.func.__name__ == 'preprocess_dummy'
+#    assert cd._detector.x_kernel.sigma == cd_load._detector.x_kernel.sigma
+    assert cd._detector.c_kernel.sigma == cd_load._detector.c_kernel.sigma
     assert cd._detector.x_kernel.init_sigma_fn == cd_load._detector.x_kernel.init_sigma_fn
+    assert cd._detector.c_kernel.init_sigma_fn == cd_load._detector.c_kernel.init_sigma_fn
     assert preds['data']['p_val'] == preds_load['data']['p_val']
 
 

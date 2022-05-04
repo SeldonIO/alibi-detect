@@ -1,6 +1,7 @@
 import numpy as np
 from typing import Callable, Dict, Optional, Union
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, has_sklearn
+from alibi_detect.base import DriftConfigMixin
 
 if has_sklearn:
     from sklearn.base import ClassifierMixin
@@ -16,14 +17,13 @@ if has_tensorflow:
     from alibi_detect.utils.tensorflow.data import TFDataset
 
 
-class ClassifierDrift:
+class ClassifierDrift(DriftConfigMixin):
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
             model: Union[ClassifierMixin, Callable],
             backend: str = 'tensorflow',
             p_val: float = .05,
-            x_ref_preprocessed: bool = False,
             preprocess_at_init: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
@@ -48,7 +48,8 @@ class ClassifierDrift:
             use_calibration: bool = False,
             calibration_kwargs: Optional[dict] = None,
             use_oob: bool = False,
-            data_type: Optional[str] = None
+            data_type: Optional[str] = None,
+            enable_config: bool = True
     ) -> None:
         """
         Classifier-based drift detector. The classifier is trained on a fraction of the combined
@@ -65,13 +66,9 @@ class ClassifierDrift:
             Backend used for the training loop implementation. Supported: 'tensorflow' | 'pytorch' | 'sklearn'.
         p_val
             p-value used for the significance of the test.
-        x_ref_preprocessed
-            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
-            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
-            data will also be preprocessed.
         preprocess_at_init
             Whether to preprocess the reference data when the detector is instantiated. Otherwise, the reference
-            data will be preprocessed at prediction time. Only applies if `x_ref_preprocessed=False`.
+            data will be preprocessed at prediction time.
         update_x_ref
             Reference data can optionally be updated to the last `n` instances seen by the detector
             or via reservoir sampling with size `n`. For the former, the parameter equals `{'last': n}` while
@@ -139,8 +136,16 @@ class ClassifierDrift:
             Whether to use out-of-bag(OOB) predictions. Supported only for `RandomForestClassifier`.
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
+        enable_config
+            Store config data at detector instantiation. this must be set to `true` in order for
+            :meth:`~alibi_detect.base.DriftConfigMixin.get_config` and :func:`alibi_detect.saving.save_detector` to
+            be used. Since the original `x_ref` data must be stored, this can be set to `false` if memory is limited.
         """
         super().__init__()
+        # Set config
+        if enable_config:
+            inputs = locals()
+            self._set_config(inputs)
 
         backend = backend.lower()
         if (backend == 'tensorflow' and not has_tensorflow) or (backend == 'pytorch' and not has_pytorch) or \
@@ -152,7 +157,7 @@ class ClassifierDrift:
 
         kwargs = locals()
         args = [kwargs['x_ref'], kwargs['model']]
-        pop_kwargs = ['self', 'x_ref', 'model', 'backend', '__class__']
+        pop_kwargs = ['self', 'x_ref', 'model', 'backend', 'enable_config', '__class__', 'inputs']
         if kwargs['optimizer'] is None:
             pop_kwargs += ['optimizer']
         [kwargs.pop(k, None) for k in pop_kwargs]
@@ -177,6 +182,9 @@ class ClassifierDrift:
             [kwargs.pop(k, None) for k in pop_kwargs]
             self._detector = ClassifierDriftSklearn(*args, **kwargs)  # type: ignore
         self.meta = self._detector.meta
+        # Set config again to include self.meta
+        if enable_config:
+            self._set_config(inputs)
 
     def predict(self, x: Union[np.ndarray, list],  return_p_val: bool = True,
                 return_distance: bool = True, return_probs: bool = True, return_model: bool = True) \
@@ -210,13 +218,3 @@ class ClassifierDrift:
         prediction probabilities on the reference and test data, and the trained model. \
         """
         return self._detector.predict(x, return_p_val, return_distance, return_probs, return_model)
-
-    def get_config(self) -> dict:
-        """
-        Get the detector's configuration dictionary.
-
-        Returns
-        -------
-        The detector's configuration dictionary.
-        """
-        return self._detector.get_config()

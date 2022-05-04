@@ -22,7 +22,6 @@ class LSDDDriftTF(BaseLSDDDrift):
             lambda_rd_max: float = 0.2,
             input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None,
-            enable_config: bool = True
     ) -> None:
         """
         Least-squares density difference (LSDD) data drift detector using a permutation test.
@@ -59,10 +58,6 @@ class LSDDDriftTF(BaseLSDDDrift):
             Shape of input data.
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
-        enable_config
-            Store config data at detector instantiation. This must be set to `True` in order for :meth:`~get_config`
-            and :func:`alibi_detect.saving.save_detector` to be used. Since the original `x_ref` data must be stored,
-            this can be set to `False` if memory is limited.
         """
         super().__init__(
             x_ref=x_ref,
@@ -76,14 +71,8 @@ class LSDDDriftTF(BaseLSDDDrift):
             lambda_rd_max=lambda_rd_max,
             input_shape=input_shape,
             data_type=data_type,
-            enable_config=enable_config
         )
-        backend = 'tensorflow'
-        self.meta.update({'backend': backend})
-
-        # Update config with any kwarg's missing from parent class (where ._set_config was called)
-        if enable_config:
-            self._set_config(locals())
+        self.meta.update({'backend': 'tensorflow'})
 
         if self.preprocess_at_init or self.preprocess_fn is None:
             x_ref = tf.convert_to_tensor(self.x_ref)

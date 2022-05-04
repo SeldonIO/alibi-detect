@@ -211,13 +211,19 @@ def write_config(cfg: dict, filepath: Union[str, os.PathLike]):
     filepath
         Filepath to directory to save 'config.toml' file in.
     """
+    # Create directory if it doesn't exist
     filepath = Path(filepath)
     if not filepath.is_dir():
         logger.warning('Directory {} does not exist and is now created.'.format(filepath))
         filepath.mkdir(parents=True, exist_ok=True)
+    # Convert pathlib.Path's to str's
     cfg = _path2str(cfg)
+    # Validatre config before final tweaks
     validate_config(cfg)  # Must validate here as replacing None w/ str will break validation
+    # Replace None with "None", and dicts with integer keys with str keys (TODO: S2C depending on toml library updates)
     cfg = _replace(cfg, None, "None")  # Note: None replaced with "None" as None/null not valid TOML
+    cfg = _fix_dict_keys(cfg)
+    # Write to TOML file
     logger.info('Writing config to {}'.format(filepath.joinpath('config.toml')))
     with open(filepath.joinpath('config.toml'), 'w') as f:
         toml.dump(cfg, f, encoder=toml.TomlNumpyEncoder())  # type: ignore[misc]
@@ -358,6 +364,32 @@ def _path2str(cfg: dict, absolute: bool = False) -> dict:
     return cfg
 
 
+def _fix_dict_keys(cfg: dict) -> dict:
+    """
+    Private function to traverse a config dict and convert any dict's with int keys to str keys (e.g.
+    `categories_per_feature` kwarg for `TabularDrift`.
+
+    Parameters
+    ----------
+    cfg
+        The config dict.
+
+    Returns
+    -------
+    The converted config dict.
+    """
+    for k, v in cfg.items():
+        if isinstance(v, dict):
+            v_copy = v.copy()
+            for key in v.keys():
+                if isinstance(key, int):
+                    v_copy[str(key)] = v[key]
+                    v_copy.pop(key)
+            _fix_dict_keys(v_copy)
+            cfg.update({k: v_copy})
+    return cfg
+
+
 def _save_model_config(model: Callable,
                        base_path: Path,
                        input_shape: tuple,
@@ -457,11 +489,18 @@ def _save_kernel_config(kernel: Callable,
 
     # If any other kernel, serialize the class to disk and get config
     else:
-        if hasattr(kernel, 'get_config'):
-            cfg_kernel = kernel.get_config()
-        else:
-            raise AttributeError("The detector's `kernel` must have a .get_config() method for it to be saved.")
-        cfg_kernel['src'], _ = _serialize_object(kernel.__class__, base_path, local_path.joinpath('kernel'))
-        cfg_kernel['init_sigma_fn'], _ = _serialize_object(cfg_kernel['init_sigma_fn'], base_path,
-                                                           local_path.joinpath('init_sigma_fn'))
+        if isinstance(kernel, type):  # if still a class
+            kernel_class = kernel
+            cfg_kernel = {}
+        else:  # if an object
+            kernel_class = kernel.__class__
+            if hasattr(kernel, 'get_config'):
+                cfg_kernel = kernel.get_config()
+                cfg_kernel['init_sigma_fn'], _ = _serialize_object(cfg_kernel['init_sigma_fn'], base_path,
+                                                                   local_path.joinpath('init_sigma_fn'))
+            else:
+                raise AttributeError("The detector's `kernel` must have a .get_config() method for it to be saved.")
+        # Serialize the kernel class
+        cfg_kernel['src'], _ = _serialize_object(kernel_class, base_path, local_path.joinpath('kernel'))
+
     return cfg_kernel
