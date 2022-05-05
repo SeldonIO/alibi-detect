@@ -126,7 +126,8 @@ class DriftConfigMixin:
                 if hasattr(detector, key):
                     cfg[key] = getattr(detector, key)
             # Set x_ref_preprocessed flag
-            cfg['x_ref_preprocessed'] = detector.preprocess_at_init and detector.preprocess_fn is not None
+            preprocess_at_init = getattr(detector, 'preprocess_at_init', True)  # If no preprocess_at_init, always true!
+            cfg['x_ref_preprocessed'] = preprocess_at_init and detector.preprocess_fn is not None
             return cfg
         else:
             raise NotImplementedError('Getting a config (or saving via a config file) is not yet implemented for this'

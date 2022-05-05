@@ -24,10 +24,10 @@ from pytest_cases import fixture, param_fixture, parametrize, parametrize_with_c
 from sklearn.model_selection import StratifiedKFold
 from transformers import AutoTokenizer
 
-from alibi_detect.cd import (ChiSquareDrift,  # ClassifierUncertaintyDrift,
-                             ClassifierDrift, FETDrift, KSDrift,
-                             LearnedKernelDrift, LSDDDrift, MMDDrift,
-                             SpotTheDiffDrift, TabularDrift, ContextMMDDrift)
+from alibi_detect.cd import (ChiSquareDrift,  # ClassifierUncertaintyDrift, RegressorUncertaintyDrift,
+                             ClassifierDrift, FETDrift, KSDrift, LearnedKernelDrift, LSDDDrift, MMDDrift,
+                             SpotTheDiffDrift, TabularDrift, ContextMMDDrift, MMDDriftOnline, LSDDDriftOnline,
+                             CVMDriftOnline, FETDriftOnline)
 from alibi_detect.cd.pytorch import HiddenOutput as HiddenOutput_pt
 from alibi_detect.cd.pytorch import preprocess_drift as preprocess_drift_pt
 from alibi_detect.cd.tensorflow import UAE as UAE_tf
@@ -53,7 +53,10 @@ if version.parse(scipy.__version__) >= version.parse('1.7.0'):
 
 backend = param_fixture("backend", ['tensorflow'])
 P_VAL = 0.05
+ERT = 10
 N_PERMUTATIONS = 10
+N_BOOTSTRAPS = 100
+WINDOW_SIZE = 5
 LATENT_DIM = 2  # Must be less than input_dim set in ./datasets.py
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 REGISTERED_OBJECTS = registry.get_all()
@@ -641,6 +644,183 @@ def test_save_contextmmddrift(data, kernel, backend, tmp_path, seed):
     assert cd._detector.x_kernel.init_sigma_fn == cd_load._detector.x_kernel.init_sigma_fn
     assert cd._detector.c_kernel.init_sigma_fn == cd_load._detector.c_kernel.init_sigma_fn
     assert preds['data']['p_val'] == preds_load['data']['p_val']
+
+
+@parametrize('kernel', [
+        None,  # Use default kernel
+        {'sigma': 0.5, 'trainable': False},  # pass kernel as object
+    ], indirect=True
+)
+@parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
+def test_save_onlinemmddrift(data, kernel, preprocess_custom, backend, tmp_path, seed):
+    """
+    Test MMDDriftOnline on continuous datasets, with UAE as preprocess_fn.
+
+    Detector is saved and then loaded, with assertions checking that the reinstantiated detector is equivalent.
+    """
+    # Init detector and make predictions
+    X_ref, X_h0 = data
+
+    with fixed_seed(seed):
+        cd = MMDDriftOnline(X_ref,
+                            ert=ERT,
+                            backend=backend,
+                            preprocess_fn=preprocess_custom,
+                            n_bootstraps=N_BOOTSTRAPS,
+                            kernel=kernel,
+                            window_size=WINDOW_SIZE
+                            )
+        stats = []
+        for i, x_t in enumerate(X_h0):
+            pred = cd.predict(x_t)
+            if i >= WINDOW_SIZE:  # test stats garbage until window full
+                stats.append(pred['data']['test_stat'])
+    save_detector(cd, tmp_path)
+
+    # Load and make predictions
+    with fixed_seed(seed):
+        cd_load = load_detector(tmp_path)
+        stats_load = []
+        for i, x_t in enumerate(X_h0):
+            pred = cd.predict(x_t)
+            if i >= WINDOW_SIZE:
+                stats_load.append(pred['data']['test_stat'])
+
+    # assertions
+    np.testing.assert_array_equal(preprocess_custom(X_ref), cd_load._detector.x_ref)
+    assert cd_load._detector.n_bootstraps == N_BOOTSTRAPS
+    assert cd_load._detector.ert == ERT
+    assert isinstance(cd_load._detector.preprocess_fn, Callable)
+    assert cd_load._detector.preprocess_fn.func.__name__ == 'preprocess_drift'
+    assert cd._detector.kernel.sigma == cd_load._detector.kernel.sigma
+    assert cd._detector.kernel.init_sigma_fn == cd_load._detector.kernel.init_sigma_fn
+    np.testing.assert_array_equal(stats, stats_load)
+
+
+@parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
+def test_save_onlinelsdddrift(data, preprocess_custom, backend, tmp_path, seed):
+    """
+    Test LSDDDriftOnline on continuous datasets, with UAE as preprocess_fn.
+
+    Detector is saved and then loaded, with assertions checking that the reinstantiated detector is equivalent.
+    """
+    # Init detector and make predictions
+    X_ref, X_h0 = data
+
+    with fixed_seed(seed):
+        cd = LSDDDriftOnline(X_ref,
+                             ert=ERT,
+                             backend=backend,
+                             preprocess_fn=preprocess_custom,
+                             n_bootstraps=N_BOOTSTRAPS,
+                             window_size=WINDOW_SIZE
+                             )
+        stats = []
+        for i, x_t in enumerate(X_h0):
+            pred = cd.predict(x_t)
+            if i >= WINDOW_SIZE:  # test stats garbage until window full
+                stats.append(pred['data']['test_stat'])
+    save_detector(cd, tmp_path)
+
+    # Load and make predictions
+    with fixed_seed(seed):
+        cd_load = load_detector(tmp_path)
+        stats_load = []
+        for i, x_t in enumerate(X_h0):
+            pred = cd.predict(x_t)
+            if i >= WINDOW_SIZE:
+                stats_load.append(pred['data']['test_stat'])
+
+    # assertions
+    np.testing.assert_array_almost_equal(preprocess_custom(X_ref), cd_load.get_config()['x_ref'], 5)
+    assert cd_load._detector.n_bootstraps == N_BOOTSTRAPS
+    assert cd_load._detector.ert == ERT
+    assert isinstance(cd_load._detector.preprocess_fn, Callable)
+    assert cd_load._detector.preprocess_fn.func.__name__ == 'preprocess_drift'
+    assert cd._detector.kernel.sigma == cd_load._detector.kernel.sigma
+    assert cd._detector.kernel.init_sigma_fn == cd_load._detector.kernel.init_sigma_fn
+    np.testing.assert_array_equal(stats, stats_load)
+
+
+@parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
+def test_save_onlinecvmdrift(data, preprocess_custom, tmp_path, seed):
+    """
+    Test CVMDriftOnline on continuous datasets, with UAE as preprocess_fn.
+
+    Detector is saved and then loaded, with assertions checking that the reinstantiated detector is equivalent.
+    """
+    # Init detector and make predictions
+    X_ref, X_h0 = data
+
+    with fixed_seed(seed):
+        cd = CVMDriftOnline(X_ref,
+                            ert=ERT,
+                            preprocess_fn=preprocess_custom,
+                            n_bootstraps=N_BOOTSTRAPS,
+                            window_sizes=[WINDOW_SIZE]
+                            )
+        stats = []
+        for i, x_t in enumerate(X_h0):
+            pred = cd.predict(x_t)
+            if i >= WINDOW_SIZE:  # test stats garbage until at least one window full
+                stats.append(pred['data']['test_stat'])
+    save_detector(cd, tmp_path)
+
+    # Load and make predictions
+    with fixed_seed(seed):
+        cd_load = load_detector(tmp_path)
+        stats_load = []
+        for i, x_t in enumerate(X_h0):
+            pred = cd.predict(x_t)
+            if i >= WINDOW_SIZE:  # test stats garbage until at least one window full
+                stats_load.append(pred['data']['test_stat'])
+
+    # assertions
+    np.testing.assert_array_almost_equal(preprocess_custom(X_ref), cd_load.get_config()['x_ref'], 5)
+    assert cd_load.n_bootstraps == N_BOOTSTRAPS
+    assert cd_load.ert == ERT
+    assert isinstance(cd_load.preprocess_fn, Callable)
+    assert cd_load.preprocess_fn.func.__name__ == 'preprocess_drift'
+    np.testing.assert_array_equal(stats, stats_load)
+
+
+@parametrize_with_cases("data", cases=BinData, prefix='data_')
+def test_save_onlinefetdrift(data, tmp_path, seed):
+    """
+    Test FETDriftOnline on binary datasets.
+
+    Detector is saved and then loaded, with assertions checking that the reinstantiated detector is equivalent.
+    """
+    # Init detector and make predictions
+    X_ref, X_h0 = data
+
+    with fixed_seed(seed):
+        cd = FETDriftOnline(X_ref,
+                            ert=ERT,
+                            n_bootstraps=N_BOOTSTRAPS,
+                            window_sizes=[WINDOW_SIZE]
+                            )
+        stats = []
+        for i, x_t in enumerate(X_h0):
+            pred = cd.predict(x_t)
+            if i >= WINDOW_SIZE:  # test stats garbage until at least one window full
+                stats.append(pred['data']['test_stat'])
+    save_detector(cd, tmp_path)
+
+    # Load and make predictions
+    with fixed_seed(seed):
+        cd_load = load_detector(tmp_path)
+        stats_load = []
+        for i, x_t in enumerate(X_h0):
+            pred = cd.predict(x_t)
+            if i >= WINDOW_SIZE:  # test stats garbage until at least one window full
+                stats_load.append(pred['data']['test_stat'])
+
+    # assertions
+    np.testing.assert_array_equal(X_ref, cd_load.get_config()['x_ref'])
+    assert cd_load.n_bootstraps == N_BOOTSTRAPS
+    assert cd_load.ert == ERT
+    np.testing.assert_array_almost_equal(stats, stats_load, 4)
 
 
 @parametrize_with_cases("data", cases=ContinuousData.data_synthetic_nd)

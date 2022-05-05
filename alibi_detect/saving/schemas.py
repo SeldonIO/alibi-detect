@@ -372,8 +372,6 @@ class DriftDetectorConfig(DetectorConfig):
     # args/kwargs shared by all drift detectors
     x_ref: str
     "Data used as reference distribution. Should be a string referencing a NumPy `.npy` file."
-    p_val: float = .05
-    "p-value threshold used for significance of the statistical test."
     preprocess_fn: Optional[Union[str, PreprocessConfig]] = None
     """
     Function to preprocess the data before computing the data drift metrics. A string referencing a serialized function
@@ -398,8 +396,6 @@ class DriftDetectorConfigResolved(DetectorConfig):
     # args/kwargs shared by all drift detectors
     x_ref: Union[np.ndarray, list]
     "Data used as reference distribution."
-    p_val: float = .05
-    "p-value threshold used for significance of the statistical test."
     preprocess_fn: Optional[Callable] = None
     "Function to preprocess the data before computing the data drift metrics."
     input_shape: Optional[tuple] = None
@@ -422,6 +418,7 @@ class KSDriftConfig(DriftDetectorConfig):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.KSDrift` documentation for a description of each field.
     """
+    p_val: float = .05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
     correction: str = 'bonferroni'
@@ -438,6 +435,7 @@ class KSDriftConfigResolved(DriftDetectorConfigResolved):
     :class:`~alibi_detect.cd.KSDrift` documentation for a description of each field.
     Resolved schema for the :class:`~alibi_detect.cd.KSDrift` detector.
     """
+    p_val: float = .05
     preprocess_at_init: bool = True  # Note: Duplication needed to avoid mypy error (unless we allow reassignment)
     update_x_ref: Optional[Dict[str, int]] = None
     correction: str = 'bonferroni'
@@ -453,6 +451,7 @@ class ChiSquareDriftConfig(DriftDetectorConfig):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.ChiSquareDrift` documentation for a description of each field.
     """
+    p_val: float = .05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
     correction: str = 'bonferroni'
@@ -468,6 +467,7 @@ class ChiSquareDriftConfigResolved(DriftDetectorConfigResolved):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.ChiSquareDrift` documentation for a description of each field.
     """
+    p_val: float = .05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
     correction: str = 'bonferroni'
@@ -483,6 +483,7 @@ class TabularDriftConfig(DriftDetectorConfig):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.TabularDrift` documentation for a description of each field.
     """
+    p_val: float = .05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
     correction: str = 'bonferroni'
@@ -499,6 +500,7 @@ class TabularDriftConfigResolved(DriftDetectorConfigResolved):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.TabularDrift` documentation for a description of each field.
     """
+    p_val: float = .05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
     correction: str = 'bonferroni'
@@ -515,6 +517,7 @@ class CVMDriftConfig(DriftDetectorConfig):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.CVMDrift` documentation for a description of each field.
     """
+    p_val: float = .05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
     correction: str = 'bonferroni'
@@ -529,6 +532,7 @@ class CVMDriftConfigResolved(DriftDetectorConfigResolved):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.CVMDrift` documentation for a description of each field.
     """
+    p_val: float = .05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
     correction: str = 'bonferroni'
@@ -543,6 +547,7 @@ class FETDriftConfig(DriftDetectorConfig):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.FETDrift` documentation for a description of each field.
     """
+    p_val: float = .05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
     correction: str = 'bonferroni'
@@ -558,6 +563,7 @@ class FETDriftConfigResolved(DriftDetectorConfigResolved):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.FETDrift` documentation for a description of each field.
     """
+    p_val: float = .05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
     correction: str = 'bonferroni'
@@ -573,6 +579,7 @@ class MMDDriftConfig(DriftDetectorConfig):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.MMDDrift` documentation for a description of each field.
     """
+    p_val: float = .05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
     kernel: Optional[Union[str, KernelConfig]] = None
@@ -590,6 +597,7 @@ class MMDDriftConfigResolved(DriftDetectorConfigResolved):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.MMDDrift` documentation for a description of each field.
     """
+    p_val: float = .05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
     kernel: Optional[Callable] = None
@@ -607,6 +615,7 @@ class LSDDDriftConfig(DriftDetectorConfig):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.LSDDDrift` documentation for a description of each field.
     """
+    p_val: float = .05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
     sigma: Optional[NDArray[np.float32]] = None
@@ -624,6 +633,7 @@ class LSDDDriftConfigResolved(DriftDetectorConfigResolved):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.LSDDDrift` documentation for a description of each field.
     """
+    p_val: float = .05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
     sigma: Optional[NDArray[np.float32]] = None
@@ -642,6 +652,7 @@ class ClassifierDriftConfig(DriftDetectorConfig):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.ClassifierDrift` documentation for a description of each field.
     """
+    p_val: float = .05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
     model: Union[str, ModelConfig]
@@ -676,6 +687,7 @@ class ClassifierDriftConfigResolved(DriftDetectorConfigResolved):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.ClassifierDrift` documentation for a description of each field.
     """
+    p_val: float = .05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
     model: Optional[SupportedModels_types] = None
@@ -710,6 +722,7 @@ class SpotTheDiffDriftConfig(DriftDetectorConfig):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.SpotTheDiffDrift` documentation for a description of each field.
     """
+    p_val: float = .05
     binarize_preds: bool = False
     train_size: Optional[float] = .75
     n_folds: Optional[int] = None
@@ -740,6 +753,7 @@ class SpotTheDiffDriftConfigResolved(DriftDetectorConfigResolved):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.SpotTheDiffDrift` documentation for a description of each field.
     """
+    p_val: float = .05
     binarize_preds: bool = False
     train_size: Optional[float] = .75
     n_folds: Optional[int] = None
@@ -770,6 +784,7 @@ class LearnedKernelDriftConfig(DriftDetectorConfig):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.LearnedKernelDrift` documentation for a description of each field.
     """
+    p_val: float = .05
     kernel: Union[str, DeepKernelConfig]
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
@@ -799,6 +814,7 @@ class LearnedKernelDriftConfigResolved(DriftDetectorConfigResolved):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.LearnedKernelDrift` documentation for a description of each field.
     """
+    p_val: float = .05
     kernel: Optional[Callable] = None
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
@@ -828,6 +844,7 @@ class ContextMMDDriftConfig(DriftDetectorConfig):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.ContextMMDDrift` documentation for a description of each field.
     """
+    p_val: float = .05
     c_ref: str
     preprocess_at_init: bool = True
     update_ref: Optional[Dict[str, int]] = None
@@ -849,6 +866,7 @@ class ContextMMDDriftConfigResolved(DriftDetectorConfigResolved):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.MMDDrift` documentation for a description of each field.
     """
+    p_val: float = .05
     c_ref: np.ndarray
     preprocess_at_init: bool = True
     update_ref: Optional[Dict[str, int]] = None
@@ -860,6 +878,152 @@ class ContextMMDDriftConfigResolved(DriftDetectorConfigResolved):
     batch_size: Optional[int] = 256
     verbose: bool = False
     device: Optional[Literal['cpu', 'cuda']] = None
+
+
+class MMDDriftOnlineConfig(DriftDetectorConfig):
+    """
+    Unresolved schema for the
+    `MMDDriftOnline <https://docs.seldon.io/projects/alibi-detect/en/stable/cd/methods/onlinemmddrift.html>`_
+    detector.
+
+    Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
+    :class:`~alibi_detect.cd.MMDDriftOnline` documentation for a description of each field.
+    """
+    ert: float
+    window_size: int
+    kernel: Optional[Union[str, KernelConfig]] = None
+    sigma: Optional[np.ndarray] = None
+    n_bootstraps: int = 1000
+    device: Optional[Literal['cpu', 'cuda']] = None
+    verbose: bool = True
+
+
+class MMDDriftOnlineConfigResolved(DriftDetectorConfigResolved):
+    """
+    Resolved schema for the
+    `MMDDriftOnline <https://docs.seldon.io/projects/alibi-detect/en/stable/cd/methods/onlinemmddrift.html>`_
+    detector.
+
+    Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
+    :class:`~alibi_detect.cd.MMDDriftOnline` documentation for a description of each field.
+    """
+    ert: float
+    window_size: int
+    kernel: Optional[Callable] = None
+    sigma: Optional[np.ndarray] = None
+    n_bootstraps: int = 1000
+    device: Optional[Literal['cpu', 'cuda']] = None
+    verbose: bool = True
+
+
+class LSDDDriftOnlineConfig(DriftDetectorConfig):
+    """
+    Unresolved schema for the
+    `LSDDDriftOnline <https://docs.seldon.io/projects/alibi-detect/en/stable/cd/methods/onlinelsdddrift.html>`_
+    detector.
+
+    Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
+    :class:`~alibi_detect.cd.LSDDDriftOnline` documentation for a description of each field.
+    """
+    ert: float
+    window_size: int
+    sigma: Optional[np.ndarray] = None
+    n_bootstraps: int = 1000
+    n_kernel_centers: Optional[int] = None
+    lambda_rd_max: float = 0.2
+    device: Optional[Literal['cpu', 'cuda']] = None
+    verbose: bool = True
+
+
+class LSDDDriftOnlineConfigResolved(DriftDetectorConfigResolved):
+    """
+    Resolved schema for the
+    `LSDDDriftOnline <https://docs.seldon.io/projects/alibi-detect/en/stable/cd/methods/onlinelsdddrift.html>`_
+    detector.
+
+    Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
+    :class:`~alibi_detect.cd.LSDDDriftOnline` documentation for a description of each field.
+    """
+    ert: float
+    window_size: int
+    sigma: Optional[np.ndarray] = None
+    n_bootstraps: int = 1000
+    n_kernel_centers: Optional[int] = None
+    lambda_rd_max: float = 0.2
+    device: Optional[Literal['cpu', 'cuda']] = None
+    verbose: bool = True
+
+
+class CVMDriftOnlineConfig(DriftDetectorConfig):
+    """
+    Unresolved schema for the
+    `CVMDriftOnline <https://docs.seldon.io/projects/alibi-detect/en/stable/cd/methods/onlinecvmdrift.html>`_
+    detector.
+
+    Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
+    :class:`~alibi_detect.cd.CVMDriftOnline` documentation for a description of each field.
+    """
+    ert: float
+    window_sizes: List[int]
+    n_bootstraps: int = 10000
+    batch_size: int = 64
+    n_features: Optional[int] = None
+    verbose: bool = True
+
+
+class CVMDriftOnlineConfigResolved(DriftDetectorConfigResolved):
+    """
+    Resolved schema for the
+    `CVMDriftOnline <https://docs.seldon.io/projects/alibi-detect/en/stable/cd/methods/onlinecvmdrift.html>`_
+    detector.
+
+    Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
+    :class:`~alibi_detect.cd.CVMDriftOnline` documentation for a description of each field.
+    """
+    ert: float
+    window_sizes: List[int]
+    n_bootstraps: int = 10000
+    batch_size: int = 64
+    n_features: Optional[int] = None
+    verbose: bool = True
+
+
+class FETDriftOnlineConfig(DriftDetectorConfig):
+    """
+    Unresolved schema for the
+    `FETDriftOnline <https://docs.seldon.io/projects/alibi-detect/en/stable/cd/methods/onlinefetdrift.html>`_
+    detector.
+
+    Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
+    :class:`~alibi_detect.cd.FETDriftOnline` documentation for a description of each field.
+    """
+    ert: float
+    window_sizes: List[int]
+    n_bootstraps: int = 10000
+    t_max: Optional[int] = None
+    alternative: Literal['greater', 'less'] = 'greater'
+    lam: float = 0.99
+    n_features: Optional[int] = None
+    verbose: bool = True
+
+
+class FETDriftOnlineConfigResolved(DriftDetectorConfigResolved):
+    """
+    Unresolved schema for the
+    `FETDriftOnline <https://docs.seldon.io/projects/alibi-detect/en/stable/cd/methods/onlinefetdrift.html>`_
+    detector.
+
+    Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
+    :class:`~alibi_detect.cd.FETDriftOnline` documentation for a description of each field.
+    """
+    ert: float
+    window_sizes: List[int]
+    n_bootstraps: int = 10000
+    t_max: Optional[int] = None
+    alternative: Literal['greater', 'less'] = 'greater'
+    lam: float = 0.99
+    n_features: Optional[int] = None
+    verbose: bool = True
 
 
 # Unresolved schema dictionary (used in alibi_detect.utils.loading)
@@ -874,7 +1038,11 @@ DETECTOR_CONFIGS = {
     'ClassifierDrift': ClassifierDriftConfig,
     'SpotTheDiffDrift': SpotTheDiffDriftConfig,
     'LearnedKernelDrift': LearnedKernelDriftConfig,
-    'ContextMMDDrift': ContextMMDDriftConfig
+    'ContextMMDDrift': ContextMMDDriftConfig,
+    'MMDDriftOnline': MMDDriftOnlineConfig,
+    'LSDDDriftOnline': LSDDDriftOnlineConfig,
+    'CVMDriftOnline': CVMDriftOnlineConfig,
+    'FETDriftOnline': FETDriftOnlineConfig
 }  # type: Dict[str, Type[DriftDetectorConfig]]
 
 
@@ -890,5 +1058,9 @@ DETECTOR_CONFIGS_RESOLVED = {
     'ClassifierDrift': ClassifierDriftConfigResolved,
     'SpotTheDiffDrift': SpotTheDiffDriftConfigResolved,
     'LearnedKernelDrift': LearnedKernelDriftConfigResolved,
-    'ContextMMDDrift': ContextMMDDriftConfigResolved
+    'ContextMMDDrift': ContextMMDDriftConfigResolved,
+    'MMDDriftOnline': MMDDriftOnlineConfigResolved,
+    'LSDDDriftOnline': LSDDDriftOnlineConfigResolved,
+    'CVMDriftOnline': CVMDriftOnlineConfigResolved,
+    'FETDriftOnline': FETDriftOnlineConfigResolved
 }  # type: Dict[str, Type[DriftDetectorConfigResolved]]

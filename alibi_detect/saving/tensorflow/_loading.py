@@ -13,11 +13,10 @@ from transformers import AutoTokenizer
 
 from alibi_detect.ad import AdversarialAE, ModelDistillation
 from alibi_detect.ad.adversarialae import DenseHidden
-from alibi_detect.cd import (ChiSquareDrift, ClassifierDrift,
-                             ClassifierUncertaintyDrift, CVMDrift, FETDrift,
-                             KSDrift, LearnedKernelDrift, LSDDDrift, MMDDrift,
-                             RegressorUncertaintyDrift, SpotTheDiffDrift,
-                             TabularDrift, ContextMMDDrift)
+from alibi_detect.cd import (ChiSquareDrift, ClassifierDrift, ClassifierUncertaintyDrift, CVMDrift, FETDrift,
+                             KSDrift, LearnedKernelDrift, LSDDDrift, MMDDrift, RegressorUncertaintyDrift,
+                             SpotTheDiffDrift, TabularDrift, ContextMMDDrift, MMDDriftOnline, LSDDDriftOnline,
+                             CVMDriftOnline, FETDriftOnline)
 from alibi_detect.cd.tensorflow import UAE, HiddenOutput
 from alibi_detect.cd.tensorflow.classifier import ClassifierDriftTF
 from alibi_detect.cd.tensorflow.mmd import MMDDriftTF
@@ -66,7 +65,11 @@ Detector = Union[
     LearnedKernelDrift,
     ContextMMDDrift,
     MMDDriftTF,  # TODO - remove when legacy loading removed
-    ClassifierDriftTF  # TODO - remove when legacy loading removed
+    ClassifierDriftTF,  # TODO - remove when legacy loading removed
+    MMDDriftOnline,
+    LSDDDriftOnline,
+    CVMDriftOnline,
+    FETDriftOnline
 ]
 
 

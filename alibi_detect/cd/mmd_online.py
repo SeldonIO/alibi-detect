@@ -1,6 +1,7 @@
 import numpy as np
 from typing import Any, Callable, Dict, Optional, Union
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
+from alibi_detect.base import DriftConfigMixin
 
 if has_pytorch:
     from alibi_detect.cd.pytorch.mmd_online import MMDDriftOnlineTorch
@@ -9,7 +10,7 @@ if has_tensorflow:
     from alibi_detect.cd.tensorflow.mmd_online import MMDDriftOnlineTF
 
 
-class MMDDriftOnline:
+class MMDDriftOnline(DriftConfigMixin):
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
@@ -17,7 +18,8 @@ class MMDDriftOnline:
             window_size: int,
             backend: str = 'tensorflow',
             preprocess_fn: Optional[Callable] = None,
-            kernel: Callable = None,
+            x_ref_preprocessed: bool = False,
+            kernel: Optional[Callable] = None,
             sigma: Optional[np.ndarray] = None,
             n_bootstraps: int = 1000,
             device: Optional[str] = None,
@@ -43,6 +45,10 @@ class MMDDriftOnline:
             Backend used for the MMD implementation and configuration.
         preprocess_fn
             Function to preprocess the data before computing the data drift metrics.
+        x_ref_preprocessed
+            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
+            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
+            data will also be preprocessed.
         kernel
             Kernel used for the MMD computation, defaults to Gaussian RBF kernel.
         sigma
@@ -65,6 +71,9 @@ class MMDDriftOnline:
         """
         super().__init__()
 
+        # Get args/kwargs to set config later
+        inputs = locals().copy()
+
         backend = backend.lower()
         if backend == 'tensorflow' and not has_tensorflow or backend == 'pytorch' and not has_pytorch:
             raise ImportError(f'{backend} not installed. Cannot initialize and run the '
@@ -74,7 +83,7 @@ class MMDDriftOnline:
 
         kwargs = locals()
         args = [kwargs['x_ref'], kwargs['ert'], kwargs['window_size']]
-        pop_kwargs = ['self', 'x_ref', 'ert', 'window_size', 'backend', '__class__']
+        pop_kwargs = ['self', 'x_ref', 'ert', 'window_size', 'backend', '__class__', 'inputs']
         [kwargs.pop(k, None) for k in pop_kwargs]
 
         if kernel is None:
@@ -90,6 +99,9 @@ class MMDDriftOnline:
         else:
             self._detector = MMDDriftOnlineTorch(*args, **kwargs)  # type: ignore
         self.meta = self._detector.meta
+
+        # Set config
+        self._set_config(inputs)
 
     @property
     def t(self):
