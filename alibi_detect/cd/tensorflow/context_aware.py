@@ -21,6 +21,7 @@ class ContextMMDDriftTF(BaseContextMMDDrift):
             x_ref: Union[np.ndarray, list],
             c_ref: np.ndarray,
             p_val: float = .05,
+            x_ref_preprocessed: bool = False,
             preprocess_at_init: bool = True,
             update_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
@@ -47,9 +48,13 @@ class ContextMMDDriftTF(BaseContextMMDDrift):
             Context for the reference distribution.
         p_val
             p-value used for the significance of the permutation test.
+        x_ref_preprocessed
+            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
+            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
+            data will also be preprocessed.
         preprocess_at_init
             Whether to preprocess the reference data when the detector is instantiated. Otherwise, the reference
-            data will be preprocessed at prediction time.
+            data will be preprocessed at prediction time. Only applies if `x_ref_preprocessed=False`.
         update_ref
             Reference data can optionally be updated to the last N instances seen by the detector.
             The parameter should be passed as a dictionary *{'last': N}*.
@@ -78,6 +83,7 @@ class ContextMMDDriftTF(BaseContextMMDDrift):
             x_ref=x_ref,
             c_ref=c_ref,
             p_val=p_val,
+            x_ref_preprocessed=x_ref_preprocessed,
             preprocess_at_init=preprocess_at_init,
             update_ref=update_ref,
             preprocess_fn=preprocess_fn,
@@ -89,7 +95,7 @@ class ContextMMDDriftTF(BaseContextMMDDrift):
             batch_size=batch_size,
             input_shape=input_shape,
             data_type=data_type,
-            verbose=verbose,
+            verbose=verbose
         )
         self.meta.update({'backend': 'tensorflow'})
 

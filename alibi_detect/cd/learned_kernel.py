@@ -2,6 +2,7 @@ import numpy as np
 from typing import Callable, Dict, Optional, Union
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
 from alibi_detect.utils.warnings import deprecated_alias
+from alibi_detect.base import DriftConfigMixin
 
 if has_pytorch:
     from torch.utils.data import DataLoader
@@ -13,7 +14,7 @@ if has_tensorflow:
     from alibi_detect.utils.tensorflow.data import TFDataset
 
 
-class LearnedKernelDrift:
+class LearnedKernelDrift(DriftConfigMixin):
     @deprecated_alias(preprocess_x_ref='preprocess_at_init')
     def __init__(
             self,
@@ -116,6 +117,9 @@ class LearnedKernelDrift:
         """
         super().__init__()
 
+        # Get args/kwargs to set config later
+        inputs = locals().copy()
+
         backend = backend.lower()
         if backend == 'tensorflow' and not has_tensorflow or backend == 'pytorch' and not has_pytorch:
             raise ImportError(f'{backend} not installed. Cannot initialize and run the '
@@ -125,7 +129,7 @@ class LearnedKernelDrift:
 
         kwargs = locals()
         args = [kwargs['x_ref'], kwargs['kernel']]
-        pop_kwargs = ['self', 'x_ref', 'kernel', 'backend', '__class__']
+        pop_kwargs = ['self', 'x_ref', 'kernel', 'backend', '__class__', 'inputs']
         if kwargs['optimizer'] is None:
             pop_kwargs += ['optimizer']
         [kwargs.pop(k, None) for k in pop_kwargs]
@@ -143,6 +147,8 @@ class LearnedKernelDrift:
                 kwargs.update({'dataloader': DataLoader})
             self._detector = LearnedKernelDriftTorch(*args, **kwargs)  # type: ignore
         self.meta = self._detector.meta
+        # Set config
+        self._set_config(inputs)
 
     def predict(self, x: Union[np.ndarray, list],  return_p_val: bool = True,
                 return_distance: bool = True, return_kernel: bool = True) \
@@ -169,13 +175,3 @@ class LearnedKernelDrift:
             trained kernel.
         """
         return self._detector.predict(x, return_p_val, return_distance, return_kernel)
-
-    def get_config(self) -> dict:
-        """
-        Get the detector's configuration dictionary.
-
-        Returns
-        -------
-        The detector's configuration dictionary.
-        """
-        return self._detector.get_config()

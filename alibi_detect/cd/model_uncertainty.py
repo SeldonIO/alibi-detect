@@ -147,16 +147,6 @@ class ClassifierUncertaintyDrift:
         """
         return self._detector.predict(x, return_p_val=return_p_val, return_distance=return_distance)
 
-    def get_config(self) -> dict:
-        """
-        Get the detector's configuration dictionary. Not currently implemented for `ClassifierUncertaintyDrift`.
-
-        Returns
-        -------
-        The detector's configuration dictionary.
-        """
-        raise NotImplementedError("get_config not yet implemented for `ClassifierUncertaintyDrift`.")
-
 
 class RegressorUncertaintyDrift:
     def __init__(
@@ -291,13 +281,3 @@ class RegressorUncertaintyDrift:
         'data' contains the drift prediction and optionally the p-value, threshold and test statistic.
         """
         return self._detector.predict(x, return_p_val=return_p_val, return_distance=return_distance)
-
-    def get_config(self) -> dict:
-        """
-        Get the detector's configuration dictionary. Not currently implemented for `RegressorUncertaintyDrift`.
-
-        Returns
-        -------
-        The detector's configuration dictionary.
-        """
-        raise NotImplementedError("get_config not yet implemented for `RegressorUncertaintyDrift`.")

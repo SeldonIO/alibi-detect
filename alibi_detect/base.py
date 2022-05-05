@@ -93,12 +93,15 @@ class ThresholdMixin(ABC):
         pass
 
 
+# "Large artefacts" - to save memory these are skipped in _set_config(), but added back in get_config()
+LARGE_ARTEFACTS = ['x_ref', 'c_ref', 'preprocess_fn']
+
+
 class DriftConfigMixin:
     """
     A mixin class containing methods related to a drift detector's configuration dictionary.
     """
-    x_ref: np.ndarray
-    enable_config: bool = True
+    config: Optional[dict] = None
 
     def get_config(self) -> dict:  # TODO - move to BaseDetector once config save/load implemented for non-drift
         """
@@ -108,11 +111,22 @@ class DriftConfigMixin:
         -------
         The detector's configuration dictionary.
         """
-        if self.enable_config:
-            return self.config
+        if self.config is not None:
+            # Get config (stored in top-level self)
+            cfg = self.config
+            # Get low-level nested detector (if needed)
+            detector = self._detector if hasattr(self, '_detector') else self
+            detector = detector._detector if hasattr(detector, '_detector') else detector
+            # Add large artefacts back to config
+            for key in LARGE_ARTEFACTS:
+                if hasattr(detector, key):
+                    cfg[key] = getattr(detector, key)
+            # Set x_ref_preprocessed flag
+            cfg['x_ref_preprocessed'] = detector.preprocess_at_init and detector.preprocess_fn is not None
+            return cfg
         else:
-            raise ValueError('The detector must be instantiated with `enable_config=True` in order for the '
-                             '`get_config` method to be used.')
+            raise NotImplementedError('Getting a config (or saving via a config file) is not yet implemented for this'
+                                      'detector')
 
     @classmethod
     def from_config(cls, config: dict):
@@ -127,7 +141,7 @@ class DriftConfigMixin:
         return cls(**config)
 
     def _set_config(self, inputs):  # TODO - move to BaseDetector once config save/load implemented for non-drift
-        if not hasattr(self, 'config'):  # init config if it doesn't already exist
+        if self.config is None:  # init config if it doesn't already exist
             name = self.__class__.__name__
             # strip off any backend suffix
             backends = ['TF', 'Torch', 'Sklearn']
@@ -148,7 +162,8 @@ class DriftConfigMixin:
             self.config = cfg
 
         # args and kwargs
-        pop_inputs = ['self', '__class__', 'inputs']
+        pop_inputs = ['self', '__class__', '__len__']
+        pop_inputs += LARGE_ARTEFACTS  # # pop large artefacts and add back in get_config()
         pop_inputs += self.config.keys()  # Adding self.config.keys() avoids overwriting existing config
         [inputs.pop(k, None) for k in pop_inputs]
         self.config.update(inputs)

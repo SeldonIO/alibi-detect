@@ -70,6 +70,9 @@ class FETDrift(BaseUnivariateDrift):
             input_shape=input_shape,
             data_type=data_type
         )
+        # Set config
+        self._set_config(locals())
+
         if alternative.lower() not in ['greater', 'less', 'two-sided']:
             raise ValueError("`alternative` must be either 'greater', 'less' or 'two-sided'.")
         self.alternative = alternative.lower()
@@ -115,21 +118,3 @@ class FETDrift(BaseUnivariateDrift):
             odds_ratio[f], p_val[f] = fisher_exact(table, alternative=self.alternative)
 
         return p_val, odds_ratio
-
-    def get_config(self) -> dict:
-        """
-        Get the detector's configuration dictionary.
-
-        Returns
-        -------
-        The detector's configuration dictionary.
-        """
-        cfg = super().get_config()
-
-        # Detector kwargs
-        kwargs = {
-            'alternative': self.alternative,
-        }
-        cfg.update(kwargs)
-
-        return cfg

@@ -22,7 +22,7 @@ from datasets import (BinData, CategoricalData, ContinuousData, MixedData,
 from alibi_detect.utils._random import fixed_seed
 from packaging import version
 from pytest_cases import (fixture, param_fixture, parametrize,
-                          parametrize_with_cases)
+                          parametrize_with_cases, fixture_union)
 from sklearn.model_selection import StratifiedKFold
 from transformers import AutoTokenizer
 
@@ -380,8 +380,9 @@ def test_save_mmddrift(data, kernel, preprocess_custom, backend, tmp_path, seed)
     assert preds['data']['p_val'] == preds_load['data']['p_val']
 
 
+@parametrize('preprocess_at_init', [True, False])
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
-def test_save_lsdddrift(data, preprocess_custom, backend, tmp_path, seed):
+def test_save_lsdddrift(data, preprocess_at_init, backend, tmp_path, seed):
     """
     Test LSDDDrift on continuous datasets.
 
@@ -393,10 +394,9 @@ def test_save_lsdddrift(data, preprocess_custom, backend, tmp_path, seed):
         cd = LSDDDrift(X_ref,
                        p_val=P_VAL,
                        backend=backend,
-                       preprocess_fn=preprocess_dummy,  # TODO - use of preprocess_custom breaks determinism.
-                       preprocess_at_init=True,
-                       n_permutations=N_PERMUTATIONS,
-                       enable_config=True
+                       preprocess_fn=preprocess_dummy,  # TODO - use of preprocess_custom (tf model) breaks determinism.
+                       preprocess_at_init=preprocess_at_init,
+                       n_permutations=N_PERMUTATIONS
                        )
         preds = cd.predict(X_h0)
     save_detector(cd, tmp_path)
@@ -407,11 +407,11 @@ def test_save_lsdddrift(data, preprocess_custom, backend, tmp_path, seed):
         preds_load = cd_load.predict(X_h0)
 
     # assertions
-    np.testing.assert_array_equal(cd._detector.x_ref, cd_load._detector.x_ref)
+    np.testing.assert_array_almost_equal(cd._detector.x_ref, cd_load._detector.x_ref, 5)
+    np.testing.assert_array_almost_equal(cd_load.get_config()['x_ref'], X_ref, 5)
     assert cd_load._detector.n_permutations == N_PERMUTATIONS
     assert cd_load._detector.p_val == P_VAL
-    assert isinstance(cd_load._detector.preprocess_fn, Callable)
-    assert cd_load._detector.preprocess_fn.func.__name__ == 'preprocess_dummy'
+    assert cd_load._detector.preprocess_fn.func == cd._detector.preprocess_fn
     assert preds['data']['distance'] == preds_load['data']['distance']
     assert preds['data']['p_val'] == preds_load['data']['p_val']
 
@@ -733,7 +733,7 @@ def test_save_kernel(kernel, use_register, backend, tmp_path):
     _prepend_cfg_filepaths(cfg, tmp_path)
     kernel_loaded = resolve_config(cfg, tmp_path)['kernel']
     assert type(kernel_loaded) == type(kernel)
-    np.testing.assert_array_almost_equal(np.array(kernel_loaded.sigma), np.array(kernel.sigma), -5)
+    np.testing.assert_array_almost_equal(np.array(kernel_loaded.sigma), np.array(kernel.sigma), 5)
     assert kernel_loaded.trainable == kernel.trainable
     assert kernel_loaded.init_sigma_fn == kernel.init_sigma_fn
 

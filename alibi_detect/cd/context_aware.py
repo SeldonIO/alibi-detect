@@ -22,6 +22,7 @@ class ContextMMDDrift(DriftConfigMixin):
             c_ref: np.ndarray,
             backend: str = 'tensorflow',
             p_val: float = .05,
+            x_ref_preprocessed: bool = False,
             preprocess_at_init: bool = True,
             update_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
@@ -34,8 +35,7 @@ class ContextMMDDrift(DriftConfigMixin):
             device: Optional[str] = None,
             input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None,
-            verbose: bool = False,
-            enable_config: bool = True
+            verbose: bool = False
     ) -> None:
         """
         A context-aware drift detector based on a conditional analogue of the maximum mean discrepancy (MMD).
@@ -52,9 +52,13 @@ class ContextMMDDrift(DriftConfigMixin):
             Backend used for the MMD implementation.
         p_val
             p-value used for the significance of the permutation test.
+        x_ref_preprocessed
+            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
+            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
+            data will also be preprocessed.
         preprocess_at_init
             Whether to preprocess the reference data when the detector is instantiated. Otherwise, the reference
-            data will be preprocessed at prediction time.
+            data will be preprocessed at prediction time. Only applies if `x_ref_preprocessed=False`.
         update_ref
             Reference data can optionally be updated to the last N instances seen by the detector.
             The parameter should be passed as a dictionary *{'last': N}*.
@@ -81,17 +85,11 @@ class ContextMMDDrift(DriftConfigMixin):
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         verbose
             Whether to print progress messages.
-        enable_config
-            Store config data at detector instantiation. this must be set to `true` in order for
-            :meth:`~alibi_detect.base.DriftConfigMixin.get_config` and :func:`alibi_detect.saving.save_detector` to
-            be used. Since the original `x_ref` data must be stored, this can be set to `false` if memory is limited.
         """
         super().__init__()
 
-        # Set config
-        if enable_config:
-            inputs = locals()
-            self._set_config(inputs)
+        # Get args/kwargs to set config later
+        inputs = locals().copy()
 
         backend = backend.lower()
         if backend == 'tensorflow' and not has_tensorflow or backend == 'pytorch' and not has_pytorch:
@@ -102,7 +100,7 @@ class ContextMMDDrift(DriftConfigMixin):
 
         kwargs = locals()
         args = [kwargs['x_ref'], kwargs['c_ref']]
-        pop_kwargs = ['self', 'x_ref', 'c_ref', 'backend', 'enable_config', '__class__', 'inputs']
+        pop_kwargs = ['self', 'x_ref', 'c_ref', 'backend', '__class__', 'inputs']
         [kwargs.pop(k, None) for k in pop_kwargs]
 
         if x_kernel is None or c_kernel is None:
@@ -121,9 +119,8 @@ class ContextMMDDrift(DriftConfigMixin):
         else:
             self._detector = ContextMMDDriftTorch(*args, **kwargs)  # type: ignore
         self.meta = self._detector.meta
-        # Set config again to include self.meta
-        if enable_config:
-            self._set_config(inputs)
+        # Set config
+        self._set_config(inputs)
 
     def predict(self, x: Union[np.ndarray, list], c: np.ndarray,
                 return_p_val: bool = True, return_distance: bool = True, return_coupling: bool = False) \

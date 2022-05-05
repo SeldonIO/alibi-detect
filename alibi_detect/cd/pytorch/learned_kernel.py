@@ -250,14 +250,3 @@ class LearnedKernelDriftTorch(BaseLearnedKernelDrift):
                     loss_ma = loss_ma + (loss.item() - loss_ma) / (step + 1)
                     dl.set_description(f'Epoch {epoch + 1}/{epochs}')
                     dl.set_postfix(dict(loss=loss_ma))
-
-    def get_config(self) -> dict:
-        """
-        Get the detector's configuration dictionary.
-        Not yet implemented for `LearnedKernelDrift` with the pytorch backend.
-
-        Returns
-        -------
-        The detector's configuration dictionary.
-        """
-        raise NotImplementedError("get_config not yet implemented for LearnedKernelDrift with pytorch backend.")

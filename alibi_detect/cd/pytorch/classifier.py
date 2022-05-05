@@ -23,6 +23,7 @@ class ClassifierDriftTorch(BaseClassifierDrift):
             x_ref: Union[np.ndarray, list],
             model: Union[nn.Module, nn.Sequential],
             p_val: float = .05,
+            x_ref_preprocessed: bool = False,
             preprocess_at_init: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
@@ -59,9 +60,13 @@ class ClassifierDriftTorch(BaseClassifierDrift):
             PyTorch classification model used for drift detection.
         p_val
             p-value used for the significance of the test.
+        x_ref_preprocessed
+           Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
+           the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
+           data will also be preprocessed.
         preprocess_at_init
             Whether to preprocess the reference data when the detector is instantiated. Otherwise, the reference
-            data will be preprocessed at prediction time.
+            data will be preprocessed at prediction time. Only applies if `x_ref_preprocessed=False`.
         update_x_ref
             Reference data can optionally be updated to the last n instances seen by the detector
             or via reservoir sampling with size n. For the former, the parameter equals {'last': n} while
@@ -118,6 +123,7 @@ class ClassifierDriftTorch(BaseClassifierDrift):
         super().__init__(
             x_ref=x_ref,
             p_val=p_val,
+            x_ref_preprocessed=x_ref_preprocessed,
             preprocess_at_init=preprocess_at_init,
             update_x_ref=update_x_ref,
             preprocess_fn=preprocess_fn,

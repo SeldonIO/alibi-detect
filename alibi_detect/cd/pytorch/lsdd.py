@@ -13,6 +13,7 @@ class LSDDDriftTorch(BaseLSDDDrift):
             self,
             x_ref: Union[np.ndarray, list],
             p_val: float = .05,
+            x_ref_preprocessed: bool = False,
             preprocess_at_init: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
@@ -22,7 +23,7 @@ class LSDDDriftTorch(BaseLSDDDrift):
             lambda_rd_max: float = 0.2,
             device: Optional[str] = None,
             input_shape: Optional[tuple] = None,
-            data_type: Optional[str] = None,
+            data_type: Optional[str] = None
     ) -> None:
         """
         Least-squares density difference (LSDD) data drift detector using a permutation test.
@@ -33,9 +34,13 @@ class LSDDDriftTorch(BaseLSDDDrift):
             Data used as reference distribution.
         p_val
             p-value used for the significance of the permutation test.
+        x_ref_preprocessed
+            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
+            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
+            data will also be preprocessed.
         preprocess_at_init
             Whether to preprocess the reference data when the detector is instantiated. Otherwise, the reference
-            data will be preprocessed at prediction time.
+            data will be preprocessed at prediction time. Only applies if `x_ref_preprocessed=False`.
         update_x_ref
             Reference data can optionally be updated to the last n instances seen by the detector
             or via reservoir sampling with size n. For the former, the parameter equals {'last': n} while
@@ -66,6 +71,7 @@ class LSDDDriftTorch(BaseLSDDDrift):
         super().__init__(
             x_ref=x_ref,
             p_val=p_val,
+            x_ref_preprocessed=x_ref_preprocessed,
             preprocess_at_init=preprocess_at_init,
             update_x_ref=update_x_ref,
             preprocess_fn=preprocess_fn,
@@ -74,7 +80,7 @@ class LSDDDriftTorch(BaseLSDDDrift):
             n_kernel_centers=n_kernel_centers,
             lambda_rd_max=lambda_rd_max,
             input_shape=input_shape,
-            data_type=data_type,
+            data_type=data_type
         )
         self.meta.update({'backend': 'pytorch'})
 
@@ -90,7 +96,7 @@ class LSDDDriftTorch(BaseLSDDDrift):
         #  in the method signature, so we can't cast it to torch.Tensor unless we change the signature
         #  to also accept torch.Tensor. We also can't redefine it's type as that would involve enabling
         #  --allow-redefinitions in mypy settings (which we might do eventually).
-        if self.preprocess_at_init or self.preprocess_fn is None:
+        if self.preprocess_at_init or self.preprocess_fn is None or self.x_ref_preprocessed:
             x_ref = torch.as_tensor(self.x_ref).to(self.device)  # type: ignore[assignment]
             self._configure_normalization(x_ref)  # type: ignore[arg-type]
             x_ref = self._normalize(x_ref)
@@ -144,7 +150,7 @@ class LSDDDriftTorch(BaseLSDDDrift):
         x_ref = torch.from_numpy(x_ref).to(self.device)  # type: ignore[assignment]
         x = torch.from_numpy(x).to(self.device)  # type: ignore[assignment]
 
-        if self.preprocess_fn is not None and self.preprocess_at_init is False:
+        if self.preprocess_fn is not None and self.preprocess_at_init is False and not self.x_ref_preprocessed:
             self._configure_normalization(x_ref)  # type: ignore[arg-type]
             x_ref = self._normalize(x_ref)
             self._initialize_kernel(x_ref)  # type: ignore[arg-type]

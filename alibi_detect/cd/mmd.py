@@ -21,6 +21,7 @@ class MMDDrift(DriftConfigMixin):
             x_ref: Union[np.ndarray, list],
             backend: str = 'tensorflow',
             p_val: float = .05,
+            x_ref_preprocessed: bool = False,
             preprocess_at_init: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
@@ -30,8 +31,7 @@ class MMDDrift(DriftConfigMixin):
             n_permutations: int = 100,
             device: Optional[str] = None,
             input_shape: Optional[tuple] = None,
-            data_type: Optional[str] = None,
-            enable_config: bool = True
+            data_type: Optional[str] = None
     ) -> None:
         """
         Maximum Mean Discrepancy (MMD) data drift detector using a permutation test.
@@ -44,9 +44,13 @@ class MMDDrift(DriftConfigMixin):
             Backend used for the MMD implementation.
         p_val
             p-value used for the significance of the permutation test.
+        x_ref_preprocessed
+            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
+            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
+            data will also be preprocessed.
         preprocess_at_init
             Whether to preprocess the reference data when the detector is instantiated. Otherwise, the reference
-            data will be preprocessed at prediction time.
+            data will be preprocessed at prediction time. Only applies if `x_ref_preprocessed=False`.
         update_x_ref
             Reference data can optionally be updated to the last n instances seen by the detector
             or via reservoir sampling with size n. For the former, the parameter equals {'last': n} while
@@ -69,17 +73,11 @@ class MMDDrift(DriftConfigMixin):
             Shape of input data.
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
-        enable_config
-            Store config data at detector instantiation. this must be set to `true` in order for
-            :meth:`~alibi_detect.base.DriftConfigMixin.get_config` and :func:`alibi_detect.saving.save_detector` to
-            be used. Since the original `x_ref` data must be stored, this can be set to `false` if memory is limited.
         """
         super().__init__()
 
-        # Set config
-        if enable_config:
-            inputs = locals()
-            self._set_config(inputs)
+        # Get args/kwargs to set config later
+        inputs = locals().copy()
 
         backend = backend.lower()
         if backend == 'tensorflow' and not has_tensorflow or backend == 'pytorch' and not has_pytorch:
@@ -90,7 +88,7 @@ class MMDDrift(DriftConfigMixin):
 
         kwargs = locals()
         args = [kwargs['x_ref']]
-        pop_kwargs = ['self', 'x_ref', 'backend', 'enable_config', '__class__', 'inputs']
+        pop_kwargs = ['self', 'x_ref', 'backend', '__class__', 'inputs']
         [kwargs.pop(k, None) for k in pop_kwargs]
 
         if kernel is None:
@@ -106,9 +104,9 @@ class MMDDrift(DriftConfigMixin):
         else:
             self._detector = MMDDriftTorch(*args, **kwargs)  # type: ignore
         self.meta = self._detector.meta
-        # Set config again to include self.meta
-        if enable_config:
-            self._set_config(inputs)
+
+        # Set config
+        self._set_config(inputs)
 
     def predict(self, x: Union[np.ndarray, list], return_p_val: bool = True, return_distance: bool = True) \
             -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:

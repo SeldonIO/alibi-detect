@@ -167,17 +167,6 @@ class BaseMultiDriftOnline(BaseDetector):
 
         return cd
 
-    @abstractmethod
-    def get_config(self) -> dict:
-        """
-        Get the detector's configuration dictionary. Not yet implemented for `BaseMultiDriftOnline`.
-
-        Returns
-        -------
-        The detector's configuration dictionary.
-        """
-        raise NotImplementedError("get_config not yet implemented for `BaseMultiDriftOnline`.")
-
 
 class BaseUniDriftOnline(BaseDetector):
     thresholds: np.ndarray
@@ -380,14 +369,3 @@ class BaseUniDriftOnline(BaseDetector):
             cd['data']['threshold'] = thresholds
 
         return cd
-
-    @abstractmethod
-    def get_config(self) -> dict:
-        """
-        Get the detector's configuration dictionary. Not yet implemented for `BaseUniDriftOnline`.
-
-        Returns
-        -------
-        The detector's configuration dictionary.
-        """
-        raise NotImplementedError("get_config not yet implemented for `BaseUniDriftOnline`.")

@@ -299,13 +299,3 @@ class FETDriftOnline(BaseUniDriftOnline):
             else:
                 stats[k, :] = np.nan
         return stats
-
-    def get_config(self) -> dict:
-        """
-        Get the detector's configuration dictionary. Not yet implemented for `FETDriftOnline`.
-
-        Returns
-        -------
-        The detector's configuration dictionary.
-        """
-        raise NotImplementedError("get_config not yet implemented for `FETDriftOnline`.")

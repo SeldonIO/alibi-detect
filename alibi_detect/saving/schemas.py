@@ -383,11 +383,11 @@ class DriftDetectorConfig(DetectorConfig):
     "Optionally pass the shape of the input data. Used when saving detectors."
     data_type: Optional[str] = None
     "Specify data type added to the metadata. E.g. `‘tabular’`or `‘image’`."
-    enable_config: bool = True
+    x_ref_preprocessed: bool = False
     """
-    Store config data at detector instantiation. This must be set to `True` in order for :meth:`~get_config` and 
-    :func:`alibi_detect.saving.save_detector` to be used. Since the original `x_ref` data must be stored, this can be 
-    set to `False` if memory is limited.
+    Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only the test 
+    data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference data will also be 
+    preprocessed.
     """
 
 
@@ -406,11 +406,11 @@ class DriftDetectorConfigResolved(DetectorConfig):
     "Optionally pass the shape of the input data. Used when saving detectors."
     data_type: Optional[str] = None
     "Specify data type added to the metadata. E.g. `‘tabular’` or `‘image’`."
-    enable_config: bool = True
+    x_ref_preprocessed: bool = False
     """
-    Store config data at detector instantiation. This must be set to `True` in order for :meth:`~get_config` and 
-    :func:`alibi_detect.saving.save_detector` to be used. Since the original `x_ref` data must be stored, this can be 
-    set to `False` if memory is limited.
+    Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only the test 
+    data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference data will also be 
+    preprocessed.
     """
 
 
@@ -661,7 +661,7 @@ class ClassifierDriftConfig(DriftDetectorConfig):
     train_kwargs: Optional[dict] = None
     dataset: Optional[str] = None
     device: Optional[Literal['cpu', 'cuda']] = None
-    dataloader: Optional[str] = None  # TODO: placeholder, will need to be updated fo pytorch implementation
+    dataloader: Optional[str] = None  # TODO: placeholder, will need to be updated for pytorch implementation
     use_calibration: bool = False
     calibration_kwargs: Optional[dict] = None
     use_oob: bool = False
@@ -695,7 +695,7 @@ class ClassifierDriftConfigResolved(DriftDetectorConfigResolved):
     train_kwargs: Optional[dict] = None
     dataset: Optional[Callable] = None
     device: Optional[Literal['cpu', 'cuda']] = None
-    dataloader: Optional[Callable] = None  # TODO: placeholder, will need to be updated fo pytorch implementation
+    dataloader: Optional[Callable] = None  # TODO: placeholder, will need to be updated for pytorch implementation
     use_calibration: bool = False
     calibration_kwargs: Optional[dict] = None
     use_oob: bool = False
@@ -728,7 +728,7 @@ class SpotTheDiffDriftConfig(DriftDetectorConfig):
     initial_diffs: Optional[str] = None
     l1_reg: float = 0.01
     device: Optional[Literal['cpu', 'cuda']] = None
-    dataloader: Optional[str] = None  # TODO: placeholder, will need to be updated fo pytorch implementation
+    dataloader: Optional[str] = None  # TODO: placeholder, will need to be updated for pytorch implementation
 
 
 class SpotTheDiffDriftConfigResolved(DriftDetectorConfigResolved):
@@ -758,7 +758,7 @@ class SpotTheDiffDriftConfigResolved(DriftDetectorConfigResolved):
     initial_diffs: Optional[np.ndarray] = None
     l1_reg: float = 0.01
     device: Optional[Literal['cpu', 'cuda']] = None
-    dataloader: Optional[Callable] = None  # TODO: placeholder, will need to be updated fo pytorch implementation
+    dataloader: Optional[Callable] = None  # TODO: placeholder, will need to be updated for pytorch implementation
 
 
 class LearnedKernelDriftConfig(DriftDetectorConfig):
@@ -787,6 +787,7 @@ class LearnedKernelDriftConfig(DriftDetectorConfig):
     train_kwargs: Optional[dict] = None
     dataset: str = '@alibi_detect.utils.tensorflow.data.TFDataset'
     device: Optional[Literal['cpu', 'cuda']] = None
+    dataloader: Optional[str] = None  # TODO: placeholder, will need to be updated for pytorch implementation
 
 
 class LearnedKernelDriftConfigResolved(DriftDetectorConfigResolved):
@@ -815,6 +816,7 @@ class LearnedKernelDriftConfigResolved(DriftDetectorConfigResolved):
     train_kwargs: Optional[dict] = None
     dataset: Optional[Callable] = None
     device: Optional[Literal['cpu', 'cuda']] = None
+    dataloader: Optional[Callable] = None  # TODO: placeholder, will need to be updated for pytorch implementation
 
 
 class ContextMMDDriftConfig(DriftDetectorConfig):
