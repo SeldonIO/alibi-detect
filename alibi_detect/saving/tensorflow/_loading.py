@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import Callable, Dict, List, Optional, Tuple, Union, get_args
 
 import dill
-import numpy as np
 import tensorflow as tf
 from tensorflow_probability.python.distributions.distribution import \
     Distribution
@@ -31,7 +30,7 @@ from alibi_detect.od import (LLR, IForest, Mahalanobis, OutlierAE,
                              OutlierAEGMM, OutlierProphet, OutlierSeq2Seq,
                              OutlierVAE, OutlierVAEGMM, SpectralResidual)
 from alibi_detect.od.llr import build_model
-from alibi_detect.utils.tensorflow.kernels import DeepKernel, GaussianRBF
+from alibi_detect.utils.tensorflow.kernels import DeepKernel
 # Below imports are used for legacy loading, and will be removed (or moved to utils/loading.py) in the future
 from alibi_detect.version import __version__
 

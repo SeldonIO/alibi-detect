@@ -49,4 +49,3 @@ def fixed_seed(seed: int):
         yield
     finally:
         reseed(orig_seed)
-

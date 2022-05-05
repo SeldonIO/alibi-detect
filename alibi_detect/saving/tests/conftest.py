@@ -1,5 +1,6 @@
 import pytest
 
+
 @pytest.fixture
 def seed(pytestconfig):
     """

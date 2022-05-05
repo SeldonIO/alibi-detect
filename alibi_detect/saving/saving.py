@@ -477,7 +477,7 @@ def _save_kernel_config(kernel: Callable,
     # if a DeepKernel
     if hasattr(kernel, 'proj'):
         if hasattr(kernel, 'get_config'):
-            cfg_kernel = kernel.get_config()
+            cfg_kernel = kernel.get_config()  # type: ignore[attr-defined]
         else:
             raise AttributeError("The detector's `kernel` must have a .get_config() method for it to be saved.")
         # Serialize the kernels (if needed)
@@ -496,7 +496,7 @@ def _save_kernel_config(kernel: Callable,
         else:  # if an object
             kernel_class = kernel.__class__
             if hasattr(kernel, 'get_config'):
-                cfg_kernel = kernel.get_config()
+                cfg_kernel = kernel.get_config()  # type: ignore[attr-defined]
                 cfg_kernel['init_sigma_fn'], _ = _serialize_object(cfg_kernel['init_sigma_fn'], base_path,
                                                                    local_path.joinpath('init_sigma_fn'))
             else:

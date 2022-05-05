@@ -385,8 +385,8 @@ class DriftDetectorConfig(DetectorConfig):
     "Specify data type added to the metadata. E.g. `‘tabular’`or `‘image’`."
     x_ref_preprocessed: bool = False
     """
-    Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only the test 
-    data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference data will also be 
+    Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only the test
+    data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference data will also be
     preprocessed.
     """
 
@@ -408,8 +408,8 @@ class DriftDetectorConfigResolved(DetectorConfig):
     "Specify data type added to the metadata. E.g. `‘tabular’` or `‘image’`."
     x_ref_preprocessed: bool = False
     """
-    Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only the test 
-    data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference data will also be 
+    Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only the test
+    data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference data will also be
     preprocessed.
     """
 

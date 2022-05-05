@@ -21,8 +21,7 @@ from datasets import (BinData, CategoricalData, ContinuousData, MixedData,
                       TextData)
 from alibi_detect.utils._random import fixed_seed
 from packaging import version
-from pytest_cases import (fixture, param_fixture, parametrize,
-                          parametrize_with_cases, fixture_union)
+from pytest_cases import fixture, param_fixture, parametrize, parametrize_with_cases
 from sklearn.model_selection import StratifiedKFold
 from transformers import AutoTokenizer
 
@@ -42,7 +41,6 @@ from alibi_detect.models.tensorflow import \
 from alibi_detect.saving import (load_detector, read_config, registry,
                                  resolve_config, save_detector, write_config)
 from alibi_detect.saving.loading import (_get_nested_value,  # type: ignore
-                                         _load_kernel_config,
                                          _load_model_config,
                                          _load_optimizer_config,
                                          _load_preprocess_config, _replace,
@@ -514,13 +512,13 @@ def test_save_classifierdrift(data, classifier, backend, tmp_path, seed):
                              n_folds=5,
                              backend=backend,
                              train_size=None)
-        preds = cd.predict(X_h0)
+        preds = cd.predict(X_h0)  # noqa: F841
     save_detector(cd, tmp_path)
 
     # Load detector and make another prediction
     with fixed_seed(seed):
         cd_load = load_detector(tmp_path)
-        preds_load = cd_load.predict(X_h0)
+        preds_load = cd_load.predict(X_h0)  # noqa: F841
 
     # Assert
     np.testing.assert_array_equal(X_ref, cd_load._detector.x_ref)
@@ -551,13 +549,13 @@ def test_save_spotthediff(data, classifier, backend, tmp_path, seed):
                               n_folds=5,
                               train_size=None,
                               backend=backend)
-        preds = cd.predict(X_h0)
+        preds = cd.predict(X_h0)   # noqa: F841
     save_detector(cd, tmp_path)
 
     # Load detector and make another prediction
     with fixed_seed(seed):
         cd_load = load_detector(tmp_path)
-        preds_load = cd_load.predict(X_h0)
+        preds_load = cd_load.predict(X_h0)   # noqa: F841
 
     # Assert
     np.testing.assert_array_equal(X_ref, cd_load._detector._detector.x_ref)

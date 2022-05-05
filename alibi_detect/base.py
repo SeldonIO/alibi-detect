@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 import copy
 import json
 import numpy as np
-from typing import Dict, Any, Optional, Callable
+from typing import Dict, Any, Optional
 from alibi_detect.version import __version__, __config_spec__
 
 DEFAULT_META = {
@@ -115,8 +115,8 @@ class DriftConfigMixin:
             # Get config (stored in top-level self)
             cfg = self.config
             # Get low-level nested detector (if needed)
-            detector = self._detector if hasattr(self, '_detector') else self
-            detector = detector._detector if hasattr(detector, '_detector') else detector
+            detector = self._detector if hasattr(self, '_detector') else self  # type: ignore[attr-defined]
+            detector = detector._detector if hasattr(detector, '_detector') else detector  # type: ignore[attr-defined]
             # Add large artefacts back to config
             for key in LARGE_ARTEFACTS:
                 if hasattr(detector, key):
