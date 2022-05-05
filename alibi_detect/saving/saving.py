@@ -164,8 +164,8 @@ def _save_detector_config(detector: Detector, filepath: Union[str, os.PathLike])
         kernel = cfg.get(kernel_str, None)
         if kernel is not None:
             cfg[kernel_str] = _save_kernel_config(kernel, filepath, Path(kernel_str))
-            if isinstance(kernel, dict):  # serialise proj from DeepKernel
-                cfg[kernel_str]['proj'], _ = _save_model_config(kernel['proj'], base_path=filepath,
+            if isinstance(cfg[kernel_str], dict):  # serialise proj fro DeepKernel - do here as need input_shape
+                cfg[kernel_str]['proj'], _ = _save_model_config(cfg[kernel_str]['proj'], base_path=filepath,
                                                                 input_shape=cfg['input_shape'], backend=backend)
 
     # ClassifierDrift and SpotTheDiffDrift specific artefacts.
@@ -476,16 +476,17 @@ def _save_kernel_config(kernel: Callable,
     """
     # if a DeepKernel
     if hasattr(kernel, 'proj'):
-        kernel_a = _save_kernel_config(kernel['kernel_a'], base_path, Path('kernel_a'))
-        kernel_b = kernel.get('kernel_b')
-        if kernel_b is not None:
-            kernel_b = _save_kernel_config(kernel['kernel_b'], base_path, Path('kernel_b'))
-        cfg_kernel = {
-            'kernel_a': kernel_a,
-            'kernel_b': kernel_b,
-            'proj': kernel['proj'],
-            'eps': kernel['eps']
-        }
+        if hasattr(kernel, 'get_config'):
+            cfg_kernel = kernel.get_config()
+        else:
+            raise AttributeError("The detector's `kernel` must have a .get_config() method for it to be saved.")
+        # Serialize the kernels (if needed)
+        kernel_a = cfg_kernel.get('kernel_b')
+        kernel_b = cfg_kernel.get('kernel_b')
+        if not isinstance(kernel_a, str):
+            cfg_kernel['kernel_a'] = _save_kernel_config(cfg_kernel['kernel_a'], base_path, Path('kernel_a'))
+        if not isinstance(kernel_b, str) and kernel_b is not None:
+            cfg_kernel['kernel_b'] = _save_kernel_config(cfg_kernel['kernel_b'], base_path, Path('kernel_b'))
 
     # If any other kernel, serialize the class to disk and get config
     else:

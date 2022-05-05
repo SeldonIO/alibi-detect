@@ -138,11 +138,11 @@ class DeepKernel(tf.keras.Model):
         eps: Union[float, str] = 'trainable'
     ) -> None:
         super().__init__()
+        self.config = {'proj': proj, 'kernel_a': kernel_a, 'kernel_b': kernel_b, 'eps': eps}
         if kernel_a == 'rbf':
             kernel_a = GaussianRBF(trainable=True)
         if kernel_b == 'rbf':
             kernel_b = GaussianRBF(trainable=True)
-        self.config = {'proj': proj, 'kernel_a': kernel_a, 'kernel_b': kernel_b, 'eps': eps}
         self.kernel_a = kernel_a
         self.kernel_b = kernel_b
         self.proj = proj
@@ -171,7 +171,7 @@ class DeepKernel(tf.keras.Model):
         return similarity
 
     def get_config(self) -> dict:
-        return self.config
+        return self.config.copy()
 
     @classmethod
     def from_config(cls, config):

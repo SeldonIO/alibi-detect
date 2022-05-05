@@ -785,7 +785,7 @@ class LearnedKernelDriftConfig(DriftDetectorConfig):
     epochs: int = 3
     verbose: int = 0
     train_kwargs: Optional[dict] = None
-    dataset: str = '@alibi_detect.utils.tensorflow.data.TFDataset'
+    dataset: Optional[str] = None
     device: Optional[Literal['cpu', 'cuda']] = None
     dataloader: Optional[str] = None  # TODO: placeholder, will need to be updated for pytorch implementation
 

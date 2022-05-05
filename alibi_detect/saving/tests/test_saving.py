@@ -119,6 +119,12 @@ def kernel(request, backend):
     return kernel
 
 
+@parametrize('kernel', [
+        {'sigma': 0.5, 'trainable': False, 'init_sigma_fn': None},
+        {'sigma': [0.5, 0.8], 'trainable': False, 'init_sigma_fn': None},
+        {'sigma': None, 'trainable': True, 'init_sigma_fn': None},
+    ], indirect=True
+)
 @fixture(unpack_into=('deep_kernel, kernel_proj_dim'))
 def build_deep_kernel(backend, current_cases):
     """
@@ -717,7 +723,7 @@ def test_save_kernel(kernel, use_register, backend, tmp_path):
 
     # Save kernel to config
     filepath = tmp_path
-    filename = 'mykernel'
+    filename = Path('mykernel')
     cfg_kernel = _save_kernel_config(kernel, filepath, filename)
     KernelConfig(**cfg_kernel)  # Passing through the pydantic validator gives a degree of testing
     if use_register:
@@ -744,17 +750,10 @@ def test_save_deepkernel(deep_kernel, kernel_proj_dim, backend, tmp_path):
 
     Kernels are saved and then loaded, with assertions to check equivalence.
     """
-    # Prep cfg_kernel (detector's .get_config() would usually be doing this)
-    cfg_kernel = {
-        'proj': deep_kernel.proj,
-        'eps': deep_kernel.eps.numpy(),
-        'kernel_a': deep_kernel.kernel_a,
-        'kernel_b': deep_kernel.kernel_b
-    }
     # Save kernel to config
     filepath = tmp_path
-    filename = 'mykernel.dill'
-    cfg_kernel = _save_kernel_config(cfg_kernel, filepath, filename)
+    filename = 'mykernel'
+    cfg_kernel = _save_kernel_config(deep_kernel, filepath, filename)
     cfg_kernel['proj'], _ = _save_model_config(cfg_kernel['proj'], base_path=filepath, input_shape=kernel_proj_dim,
                                                backend=backend)
     cfg_kernel = _path2str(cfg_kernel)
@@ -762,15 +761,13 @@ def test_save_deepkernel(deep_kernel, kernel_proj_dim, backend, tmp_path):
     cfg_kernel = DeepKernelConfig(**cfg_kernel).dict()  # pydantic validation
     assert cfg_kernel['proj']['src'] == 'model'
     assert cfg_kernel['proj']['custom_objects'] is None
-    assert pytest.approx(cfg_kernel['eps'], deep_kernel.eps, 4)
-    assert cfg_kernel['kernel_a']['trainable'] and cfg_kernel['kernel_b']['trainable']
+    assert cfg_kernel['eps'] == pytest.approx(deep_kernel.eps.numpy(), 4)
 
     # Resolve and load config
-    cfg = {'kernel': cfg_kernel}
-    cfg_kernel = resolve_config(cfg, tmp_path)['kernel']
-    kernel_loaded = _load_kernel_config(cfg_kernel, backend=backend)
+    cfg = {'kernel': cfg_kernel, 'backend': backend}
+    kernel_loaded = resolve_config(cfg, tmp_path)['kernel']  # implicitly calls _load_kernel_config
     assert isinstance(kernel_loaded.proj, (torch.nn.Module, tf.keras.Model))
-    np.testing.assert_almost_equal(kernel_loaded.eps, deep_kernel.eps, 4)
+    kernel_loaded.eps.numpy() == pytest.approx(deep_kernel.eps.numpy(), 4)
     assert kernel_loaded.kernel_a.sigma == deep_kernel.kernel_a.sigma
     assert kernel_loaded.kernel_b.sigma == deep_kernel.kernel_b.sigma
 
