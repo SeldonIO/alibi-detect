@@ -17,8 +17,7 @@ import scipy
 import tensorflow as tf
 import torch
 
-from datasets import (BinData, CategoricalData, ContinuousData, MixedData,
-                      TextData)
+from .datasets import BinData, CategoricalData, ContinuousData, MixedData, TextData
 from alibi_detect.utils._random import fixed_seed
 from packaging import version
 from pytest_cases import fixture, param_fixture, parametrize, parametrize_with_cases
@@ -34,20 +33,14 @@ from alibi_detect.cd.pytorch import preprocess_drift as preprocess_drift_pt
 from alibi_detect.cd.tensorflow import UAE as UAE_tf
 from alibi_detect.cd.tensorflow import HiddenOutput as HiddenOutput_tf
 from alibi_detect.cd.tensorflow import preprocess_drift as preprocess_drift_tf
-from alibi_detect.models.pytorch import \
-    TransformerEmbedding as TransformerEmbedding_pt
-from alibi_detect.models.tensorflow import \
-    TransformerEmbedding as TransformerEmbedding_tf
+from alibi_detect.models.pytorch import TransformerEmbedding as TransformerEmbedding_pt
+from alibi_detect.models.tensorflow import TransformerEmbedding as TransformerEmbedding_tf
 from alibi_detect.saving import (load_detector, read_config, registry,
                                  resolve_config, save_detector, write_config)
-from alibi_detect.saving.loading import (_get_nested_value,  # type: ignore
-                                         _load_model_config,
-                                         _load_optimizer_config,
-                                         _load_preprocess_config, _replace,
+from alibi_detect.saving.loading import (_get_nested_value, _load_model_config, _load_optimizer_config, _replace,
                                          _set_dtypes, _set_nested_value, _prepend_cfg_filepaths)
-from alibi_detect.saving.saving import _serialize_object  # type: ignore
-from alibi_detect.saving.saving import (_path2str, _save_kernel_config,
-                                        _save_model_config,
+from alibi_detect.saving.saving import _serialize_object
+from alibi_detect.saving.saving import (_path2str, _int2str_keys, _save_kernel_config, _save_model_config,
                                         _save_preprocess_config)
 from alibi_detect.saving.schemas import DeepKernelConfig, KernelConfig, ModelConfig, PreprocessConfig
 from alibi_detect.utils.pytorch.kernels import DeepKernel as DeepKernel_pt
@@ -107,13 +100,13 @@ def kernel(request, backend):
     Gaussian RBF kernel for given backend.
     """
     kernel = request.param
-    if kernel is not None:
+    if kernel is None:
+        pass
+    elif isinstance(kernel, dict):  # dict of kwargs
         if backend == 'tensorflow':
             kernel = GaussianRBF_tf(**kernel)
         elif backend == 'pytorch':
             kernel = GaussianRBF_pt(**kernel)
-        else:
-            raise ValueError('`backend` not valid.')
     return kernel
 
 
@@ -708,28 +701,23 @@ def test_version_warning(data, tmp_path):
         {'sigma': None, 'trainable': True, 'init_sigma_fn': None},
     ], indirect=True
 )
-@parametrize('use_register', [True, False])
-def test_save_kernel(kernel, use_register, backend, tmp_path):
+def test_save_kernel(kernel, backend, tmp_path):
     """
     Unit test for _save/_load_kernel_config, when kernel is a GaussianRBF kernel.
 
     Kernels are saved and then loaded, with assertions to check equivalence.
     """
-    # If use_register False, overwrite GaussianRBF's from object registry to force kernel to be saved to disk
-    if not use_register:
-        registry.register('utils.' + backend + '.kernels.GaussianRBF', func="NULL")
-
     # Save kernel to config
     filepath = tmp_path
     filename = Path('mykernel')
     cfg_kernel = _save_kernel_config(kernel, filepath, filename)
     KernelConfig(**cfg_kernel)  # Passing through the pydantic validator gives a degree of testing
-    if use_register:
+    if kernel.__class__.__name__ == 'GaussianRBF':
         assert cfg_kernel['src'] == '@utils.' + backend + '.kernels.GaussianRBF'
     else:
         assert Path(cfg_kernel['src']).suffix == '.dill'
     assert cfg_kernel['trainable'] == kernel.trainable
-    if not kernel.trainable:
+    if not kernel.trainable and cfg_kernel['sigma'] is not None:
         np.testing.assert_almost_equal(cfg_kernel['sigma'], kernel.sigma, 6)
 
     # Resolve and load config (_load_kernel_config is called within resolve_config)
@@ -795,9 +783,8 @@ def test_save_preprocess(data, preprocess_fn, tmp_path, backend):
     # TODO - check layer details here once implemented
 
     # Resolve and load preprocess config
-    cfg = {'preprocess_fn': cfg_preprocess}
-    cfg_preprocess = resolve_config(cfg, tmp_path)['preprocess_fn']
-    preprocess_fn_load = _load_preprocess_config(cfg_preprocess, backend)
+    cfg = {'preprocess_fn': cfg_preprocess, 'backend': backend}
+    preprocess_fn_load = resolve_config(cfg, tmp_path)['preprocess_fn']  # tests _load_preprocess_config implicitly
     if backend == 'tensorflow':
         assert preprocess_fn_load.func.__name__ == 'preprocess_drift'
         assert isinstance(preprocess_fn_load.keywords['model'], tf.keras.Model)
@@ -829,9 +816,8 @@ def test_save_preprocess_nlp(data, preprocess_fn, max_len, tmp_path, backend):
         assert cfg_preprocess['model']['src'] == 'preprocess_fn/model'
 
     # Resolve and load preprocess config
-    cfg = {'preprocess_fn': cfg_preprocess}
-    cfg_preprocess = resolve_config(cfg, tmp_path)['preprocess_fn']
-    preprocess_fn_load = _load_preprocess_config(cfg_preprocess, backend)
+    cfg = {'preprocess_fn': cfg_preprocess, 'backend': backend}
+    preprocess_fn_load = resolve_config(cfg, tmp_path)['preprocess_fn']  # tests _load_preprocess_config implicitly
     assert isinstance(preprocess_fn_load.keywords['tokenizer'], type(preprocess_fn.keywords['tokenizer']))
     assert isinstance(preprocess_fn_load.keywords['model'], type(preprocess_fn.keywords['model']))
     if isinstance(preprocess_fn.keywords['model'], (TransformerEmbedding_tf, TransformerEmbedding_pt)):
@@ -952,6 +938,27 @@ def test_path2str(tmp_path):
     abs_path = cfg_abs['dict']['a path']
     assert isinstance(abs_path, str)
     assert abs_path == str(tmp_path.resolve())
+
+
+def test_int2str_keys():
+    """
+    A unit test for _int2str_keys
+    """
+    cfg = {
+        'dict': {'0': 'A', '1': 3, 2: 'C'},
+        3: 'D',
+        '4': 'E'
+    }
+    cfg_fixed = _int2str_keys(cfg)
+
+    # Check all str keys changed to int
+    assert cfg['dict'].pop(2) == cfg_fixed['dict'].pop('2')
+    assert cfg.pop(3) == cfg_fixed.pop('3')
+
+    # Check remaining items untouched
+    assert cfg == cfg_fixed
+
+    assert cfg
 
 
 def generic_function(x: float, add: float = 0.0, invert: bool = True):

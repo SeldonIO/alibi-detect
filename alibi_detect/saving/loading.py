@@ -157,12 +157,10 @@ def _init_detector(cfg: dict) -> Detector:
     The instantiated detector.
     """
     detector_name = cfg.pop('name')
-    version_warning = cfg.pop('meta', None)['version_warning']  # meta is pop'd as don't want to pass as kwarg
 
     # Instantiate the detector
     klass = getattr(import_module('alibi_detect.cd'), detector_name)
     detector = klass.from_config(cfg)
-    detector.meta['version_warning'] = version_warning  # Insert here to avoid needing to add as kwarg
     logger.info('Instantiated drift detector {}'.format(detector_name))
     return detector
 

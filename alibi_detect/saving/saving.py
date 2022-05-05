@@ -133,12 +133,11 @@ def _save_detector_config(detector: Detector, filepath: Union[str, os.PathLike])
         filepath.mkdir(parents=True, exist_ok=True)
 
     # Get the detector config (with artefacts still within it)
-    cfg = getattr(detector, 'get_config', None)
-    if cfg is not None:
-        cfg = cfg()  # TODO - can just do detector.get_config() once all detectors have a .get_config()
-        validate_config(cfg, resolved=True)  # don't return cfg as don't want to save fully populated config
+    if hasattr(detector, 'get_config'):
+        cfg = detector.get_config()
+        cfg = validate_config(cfg, resolved=True)
     else:
-        raise NotImplementedError(f'{detector_name} is not supported by `save_detector`.')
+        raise NotImplementedError(f'{detector_name} does not yet support config.toml based saving.')
 
     # Save x_ref
     save_path = filepath.joinpath(X_REF_FILENAME)
@@ -164,7 +163,7 @@ def _save_detector_config(detector: Detector, filepath: Union[str, os.PathLike])
         kernel = cfg.get(kernel_str, None)
         if kernel is not None:
             cfg[kernel_str] = _save_kernel_config(kernel, filepath, Path(kernel_str))
-            if isinstance(cfg[kernel_str], dict):  # serialise proj fro DeepKernel - do here as need input_shape
+            if 'proj' in cfg[kernel_str]:  # serialise proj from DeepKernel - do here as need input_shape
                 cfg[kernel_str]['proj'], _ = _save_model_config(cfg[kernel_str]['proj'], base_path=filepath,
                                                                 input_shape=cfg['input_shape'], backend=backend)
 
@@ -222,7 +221,7 @@ def write_config(cfg: dict, filepath: Union[str, os.PathLike]):
     validate_config(cfg)  # Must validate here as replacing None w/ str will break validation
     # Replace None with "None", and dicts with integer keys with str keys (TODO: S2C depending on toml library updates)
     cfg = _replace(cfg, None, "None")  # Note: None replaced with "None" as None/null not valid TOML
-    cfg = _fix_dict_keys(cfg)
+    cfg = _int2str_keys(cfg)
     # Write to TOML file
     logger.info('Writing config to {}'.format(filepath.joinpath('config.toml')))
     with open(filepath.joinpath('config.toml'), 'w') as f:
@@ -364,30 +363,28 @@ def _path2str(cfg: dict, absolute: bool = False) -> dict:
     return cfg
 
 
-def _fix_dict_keys(cfg: dict) -> dict:
+def _int2str_keys(dikt: dict) -> dict:
     """
-    Private function to traverse a config dict and convert any dict's with int keys to str keys (e.g.
+    Private function to traverse a dict and convert any dict's with int keys to str keys (e.g.
     `categories_per_feature` kwarg for `TabularDrift`.
 
     Parameters
     ----------
-    cfg
-        The config dict.
+    dikt
+        The dictionary.
 
     Returns
     -------
-    The converted config dict.
+    The converted dictionary.
     """
-    for k, v in cfg.items():
+    dikt_copy = dikt.copy()
+    for k, v in dikt.items():
+        if isinstance(k, int):
+            dikt_copy[str(k)] = dikt[k]
+            dikt_copy.pop(k)
         if isinstance(v, dict):
-            v_copy = v.copy()
-            for key in v.keys():
-                if isinstance(key, int):
-                    v_copy[str(key)] = v[key]
-                    v_copy.pop(key)
-            _fix_dict_keys(v_copy)
-            cfg.update({k: v_copy})
-    return cfg
+            dikt_copy[k] = _int2str_keys(v)
+    return dikt_copy
 
 
 def _save_model_config(model: Callable,
