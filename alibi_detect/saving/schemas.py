@@ -1009,7 +1009,7 @@ class FETDriftOnlineConfig(DriftDetectorConfig):
 
 class FETDriftOnlineConfigResolved(DriftDetectorConfigResolved):
     """
-    Unresolved schema for the
+    Resolved schema for the
     `FETDriftOnline <https://docs.seldon.io/projects/alibi-detect/en/stable/cd/methods/onlinefetdrift.html>`_
     detector.
 
@@ -1024,6 +1024,110 @@ class FETDriftOnlineConfigResolved(DriftDetectorConfigResolved):
     lam: float = 0.99
     n_features: Optional[int] = None
     verbose: bool = True
+
+
+# The uncertainty detectors don't inherit from DriftDetectorConfig since their kwargs are a little different from the
+# other drift detectors (e.g. no preprocess_fn). Subject to change in the future.
+class ClassifierUncertaintyDriftConfig(DetectorConfig):
+    """
+    Unresolved schema for the
+    `ClassifierUncertaintyDrift <https://docs.seldon.io/projects/alibi-detect/en/stable/cd/methods/modeluncdrift.html>`_
+    detector.
+
+    Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
+    :class:`~alibi_detect.cd.ClassifierUncertaintyDrift` documentation for a description of each field.
+    """
+    x_ref: str
+    model: Union[str, ModelConfig]
+    p_val: float = .05
+    x_ref_preprocessed: bool = False
+    update_x_ref: Optional[Dict[str, int]] = None
+    preds_type: str = 'probs'
+    uncertainty_type: str = 'entropy'
+    margin_width: float = 0.1
+    batch_size: int = 32
+    preprocess_batch_fn: Optional[str] = None
+    device: Optional[str] = None
+    tokenizer: Optional[Union[str, TokenizerConfig]] = None
+    max_len: Optional[int] = None
+    input_shape: Optional[tuple] = None
+    data_type: Optional[str] = None
+
+
+class ClassifierUncertaintyDriftConfigResolved(DetectorConfig):
+    """
+    Resolved schema for the
+    `ClassifierUncertaintyDrift <https://docs.seldon.io/projects/alibi-detect/en/stable/cd/methods/modeluncdrift.html>`_
+    detector.
+
+    Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
+    :class:`~alibi_detect.cd.ClassifierUncertaintyDrift` documentation for a description of each field.
+    """
+    x_ref: Union[np.ndarray, list]
+    model: Optional[SupportedModels_types] = None
+    p_val: float = .05
+    x_ref_preprocessed: bool = False
+    update_x_ref: Optional[Dict[str, int]] = None
+    preds_type: Literal['probs', 'logits'] = 'probs'
+    uncertainty_type: Literal['entropy', 'margin'] = 'entropy'
+    margin_width: float = 0.1
+    batch_size: int = 32
+    preprocess_batch_fn: Optional[Callable] = None
+    device: Optional[str] = None
+    tokenizer: Optional[Union[str, Callable]] = None
+    max_len: Optional[int] = None
+    input_shape: Optional[tuple] = None
+    data_type: Optional[str] = None
+
+
+class RegressorUncertaintyDriftConfig(DetectorConfig):
+    """
+    Unresolved schema for the
+    `RegressorUncertaintyDrift <https://docs.seldon.io/projects/alibi-detect/en/stable/cd/methods/modeluncdrift.html>`_
+    detector.
+
+    Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
+    :class:`~alibi_detect.cd.RegressorUncertaintyDrift` documentation for a description of each field.
+    """
+    x_ref: str
+    model: Union[str, ModelConfig]
+    p_val: float = .05
+    x_ref_preprocessed: bool = False
+    update_x_ref: Optional[Dict[str, int]] = None
+    uncertainty_type: Literal['mc_dropout', 'ensemble'] = 'mc_dropout'
+    n_evals: int = 25
+    batch_size: int = 32
+    preprocess_batch_fn: Optional[str] = None
+    device: Optional[str] = None
+    tokenizer: Optional[Union[str, TokenizerConfig]] = None
+    max_len: Optional[int] = None
+    input_shape: Optional[tuple] = None
+    data_type: Optional[str] = None
+
+
+class RegressorUncertaintyDriftConfigResolved(DetectorConfig):
+    """
+    Resolved schema for the
+    `RegressorUncertaintyDrift <https://docs.seldon.io/projects/alibi-detect/en/stable/cd/methods/modeluncdrift.html>`_
+    detector.
+
+    Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
+    :class:`~alibi_detect.cd.RegressorUncertaintyDrift` documentation for a description of each field.
+    """
+    x_ref: Union[np.ndarray, list]
+    model: Optional[SupportedModels_types] = None
+    p_val: float = .05
+    x_ref_preprocessed: bool = False
+    update_x_ref: Optional[Dict[str, int]] = None
+    uncertainty_type: Literal['mc_dropout', 'ensemble'] = 'mc_dropout'
+    n_evals: int = 25
+    batch_size: int = 32
+    preprocess_batch_fn: Optional[Callable] = None
+    device: Optional[str] = None
+    tokenizer: Optional[Callable] = None
+    max_len: Optional[int] = None
+    input_shape: Optional[tuple] = None
+    data_type: Optional[str] = None
 
 
 # Unresolved schema dictionary (used in alibi_detect.utils.loading)
@@ -1042,7 +1146,9 @@ DETECTOR_CONFIGS = {
     'MMDDriftOnline': MMDDriftOnlineConfig,
     'LSDDDriftOnline': LSDDDriftOnlineConfig,
     'CVMDriftOnline': CVMDriftOnlineConfig,
-    'FETDriftOnline': FETDriftOnlineConfig
+    'FETDriftOnline': FETDriftOnlineConfig,
+    'ClassifierUncertaintyDrift': ClassifierUncertaintyDriftConfig,
+    'RegressorUncertaintyDrift': RegressorUncertaintyDriftConfig,
 }  # type: Dict[str, Type[DriftDetectorConfig]]
 
 
@@ -1062,5 +1168,7 @@ DETECTOR_CONFIGS_RESOLVED = {
     'MMDDriftOnline': MMDDriftOnlineConfigResolved,
     'LSDDDriftOnline': LSDDDriftOnlineConfigResolved,
     'CVMDriftOnline': CVMDriftOnlineConfigResolved,
-    'FETDriftOnline': FETDriftOnlineConfigResolved
+    'FETDriftOnline': FETDriftOnlineConfigResolved,
+    'ClassifierUncertaintyDrift': ClassifierUncertaintyDriftConfigResolved,
+    'RegressorUncertaintyDrift': RegressorUncertaintyDriftConfigResolved,
 }  # type: Dict[str, Type[DriftDetectorConfigResolved]]

@@ -7,16 +7,18 @@ from alibi_detect.cd.chisquare import ChiSquareDrift
 from alibi_detect.cd.preprocess import classifier_uncertainty, regressor_uncertainty
 from alibi_detect.cd.utils import encompass_batching, encompass_shuffling_and_batch_filling
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
+from alibi_detect.base import DriftConfigMixin
 
 logger = logging.getLogger(__name__)
 
 
-class ClassifierUncertaintyDrift:
+class ClassifierUncertaintyDrift(DriftConfigMixin):
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
             model: Callable,
             p_val: float = .05,
+            x_ref_preprocessed: bool = False,
             backend: Optional[str] = None,
             update_x_ref: Optional[Dict[str, int]] = None,
             preds_type: str = 'probs',
@@ -27,6 +29,7 @@ class ClassifierUncertaintyDrift:
             device: Optional[str] = None,
             tokenizer: Optional[Callable] = None,
             max_len: Optional[int] = None,
+            input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None,
     ) -> None:
         """
@@ -45,6 +48,10 @@ class ClassifierUncertaintyDrift:
             Backend to use if model requires batch prediction. Options are 'tensorflow' or 'pytorch'.
         p_val
             p-value used for the significance of the test.
+        x_ref_preprocessed
+            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
+            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
+            data will also be preprocessed.
         update_x_ref
             Reference data can optionally be updated to the last n instances seen by the detector
             or via reservoir sampling with size n. For the former, the parameter equals {'last': n} while
@@ -68,9 +75,13 @@ class ClassifierUncertaintyDrift:
             Optional tokenizer for NLP models.
         max_len
             Optional max token length for NLP models.
+        input_shape
+            Shape of input data.
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
+        # Get args/kwargs to set config later
+        inputs = locals().copy()
 
         if backend == 'tensorflow' and not has_tensorflow or backend == 'pytorch' and not has_pytorch:
             raise ImportError(f'{backend} not installed. Cannot initialize and run the '
@@ -93,7 +104,6 @@ class ClassifierUncertaintyDrift:
 
         preprocess_fn = partial(
             classifier_uncertainty,
-            model_fn=model_fn,
             preds_type=preds_type,
             uncertainty_type=uncertainty_type,
             margin_width=margin_width,
@@ -105,18 +115,22 @@ class ClassifierUncertaintyDrift:
             self._detector = KSDrift(
                 x_ref=x_ref,
                 p_val=p_val,
+                x_ref_preprocessed=x_ref_preprocessed,
                 preprocess_at_init=True,
                 update_x_ref=update_x_ref,
                 preprocess_fn=preprocess_fn,
+                input_shape=input_shape,
                 data_type=data_type
             )
         elif uncertainty_type == 'margin':
             self._detector = ChiSquareDrift(
                 x_ref=x_ref,
                 p_val=p_val,
+                x_ref_preprocessed=x_ref_preprocessed,
                 preprocess_at_init=True,
                 update_x_ref=update_x_ref,
                 preprocess_fn=preprocess_fn,
+                input_shape=input_shape,
                 data_type=data_type
             )
         else:
@@ -124,6 +138,9 @@ class ClassifierUncertaintyDrift:
 
         self.meta = self._detector.meta
         self.meta['name'] = 'ClassifierUncertaintyDrift'
+
+        # Set config
+        self._set_config(inputs)
 
     def predict(self, x: Union[np.ndarray, list], return_p_val: bool = True,
                 return_distance: bool = True) -> Dict[Dict[str, str], Dict[str, Union[np.ndarray, int, float]]]:
@@ -148,12 +165,13 @@ class ClassifierUncertaintyDrift:
         return self._detector.predict(x, return_p_val=return_p_val, return_distance=return_distance)
 
 
-class RegressorUncertaintyDrift:
+class RegressorUncertaintyDrift(DriftConfigMixin):
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
             model: Callable,
             p_val: float = .05,
+            x_ref_preprocessed: bool = False,
             backend: Optional[str] = None,
             update_x_ref: Optional[Dict[str, int]] = None,
             uncertainty_type: str = 'mc_dropout',
@@ -163,6 +181,7 @@ class RegressorUncertaintyDrift:
             device: Optional[str] = None,
             tokenizer: Optional[Callable] = None,
             max_len: Optional[int] = None,
+            input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None,
     ) -> None:
         """
@@ -181,6 +200,10 @@ class RegressorUncertaintyDrift:
             Backend to use if model requires batch prediction. Options are 'tensorflow' or 'pytorch'.
         p_val
             p-value used for the significance of the test.
+        x_ref_preprocessed
+            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
+            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
+            data will also be preprocessed.
         update_x_ref
             Reference data can optionally be updated to the last n instances seen by the detector
             or via reservoir sampling with size n. For the former, the parameter equals {'last': n} while
@@ -204,9 +227,13 @@ class RegressorUncertaintyDrift:
             Optional tokenizer for NLP models.
         max_len
             Optional max token length for NLP models.
+        input_shape
+            Shape of input data.
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
+        # Get args/kwargs to set config later
+        inputs = locals().copy()
 
         if backend == 'tensorflow' and not has_tensorflow or backend == 'pytorch' and not has_pytorch:
             raise ImportError(f'{backend} not installed. Cannot initialize and run the '
@@ -251,14 +278,19 @@ class RegressorUncertaintyDrift:
         self._detector = KSDrift(
             x_ref=x_ref,
             p_val=p_val,
+            x_ref_preprocessed=x_ref_preprocessed,
             preprocess_at_init=True,
             update_x_ref=update_x_ref,
             preprocess_fn=preprocess_fn,
+            input_shape=input_shape,
             data_type=data_type
         )
 
         self.meta = self._detector.meta
         self.meta['name'] = 'RegressorUncertaintyDrift'
+
+        # Set config
+        self._set_config(inputs)
 
     def predict(self, x: Union[np.ndarray, list], return_p_val: bool = True,
                 return_distance: bool = True) -> Dict[Dict[str, str], Dict[str, Union[np.ndarray, int, float]]]:

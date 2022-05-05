@@ -123,7 +123,7 @@ class DriftConfigMixin:
             detector = detector._detector if hasattr(detector, '_detector') else detector  # type: ignore[attr-defined]
             # Add large artefacts back to config
             for key in LARGE_ARTEFACTS:
-                if hasattr(detector, key):
+                if key in cfg:  # self.config is validated, therefore if a key is not in cfg, it isn't valid to insert
                     cfg[key] = getattr(detector, key)
             # Set x_ref_preprocessed flag
             preprocess_at_init = getattr(detector, 'preprocess_at_init', True)  # If no preprocess_at_init, always true!
@@ -170,9 +170,14 @@ class DriftConfigMixin:
 
         # args and kwargs
         pop_inputs = ['self', '__class__', '__len__']
-        pop_inputs += LARGE_ARTEFACTS  # # pop large artefacts and add back in get_config()
         pop_inputs += self.config.keys()  # Adding self.config.keys() avoids overwriting existing config
         [inputs.pop(k, None) for k in pop_inputs]
+
+        # Overwrite any large artefacts with None to save memory. They'll be added back by get_config()
+        for key in LARGE_ARTEFACTS:
+            if key in inputs:
+                inputs[key] = None
+
         self.config.update(inputs)
 
 

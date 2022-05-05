@@ -24,7 +24,7 @@ from pytest_cases import fixture, param_fixture, parametrize, parametrize_with_c
 from sklearn.model_selection import StratifiedKFold
 from transformers import AutoTokenizer
 
-from alibi_detect.cd import (ChiSquareDrift,  # ClassifierUncertaintyDrift, RegressorUncertaintyDrift,
+from alibi_detect.cd import (ChiSquareDrift, ClassifierUncertaintyDrift, RegressorUncertaintyDrift,
                              ClassifierDrift, FETDrift, KSDrift, LearnedKernelDrift, LSDDDrift, MMDDrift,
                              SpotTheDiffDrift, TabularDrift, ContextMMDDrift, MMDDriftOnline, LSDDDriftOnline,
                              CVMDriftOnline, FETDriftOnline)
@@ -65,9 +65,9 @@ REGISTERED_OBJECTS = registry.get_all()
 
 
 @fixture
-def custom_model(backend, current_cases):
+def encoder_model(backend, current_cases):
     """
-    An untrained autoencoder of given input dimension and backend (this is a "custom" model, NOT an Alibi Detect UAE).
+    An untrained encoder of given input dimension and backend (this is a "custom" model, NOT an Alibi Detect UAE).
     """
     _, _, data_params = current_cases["data"]
     _, input_dim = data_params['data_shape']
@@ -86,14 +86,38 @@ def custom_model(backend, current_cases):
 
 
 @fixture
-def preprocess_custom(custom_model, backend):
+def encoder_dropout_model(backend, current_cases):
+    """
+    An untrained encoder with dropout, of given input dimension and backend.
+
+    TODO: consolidate this model (and encoder_model above) with models like that in test_model_uncertainty.py
+    """
+    _, _, data_params = current_cases["data"]
+    _, input_dim = data_params['data_shape']
+
+    if backend == 'tensorflow':
+        model = tf.keras.Sequential(
+               [
+                   tf.keras.layers.InputLayer(input_shape=(input_dim,)),
+                   tf.keras.layers.Dense(5, activation=tf.nn.relu),
+                   tf.keras.layers.Dropout(0.5),
+                   tf.keras.layers.Dense(LATENT_DIM, activation=None)
+               ]
+           )
+    else:
+        raise NotImplementedError('`pytorch` tests not implemented.')
+    return model
+
+
+@fixture
+def preprocess_custom(encoder_model, backend):
     """
     Preprocess function with Untrained Autoencoder.
     """
     if backend == 'tensorflow':
-        preprocess_fn = partial(preprocess_drift_tf, model=custom_model)
+        preprocess_fn = partial(preprocess_drift_tf, model=encoder_model)
     else:
-        preprocess_fn = partial(preprocess_drift_pt, model=custom_model)
+        preprocess_fn = partial(preprocess_drift_pt, model=encoder_model)
     return preprocess_fn
 
 
@@ -646,6 +670,61 @@ def test_save_contextmmddrift(data, kernel, backend, tmp_path, seed):
     assert preds['data']['p_val'] == preds_load['data']['p_val']
 
 
+@parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
+def test_save_classifieruncertaintydrift(data, classifier, backend, tmp_path, seed):
+    """ Test ClassifierDrift on continuous datasets."""
+    # Init detector and predict
+    X_ref, X_h0 = data
+    with fixed_seed(seed):
+        cd = ClassifierUncertaintyDrift(X_ref,
+                                        model=classifier,
+                                        p_val=P_VAL,
+                                        backend=backend,
+                                        preds_type='probs',
+                                        uncertainty_type='entropy')
+        preds = cd.predict(X_h0)  # noqa: F841
+    save_detector(cd, tmp_path)
+
+    # Load detector and make another prediction
+    with fixed_seed(seed):
+        cd_load = load_detector(tmp_path)
+        preds_load = cd_load.predict(X_h0)  # noqa: F841
+
+    # Assert
+    np.testing.assert_array_equal(cd._detector.preprocess_fn(X_ref), cd_load._detector.x_ref)
+    assert cd_load._detector.p_val == P_VAL
+    assert preds['data']['distance'] == preds_load['data']['distance']
+    assert preds['data']['p_val'] == preds_load['data']['p_val']
+
+
+@parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
+@parametrize('regressor', [encoder_model])
+def test_save_regressoruncertaintydrift(data, regressor, backend, tmp_path, seed):
+    """ Test RegressorDrift on continuous datasets."""
+    # Init detector and predict
+    X_ref, X_h0 = data
+    with fixed_seed(seed):
+        cd = RegressorUncertaintyDrift(X_ref,
+                                       model=regressor,
+                                       p_val=P_VAL,
+                                       backend=backend,
+                                       uncertainty_type='mc_dropout'
+                                       )
+        preds = cd.predict(X_h0)  # noqa: F841
+    save_detector(cd, tmp_path)
+
+    # Load detector and make another prediction
+    with fixed_seed(seed):
+        cd_load = load_detector(tmp_path)
+        preds_load = cd_load.predict(X_h0)  # noqa: F841
+
+    # Assert
+    np.testing.assert_array_equal(cd._detector.preprocess_fn(X_ref), cd_load._detector.x_ref)
+    assert cd_load._detector.p_val == P_VAL
+    assert preds['data']['distance'] == preds_load['data']['distance']
+    assert preds['data']['p_val'] == preds_load['data']['p_val']
+
+
 @parametrize('kernel', [
         None,  # Use default kernel
         {'sigma': 0.5, 'trainable': False},  # pass kernel as object
@@ -1012,7 +1091,7 @@ def test_save_preprocess_nlp(data, preprocess_fn, max_len, tmp_path, backend):
 
 
 @parametrize_with_cases("data", cases=ContinuousData.data_synthetic_nd, prefix='data_')
-@parametrize('model', [custom_model])
+@parametrize('model', [encoder_model])
 @parametrize('layer', [None, -1])
 def test_save_model(data, model, layer, backend, tmp_path):
     """
