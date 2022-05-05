@@ -1042,8 +1042,8 @@ class ClassifierUncertaintyDriftConfig(DetectorConfig):
     p_val: float = .05
     x_ref_preprocessed: bool = False
     update_x_ref: Optional[Dict[str, int]] = None
-    preds_type: str = 'probs'
-    uncertainty_type: str = 'entropy'
+    preds_type: Literal['probs', 'logits'] = 'probs'
+    uncertainty_type: Literal['entropy', 'margin'] = 'entropy'
     margin_width: float = 0.1
     batch_size: int = 32
     preprocess_batch_fn: Optional[str] = None

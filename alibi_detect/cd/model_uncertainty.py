@@ -104,6 +104,7 @@ class ClassifierUncertaintyDrift(DriftConfigMixin):
 
         preprocess_fn = partial(
             classifier_uncertainty,
+            model_fn=model_fn,
             preds_type=preds_type,
             uncertainty_type=uncertainty_type,
             margin_width=margin_width,
