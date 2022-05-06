@@ -25,5 +25,3 @@ python:
     - requirements: requirements/docs.txt
     - method: pip
       path: .
-      extra_requirements:
-        - torch
