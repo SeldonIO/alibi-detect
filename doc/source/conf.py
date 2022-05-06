@@ -207,8 +207,8 @@ latex_elements = {
     'preamble': r''' 
         \DeclareUnicodeCharacter{2588}{=}
         \DeclareUnicodeCharacter{258E}{|} 
-        \DeclareUnicodeCharacter{274C}{\times} 
-        \DeclareUnicodeCharacter{2705}{\checkmark} 
+        \DeclareUnicodeCharacter{274C}{$\times$} 
+        \DeclareUnicodeCharacter{2705}{$\checkmark$} 
 
         \usepackage{enumitem}
         \setlistdepth{99}
