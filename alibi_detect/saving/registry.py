@@ -1,3 +1,38 @@
+"""
+This registry allows Python objects to be registered and accessed by their string reference later on. The primary usage
+is to register objects so that they can be specified in a `config.toml` file. A number of Alibi Detect functions are
+also pre-registered in the registry for convenience. See the
+`Registering artefacts <https://docs.seldon.io/projects/alibi-detect/en/stable/overview/config_files.html#registering-artefacts>`_  # noqa: E501
+documentation.
+
+Examples
+--------
+Registering a simple function using the `@registry.register` decorator, and immediately fetching it:
+
+.. code-block :: python
+
+    import numpy as np
+    from alibi_detect.saving import registry
+
+    # Register a simple function
+    @registry.register('my_function.v1')
+    def my_function(x: np.ndarray) -> np.ndarray:
+        "A custom function to normalise input data."
+        return (x - x.mean()) / x.std()
+
+    # Get function from registry
+    fetched_function = registry.get('my_function.v1')
+
+Instead of using a decorator, objects can also be registered by directly using the `registry.register()` function:
+
+.. code-block :: python
+
+    from alibi_detect.saving import registry
+
+    my_object = ...
+    registry.register("my_object.v1", func=my_object)
+"""
+
 import catalogue
 
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow

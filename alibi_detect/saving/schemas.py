@@ -14,7 +14,7 @@ The `resolved` kwarg of :func:`~alibi_detect.utils.validate.validate_config` det
     detector's api docs for a full description of each arg/kwarg.
 """
 
-from typing import Callable, Dict, List, Optional, Type, Union
+from typing import Callable, Dict, List, Optional, Type, Union, Any
 
 # TODO - conditional checks depending on backend etc
 # TODO - consider validating output of get_config calls
@@ -86,7 +86,7 @@ class DetectorConfig(CustomBaseModel):
 
 class ModelConfig(CustomBaseModel):
     """
-    Unresolved schema for (ML) models. Note that the model "backend" e.g. 'tensorflow', 'pytorch', 'sklearn', is set
+    Schema for (ML) models. Note that the model "backend" e.g. 'tensorflow', 'pytorch', 'sklearn', is set
     by `backend` in :class:`DetectorConfig`.
 
     Examples
@@ -120,7 +120,7 @@ class ModelConfig(CustomBaseModel):
 
 class EmbeddingConfig(CustomBaseModel):
     """
-    Unresolved schema for text embedding models. Currently, only pre-trained
+    Schema for text embedding models. Currently, only pre-trained
     `HuggingFace transformer <https://github.com/huggingface/transformers>`_ models are supported.
 
     Examples
@@ -152,7 +152,7 @@ class EmbeddingConfig(CustomBaseModel):
 
 class TokenizerConfig(CustomBaseModel):
     """
-    Unresolved schema for text tokenizers. Currently, only pre-trained
+    Schema for text tokenizers. Currently, only pre-trained
     `HuggingFace tokenizer <https://github.com/huggingface/tokenizers>`_ models are supported.
 
     Examples
@@ -180,7 +180,7 @@ class TokenizerConfig(CustomBaseModel):
 
 class PreprocessConfig(CustomBaseModel):
     """
-    Unresolved schema for drift detector preprocess functions, to be passed to a detector's `preprocess_fn` kwarg.
+    Schema for drift detector preprocess functions, to be passed to a detector's `preprocess_fn` kwarg.
     Once loaded, the function is wrapped in a :func:`~functools.partial`, to be evaluated within the detector.
 
     If `src` specifies a generic Python function, the dictionary specified by `kwargs` is passed to it. Otherwise,
@@ -271,7 +271,7 @@ class PreprocessConfig(CustomBaseModel):
 
 class KernelConfig(CustomBaseModelWithKwargs):
     """
-    Unresolved schema for kernels, to be passed to a detector's `kernel` kwarg.
+    Schema for kernels, to be passed to a detector's `kernel` kwarg.
 
     If `src` specifies a :class:`~alibi_detect.utils.tensorflow.GaussianRBF` kernel, the `sigma`, `trainable` and
     `init_sigma_fn` fields are passed to it. Otherwise, all fields except `src` are passed as kwargs.
@@ -318,7 +318,7 @@ class KernelConfig(CustomBaseModelWithKwargs):
 
 class DeepKernelConfig(CustomBaseModel):
     """
-    Unresolved schema for :class:`~alibi_detect.utils.tensorflow.kernels.DeepKernel`'s.
+    Schema for :class:`~alibi_detect.utils.tensorflow.kernels.DeepKernel`'s.
 
     Examples
     --------
@@ -363,6 +363,32 @@ class DeepKernelConfig(CustomBaseModel):
     The proportion (in [0,1]) of weight to assign to the kernel applied to raw inputs. This can be either specified or
     set to `'trainable'`. Only relevant is `kernel_b` is not `None`.
     """
+
+
+class OptimizerConfig(CustomBaseModelWithKwargs):
+    """
+    Schema for optimizers. Note that the model "backend" e.g. 'tensorflow', 'pytorch', 'sklearn', is set
+    by `backend` in :class:`DetectorConfig`. If `backend='tensorflow'`, the `optimizer` dictionary is expected to be
+    a configuration dictionary compatible with
+    `tf.keras.optimizers.deserialize <https://www.tensorflow.org/api_docs/python/tf/keras/optimizers/deserialize>`_.
+
+
+    Examples
+    --------
+    A TensorFlow Adam optimizer:
+
+    .. code-block :: toml
+
+        [optimizer]
+        class_name = "Adam"
+
+        [optimizer.config]
+        name = "Adam"
+        learning_rate = 0.001
+        decay = 0.0
+    """
+    class_name: str
+    config: Dict[str, Any]
 
 
 class DriftDetectorConfig(DetectorConfig):
@@ -663,7 +689,7 @@ class ClassifierDriftConfig(DriftDetectorConfig):
     n_folds: Optional[int] = None
     retrain_from_scratch: bool = True
     seed: int = 0
-    optimizer: Optional[Union[str, dict]] = None  # dict as can pass dict to tf.keras.optimizers.deserialize
+    optimizer: Optional[Union[str, OptimizerConfig]] = None
     learning_rate: float = 1e-3
     batch_size: int = 32
     preprocess_batch_fn: Optional[str] = None
@@ -728,7 +754,7 @@ class SpotTheDiffDriftConfig(DriftDetectorConfig):
     n_folds: Optional[int] = None
     retrain_from_scratch: bool = True
     seed: int = 0
-    optimizer: Optional[Union[str, dict]] = None  # dict as can pass dict to tf.keras.optimizers.deserialize
+    optimizer: Optional[Union[str, OptimizerConfig]] = None
     learning_rate: float = 1e-3
     batch_size: int = 32
     preprocess_batch_fn: Optional[str] = None
@@ -793,7 +819,7 @@ class LearnedKernelDriftConfig(DriftDetectorConfig):
     reg_loss_fn: Optional[str] = None
     train_size: Optional[float] = .75
     retrain_from_scratch: bool = True
-    optimizer: Optional[Union[str, dict]] = None  # dict as can pass dict to tf.keras.optimizers.deserialize
+    optimizer: Optional[Union[str, OptimizerConfig]] = None
     learning_rate: float = 1e-3
     batch_size: int = 32
     preprocess_batch_fn: Optional[str] = None
@@ -1149,7 +1175,7 @@ DETECTOR_CONFIGS = {
     'FETDriftOnline': FETDriftOnlineConfig,
     'ClassifierUncertaintyDrift': ClassifierUncertaintyDriftConfig,
     'RegressorUncertaintyDrift': RegressorUncertaintyDriftConfig,
-}  # type: Dict[str, Type[DriftDetectorConfig]]
+}  # type: Dict[str, Type[DetectorConfig]]
 
 
 # Resolved schema dictionary (used in alibi_detect.utils.loading)
@@ -1171,4 +1197,4 @@ DETECTOR_CONFIGS_RESOLVED = {
     'FETDriftOnline': FETDriftOnlineConfigResolved,
     'ClassifierUncertaintyDrift': ClassifierUncertaintyDriftConfigResolved,
     'RegressorUncertaintyDrift': RegressorUncertaintyDriftConfigResolved,
-}  # type: Dict[str, Type[DriftDetectorConfigResolved]]
+}  # type: Dict[str, Type[DetectorConfig]]

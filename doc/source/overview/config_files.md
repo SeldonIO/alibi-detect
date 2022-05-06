@@ -54,21 +54,17 @@ detector = load_detector(filepath)
 
 Compared to *standard instantiation*, config-driven instantiation has a number of advantages:
 
-- **Human readable**: The `config.toml` files are human-readable, providing a readily accessible record of 
-previously created detectors.
+- **Human readable**: The `config.toml` files are human-readable (and editable!), providing a readily accessible record 
+of previously created detectors.
 - **Flexible artefact specification**: Artefacts such as datasets and models can be specified as locally serialized
 objects, or as runtime registered objects (see [Specifying complex fields](complex_fields)). Multiple detectors can 
 share the same artefacts, and they can be easily swapped.
-- **Editable**: Config files written by the {func}`~alibi_detect.saving.save_detector` function can be edited 
-prior to reloading.
 - **Inbuilt validation**: The {func}`~alibi_detect.saving.load_detector` function uses
-[pydantic](https://pydantic-docs.helpmanual.io/) to validate detector configurations, improving reliability.
+[pydantic](https://pydantic-docs.helpmanual.io/) to validate detector configurations.
 
-In what follows, the Alibi Detect config files are explored in some detail. To get a general idea 
-of the expected layout of a config file, readers can also skip ahead to [Example config files](examples) for examples of
-config files for some common use cases. Alternatively, to obtain a fully populated config file for reference, users
-can run one of the [example notebooks](../cd/examples.md) and generate a config file by passing an instantiated 
-detector to {func}`~alibi_detect.saving.save_detector`.
+To get a general idea of the expected layout of a config file, see the [Example config files](examples). Alternatively, 
+to obtain a fully populated config file for reference, users can run one of the [example notebooks](../cd/examples.md) 
+and generate a config file by passing an instantiated detector to {func}`~alibi_detect.saving.save_detector`.
 
 ## Configuration file layout
 
@@ -109,7 +105,7 @@ detector = MMDDrift(x_ref, p_val=0.05, preprocess_fn=preprocess_fn)
 `````
 
 The `name` field should always be the name of the detector, for example `KSDrift` or `SpotTheDiffDrift`. 
-The following fields are the args/kwargs to pass to the detector (see the {mod}`alibi_detect.cd` docs
+The remaining fields are the args/kwargs to pass to the detector (see the {mod}`alibi_detect.cd` docs
 for a full list of permissible args/kwargs for each detector). All config fields
 follow this convention, however as discussed in [Specifying artefacts](complex_fields), some fields can be 
 more complex than others. 
@@ -149,25 +145,24 @@ additional option/setting fields. Sometimes these fields may be nested artefact 
 
 The following table shows the allowable formats for all possible config file artefacts.
 
-```{table} Possible artefact formats
+```{table} Allowable artefact formats
 :name: all-artefacts-table
 
-|Field                     |.npy file  |.dill file  |[Registry](registering_artefacts)|[Artefact Dictionary](dictionaries)                                                                       | 
-|:-------------------------|:---------:|:----------:|:-------------------------------:|:--------------------------------------------------------------------------------------------------------:|
-|`x_ref`                   |✔          |            |                                 |                                                                                                          |
-|`reg_loss_fn`             |           |✔           |✔                                |                                                                                                          |
-|`dataset`                 |           |✔           |✔                                |                                                                                                          |
-|`initial_diffs`           |✔          |            |                                 |                                                                                                          |
-|`model`                   |           |            |✔                                |{class}`~alibi_detect.saving.schemas.ModelConfig`                                                          |
-|`preprocess_fn`           |           |✔           |✔                                |{class}`~alibi_detect.saving.schemas.PreprocessConfig`                                                     |
-|`preprocess_fn.model`     |           |            |✔                                |{class}`~alibi_detect.saving.schemas.ModelConfig`                                                          |
-|`preprocess_fn.embedding` |           |            |✔                                |{class}`~alibi_detect.saving.schemas.EmbeddingConfig`                                                      |
-|`preprocess_fn.tokenizer` |           |            |✔                                |{class}`~alibi_detect.saving.schemas.TokenizerConfig`                                                      |
-|`kernel`                  |           |✔           |✔                                |{class}`~alibi_detect.saving.schemas.KernelConfig` or {class}`~alibi_detect.saving.schemas.DeepKernelConfig`|
-|`kernel.proj`             |           |            |✔                                |{class}`~alibi_detect.saving.schemas.ModelConfig`                                                          |
-|`kernel.kernel_a`         |           |✔           |✔                                |{class}`~alibi_detect.saving.schemas.KernelConfig`                                                         |
-|`kernel.kernel_b`         |           |✔           |✔                                |{class}`~alibi_detect.saving.schemas.KernelConfig`                                                         |
-|`optimizer`               |           |✔           |✔                                | Dictionary in the format expected by [tf.keras.optimizers.deserialize](https://www.tensorflow.org/api_docs/python/tf/keras/optimizers/deserialize) |
+|Field                     |.npy file  |.dill file  |[Registry](registering_artefacts)|[Artefact Dictionary](dictionaries)                                                                         | 
+|:-------------------------|:---------:|:----------:|:-------------------------------:|:----------------------------------------------------------------------------------------------------------:|
+|`x_ref`                   |✔          |            |                                 |                                                                                                            |
+|`c_ref`                   |✔          |            |                                 |                                                                                                            |
+|`reg_loss_fn`             |           |✔           |✔                                |                                                                                                            |
+|`dataset`                 |           |✔           |✔                                |                                                                                                            |
+|`initial_diffs`           |✔          |            |                                 |                                                                                                            |
+|`model`/`proj`            |           |            |✔                                |{class}`~alibi_detect.saving.schemas.ModelConfig`                                                           |
+|`preprocess_fn`           |           |✔           |✔                                |{class}`~alibi_detect.saving.schemas.PreprocessConfig`                                                      |
+|`preprocess_batch_fn`     |           |✔           |✔                                |                                                                                                            |
+|`embedding`               |           |            |✔                                |{class}`~alibi_detect.saving.schemas.EmbeddingConfig`                                                       |
+|`tokenizer`               |           |            |✔                                |{class}`~alibi_detect.saving.schemas.TokenizerConfig`                                                       |
+|`kernel`                  |           |            |✔                                |{class}`~alibi_detect.saving.schemas.KernelConfig` or {class}`~alibi_detect.saving.schemas.DeepKernelConfig`|
+|`kernel_a`/`kernel_b`     |           |            |✔                                |{class}`~alibi_detect.saving.schemas.KernelConfig`                                                          |
+|`optimizer`               |           |✔           |✔                                | {class}`~alibi_detect.saving.schemas.OptimizerConfig`                                                      |
 ```
 
 ```{note}
@@ -196,9 +191,10 @@ dictionaries able to be specified with {} brackets or by sections demarcated wit
 [TOML documentation](https://toml.io/en/) for more details on the TOML format).
 
 Other config fields in the {ref}`all-artefacts-table` table can be specified via artefact dictionaries in a similar way. 
-For example, the `model`, `preprocess_fn.model` and `kernel.proj` fields can be set as TensorFlow (and soon PyTorch) 
-models via the {class}`~alibi_detect.saving.schemas.ModelConfig` dictionary. This is seen in the following example, 
-where a `preprocess_fn` is specified with a TensorFlow `model`.
+For example, the `model` and `proj` fields can be set as TensorFlow (and soon PyTorch) 
+models via the {class}`~alibi_detect.saving.schemas.ModelConfig` dictionary. Often an artefact dictionary may itself
+contain nested artefact dictionaries, as is the case in in the following example, where a `preprocess_fn` is specified 
+with a TensorFlow `model`.
 
 <p class="codeblock-label">config.toml (excerpt)</p>
 

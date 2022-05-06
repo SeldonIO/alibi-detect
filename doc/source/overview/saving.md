@@ -51,8 +51,29 @@ for the remaining detectors is in the [Roadmap](roadmap.md).
 
 
 ````{tab-set}
-```{tab-item} Outlier detectors
 
+```{tab-item} Drift detectors
+| Detector                                                                       | Legacy save/load | Config save/load |
+|:-------------------------------------------------------------------------------|:----------------:|:----------------:|
+| [Kolmogorov-Smirnov](../cd/methods/ksdrift.ipynb)                              |        ✅         |        ✅         |
+| [Cramér-von Mises](../cd/methods/cvmdrift.ipynb)                               |        ✅         |        ✅         |
+| [Fisher's Exact Test](../cd/methods/fetdrift.ipynb)                            |        ✅         |        ✅         |
+| [Least-Squares Density Difference](../cd/methods/lsdddrift.ipynb)              |        ❌         |        ✅         |
+| [Maximum Mean Discrepancy](../cd/methods/mmddrift.ipynb)                       |        ✅         |        ✅         |
+| [Learned Kernel MMD](../cd/methods/learnedkerneldrift.ipynb)                   |        ❌         |        ✅         |
+| [Chi-Squared](../cd/methods/chisquaredrift.ipynb)                              |        ✅         |        ✅         |
+| [Mixed-type tabular](../cd/methods/tabulardrift.ipynb)                         |        ✅         |        ✅         |
+| [Classifier](../cd/methods/classifierdrift.ipynb)                              |        ✅         |        ✅         |
+| [Spot-the-diff](../cd/methods/spotthediffdrift.ipynb)                          |        ❌         |        ✅         |
+| [Classifier Uncertainty](../cd/methods/modeluncdrift.ipynb)                    |        ❌         |        ✅         |
+| [Regressor Uncertainty](../cd/methods/modeluncdrift.ipynb)                     |        ❌         |        ✅         |
+| [Online Cramér-von Mises](../cd/methods/onlinecvmdrift.ipynb)                  |        ❌         |        ✅         |
+| [Online Fisher's Exact Test](../cd/methods/onlinefetdrift.ipynb)               |        ❌         |        ✅         |
+| [Online Least-Squares Density Difference](../cd/methods/onlinelsdddrift.ipynb) |        ❌         |        ✅         |
+| [Online Maximum Mean Discrepancy](../cd/methods/onlinemmddrift.ipynb)          |        ❌         |        ✅         |
+```
+
+```{tab-item} Outlier detectors
 | Detector                                                | Legacy save/load | Config save/load |
 |:--------------------------------------------------------|:----------------:|:----------------:|
 | [Isolation Forest](../od/methods/iforest.ipynb)         |         ✅       |       ❌          |         
@@ -73,27 +94,6 @@ for the remaining detectors is in the [Roadmap](roadmap.md).
 |:------------------------------------------------------------|:----------------:|:----------------:|
 | [Adversarial AE](../ad/methods/adversarialae.ipynb)         |        ✅        |        ❌         |
 | [Model distillation](../ad/methods/modeldistillation.ipynb) |        ✅        |        ❌         |
-```
-
-```{tab-item} Drift detectors
-| Detector                                                                       | Legacy save/load | Config save/load |
-|:-------------------------------------------------------------------------------|:----------------:|:----------------:|
-| [Kolmogorov-Smirnov](../cd/methods/ksdrift.ipynb)                              |        ✅         |        ✅         |
-| [Cramér-von Mises](../cd/methods/cvmdrift.ipynb)                               |        ✅         |        ✅         |
-| [Fisher's Exact Test](../cd/methods/fetdrift.ipynb)                            |        ✅         |        ✅         |
-| [Least-Squares Density Difference](../cd/methods/lsdddrift.ipynb)              |        ❌         |        ✅         |
-| [Maximum Mean Discrepancy](../cd/methods/mmddrift.ipynb)                       |        ✅         |        ✅         |
-| [Learned Kernel MMD](../cd/methods/learnedkerneldrift.ipynb)                   |        ❌         |        ✅         |
-| [Chi-Squared](../cd/methods/chisquaredrift.ipynb)                              |        ✅         |        ✅         |
-| [Mixed-type tabular](../cd/methods/tabulardrift.ipynb)                         |        ✅         |        ✅         |
-| [Classifier](../cd/methods/classifierdrift.ipynb)                              |        ✅         |        ✅         |
-| [Spot-the-diff](../cd/methods/spotthediffdrift.ipynb)                          |        ❌         |        ✅         |
-| [Classifier Uncertainty](../cd/methods/modeluncdrift.ipynb)                    |        ❌         |        ❌         |
-| [Regressor Uncertainty](../cd/methods/modeluncdrift.ipynb)                     |        ❌         |        ❌         |
-| [Online Cramér-von Mises](../cd/methods/onlinecvmdrift.ipynb)                  |        ❌         |        ❌         |
-| [Online Fisher's Exact Test](../cd/methods/onlinefetdrift.ipynb)               |        ❌         |        ❌         |
-| [Online Least-Squares Density Difference](../cd/methods/onlinelsdddrift.ipynb) |        ❌         |        ❌         |
-| [Online Maximum Mean Discrepancy](../cd/methods/onlinemmddrift.ipynb)          |        ❌         |        ❌         |
 ```
 ````
 

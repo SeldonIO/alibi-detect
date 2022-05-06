@@ -58,7 +58,8 @@ FIELDS_TO_RESOLVE = [
     ['c_kernel', 'src'],
     ['c_kernel', 'init_sigma_fn'],
     ['c_kernel'],
-    ['initial_diffs']
+    ['initial_diffs'],
+    ['tokenizer']
 ]
 
 # Fields to convert from str to dtype
