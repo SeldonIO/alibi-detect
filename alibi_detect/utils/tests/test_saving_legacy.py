@@ -150,7 +150,6 @@ def select_detector(request):
 def test_save_load(select_detector):
     det = select_detector
     det_name = det.meta['name']
-
     with TemporaryDirectory() as temp_dir:
         temp_dir += '/'
         save_detector(det, temp_dir, legacy=True)

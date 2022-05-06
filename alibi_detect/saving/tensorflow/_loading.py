@@ -299,10 +299,8 @@ def load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwarg
         detector = init_ad_ae(state_dict, ae, model, model_hl)
     elif detector_name == 'ModelDistillation':
         md = load_model(filepath, load_dir='distilled_model')
-        print(md)
         custom_objects = kwargs['custom_objects'] if 'custom_objects' in k else None
         model = load_model(filepath, custom_objects=custom_objects)
-        print(model)
         detector = init_ad_md(state_dict, md, model)
     elif detector_name == 'OutlierProphet':
         detector = init_od_prophet(state_dict)
@@ -315,7 +313,10 @@ def load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwarg
         emb, tokenizer = None, None
         if state_dict['other']['load_text_embedding']:
             emb, tokenizer = load_text_embed(filepath)
-        model = load_model(filepath, load_dir='encoder')
+        try:  # legacy load_model behaviour was to return None if not found. Now it raises error, hence need try-except.
+            model = load_model(filepath, load_dir='encoder')
+        except FileNotFoundError:
+            model = None
         if detector_name == 'KSDrift':
             load_fn = init_cd_ksdrift  # type: ignore[assignment]
         elif detector_name == 'MMDDriftTF':
@@ -325,6 +326,7 @@ def load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwarg
         elif detector_name == 'TabularDrift':
             load_fn = init_cd_tabulardrift  # type: ignore[assignment]
         elif detector_name == 'ClassifierDriftTF':
+            # Don't need try-except here since model is not optional for ClassifierDrift
             clf_drift = load_model(filepath, load_dir='clf_drift')
             load_fn = partial(init_cd_classifierdrift, clf_drift)  # type: ignore[assignment]
         else:
