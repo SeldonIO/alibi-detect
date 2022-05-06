@@ -274,8 +274,11 @@ the reconstruction loss, e.g. if MSE is used:
 $\phi, \psi = \text{arg} \min_{\phi, \psi}\, \lVert \mathbf{X}-(\phi \circ \psi)\mathbf{X}\rVert^2$.
 However, untrained (randomly initialised) autoencoders can also be used.
 For an example, a `pytorch` autoencoder can be incorporated into a
-detector by packaging it as a callable function using {func}`~alibi_detect.cd.pytorch.preprocess.preprocess_drift`
-and {func}`~functools.partial`: 
+detector by packaging it as a callable function using
+`preprocess_drift` (from
+[alibi_detect.cd.pytorch.preprocess](../api/alibi_detect.cd.pytorch.preprocess.rst))
+and `partial` (see
+[here](https://docs.python.org/3/library/functools.html#functools.partial)):
 
 ```python
 encoder_net = torch.nn.Sequential(...)
@@ -309,7 +312,10 @@ is encouraging since this allows the user to repurpose existing
 black-box models for use as drift detectors. The syntax for
 incorporating existing models into drift detectors is similar to the
 previous autoencoder example, with the added step of using
-{class}`~alibi_detect.cd.tensorflow.preprocess.HiddenOutput`
+`HiddenOutput`
+([alibi_detect.cd.tensorflow.preprocess](../api/alibi_detect.cd.tensorflow.preprocess.rst)
+or
+[alibi_detect.cd.pytorch.preprocess](../api/alibi_detect.cd.pytorch.preprocess.rst))
 to select the model’s network layer to extract outputs from. The code
 snippet below is borrowed from [Maximum Mean Discrepancy drift detector
 on CIFAR-10](../examples/cd_mmd_cifar10.ipynb), where the softmax
@@ -391,7 +397,8 @@ reviews](../examples/cd_text_imdb.ipynb) example, where the
 768-dimensional embeddings from the BERT model are passed through an
 untrained AutoEncoder to reduce their dimensionality. Alibi Detect
 allows various types of embeddings to be extracted from transformer
-models, using {class}`~alibi_detect.models.tensorflow.embedding.TransformerEmbedding`.
+models, as discussed in
+[alibi_detect.models.tensorflow.embedding](../api/alibi_detect.models.tensorflow.embedding.rst).
 
 #### Graph data
 
