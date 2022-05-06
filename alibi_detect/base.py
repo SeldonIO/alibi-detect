@@ -9,9 +9,7 @@ DEFAULT_META = {
     "name": None,
     "detector_type": None,  # online or offline
     "data_type": None,  # tabular, image or time-series
-    "version": None,
-    "config_spec": None,
-    "version_warning": False
+    "version": None
 }  # type: Dict
 
 
@@ -60,8 +58,6 @@ class BaseDetector(ABC):
         self.meta = copy.deepcopy(DEFAULT_META)
         self.meta['name'] = self.__class__.__name__
         self.meta['version'] = __version__
-        self.meta['config_spec'] = __config_spec__
-        self.meta['version_warning'] = False
 
     def __repr__(self):
         return self.__class__.__name__
@@ -143,30 +139,31 @@ class DriftConfigMixin:
         config
             A config dictionary matching the schema's in :class:`~alibi_detect.saving.schemas`.
         """
-        meta = config.pop('meta', None)  # meta is pop'd as don't want to pass as arg/kwarg
+        # Check for exisiting version_warning. meta is pop'd as don't want to pass as arg/kwarg
+        version_warning = config.pop('meta', {}).pop('version_warning', False)
+        # Init detector
         detector = cls(**config)
-        if meta is not None:
-            detector.meta['version_warning'] = meta.get('version_warning', False)  # type: ignore[attr-defined]
-            detector.config['meta']['version_warning'] = meta.get('version_warning', False)
+        # Add version_warning
+        detector.meta['version_warning'] = version_warning  # type: ignore[attr-defined]
+        detector.config['meta']['version_warning'] = version_warning
         return detector
 
     def _set_config(self, inputs):  # TODO - move to BaseDetector once config save/load implemented for non-drift
-        if self.config is None:  # init config if it doesn't already exist
-            name = self.__class__.__name__
-            # strip off any backend suffix
-            backends = ['TF', 'Torch', 'Sklearn']
-            for backend in backends:
-                if name.endswith(backend):
-                    name = name[:-len(backend)]
-            # Init config dict
-            self.config: Dict[str, Any] = {
-                'name': name,
-                'meta': {
-                    'version': self.meta['version'],
-                    'config_spec': self.meta['config_spec'],
-                    'version_warning': self.meta['version_warning'],
-                }
+        # Set config metadata
+        name = self.__class__.__name__
+        # strip off any backend suffix
+        backends = ['TF', 'Torch', 'Sklearn']
+        for backend in backends:
+            if name.endswith(backend):
+                name = name[:-len(backend)]
+        # Init config dict
+        self.config: Dict[str, Any] = {
+            'name': name,
+            'meta': {
+                'version': self.meta['version'],
+                'config_spec': __config_spec__,
             }
+        }
 
         # args and kwargs
         pop_inputs = ['self', '__class__', '__len__']
