@@ -391,7 +391,6 @@ reviews](../examples/cd_text_imdb.ipynb) example, where the
 768-dimensional embeddings from the BERT model are passed through an
 untrained AutoEncoder to reduce their dimensionality. Alibi Detect
 allows various types of embeddings to be extracted from transformer
-models, as discussed in
 models, using {class}`~alibi_detect.models.tensorflow.embedding.TransformerEmbedding`.
 
 #### Graph data
