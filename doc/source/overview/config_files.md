@@ -212,7 +212,7 @@ src = "model/"
 ```
 
 Each artefact dictionary has an associated pydantic model which is used for [validation of config files](validation). 
-The [documentation](../api/alibi_detect/saving/schemas/index.rst) for these pydantic models provides a description of the 
+The [documentation](../api/alibi_detect.saving.schemas.rst) for these pydantic models provides a description of the 
 permissible fields for each artefact dictionary. For examples of how the artefact dictionaries can be used in practice, 
 see {ref}`examples`.
 
