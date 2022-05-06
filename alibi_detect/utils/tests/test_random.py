@@ -25,37 +25,37 @@ def test_fixed_seed(seed):
     """
     n = 5  # Length of random number sequences
 
-    nums0 = np.empty((n, 3))
+    nums0 = []
     tmp_seed = seed + 42
     with fixed_seed(tmp_seed):
         # Generate a sequence of random numbers
         for i in range(n):
-            nums0[i, 0] = np.random.normal([1])
-            nums0[i, 1] = tf.random.normal([1])
-            nums0[i, 2] = torch.normal(torch.tensor([1.0]))
+            nums0.append(np.random.normal([1]))
+            nums0.append(tf.random.normal([1]))
+            nums0.append(torch.normal(torch.tensor([1.0])))
 
         # Check seed unchanged after RNG calls
         assert get_seed() == tmp_seed
 
     # Generate another sequence of random numbers with same seed, and check equal
-    nums1 = np.empty((n, 3))
+    nums1 = []
     tmp_seed = seed + 42
     with fixed_seed(tmp_seed):
         for i in range(n):
-            nums1[i, 0] = np.random.normal([1])
-            nums1[i, 1] = tf.random.normal([1])
-            nums1[i, 2] = torch.normal(torch.tensor([1.0]))
-    np.testing.assert_array_equal(nums0, nums1)
+            nums1.append(np.random.normal([1]))
+            nums1.append(tf.random.normal([1]))
+            nums1.append(torch.normal(torch.tensor([1.0])))
+    assert nums0 == nums1
 
     # Generate another sequence of random numbers with different seed, and check not equal
-    nums2 = np.empty((n, 3))
+    nums2 = []
     tmp_seed = seed + 99
     with fixed_seed(tmp_seed):
         for i in range(n):
-            nums2[i, 0] = np.random.normal([1])
-            nums2[i, 1] = tf.random.normal([1])
-            nums2[i, 2] = torch.normal(torch.tensor([1.0]))
-    np.testing.assert_raises(AssertionError, np.testing.assert_array_equal, nums1, nums2)
+            nums2.append(np.random.normal([1]))
+            nums2.append(tf.random.normal([1]))
+            nums2.append(torch.normal(torch.tensor([1.0])))
+    assert nums1 != nums2
 
     # Check seeds were reset upon exit of context managers
     assert get_seed() == seed

@@ -7,30 +7,29 @@ from contextlib import contextmanager
 import random
 import numpy as np
 import os
-import sys
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
-
-# Pointer to the alibi_detect module. Used to set a global seed variable.
-_module_pointer = sys.modules[__name__]
-setattr(_module_pointer, '_seed', None)
 
 if has_tensorflow:
     import tensorflow as tf
 if has_pytorch:
     import torch
 
+# Init global seed
+_ALIBI_SEED = None
+
 
 def set_seed(seed: int):
     """
-    Sets the Python, NumPy, TensorFlow and PyTorch random seeds (if installed).
+    Sets the Python, NumPy, TensorFlow and PyTorch random seeds, and the PYTHONHASHSEED env variable.
 
     Parameters
     ----------
     seed
         Value of the random seed to set.
     """
+    global _ALIBI_SEED
     seed = max(seed, 0)  # TODO: This is a fix to allow --randomly-seed=0 in setup.cfg. To be removed in future
-    setattr(_module_pointer, '_seed', seed)
+    _ALIBI_SEED = seed
     os.environ['PYTHONHASHSEED'] = str(seed)
     random.seed(seed)
     np.random.seed(seed)
@@ -51,8 +50,9 @@ def get_seed() -> int:
     >>> get_seed()
     42
     """
-    if _module_pointer._seed is not None:
-        return _module_pointer._seed
+    global _ALIBI_SEED
+    if _ALIBI_SEED is not None:
+        return _ALIBI_SEED
     else:
         raise RuntimeError('`set_seed` must be called before `get_seed` can be called.')
 
