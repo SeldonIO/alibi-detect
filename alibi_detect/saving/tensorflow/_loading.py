@@ -3,7 +3,7 @@ import os
 import warnings
 from functools import partial
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Tuple, Union, get_args
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
 import dill
 import tensorflow as tf
@@ -267,7 +267,7 @@ def load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwarg
         raise NotImplementedError('Detectors with PyTorch backend are not yet supported.')
 
     detector_name = meta_dict['name']
-    if detector_name not in [detector.__name__ for detector in get_args(Detector)]:
+    if detector_name not in [detector.__name__ for detector in Detector.__args__]:  # type: ignore[attr-defined]
         raise NotImplementedError(f'{detector_name} is not supported by `load_detector`.')
 
     # load outlier detector specific parameters

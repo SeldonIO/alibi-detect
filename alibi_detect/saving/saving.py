@@ -4,7 +4,7 @@ import shutil
 import warnings
 from functools import partial
 from pathlib import Path
-from typing import Callable, Optional, Tuple, Union, get_args
+from typing import Callable, Optional, Tuple, Union
 
 import dill
 import numpy as np
@@ -47,8 +47,9 @@ def save_detector(detector: Detector, filepath: Union[str, os.PathLike], legacy:
     if 'backend' in list(detector.meta.keys()) and detector.meta['backend'] in ['pytorch', 'sklearn']:
         raise NotImplementedError('Saving detectors with PyTorch or sklearn backend is not yet supported.')
 
+    # TODO: Replace .__args__ w/ typing.get_args() once Python 3.7 dropped
     detector_name = detector.__class__.__name__
-    if detector_name not in [detector.__name__ for detector in get_args(Detector)]:
+    if detector_name not in [detector.__name__ for detector in Detector.__args__]:
         raise NotImplementedError(f'{detector_name} is not supported by `save_detector`.')
 
     # Get a list of all existing files in `filepath` (so we know what not to cleanup if an error occurs)
