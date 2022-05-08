@@ -136,7 +136,7 @@ class MMDDriftTorch(BaseMMDDrift):
         return p_val.numpy().item(), mmd2.numpy().item(), mmd2_permuted.numpy()
 
 
-class LinearTimeDriftTorch(BaseMMDDrift):
+class LinearTimeMMDDriftTorch(BaseMMDDrift):
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
@@ -147,13 +147,12 @@ class LinearTimeDriftTorch(BaseMMDDrift):
             kernel: Callable = GaussianRBF,
             sigma: Optional[np.ndarray] = None,
             configure_kernel_from_x_ref: bool = True,
-            n_permutations: int = 100,
             device: Optional[str] = None,
             input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None
     ) -> None:
         """
-        Maximum Mean Discrepancy (MMD) data drift detector using a permutation test, with linear-time estimator.
+        Maximum Mean Discrepancy (MMD) data drift detector using a linear-time estimator.
 
         Parameters
         ----------
@@ -176,8 +175,6 @@ class LinearTimeDriftTorch(BaseMMDDrift):
             The kernel evaluation is then averaged over those bandwidths.
         configure_kernel_from_x_ref
             Whether to already configure the kernel bandwidth from the reference data.
-        n_permutations
-            Number of permutations used in the permutation test.
         device
             Device type used. The default None tries to use the GPU and falls back on CPU if needed.
             Can be specified by passing either 'cuda', 'gpu' or 'cpu'.
@@ -194,7 +191,6 @@ class LinearTimeDriftTorch(BaseMMDDrift):
             preprocess_fn=preprocess_fn,
             sigma=sigma,
             configure_kernel_from_x_ref=configure_kernel_from_x_ref,
-            n_permutations=n_permutations,
             input_shape=input_shape,
             data_type=data_type
         )
@@ -215,8 +211,11 @@ class LinearTimeDriftTorch(BaseMMDDrift):
 
         # compute kernel matrix for the reference data
         if self.infer_sigma or isinstance(sigma, torch.Tensor):
-            x = torch.from_numpy(self.x_ref).to(self.device)
-            self.k_xx = self.kernel(x, x, infer_sigma=self.infer_sigma)
+            n = self.x_ref.shape[0]
+            n_hat = int(np.floor(n / 2) * 2)
+            x = torch.from_numpy(self.x_ref[:n_hat, :]).to(self.device)
+            self.k_xx = self.kernel(x=x[0::2, :], y=x[1::2, :],
+                                    pairwise=False, infer_sigma=self.infer_sigma)
             self.infer_sigma = False
         else:
             self.k_xx, self.infer_sigma = None, True
@@ -231,8 +230,9 @@ class LinearTimeDriftTorch(BaseMMDDrift):
 
     def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, np.ndarray]:
         """
-        Compute the p-value resulting from a permutation test using the maximum mean discrepancy
-        as a distance measure between the reference data and the data to be tested.
+        Compute the p-value using the maximum mean discrepancy as a distance measure between the
+        reference data and the data to be tested. x and x_ref are required to have the same size.
+        The sample size is then specified as the maximal even number below the data size.
 
         Parameters
         ----------
@@ -247,14 +247,20 @@ class LinearTimeDriftTorch(BaseMMDDrift):
         x_ref, x = self.preprocess(x)
         n = x.shape[0]
         m = x_ref.shape[0]
-        n_hat = int(np.floor(min(n, m) / 2) * 2)
+        if n != m:
+            raise ValueError('x and x_ref must have the same size.')
+        n_hat = int(np.floor(n / 2) * 2)
         x_ref = torch.from_numpy(x_ref[:n_hat, :]).to(self.device)  # type: ignore[assignment]
         x = torch.from_numpy(x[:n_hat, :]).to(self.device)  # type: ignore[assignment]
-        mmd2, var_mmd2 = linear_mmd2(x_ref, x, self.kernel)  # type: ignore[arg-type]
+        if self.k_xx is not None and self.update_x_ref is None:
+            k_xx = self.k_xx
+        else:
+            k_xx = self.kernel(x=x_ref[0::2, :], y=x_ref[1::2, :], pairwise=False)
+        mmd2, var_mmd2 = linear_mmd2(k_xx, x_ref, x, self.kernel)  # type: ignore[arg-type]
         if self.device.type == 'cuda':
             mmd2 = mmd2.cpu()
         mmd2 = mmd2.numpy().item()
-        var_mmd2 = var_mmd2.numpy().item()
+        var_mmd2 = np.clip(var_mmd2.numpy().item(), 1e-8, 1e8)
         std_mmd2 = np.sqrt(var_mmd2)
         t = mmd2 / (std_mmd2 / np.sqrt(n_hat / 2.))
         p_val = 1 - stats.t.cdf(t, df=(n_hat / 2.) - 1)

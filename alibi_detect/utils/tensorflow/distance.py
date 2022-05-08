@@ -6,7 +6,13 @@ from typing import Callable, Tuple, List, Optional, Union
 logger = logging.getLogger(__name__)
 
 
-def squared_pairwise_distance(x: tf.Tensor, y: tf.Tensor, a_min: float = 1e-30, a_max: float = 1e30) -> tf.Tensor:
+def squared_pairwise_distance(
+    x: tf.Tensor,
+    y: tf.Tensor,
+    a_min: float = 1e-30,
+    a_max: float = 1e30,
+    pairwise: bool = False
+) -> tf.Tensor:
     """
     TensorFlow pairwise squared Euclidean distance between samples x and y.
 
@@ -20,14 +26,18 @@ def squared_pairwise_distance(x: tf.Tensor, y: tf.Tensor, a_min: float = 1e-30, 
         Lower bound to clip distance values.
     a_max
         Upper bound to clip distance values.
-
+    pairwise
+        Whether to compute pairwise distances or not.
     Returns
     -------
     Pairwise squared Euclidean distance [Nx, Ny].
     """
     x2 = tf.reduce_sum(x ** 2, axis=-1, keepdims=True)
     y2 = tf.reduce_sum(y ** 2, axis=-1, keepdims=True)
-    dist = x2 + tf.transpose(y2, (1, 0)) - 2. * x @ tf.transpose(y, (1, 0))
+    if pairwise:
+        dist = x2 + tf.transpose(y2, (1, 0)) - 2. * x @ tf.transpose(y, (1, 0))
+    else:
+        dist = x2 + y2 - 2. * tf.reduce_sum(x * y, axis=-1, keepdims=True)
     return tf.clip_by_value(dist, a_min, a_max)
 
 
@@ -110,6 +120,7 @@ def batch_compute_kernel_matrix(
 
 
 def linear_mmd2(
+    k_xx: tf.Tensor,
     x: tf.Tensor,
     y: tf.Tensor,
     kernel: Callable
@@ -126,18 +137,12 @@ def linear_mmd2(
         Batch of instances of shape [Ny, features].
     kernel
         Kernel function.
-    permute
-        Whether to permute the row indices. Used for permutation tests.
     """
-    n = np.shape(x)[0]
-    m = np.shape(y)[0]
-    if n != m:
-        raise RuntimeError("Linear-time estimator requires equal size samples")
-    k_xx = kernel(x=x[0::2, :], y=x[1::2, :], pairwise=False)
+    n = x.shape[0]
     k_yy = kernel(x=y[0::2, :], y=y[1::2, :], pairwise=False)
     k_xy = kernel(x=x[0::2, :], y=y[1::2, :], pairwise=False)
-    k_yz = kernel(x=y[0::2, :], y=x[1::2, :], pairwise=False)
-    h = k_xx + k_yy - k_xy - k_yz
+    k_yx = kernel(x=y[0::2, :], y=x[1::2, :], pairwise=False)
+    h = k_xx + k_yy - k_xy - k_yx
     mmd2 = tf.reduce_mean(h)
     var_mmd2 = tf.math.reduce_sum(h ** 2) / ((n / 2.) - 1) - (mmd2 ** 2)
     return mmd2, var_mmd2

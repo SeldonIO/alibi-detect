@@ -8,7 +8,12 @@ logger = logging.getLogger(__name__)
 
 
 @torch.jit.script
-def squared_pairwise_distance(x: torch.Tensor, y: torch.Tensor, a_min: float = 1e-30) -> torch.Tensor:
+def squared_pairwise_distance(
+    x: torch.Tensor,
+    y: torch.Tensor,
+    a_min: float = 1e-30,
+    pairwise: bool = False
+) -> torch.Tensor:
     """
     PyTorch pairwise squared Euclidean distance between samples x and y.
 
@@ -20,13 +25,18 @@ def squared_pairwise_distance(x: torch.Tensor, y: torch.Tensor, a_min: float = 1
         Batch of instances of shape [Ny, features].
     a_min
         Lower bound to clip distance values.
+    pairwise
+        Whether to compute pairwise distances or not.
     Returns
     -------
     Pairwise squared Euclidean distance [Nx, Ny].
     """
     x2 = x.pow(2).sum(dim=-1, keepdim=True)
     y2 = y.pow(2).sum(dim=-1, keepdim=True)
-    dist = torch.addmm(y2.transpose(-2, -1), x, y.transpose(-2, -1), alpha=-2).add_(x2)
+    if pairwise:
+        dist = torch.addmm(y2.transpose(-2, -1), x, y.transpose(-2, -1), alpha=-2).add_(x2)
+    else:
+        dist = x2 + y2 - (2 * x * y).sum(dim=-1, keepdim=True)
     return dist.clamp_min_(a_min)
 
 
@@ -116,6 +126,7 @@ def batch_compute_kernel_matrix(
 
 
 def linear_mmd2(
+    k_xx: torch.Tensor,
     x: torch.Tensor,
     y: torch.Tensor,
     kernel: Callable
@@ -136,16 +147,10 @@ def linear_mmd2(
     -------
     MMD^2 between the samples.
     """
-    n = np.shape(x)[0]
-    m = np.shape(y)[0]
-    if n != m:
-        raise RuntimeError("Linear-time estimator requires equal size samples")
-    k_xx = kernel(x=x[0::2, :], y=x[1::2, :], pairwise=False)
     k_yy = kernel(x=y[0::2, :], y=y[1::2, :], pairwise=False)
     k_xy = kernel(x=x[0::2, :], y=y[1::2, :], pairwise=False)
-    k_yz = kernel(x=y[0::2, :], y=x[1::2, :], pairwise=False)
-
-    h = k_xx + k_yy - k_xy - k_yz
+    k_yx = kernel(x=y[0::2, :], y=x[1::2, :], pairwise=False)
+    h = k_xx + k_yy - k_xy - k_yx
     mmd2 = h.mean()
     var_mmd2 = torch.var(h, unbiased=True)
     return mmd2, var_mmd2

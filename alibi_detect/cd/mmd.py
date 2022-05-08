@@ -4,7 +4,7 @@ from typing import Callable, Dict, Optional, Union, Tuple
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
 
 if has_pytorch:
-    from alibi_detect.cd.pytorch.mmd import MMDDriftTorch, LinearTimeDriftTorch
+    from alibi_detect.cd.pytorch.mmd import MMDDriftTorch, LinearTimeMMDDriftTorch
 
 if has_tensorflow:
     from alibi_detect.cd.tensorflow.mmd import MMDDriftTF, LinearTimeMMDDriftTF
@@ -44,8 +44,8 @@ class MMDDrift:
         estimator
             Estimator used for the MMD^2 computation {'quad', 'linear'}. 'Quad' is the default and
             uses the quadratic u-statistics on each square kernel matrix. 'Linear' uses the linear
-            time estimator as in Gretton et al. (2014), and the threshold is computed using the Gaussian
-            asympotic distribution under null.
+            time estimator as in Gretton et al. (JMLR 2014, sec 6), and the threshold is computed
+            using the Gaussian asympotic distribution under null.
         preprocess_x_ref
             Whether to already preprocess and store the reference data.
         update_x_ref
@@ -62,7 +62,8 @@ class MMDDrift:
         configure_kernel_from_x_ref
             Whether to already configure the kernel bandwidth from the reference data.
         n_permutations
-            Number of permutations used in the permutation test.
+            Number of permutations used in the permutation test, only used for the quadratic estimator
+            (estimator='quad').
         device
             Device type used. The default None tries to use the GPU and falls back on CPU if needed.
             Can be specified by passing either 'cuda', 'gpu' or 'cpu'. Only relevant for 'pytorch' backend.
@@ -106,7 +107,7 @@ class MMDDrift:
                 self._detector = MMDDriftTorch(*args, **kwargs)  # type: ignore
             elif estimator == 'linear':
                 kwargs.pop('n_permutations', None)
-                self._detector = LinearTimeDriftTorch(*args, **kwargs)  # type: ignore
+                self._detector = LinearTimeMMDDriftTorch(*args, **kwargs)  # type: ignore
             else:
                 raise NotImplementedError(f'{estimator} not implemented. Use quad or linear instead.')
         self.meta = self._detector.meta

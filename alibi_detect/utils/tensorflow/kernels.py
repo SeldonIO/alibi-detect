@@ -5,7 +5,12 @@ from typing import Optional, Union, Callable
 from scipy.special import logit
 
 
-def sigma_median(x: tf.Tensor, y: tf.Tensor, dist: tf.Tensor) -> tf.Tensor:
+def sigma_median(
+    x: tf.Tensor,
+    y: tf.Tensor,
+    dist: tf.Tensor,
+    pairwise: bool
+) -> tf.Tensor:
     """
     Bandwidth estimation using the median heuristic :cite:t:`Gretton2012`.
 
@@ -17,15 +22,19 @@ def sigma_median(x: tf.Tensor, y: tf.Tensor, dist: tf.Tensor) -> tf.Tensor:
         Tensor of instances with dimension [Ny, features].
     dist
         Tensor with dimensions [Nx, Ny], containing the pairwise distances between `x` and `y`.
-
+    pairwise
+        Whether the distances are pairwise.
     Returns
     -------
     The computed bandwidth, `sigma`.
     """
-    n = min(x.shape[0], y.shape[0])
-    n = n if tf.reduce_all(x[:n] == y[:n]) and x.shape == y.shape else 0
-    n_median = n + (tf.math.reduce_prod(dist.shape) - n) // 2 - 1
-    sigma = tf.expand_dims((.5 * tf.sort(tf.reshape(dist, (-1,)))[n_median]) ** .5, axis=0)
+    if pairwise:
+        n = min(x.shape[0], y.shape[0])
+        n = n if tf.reduce_all(x[:n] == y[:n]) and x.shape == y.shape else 0
+        n_median = n + (tf.math.reduce_prod(dist.shape) - n) // 2 - 1
+        sigma = tf.expand_dims((.5 * tf.sort(tf.reshape(dist, (-1,)))[n_median]) ** .5, axis=0)
+    else:
+        sigma = tf.expand_dims((.5 * tf.sort(tf.reshape(dist, (-1,)))[dist.shape[0] // 2 - 1]) ** .5, axis=0)
     return sigma
 
 
@@ -69,23 +78,20 @@ class GaussianRBF(tf.keras.Model):
     def sigma(self) -> tf.Tensor:
         return tf.math.exp(self.log_sigma)
 
-    def call(self, x: tf.Tensor, y: tf.Tensor,
-             infer_sigma: bool = False,
-             pairwise: bool = True) -> tf.Tensor:
+    def call(
+        self, x: tf.Tensor,
+        y: tf.Tensor,
+        infer_sigma: bool = False,
+        pairwise: bool = True
+    ) -> tf.Tensor:
         y = tf.cast(y, x.dtype)
         x, y = tf.reshape(x, (x.shape[0], -1)), tf.reshape(y, (y.shape[0], -1))  # flatten
-        if pairwise:
-            dist = distance.squared_pairwise_distance(x, y)  # [Nx, Ny]
-        else:
-            dist = distance.squared_distance(x, y)  # [Nx]
+        dist = distance.squared_pairwise_distance(x=x, y=y, pairwise=pairwise)  # [Nx, Ny] or [Nx, 1]
 
         if infer_sigma or self.init_required:
             if self.trainable and infer_sigma:
                 raise ValueError("Gradients cannot be computed w.r.t. an inferred sigma value")
-            if pairwise:
-                sigma = self.init_sigma_fn(x, y, dist)
-            else:
-                sigma = tf.expand_dims((.5 * tf.sort(tf.reshape(dist, (-1,)))[dist.shape[0] // 2 - 1]) ** .5, axis=0)
+            sigma = self.init_sigma_fn(x, y, dist, pairwise)
             self.log_sigma.assign(tf.math.log(sigma))
             self.init_required = False
 
