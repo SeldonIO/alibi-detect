@@ -1038,7 +1038,7 @@ def test_save_preprocess(data, preprocess_fn, tmp_path, backend):
     cfg_preprocess = _path2str(cfg_preprocess)
     cfg_preprocess = PreprocessConfig(**cfg_preprocess).dict()  # pydantic validation
     assert cfg_preprocess['src'] == '@cd.' + backend + '.preprocess.preprocess_drift'
-    assert cfg_preprocess['model']['src'] == 'preprocess_fn/model'
+    assert cfg_preprocess['model']['src'] == str(Path('preprocess_fn/model'))
     # TODO - check layer details here once implemented
 
     # Resolve and load preprocess config
@@ -1067,12 +1067,13 @@ def test_save_preprocess_nlp(data, preprocess_fn, max_len, tmp_path, backend):
     cfg_preprocess = _path2str(cfg_preprocess)
     cfg_preprocess = PreprocessConfig(**cfg_preprocess).dict()  # pydantic validation
     assert cfg_preprocess['src'] == '@cd.' + backend + '.preprocess.preprocess_drift'
-    assert cfg_preprocess['embedding']['src'] == 'preprocess_fn/embedding'
-    assert cfg_preprocess['tokenizer']['src'] == 'preprocess_fn/tokenizer'
+    assert cfg_preprocess['embedding']['src'] == str(Path('preprocess_fn/embedding'))
+    assert cfg_preprocess['tokenizer']['src'] == str(Path('preprocess_fn/tokenizer'))
+
     if isinstance(preprocess_fn.keywords['model'], (TransformerEmbedding_tf, TransformerEmbedding_pt)):
         assert cfg_preprocess['model'] is None
     else:
-        assert cfg_preprocess['model']['src'] == 'preprocess_fn/model'
+        assert cfg_preprocess['model']['src'] == str(Path('preprocess_fn/model'))
 
     # Resolve and load preprocess config
     cfg = {'preprocess_fn': cfg_preprocess, 'backend': backend}
