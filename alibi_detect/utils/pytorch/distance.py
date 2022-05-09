@@ -12,7 +12,7 @@ def squared_pairwise_distance(
     x: torch.Tensor,
     y: torch.Tensor,
     a_min: float = 1e-30,
-    pairwise: bool = False
+    pairwise: bool = True
 ) -> torch.Tensor:
     """
     PyTorch pairwise squared Euclidean distance between samples x and y.

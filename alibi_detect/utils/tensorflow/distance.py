@@ -11,7 +11,7 @@ def squared_pairwise_distance(
     y: tf.Tensor,
     a_min: float = 1e-30,
     a_max: float = 1e30,
-    pairwise: bool = False
+    pairwise: bool = True
 ) -> tf.Tensor:
     """
     TensorFlow pairwise squared Euclidean distance between samples x and y.

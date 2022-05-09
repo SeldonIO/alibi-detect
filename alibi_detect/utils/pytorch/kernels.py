@@ -9,7 +9,6 @@ def sigma_median(
     x: torch.Tensor,
     y: torch.Tensor,
     dist: torch.Tensor,
-    pairwise: bool
 ) -> torch.Tensor:
     """
     Bandwidth estimation using the median heuristic :cite:t:`Gretton2012`.
@@ -23,19 +22,14 @@ def sigma_median(
     dist
         Tensor with dimensions [Nx, Ny] when pairwise=True, containing the pairwise distances between `x` and `y`.
         Dimensions are [Nx, 1] when pairwise=False.
-    pairwise
-        Whether the distances are pairwise.
     Returns
     -------
     The computed bandwidth, `sigma`.
     """
-    if pairwise:
-        n = min(x.shape[0], y.shape[0])
-        n = n if (x[:n] == y[:n]).all() and x.shape == y.shape else 0
-        n_median = n + (np.prod(dist.shape) - n) // 2 - 1
-        sigma = (.5 * dist.flatten().sort().values[n_median].unsqueeze(dim=-1)) ** .5
-    else:
-        sigma = (.5 * dist.flatten().sort().values[dist.shape[0] // 2 - 1].unsqueeze(dim=-1)) ** .5
+    n = min(x.shape[0], y.shape[0])
+    n = n if (x[:n] == y[:n]).all() and x.shape == y.shape else 0
+    n_median = n + (np.prod(dist.shape) - n) // 2 - 1
+    sigma = (.5 * dist.flatten().sort().values[n_median].unsqueeze(dim=-1)) ** .5
     return sigma
 
 
@@ -93,7 +87,10 @@ class GaussianRBF(nn.Module):
         if infer_sigma or self.init_required:
             if self.trainable and infer_sigma:
                 raise ValueError("Gradients cannot be computed w.r.t. an inferred sigma value")
-            sigma = self.init_sigma_fn(x, y, dist, pairwise)
+            if pairwise:
+                sigma = self.init_sigma_fn(x, y, dist)
+            else:
+                sigma = (.5 * dist.flatten().sort().values[dist.shape[0] // 2 - 1].unsqueeze(dim=-1)) ** .5
             with torch.no_grad():
                 self.log_sigma.copy_(sigma.log().clone())
             self.init_required = False

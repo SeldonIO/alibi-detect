@@ -8,8 +8,7 @@ from scipy.special import logit
 def sigma_median(
     x: tf.Tensor,
     y: tf.Tensor,
-    dist: tf.Tensor,
-    pairwise: bool
+    dist: tf.Tensor
 ) -> tf.Tensor:
     """
     Bandwidth estimation using the median heuristic :cite:t:`Gretton2012`.
@@ -22,19 +21,14 @@ def sigma_median(
         Tensor of instances with dimension [Ny, features].
     dist
         Tensor with dimensions [Nx, Ny], containing the pairwise distances between `x` and `y`.
-    pairwise
-        Whether the distances are pairwise.
     Returns
     -------
     The computed bandwidth, `sigma`.
     """
-    if pairwise:
-        n = min(x.shape[0], y.shape[0])
-        n = n if tf.reduce_all(x[:n] == y[:n]) and x.shape == y.shape else 0
-        n_median = n + (tf.math.reduce_prod(dist.shape) - n) // 2 - 1
-        sigma = tf.expand_dims((.5 * tf.sort(tf.reshape(dist, (-1,)))[n_median]) ** .5, axis=0)
-    else:
-        sigma = tf.expand_dims((.5 * tf.sort(tf.reshape(dist, (-1,)))[dist.shape[0] // 2 - 1]) ** .5, axis=0)
+    n = min(x.shape[0], y.shape[0])
+    n = n if tf.reduce_all(x[:n] == y[:n]) and x.shape == y.shape else 0
+    n_median = n + (tf.math.reduce_prod(dist.shape) - n) // 2 - 1
+    sigma = tf.expand_dims((.5 * tf.sort(tf.reshape(dist, (-1,)))[n_median]) ** .5, axis=0)
     return sigma
 
 
@@ -91,7 +85,10 @@ class GaussianRBF(tf.keras.Model):
         if infer_sigma or self.init_required:
             if self.trainable and infer_sigma:
                 raise ValueError("Gradients cannot be computed w.r.t. an inferred sigma value")
-            sigma = self.init_sigma_fn(x, y, dist, pairwise)
+            if pairwise:
+                sigma = self.init_sigma_fn(x, y, dist)
+            else:
+                sigma = tf.expand_dims((.5 * tf.sort(tf.reshape(dist, (-1,)))[dist.shape[0] // 2 - 1]) ** .5, axis=0)
             self.log_sigma.assign(tf.math.log(sigma))
             self.init_required = False
 
