@@ -3,7 +3,8 @@
 requires = [
 	"setuptools~=62.0.0",
 	"setuptools_scm~=6.2",
-	"wheel~=0.37.0"
+	"wheel~=0.37.0",
+	"build~=0.7.0"
 ]
 build-backend = "setuptools.build_meta"
 
@@ -17,7 +18,7 @@ exclude = ["**/tests*"]  # tests should be excluded by default (https://setuptoo
 namespaces = false
 
 [tool.setuptools_scm]
-write_to = "alibi_detect/version.py"
+write_to = "alibi_detect/_version.py"
 version_scheme = "guess-next-dev"
 local_scheme = "node-and-date"  #  adds git commit tag and date if workdir has changes
 

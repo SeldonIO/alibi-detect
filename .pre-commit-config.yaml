@@ -10,3 +10,4 @@ repos:
         additional_dependencies: [
           types-requests>=2.25.0,
         ]
+        exclude: 'doc/*'
