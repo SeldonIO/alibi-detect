@@ -448,7 +448,7 @@ def _save_tokenizer_config(tokenizer: PreTrainedTokenizerBase,
     cfg_token = {}
     logger.info('Saving tokenizer to {}.'.format(filepath))
     tokenizer.save_pretrained(filepath)
-    cfg_token.update({'src': path.joinpath('tokenizer')})
+    cfg_token.update({'src': path.joinpath('tokenizer').as_posix()})
     return cfg_token
 
 

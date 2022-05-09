@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 def save_model_config(model: Callable,
                       base_path: Path,
                       input_shape: tuple,
-                      path: Path = Path('.')) -> Tuple[dict, Optional[dict]]:
+                      local_path: Path = Path('.')) -> Tuple[dict, Optional[dict]]:
     """
     Save a model to a config dictionary. When a model has a text embedding model contained within it,
     this is extracted and saved separately.
@@ -38,26 +38,23 @@ def save_model_config(model: Callable,
     model
         The model to save.
     base_path
-        Base filepath to save to.
+        Base filepath to save to (the location of the `config.toml` file).
     input_shape
         The input dimensions of the model (after the optional embedding has been applied).
-    path
+    local_path
         A local (relative) filepath to append to base_path.
 
     Returns
     -------
     A tuple containing the model and embedding config dicts.
     """
-
-    filepath = base_path.joinpath(path)
-
     cfg_model = None  # type: Optional[Dict[str, Any]]
     cfg_embed = None  # type: Optional[Dict[str, Any]]
     if isinstance(model, UAE):
         if isinstance(model.encoder.layers[0], TransformerEmbedding):  # if UAE contains embedding and encoder
             # embedding
             embed = model.encoder.layers[0]
-            cfg_embed = save_embedding_config(embed, filepath.joinpath('embedding'))
+            cfg_embed = save_embedding_config(embed, base_path, local_path.joinpath('embedding'))
             # preprocessing encoder
             inputs = Input(shape=input_shape, dtype=tf.int64)
             model.encoder.call(inputs)
@@ -68,7 +65,7 @@ def save_model_config(model: Callable,
         else:  # If UAE is simply an encoder
             model = model.encoder
     elif isinstance(model, TransformerEmbedding):
-        cfg_embed = save_embedding_config(model, filepath.joinpath('embedding'))
+        cfg_embed = save_embedding_config(model, base_path, local_path.joinpath('embedding'))
         model = None
     elif isinstance(model, HiddenOutput):
         model = model.model
@@ -78,8 +75,9 @@ def save_model_config(model: Callable,
         raise ValueError('Model not recognised, cannot save.')
 
     if model is not None:
+        filepath = base_path.joinpath(local_path)
         save_model(model, filepath=filepath, save_dir='model')
-        cfg_model = {'src': path.joinpath('model')}
+        cfg_model = {'src': local_path.joinpath('model').as_posix()}
     return cfg_model, cfg_embed
 
 
@@ -118,7 +116,8 @@ def save_model(model: tf.keras.Model,
 
 
 def save_embedding_config(embed: TransformerEmbedding,
-                          filepath: Path) -> dict:
+                          base_path: Path,
+                          local_path: Path = Path('.')) -> dict:
     """
     Save embeddings for text drift models.
 
@@ -126,10 +125,13 @@ def save_embedding_config(embed: TransformerEmbedding,
     ----------
     embed
         Embedding model.
-    filepath
-        The save directory.
+    base_path
+        Base filepath to save to (the location of the `config.toml` file).
+    local_path
+        A local (relative) filepath to append to base_path.
     """
     # create folder to save model in
+    filepath = base_path.joinpath(local_path)
     if not filepath.is_dir():
         logger.warning('Directory {} does not exist and is now created.'.format(filepath))
         filepath.mkdir(parents=True, exist_ok=True)
@@ -138,7 +140,8 @@ def save_embedding_config(embed: TransformerEmbedding,
     cfg_embed = {}
     cfg_embed.update({'type': embed.emb_type})
     cfg_embed.update({'layers': embed.hs_emb.keywords['layers']})
-    cfg_embed.update({'src': 'preprocess_fn/embedding'})
+    #cfg_embed.update({'src': 'preprocess_fn/embedding'})
+    cfg_embed.update({'src': local_path.as_posix()})
 
     # Save embedding model
     logger.info('Saving embedding model to {}.'.format(filepath))
