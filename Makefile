@@ -38,8 +38,8 @@ clean_docs: ## Clean the documentation build
 	rm -r doc/source/api
 
 .PHONY: build_pypi
-build_pypi: ## Build the Python package
-	pip install build
+build_pypi: ## Build the Python package (virtualenv installed due to Debian issue https://github.com/pypa/build/issues/224)
+	pip install --upgrade build virtualenv
 	python -m build --sdist --wheel
 
 .PHONY: push_pypi_test

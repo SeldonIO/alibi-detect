@@ -1,8 +1,9 @@
 # setuptools settings (we could change to poetry or flit in the future)
 [build-system]
 requires = [
-	"setuptools>=61.0.0, <63.0.0",
-	"wheel>=0.36.0, <0.38.0"
+	"setuptools~=62.0.0",
+	"setuptools_scm~=6.2",
+	"wheel~=0.37.0"
 ]
 build-backend = "setuptools.build_meta"
 
@@ -15,6 +16,11 @@ include = ["alibi_detect*"]
 exclude = ["**/tests*"]  # tests should be excluded by default (https://setuptools.pypa.io/en/latest/userguide/package_discovery.html#flat-layout) but exclude explicitly in case of change
 namespaces = false
 
+[tool.setuptools_scm]
+write_to = "alibi_detect/version.py"
+version_scheme = "guess-next-dev"
+local_scheme = "node-and-date"  #  adds git commit tag and date if workdir has changes
+
 # Project metadata
 [project]
 name = "alibi-detect"
@@ -25,8 +31,9 @@ authors = [
 ]
 license = {text = "Apache-2.0"}
 readme = "README.md"
-version = "0.9.2dev"
-requires-python = ">=3.7, <3.11" 
+requires-python = ">=3.7, <3.11"
+
+dynamic = ["version"]  # Since we use setuptools_scm 
 
 classifiers = [
     "Intended Audience :: Science/Research",
