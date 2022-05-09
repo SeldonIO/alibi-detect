@@ -140,7 +140,6 @@ def save_embedding_config(embed: TransformerEmbedding,
     cfg_embed = {}
     cfg_embed.update({'type': embed.emb_type})
     cfg_embed.update({'layers': embed.hs_emb.keywords['layers']})
-    #cfg_embed.update({'src': 'preprocess_fn/embedding'})
     cfg_embed.update({'src': local_path.as_posix()})
 
     # Save embedding model
