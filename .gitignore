@@ -1,5 +1,5 @@
 # alibi_detect version file - ignore this as controlled by setuptools_scm
-alibi_detect/version.py
+alibi_detect/_version.py
 
 # emacs tmp files
 *~
