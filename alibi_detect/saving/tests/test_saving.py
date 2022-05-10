@@ -124,7 +124,7 @@ def preprocess_custom(encoder_model, backend):
 @fixture
 def kernel(request, backend):
     """
-    Gaussian RBF kernel for given backend.
+    Gaussian RBF kernel for given backend. Settings are parametrised in the test function.
     """
     kernel = request.param
     if kernel is None:
@@ -137,38 +137,30 @@ def kernel(request, backend):
     return kernel
 
 
-@parametrize('kernel', [
-        {'sigma': 0.5, 'trainable': False, 'init_sigma_fn': None},
-        {'sigma': [0.5, 0.8], 'trainable': False, 'init_sigma_fn': None},
-        {'sigma': None, 'trainable': True, 'init_sigma_fn': None},
-    ], indirect=True
-)
-@fixture(unpack_into=('deep_kernel, kernel_proj_dim'))
-def build_deep_kernel(backend, current_cases):
+@fixture
+def deep_kernel(request, backend, encoder_model):
     """
-    Deep kernel with given input dimension and backend.
+    Deep kernel, built using the `encoder_model` fixture for the projection, and using the kernel_a and eps
+    parametrised in the test function.
     """
-    if 'data' in current_cases:
-        _, _, data_params = current_cases['data']
-        _, input_dim = data_params['data_shape']
-    else:
-        input_dim = 4
+    # Get DeepKernel options
+    kernel_a = request.param.get('kernel_a', 'rbf')
+    kernel_b = request.param.get('kernel_b', 'rbf')
+    eps = request.param.get('eps', 'trainable')
 
+    # Proj model (backend managed in encoder_model fixture)
+    proj = encoder_model
+
+    # Build DeepKernel
     if backend == 'tensorflow':
-        proj = tf.keras.Sequential(
-          [
-              tf.keras.layers.InputLayer((1, 1, input_dim,)),
-              tf.keras.layers.Conv1D(int(input_dim), 2, strides=1, padding='same', activation=tf.nn.relu),
-              tf.keras.layers.Conv1D(input_dim, 2, strides=1, padding='same', activation=tf.nn.relu),
-              tf.keras.layers.Flatten(),
-          ]
-        )
-        deep_kernel = DeepKernel_tf(proj, eps=0.01)
+        kernel_a = GaussianRBF_tf(**kernel_a) if isinstance(kernel_a, dict) else kernel_a
+        kernel_a = GaussianRBF_tf(**kernel_b) if isinstance(kernel_b, dict) else kernel_b
+        deep_kernel = DeepKernel_tf(proj, kernel_a=kernel_a, kernel_b=kernel_b, eps=eps)
     elif backend == 'pytorch':
         raise NotImplementedError('`pytorch` tests not implemented.')
     else:
         raise ValueError('`backend` not valid.')
-    return deep_kernel, input_dim
+    return deep_kernel
 
 
 @fixture
@@ -436,8 +428,8 @@ def test_save_lsdddrift(data, preprocess_at_init, backend, tmp_path, seed):
     assert cd_load._detector.n_permutations == N_PERMUTATIONS
     assert cd_load._detector.p_val == P_VAL
     assert cd_load._detector.preprocess_fn.func == cd._detector.preprocess_fn
-    assert preds['data']['distance'] == preds_load['data']['distance']
-    assert preds['data']['p_val'] == preds_load['data']['p_val']
+    assert preds['data']['distance'] == pytest.approx(preds_load['data']['distance'], abs=1e-6)
+    assert preds['data']['p_val'] == pytest.approx(preds_load['data']['p_val'], abs=1e-6)
 
 
 @parametrize_with_cases("data", cases=BinData, prefix='data_')
@@ -454,8 +446,10 @@ def test_save_fetdrift(data, tmp_path):
                   p_val=P_VAL,
                   alternative='less',
                   )
+    preds = cd.predict(X_h0)
     save_detector(cd, tmp_path)
     cd_load = load_detector(tmp_path)
+    preds_load = cd_load.predict(X_h0)
 
     # Assert
     np.testing.assert_array_equal(X_ref, cd_load.x_ref)
@@ -463,8 +457,8 @@ def test_save_fetdrift(data, tmp_path):
     assert cd_load.n_features == input_dim
     assert cd_load.p_val == P_VAL
     assert cd_load.alternative == 'less'
-    np.testing.assert_array_equal(cd.predict(X_h0)['data']['p_val'],
-                                  cd_load.predict(X_h0)['data']['p_val'])
+    assert preds['data']['distance'] == pytest.approx(preds_load['data']['distance'], abs=1e-6)
+    assert preds['data']['p_val'] == pytest.approx(preds_load['data']['p_val'], abs=1e-6)
 
 
 @parametrize_with_cases("data", cases=CategoricalData, prefix='data_')
@@ -480,16 +474,18 @@ def test_save_chisquaredrift(data, tmp_path):
     cd = ChiSquareDrift(X_ref,
                         p_val=P_VAL,
                         )
+    preds = cd.predict(X_h0)
     save_detector(cd, tmp_path)
     cd_load = load_detector(tmp_path)
+    preds_load = cd_load.predict(X_h0)
 
     # Assert
     np.testing.assert_array_equal(X_ref, cd_load.x_ref)
     assert cd_load.n_features == input_dim
     assert cd_load.p_val == P_VAL
     assert isinstance(cd_load.x_ref_categories, dict)
-    np.testing.assert_array_equal(cd.predict(X_h0)['data']['p_val'],
-                                  cd_load.predict(X_h0)['data']['p_val'])
+    assert preds['data']['distance'] == pytest.approx(preds_load['data']['distance'], abs=1e-6)
+    assert preds['data']['p_val'] == pytest.approx(preds_load['data']['p_val'], abs=1e-6)
     assert cd_load.x_ref_categories == cd.x_ref_categories
 
 
@@ -507,17 +503,19 @@ def test_save_tabulardrift(data, tmp_path):
                       p_val=P_VAL,
                       categories_per_feature={0: None},
                       )
+    preds = cd.predict(X_h0)
     save_detector(cd, tmp_path)
     cd_load = load_detector(tmp_path)
+    preds_load = cd_load.predict(X_h0)
 
     # Assert
     np.testing.assert_array_equal(X_ref, cd_load.x_ref)
     assert cd_load.n_features == input_dim
     assert cd_load.p_val == P_VAL
     assert isinstance(cd_load.x_ref_categories, dict)
-    np.testing.assert_array_equal(cd.predict(X_h0)['data']['p_val'],
-                                  cd_load.predict(X_h0)['data']['p_val'])
     assert cd_load.x_ref_categories == cd.x_ref_categories
+    assert preds['data']['distance'] == pytest.approx(preds_load['data']['distance'], abs=1e-6)
+    assert preds['data']['p_val'] == pytest.approx(preds_load['data']['p_val'], abs=1e-6)
 
 
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
@@ -549,9 +547,9 @@ def test_save_classifierdrift(data, classifier, backend, tmp_path, seed):
         assert isinstance(cd_load._detector.model, tf.keras.Model)
     else:
         pass  # TODO
-    # TODO: detectors involving tensorflow model's still aren't deterministic - investigate in future
-#    assert preds['data']['distance'] == preds_load['data']['distance']
-#    assert preds['data']['p_val'] == preds_load['data']['p_val']
+    # TODO - detector still not deterministic, investigate in future
+    # assert preds['data']['distance'] == pytest.approx(preds_load['data']['distance'], abs=1e-6)
+    # assert preds['data']['p_val'] == pytest.approx(preds_load['data']['p_val'], abs=1e-6)
 
 
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
@@ -586,40 +584,48 @@ def test_save_spotthediff(data, classifier, backend, tmp_path, seed):
         assert isinstance(cd_load._detector._detector.model, tf.keras.Model)
     else:
         pass  # TODO
-    # TODO: detectors involving tensorflow model's still aren't deterministic - investigate in future
-    #    assert preds['data']['distance'] == preds_load['data']['distance']
-    #    assert preds['data']['p_val'] == preds_load['data']['p_val']
+    # TODO - detector still not deterministic, investigate in future
+    # assert preds['data']['distance'] == pytest.approx(preds_load['data']['distance'], abs=1e-6)
+    # assert preds['data']['p_val'] == pytest.approx(preds_load['data']['p_val'], abs=1e-6)
 
 
+@parametrize('deep_kernel', [
+        {'kernel_a': 'rbf', 'eps': 0.01}  # Default for kernel_a
+    ], indirect=True
+)
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
-def test_save_learnedkernel(data, deep_kernel, preprocess_custom, backend, tmp_path):
+def test_save_learnedkernel(data, deep_kernel, backend, tmp_path, seed):
     """
-    Test LearnedKernelDrift on continuous datasets, with UAE as preprocess_fn.
+    Test LearnedKernelDrift on continuous datasets.
 
     Detector is saved and then loaded, with assertions checking that the reinstantiated detector is equivalent.
     """
-    # Detector save/load
+    # Init detector and predict
     X_ref, X_h0 = data
-    cd = LearnedKernelDrift(X_ref,
-                            deep_kernel,
-                            p_val=P_VAL,
-                            backend=backend,
-                            preprocess_fn=preprocess_custom,
-                            train_size=0.7)
+    with fixed_seed(seed):
+        cd = LearnedKernelDrift(X_ref,
+                                deep_kernel,
+                                p_val=P_VAL,
+                                backend=backend,
+                                train_size=0.7)
+        preds = cd.predict(X_h0)  # noqa: F841
     save_detector(cd, tmp_path)
-    cd_load = load_detector(tmp_path)
+    with fixed_seed(seed):
+        cd_load = load_detector(tmp_path)
+        preds_load = cd_load.predict(X_h0)  # noqa: F841
 
     # Assert
-    np.testing.assert_array_equal(preprocess_custom(X_ref), cd_load._detector.x_ref)
-    assert cd_load._detector.x_ref_preprocessed
+    np.testing.assert_array_equal(X_ref, cd_load._detector.x_ref)
+    assert not cd_load._detector.x_ref_preprocessed
     assert cd_load._detector.p_val == P_VAL
     assert isinstance(cd_load._detector.train_kwargs, dict)
     if backend == 'tensorflow':
         assert isinstance(cd_load._detector.kernel, DeepKernel_tf)
     else:
         assert isinstance(cd_load._detector.kernel, DeepKernel_pt)
-
-# TODO - checks for modeluncertainty detectors - once save/load implemented for them
+    # TODO: Not yet deterministic
+    # assert preds['data']['distance'] == pytest.approx(preds_load['data']['distance'], abs=1e-6)
+    # assert preds['data']['p_val'] == pytest.approx(preds_load['data']['p_val'], abs=1e-6)
 
 
 @parametrize('kernel', [
@@ -667,7 +673,8 @@ def test_save_contextmmddrift(data, kernel, backend, tmp_path, seed):
     assert cd._detector.c_kernel.sigma == cd_load._detector.c_kernel.sigma
     assert cd._detector.x_kernel.init_sigma_fn == cd_load._detector.x_kernel.init_sigma_fn
     assert cd._detector.c_kernel.init_sigma_fn == cd_load._detector.c_kernel.init_sigma_fn
-    assert preds['data']['p_val'] == preds_load['data']['p_val']
+    assert preds['data']['distance'] == pytest.approx(preds_load['data']['distance'], abs=1e-6)
+    assert preds['data']['p_val'] == pytest.approx(preds_load['data']['p_val'], abs=1e-6)
 
 
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
@@ -693,8 +700,8 @@ def test_save_classifieruncertaintydrift(data, classifier, backend, tmp_path, se
     # Assert
     np.testing.assert_array_equal(cd._detector.preprocess_fn(X_ref), cd_load._detector.x_ref)
     assert cd_load._detector.p_val == P_VAL
-    assert preds['data']['distance'] == preds_load['data']['distance']
-    assert preds['data']['p_val'] == preds_load['data']['p_val']
+    assert preds['data']['distance'] == pytest.approx(preds_load['data']['distance'], abs=1e-6)
+    assert preds['data']['p_val'] == pytest.approx(preds_load['data']['p_val'], abs=1e-6)
 
 
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
@@ -721,8 +728,8 @@ def test_save_regressoruncertaintydrift(data, regressor, backend, tmp_path, seed
     # Assert
     np.testing.assert_array_equal(cd._detector.preprocess_fn(X_ref), cd_load._detector.x_ref)
     assert cd_load._detector.p_val == P_VAL
-    assert preds['data']['distance'] == preds_load['data']['distance']
-    assert preds['data']['p_val'] == preds_load['data']['p_val']
+    assert preds['data']['distance'] == pytest.approx(preds_load['data']['distance'], abs=1e-6)
+    assert preds['data']['p_val'] == pytest.approx(preds_load['data']['p_val'], abs=1e-6)
 
 
 @parametrize('kernel', [
@@ -983,36 +990,61 @@ def test_save_kernel(kernel, backend, tmp_path):
     cfg = {'kernel': cfg_kernel, 'backend': backend}
     _prepend_cfg_filepaths(cfg, tmp_path)
     kernel_loaded = resolve_config(cfg, tmp_path)['kernel']
+
+    # Call kernels
+    X = np.random.standard_normal((10, 1))
+    kernel(X, X)
+    kernel_loaded(X, X)
+
+    # Final checks
     assert type(kernel_loaded) == type(kernel)
     np.testing.assert_array_almost_equal(np.array(kernel_loaded.sigma), np.array(kernel.sigma), 5)
     assert kernel_loaded.trainable == kernel.trainable
     assert kernel_loaded.init_sigma_fn == kernel.init_sigma_fn
 
 
-def test_save_deepkernel(deep_kernel, kernel_proj_dim, backend, tmp_path):
+# `data` passed below as needed in encoder_model, which is used in deep_kernel
+@parametrize_with_cases("data", cases=ContinuousData.data_synthetic_nd)
+@parametrize('deep_kernel', [
+        {'kernel_a': 'rbf', 'kernel_b': 'rbf', 'eps': 'trainable'},  # Default for kernel_a and kernel_b, trainable eps
+        {'kernel_a': {'trainable': True}, 'kernel_b': 'rbf', 'eps': 0.01},  # Explicit kernel_a, fixed eps
+    ], indirect=True
+)
+def test_save_deepkernel(data, deep_kernel, backend, tmp_path):
     """
     Unit test for _save/_load_kernel_config, when kernel is a DeepKernel kernel.
 
     Kernels are saved and then loaded, with assertions to check equivalence.
     """
+    # Get data dim
+    X, _ = data
+    input_dim = X.shape[1]
+
     # Save kernel to config
     filepath = tmp_path
     filename = 'mykernel'
     cfg_kernel = _save_kernel_config(deep_kernel, filepath, filename)
-    cfg_kernel['proj'], _ = _save_model_config(cfg_kernel['proj'], base_path=filepath, input_shape=kernel_proj_dim,
+    cfg_kernel['proj'], _ = _save_model_config(cfg_kernel['proj'], base_path=filepath, input_shape=input_dim,
                                                backend=backend)
     cfg_kernel = _path2str(cfg_kernel)
     cfg_kernel['proj'] = ModelConfig(**cfg_kernel['proj']).dict()  # Pass thru ModelConfig to set `custom_objects` etc
     cfg_kernel = DeepKernelConfig(**cfg_kernel).dict()  # pydantic validation
     assert cfg_kernel['proj']['src'] == 'model'
     assert cfg_kernel['proj']['custom_objects'] is None
-    assert cfg_kernel['eps'] == pytest.approx(deep_kernel.eps.numpy(), 4)
 
     # Resolve and load config
     cfg = {'kernel': cfg_kernel, 'backend': backend}
     kernel_loaded = resolve_config(cfg, tmp_path)['kernel']  # implicitly calls _load_kernel_config
+
+    # Call kernels
+    deep_kernel.kernel_a(X, X)
+    deep_kernel.kernel_b(X, X)
+    kernel_loaded.kernel_a(X, X)
+    kernel_loaded.kernel_b(X, X)
+
+    # Final checks
     assert isinstance(kernel_loaded.proj, (torch.nn.Module, tf.keras.Model))
-    kernel_loaded.eps.numpy() == pytest.approx(deep_kernel.eps.numpy(), 4)
+    assert pytest.approx(deep_kernel.eps.numpy(), abs=1e-4) == kernel_loaded.eps.numpy()
     assert kernel_loaded.kernel_a.sigma == deep_kernel.kernel_a.sigma
     assert kernel_loaded.kernel_b.sigma == deep_kernel.kernel_b.sigma
 
