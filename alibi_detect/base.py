@@ -4,7 +4,7 @@ import json
 import numpy as np
 from typing import Dict
 
-from alibi_detect.version import version
+from alibi_detect.version import __version__
 
 DEFAULT_META = {
     "name": None,
@@ -58,7 +58,7 @@ class BaseDetector(ABC):
     def __init__(self):
         self.meta = copy.deepcopy(DEFAULT_META)
         self.meta['name'] = self.__class__.__name__
-        self.meta['version'] = version
+        self.meta['version'] = __version__
 
     def __repr__(self):
         return self.__class__.__name__
