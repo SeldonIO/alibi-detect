@@ -24,7 +24,7 @@ jobs:
     - name: Build a binary wheel and a source tarball
       run: python -m build --sdist --wheel --outdir dist/ .
 
-    # Publish to test PyPI
+    # Publish to test PyPI TODO - perhaps only do this for rc tags?
     - name: Publish distribution 📦 to Test PyPI
       if: startsWith(github.ref, 'refs/tags')  # Only publish when tag pushed
       uses: pypa/gh-action-pypi-publish@master
@@ -32,7 +32,7 @@ jobs:
         password: ${{ secrets.TEST_PYPI_API_TOKEN }}
         repository_url: https://test.pypi.org/legacy/
           
-#    # Publish to real PyPI
+#    # Publish to real PyPI TODO - only do this for non-rc tags?
 #    - name: Publish distribution 📦 to PyPI
 #      if: startsWith(github.ref, 'refs/tags')
 #      uses: pypa/gh-action-pypi-publish@master
