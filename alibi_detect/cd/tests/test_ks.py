@@ -28,9 +28,9 @@ preprocess = [
 alternative = ['two-sided', 'less', 'greater']
 correction = ['bonferroni', 'fdr']
 update_x_ref = [{'last': 1000}, {'reservoir_sampling': 1000}]
-preprocess_x_ref = [True, False]
+preprocess_at_init = [True, False]
 tests_ksdrift = list(product(n_features, n_enc, preprocess, alternative,
-                             correction, update_x_ref, preprocess_x_ref))
+                             correction, update_x_ref, preprocess_at_init))
 n_tests = len(tests_ksdrift)
 
 
@@ -42,7 +42,7 @@ def ksdrift_params(request):
 @pytest.mark.parametrize('ksdrift_params', list(range(n_tests)), indirect=True)
 def test_ksdrift(ksdrift_params):
     n_features, n_enc, preprocess, alternative, correction, \
-        update_x_ref, preprocess_x_ref = ksdrift_params
+        update_x_ref, preprocess_at_init = ksdrift_params
     np.random.seed(0)
     x_ref = np.random.randn(n * n_features).reshape(n, n_features).astype(np.float32)
     preprocess_fn, preprocess_kwargs = preprocess
@@ -70,7 +70,7 @@ def test_ksdrift(ksdrift_params):
     cd = KSDrift(
         x_ref=x_ref,
         p_val=.05,
-        preprocess_x_ref=preprocess_x_ref if isinstance(preprocess_fn, Callable) else False,
+        preprocess_at_init=preprocess_at_init if isinstance(preprocess_fn, Callable) else False,
         update_x_ref=update_x_ref,
         preprocess_fn=preprocess_fn,
         correction=correction,

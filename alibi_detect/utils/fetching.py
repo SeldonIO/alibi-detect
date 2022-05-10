@@ -14,7 +14,7 @@ from alibi_detect.ad import AdversarialAE, ModelDistillation
 from alibi_detect.models.tensorflow import PixelCNN
 from alibi_detect.od import (IForest, LLR, Mahalanobis, OutlierAE, OutlierAEGMM, OutlierProphet,
                              OutlierSeq2Seq, OutlierVAE, OutlierVAEGMM, SpectralResidual)
-from alibi_detect.utils.saving import load_detector  # type: ignore
+from alibi_detect.saving import load_detector
 
 # do not extend pickle dispatch table so as not to change pickle behaviour
 dill.extend(use_dill=False)
@@ -514,7 +514,8 @@ def fetch_detector(filepath: Union[str, os.PathLike],
         if model_type == 'weights':
             kwargs = get_pixelcnn_default_kwargs()
     detector = load_detector(filepath, **kwargs)
-    return detector
+    return detector  # type: ignore[return-value] # load_detector returns drift detectors but `Data` doesn't inc. them
+    # TODO - above type ignore can be removed once all detectors use the config based approach.
 
 
 def _join_url(base: str, parts: Union[str, List[str]]) -> str:
