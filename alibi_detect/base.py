@@ -4,7 +4,7 @@ import json
 import numpy as np
 from typing import Dict
 
-from alibi_detect._version import version
+from alibi_detect.version import version
 
 DEFAULT_META = {
     "name": None,
