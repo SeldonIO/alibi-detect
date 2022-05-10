@@ -47,9 +47,9 @@ def save_detector(detector: Detector, filepath: Union[str, os.PathLike], legacy:
     if 'backend' in list(detector.meta.keys()) and detector.meta['backend'] in ['pytorch', 'sklearn']:
         raise NotImplementedError('Saving detectors with PyTorch or sklearn backend is not yet supported.')
 
-    # TODO: Replace .__args__ w/ typing.get_args() once Python 3.7 dropped
+    # TODO: Replace .__args__ w/ typing.get_args() once Python 3.7 dropped (and remove type ignore below)
     detector_name = detector.__class__.__name__
-    if detector_name not in [detector.__name__ for detector in Detector.__args__]:
+    if detector_name not in [detector.__name__ for detector in Detector.__args__]:  # type: ignore[attr-defined]
         raise NotImplementedError(f'{detector_name} is not supported by `save_detector`.')
 
     # Get a list of all existing files in `filepath` (so we know what not to cleanup if an error occurs)
@@ -135,7 +135,7 @@ def _save_detector_config(detector: Detector, filepath: Union[str, os.PathLike])
 
     # Get the detector config (with artefacts still within it)
     if hasattr(detector, 'get_config'):
-        cfg = detector.get_config()
+        cfg = detector.get_config()  # type: ignore[union-attr]  # TODO - remove once all detectors have get_config
         cfg = validate_config(cfg, resolved=True)
     else:
         raise NotImplementedError(f'{detector_name} does not yet support config.toml based saving.')
