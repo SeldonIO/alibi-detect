@@ -20,10 +20,10 @@ extras_require = {
     ],
     # https://github.com/SeldonIO/alibi-detect/issues/375 and 387
     "tensorflow": [
-        "tensorflow>=2.2.0, !=2.6.0, !=2.6.1, <2.9.0"
+        # "tensorflow>=2.2.0, !=2.6.0, !=2.6.1, <2.9.0"
     ],
     "tensorflow_probability": [
-        "tensorflow_probability>=0.8.0, <0.17.0"
+        # "tensorflow_probability>=0.8.0, <0.17.0"
     ],
     "numba": [
         "numba>=0.50.0, !=0.54.0, <0.56.0"
@@ -33,8 +33,8 @@ extras_require = {
         "holidays==0.9.11",
         "pystan<3.0",
         "numba>=0.50.0, !=0.54.0, <0.56.0",
-        "tensorflow_probability>=0.8.0, <0.17.0",
-        "tensorflow>=2.2.0, !=2.6.0, !=2.6.1, <2.9.0",
+        # "tensorflow_probability>=0.8.0, <0.17.0",
+        # "tensorflow>=2.2.0, !=2.6.0, !=2.6.1, <2.9.0",
         "torch>=1.7.0"
     ],
 }
@@ -66,6 +66,9 @@ setup(
         "dill>=0.3.0, <0.4.0",
         "tqdm>=4.28.1, <5.0.0",
         "requests>=2.21.0, <3.0.0",
+        # will be removed in coming PRs:
+        "tensorflow_probability>=0.8.0, <0.17.0",
+        "tensorflow>=2.2.0, !=2.6.0, !=2.6.1, <2.9.0",
     ],
     extras_require=extras_require,
     test_suite="tests",
