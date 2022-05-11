@@ -26,7 +26,7 @@ extras_require = {
         # "tensorflow_probability>=0.8.0, <0.17.0"
     ],
     "numba": [
-        "numba>=0.50.0, !=0.54.0, <0.56.0"
+        # "numba>=0.50.0, !=0.54.0, <0.56.0"
     ],
     'all': [
         "fbprophet>=0.5, <0.7",
@@ -69,6 +69,7 @@ setup(
         # will be removed in coming PRs:
         "tensorflow_probability>=0.8.0, <0.17.0",
         "tensorflow>=2.2.0, !=2.6.0, !=2.6.1, <2.9.0",
+        "numba>=0.50.0, !=0.54.0, <0.56.0"
     ],
     extras_require=extras_require,
     test_suite="tests",
