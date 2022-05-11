@@ -60,4 +60,7 @@ licenses:
 check_licenses:
 	git --no-pager diff --exit-code ./licenses/license_info.no_versions.csv
 
-
+.PHONY: repl
+tox-env=default
+repl:
+	env COMMAND="python" tox -e $(tox-env)
