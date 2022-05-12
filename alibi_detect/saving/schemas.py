@@ -19,7 +19,7 @@ from typing import Callable, Dict, List, Optional, Type, Union, Any
 # TODO - conditional checks depending on backend etc
 # TODO - consider validating output of get_config calls
 import numpy as np
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 
 from alibi_detect.cd.tensorflow import UAE as UAE_tf
 from alibi_detect.cd.tensorflow import HiddenOutput as HiddenOutput_tf
@@ -42,6 +42,15 @@ SupportedModels = tuple(SupportedModels_list)
 # SupportedModels_types is a typing Union for use with pydantic. We include all optional deps in here so that they
 # are all documented in the api docs (where the optional deps are not installed at build time)
 SupportedModels_types = Union['tf.keras.Model', UAE_tf, HiddenOutput_tf]
+
+
+# Custom validators (defined here for reuse in multiple pydantic models)
+def coerce_int2list(value: int) -> List[int]:
+    """Validator to coerce int to list (pydantic doesn't do this by default)."""
+    if isinstance(value, int):
+        return [value]
+    else:
+        return value
 
 
 # Custom BaseModel so that we can set default config
@@ -996,6 +1005,9 @@ class CVMDriftOnlineConfig(DriftDetectorConfig):
     n_features: Optional[int] = None
     verbose: bool = True
 
+    # validators
+    _coerce_int2list = validator('window_sizes', allow_reuse=True, pre=True)(coerce_int2list)
+
 
 class CVMDriftOnlineConfigResolved(DriftDetectorConfigResolved):
     """
@@ -1012,6 +1024,9 @@ class CVMDriftOnlineConfigResolved(DriftDetectorConfigResolved):
     batch_size: int = 64
     n_features: Optional[int] = None
     verbose: bool = True
+
+    # validators
+    _coerce_int2list = validator('window_sizes', allow_reuse=True, pre=True)(coerce_int2list)
 
 
 class FETDriftOnlineConfig(DriftDetectorConfig):
@@ -1032,6 +1047,9 @@ class FETDriftOnlineConfig(DriftDetectorConfig):
     n_features: Optional[int] = None
     verbose: bool = True
 
+    # validators
+    _coerce_int2list = validator('window_sizes', allow_reuse=True, pre=True)(coerce_int2list)
+
 
 class FETDriftOnlineConfigResolved(DriftDetectorConfigResolved):
     """
@@ -1050,6 +1068,9 @@ class FETDriftOnlineConfigResolved(DriftDetectorConfigResolved):
     lam: float = 0.99
     n_features: Optional[int] = None
     verbose: bool = True
+
+    # validators
+    _coerce_int2list = validator('window_sizes', allow_reuse=True, pre=True)(coerce_int2list)
 
 
 # The uncertainty detectors don't inherit from DriftDetectorConfig since their kwargs are a little different from the
