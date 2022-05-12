@@ -447,8 +447,8 @@ class KSDriftConfig(DriftDetectorConfig):
     p_val: float = .05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
-    correction: str = 'bonferroni'
-    alternative: str = 'two-sided'
+    correction: Literal['bonferroni', 'fdr'] = 'bonferroni'
+    alternative: Literal['two-sided', 'greater', 'less'] = 'two-sided'
     n_features: Optional[int] = None
 
 
@@ -464,8 +464,8 @@ class KSDriftConfigResolved(DriftDetectorConfigResolved):
     p_val: float = .05
     preprocess_at_init: bool = True  # Note: Duplication needed to avoid mypy error (unless we allow reassignment)
     update_x_ref: Optional[Dict[str, int]] = None
-    correction: str = 'bonferroni'
-    alternative: str = 'two-sided'
+    correction: Literal['bonferroni', 'fdr'] = 'bonferroni'
+    alternative: Literal['two-sided', 'greater', 'less'] = 'two-sided'
     n_features: Optional[int] = None
 
 
@@ -480,7 +480,7 @@ class ChiSquareDriftConfig(DriftDetectorConfig):
     p_val: float = .05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
-    correction: str = 'bonferroni'
+    correction: Literal['bonferroni', 'fdr'] = 'bonferroni'
     categories_per_feature: Dict[int, Union[int, List[int]]] = None
     n_features: Optional[int] = None
 
@@ -512,9 +512,9 @@ class TabularDriftConfig(DriftDetectorConfig):
     p_val: float = .05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
-    correction: str = 'bonferroni'
+    correction: Literal['bonferroni', 'fdr'] = 'bonferroni'
     categories_per_feature: Dict[int, Optional[Union[int, List[int]]]] = None
-    alternative: str = 'two-sided'
+    alternative: Literal['two-sided', 'greater', 'less'] = 'two-sided'
     n_features: Optional[int] = None
 
 
@@ -529,9 +529,9 @@ class TabularDriftConfigResolved(DriftDetectorConfigResolved):
     p_val: float = .05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
-    correction: str = 'bonferroni'
+    correction: Literal['bonferroni', 'fdr'] = 'bonferroni'
     categories_per_feature: Dict[int, Optional[Union[int, List[int]]]] = None
-    alternative: str = 'two-sided'
+    alternative: Literal['two-sided', 'greater', 'less'] = 'two-sided'
     n_features: Optional[int] = None
 
 
@@ -546,7 +546,7 @@ class CVMDriftConfig(DriftDetectorConfig):
     p_val: float = .05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
-    correction: str = 'bonferroni'
+    correction: Literal['bonferroni', 'fdr'] = 'bonferroni'
     n_features: Optional[int] = None
 
 
@@ -576,8 +576,8 @@ class FETDriftConfig(DriftDetectorConfig):
     p_val: float = .05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
-    correction: str = 'bonferroni'
-    alternative: str = 'two-sided'
+    correction: Literal['bonferroni', 'fdr'] = 'bonferroni'
+    alternative: Literal['two-sided', 'greater', 'less'] = 'two-sided'
     n_features: Optional[int] = None
 
 
@@ -592,8 +592,8 @@ class FETDriftConfigResolved(DriftDetectorConfigResolved):
     p_val: float = .05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
-    correction: str = 'bonferroni'
-    alternative: str = 'two-sided'
+    correction: Literal['bonferroni', 'fdr'] = 'bonferroni'
+    alternative: Literal['two-sided', 'greater', 'less'] = 'two-sided'
     n_features: Optional[int] = None
 
 
