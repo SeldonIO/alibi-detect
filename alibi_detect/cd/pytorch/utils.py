@@ -24,5 +24,5 @@ def get_torch_device(device: Optional[str] = None) -> torch.device:
             print('No GPU detected, fall back on CPU.')
     else:
         torch_device = torch.device('cpu')
-    
+
     return torch_device
