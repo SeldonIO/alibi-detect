@@ -1,4 +1,3 @@
-from webbrowser import get
 from tqdm import tqdm
 import numpy as np
 import torch
