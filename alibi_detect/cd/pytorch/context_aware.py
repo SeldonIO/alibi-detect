@@ -3,6 +3,7 @@ import numpy as np
 import torch
 from typing import Callable, Dict, Optional, Tuple, Union
 from alibi_detect.cd.base import BaseContextMMDDrift
+from alibi_detect.cd.pytorch.utils import get_torch_device
 from alibi_detect.utils.pytorch.kernels import GaussianRBF
 from alibi_detect.cd._domain_clf import _SVCDomainClf
 from tqdm import tqdm
@@ -94,12 +95,7 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
         self.meta.update({'backend': 'pytorch'})
 
         # set device
-        if device is None or device.lower() in ['gpu', 'cuda']:
-            self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-            if self.device.type == 'cpu':
-                print('No GPU detected, fall back on CPU.')
-        else:
-            self.device = torch.device('cpu')
+        self.device = get_torch_device()
 
         # initialize kernel
         self.x_kernel = x_kernel(init_sigma_fn=_sigma_median_diag) if x_kernel == GaussianRBF else x_kernel
