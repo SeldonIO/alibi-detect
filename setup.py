@@ -36,7 +36,7 @@ setup(
         "opencv-python>=3.2.0, <5.0.0",
         "scipy>=1.3.0, <2.0.0",
         'scikit-image>=0.14.2, !=0.17.1, <0.20',  # https://github.com/SeldonIO/alibi/issues/215
-        "scikit-learn>=0.20.2, <1.1.0",
+        "scikit-learn>=0.20.2, <1.2.0",
         "tensorflow>=2.2.0, !=2.6.0, !=2.6.1, <2.9.0",  # https://github.com/SeldonIO/alibi-detect/issues/375 and 387
         "tensorflow_probability>=0.8.0, <0.17.0",
         "transformers>=4.0.0, <5.0.0",
