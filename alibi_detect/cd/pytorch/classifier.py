@@ -13,9 +13,6 @@ from alibi_detect.models.pytorch.trainer import trainer
 from alibi_detect.utils.pytorch.data import TorchDataset
 from alibi_detect.utils.pytorch.prediction import predict_batch
 
-logger = logging.getLogger(__name__)
-
-
 class ClassifierDriftTorch(BaseClassifierDrift):
     def __init__(
             self,

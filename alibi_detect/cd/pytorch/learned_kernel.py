@@ -12,9 +12,6 @@ from alibi_detect.cd.pytorch.utils import get_torch_device
 from alibi_detect.utils.pytorch.distance import mmd2_from_kernel_matrix, batch_compute_kernel_matrix
 from alibi_detect.utils.pytorch.data import TorchDataset
 
-logger = logging.getLogger(__name__)
-
-
 class LearnedKernelDriftTorch(BaseLearnedKernelDrift):
     def __init__(
             self,
