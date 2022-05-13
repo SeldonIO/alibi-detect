@@ -1,7 +1,6 @@
 from copy import deepcopy
 from functools import partial
 from tqdm import tqdm
-import logging
 import numpy as np
 import torch
 import torch.nn as nn
@@ -11,6 +10,7 @@ from alibi_detect.cd.base import BaseLearnedKernelDrift
 from alibi_detect.cd.pytorch.utils import get_torch_device
 from alibi_detect.utils.pytorch.distance import mmd2_from_kernel_matrix, batch_compute_kernel_matrix
 from alibi_detect.utils.pytorch.data import TorchDataset
+
 
 class LearnedKernelDriftTorch(BaseLearnedKernelDrift):
     def __init__(

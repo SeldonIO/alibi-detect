@@ -1,6 +1,5 @@
 from copy import deepcopy
 from functools import partial
-import logging
 import numpy as np
 import torch
 import torch.nn as nn
@@ -12,6 +11,7 @@ from alibi_detect.cd.pytorch.utils import get_torch_device
 from alibi_detect.models.pytorch.trainer import trainer
 from alibi_detect.utils.pytorch.data import TorchDataset
 from alibi_detect.utils.pytorch.prediction import predict_batch
+
 
 class ClassifierDriftTorch(BaseClassifierDrift):
     def __init__(
