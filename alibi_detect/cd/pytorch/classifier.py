@@ -8,6 +8,7 @@ from torch.utils.data import DataLoader
 from scipy.special import softmax
 from typing import Callable, Dict, Optional, Union, Tuple
 from alibi_detect.cd.base import BaseClassifierDrift
+from alibi_detect.cd.pytorch.utils import get_torch_device
 from alibi_detect.models.pytorch.trainer import trainer
 from alibi_detect.utils.pytorch.data import TorchDataset
 from alibi_detect.utils.pytorch.prediction import predict_batch
@@ -130,12 +131,7 @@ class ClassifierDriftTorch(BaseClassifierDrift):
         self.meta.update({'backend': 'pytorch'})
 
         # set device, define model and training kwargs
-        if device is None or device.lower() in ['gpu', 'cuda']:
-            self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-            if self.device.type == 'cpu':
-                logger.warning('No GPU detected, fall back on CPU.')
-        else:
-            self.device = torch.device('cpu')
+        self.device = get_torch_device(device)
         self.original_model = model
         self.model = deepcopy(model)
 

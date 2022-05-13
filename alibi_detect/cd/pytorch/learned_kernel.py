@@ -8,6 +8,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 from typing import Callable, Dict, Optional, Union, Tuple
 from alibi_detect.cd.base import BaseLearnedKernelDrift
+from alibi_detect.cd.pytorch.utils import get_torch_device
 from alibi_detect.utils.pytorch.distance import mmd2_from_kernel_matrix, batch_compute_kernel_matrix
 from alibi_detect.utils.pytorch.data import TorchDataset
 
@@ -116,12 +117,7 @@ class LearnedKernelDriftTorch(BaseLearnedKernelDrift):
         self.meta.update({'backend': 'pytorch'})
 
         # set device, define model and training kwargs
-        if device is None or device.lower() in ['gpu', 'cuda']:
-            self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-            if self.device.type == 'cpu':
-                logger.warning('No GPU detected, fall back on CPU.')
-        else:
-            self.device = torch.device('cpu')
+        self.device = get_torch_device(device)
         self.original_kernel = kernel
         self.kernel = deepcopy(kernel)
 
