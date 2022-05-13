@@ -75,7 +75,7 @@ class MMDDriftTorch(BaseMMDDrift):
         self.meta.update({'backend': 'pytorch'})
 
         # set backend
-        self.device = get_torch_device()
+        self.device = get_torch_device(device)
 
         # initialize kernel
         sigma = torch.from_numpy(sigma).to(self.device) if isinstance(sigma,  # type: ignore[assignment]

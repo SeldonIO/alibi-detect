@@ -95,7 +95,7 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
         self.meta.update({'backend': 'pytorch'})
 
         # set device
-        self.device = get_torch_device()
+        self.device = get_torch_device(device)
 
         # initialize kernel
         self.x_kernel = x_kernel(init_sigma_fn=_sigma_median_diag) if x_kernel == GaussianRBF else x_kernel

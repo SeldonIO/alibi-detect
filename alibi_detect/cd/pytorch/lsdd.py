@@ -77,7 +77,7 @@ class LSDDDriftTorch(BaseLSDDDrift):
         self.meta.update({'backend': 'pytorch'})
 
         # set backend
-        self.device = get_torch_device()
+        self.device = get_torch_device(device)
 
         # TODO: TBD: the several type:ignore's below are because x_ref is typed as an np.ndarray
         #  in the method signature, so we can't cast it to torch.Tensor unless we change the signature

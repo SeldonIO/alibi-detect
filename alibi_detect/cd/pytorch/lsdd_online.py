@@ -81,7 +81,7 @@ class LSDDDriftOnlineTorch(BaseMultiDriftOnline):
         self.lambda_rd_max = lambda_rd_max
 
         # set backend
-        self.device = get_torch_device()
+        self.device = get_torch_device(device)
 
         self._configure_normalization()
 
