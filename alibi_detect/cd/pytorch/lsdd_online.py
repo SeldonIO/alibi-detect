@@ -80,7 +80,7 @@ class LSDDDriftOnlineTorch(BaseMultiDriftOnline):
         self.n_kernel_centers = n_kernel_centers
         self.lambda_rd_max = lambda_rd_max
 
-        # set backend
+        # set device
         self.device = get_torch_device(device)
 
         self._configure_normalization()

@@ -71,7 +71,7 @@ class MMDDriftOnlineTorch(BaseMultiDriftOnline):
         )
         self.meta.update({'backend': 'pytorch'})
 
-        # set backend
+        # set device
         self.device = get_torch_device(device)
 
         # initialize kernel
