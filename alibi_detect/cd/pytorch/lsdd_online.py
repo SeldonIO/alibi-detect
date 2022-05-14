@@ -3,7 +3,7 @@ import numpy as np
 import torch
 from typing import Any, Callable, Optional, Union
 from alibi_detect.cd.base_online import BaseMultiDriftOnline
-from alibi_detect.cd.pytorch.utils import get_torch_device
+from alibi_detect.utils.pytorch import get_device
 from alibi_detect.utils.pytorch import GaussianRBF, permed_lsdds, quantile
 
 
@@ -81,7 +81,7 @@ class LSDDDriftOnlineTorch(BaseMultiDriftOnline):
         self.lambda_rd_max = lambda_rd_max
 
         # set device
-        self.device = get_torch_device(device)
+        self.device = get_device(device)
 
         self._configure_normalization()
 

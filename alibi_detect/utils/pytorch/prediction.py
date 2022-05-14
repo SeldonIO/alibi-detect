@@ -1,14 +1,15 @@
 from functools import partial
-from typing import Callable, Type, Union
+from typing import Callable, Optional, Type, Union
 
 import numpy as np
 import torch
 import torch.nn as nn
+from alibi_detect.utils.pytorch import get_device
 from alibi_detect.utils.prediction import tokenize_transformer
 
 
 def predict_batch(x: Union[list, np.ndarray, torch.Tensor], model: Union[Callable, nn.Module, nn.Sequential],
-                  device: torch.device = None, batch_size: int = int(1e10), preprocess_fn: Callable = None,
+                  device: Optional[str] = None, batch_size: int = int(1e10), preprocess_fn: Callable = None,
                   dtype: Union[Type[np.generic], torch.dtype] = np.float32) -> Union[np.ndarray, torch.Tensor, tuple]:
     """
     Make batch predictions on a model.
@@ -33,8 +34,7 @@ def predict_batch(x: Union[list, np.ndarray, torch.Tensor], model: Union[Callabl
     -------
     Numpy array, torch tensor or tuples of those with model outputs.
     """
-    if device is None:
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = get_device(device)
     if isinstance(x, np.ndarray):
         x = torch.from_numpy(x)
     n = len(x)
@@ -54,11 +54,11 @@ def predict_batch(x: Union[list, np.ndarray, torch.Tensor], model: Union[Callabl
                     preds = tuple([] for _ in range(len(preds_tmp)))
                     return_list = isinstance(preds_tmp, list)
                 for j, p in enumerate(preds_tmp):
-                    if device.type == 'cuda' and isinstance(p, torch.Tensor):
+                    if device.type == 'cuda' and isinstance(p, torch.Tensor):  # type: ignore
                         p = p.cpu()
                     preds[j].append(p if not return_np or isinstance(p, np.ndarray) else p.numpy())
             elif isinstance(preds_tmp, (np.ndarray, torch.Tensor)):
-                if device.type == 'cuda' and isinstance(preds_tmp, torch.Tensor):
+                if device.type == 'cuda' and isinstance(preds_tmp, torch.Tensor):  # type: ignore
                     preds_tmp = preds_tmp.cpu()
                 preds.append(preds_tmp if not return_np or isinstance(preds_tmp, np.ndarray)  # type: ignore
                              else preds_tmp.numpy())

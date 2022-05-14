@@ -1,4 +1,9 @@
+import logging
+from typing import Optional
+
 import torch
+
+logger = logging.getLogger(__name__)
 
 
 def zero_diag(mat: torch.Tensor) -> torch.Tensor:
@@ -59,3 +64,14 @@ def quantile(sample: torch.Tensor, p: float, type: int = 7, sorted: bool = False
         quantile += (h - h_floor)*(sorted_sample[h_floor]-sorted_sample[h_floor-1])
 
     return float(quantile)
+
+
+def get_device(device: Optional[str] = None) -> torch.device:
+    if device is None or device.lower() in ['gpu', 'cuda']:
+        torch_device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        if torch_device.type == 'cpu':
+            logger.warning('No GPU detected, fall back on CPU.')
+    else:
+        torch_device = torch.device('cpu')
+
+    return torch_device

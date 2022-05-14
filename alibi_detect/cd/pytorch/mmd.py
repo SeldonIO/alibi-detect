@@ -3,7 +3,7 @@ import numpy as np
 import torch
 from typing import Callable, Dict, Optional, Tuple, Union
 from alibi_detect.cd.base import BaseMMDDrift
-from alibi_detect.cd.pytorch.utils import get_torch_device
+from alibi_detect.utils.pytorch import get_device
 from alibi_detect.utils.pytorch.distance import mmd2_from_kernel_matrix
 from alibi_detect.utils.pytorch.kernels import GaussianRBF
 
@@ -75,7 +75,7 @@ class MMDDriftTorch(BaseMMDDrift):
         self.meta.update({'backend': 'pytorch'})
 
         # set device
-        self.device = get_torch_device(device)
+        self.device = get_device(device)
 
         # initialize kernel
         sigma = torch.from_numpy(sigma).to(self.device) if isinstance(sigma,  # type: ignore[assignment]
