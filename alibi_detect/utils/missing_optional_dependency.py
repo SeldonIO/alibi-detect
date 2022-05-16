@@ -28,6 +28,12 @@ ERROR_TYPES = {
     "torch": 'torch'
 }
 
+ERROR_API_MAP = {
+    "LLR": 'tensorflow,tensorflow-probability',
+    "OutlierVAE": 'tensorflow,tensorflow-probability',
+    "OutlierVAEGMM": 'tensorflow,tensorflow-probability',
+}
+
 
 class MissingDependency:
     """Missing Dependency Class
@@ -73,6 +79,7 @@ def import_optional(module_name: str, names: Optional[List[str]] = None) -> Any:
     Note: This function is used to import modules that depend on optional dependencies. Because it mirrors the python
     import functionality its return type has to be `Any`. Using objects imported with this function can lead to
     misspecification of types as `Any` when the developer intended to be more restrictive.
+
     Parameters
     ----------
         module_name
@@ -85,11 +92,13 @@ def import_optional(module_name: str, names: Optional[List[str]] = None) -> Any:
         ModuleNotFoundError or ImportError then the requested module or named objects are replaced with instances of
         the MissingDependency class above.
     """
+    if not names:
+        names = []
 
     try:
         module = import_module(module_name)
         # TODO: We should check against specific dependency versions here.
-        if names is not None:
+        if names:
             objs = tuple(getattr(module, name) for name in names)
             return objs if len(objs) > 1 else objs[0]
         return module
@@ -98,8 +107,17 @@ def import_optional(module_name: str, names: Optional[List[str]] = None) -> Any:
             raise TypeError()
         if str(err.name) not in ERROR_TYPES:
             raise err
-        missing_dependency = ERROR_TYPES[err.name]
-        if names is not None:
+
+        # The object being imported might have multiple optional dependencies. Such cases are captured in ERROR_API_MAP.
+        # We first check for these and assign to missing_dependency, if this isn't the case we etect hte optional
+        # dependency option using ERROR_TYPES.
+        missing_dependency = None
+        for name in names:
+            missing_dependency = ERROR_API_MAP.get(name)
+        if not missing_dependency:
+            missing_dependency = ERROR_TYPES[err.name]
+
+        if names:
             missing_dependencies = \
                 tuple(MissingDependency(
                     missing_dependency=missing_dependency,
