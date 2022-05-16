@@ -1373,4 +1373,3 @@ class BaseContextMMDDrift(BaseDetector):
             cd['data']['coupling_yy'] = coupling[1]
             cd['data']['coupling_xy'] = coupling[2]
         return cd
-

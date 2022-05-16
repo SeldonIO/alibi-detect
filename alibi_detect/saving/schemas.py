@@ -343,7 +343,7 @@ class KernelConfig(CustomBaseModel):
     "A string referencing a filepath to a serialized kernel in `.dill` format, or an object registry reference."
 
     # Below kwargs are only passed if kernel == @GaussianRBF
-    sigma: Optional[NDArray[float]] = None
+    sigma: Optional[NDArray[np.float32]] = None
     """
     Bandwidth used for the kernel. Needn’t be specified if being inferred or trained. Can pass multiple values to eval
     kernel with and then average.
@@ -367,7 +367,7 @@ class KernelConfigResolved(CustomBaseModel):
     "The kernel."
 
     # Below kwargs are only passed if kernel == @GaussianRBF
-    sigma: Optional[NDArray[float]] = None
+    sigma: Optional[NDArray[np.float32]] = None
     """
     Bandwidth used for the kernel. Needn’t be specified if being inferred or trained. Can pass multiple values to eval
     kernel with and then average.
@@ -660,7 +660,7 @@ class MMDDriftConfig(DriftDetectorConfig):
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
     kernel: Optional[Union[str, KernelConfig]] = None
-    sigma: Optional[NDArray[float]] = None
+    sigma: Optional[NDArray[np.float32]] = None
     configure_kernel_from_x_ref: bool = True
     n_permutations: int = 100
     device: Optional[Literal['cpu', 'cuda']] = None
@@ -677,7 +677,7 @@ class MMDDriftConfigResolved(DriftDetectorConfigResolved):
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
     kernel: Optional[Union[Callable, KernelConfigResolved]] = None
-    sigma: Optional[NDArray[float]] = None
+    sigma: Optional[NDArray[np.float32]] = None
     configure_kernel_from_x_ref: bool = True
     n_permutations: int = 100
     device: Optional[Literal['cpu', 'cuda']] = None
@@ -693,7 +693,7 @@ class LSDDDriftConfig(DriftDetectorConfig):
     """
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
-    sigma: Optional[NDArray[float]] = None
+    sigma: Optional[NDArray[np.float32]] = None
     n_permutations: int = 100
     n_kernel_centers: Optional[int] = None
     lambda_rd_max: float = 0.2
@@ -710,7 +710,7 @@ class LSDDDriftConfigResolved(DriftDetectorConfigResolved):
     """
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
-    sigma: Optional[NDArray[float]] = None
+    sigma: Optional[NDArray[np.float32]] = None
     n_permutations: int = 100
     n_kernel_centers: Optional[int] = None
     lambda_rd_max: float = 0.2

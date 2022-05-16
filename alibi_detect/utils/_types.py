@@ -32,7 +32,7 @@ if NumpyVersion(np.__version__) < "1.22.0":
             return _validate(cls, val, field)
 
 else:
-    class NDArray(Generic[T], np.ndarray[Any, T]):  # type: ignore[no-redef]
+    class NDArray(Generic[T], np.ndarray[Any, T]):  # type: ignore[no-redef, type-var]
         """
         A Generic pydantic model to validate (and coerce) np.ndarray's.
         """
