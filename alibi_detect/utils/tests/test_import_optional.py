@@ -1,6 +1,7 @@
 import pytest
 
-from alibi_detect.utils.missing_optional_dependency import import_optional, ERROR_TYPES, MissingDependency
+from alibi_detect.utils.missing_optional_dependency import import_optional, MissingDependency, ERROR_TYPES, \
+    ERROR_API_MAP
 
 
 class TestImportOptional:
@@ -9,6 +10,7 @@ class TestImportOptional:
     def setup_method(self):
         # mock missing dependency error for non existent module
         ERROR_TYPES['non_existent_module'] = 'optional-deps'
+        ERROR_API_MAP['MockedClassMissingMultipleRequiredDeps'] = 'optional-deps-1,optional-deps'
 
     def teardown_method(self):
         # remove mock missing dependency error for other tests
@@ -44,17 +46,29 @@ class TestImportOptional:
 
     def test_import_optional_names_missing(self):
         """Test import_optional correctly replaces names from module that doesn't exist with MissingDependencies."""
-        MockedClassWithoutRequiredDeps, mocked_function_without_required_deps = import_optional(
+        MockedClassMissingRequiredDeps, mocked_function_missing_required_deps = import_optional(
             'alibi_detect.utils.tests.mocked_opt_dep',
-            names=['MockedClassWithoutRequiredDeps', 'mocked_function_without_required_deps'])
-        assert isinstance(MockedClassWithoutRequiredDeps, MissingDependency)
+            names=['MockedClassMissingRequiredDeps', 'mocked_function_missing_required_deps'])
+        assert isinstance(MockedClassMissingRequiredDeps, MissingDependency)
         with pytest.raises(ImportError) as err:
-            MockedClassWithoutRequiredDeps.__version__  # noqa
-        assert 'MockedClassWithoutRequiredDeps' in str(err.value)
+            MockedClassMissingRequiredDeps.__version__  # noqa
+        assert 'MockedClassMissingRequiredDeps' in str(err.value)
         assert 'pip install alibi-detect[optional-deps]' in str(err.value)
 
-        assert isinstance(mocked_function_without_required_deps, MissingDependency)
+        assert isinstance(mocked_function_missing_required_deps, MissingDependency)
         with pytest.raises(ImportError) as err:
-            mocked_function_without_required_deps.__version__  # noqa
-        assert 'mocked_function_without_required_deps' in str(err.value)
+            mocked_function_missing_required_deps.__version__  # noqa
+        assert 'mocked_function_missing_required_deps' in str(err.value)
         assert 'pip install alibi-detect[optional-deps]' in str(err.value)
+
+    def test_import_optional_names_missing_multiple_optional_dependencies(self):
+        """
+        Test import_optional issues correct optional dependencies in error message for object with multiple
+        optional dependencies.
+        """
+        MockedClassMissingMultipleRequiredDeps = import_optional(
+            'alibi_detect.utils.tests.mocked_opt_dep', names=['MockedClassMissingMultipleRequiredDeps'])
+        with pytest.raises(ImportError) as err:
+            MockedClassMissingMultipleRequiredDeps()
+        assert 'MockedClassMissingMultipleRequiredDeps' in str(err.value)
+        assert 'alibi-detect[optional-deps-1,optional-deps]' in str(err.value)
