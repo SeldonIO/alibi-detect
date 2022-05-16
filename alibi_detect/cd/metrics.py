@@ -16,7 +16,7 @@ def eval_calibration(
         n_samples: int = 500,
         qq_plot: bool = False,
         hist_plot: bool = False,
-        random_state: Optional[int] = None  # TODO - needs separate utils.random implementation
+        random_seed: Optional[Union[int, np.random.Generator]] = None
 ) -> np.ndarray:
     """
     TODO
@@ -43,8 +43,9 @@ def eval_calibration(
     hist_plot
         Whether to visualise the p-values on a histogram. This can also be done later with the :func:`~plot_hist`
         function.
-    random_state
-        TODO
+    random_seed
+        Random seed (or :class:`~np.random.Generator`) to use for random sampling. If `None`, then fresh,
+        unpredictable entropy will be pulled from the OS.
 
     Returns
     -------
@@ -63,11 +64,14 @@ def eval_calibration(
     if preprocess_fn is not None:
         X = preprocess_fn(X)
 
+    # NumPy RNG
+    rng = np.random.default_rng(random_seed)
+
     # Main experiment loop
     p_vals_list = []
     for _ in tqdm(range(n_runs)):
         # Subsample data
-        idx = np.random.choice(n_data, size=n_data, replace=False)
+        idx = rng.choice(n_data, size=n_data, replace=False)
         idx_ref, idx_nodrift = idx[:n_samples], idx[n_samples:2*n_samples]
         x_ref, x_nodrift = X[idx_ref], X[idx_nodrift]
 
@@ -101,6 +105,7 @@ def eval_test_power(
     n_samples: Tuple[int, int] = (500, 500),
     return_auc: bool = True,
     power_plot: bool = False,
+    random_seed: Optional[Union[int, np.random.Generator]] = None
 ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
     """
 
@@ -126,12 +131,15 @@ def eval_test_power(
         X_ref = preprocess_fn(X_ref)
         X_drift = preprocess_fn(X_drift)
 
+    # NumPy RNG
+    rng = np.random.default_rng(random_seed)
+
     # Main experiment loop
     power = np.zeros(len(sig_levels), dtype=float)
     for _ in tqdm(range(n_runs)):
         # Subsample data
-        idx_ref = np.random.choice(n_ref, size=n_samples[0], replace=False)
-        idx_drift = np.random.choice(n_drift, size=n_samples[1], replace=False)
+        idx_ref = rng.choice(n_ref, size=n_samples[0], replace=False)
+        idx_drift = rng.choice(n_drift, size=n_samples[1], replace=False)
         x_ref, x_drift = X_ref[idx_ref], X_drift[idx_drift]
 
         # Init detector and predict
@@ -235,8 +243,8 @@ def plot_hist(
 
 
 def plot_power(
-        sig_levels: Union[np.ndarray, List[np.ndarray]],
         powers: Union[np.ndarray, List[np.ndarray]],
+        sig_levels: np.ndarray = np.linspace(0.05, 0.5, 10),
         title: Optional[str] = None,
         colors: Union[str, List[str]] = 'turquoise',
         labels: Optional[Union[str, List[str]]] = None,
