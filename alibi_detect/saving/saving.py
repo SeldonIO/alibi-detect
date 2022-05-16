@@ -211,7 +211,7 @@ def write_config(cfg: dict, filepath: Union[str, os.PathLike]):
     cfg = _replace(cfg, None, "None")  # Note: None replaced with "None" as None/null not valid TOML
     logger.info('Writing config to {}'.format(filepath.joinpath('config.toml')))
     with open(filepath.joinpath('config.toml'), 'w') as f:
-        toml.dump(cfg, f, encoder=toml.TomlNumpyEncoder())  # type: ignore[call-arg, attr-defined]
+        toml.dump(cfg, f, encoder=toml.TomlNumpyEncoder())  # type: ignore[misc]
 
 
 def _save_preprocess_config(preprocess_fn: Callable,
