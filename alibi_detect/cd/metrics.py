@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Union, List, Optional, Tuple
+from typing import Union, List, Optional, Tuple, Callable
 import matplotlib.pyplot as plt
 from scipy.stats import uniform
 import statsmodels.api as sm
@@ -11,6 +11,8 @@ from tqdm import tqdm
 def eval_calibration(
         detector: type,  # TODO: type w/ BaseDriftDetector if introduced.
         X: Union[np.ndarray, list],
+        C: Optional[np.ndarray] = None,
+        model: Optional[Callable] = None,
         detector_kwargs: Optional[dict] = None,
         n_runs: int = 100,
         n_samples: int = 500,
@@ -25,11 +27,17 @@ def eval_calibration(
     ----------
     detector
         The detector class to evaluate calibration for.
-    detector_kwargs
-        Keyword arguments to pass to detector.
     X
         A reservoir of data. On each run instances are randomly subsampled to provide reference and test sets for
-        the detector(s).
+        the detector.
+    C
+        A reservoir of context data. On each run instances are randomly subsampled to provide reference and test sets
+        for the detector. Should only be given for the :class:`~alibi_detect.cd.ContextMMDDrift` detector.
+    model
+        A PyTorch, TensorFlow or Sklearn model. Should only be given for detectors accepting a `model` arg, such
+        as :class:`~alibi_detect.cd.ClassifierDrift`.
+    detector_kwargs
+        Keyword arguments to pass to detector.
     n_runs
         The number of experiment runs. A larger number will give more stable p-value distributions, at the expense of
         a longer runtime.
@@ -74,10 +82,19 @@ def eval_calibration(
         idx = rng.choice(n_data, size=n_data, replace=False)
         idx_ref, idx_nodrift = idx[:n_samples], idx[n_samples:2*n_samples]
         x_ref, x_nodrift = X[idx_ref], X[idx_nodrift]
+        detector_args, predict_args = [x_ref], [x_nodrift]
+
+        if C is not None:
+            c_ref, c_nodrift = C[idx_ref], C[idx_nodrift]
+            detector_args.append(c_ref)
+            predict_args.append(c_nodrift)
+
+        if model is not None:
+            detector_args.append(model)
 
         # Init detector and predict
-        dd = detector(x_ref, **detector_kwargs)
-        preds = dd.predict(x_nodrift)
+        dd = detector(*detector_args, **detector_kwargs)
+        preds = dd.predict(*predict_args)
         p_vals_list.append(preds['data']['p_val'])
     p_vals = np.array(p_vals_list).flatten()
     # TODO - is above OK? (to flatten over features for univariate detectors)
@@ -99,6 +116,9 @@ def eval_test_power(
     detector: type,  # TODO: type w/ BaseDriftDetector if introduced.
     X_ref: Union[np.ndarray, list],
     X_drift: Union[np.ndarray, list],
+    C_ref: Optional[np.ndarray] = None,
+    C_drift: Optional[np.ndarray] = None,
+    model: Optional[Callable] = None,
     detector_kwargs: Optional[dict] = None,
     sig_levels: np.ndarray = np.linspace(0.05, 0.5, 10),
     n_runs: int = 100,
@@ -116,6 +136,9 @@ def eval_test_power(
     -------
 
     """
+    if (C_ref is None) != (C_drift is None):
+        raise ValueError("`C_ref` and `C_drift` must both be `None`, or both be given as np.ndarray's.")
+
     # Check data sizes
     n_ref, n_drift = len(X_ref), len(X_drift)
     _check_sufficient_data_size(X_ref, n_samples, n_runs, X_test=X_drift)
@@ -141,11 +164,20 @@ def eval_test_power(
         idx_ref = rng.choice(n_ref, size=n_samples[0], replace=False)
         idx_drift = rng.choice(n_drift, size=n_samples[1], replace=False)
         x_ref, x_drift = X_ref[idx_ref], X_drift[idx_drift]
+        detector_args, predict_args = [x_ref], [x_drift]
+
+        if C_ref is not None:
+            c_ref, c_drift = C_ref[idx_ref], C_drift[idx_drift]
+            detector_args.append(c_ref)
+            predict_args.append(c_drift)
+
+        if model is not None:
+            detector_args.append(model)
 
         # Init detector and predict
         for i, sig in enumerate(sig_levels):
-            dd = detector(x_ref, p_val=sig, **detector_kwargs)
-            preds = dd.predict(x_drift)
+            dd = detector(*detector_args, p_val=sig, **detector_kwargs)
+            preds = dd.predict(*predict_args)
             power[i] += preds['data']['is_drift']
     power /= n_runs
 
@@ -243,8 +275,8 @@ def plot_hist(
 
 
 def plot_power(
+        sig_levels: np.ndarray,
         powers: Union[np.ndarray, List[np.ndarray]],
-        sig_levels: np.ndarray = np.linspace(0.05, 0.5, 10),
         title: Optional[str] = None,
         colors: Union[str, List[str]] = 'turquoise',
         labels: Optional[Union[str, List[str]]] = None,
@@ -257,11 +289,10 @@ def plot_power(
     if ax is None:
         fig, ax = plt.subplots(1, figsize=(7, 5))
 
-    sig_levelss = [sig_levels] if not isinstance(sig_levels, list) else sig_levels
     powers = [powers] if not isinstance(powers, list) else powers
     colors = [colors] if not isinstance(colors, list) else colors
     labels = [labels] if not isinstance(labels, list) else labels
-    for sig_levels, power, label, color in zip(sig_levelss, powers, labels, colors):
+    for power, label, color in zip(powers, labels, colors):
         sns.lineplot(x=sig_levels, y=power, marker='o', mec='k', ms=8, color=color, label=label)
         ax.fill_between(sig_levels, power, alpha=0.2, color=color)
     if label is not None:
