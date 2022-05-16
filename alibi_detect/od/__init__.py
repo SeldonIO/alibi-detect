@@ -1,13 +1,16 @@
-from .aegmm import OutlierAEGMM
+from alibi_detect.utils.missing_optional_dependency import import_optional
+
 from .isolationforest import IForest
 from .mahalanobis import Mahalanobis
-from .ae import OutlierAE
-from .vae import OutlierVAE
-from .vaegmm import OutlierVAEGMM
 from .prophet import PROPHET_INSTALLED, OutlierProphet
-from .seq2seq import OutlierSeq2Seq
 from .sr import SpectralResidual
-from .llr import LLR
+
+OutlierAEGMM = import_optional('alibi_detect.od.aegmm', names=['OutlierAEGMM'])
+OutlierAE = import_optional('alibi_detect.od.ae', names=['OutlierAE'])
+OutlierVAE = import_optional('alibi_detect.od.vae', names=['OutlierVAE'])
+OutlierVAEGMM = import_optional('alibi_detect.od.vaegmm', names=['OutlierVAEGMM'])
+OutlierSeq2Seq = import_optional('alibi_detect.od.seq2seq', names=['OutlierSeq2Seq'])
+LLR = import_optional('alibi_detect.od.llr', names=['LLR'])
 
 __all__ = [
     "OutlierAEGMM",
