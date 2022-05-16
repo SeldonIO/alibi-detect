@@ -2,8 +2,8 @@
 # linting and static type-checking
 flake8>=3.7.7, <5.0.0
 mypy~=0.900
-types-requests~=2.25
-types-toml~=0.10
+types-requests>=2.25, <3.0
+types-toml>=0.10, <1.0
 # testing
 pytest>=5.3.5, <8.0.0
 pytest-cov>=2.6.1, <4.0.0
