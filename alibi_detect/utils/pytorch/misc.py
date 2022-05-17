@@ -89,4 +89,5 @@ def get_device(device: Optional[Union[str, torch.device]] = None) -> torch.devic
                 logger.warning('No GPU detected, fall back on CPU.')
         else:
             torch_device = torch.device('cpu')
+            logger.warning('Requested device not recognised, fall back on CPU.')
     return torch_device
