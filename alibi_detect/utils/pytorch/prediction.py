@@ -9,7 +9,7 @@ from alibi_detect.utils.prediction import tokenize_transformer
 
 
 def predict_batch(x: Union[list, np.ndarray, torch.Tensor], model: Union[Callable, nn.Module, nn.Sequential],
-                  device: Optional[str] = None, batch_size: int = int(1e10), preprocess_fn: Callable = None,
+                  device: Optional[torch.device] = None, batch_size: int = int(1e10), preprocess_fn: Callable = None,
                   dtype: Union[Type[np.generic], torch.dtype] = np.float32) -> Union[np.ndarray, torch.Tensor, tuple]:
     """
     Make batch predictions on a model.
@@ -54,11 +54,11 @@ def predict_batch(x: Union[list, np.ndarray, torch.Tensor], model: Union[Callabl
                     preds = tuple([] for _ in range(len(preds_tmp)))
                     return_list = isinstance(preds_tmp, list)
                 for j, p in enumerate(preds_tmp):
-                    if device.type == 'cuda' and isinstance(p, torch.Tensor):  # type: ignore[union-attr]
+                    if device.type == 'cuda' and isinstance(p, torch.Tensor):
                         p = p.cpu()
                     preds[j].append(p if not return_np or isinstance(p, np.ndarray) else p.numpy())
             elif isinstance(preds_tmp, (np.ndarray, torch.Tensor)):
-                if device.type == 'cuda' and isinstance(preds_tmp, torch.Tensor):  # type: ignore[union-attr]
+                if device.type == 'cuda' and isinstance(preds_tmp, torch.Tensor):
                     preds_tmp = preds_tmp.cpu()
                 preds.append(preds_tmp if not return_np or isinstance(preds_tmp, np.ndarray)  # type: ignore
                              else preds_tmp.numpy())
@@ -74,7 +74,7 @@ def predict_batch(x: Union[list, np.ndarray, torch.Tensor], model: Union[Callabl
 
 
 def predict_batch_transformer(x: Union[list, np.ndarray], model: Union[nn.Module, nn.Sequential],
-                              tokenizer: Callable, max_len: int, device: torch.device = None,
+                              tokenizer: Callable, max_len: int, device: Optional[torch.device] = None,
                               batch_size: int = int(1e10), dtype: Union[Type[np.generic], torch.dtype] = np.float32) \
         -> Union[np.ndarray, torch.Tensor, tuple]:
     """
