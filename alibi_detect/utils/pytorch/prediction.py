@@ -54,11 +54,11 @@ def predict_batch(x: Union[list, np.ndarray, torch.Tensor], model: Union[Callabl
                     preds = tuple([] for _ in range(len(preds_tmp)))
                     return_list = isinstance(preds_tmp, list)
                 for j, p in enumerate(preds_tmp):
-                    if device.type == 'cuda' and isinstance(p, torch.Tensor):  # type: ignore
+                    if device.type == 'cuda' and isinstance(p, torch.Tensor):  # type: ignore[union-attr]
                         p = p.cpu()
                     preds[j].append(p if not return_np or isinstance(p, np.ndarray) else p.numpy())
             elif isinstance(preds_tmp, (np.ndarray, torch.Tensor)):
-                if device.type == 'cuda' and isinstance(preds_tmp, torch.Tensor):  # type: ignore
+                if device.type == 'cuda' and isinstance(preds_tmp, torch.Tensor):  # type: ignore[union-attr]
                     preds_tmp = preds_tmp.cpu()
                 preds.append(preds_tmp if not return_np or isinstance(preds_tmp, np.ndarray)  # type: ignore
                              else preds_tmp.numpy())
