@@ -50,7 +50,6 @@ def get_seed() -> int:
     >>> get_seed()
     42
     """
-    global _ALIBI_SEED
     if _ALIBI_SEED is not None:
         return _ALIBI_SEED
     else:
