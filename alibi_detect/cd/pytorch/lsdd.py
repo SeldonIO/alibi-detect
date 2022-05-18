@@ -118,7 +118,7 @@ class LSDDDriftTorch(BaseLSDDDrift):
         x_ref_eff = x_ref[non_c_inds]  # the effective reference set
         self.k_xc = self.kernel(x_ref_eff, self.kernel_centers)
 
-    def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, np.ndarray]:
+    def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, float]:
         """
         Compute the p-value resulting from a permutation test using the least-squares density
         difference as a distance measure between the reference data and the data to be tested.
@@ -130,8 +130,8 @@ class LSDDDriftTorch(BaseLSDDDrift):
 
         Returns
         -------
-        p-value obtained from the permutation test, the LSDD between the reference and test set
-        and the LSDD values from the permutation test.
+        p-value obtained from the permutation test, the LSDD between the reference and test set,
+        and the LSDD threshold above which drift is flagged.
         """
         x_ref, x = self.preprocess(x)
         x_ref = torch.from_numpy(x_ref).to(self.device)  # type: ignore[assignment]
@@ -158,6 +158,8 @@ class LSDDDriftTorch(BaseLSDDDrift):
         lsdd_permuted, _, lsdd = permed_lsdds(  # type: ignore
             k_all_c, x_perms, y_perms, self.H, lam_rd_max=self.lambda_rd_max, return_unpermed=True
         )
-
         p_val = (lsdd <= lsdd_permuted).float().mean()
-        return float(p_val.cpu()), float(lsdd.cpu().numpy()), lsdd_permuted.cpu().numpy()
+
+        idx_threshold = int(self.p_val * len(lsdd_permuted))
+        distance_threshold = torch.sort(lsdd_permuted, descending=True).values[idx_threshold]
+        return float(p_val.cpu()), float(lsdd.cpu().numpy()), distance_threshold.cpu().numpy()

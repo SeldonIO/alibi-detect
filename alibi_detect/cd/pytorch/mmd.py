@@ -98,7 +98,7 @@ class MMDDriftTorch(BaseMMDDrift):
         kernel_mat = torch.cat([torch.cat([k_xx, k_xy], 1), torch.cat([k_xy.T, k_yy], 1)], 0)
         return kernel_mat
 
-    def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, np.ndarray]:
+    def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, float]:
         """
         Compute the p-value resulting from a permutation test using the maximum mean discrepancy
         as a distance measure between the reference data and the data to be tested.
@@ -110,8 +110,8 @@ class MMDDriftTorch(BaseMMDDrift):
 
         Returns
         -------
-        p-value obtained from the permutation test, the MMD^2 between the reference and test set
-        and the MMD^2 values from the permutation test.
+        p-value obtained from the permutation test, the MMD^2 between the reference and test set,
+        and the MMD^2 threshold above which drift is flagged.
         """
         x_ref, x = self.preprocess(x)
         x_ref = torch.from_numpy(x_ref).to(self.device)  # type: ignore[assignment]
@@ -127,4 +127,7 @@ class MMDDriftTorch(BaseMMDDrift):
         if self.device.type == 'cuda':
             mmd2, mmd2_permuted = mmd2.cpu(), mmd2_permuted.cpu()
         p_val = (mmd2 <= mmd2_permuted).float().mean()
-        return p_val.numpy().item(), mmd2.numpy().item(), mmd2_permuted.numpy()
+        # compute distance threshold
+        idx_threshold = int(self.p_val * len(mmd2_permuted))
+        distance_threshold = torch.sort(mmd2_permuted, descending=True).values[idx_threshold]
+        return p_val.numpy().item(), mmd2.numpy().item(), distance_threshold.numpy()
