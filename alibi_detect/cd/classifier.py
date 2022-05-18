@@ -1,6 +1,7 @@
 import numpy as np
 from typing import Callable, Dict, Optional, Union
-from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, has_sklearn
+from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, has_tensorflow_probability, has_sklearn, \
+    BackendValidator
 
 if has_sklearn:
     from sklearn.base import ClassifierMixin
@@ -11,7 +12,7 @@ if has_pytorch:
     from alibi_detect.cd.pytorch.classifier import ClassifierDriftTorch
     from alibi_detect.utils.pytorch.data import TorchDataset
 
-if has_tensorflow:
+if has_tensorflow and has_tensorflow_probability:
     from alibi_detect.cd.tensorflow.classifier import ClassifierDriftTF
     from alibi_detect.utils.tensorflow.data import TFDataset
 
@@ -132,14 +133,13 @@ class ClassifierDrift:
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
         super().__init__()
-
         backend = backend.lower()
-        if (backend == 'tensorflow' and not has_tensorflow) or (backend == 'pytorch' and not has_pytorch) or \
-                (backend == 'sklearn' and not has_sklearn):
-            raise ImportError(f'{backend} not installed. Cannot initialize and run the '
-                              f'ClassifierDrift detector with {backend} backend.')
-        elif backend not in ['tensorflow', 'pytorch', 'sklearn']:
-            raise NotImplementedError(f"{backend} not implemented. Use 'tensorflow', 'pytorch' or 'sklearn' instead.")
+        BackendValidator(
+            backend_options={'tensorflow': ['tensorflow', 'tensorflow_probability'],
+                             'pytorch': ['pytorch'],
+                             'sklearn': ['sklearn']},
+            construct_name='ClassifierDrift'
+        ).verify_backend(backend)
 
         kwargs = locals()
         args = [kwargs['x_ref'], kwargs['model']]

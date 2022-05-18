@@ -25,13 +25,14 @@ ERROR_TYPES = {
     "numba": 'numba',
     "tensorflow_probability": 'tensorflow_probability',
     "tensorflow": 'tensorflow',
-    "torch": 'torch'
+    "torch": 'torch',
+    "pytorch": 'torch'
 }
 
 ERROR_API_MAP = {
-    "LLR": 'tensorflow,tensorflow-probability',
-    "OutlierVAE": 'tensorflow,tensorflow-probability',
-    "OutlierVAEGMM": 'tensorflow,tensorflow-probability',
+    "LLR": 'tensorflow,tensorflow_probability',
+    "OutlierVAE": 'tensorflow,tensorflow_probability',
+    "OutlierVAEGMM": 'tensorflow,tensorflow_probability',
 }
 
 

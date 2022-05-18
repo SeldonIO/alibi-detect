@@ -1,12 +1,12 @@
 import logging
 import numpy as np
 from typing import Callable, Dict, Optional, Union, Tuple
-from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
+from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, has_tensorflow_probability, BackendValidator
 
 if has_pytorch:
     from alibi_detect.cd.pytorch.context_aware import ContextMMDDriftTorch
 
-if has_tensorflow:
+if has_tensorflow and has_tensorflow_probability:
     from alibi_detect.cd.tensorflow.context_aware import ContextMMDDriftTF
 
 logger = logging.getLogger(__name__)
@@ -80,11 +80,9 @@ class ContextMMDDrift:
         super().__init__()
 
         backend = backend.lower()
-        if backend == 'tensorflow' and not has_tensorflow or backend == 'pytorch' and not has_pytorch:
-            raise ImportError(f'{backend} not installed. Cannot initialize and run the '
-                              f'ContextMMMDrift detector with {backend} backend.')
-        elif backend not in ['tensorflow', 'pytorch']:
-            raise NotImplementedError(f'{backend} not implemented. Use tensorflow or pytorch instead.')
+        BackendValidator(backend_options={'tensorflow': ['tensorflow', 'tensorflow_probability'],
+                                          'pytorch': ['pytorch']},
+                         construct_name='ContextMMDDrift').verify_backend(backend)
 
         kwargs = locals()
         args = [kwargs['x_ref'], kwargs['c_ref']]
