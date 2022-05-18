@@ -2,6 +2,7 @@ import numpy as np
 import torch
 from typing import Callable, Dict, Optional, Tuple, Union
 from alibi_detect.cd.base import BaseLSDDDrift
+from alibi_detect.utils.pytorch import get_device
 from alibi_detect.utils.pytorch.kernels import GaussianRBF
 from alibi_detect.utils.pytorch.distance import permed_lsdds
 
@@ -75,13 +76,8 @@ class LSDDDriftTorch(BaseLSDDDrift):
         )
         self.meta.update({'backend': 'pytorch'})
 
-        # set backend
-        if device is None or device.lower() in ['gpu', 'cuda']:
-            self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-            if self.device.type == 'cpu':
-                print('No GPU detected, fall back on CPU.')
-        else:
-            self.device = torch.device('cpu')
+        # set device
+        self.device = get_device(device)
 
         # TODO: TBD: the several type:ignore's below are because x_ref is typed as an np.ndarray
         #  in the method signature, so we can't cast it to torch.Tensor unless we change the signature

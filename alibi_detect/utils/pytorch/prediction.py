@@ -1,14 +1,15 @@
 from functools import partial
-from typing import Callable, Type, Union
+from typing import Callable, Optional, Type, Union
 
 import numpy as np
 import torch
 import torch.nn as nn
+from alibi_detect.utils.pytorch.misc import get_device
 from alibi_detect.utils.prediction import tokenize_transformer
 
 
 def predict_batch(x: Union[list, np.ndarray, torch.Tensor], model: Union[Callable, nn.Module, nn.Sequential],
-                  device: torch.device = None, batch_size: int = int(1e10), preprocess_fn: Callable = None,
+                  device: Optional[torch.device] = None, batch_size: int = int(1e10), preprocess_fn: Callable = None,
                   dtype: Union[Type[np.generic], torch.dtype] = np.float32) -> Union[np.ndarray, torch.Tensor, tuple]:
     """
     Make batch predictions on a model.
@@ -33,8 +34,7 @@ def predict_batch(x: Union[list, np.ndarray, torch.Tensor], model: Union[Callabl
     -------
     Numpy array, torch tensor or tuples of those with model outputs.
     """
-    if device is None:
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = get_device(device)
     if isinstance(x, np.ndarray):
         x = torch.from_numpy(x)
     n = len(x)
@@ -74,7 +74,7 @@ def predict_batch(x: Union[list, np.ndarray, torch.Tensor], model: Union[Callabl
 
 
 def predict_batch_transformer(x: Union[list, np.ndarray], model: Union[nn.Module, nn.Sequential],
-                              tokenizer: Callable, max_len: int, device: torch.device = None,
+                              tokenizer: Callable, max_len: int, device: Optional[torch.device] = None,
                               batch_size: int = int(1e10), dtype: Union[Type[np.generic], torch.dtype] = np.float32) \
         -> Union[np.ndarray, torch.Tensor, tuple]:
     """
