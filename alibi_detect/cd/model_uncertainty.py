@@ -6,7 +6,7 @@ from alibi_detect.cd.ks import KSDrift
 from alibi_detect.cd.chisquare import ChiSquareDrift
 from alibi_detect.cd.preprocess import classifier_uncertainty, regressor_uncertainty
 from alibi_detect.cd.utils import encompass_batching, encompass_shuffling_and_batch_filling
-from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, BackendValidator
+from alibi_detect.utils.frameworks import BackendValidator
 
 logger = logging.getLogger(__name__)
 
