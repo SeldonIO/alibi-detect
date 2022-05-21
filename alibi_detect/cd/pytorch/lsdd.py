@@ -2,6 +2,7 @@ import numpy as np
 import torch
 from typing import Callable, Dict, Optional, Tuple, Union
 from alibi_detect.cd.base import BaseLSDDDrift
+from alibi_detect.utils.pytorch import get_device
 from alibi_detect.utils.pytorch.kernels import GaussianRBF
 from alibi_detect.utils.pytorch.distance import permed_lsdds
 
@@ -75,13 +76,8 @@ class LSDDDriftTorch(BaseLSDDDrift):
         )
         self.meta.update({'backend': 'pytorch'})
 
-        # set backend
-        if device is None or device.lower() in ['gpu', 'cuda']:
-            self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-            if self.device.type == 'cpu':
-                print('No GPU detected, fall back on CPU.')
-        else:
-            self.device = torch.device('cpu')
+        # set device
+        self.device = get_device(device)
 
         # TODO: TBD: the several type:ignore's below are because x_ref is typed as an np.ndarray
         #  in the method signature, so we can't cast it to torch.Tensor unless we change the signature
@@ -122,7 +118,7 @@ class LSDDDriftTorch(BaseLSDDDrift):
         x_ref_eff = x_ref[non_c_inds]  # the effective reference set
         self.k_xc = self.kernel(x_ref_eff, self.kernel_centers)
 
-    def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, np.ndarray]:
+    def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, float]:
         """
         Compute the p-value resulting from a permutation test using the least-squares density
         difference as a distance measure between the reference data and the data to be tested.
@@ -134,8 +130,8 @@ class LSDDDriftTorch(BaseLSDDDrift):
 
         Returns
         -------
-        p-value obtained from the permutation test, the LSDD between the reference and test set
-        and the LSDD values from the permutation test.
+        p-value obtained from the permutation test, the LSDD between the reference and test set,
+        and the LSDD threshold above which drift is flagged.
         """
         x_ref, x = self.preprocess(x)
         x_ref = torch.from_numpy(x_ref).to(self.device)  # type: ignore[assignment]
@@ -162,6 +158,8 @@ class LSDDDriftTorch(BaseLSDDDrift):
         lsdd_permuted, _, lsdd = permed_lsdds(  # type: ignore
             k_all_c, x_perms, y_perms, self.H, lam_rd_max=self.lambda_rd_max, return_unpermed=True
         )
-
         p_val = (lsdd <= lsdd_permuted).float().mean()
-        return float(p_val.cpu()), float(lsdd.cpu().numpy()), lsdd_permuted.cpu().numpy()
+
+        idx_threshold = int(self.p_val * len(lsdd_permuted))
+        distance_threshold = torch.sort(lsdd_permuted, descending=True).values[idx_threshold]
+        return float(p_val.cpu()), float(lsdd.cpu().numpy()), distance_threshold.cpu().numpy()

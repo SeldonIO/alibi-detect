@@ -34,7 +34,7 @@ We use type hints to develop the libary and `mypy` to for static type checking. 
 options are defined in `setup.cfg`.
 
 ## Docstrings
-We adhere to the `numpy` style docstrings (https://numpydoc.readthedocs.io/en/latest/format.html)
+We adhere to the `numpy` style docstrings (https://numpydoc.readthedocs.io/en/stable/format.html)
 with the exception of ommiting argument types in docstrings in favour of type hints in function
 and class signatures. If you're using a `PyCharm`, you can configure this under
 `File -> Settings -> Tools -> Python Integrated Tools -> Docstrings`.

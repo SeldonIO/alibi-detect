@@ -1,14 +1,20 @@
 # Change Log
 
+## [v0.9.1](https://github.com/SeldonIO/alibi-detect/tree/v0.9.1) (2022-04-01)
+[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.9.0...v0.9.1)
+
+### Fixed
+- Fixed an issue whereby simply importing the library in any capacity caused tensorflow to occupy all available GPU memory. This was due to the instantiation of `tf.keras.Model` objects within a class definition (`GaussianRBF` objects within the `DeepKernel` class).
+
 ## [v0.9.0](https://github.com/SeldonIO/alibi-detect/tree/v0.9.0) (2022-03-17)
 [Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.8.1...v0.9.0)
 
 ### Added
-- Added the [ContextMMDDrift](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/contextmmddrift.html) detector. The context-aware maximum mean discrepancy drift detector ([Cobb and Van Looveren, 2022](https://arxiv.org/abs/2203.08644)) is a kernel based method for detecting drift in a manner that can take relevant context into account.
+- Added the [ContextMMDDrift](https://docs.seldon.io/projects/alibi-detect/en/stable/cd/methods/contextmmddrift.html) detector. The context-aware maximum mean discrepancy drift detector ([Cobb and Van Looveren, 2022](https://arxiv.org/abs/2203.08644)) is a kernel based method for detecting drift in a manner that can take relevant context into account.
 
 ### Fixed
-- Fixed an issue experienced when the [Model uncertainty based drift detection](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_model_unc_cifar10_wine.html) example is run on GPU's ([#445](https://github.com/SeldonIO/alibi-detect/pull/445)).
-- Fixed an issue with the [Text drift detection on IMDB](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_text_imdb.html) example to allow PyTorch to be used ([#438](https://github.com/SeldonIO/alibi-detect/pull/438)).
+- Fixed an issue experienced when the [Model uncertainty based drift detection](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/cd_model_unc_cifar10_wine.html) example is run on GPU's ([#445](https://github.com/SeldonIO/alibi-detect/pull/445)).
+- Fixed an issue with the [Text drift detection on IMDB](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/cd_text_imdb.html) example to allow PyTorch to be used ([#438](https://github.com/SeldonIO/alibi-detect/pull/438)).
 
 ### Development
 - The maximum `tensorflow` version has been bumped from 2.7 to 2.8 ([#444](https://github.com/SeldonIO/alibi-detect/pull/444)).
@@ -17,7 +23,7 @@
 [Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.8.0...v0.8.1)
 
 ### Added
-- **New feature** `ClassifierDrift` now supports `sklearn` models ([#414](https://github.com/SeldonIO/alibi-detect/pull/414)). See [this example](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_clf_adult.html). 
+- **New feature** `ClassifierDrift` now supports `sklearn` models ([#414](https://github.com/SeldonIO/alibi-detect/pull/414)). See [this example](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/cd_clf_adult.html). 
 
 ### Changed
 - Python 3.6 has been deprecated from the supported versions as it has reached end-of-life. 
@@ -35,8 +41,8 @@
 [Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.7.3...v0.8.0)
 
 ### Added
-- [Offline](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/fetdrift.html) and [online](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/onlinefetdrift.html) versions of Fisher's Exact Test detector for supervised drift detection on binary data: `from alibi_detect.cd import FETDrift, FETDriftOnline`.
-- [Offline](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/cvmdrift.html) and [online](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/onlinecvmdrift.html) versions of Cramér-von Mises detector for supervised drift detection on continuous data: `from alibi_detect.cd import CVMDrift, CVMDriftOnline`.
+- [Offline](https://docs.seldon.io/projects/alibi-detect/en/stable/cd/methods/fetdrift.html) and [online](https://docs.seldon.io/projects/alibi-detect/en/stable/cd/methods/onlinefetdrift.html) versions of Fisher's Exact Test detector for supervised drift detection on binary data: `from alibi_detect.cd import FETDrift, FETDriftOnline`.
+- [Offline](https://docs.seldon.io/projects/alibi-detect/en/stable/cd/methods/cvmdrift.html) and [online](https://docs.seldon.io/projects/alibi-detect/en/stable/cd/methods/onlinecvmdrift.html) versions of Cramér-von Mises detector for supervised drift detection on continuous data: `from alibi_detect.cd import CVMDrift, CVMDriftOnline`.
 - Offline supervised drift detection [example](https://github.com/SeldonIO/alibi-detect/blob/master/examples/cd_supervised_penguins.ipynb) on the penguin classification dataset.
 
 ### Changed

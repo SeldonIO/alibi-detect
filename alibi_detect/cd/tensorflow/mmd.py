@@ -90,7 +90,7 @@ class MMDDriftTF(BaseMMDDrift):
         kernel_mat = tf.concat([tf.concat([k_xx, k_xy], 1), tf.concat([tf.transpose(k_xy, (1, 0)), k_yy], 1)], 0)
         return kernel_mat
 
-    def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, np.ndarray]:
+    def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, float]:
         """
         Compute the p-value resulting from a permutation test using the maximum mean discrepancy
         as a distance measure between the reference data and the data to be tested.
@@ -102,8 +102,8 @@ class MMDDriftTF(BaseMMDDrift):
 
         Returns
         -------
-        p-value obtained from the permutation test, the MMD^2 between the reference and test set
-        and the MMD^2 values from the permutation test.
+        p-value obtained from the permutation test, the MMD^2 between the reference and test set,
+        and the MMD^2 threshold above which drift is flagged.
         """
         x_ref, x = self.preprocess(x)
         # compute kernel matrix, MMD^2 and apply permutation test using the kernel matrix
@@ -115,7 +115,10 @@ class MMDDriftTF(BaseMMDDrift):
             [mmd2_from_kernel_matrix(kernel_mat, n, permute=True, zero_diag=False).numpy()
              for _ in range(self.n_permutations)])
         p_val = (mmd2 <= mmd2_permuted).mean()
-        return p_val, mmd2, mmd2_permuted
+        # compute distance threshold
+        idx_threshold = int(self.p_val * len(mmd2_permuted))
+        distance_threshold = np.sort(mmd2_permuted)[::-1][idx_threshold]
+        return p_val, mmd2, distance_threshold
 
 
 class LinearTimeMMDDriftTF(BaseMMDDrift):
@@ -198,7 +201,7 @@ class LinearTimeMMDDriftTF(BaseMMDDrift):
         kernel_mat = tf.concat([tf.concat([k_xx, k_xy], 1), tf.concat([tf.transpose(k_xy, (1, 0)), k_yy], 1)], 0)
         return kernel_mat
 
-    def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, np.ndarray]:
+    def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, float]:
         """
         Compute the p-value using the maximum mean discrepancy as a distance measure between the
         reference data and the data to be tested. The sample size is specified as the maximal even

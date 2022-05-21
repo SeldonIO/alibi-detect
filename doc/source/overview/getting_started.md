@@ -64,7 +64,7 @@ pip install alibi-detect[prophet]
 ``````{dropdown} Install via conda-forge
 
 ```{div} sd-mb-3
-- To install the conda-forge version it is recommended to use [mamba](https://mamba.readthedocs.io/en/latest/), 
+- To install the conda-forge version it is recommended to use [mamba](https://mamba.readthedocs.io/en/stable/), 
 which can be installed to the *base* conda enviroment with:
 ```
 

@@ -18,14 +18,14 @@
 [#github-license]: https://github.com/SeldonIO/alibi-detect/blob/master/LICENSE
 [#pypi-package]: https://pypi.org/project/alibi-detect/
 [#conda-forge-package]: https://anaconda.org/conda-forge/alibi-detect
-[#docs-package]: https://docs.seldon.io/projects/alibi-detect/en/latest/
+[#docs-package]: https://docs.seldon.io/projects/alibi-detect/en/stable/
 [#build-status]: https://github.com/SeldonIO/alibi-detect/actions?query=workflow%3A%22CI%22
 [#slack-channel]: https://join.slack.com/t/seldondev/shared_invite/zt-vejg6ttd-ksZiQs3O_HOtPQsen_labg
 <!--- BADGES: END --->
 ---
 
 [Alibi Detect](https://github.com/SeldonIO/alibi-detect) is an open source Python library focused on **outlier**, **adversarial** and **drift** detection. The package aims to cover both online and offline detectors for tabular data, text, images and time series. Both **TensorFlow** and **PyTorch** backends are supported for drift detection.
-*  [Documentation](https://docs.seldon.io/projects/alibi-detect/en/latest/)
+*  [Documentation](https://docs.seldon.io/projects/alibi-detect/en/stable/)
 
 For more background on the importance of monitoring outliers and distributions in a production setting, check out [this talk](https://slideslive.com/38931758/monitoring-and-explainability-of-models-in-production?ref=speaker-37384-latest) from the *Challenges in Deploying and Monitoring Machine Learning Systems* ICML 2020 workshop, based on the paper [Monitoring and explainability of models in production](https://arxiv.org/abs/2007.06299) and referencing Alibi Detect.
 
@@ -93,7 +93,7 @@ The package, `alibi-detect` can be installed from:
 
 ### With conda
 
-To install from [conda-forge](https://conda-forge.org/) it is recommended to use [mamba](https://mamba.readthedocs.io/en/latest/), 
+To install from [conda-forge](https://conda-forge.org/) it is recommended to use [mamba](https://mamba.readthedocs.io/en/stable/), 
 which can be installed to the *base* conda enviroment with:
 
 ```bash
@@ -113,7 +113,7 @@ conda install mamba -n base -c conda-forge
   ```
 
 ### Usage
-We will use the [VAE outlier detector](https://docs.seldon.io/projects/alibi-detect/en/latest/od/methods/vae.html) to illustrate the API.
+We will use the [VAE outlier detector](https://docs.seldon.io/projects/alibi-detect/en/stable/od/methods/vae.html) to illustrate the API.
 
 ```python
 from alibi_detect.od import OutlierVAE
@@ -132,7 +132,7 @@ save_detector(od, filepath)
 od = load_detector(filepath)
 ```
 
-The predictions are returned in a dictionary with as keys `meta` and `data`. `meta` contains the detector's metadata while `data` is in itself a dictionary with the actual predictions. It contains the outlier, adversarial or drift scores and thresholds as well as the predictions whether instances are e.g. outliers or not. The exact details can vary slightly from method to method, so we encourage the reader to become familiar with the [types of algorithms supported](https://docs.seldon.io/projects/alibi-detect/en/latest/overview/algorithms.html).
+The predictions are returned in a dictionary with as keys `meta` and `data`. `meta` contains the detector's metadata while `data` is in itself a dictionary with the actual predictions. It contains the outlier, adversarial or drift scores and thresholds as well as the predictions whether instances are e.g. outliers or not. The exact details can vary slightly from method to method, so we encourage the reader to become familiar with the [types of algorithms supported](https://docs.seldon.io/projects/alibi-detect/en/stable/overview/algorithms.html).
 
 ## Supported Algorithms
 
@@ -214,92 +214,92 @@ cd = MMDDrift(x_ref, backend='tensorflow', p_val=.05, preprocess_fn=preprocess_f
 preds = cd.predict(x)
 ```
 
-Check the example notebooks (e.g. [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_mmd_cifar10.html), [movie reviews](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_text_imdb.html)) for more details.
+Check the example notebooks (e.g. [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/cd_mmd_cifar10.html), [movie reviews](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/cd_text_imdb.html)) for more details.
 
 ### Reference List
 
 #### Outlier Detection
 
-- [Isolation Forest](https://docs.seldon.io/projects/alibi-detect/en/latest/od/methods/iforest.html) ([FT Liu et al., 2008](https://cs.nju.edu.cn/zhouzh/zhouzh.files/publication/icdm08b.pdf))
-   - Example: [Network Intrusion](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/od_if_kddcup.html)
+- [Isolation Forest](https://docs.seldon.io/projects/alibi-detect/en/stable/od/methods/iforest.html) ([FT Liu et al., 2008](https://cs.nju.edu.cn/zhouzh/zhouzh.files/publication/icdm08b.pdf))
+   - Example: [Network Intrusion](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/od_if_kddcup.html)
 
-- [Mahalanobis Distance](https://docs.seldon.io/projects/alibi-detect/en/latest/od/methods/mahalanobis.html) ([Mahalanobis, 1936](https://insa.nic.in/writereaddata/UpLoadedFiles/PINSA/Vol02_1936_1_Art05.pdf))
-   - Example: [Network Intrusion](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/od_mahalanobis_kddcup.html)
+- [Mahalanobis Distance](https://docs.seldon.io/projects/alibi-detect/en/stable/od/methods/mahalanobis.html) ([Mahalanobis, 1936](https://insa.nic.in/writereaddata/UpLoadedFiles/PINSA/Vol02_1936_1_Art05.pdf))
+   - Example: [Network Intrusion](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/od_mahalanobis_kddcup.html)
 
-- [Auto-Encoder (AE)](https://docs.seldon.io/projects/alibi-detect/en/latest/od/methods/ae.html)
-   - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/od_ae_cifar10.html)
+- [Auto-Encoder (AE)](https://docs.seldon.io/projects/alibi-detect/en/stable/od/methods/ae.html)
+   - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/od_ae_cifar10.html)
 
-- [Variational Auto-Encoder (VAE)](https://docs.seldon.io/projects/alibi-detect/en/latest/od/methods/vae.html) ([Kingma et al., 2013](https://arxiv.org/abs/1312.6114))
-   - Examples: [Network Intrusion](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/od_vae_kddcup.html), [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/od_vae_cifar10.html)
+- [Variational Auto-Encoder (VAE)](https://docs.seldon.io/projects/alibi-detect/en/stable/od/methods/vae.html) ([Kingma et al., 2013](https://arxiv.org/abs/1312.6114))
+   - Examples: [Network Intrusion](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/od_vae_kddcup.html), [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/od_vae_cifar10.html)
 
-- [Auto-Encoding Gaussian Mixture Model (AEGMM)](https://docs.seldon.io/projects/alibi-detect/en/latest/od/methods/aegmm.html) ([Zong et al., 2018](https://openreview.net/forum?id=BJJLHbb0-))
-   - Example: [Network Intrusion](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/od_aegmm_kddcup.html)
+- [Auto-Encoding Gaussian Mixture Model (AEGMM)](https://docs.seldon.io/projects/alibi-detect/en/stable/od/methods/aegmm.html) ([Zong et al., 2018](https://openreview.net/forum?id=BJJLHbb0-))
+   - Example: [Network Intrusion](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/od_aegmm_kddcup.html)
 
-- [Variational Auto-Encoding Gaussian Mixture Model (VAEGMM)](https://docs.seldon.io/projects/alibi-detect/en/latest/od/methods/vaegmm.html)
-   - Example: [Network Intrusion](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/od_aegmm_kddcup.html)
+- [Variational Auto-Encoding Gaussian Mixture Model (VAEGMM)](https://docs.seldon.io/projects/alibi-detect/en/stable/od/methods/vaegmm.html)
+   - Example: [Network Intrusion](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/od_aegmm_kddcup.html)
      
-- [Likelihood Ratios](https://docs.seldon.io/projects/alibi-detect/en/latest/od/methods/llr.html) ([Ren et al., 2019](https://arxiv.org/abs/1906.02845))
-   - Examples: [Genome](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/od_llr_genome.html), [Fashion-MNIST vs. MNIST](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/od_llr_mnist.html)
+- [Likelihood Ratios](https://docs.seldon.io/projects/alibi-detect/en/stable/od/methods/llr.html) ([Ren et al., 2019](https://arxiv.org/abs/1906.02845))
+   - Examples: [Genome](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/od_llr_genome.html), [Fashion-MNIST vs. MNIST](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/od_llr_mnist.html)
 
-- [Prophet Time Series Outlier Detector](https://docs.seldon.io/projects/alibi-detect/en/latest/od/methods/prophet.html) ([Taylor et al., 2018](https://peerj.com/preprints/3190/))
-   - Example: [Weather Forecast](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/od_prophet_weather.html)
+- [Prophet Time Series Outlier Detector](https://docs.seldon.io/projects/alibi-detect/en/stable/od/methods/prophet.html) ([Taylor et al., 2018](https://peerj.com/preprints/3190/))
+   - Example: [Weather Forecast](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/od_prophet_weather.html)
   
-- [Spectral Residual Time Series Outlier Detector](https://docs.seldon.io/projects/alibi-detect/en/latest/od/methods/sr.html) ([Ren et al., 2019](https://arxiv.org/abs/1906.03821))
-   - Example: [Synthetic Dataset](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/od_sr_synth.html)
+- [Spectral Residual Time Series Outlier Detector](https://docs.seldon.io/projects/alibi-detect/en/stable/od/methods/sr.html) ([Ren et al., 2019](https://arxiv.org/abs/1906.03821))
+   - Example: [Synthetic Dataset](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/od_sr_synth.html)
 
-- [Sequence-to-Sequence (Seq2Seq) Outlier Detector](https://docs.seldon.io/projects/alibi-detect/en/latest/od/methods/seq2seq.html) ([Sutskever et al., 2014](https://papers.nips.cc/paper/5346-sequence-to-sequence-learning-with-neural-networks.pdf); [Park et al., 2017](https://arxiv.org/pdf/1711.00614.pdf))
-   - Examples: [ECG](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/od_seq2seq_ecg.html), [Synthetic Dataset](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/od_seq2seq_synth.html)
+- [Sequence-to-Sequence (Seq2Seq) Outlier Detector](https://docs.seldon.io/projects/alibi-detect/en/stable/od/methods/seq2seq.html) ([Sutskever et al., 2014](https://papers.nips.cc/paper/5346-sequence-to-sequence-learning-with-neural-networks.pdf); [Park et al., 2017](https://arxiv.org/pdf/1711.00614.pdf))
+   - Examples: [ECG](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/od_seq2seq_ecg.html), [Synthetic Dataset](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/od_seq2seq_synth.html)
   
 #### Adversarial Detection
 
-- [Adversarial Auto-Encoder](https://docs.seldon.io/projects/alibi-detect/en/latest/ad/methods/adversarialae.html) ([Vacanti and Van Looveren, 2020](https://arxiv.org/abs/2002.09364))
-   - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/ad_ae_cifar10.html)
+- [Adversarial Auto-Encoder](https://docs.seldon.io/projects/alibi-detect/en/stable/ad/methods/adversarialae.html) ([Vacanti and Van Looveren, 2020](https://arxiv.org/abs/2002.09364))
+   - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/ad_ae_cifar10.html)
 
-- [Model distillation](https://docs.seldon.io/projects/alibi-detect/en/latest/ad/methods/modeldistillation.html) 
-   - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_distillation_cifar10.html)
+- [Model distillation](https://docs.seldon.io/projects/alibi-detect/en/stable/ad/methods/modeldistillation.html) 
+   - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/cd_distillation_cifar10.html)
      
 #### Drift Detection
 
-- [Kolmogorov-Smirnov](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/ksdrift.html)
-   - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_ks_cifar10.html), [molecular graphs](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_mol.html), [movie reviews](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_text_imdb.html)
+- [Kolmogorov-Smirnov](https://docs.seldon.io/projects/alibi-detect/en/stable/cd/methods/ksdrift.html)
+   - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/cd_ks_cifar10.html), [molecular graphs](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/cd_mol.html), [movie reviews](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/cd_text_imdb.html)
 
-- [Cramér-von Mises](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/cvmdrift.html)
-  - Example: [Penguins](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_supervised_penguins.html)
+- [Cramér-von Mises](https://docs.seldon.io/projects/alibi-detect/en/stable/cd/methods/cvmdrift.html)
+  - Example: [Penguins](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/cd_supervised_penguins.html)
 
-- [Fisher's Exact Test](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/fetdrift.html)
-  - Example: [Penguins](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_supervised_penguins.html)
+- [Fisher's Exact Test](https://docs.seldon.io/projects/alibi-detect/en/stable/cd/methods/fetdrift.html)
+  - Example: [Penguins](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/cd_supervised_penguins.html)
 
-- [Least-Squares Density Difference](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/lsdddrift.html) ([Bu et al, 2016](https://alippi.faculty.polimi.it/articoli/A%20Pdf%20free%20Change%20Detection%20Test%20Based%20on%20Density%20Difference%20Estimation.pdf))
+- [Least-Squares Density Difference](https://docs.seldon.io/projects/alibi-detect/en/stable/cd/methods/lsdddrift.html) ([Bu et al, 2016](https://alippi.faculty.polimi.it/articoli/A%20Pdf%20free%20Change%20Detection%20Test%20Based%20on%20Density%20Difference%20Estimation.pdf))
 
-- [Maximum Mean Discrepancy](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/mmddrift.html) ([Gretton et al, 2012](http://jmlr.csail.mit.edu/papers/v13/gretton12a.html))
-   - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_mmd_cifar10.html), [molecular graphs](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_mol.html), [movie reviews](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_text_imdb.html), [Amazon reviews](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_text_amazon.html)
+- [Maximum Mean Discrepancy](https://docs.seldon.io/projects/alibi-detect/en/stable/cd/methods/mmddrift.html) ([Gretton et al, 2012](http://jmlr.csail.mit.edu/papers/v13/gretton12a.html))
+   - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/cd_mmd_cifar10.html), [molecular graphs](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/cd_mol.html), [movie reviews](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/cd_text_imdb.html), [Amazon reviews](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/cd_text_amazon.html)
 
-- [Learned Kernel MMD](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/learnedkerneldrift.html) ([Liu et al, 2020](https://arxiv.org/abs/2002.09116))
-  - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_clf_cifar10.html)
+- [Learned Kernel MMD](https://docs.seldon.io/projects/alibi-detect/en/stable/cd/methods/learnedkerneldrift.html) ([Liu et al, 2020](https://arxiv.org/abs/2002.09116))
+  - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/cd_clf_cifar10.html)
 
-- [Context-aware MMD](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/contextmmddrift.html) ([Cobb and Van Looveren, 2022](https://arxiv.org/abs/2203.08644))
-  - Example: [ECG](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_context_ecg.html), [news topics](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_context_20newsgroup.html)
+- [Context-aware MMD](https://docs.seldon.io/projects/alibi-detect/en/stable/cd/methods/contextmmddrift.html) ([Cobb and Van Looveren, 2022](https://arxiv.org/abs/2203.08644))
+  - Example: [ECG](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/cd_context_ecg.html), [news topics](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/cd_context_20newsgroup.html)
 
-- [Chi-Squared](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/chisquaredrift.html)
-   - Example: [Income Prediction](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_chi2ks_adult.html)
+- [Chi-Squared](https://docs.seldon.io/projects/alibi-detect/en/stable/cd/methods/chisquaredrift.html)
+   - Example: [Income Prediction](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/cd_chi2ks_adult.html)
 
-- [Mixed-type tabular data](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/tabulardrift.html)
-   - Example: [Income Prediction](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_chi2ks_adult.html)
+- [Mixed-type tabular data](https://docs.seldon.io/projects/alibi-detect/en/stable/cd/methods/tabulardrift.html)
+   - Example: [Income Prediction](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/cd_chi2ks_adult.html)
 
-- [Classifier](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/classifierdrift.html) ([Lopez-Paz and Oquab, 2017](https://openreview.net/forum?id=SJkXfE5xx))
-   - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_clf_cifar10.html), [Amazon reviews](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_text_amazon.html)
+- [Classifier](https://docs.seldon.io/projects/alibi-detect/en/stable/cd/methods/classifierdrift.html) ([Lopez-Paz and Oquab, 2017](https://openreview.net/forum?id=SJkXfE5xx))
+   - Example: [CIFAR10](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/cd_clf_cifar10.html), [Amazon reviews](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/cd_text_amazon.html)
 
-- [Spot-the-diff](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/spotthediffdrift.html) (adaptation of [Jitkrittum et al, 2016](https://arxiv.org/abs/1605.06796))
-  - Example [MNIST and Wine quality](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/spot_the_diff_mnist_win.html)
+- [Spot-the-diff](https://docs.seldon.io/projects/alibi-detect/en/stable/cd/methods/spotthediffdrift.html) (adaptation of [Jitkrittum et al, 2016](https://arxiv.org/abs/1605.06796))
+  - Example [MNIST and Wine quality](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/spot_the_diff_mnist_win.html)
 
-- [Classifier and Regressor Uncertainty](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/modeluncdrift.html)
-   - Example: [CIFAR10 and Wine](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_model_unc_cifar10_wine.html), [molecular graphs](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_mol.html)
+- [Classifier and Regressor Uncertainty](https://docs.seldon.io/projects/alibi-detect/en/stable/cd/methods/modeluncdrift.html)
+   - Example: [CIFAR10 and Wine](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/cd_model_unc_cifar10_wine.html), [molecular graphs](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/cd_mol.html)
 
-- [Online Maximum Mean Discrepancy](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/onlinemmddrift.html)
-  - Example: [Wine Quality](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_online_wine.html), [Camelyon medical imaging](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_online_camelyon.html)
+- [Online Maximum Mean Discrepancy](https://docs.seldon.io/projects/alibi-detect/en/stable/cd/methods/onlinemmddrift.html)
+  - Example: [Wine Quality](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/cd_online_wine.html), [Camelyon medical imaging](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/cd_online_camelyon.html)
   
-- [Online Least-Squares Density Difference](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/onlinemmddrift.html) ([Bu et al, 2017](https://ieeexplore.ieee.org/abstract/document/7890493))
-  - Example: [Wine Quality](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_online_wine.html)
+- [Online Least-Squares Density Difference](https://docs.seldon.io/projects/alibi-detect/en/stable/cd/methods/onlinemmddrift.html) ([Bu et al, 2017](https://ieeexplore.ieee.org/abstract/document/7890493))
+  - Example: [Wine Quality](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/cd_online_wine.html)
 
 
 ## Datasets
@@ -378,9 +378,9 @@ Models and/or building blocks that can be useful outside of outlier, adversarial
 
 ## Integrations
 
-Alibi-detect is integrated in the open source machine learning model deployment platform [Seldon Core](https://docs.seldon.io/projects/seldon-core/en/latest/index.html) and model serving framework [KFServing](https://github.com/kubeflow/kfserving).
+Alibi-detect is integrated in the open source machine learning model deployment platform [Seldon Core](https://docs.seldon.io/projects/seldon-core/en/stable/index.html) and model serving framework [KFServing](https://github.com/kubeflow/kfserving).
 
-- **Seldon Core**: [outlier](https://docs.seldon.io/projects/seldon-core/en/latest/analytics/outlier_detection.html) and [drift](https://docs.seldon.io/projects/seldon-core/en/latest/analytics/drift_detection.html) detection worked examples.
+- **Seldon Core**: [outlier](https://docs.seldon.io/projects/seldon-core/en/stable/analytics/outlier_detection.html) and [drift](https://docs.seldon.io/projects/seldon-core/en/stable/analytics/drift_detection.html) detection worked examples.
 
 - **KFServing**: [outlier](https://github.com/kubeflow/kfserving/tree/master/docs/samples/outlier-detection/alibi-detect/cifar10) and [drift](https://github.com/kubeflow/kfserving/tree/master/docs/samples/drift-detection/alibi-detect/cifar10) detection examples.
 
@@ -395,8 +395,8 @@ BibTeX entry:
   title = {Alibi Detect: Algorithms for outlier, adversarial and drift detection},
   author = {Van Looveren, Arnaud and Klaise, Janis and Vacanti, Giovanni and Cobb, Oliver and Scillitoe, Ashley and Samoilescu, Robert},
   url = {https://github.com/SeldonIO/alibi-detect},
-  version = {0.9.0},
-  date = {2022-03-17},
+  version = {0.9.1},
+  date = {2022-04-01},
   year = {2019}
 }
 ```

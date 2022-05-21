@@ -136,7 +136,7 @@ class ContextMMDDrift:
         """
         return self._detector.predict(x, c, return_p_val, return_distance, return_coupling)
 
-    def score(self, x: Union[np.ndarray, list], c: np.ndarray) -> Tuple[float, float, np.ndarray, Tuple]:
+    def score(self, x: Union[np.ndarray, list], c: np.ndarray) -> Tuple[float, float, float, Tuple]:
         """
         Compute the MMD based conditional test statistic, and perform a conditional permutation test to obtain a
         p-value representing the test statistic's extremity under the null hypothesis.
@@ -150,7 +150,8 @@ class ContextMMDDrift:
 
         Returns
         -------
-        p-value obtained from the conditional permutation test, the conditional MMD test statistic, the permuted
-        test statistics, and a tuple containing the coupling matrices (Wref,ref, Wtest,test, Wref,test).
+        p-value obtained from the conditional permutation test, the conditional MMD test statistic, the test
+        statistic threshold above which drift is flagged, and a tuple containing the coupling matrices
+        (W_{ref,ref}, W_{test,test}, W_{ref,test}).
         """
         return self._detector.score(x, c)

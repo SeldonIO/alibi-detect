@@ -45,6 +45,7 @@ class ClassifierDrift:
             dataloader: Optional[Callable] = None,
             use_calibration: bool = False,
             calibration_kwargs: Optional[dict] = None,
+            use_oob: bool = False,
             data_type: Optional[str] = None
     ) -> None:
         """
@@ -125,6 +126,8 @@ class ClassifierDrift:
             Optional additional kwargs for calibration. Only relevant for 'sklearn' backend.
             See https://scikit-learn.org/stable/modules/generated/sklearn.calibration.CalibratedClassifierCV.html
             for more details.
+        use_oob
+            Whether to use out-of-bag(OOB) predictions. Supported only for `RandomForestClassifier`.
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
@@ -146,13 +149,13 @@ class ClassifierDrift:
         [kwargs.pop(k, None) for k in pop_kwargs]
 
         if backend == 'tensorflow':
-            pop_kwargs = ['device', 'dataloader', 'use_calibration', 'calibration_kwargs']
+            pop_kwargs = ['device', 'dataloader', 'use_calibration', 'calibration_kwargs', 'use_oob']
             [kwargs.pop(k, None) for k in pop_kwargs]
             if dataset is None:
                 kwargs.update({'dataset': TFDataset})
             self._detector = ClassifierDriftTF(*args, **kwargs)  # type: ignore
         elif backend == 'pytorch':
-            pop_kwargs = ['use_calibration', 'calibration_kwargs']
+            pop_kwargs = ['use_calibration', 'calibration_kwargs', 'use_oob']
             [kwargs.pop(k, None) for k in pop_kwargs]
             if dataset is None:
                 kwargs.update({'dataset': TorchDataset})

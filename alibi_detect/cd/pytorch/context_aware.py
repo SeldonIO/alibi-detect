@@ -3,6 +3,7 @@ import numpy as np
 import torch
 from typing import Callable, Dict, Optional, Tuple, Union
 from alibi_detect.cd.base import BaseContextMMDDrift
+from alibi_detect.utils.pytorch import get_device
 from alibi_detect.utils.pytorch.kernels import GaussianRBF
 from alibi_detect.cd._domain_clf import _SVCDomainClf
 from tqdm import tqdm
@@ -94,12 +95,7 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
         self.meta.update({'backend': 'pytorch'})
 
         # set device
-        if device is None or device.lower() in ['gpu', 'cuda']:
-            self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-            if self.device.type == 'cpu':
-                print('No GPU detected, fall back on CPU.')
-        else:
-            self.device = torch.device('cpu')
+        self.device = get_device(device)
 
         # initialize kernel
         self.x_kernel = x_kernel(init_sigma_fn=_sigma_median_diag) if x_kernel == GaussianRBF else x_kernel
@@ -109,7 +105,7 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
         self.clf = _SVCDomainClf(self.c_kernel)
 
     def score(self,  # type: ignore[override]
-              x: Union[np.ndarray, list], c: np.ndarray) -> Tuple[float, float, np.ndarray, Tuple]:
+              x: Union[np.ndarray, list], c: np.ndarray) -> Tuple[float, float, float, Tuple]:
         """
         Compute the MMD based conditional test statistic, and perform a conditional permutation test to obtain a
         p-value representing the test statistic's extremity under the null hypothesis.
@@ -123,8 +119,9 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
 
         Returns
         -------
-        p-value obtained from the conditional permutation test, the conditional MMD test statistic, the permuted
-        test statistics, and a tuple containing the coupling matrices (Wref,ref, Wtest,test, Wref,test).
+        p-value obtained from the conditional permutation test, the conditional MMD test statistic, the test
+        statistic threshold above which drift is flagged, and a tuple containing the coupling matrices
+        (W_{ref,ref}, W_{test,test}, W_{ref,test}).
         """
         x_ref, x = self.preprocess(x)
         x_ref = torch.from_numpy(x_ref).to(self.device)  # type: ignore[assignment]
@@ -165,7 +162,11 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
         p_val = (stat <= permuted_stats).float().mean()
         coupling = (coupling_xx.numpy(), coupling_yy.numpy(), coupling_xy.numpy())
 
-        return p_val.numpy().item(), stat.numpy().item(), permuted_stats.numpy(), coupling
+        # compute distance threshold
+        idx_threshold = int(self.p_val * len(permuted_stats))
+        distance_threshold = torch.sort(permuted_stats, descending=True).values[idx_threshold]
+
+        return p_val.numpy().item(), stat.numpy().item(), distance_threshold.numpy(), coupling
 
     def _cmmd(self, K: torch.Tensor, L: torch.Tensor, bools: torch.Tensor, L_held: torch.Tensor = None) \
             -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:

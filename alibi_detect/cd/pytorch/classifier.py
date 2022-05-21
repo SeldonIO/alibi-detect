@@ -1,6 +1,5 @@
 from copy import deepcopy
 from functools import partial
-import logging
 import numpy as np
 import torch
 import torch.nn as nn
@@ -9,10 +8,9 @@ from scipy.special import softmax
 from typing import Callable, Dict, Optional, Union, Tuple
 from alibi_detect.cd.base import BaseClassifierDrift
 from alibi_detect.models.pytorch.trainer import trainer
+from alibi_detect.utils.pytorch import get_device
 from alibi_detect.utils.pytorch.data import TorchDataset
 from alibi_detect.utils.pytorch.prediction import predict_batch
-
-logger = logging.getLogger(__name__)
 
 
 class ClassifierDriftTorch(BaseClassifierDrift):
@@ -130,12 +128,7 @@ class ClassifierDriftTorch(BaseClassifierDrift):
         self.meta.update({'backend': 'pytorch'})
 
         # set device, define model and training kwargs
-        if device is None or device.lower() in ['gpu', 'cuda']:
-            self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-            if self.device.type == 'cpu':
-                logger.warning('No GPU detected, fall back on CPU.')
-        else:
-            self.device = torch.device('cpu')
+        self.device = get_device(device)
         self.original_model = model
         self.model = deepcopy(model)
 
@@ -168,7 +161,7 @@ class ClassifierDriftTorch(BaseClassifierDrift):
         """
         x_ref, x = self.preprocess(x)
         n_ref, n_cur = len(x_ref), len(x)
-        x, y, splits = self.get_splits(x_ref, x)
+        x, y, splits = self.get_splits(x_ref, x)  # type: ignore
 
         # iterate over folds: train a new model for each fold and make out-of-fold (oof) predictions
         preds_oof_list, idx_oof_list = [], []

@@ -3,6 +3,7 @@ import numpy as np
 import torch
 from typing import Any, Callable, Optional, Union
 from alibi_detect.cd.base_online import BaseMultiDriftOnline
+from alibi_detect.utils.pytorch import get_device
 from alibi_detect.utils.pytorch.kernels import GaussianRBF
 from alibi_detect.utils.pytorch import zero_diag, quantile
 
@@ -70,13 +71,8 @@ class MMDDriftOnlineTorch(BaseMultiDriftOnline):
         )
         self.meta.update({'backend': 'pytorch'})
 
-        # set backend
-        if device is None or device.lower() in ['gpu', 'cuda']:
-            self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-            if self.device.type == 'cpu':
-                print('No GPU detected, fall back on CPU.')
-        else:
-            self.device = torch.device('cpu')
+        # set device
+        self.device = get_device(device)
 
         # initialize kernel
         sigma = torch.from_numpy(sigma).to(self.device) if isinstance(sigma,  # type: ignore[assignment]
