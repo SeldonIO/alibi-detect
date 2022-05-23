@@ -151,11 +151,7 @@ class DriftConfigMixin:
     def _set_config(self, inputs):  # TODO - move to BaseDetector once config save/load implemented for non-drift
         # Set config metadata
         name = self.__class__.__name__
-        # strip off any backend suffix
-        backends = ['TF', 'Torch', 'Sklearn']
-        for backend in backends:
-            if name.endswith(backend):
-                name = name[:-len(backend)]
+
         # Init config dict
         self.config: Dict[str, Any] = {
             'name': name,
