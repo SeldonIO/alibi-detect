@@ -224,12 +224,11 @@ def nlp_embedding_and_tokenizer(model_name, max_len, uae, backend):
     return tokenizer, embedding, max_len, enc_dim
 
 
-def preprocess_dummy(x: np.ndarray):
+def preprocess_simple(x: np.ndarray):
     """
-    Dummy function to test serialization of generic Python function within preprocess_fn.
+    Simple function to test serialization of generic Python function within preprocess_fn.
     """
-    assert isinstance(x, np.ndarray)
-    return x
+    return x*2.0
 
 
 @fixture
@@ -239,10 +238,10 @@ def preprocess_nlp(embedding, tokenizer, max_len, backend):
     """
     if backend == 'tensorflow':
         preprocess_fn = partial(preprocess_drift_tf, model=embedding, tokenizer=tokenizer,
-                                max_len=max_len, preprocess_batch_fn=preprocess_dummy)
+                                max_len=max_len, preprocess_batch_fn=preprocess_simple)
     else:
         preprocess_fn = partial(preprocess_drift_pt, model=embedding, tokenizer=tokenizer, max_len=max_len,
-                                preprocess_batch_fn=preprocess_dummy)
+                                preprocess_batch_fn=preprocess_simple)
     return preprocess_fn
 
 
@@ -396,6 +395,7 @@ def test_save_mmddrift(data, kernel, preprocess_custom, backend, tmp_path, seed)
     assert preds['data']['p_val'] == preds_load['data']['p_val']
 
 
+# @parametrize('preprocess_fn', [preprocess_custom, preprocess_hiddenoutput])
 @parametrize('preprocess_at_init', [True, False])
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
 def test_save_lsdddrift(data, preprocess_at_init, backend, tmp_path, seed):
@@ -404,13 +404,17 @@ def test_save_lsdddrift(data, preprocess_at_init, backend, tmp_path, seed):
 
     Detector is saved and then loaded, with assertions checking that the reinstantiated detector is equivalent.
     """
+    preprocess_fn = preprocess_simple
+    # TODO - TensorFlow based preprocessors currently cause in-deterministic behaviour with LSDD permutations. Replace
+    # preprocess_simple with parametrized preprocess_fn's once above issue resolved.
+
     # Init detector and make predictions
     X_ref, X_h0 = data
     with fixed_seed(seed):  # Init and predict with a fixed random state
         cd = LSDDDrift(X_ref,
                        p_val=P_VAL,
                        backend=backend,
-                       preprocess_fn=preprocess_dummy,  # TODO - use of preprocess_custom (tf model) breaks determinism.
+                       preprocess_fn=preprocess_fn,
                        preprocess_at_init=preprocess_at_init,
                        n_permutations=N_PERMUTATIONS
                        )
@@ -423,11 +427,13 @@ def test_save_lsdddrift(data, preprocess_at_init, backend, tmp_path, seed):
         preds_load = cd_load.predict(X_h0)
 
     # assertions
+    if preprocess_at_init:
+        np.testing.assert_array_almost_equal(cd_load.get_config()['x_ref'], preprocess_fn(X_ref), 5)
+    else:
+        np.testing.assert_array_almost_equal(cd_load.get_config()['x_ref'], X_ref, 5)
     np.testing.assert_array_almost_equal(cd._detector.x_ref, cd_load._detector.x_ref, 5)
-    np.testing.assert_array_almost_equal(cd_load.get_config()['x_ref'], X_ref, 5)
     assert cd_load._detector.n_permutations == N_PERMUTATIONS
     assert cd_load._detector.p_val == P_VAL
-    assert cd_load._detector.preprocess_fn.func == cd._detector.preprocess_fn
     assert preds['data']['distance'] == pytest.approx(preds_load['data']['distance'], abs=1e-6)
     assert preds['data']['p_val'] == pytest.approx(preds_load['data']['p_val'], abs=1e-6)
 
@@ -648,7 +654,7 @@ def test_save_contextmmddrift(data, kernel, backend, tmp_path, seed):
                              C_ref,
                              p_val=P_VAL,
                              backend=backend,
-                             preprocess_fn=preprocess_dummy,
+                             preprocess_fn=preprocess_simple,
                              n_permutations=N_PERMUTATIONS,
                              preprocess_at_init=True,
                              x_kernel=kernel,
@@ -663,12 +669,12 @@ def test_save_contextmmddrift(data, kernel, backend, tmp_path, seed):
         preds_load = cd_load.predict(X_h0, C_h0)
 
     # assertions
-    np.testing.assert_array_equal(X_ref, cd_load._detector.x_ref)
+    np.testing.assert_array_equal(preprocess_simple(X_ref), cd_load._detector.x_ref)
     np.testing.assert_array_equal(C_ref, cd_load._detector.c_ref)
     assert cd_load._detector.n_permutations == N_PERMUTATIONS
     assert cd_load._detector.p_val == P_VAL
     assert isinstance(cd_load._detector.preprocess_fn, Callable)
-    assert cd_load._detector.preprocess_fn.func.__name__ == 'preprocess_dummy'
+    assert cd_load._detector.preprocess_fn.func.__name__ == 'preprocess_simple'
 #    assert cd._detector.x_kernel.sigma == cd_load._detector.x_kernel.sigma
     assert cd._detector.c_kernel.sigma == cd_load._detector.c_kernel.sigma
     assert cd._detector.x_kernel.init_sigma_fn == cd_load._detector.x_kernel.init_sigma_fn

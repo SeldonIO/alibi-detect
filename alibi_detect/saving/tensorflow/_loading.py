@@ -149,7 +149,6 @@ def load_kernel_config(cfg: dict) -> Callable:
     cfg
         A kernel config dict. (see pydantic schema's).
 
-    print(cfg_kernel)
     Returns
     -------
     The kernel.
@@ -644,7 +643,6 @@ def init_ad_md(state_dict: Dict,
     -------
     Initialized ModelDistillation instance.
     """
-    print(model)
     ad = ModelDistillation(threshold=state_dict['threshold'],
                            distilled_model=distilled_model,
                            model=model,
