@@ -220,7 +220,8 @@ def write_config(cfg: dict, filepath: Union[str, os.PathLike]):
     cfg = _path2str(cfg)
     # Validatre config before final tweaks
     validate_config(cfg)  # Must validate here as replacing None w/ str will break validation
-    # Replace None with "None", and dicts with integer keys with str keys (TODO: S2C depending on toml library updates)
+    # Replace None with "None", and dicts with integer keys with str keys
+    # TODO: Subject to change depending on toml library updates
     cfg = _replace(cfg, None, "None")  # Note: None replaced with "None" as None/null not valid TOML
     cfg = _int2str_keys(cfg)
     # Write to TOML file

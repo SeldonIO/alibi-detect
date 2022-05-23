@@ -133,7 +133,7 @@ class LSDDDriftTF(BaseLSDDDrift):
         """
         x_ref, x = self.preprocess(x)
 
-        if self.preprocess_fn is not None and self.preprocess_at_init is False and not self.x_ref_preprocessed:
+        if self.preprocess_fn is not None and not self.preprocess_at_init and not self.x_ref_preprocessed:
             self._configure_normalization(x_ref)
             x_ref = self._normalize(x_ref)
             self._initialize_kernel(x_ref)
