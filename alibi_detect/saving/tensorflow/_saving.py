@@ -77,7 +77,7 @@ def save_model_config(model: Callable,
     if model is not None:
         filepath = base_path.joinpath(local_path)
         save_model(model, filepath=filepath, save_dir='model')
-        cfg_model = {'src': local_path.joinpath('model').as_posix()}
+        cfg_model = {'src': local_path.joinpath('model')}
     return cfg_model, cfg_embed
 
 
@@ -137,10 +137,10 @@ def save_embedding_config(embed: TransformerEmbedding,
         filepath.mkdir(parents=True, exist_ok=True)
 
     # Populate config dict
-    cfg_embed = {}
+    cfg_embed = {}  # type: Dict[str, Any]
     cfg_embed.update({'type': embed.emb_type})
     cfg_embed.update({'layers': embed.hs_emb.keywords['layers']})
-    cfg_embed.update({'src': local_path.as_posix()})
+    cfg_embed.update({'src': local_path})
 
     # Save embedding model
     logger.info('Saving embedding model to {}.'.format(filepath))

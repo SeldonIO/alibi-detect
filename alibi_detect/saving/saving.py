@@ -361,7 +361,7 @@ def _path2str(cfg: dict, absolute: bool = False) -> dict:
         elif isinstance(v, Path):
             if absolute:
                 v = v.resolve()
-            cfg.update({k: str(v)})
+            cfg.update({k: str(v.as_posix())})
     return cfg
 
 
@@ -449,7 +449,7 @@ def _save_tokenizer_config(tokenizer: PreTrainedTokenizerBase,
     cfg_token = {}
     logger.info('Saving tokenizer to {}.'.format(filepath))
     tokenizer.save_pretrained(filepath)
-    cfg_token.update({'src': path.joinpath('tokenizer').as_posix()})
+    cfg_token.update({'src': path.joinpath('tokenizer')})
     return cfg_token
 
 
