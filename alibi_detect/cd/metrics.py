@@ -18,7 +18,8 @@ def eval_calibration(
         n_samples: int = 500,
         qq_plot: bool = False,
         hist_plot: bool = False,
-        random_seed: Optional[Union[int, np.random.Generator]] = None
+        random_seed: Optional[Union[int, np.random.Generator]] = None,
+        verbose: bool = True
 ) -> np.ndarray:
     """
     TODO
@@ -54,6 +55,8 @@ def eval_calibration(
     random_seed
         Random seed (or :class:`~np.random.Generator`) to use for random sampling. If `None`, then fresh,
         unpredictable entropy will be pulled from the OS.
+    verbose
+        TODO
 
     Returns
     -------
@@ -77,7 +80,8 @@ def eval_calibration(
 
     # Main experiment loop
     p_vals_list = []
-    for _ in tqdm(range(n_runs)):
+    runs = tqdm(range(n_runs)) if verbose else range(n_runs)
+    for _ in runs:
         # Subsample data
         idx = rng.choice(n_data, size=n_data, replace=False)
         idx_ref, idx_nodrift = idx[:n_samples], idx[n_samples:2*n_samples]
@@ -125,7 +129,8 @@ def eval_test_power(
     n_samples: Tuple[int, int] = (500, 500),
     return_auc: bool = True,
     power_plot: bool = False,
-    random_seed: Optional[Union[int, np.random.Generator]] = None
+    random_seed: Optional[Union[int, np.random.Generator]] = None,
+    verbose: bool = False,
 ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
     """
 
@@ -159,7 +164,8 @@ def eval_test_power(
 
     # Main experiment loop
     power = np.zeros(len(sig_levels), dtype=float)
-    for _ in tqdm(range(n_runs)):
+    runs = tqdm(range(n_runs)) if verbose else range(n_runs)
+    for _ in runs:
         # Subsample data
         idx_ref = rng.choice(n_ref, size=n_samples[0], replace=False)
         idx_drift = rng.choice(n_drift, size=n_samples[1], replace=False)
