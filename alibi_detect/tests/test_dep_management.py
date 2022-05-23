@@ -57,9 +57,8 @@ def test_cd_dependencies(opt_dep):
     for dependency, relations in []:
         dependency_map[dependency] = relations
     if opt_dep != 'all':
-        with pytest.raises(ImportError):
-            from alibi_detect import cd
-            check_correct_dependencies(cd, dependency_map, opt_dep)
+        from alibi_detect import cd
+        check_correct_dependencies(cd, dependency_map, opt_dep)
 
 
 def test_ad_dependencies(opt_dep):
@@ -67,12 +66,14 @@ def test_ad_dependencies(opt_dep):
     """
 
     dependency_map = defaultdict(lambda: ['default'])
-    for dependency, relations in []:
+    for dependency, relations in [
+            ('AdversarialAE', ['tf-tfp']),
+            ('ModelDistillation', ['tf-tfp'])
+            ]:
         dependency_map[dependency] = relations
     if opt_dep != 'all':
-        with pytest.raises(ImportError):
-            from alibi_detect import ad
-            check_correct_dependencies(ad, dependency_map, opt_dep)
+        from alibi_detect import ad
+        check_correct_dependencies(ad, dependency_map, opt_dep)
 
 
 def test_od_dependencies(opt_dep):
@@ -80,12 +81,18 @@ def test_od_dependencies(opt_dep):
     """
 
     dependency_map = defaultdict(lambda: ['default'])
-    for dependency, relations in []:
+    for dependency, relations in [
+            ('LLR', ['tf-tfp']),
+            ('OutlierVAE', ['tf-tfp']),
+            ('OutlierVAEGMM', ['tf-tfp']),
+            ('OutlierAE', ['tensorflow', 'tf-tfp']),
+            ('OutlierAEGMM', ['tf-tfp']),
+            ('OutlierSeq2Seq', ['tensorflow', 'tf-tfp']),
+            ]:
         dependency_map[dependency] = relations
     if opt_dep != 'all':
-        with pytest.raises(ImportError):
-            from alibi_detect import od
-            check_correct_dependencies(od, dependency_map, opt_dep)
+        from alibi_detect import od
+        check_correct_dependencies(od, dependency_map, opt_dep)
 
 
 def test_tensorflow_model_dependencies(opt_dep):
@@ -93,12 +100,21 @@ def test_tensorflow_model_dependencies(opt_dep):
     """
 
     dependency_map = defaultdict(lambda: ['default'])
-    for dependency, relations in []:
+    for dependency, relations in [
+            ("AE", ['tensorflow', 'tf-tfp']),
+            ("AEGMM", ['tensorflow', 'tf-tfp']),
+            ("Seq2Seq", ['tensorflow', 'tf-tfp']),
+            ("VAE", ['tensorflow', 'tf-tfp']),
+            ("VAEGMM", ['tensorflow', 'tf-tfp']),
+            ("resnet", ['tensorflow', 'tf-tfp']),
+            ("PixelCNN", ['tf-tfp']),
+            ("TransformerEmbedding", ['tensorflow', 'tf-tfp']),
+            ("trainer", ['tensorflow', 'tf-tfp'])
+            ]:
         dependency_map[dependency] = relations
     if opt_dep != 'all':
-        with pytest.raises(ImportError):
-            from alibi_detect.models import tensorflow as tf_models
-            check_correct_dependencies(tf_models, dependency_map, opt_dep)
+        from alibi_detect.models import tensorflow as tf_models
+        check_correct_dependencies(tf_models, dependency_map, opt_dep)
 
 
 def test_torch_model_dependencies(opt_dep):
@@ -106,12 +122,14 @@ def test_torch_model_dependencies(opt_dep):
     """
 
     dependency_map = defaultdict(lambda: ['default'])
-    for dependency, relations in []:
+    for dependency, relations in [
+            ("TransformerEmbedding", ['torch']),
+            ("trainer", ['torch']),
+            ]:
         dependency_map[dependency] = relations
     if opt_dep != 'all':
-        with pytest.raises(ImportError):
-            from alibi_detect.models import pytorch as torch_models
-            check_correct_dependencies(torch_models, dependency_map, opt_dep)
+        from alibi_detect.models import pytorch as torch_models
+        check_correct_dependencies(torch_models, dependency_map, opt_dep)
 
 
 def test_dataset_dependencies(opt_dep):
@@ -122,19 +140,17 @@ def test_dataset_dependencies(opt_dep):
     for dependency, relations in []:
         dependency_map[dependency] = relations
     if opt_dep != 'all':
-        with pytest.raises(ImportError):
-            from alibi_detect import datasets
-            check_correct_dependencies(datasets, dependency_map, opt_dep)
+        from alibi_detect import datasets
+        check_correct_dependencies(datasets, dependency_map, opt_dep)
 
 
-def test_utils_dependencies(opt_dep):
-    """Tests that the datasets module correctly protects against uninstalled optional dependencies.
-    """
-
-    dependency_map = defaultdict(lambda: ['default'])
-    for dependency, relations in []:
-        dependency_map[dependency] = relations
-    if opt_dep != 'all':
-        with pytest.raises(ImportError):
-            from alibi_detect import utils
-            check_correct_dependencies(utils, dependency_map, opt_dep)
+# def test_utils_dependencies(opt_dep):
+#     """Tests that the datasets module correctly protects against uninstalled optional dependencies.
+#     """
+#
+#     dependency_map = defaultdict(lambda: ['default'])
+#     for dependency, relations in []:
+#         dependency_map[dependency] = relations
+#     if opt_dep != 'all':
+#         from alibi_detect import utils
+#         check_correct_dependencies(utils, dependency_map, opt_dep)

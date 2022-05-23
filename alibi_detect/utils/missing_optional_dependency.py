@@ -14,7 +14,7 @@ err_msg_template = Template((
     "Attempted to use $object_name without the correct optional dependencies installed. To install "
     + "the correct optional dependencies, run `pip install alibi-detect[$missing_dependency]` "
     + "from the command line. For more information, check the Installation documentation "
-    + "at https://docs.seldon.io/projects/alibi/en/latest/overview/getting_started.html."
+    + "at https://docs.seldon.io/projects/alibi-detect/en/latest/overview/getting_started.html."
 ))
 
 
@@ -33,6 +33,11 @@ ERROR_API_MAP = {
     "LLR": 'tensorflow,tensorflow_probability',
     "OutlierVAE": 'tensorflow,tensorflow_probability',
     "OutlierVAEGMM": 'tensorflow,tensorflow_probability',
+    "OutlierAEGMM": 'tensorflow,tensorflow_probability',
+    "OutlierSeq2Seq": 'tensorflow,tensorflow_probability',
+    "AdversarialAE": 'tensorflow,tensorflow_probability',
+    "ModelDistillation": 'tensorflow,tensorflow_probability',
+    "PixelCNN": 'tensorflow,tensorflow_probability'
 }
 
 
