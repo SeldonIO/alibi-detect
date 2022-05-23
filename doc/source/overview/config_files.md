@@ -114,7 +114,8 @@ more complex than others.
 ```{note}
 In the  above example `config.toml`, `x_ref` and `preprocess_fn` are stored in `detector_directory/`, but this directory
 isn't included in the config file. This is because in the config file, **relative directories are relative to the 
-location of the config.toml file** (absolute filepaths can also be used). 
+location of the config.toml file**. Filepaths may be absolute, or include nested directories, but **must be POSIX 
+paths** i.e. use `/` path separators instead of `\`.
 ```
 
 ```{note}

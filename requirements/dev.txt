@@ -8,7 +8,6 @@ types-toml>=0.10, <1.0
 pytest>=5.3.5, <8.0.0
 pytest-cov>=2.6.1, <4.0.0
 pytest-xdist>=1.28.0, <3.0.0 # for distributed testing, currently unused (see setup.cfg)
-pytest-randomly>=3.5.0, <4.0.0
 pytest_cases>=3.6.8, <4.0.0
 pytest-randomly>=3.5.0, <4.0.0
 pytest-timeout>=1.4.2, <3.0.0 # for notebook tests

@@ -166,8 +166,7 @@ class DriftConfigMixin:
         }
 
         # args and kwargs
-        pop_inputs = ['self', '__class__', '__len__']
-        pop_inputs += self.config.keys()  # Adding self.config.keys() avoids overwriting existing config
+        pop_inputs = ['self', '__class__', '__len__', 'name', 'meta']
         [inputs.pop(k, None) for k in pop_inputs]
 
         # Overwrite any large artefacts with None to save memory. They'll be added back by get_config()
