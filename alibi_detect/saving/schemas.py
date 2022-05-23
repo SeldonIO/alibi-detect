@@ -95,7 +95,7 @@ class DetectorConfig(CustomBaseModel):
 
 class ModelConfig(CustomBaseModel):
     """
-    Schema for (ML) models. Note that the model "backend" e.g. 'tensorflow', 'pytorch', 'sklearn', is set
+    Unresolved schema for (ML) models. Note that the model "backend" e.g. 'tensorflow', 'pytorch', 'sklearn', is set
     by `backend` in :class:`DetectorConfig`.
 
     Examples
@@ -129,7 +129,7 @@ class ModelConfig(CustomBaseModel):
 
 class EmbeddingConfig(CustomBaseModel):
     """
-    Schema for text embedding models. Currently, only pre-trained
+    Unresolved schema for text embedding models. Currently, only pre-trained
     `HuggingFace transformer <https://github.com/huggingface/transformers>`_ models are supported.
 
     Examples
@@ -161,7 +161,7 @@ class EmbeddingConfig(CustomBaseModel):
 
 class TokenizerConfig(CustomBaseModel):
     """
-    Schema for text tokenizers. Currently, only pre-trained
+    Unresolved schema for text tokenizers. Currently, only pre-trained
     `HuggingFace tokenizer <https://github.com/huggingface/tokenizers>`_ models are supported.
 
     Examples
@@ -189,7 +189,7 @@ class TokenizerConfig(CustomBaseModel):
 
 class PreprocessConfig(CustomBaseModel):
     """
-    Schema for drift detector preprocess functions, to be passed to a detector's `preprocess_fn` kwarg.
+    Unresolved schema for drift detector preprocess functions, to be passed to a detector's `preprocess_fn` kwarg.
     Once loaded, the function is wrapped in a :func:`~functools.partial`, to be evaluated within the detector.
 
     If `src` specifies a generic Python function, the dictionary specified by `kwargs` is passed to it. Otherwise,
@@ -280,7 +280,7 @@ class PreprocessConfig(CustomBaseModel):
 
 class KernelConfig(CustomBaseModelWithKwargs):
     """
-    Schema for kernels, to be passed to a detector's `kernel` kwarg.
+    Unresolved schema for kernels, to be passed to a detector's `kernel` kwarg.
 
     If `src` specifies a :class:`~alibi_detect.utils.tensorflow.GaussianRBF` kernel, the `sigma`, `trainable` and
     `init_sigma_fn` fields are passed to it. Otherwise, all fields except `src` are passed as kwargs.
@@ -327,7 +327,7 @@ class KernelConfig(CustomBaseModelWithKwargs):
 
 class DeepKernelConfig(CustomBaseModel):
     """
-    Schema for :class:`~alibi_detect.utils.tensorflow.kernels.DeepKernel`'s.
+    Unresolved schema for :class:`~alibi_detect.utils.tensorflow.kernels.DeepKernel`'s.
 
     Examples
     --------
@@ -376,7 +376,7 @@ class DeepKernelConfig(CustomBaseModel):
 
 class OptimizerConfig(CustomBaseModelWithKwargs):
     """
-    Schema for optimizers. Note that the model "backend" e.g. 'tensorflow', 'pytorch', 'sklearn', is set
+    Unresolved schema for optimizers. Note that the model "backend" e.g. 'tensorflow', 'pytorch', 'sklearn', is set
     by `backend` in :class:`DetectorConfig`. If `backend='tensorflow'`, the `optimizer` dictionary is expected to be
     a configuration dictionary compatible with
     `tf.keras.optimizers.deserialize <https://www.tensorflow.org/api_docs/python/tf/keras/optimizers/deserialize>`_.
@@ -770,7 +770,7 @@ class SpotTheDiffDriftConfig(DriftDetectorConfig):
     epochs: int = 3
     verbose: int = 0
     train_kwargs: Optional[dict] = None
-    dataset: str = None
+    dataset: Optional[str] = None
     kernel: Optional[Union[str, KernelConfig]] = None
     n_diffs: int = 1
     initial_diffs: Optional[str] = None

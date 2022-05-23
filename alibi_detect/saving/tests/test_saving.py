@@ -1230,12 +1230,12 @@ def test_path2str(tmp_path):
     cfg_rel = _path2str(cfg)
     rel_path = cfg_rel['dict']['a path']
     assert isinstance(rel_path, str)
-    assert rel_path == str(tmp_path)
+    assert rel_path == str(tmp_path.as_posix())
 
     cfg_abs = _path2str(cfg, absolute=True)
     abs_path = cfg_abs['dict']['a path']
     assert isinstance(abs_path, str)
-    assert abs_path == str(tmp_path.resolve())
+    assert abs_path == str(tmp_path.resolve().as_posix())
 
 
 def test_int2str_keys():
