@@ -88,8 +88,8 @@ class ContextMMDDrift(DriftConfigMixin):
         """
         super().__init__()
 
-        # Get args/kwargs to set config later
-        inputs = locals().copy()
+        # Set config
+        self._set_config(locals())
 
         backend = backend.lower()
         if backend == 'tensorflow' and not has_tensorflow or backend == 'pytorch' and not has_pytorch:
@@ -119,8 +119,6 @@ class ContextMMDDrift(DriftConfigMixin):
         else:
             self._detector = ContextMMDDriftTorch(*args, **kwargs)  # type: ignore
         self.meta = self._detector.meta
-        # Set config
-        self._set_config(inputs)
 
     def predict(self, x: Union[np.ndarray, list], c: np.ndarray,
                 return_p_val: bool = True, return_distance: bool = True, return_coupling: bool = False) \

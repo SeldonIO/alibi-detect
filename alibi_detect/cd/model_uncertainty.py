@@ -80,8 +80,8 @@ class ClassifierUncertaintyDrift(DriftConfigMixin):
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
-        # Get args/kwargs to set config later
-        inputs = locals().copy()
+        # Set config
+        self._set_config(locals())
 
         if backend == 'tensorflow' and not has_tensorflow or backend == 'pytorch' and not has_pytorch:
             raise ImportError(f'{backend} not installed. Cannot initialize and run the '
@@ -139,9 +139,6 @@ class ClassifierUncertaintyDrift(DriftConfigMixin):
 
         self.meta = self._detector.meta
         self.meta['name'] = 'ClassifierUncertaintyDrift'
-
-        # Set config
-        self._set_config(inputs)
 
     def predict(self, x: Union[np.ndarray, list], return_p_val: bool = True,
                 return_distance: bool = True) -> Dict[Dict[str, str], Dict[str, Union[np.ndarray, int, float]]]:
@@ -233,8 +230,8 @@ class RegressorUncertaintyDrift(DriftConfigMixin):
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
-        # Get args/kwargs to set config later
-        inputs = locals().copy()
+        # Set config
+        self._set_config(locals())
 
         if backend == 'tensorflow' and not has_tensorflow or backend == 'pytorch' and not has_pytorch:
             raise ImportError(f'{backend} not installed. Cannot initialize and run the '
@@ -289,9 +286,6 @@ class RegressorUncertaintyDrift(DriftConfigMixin):
 
         self.meta = self._detector.meta
         self.meta['name'] = 'RegressorUncertaintyDrift'
-
-        # Set config
-        self._set_config(inputs)
 
     def predict(self, x: Union[np.ndarray, list], return_p_val: bool = True,
                 return_distance: bool = True) -> Dict[Dict[str, str], Dict[str, Union[np.ndarray, int, float]]]:

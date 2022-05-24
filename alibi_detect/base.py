@@ -158,7 +158,7 @@ class DriftConfigMixin:
         self.config: Dict[str, Any] = {
             'name': name,
             'meta': {
-                'version': self.meta['version'],
+                'version': __version__,
                 'config_spec': __config_spec__,
             }
         }

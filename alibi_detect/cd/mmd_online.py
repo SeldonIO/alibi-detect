@@ -71,8 +71,8 @@ class MMDDriftOnline(DriftConfigMixin):
         """
         super().__init__()
 
-        # Get args/kwargs to set config later
-        inputs = locals().copy()
+        # Set config
+        self._set_config(locals())
 
         backend = backend.lower()
         if backend == 'tensorflow' and not has_tensorflow or backend == 'pytorch' and not has_pytorch:
@@ -99,9 +99,6 @@ class MMDDriftOnline(DriftConfigMixin):
         else:
             self._detector = MMDDriftOnlineTorch(*args, **kwargs)  # type: ignore
         self.meta = self._detector.meta
-
-        # Set config
-        self._set_config(inputs)
 
     @property
     def t(self):
