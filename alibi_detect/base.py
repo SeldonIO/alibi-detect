@@ -94,6 +94,8 @@ class ThresholdMixin(ABC):
 
 
 # "Large artefacts" - to save memory these are skipped in _set_config(), but added back in get_config()
+# Note: The current implementation assumes the artefact is stored as a class attribute, and as a config field under
+# the same name. Refactoring will be required if this assumption is to be broken.
 LARGE_ARTEFACTS = ['x_ref', 'c_ref', 'preprocess_fn']
 
 
