@@ -3,6 +3,7 @@ import numpy as np
 import torch
 from typing import Any, Callable, Optional, Union
 from alibi_detect.cd.base_online import BaseMultiDriftOnline
+from alibi_detect.utils.pytorch import get_device
 from alibi_detect.utils.pytorch import GaussianRBF, permed_lsdds, quantile
 
 
@@ -85,13 +86,8 @@ class LSDDDriftOnlineTorch(BaseMultiDriftOnline):
         self.n_kernel_centers = n_kernel_centers
         self.lambda_rd_max = lambda_rd_max
 
-        # set backend
-        if device is None or device.lower() in ['gpu', 'cuda']:
-            self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-            if self.device.type == 'cpu':
-                print('No GPU detected, fall back on CPU.')
-        else:
-            self.device = torch.device('cpu')
+        # set device
+        self.device = get_device(device)
 
         self._configure_normalization()
 

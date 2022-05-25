@@ -154,7 +154,7 @@ class LearnedKernelDriftTF(BaseLearnedKernelDrift):
 
             return mmd2_est/tf.math.sqrt(reg_var_est)
 
-    def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, np.ndarray]:
+    def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, float]:
         """
         Compute the p-value resulting from a permutation test using the maximum mean discrepancy
         as a distance measure between the reference data and the data to be tested. The kernel
@@ -167,8 +167,8 @@ class LearnedKernelDriftTF(BaseLearnedKernelDrift):
 
         Returns
         -------
-        p-value obtained from the permutation test, the MMD^2 between the reference and test set
-        and the MMD^2 values from the permutation test.
+        p-value obtained from the permutation test, the MMD^2 between the reference and test set,
+        and the MMD^2 threshold above which drift is flagged.
         """
         x_ref, x_cur = self.preprocess(x)
         (x_ref_tr, x_cur_tr), (x_ref_te, x_cur_te) = self.get_splits(x_ref, x_cur)
@@ -190,7 +190,10 @@ class LearnedKernelDriftTF(BaseLearnedKernelDrift):
                 for _ in range(self.n_permutations)]
         )
         p_val = (mmd2 <= mmd2_permuted).mean()
-        return p_val, mmd2, mmd2_permuted
+
+        idx_threshold = int(self.p_val * len(mmd2_permuted))
+        distance_threshold = np.sort(mmd2_permuted)[::-1][idx_threshold]
+        return p_val, mmd2, distance_threshold
 
     @staticmethod
     def trainer(

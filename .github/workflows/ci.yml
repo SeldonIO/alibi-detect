@@ -49,11 +49,12 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip setuptools wheel
-          python -m pip install -r requirements/dev.txt
+          python -m pip install --upgrade --upgrade-strategy eager -r requirements/dev.txt
+          python -m pip install --upgrade --upgrade-strategy eager -e .
           if [ "$RUNNER_OS" != "Windows" ] && [ ${{ matrix.python }} < '3.10' ]; then  # Skip Prophet tests on Windows as installation complex. Skip on Python 3.10 as not supported.
-            python -m pip install -e .[prophet]
+            python -m pip install --upgrade --upgrade-strategy eager -e .[prophet]
           fi
-          python -m pip install -e .[torch]
+          python -m pip install --upgrade --upgrade-strategy eager -e .[torch]
           python -m pip freeze
 
       - name: Lint with flake8
