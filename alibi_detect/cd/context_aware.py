@@ -100,7 +100,7 @@ class ContextMMDDrift(DriftConfigMixin):
 
         kwargs = locals()
         args = [kwargs['x_ref'], kwargs['c_ref']]
-        pop_kwargs = ['self', 'x_ref', 'c_ref', 'backend', '__class__', 'inputs']
+        pop_kwargs = ['self', 'x_ref', 'c_ref', 'backend', '__class__']
         [kwargs.pop(k, None) for k in pop_kwargs]
 
         if x_kernel is None or c_kernel is None:

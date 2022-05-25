@@ -218,7 +218,7 @@ def write_config(cfg: dict, filepath: Union[str, os.PathLike]):
         filepath.mkdir(parents=True, exist_ok=True)
     # Convert pathlib.Path's to str's
     cfg = _path2str(cfg)
-    # Validatre config before final tweaks
+    # Validate config before final tweaks
     validate_config(cfg)  # Must validate here as replacing None w/ str will break validation
     # Replace None with "None", and dicts with integer keys with str keys
     # TODO: Subject to change depending on toml library updates

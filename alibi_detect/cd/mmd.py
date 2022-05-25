@@ -88,7 +88,7 @@ class MMDDrift(DriftConfigMixin):
 
         kwargs = locals()
         args = [kwargs['x_ref']]
-        pop_kwargs = ['self', 'x_ref', 'backend', '__class__', 'inputs']
+        pop_kwargs = ['self', 'x_ref', 'backend', '__class__']
         [kwargs.pop(k, None) for k in pop_kwargs]
 
         if kernel is None:

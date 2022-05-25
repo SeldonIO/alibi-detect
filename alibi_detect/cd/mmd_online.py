@@ -83,7 +83,7 @@ class MMDDriftOnline(DriftConfigMixin):
 
         kwargs = locals()
         args = [kwargs['x_ref'], kwargs['ert'], kwargs['window_size']]
-        pop_kwargs = ['self', 'x_ref', 'ert', 'window_size', 'backend', '__class__', 'inputs']
+        pop_kwargs = ['self', 'x_ref', 'ert', 'window_size', 'backend', '__class__']
         [kwargs.pop(k, None) for k in pop_kwargs]
 
         if kernel is None:

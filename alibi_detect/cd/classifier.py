@@ -156,7 +156,7 @@ class ClassifierDrift(DriftConfigMixin):
 
         kwargs = locals()
         args = [kwargs['x_ref'], kwargs['model']]
-        pop_kwargs = ['self', 'x_ref', 'model', 'backend', '__class__', 'inputs']
+        pop_kwargs = ['self', 'x_ref', 'model', 'backend', '__class__']
         if kwargs['optimizer'] is None:
             pop_kwargs += ['optimizer']
         [kwargs.pop(k, None) for k in pop_kwargs]
