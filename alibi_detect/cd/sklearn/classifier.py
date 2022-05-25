@@ -288,13 +288,3 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
         n_cur = np.sum(index_oob >= len(x_ref)).item()
         p_val, dist = self.test_probs(y_oob, probs_oob, n_ref, n_cur)
         return p_val, dist, probs_oob[:n_ref, 1], probs_oob[n_ref:, 1]
-
-    def get_config(self) -> dict:
-        """
-        Get the detector's configuration dictionary. Not yet implemented for `ClassifierDrift` with sklearn backend.
-
-        Returns
-        -------
-        The detector's configuration dictionary.
-        """
-        raise NotImplementedError("get_config not yet implemented for `ClassifierDrift` with sklearn backend.")

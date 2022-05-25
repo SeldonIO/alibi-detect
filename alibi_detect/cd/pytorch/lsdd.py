@@ -96,7 +96,7 @@ class LSDDDriftTorch(BaseLSDDDrift):
         #  in the method signature, so we can't cast it to torch.Tensor unless we change the signature
         #  to also accept torch.Tensor. We also can't redefine it's type as that would involve enabling
         #  --allow-redefinitions in mypy settings (which we might do eventually).
-        if self.preprocess_at_init:
+        if self.preprocess_at_init or self.preprocess_fn is None or self.x_ref_preprocessed:
             x_ref = torch.as_tensor(self.x_ref).to(self.device)  # type: ignore[assignment]
             self._configure_normalization(x_ref)  # type: ignore[arg-type]
             x_ref = self._normalize(x_ref)
@@ -150,7 +150,7 @@ class LSDDDriftTorch(BaseLSDDDrift):
         x_ref = torch.from_numpy(x_ref).to(self.device)  # type: ignore[assignment]
         x = torch.from_numpy(x).to(self.device)  # type: ignore[assignment]
 
-        if not self.preprocess_at_init:
+        if self.preprocess_fn is not None and self.preprocess_at_init is False and not self.x_ref_preprocessed:
             self._configure_normalization(x_ref)  # type: ignore[arg-type]
             x_ref = self._normalize(x_ref)
             self._initialize_kernel(x_ref)  # type: ignore[arg-type]
@@ -174,15 +174,3 @@ class LSDDDriftTorch(BaseLSDDDrift):
 
         p_val = (lsdd <= lsdd_permuted).float().mean()
         return float(p_val.cpu()), float(lsdd.cpu().numpy()), lsdd_permuted.cpu().numpy()
-
-    def get_config(self) -> dict:
-        """
-        Get the detector's configuration dictionary.
-
-        Not yet implemented for `LSDDDrift` with the pytorch backend.
-
-        Returns
-        -------
-        The detector's configuration dictionary.
-        """
-        raise NotImplementedError("get_config not yet implemented for LSDDDrift with pytorch backend.")

@@ -19,7 +19,7 @@ if has_tensorflow:
 logger = logging.getLogger(__name__)
 
 
-class BaseClassifierDrift(BaseDetector, DriftConfigMixin):
+class BaseClassifierDrift(BaseDetector):
     model: Union['tf.keras.Model', 'torch.nn.Module']
 
     def __init__(
@@ -37,7 +37,7 @@ class BaseClassifierDrift(BaseDetector, DriftConfigMixin):
             retrain_from_scratch: bool = True,
             seed: int = 0,
             input_shape: Optional[tuple] = None,
-            data_type: Optional[str] = None
+            data_type: Optional[str] = None,
     ) -> None:
         """
         A context-aware drift detector based on a conditional analogue of the maximum mean discrepancy (MMD).
@@ -97,17 +97,12 @@ class BaseClassifierDrift(BaseDetector, DriftConfigMixin):
         if n_folds is not None and n_folds > 1 and not retrain_from_scratch:
             raise ValueError("If using multiple folds the model must be retrained from scratch for each fold.")
 
-        # x_ref preprocessing logic
-        self.preprocess_at_pred = not preprocess_at_init and not x_ref_preprocessed and preprocess_fn is not None
-        self.preprocess_at_init = preprocess_at_init and not x_ref_preprocessed and preprocess_fn is not None
+        # x_ref preprocessing
+        self.preprocess_at_init = preprocess_at_init
         self.x_ref_preprocessed = x_ref_preprocessed
-        # Check if preprocess_fn is valid
-        if (self.preprocess_at_init or self.preprocess_at_pred) \
-                and not isinstance(preprocess_fn, Callable):  # type: ignore[arg-type]
+        if preprocess_fn is not None and not isinstance(preprocess_fn, Callable):  # type: ignore[arg-type]
             raise ValueError("`preprocess_fn` is not a valid Callable.")
-
-        # optionally preprocess reference data (now instead of at predict)
-        if self.preprocess_at_init:
+        if self.preprocess_at_init and not self.x_ref_preprocessed and preprocess_fn is not None:
             self.x_ref = preprocess_fn(x_ref)
         else:
             self.x_ref = x_ref
@@ -147,12 +142,15 @@ class BaseClassifierDrift(BaseDetector, DriftConfigMixin):
         -------
         Preprocessed reference data and new instances.
         """
-        if isinstance(self.preprocess_fn, Callable):  # type: ignore[arg-type]
+        if self.preprocess_fn is not None:
             x = self.preprocess_fn(x)
-            x_ref = self.preprocess_fn(self.x_ref) if self.preprocess_at_pred else self.x_ref
-            return x_ref, x
+            if not self.preprocess_at_init and not self.x_ref_preprocessed:
+                x_ref = self.preprocess_fn(self.x_ref)
+            else:
+                x_ref = self.x_ref
+            return x_ref, x  # type: ignore[return-value]
         else:
-            return self.x_ref, x
+            return self.x_ref, x  # type: ignore[return-value]
 
     def get_splits(self,
                    x_ref: Union[np.ndarray, list],
@@ -279,7 +277,7 @@ class BaseClassifierDrift(BaseDetector, DriftConfigMixin):
         drift_pred = int(p_val < self.p_val)
 
         # update reference dataset
-        if isinstance(self.update_x_ref, dict) and self.preprocess_at_init:
+        if isinstance(self.update_x_ref, dict) and self.preprocess_fn is not None and self.preprocess_at_init:
             x = self.preprocess_fn(x)
         # TODO: TBD: can `x` ever be a `list` after pre-processing? update_references and downstream functions
         # don't support list inputs and without the type: ignore[arg-type] mypy complains
@@ -303,42 +301,8 @@ class BaseClassifierDrift(BaseDetector, DriftConfigMixin):
             cd['data']['model'] = self.model
         return cd
 
-    @abstractmethod
-    def get_config(self) -> dict:
-        """
-        Get the detector's configuration dictionary.
 
-        Returns
-        -------
-        The detector's configuration dictionary.
-        """
-        cfg = self.drift_config()
-
-        # Detector kwargs
-        # Note: Currently write kwargs out such that load_detector will load a fresh detector. We don't (yet) write out
-        #  stateful attributes such as self.skf, which would enable the detector to be re-loaded without re-fitting.
-        kwargs = {
-            'p_val': self.p_val,
-            'x_ref_preprocessed': self.preprocess_at_init or self.x_ref_preprocessed,
-            'preprocess_at_init': self.preprocess_at_init,
-            'update_x_ref': self.update_x_ref,
-            'preprocess_fn': self.preprocess_fn,
-            'preds_type': self.preds_type,
-            'binarize_preds': self.binarize_preds,
-            'train_size': self.train_size,
-            'n_folds': self.skf.n_splits if self.skf is not None else None,
-            'retrain_from_scratch': self.retrain_from_scratch,
-            'seed': self.skf.random_state if self.skf is not None else 0,
-            'input_shape': self.input_shape,
-            'data_type': self.meta['data_type'],
-            'backend': self.meta['backend'],
-        }
-        cfg.update(kwargs)
-
-        return cfg
-
-
-class BaseLearnedKernelDrift(BaseDetector, DriftConfigMixin):
+class BaseLearnedKernelDrift(BaseDetector):
     kernel: Union['tf.keras.Model', 'torch.nn.Module']
 
     def __init__(
@@ -391,21 +355,15 @@ class BaseLearnedKernelDrift(BaseDetector, DriftConfigMixin):
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
         super().__init__()
-
         if p_val is None:
             logger.warning('No p-value set for the drift threshold. Need to set it to detect data drift.')
 
-        # x_ref preprocessing logic
-        self.preprocess_at_pred = not preprocess_at_init and not x_ref_preprocessed and preprocess_fn is not None
-        self.preprocess_at_init = preprocess_at_init and not x_ref_preprocessed and preprocess_fn is not None
+        # x_ref preprocessing
+        self.preprocess_at_init = preprocess_at_init
         self.x_ref_preprocessed = x_ref_preprocessed
-        # Check if preprocess_fn is valid
-        if (self.preprocess_at_init or self.preprocess_at_pred) \
-                and not isinstance(preprocess_fn, Callable):  # type: ignore[arg-type]
+        if preprocess_fn is not None and not isinstance(preprocess_fn, Callable):  # type: ignore[arg-type]
             raise ValueError("`preprocess_fn` is not a valid Callable.")
-
-        # optionally preprocess reference data (now instead of at predict)
-        if self.preprocess_at_init:
+        if self.preprocess_at_init and not self.x_ref_preprocessed and preprocess_fn is not None:
             self.x_ref = preprocess_fn(x_ref)
         else:
             self.x_ref = x_ref
@@ -438,12 +396,15 @@ class BaseLearnedKernelDrift(BaseDetector, DriftConfigMixin):
         -------
         Preprocessed reference data and new instances.
         """
-        if isinstance(self.preprocess_fn, Callable):  # type: ignore[arg-type]
+        if self.preprocess_fn is not None:
             x = self.preprocess_fn(x)
-            x_ref = self.preprocess_fn(self.x_ref) if self.preprocess_at_pred else self.x_ref
-            return x_ref, x
+            if not self.preprocess_at_init and not self.x_ref_preprocessed:
+                x_ref = self.preprocess_fn(self.x_ref)
+            else:
+                x_ref = self.x_ref
+            return x_ref, x  # type: ignore[return-value]
         else:
-            return self.x_ref, x
+            return self.x_ref, x  # type: ignore[return-value]
 
     def get_splits(self, x_ref: Union[np.ndarray, list], x: Union[np.ndarray, list]) \
             -> Tuple[Tuple[Union[np.ndarray, list], Union[np.ndarray, list]],
@@ -515,7 +476,7 @@ class BaseLearnedKernelDrift(BaseDetector, DriftConfigMixin):
         distance_threshold = np.sort(dist_permutations)[::-1][idx_threshold]
 
         # update reference dataset
-        if isinstance(self.update_x_ref, dict) and self.preprocess_at_init:
+        if isinstance(self.update_x_ref, dict) and self.preprocess_fn is not None and self.preprocess_at_init:
             x = self.preprocess_fn(x)
         self.x_ref = update_reference(self.x_ref, x, self.n, self.update_x_ref)  # type: ignore[arg-type]
         # used for reservoir sampling
@@ -535,39 +496,8 @@ class BaseLearnedKernelDrift(BaseDetector, DriftConfigMixin):
             cd['data']['kernel'] = self.kernel
         return cd
 
-    @abstractmethod
-    def get_config(self) -> dict:
-        """
-        Get the detector's configuration dictionary.
 
-        Returns
-        -------
-        The detector's configuration dictionary.
-        """
-        cfg = self.drift_config()
-
-        # Detector kwargs
-        # Note: Currently write kwargs out such that load_detector will load a fresh detector. We don't (yet) write out
-        #  stateful attributes which would enable the detector to be re-loaded without re-fitting.
-        kwargs = {
-            'p_val': self.p_val,
-            'x_ref_preprocessed': self.preprocess_at_init or self.x_ref_preprocessed,
-            'preprocess_at_init': self.preprocess_at_init,
-            'update_x_ref': self.update_x_ref,
-            'preprocess_fn': self.preprocess_fn,
-            'n_permutations': self.n_permutations,
-            'train_size': self.train_size,
-            'retrain_from_scratch': self.retrain_from_scratch,
-            'input_shape': self.input_shape,
-            'data_type': self.meta['data_type'],
-            'backend': self.meta['backend'],
-        }
-        cfg.update(kwargs)
-
-        return cfg
-
-
-class BaseMMDDrift(BaseDetector, DriftConfigMixin):
+class BaseMMDDrift(BaseDetector):
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
@@ -628,17 +558,12 @@ class BaseMMDDrift(BaseDetector, DriftConfigMixin):
                            'is set to True. `sigma` argument takes priority over '
                            '`configure_kernel_from_x_ref` (set to False).')
 
-        # x_ref preprocessing logic
-        self.preprocess_at_pred = not preprocess_at_init and not x_ref_preprocessed and preprocess_fn is not None
-        self.preprocess_at_init = preprocess_at_init and not x_ref_preprocessed and preprocess_fn is not None
+        # x_ref preprocessing
+        self.preprocess_at_init = preprocess_at_init
         self.x_ref_preprocessed = x_ref_preprocessed
-        # Check if preprocess_fn is valid
-        if (self.preprocess_at_init or self.preprocess_at_pred) \
-                and not isinstance(preprocess_fn, Callable):  # type: ignore[arg-type]
+        if preprocess_fn is not None and not isinstance(preprocess_fn, Callable):  # type: ignore[arg-type]
             raise ValueError("`preprocess_fn` is not a valid Callable.")
-
-        # optionally preprocess reference data (now instead of at predict)
-        if self.preprocess_at_init:
+        if self.preprocess_at_init and not self.x_ref_preprocessed and preprocess_fn is not None:
             self.x_ref = preprocess_fn(x_ref)
         else:
             self.x_ref = x_ref
@@ -667,11 +592,14 @@ class BaseMMDDrift(BaseDetector, DriftConfigMixin):
         -------
         Preprocessed reference data and new instances.
         """
-        if isinstance(self.preprocess_fn, Callable):  # type: ignore[arg-type]
+        if self.preprocess_fn is not None:
             x = self.preprocess_fn(x)
-            x_ref = self.preprocess_fn(self.x_ref) if self.preprocess_at_pred else self.x_ref
-            # TODO: TBD: similar to above, can x be a list here? x_ref is also revealed to be Any,
-            #  can we tighten the type up (e.g. by typing Callable with stricter inputs/outputs?
+            if not self.preprocess_at_init and not self.x_ref_preprocessed:
+                x_ref = self.preprocess_fn(self.x_ref)
+                # TODO: TBD: similar to above, can x be a list here? x_ref is also revealed to be Any,
+                #  can we tighten the type up (e.g. by typing Callable with stricter inputs/outputs?
+            else:
+                x_ref = self.x_ref
             return x_ref, x  # type: ignore[return-value]
         else:
             return self.x_ref, x  # type: ignore[return-value]
@@ -714,7 +642,7 @@ class BaseMMDDrift(BaseDetector, DriftConfigMixin):
         distance_threshold = np.sort(dist_permutations)[::-1][idx_threshold]
 
         # update reference dataset
-        if isinstance(self.update_x_ref, dict) and self.preprocess_at_init:
+        if isinstance(self.update_x_ref, dict) and self.preprocess_fn is not None and self.preprocess_at_init:
             x = self.preprocess_fn(x)
         self.x_ref = update_reference(self.x_ref, x, self.n, self.update_x_ref)  # type: ignore[arg-type]
         # used for reservoir sampling
@@ -732,38 +660,12 @@ class BaseMMDDrift(BaseDetector, DriftConfigMixin):
             cd['data']['distance_threshold'] = distance_threshold
         return cd
 
-    @abstractmethod
-    def get_config(self) -> dict:
-        """
-        Get the detector's configuration dictionary.
 
-        Returns
-        -------
-        The detector's configuration dictionary.
-        """
-        cfg = self.drift_config()
-
-        # Detector field
-        kwargs = {
-            'p_val': self.p_val,
-            'x_ref_preprocessed': self.preprocess_at_init or self.x_ref_preprocessed,
-            'preprocess_at_init': self.preprocess_at_init,
-            'update_x_ref': self.update_x_ref,
-            'configure_kernel_from_x_ref': not self.infer_sigma,
-            'n_permutations': self.n_permutations,
-            'input_shape': self.input_shape,
-            'data_type': self.meta['data_type'],
-            'backend': self.meta['backend'],
-        }
-        cfg.update(kwargs)
-
-        return cfg
-
-
-class BaseLSDDDrift(BaseDetector, DriftConfigMixin):
+class BaseLSDDDrift(BaseDetector):
     # TODO: TBD: this is only created when _configure_normalization is called from backend-specific classes,
     # is declaring it here the right thing to do?
     _normalize: Callable
+    _unnormalize: Callable
 
     def __init__(
             self,
@@ -821,21 +723,15 @@ class BaseLSDDDrift(BaseDetector, DriftConfigMixin):
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
         super().__init__()
-
         if p_val is None:
             logger.warning('No p-value set for the drift threshold. Need to set it to detect data drift.')
 
-        # x_ref preprocessing logic. Inc. preprocess_fn logic in preprocess_at_init, since preprocess_at_init includes
-        # x_ref normalizing x_ref and computing H. preprocess_at_init always True if no preprocess_fn, except for when
-        # x_ref is "preprocessed" (i.e. normalized) already.
-        self.preprocess_at_init = (preprocess_fn is None or preprocess_at_init) and not x_ref_preprocessed
+        # x_ref preprocessing
+        self.preprocess_at_init = preprocess_at_init
         self.x_ref_preprocessed = x_ref_preprocessed
-        # Check if preprocess_fn is valid
         if preprocess_fn is not None and not isinstance(preprocess_fn, Callable):  # type: ignore[arg-type]
             raise ValueError("`preprocess_fn` is not a valid Callable.")
-
-        # optionally preprocess reference data (now instead of at predict)
-        if self.preprocess_at_init and preprocess_fn is not None:
+        if self.preprocess_at_init and not self.x_ref_preprocessed and preprocess_fn is not None:
             self.x_ref = preprocess_fn(x_ref)
         else:
             self.x_ref = x_ref
@@ -867,9 +763,12 @@ class BaseLSDDDrift(BaseDetector, DriftConfigMixin):
         -------
         Preprocessed reference data and new instances.
         """
-        if isinstance(self.preprocess_fn, Callable):  # type: ignore[arg-type]
+        if self.preprocess_fn is not None:
             x = self.preprocess_fn(x)
-            x_ref = self.preprocess_fn(self.x_ref) if not self.preprocess_at_init else self.x_ref
+            if not self.preprocess_at_init and not self.x_ref_preprocessed:
+                x_ref = self.preprocess_fn(self.x_ref)
+            else:
+                x_ref = self.x_ref
             return x_ref, x  # type: ignore[return-value]
         else:
             return self.x_ref, x  # type: ignore[return-value]
@@ -908,10 +807,13 @@ class BaseLSDDDrift(BaseDetector, DriftConfigMixin):
 
         # update reference dataset
         if isinstance(self.update_x_ref, dict):
-            if self.preprocess_at_init:
-                if self.preprocess_fn is not None:
-                    x = self.preprocess_fn(x)
+            if self.preprocess_fn is not None and self.preprocess_at_init:
+                x = self.preprocess_fn(x)
                 x = self._normalize(x)
+            elif self.preprocess_fn is None:
+                x = self._normalize(x)
+            else:
+                pass
         self.x_ref = update_reference(self.x_ref, x, self.n, self.update_x_ref)  # type: ignore[arg-type]
         # used for reservoir sampling
         self.n += len(x)  # type: ignore
@@ -927,35 +829,6 @@ class BaseLSDDDrift(BaseDetector, DriftConfigMixin):
             cd['data']['distance'] = dist
             cd['data']['distance_threshold'] = distance_threshold
         return cd
-
-    @abstractmethod
-    def get_config(self) -> dict:
-        """
-        Get the detector's configuration dictionary.
-
-        Returns
-        -------
-        The detector's configuration dictionary.
-        """
-        cfg = self.drift_config()
-
-        # Detector field
-        kwargs = {
-            'p_val': self.p_val,
-            'x_ref_preprocessed': self.preprocess_at_init or self.x_ref_preprocessed,
-            'preprocess_at_init': self.preprocess_at_init,
-            'update_x_ref': self.update_x_ref,
-            'sigma': self.sigma,
-            'n_permutations': self.n_permutations,
-            'n_kernel_centers': self.n_kernel_centers,
-            'lambda_rd_max': self.lambda_rd_max,
-            'input_shape': self.input_shape,
-            'data_type': self.meta['data_type'],
-            'backend': self.meta['backend'],
-        }
-        cfg.update(kwargs)
-
-        return cfg
 
 
 class BaseUnivariateDrift(BaseDetector, DriftConfigMixin):
@@ -1011,21 +884,15 @@ class BaseUnivariateDrift(BaseDetector, DriftConfigMixin):
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
         super().__init__()
-
         if p_val is None:
             logger.warning('No p-value set for the drift threshold. Need to set it to detect data drift.')
 
-        # x_ref preprocessing logic
-        self.preprocess_at_pred = not preprocess_at_init and not x_ref_preprocessed and preprocess_fn is not None
-        self.preprocess_at_init = preprocess_at_init and not x_ref_preprocessed and preprocess_fn is not None
+        # x_ref preprocessing
+        self.preprocess_at_init = preprocess_at_init
         self.x_ref_preprocessed = x_ref_preprocessed
-        # Check if preprocess_fn is valid
-        if (self.preprocess_at_init or self.preprocess_at_pred) \
-                and not isinstance(preprocess_fn, Callable):  # type: ignore[arg-type]
+        if preprocess_fn is not None and not isinstance(preprocess_fn, Callable):  # type: ignore[arg-type]
             raise ValueError("`preprocess_fn` is not a valid Callable.")
-
-        # optionally preprocess reference data (now instead of at predict)
-        if self.preprocess_at_init:
+        if self.preprocess_at_init and not self.x_ref_preprocessed and preprocess_fn is not None:
             self.x_ref = preprocess_fn(x_ref)
         else:
             self.x_ref = x_ref
@@ -1043,13 +910,12 @@ class BaseUnivariateDrift(BaseDetector, DriftConfigMixin):
         # compute number of features for the univariate tests
         if isinstance(n_features, int):
             self.n_features = n_features
-        elif self.preprocess_at_pred:
-            # infer number of features after applying preprocessing step
-            x = self.preprocess_fn(x_ref[0:1])
-            self.n_features = x.reshape(x.shape[0], -1).shape[-1]
-        else:
+        elif not isinstance(preprocess_fn, Callable) or preprocess_at_init or x_ref_preprocessed:
             # infer features from preprocessed reference data
             self.n_features = self.x_ref.reshape(self.x_ref.shape[0], -1).shape[-1]
+        else:  # infer number of features after applying preprocessing step
+            x = self.preprocess_fn(x_ref[0:1])
+            self.n_features = x.reshape(x.shape[0], -1).shape[-1]
 
         if correction not in ['bonferroni', 'fdr'] and self.n_features > 1:
             raise ValueError('Only `bonferroni` and `fdr` are acceptable for multivariate correction.')
@@ -1071,9 +937,12 @@ class BaseUnivariateDrift(BaseDetector, DriftConfigMixin):
         -------
         Preprocessed reference data and new instances.
         """
-        if isinstance(self.preprocess_fn, Callable):  # type: ignore[arg-type]
+        if self.preprocess_fn is not None:
             x = self.preprocess_fn(x)
-            x_ref = self.preprocess_fn(self.x_ref) if self.preprocess_at_pred else self.x_ref
+            if not self.preprocess_at_init and not self.x_ref_preprocessed:
+                x_ref = self.preprocess_fn(self.x_ref)
+            else:
+                x_ref = self.x_ref
             return x_ref, x  # type: ignore[return-value]
         else:
             return self.x_ref, x  # type: ignore[return-value]
@@ -1141,7 +1010,7 @@ class BaseUnivariateDrift(BaseDetector, DriftConfigMixin):
             raise ValueError('`drift_type` needs to be either `feature` or `batch`.')
 
         # update reference dataset
-        if isinstance(self.update_x_ref, dict) and self.preprocess_at_init:
+        if isinstance(self.update_x_ref, dict) and self.preprocess_fn is not None and self.preprocess_at_init:
             x = self.preprocess_fn(x)
         self.x_ref = update_reference(self.x_ref, x, self.n, self.update_x_ref)  # type: ignore[arg-type]
         # used for reservoir sampling
@@ -1158,32 +1027,6 @@ class BaseUnivariateDrift(BaseDetector, DriftConfigMixin):
             cd['data']['distance'] = dist
         return cd
 
-    @abstractmethod
-    def get_config(self) -> dict:
-        """
-        Get the detector's configuration dictionary.
-
-        Returns
-        -------
-        The detector's configuration dictionary.
-        """
-        cfg = self.drift_config()
-
-        # Detector kwargs
-        kwargs = {
-            'p_val': self.p_val,
-            'x_ref_preprocessed': self.preprocess_at_init or self.x_ref_preprocessed,
-            'preprocess_at_init': self.preprocess_at_init,
-            'update_x_ref': self.update_x_ref,
-            'correction': self.correction,
-            'n_features': self.n_features,
-            'input_shape': self.input_shape,
-            'data_type': self.meta['data_type']
-        }
-        cfg.update(kwargs)
-
-        return cfg
-
 
 class BaseContextMMDDrift(BaseDetector):
     lams: Optional[Tuple[Any, Any]] = None
@@ -1193,7 +1036,8 @@ class BaseContextMMDDrift(BaseDetector):
             x_ref: Union[np.ndarray, list],
             c_ref: np.ndarray,
             p_val: float = .05,
-            preprocess_x_ref: bool = True,
+            x_ref_preprocessed: bool = False,
+            preprocess_at_init: bool = True,
             update_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
             x_kernel: Callable = None,
@@ -1204,7 +1048,7 @@ class BaseContextMMDDrift(BaseDetector):
             batch_size: Optional[int] = 256,
             input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None,
-            verbose: bool = False
+            verbose: bool = False,
     ) -> None:
         """
         Maximum Mean Discrepancy (MMD) based context aware drift detector.
@@ -1217,8 +1061,13 @@ class BaseContextMMDDrift(BaseDetector):
             Context for the reference distribution.
         p_val
             p-value used for the significance of the permutation test.
-        preprocess_x_ref
-            Whether to already preprocess and store the reference data `x_ref`.
+        x_ref_preprocessed
+            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
+            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
+            data will also be preprocessed.
+        preprocess_at_init
+            Whether to preprocess the reference data when the detector is instantiated. Otherwise, the reference
+            data will be preprocessed at prediction time. Only applies if `x_ref_preprocessed=False`.
         update_ref
             Reference data can optionally be updated to the last N instances seen by the detector.
             The parameter should be passed as a dictionary *{'last': N}*.
@@ -1244,17 +1093,21 @@ class BaseContextMMDDrift(BaseDetector):
             Whether or not to print progress during configuration.
         """
         super().__init__()
-
         if p_val is None:
             logger.warning('No p-value set for the drift threshold. Need to set it to detect data drift.')
 
-        # optionally already preprocess reference data
-        self.p_val = p_val
-        if preprocess_x_ref and isinstance(preprocess_fn, Callable):  # type: ignore[arg-type]
+        # x_ref preprocessing
+        self.preprocess_at_init = preprocess_at_init
+        self.x_ref_preprocessed = x_ref_preprocessed
+        if preprocess_fn is not None and not isinstance(preprocess_fn, Callable):  # type: ignore[arg-type]
+            raise ValueError("`preprocess_fn` is not a valid Callable.")
+        if self.preprocess_at_init and not self.x_ref_preprocessed and preprocess_fn is not None:
             self.x_ref = preprocess_fn(x_ref)
         else:
             self.x_ref = x_ref
-        self.preprocess_x_ref = preprocess_x_ref
+
+        # Other attributes
+        self.p_val = p_val
         self.preprocess_fn = preprocess_fn
         self.n = len(x_ref)
         self.n_permutations = n_permutations  # nb of iterations through permutation test
@@ -1301,11 +1154,12 @@ class BaseContextMMDDrift(BaseDetector):
         -------
         Preprocessed reference data and new instances.
         """
-        if isinstance(self.preprocess_fn, Callable):  # type: ignore[arg-type]
+        if self.preprocess_fn is not None:
             x = self.preprocess_fn(x)
-            x_ref = self.x_ref if self.preprocess_x_ref else self.preprocess_fn(self.x_ref)
-            # TODO: TBD: similar to above, can x be a list here? x_ref is also revealed to be Any,
-            #  can we tighten the type up (e.g. by typing Callable with stricter inputs/outputs?
+            if not self.preprocess_at_init and not self.x_ref_preprocessed:
+                x_ref = self.preprocess_fn(self.x_ref)
+            else:
+                x_ref = self.x_ref
             return x_ref, x  # type: ignore[return-value]
         else:
             return self.x_ref, x  # type: ignore[return-value]
@@ -1351,7 +1205,7 @@ class BaseContextMMDDrift(BaseDetector):
         distance_threshold = np.sort(dist_permutations)[::-1][idx_threshold]
 
         # update reference dataset
-        if isinstance(self.update_ref, dict) and self.preprocess_fn is not None and self.preprocess_x_ref:
+        if isinstance(self.update_ref, dict) and self.preprocess_fn is not None and self.preprocess_at_init:
             x = self.preprocess_fn(x)
         self.x_ref = update_reference(self.x_ref, x, self.n, self.update_ref)  # type: ignore[arg-type]
         self.c_ref = update_reference(self.c_ref, c, self.n, self.update_ref)  # type: ignore[arg-type]

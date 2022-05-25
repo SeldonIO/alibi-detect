@@ -14,17 +14,15 @@ The `resolved` kwarg of :func:`~alibi_detect.utils.validate.validate_config` det
     detector's api docs for a full description of each arg/kwarg.
 """
 
-from typing import Any, Callable, Dict, List, Optional, Type, Union
+from typing import Callable, Dict, List, Optional, Type, Union, Any
 
 # TODO - conditional checks depending on backend etc
 # TODO - consider validating output of get_config calls
 import numpy as np
-from pydantic import BaseModel
-from transformers import PreTrainedTokenizerBase
+from pydantic import BaseModel, validator
 
 from alibi_detect.cd.tensorflow import UAE as UAE_tf
 from alibi_detect.cd.tensorflow import HiddenOutput as HiddenOutput_tf
-from alibi_detect.models.tensorflow import TransformerEmbedding
 from alibi_detect.utils._types import Literal, NDArray
 from alibi_detect.utils.frameworks import has_tensorflow
 from alibi_detect.version import __config_spec__, __version__
@@ -46,6 +44,15 @@ SupportedModels = tuple(SupportedModels_list)
 SupportedModels_types = Union['tf.keras.Model', UAE_tf, HiddenOutput_tf]
 
 
+# Custom validators (defined here for reuse in multiple pydantic models)
+def coerce_int2list(value: int) -> List[int]:
+    """Validator to coerce int to list (pydantic doesn't do this by default)."""
+    if isinstance(value, int):
+        return [value]
+    else:
+        return value
+
+
 # Custom BaseModel so that we can set default config
 class CustomBaseModel(BaseModel):
     """
@@ -56,10 +63,20 @@ class CustomBaseModel(BaseModel):
         extra = 'forbid'  # Forbid extra fields so that we catch misspelled fields
 
 
+# Custom BaseModel with additional kwarg's allowed
+class CustomBaseModelWithKwargs(BaseModel):
+    """
+    Base pydantic model schema. The default pydantic settings are set here.
+    """
+    class Config:
+        arbitrary_types_allowed = True  # since we have np.ndarray's etc
+        extra = 'allow'  # Allow extra fields
+
+
 class MetaData(CustomBaseModel):
     version: str = __version__
     config_spec: str = __config_spec__
-    version_warning: bool = False
+    version_warning: Optional[bool] = None  # None instead of False as same effect in logicals but hides from config
 
 
 class DetectorConfig(CustomBaseModel):
@@ -250,7 +267,7 @@ class PreprocessConfig(CustomBaseModel):
     "Optional max token length for text drift."
     batch_size: Optional[int] = int(1e10)
     "Batch size used during prediction."
-    dtype: Optional[str] = None
+    dtype: str = 'np.float32'
     "Model output type, e.g. `'tf.float32'`"
 
     # Additional kwargs
@@ -261,61 +278,12 @@ class PreprocessConfig(CustomBaseModel):
     """
 
 
-class PreprocessConfigResolved(CustomBaseModel):
-    """
-    Resolved schema for drift detector preprocess functions, to be passed to a detector's `preprocess_fn` kwarg.
-    Once loaded, the function is wrapped in a :func:`~functools.partial`, to be evaluated within the detector.
-
-    If `src` is a generic Python function, the dictionary specified by `kwargs` is passed to it. Otherwise,
-    if `src` is a :func:`~alibi_detect.cd.tensorflow.preprocess.preprocess_drift` function, all fields
-    (except `kwargs`) are passed to it.
-    """
-    src: Callable
-    "The preprocessing function."
-
-    # Below kwargs are only passed if src == @preprocess_drift
-    model: Optional[SupportedModels_types] = None
-    "Model used for preprocessing."
-    embedding: Optional[TransformerEmbedding] = None
-    """
-    A text embedding model. If `model=None`, the `embedding` is passed to
-    :func:`~alibi_detect.cd.tensorflow.preprocess.preprocess_drift` as `model`. Otherwise, the `model` is chained to
-    the output of the `embedding` as an additional preprocessing step.')
-    """
-    tokenizer: Optional[PreTrainedTokenizerBase] = None
-    "Optional tokenizer for text drift."
-    device: Optional[Any] = None
-    """
-    Device type used. The default `None` tries to use the GPU and falls back on CPU if needed. Only relevant if
-    function is :func:`~alibi_detect.cd.pytorch.preprocess.preprocess_drift`.
-    """
-    # TODO: Set as Any and None for now. Clarify when pytorch implemented
-    preprocess_batch_fn: Optional[Callable] = None
-    """
-    Optional batch preprocessing function. For example to convert a list of objects to a batch which can be processed
-    by the `model`.
-    """
-    max_len: Optional[int] = None
-    "Optional max token length for text drift."
-    batch_size: Optional[int] = int(1e10)
-    "Batch size used during prediction."
-    dtype: Optional[Union['tf.DType', np.dtype, type]] = None  # TODO - add pytorch
-    "Model output type, e.g. `tf.float32`"
-
-    # Additional kwargs
-    kwargs: dict = {}
-    """
-    Dictionary of keyword arguments to be passed to the function specified by `src`. Only used if `src` specifies a
-    generic Python function.
-    """
-
-
-class KernelConfig(CustomBaseModel):
+class KernelConfig(CustomBaseModelWithKwargs):
     """
     Unresolved schema for kernels, to be passed to a detector's `kernel` kwarg.
 
-    If `src` specifies a :class:`~alibi_detect.utils.tensorflow.GaussianRBF` kernel, the `sigma` and `trainable` fields
-    are passed to it. Otherwise, the `kwargs` field is passed.
+    If `src` specifies a :class:`~alibi_detect.utils.tensorflow.GaussianRBF` kernel, the `sigma`, `trainable` and
+    `init_sigma_fn` fields are passed to it. Otherwise, all fields except `src` are passed as kwargs.
 
     Examples
     --------
@@ -334,8 +302,6 @@ class KernelConfig(CustomBaseModel):
 
         [kernel]
         src = "mykernel.dill"
-
-        [kernel.kwargs]
         sigma = 0.42
         custom_setting = "xyz"
     """
@@ -351,34 +317,12 @@ class KernelConfig(CustomBaseModel):
     trainable: bool = False
     "Whether or not to track gradients w.r.t. sigma to allow it to be trained."
 
-    # Additional kwargs
-    kwargs: dict = {}
-    "Dictionary of keyword arguments to pass to the kernel."
-
-
-class KernelConfigResolved(CustomBaseModel):
+    init_sigma_fn: Optional[str] = None
     """
-    Resolved schema for kernels, to be passed to a detector's `kernel` kwarg.
-
-    If `src` is a :class:`~alibi_detect.utils.tensorflow.GaussianRBF` kernel, the `sigma` and `trainable` fields
-    are passed to it. Otherwise, the `kwargs` field is passed.
+    Function used to compute the bandwidth `sigma`. Used when `sigma` is to be inferred. The function's signature
+    should match :py:func:`~alibi_detect.utils.tensorflow.kernels.sigma_median`. If `None`, it is set to
+    :func:`~alibi_detect.utils.tensorflow.kernels.sigma_median`.
     """
-    src: Callable
-    "The kernel."
-
-    # Below kwargs are only passed if kernel == @GaussianRBF
-    sigma: Optional[NDArray[np.float32]] = None
-    """
-    Bandwidth used for the kernel. Needn’t be specified if being inferred or trained. Can pass multiple values to eval
-    kernel with and then average.
-    """
-
-    trainable: bool = False
-    "Whether or not to track gradients w.r.t. sigma to allow it to be trained."
-
-    # Additional kwargs
-    kwargs: dict = {}
-    "Dictionary of keyword arguments to pass to the kernel."
 
 
 class DeepKernelConfig(CustomBaseModel):
@@ -430,25 +374,30 @@ class DeepKernelConfig(CustomBaseModel):
     """
 
 
-class DeepKernelConfigResolved(CustomBaseModel):
+class OptimizerConfig(CustomBaseModelWithKwargs):
     """
-    Resolved schema for :class:`~alibi_detect.utils.tensorflow.kernels.DeepKernel`'s.
+    Unresolved schema for optimizers. Note that the model "backend" e.g. 'tensorflow', 'pytorch', 'sklearn', is set
+    by `backend` in :class:`DetectorConfig`. If `backend='tensorflow'`, the `optimizer` dictionary is expected to be
+    a configuration dictionary compatible with
+    `tf.keras.optimizers.deserialize <https://www.tensorflow.org/api_docs/python/tf/keras/optimizers/deserialize>`_.
+
+
+    Examples
+    --------
+    A TensorFlow Adam optimizer:
+
+    .. code-block :: toml
+
+        [optimizer]
+        class_name = "Adam"
+
+        [optimizer.config]
+        name = "Adam"
+        learning_rate = 0.001
+        decay = 0.0
     """
-    proj: SupportedModels_types
-    """
-    The projection to be applied to the inputs before applying `kernel_a`. This should be a Tensorflow or PyTorch model.
-    """
-    kernel_a: Union[Callable, KernelConfigResolved]
-    "The kernel to apply to the projected inputs."
-    kernel_b: Optional[Union[Callable, KernelConfigResolved]]
-    "The kernel to apply to the raw inputs. Set to None in order to use only the deep component (i.e. eps=0)."
-    # TODO - would be good to set kernel defaults to GaussianRBF(trainable=True). But not clear
-    #  how to do this and handle TensorFlow vs PyTorch (especially w/ optional deps)
-    eps: Union[float, str] = 'trainable'
-    """
-    The proportion (in [0,1]) of weight to assign to the kernel applied to raw inputs. This can be either specified or
-    set to `'trainable'`. Only relevant is `kernel_b` is not `None`.
-    """
+    class_name: str
+    config: Dict[str, Any]
 
 
 class DriftDetectorConfig(DetectorConfig):
@@ -458,13 +407,6 @@ class DriftDetectorConfig(DetectorConfig):
     # args/kwargs shared by all drift detectors
     x_ref: str
     "Data used as reference distribution. Should be a string referencing a NumPy `.npy` file."
-    p_val: float = .05
-    "p-value threshold used for significance of the statistical test."
-    x_ref_preprocessed: bool = False
-    """
-    Whether or not the reference data x_ref has already been preprocessed. If True, the reference data will be skipped
-    and preprocessing will only be applied to the test data passed to predict.
-    """
     preprocess_fn: Optional[Union[str, PreprocessConfig]] = None
     """
     Function to preprocess the data before computing the data drift metrics. A string referencing a serialized function
@@ -474,6 +416,12 @@ class DriftDetectorConfig(DetectorConfig):
     "Optionally pass the shape of the input data. Used when saving detectors."
     data_type: Optional[str] = None
     "Specify data type added to the metadata. E.g. `‘tabular’`or `‘image’`."
+    x_ref_preprocessed: bool = False
+    """
+    Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only the test
+    data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference data will also be
+    preprocessed.
+    """
 
 
 class DriftDetectorConfigResolved(DetectorConfig):
@@ -483,19 +431,18 @@ class DriftDetectorConfigResolved(DetectorConfig):
     # args/kwargs shared by all drift detectors
     x_ref: Union[np.ndarray, list]
     "Data used as reference distribution."
-    p_val: float = .05
-    "p-value threshold used for significance of the statistical test."
-    x_ref_preprocessed: bool = False
-    """
-    Whether or not the reference data x_ref has already been preprocessed. If True, the reference data will be skipped
-    and preprocessing will only be applied to the test data passed to predict.
-    """
-    preprocess_fn: Optional[Union[Callable, PreprocessConfigResolved]] = None
+    preprocess_fn: Optional[Callable] = None
     "Function to preprocess the data before computing the data drift metrics."
     input_shape: Optional[tuple] = None
     "Optionally pass the shape of the input data. Used when saving detectors."
     data_type: Optional[str] = None
     "Specify data type added to the metadata. E.g. `‘tabular’` or `‘image’`."
+    x_ref_preprocessed: bool = False
+    """
+    Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only the test
+    data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference data will also be
+    preprocessed.
+    """
 
 
 class KSDriftConfig(DriftDetectorConfig):
@@ -506,10 +453,11 @@ class KSDriftConfig(DriftDetectorConfig):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.KSDrift` documentation for a description of each field.
     """
+    p_val: float = .05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
-    correction: str = 'bonferroni'
-    alternative: str = 'two-sided'
+    correction: Literal['bonferroni', 'fdr'] = 'bonferroni'
+    alternative: Literal['two-sided', 'greater', 'less'] = 'two-sided'
     n_features: Optional[int] = None
 
 
@@ -522,10 +470,11 @@ class KSDriftConfigResolved(DriftDetectorConfigResolved):
     :class:`~alibi_detect.cd.KSDrift` documentation for a description of each field.
     Resolved schema for the :class:`~alibi_detect.cd.KSDrift` detector.
     """
+    p_val: float = .05
     preprocess_at_init: bool = True  # Note: Duplication needed to avoid mypy error (unless we allow reassignment)
     update_x_ref: Optional[Dict[str, int]] = None
-    correction: str = 'bonferroni'
-    alternative: str = 'two-sided'
+    correction: Literal['bonferroni', 'fdr'] = 'bonferroni'
+    alternative: Literal['two-sided', 'greater', 'less'] = 'two-sided'
     n_features: Optional[int] = None
 
 
@@ -537,9 +486,10 @@ class ChiSquareDriftConfig(DriftDetectorConfig):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.ChiSquareDrift` documentation for a description of each field.
     """
+    p_val: float = .05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
-    correction: str = 'bonferroni'
+    correction: Literal['bonferroni', 'fdr'] = 'bonferroni'
     categories_per_feature: Dict[int, Union[int, List[int]]] = None
     n_features: Optional[int] = None
 
@@ -552,6 +502,7 @@ class ChiSquareDriftConfigResolved(DriftDetectorConfigResolved):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.ChiSquareDrift` documentation for a description of each field.
     """
+    p_val: float = .05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
     correction: str = 'bonferroni'
@@ -567,11 +518,12 @@ class TabularDriftConfig(DriftDetectorConfig):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.TabularDrift` documentation for a description of each field.
     """
+    p_val: float = .05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
-    correction: str = 'bonferroni'
+    correction: Literal['bonferroni', 'fdr'] = 'bonferroni'
     categories_per_feature: Dict[int, Optional[Union[int, List[int]]]] = None
-    alternative: str = 'two-sided'
+    alternative: Literal['two-sided', 'greater', 'less'] = 'two-sided'
     n_features: Optional[int] = None
 
 
@@ -583,11 +535,12 @@ class TabularDriftConfigResolved(DriftDetectorConfigResolved):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.TabularDrift` documentation for a description of each field.
     """
+    p_val: float = .05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
-    correction: str = 'bonferroni'
+    correction: Literal['bonferroni', 'fdr'] = 'bonferroni'
     categories_per_feature: Dict[int, Optional[Union[int, List[int]]]] = None
-    alternative: str = 'two-sided'
+    alternative: Literal['two-sided', 'greater', 'less'] = 'two-sided'
     n_features: Optional[int] = None
 
 
@@ -599,9 +552,10 @@ class CVMDriftConfig(DriftDetectorConfig):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.CVMDrift` documentation for a description of each field.
     """
+    p_val: float = .05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
-    correction: str = 'bonferroni'
+    correction: Literal['bonferroni', 'fdr'] = 'bonferroni'
     n_features: Optional[int] = None
 
 
@@ -613,6 +567,7 @@ class CVMDriftConfigResolved(DriftDetectorConfigResolved):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.CVMDrift` documentation for a description of each field.
     """
+    p_val: float = .05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
     correction: str = 'bonferroni'
@@ -627,10 +582,11 @@ class FETDriftConfig(DriftDetectorConfig):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.FETDrift` documentation for a description of each field.
     """
+    p_val: float = .05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
-    correction: str = 'bonferroni'
-    alternative: str = 'two-sided'
+    correction: Literal['bonferroni', 'fdr'] = 'bonferroni'
+    alternative: Literal['two-sided', 'greater', 'less'] = 'two-sided'
     n_features: Optional[int] = None
 
 
@@ -642,10 +598,11 @@ class FETDriftConfigResolved(DriftDetectorConfigResolved):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.FETDrift` documentation for a description of each field.
     """
+    p_val: float = .05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
-    correction: str = 'bonferroni'
-    alternative: str = 'two-sided'
+    correction: Literal['bonferroni', 'fdr'] = 'bonferroni'
+    alternative: Literal['two-sided', 'greater', 'less'] = 'two-sided'
     n_features: Optional[int] = None
 
 
@@ -657,6 +614,7 @@ class MMDDriftConfig(DriftDetectorConfig):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.MMDDrift` documentation for a description of each field.
     """
+    p_val: float = .05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
     kernel: Optional[Union[str, KernelConfig]] = None
@@ -674,9 +632,10 @@ class MMDDriftConfigResolved(DriftDetectorConfigResolved):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.MMDDrift` documentation for a description of each field.
     """
+    p_val: float = .05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
-    kernel: Optional[Union[Callable, KernelConfigResolved]] = None
+    kernel: Optional[Callable] = None
     sigma: Optional[NDArray[np.float32]] = None
     configure_kernel_from_x_ref: bool = True
     n_permutations: int = 100
@@ -691,6 +650,7 @@ class LSDDDriftConfig(DriftDetectorConfig):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.LSDDDrift` documentation for a description of each field.
     """
+    p_val: float = .05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
     sigma: Optional[NDArray[np.float32]] = None
@@ -708,6 +668,7 @@ class LSDDDriftConfigResolved(DriftDetectorConfigResolved):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.LSDDDrift` documentation for a description of each field.
     """
+    p_val: float = .05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
     sigma: Optional[NDArray[np.float32]] = None
@@ -726,6 +687,7 @@ class ClassifierDriftConfig(DriftDetectorConfig):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.ClassifierDrift` documentation for a description of each field.
     """
+    p_val: float = .05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
     model: Union[str, ModelConfig]
@@ -736,15 +698,19 @@ class ClassifierDriftConfig(DriftDetectorConfig):
     n_folds: Optional[int] = None
     retrain_from_scratch: bool = True
     seed: int = 0
-    optimizer: Optional[Union[str, dict]] = None  # dict as can pass dict to tf.keras.optimizers.deserialize
+    optimizer: Optional[Union[str, OptimizerConfig]] = None
     learning_rate: float = 1e-3
     batch_size: int = 32
     preprocess_batch_fn: Optional[str] = None
     epochs: int = 3
     verbose: int = 0
     train_kwargs: Optional[dict] = None
-    dataset: str = '@alibi_detect.utils.tensorflow.data.TFDataset'
+    dataset: Optional[str] = None
     device: Optional[Literal['cpu', 'cuda']] = None
+    dataloader: Optional[str] = None  # TODO: placeholder, will need to be updated for pytorch implementation
+    use_calibration: bool = False
+    calibration_kwargs: Optional[dict] = None
+    use_oob: bool = False
 
 
 class ClassifierDriftConfigResolved(DriftDetectorConfigResolved):
@@ -756,6 +722,7 @@ class ClassifierDriftConfigResolved(DriftDetectorConfigResolved):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.ClassifierDrift` documentation for a description of each field.
     """
+    p_val: float = .05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
     model: Optional[SupportedModels_types] = None
@@ -775,6 +742,10 @@ class ClassifierDriftConfigResolved(DriftDetectorConfigResolved):
     train_kwargs: Optional[dict] = None
     dataset: Optional[Callable] = None
     device: Optional[Literal['cpu', 'cuda']] = None
+    dataloader: Optional[Callable] = None  # TODO: placeholder, will need to be updated for pytorch implementation
+    use_calibration: bool = False
+    calibration_kwargs: Optional[dict] = None
+    use_oob: bool = False
 
 
 class SpotTheDiffDriftConfig(DriftDetectorConfig):
@@ -786,24 +757,26 @@ class SpotTheDiffDriftConfig(DriftDetectorConfig):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.SpotTheDiffDrift` documentation for a description of each field.
     """
+    p_val: float = .05
     binarize_preds: bool = False
     train_size: Optional[float] = .75
     n_folds: Optional[int] = None
     retrain_from_scratch: bool = True
     seed: int = 0
-    optimizer: Optional[Union[str, dict]] = None  # dict as can pass dict to tf.keras.optimizers.deserialize
+    optimizer: Optional[Union[str, OptimizerConfig]] = None
     learning_rate: float = 1e-3
     batch_size: int = 32
     preprocess_batch_fn: Optional[str] = None
     epochs: int = 3
     verbose: int = 0
     train_kwargs: Optional[dict] = None
-    dataset: str = '@alibi_detect.utils.tensorflow.data.TFDataset'
+    dataset: Optional[str] = None
     kernel: Optional[Union[str, KernelConfig]] = None
     n_diffs: int = 1
     initial_diffs: Optional[str] = None
     l1_reg: float = 0.01
     device: Optional[Literal['cpu', 'cuda']] = None
+    dataloader: Optional[str] = None  # TODO: placeholder, will need to be updated for pytorch implementation
 
 
 class SpotTheDiffDriftConfigResolved(DriftDetectorConfigResolved):
@@ -815,6 +788,7 @@ class SpotTheDiffDriftConfigResolved(DriftDetectorConfigResolved):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.SpotTheDiffDrift` documentation for a description of each field.
     """
+    p_val: float = .05
     binarize_preds: bool = False
     train_size: Optional[float] = .75
     n_folds: Optional[int] = None
@@ -828,11 +802,12 @@ class SpotTheDiffDriftConfigResolved(DriftDetectorConfigResolved):
     verbose: int = 0
     train_kwargs: Optional[dict] = None
     dataset: Optional[Callable] = None
-    kernel: Optional[Union[Callable, KernelConfigResolved]] = None
+    kernel: Optional[Callable] = None
     n_diffs: int = 1
     initial_diffs: Optional[np.ndarray] = None
     l1_reg: float = 0.01
     device: Optional[Literal['cpu', 'cuda']] = None
+    dataloader: Optional[Callable] = None  # TODO: placeholder, will need to be updated for pytorch implementation
 
 
 class LearnedKernelDriftConfig(DriftDetectorConfig):
@@ -844,6 +819,7 @@ class LearnedKernelDriftConfig(DriftDetectorConfig):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.LearnedKernelDrift` documentation for a description of each field.
     """
+    p_val: float = .05
     kernel: Union[str, DeepKernelConfig]
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
@@ -852,15 +828,16 @@ class LearnedKernelDriftConfig(DriftDetectorConfig):
     reg_loss_fn: Optional[str] = None
     train_size: Optional[float] = .75
     retrain_from_scratch: bool = True
-    optimizer: Optional[Union[str, dict]] = None  # dict as can pass dict to tf.keras.optimizers.deserialize
+    optimizer: Optional[Union[str, OptimizerConfig]] = None
     learning_rate: float = 1e-3
     batch_size: int = 32
     preprocess_batch_fn: Optional[str] = None
     epochs: int = 3
     verbose: int = 0
     train_kwargs: Optional[dict] = None
-    dataset: str = '@alibi_detect.utils.tensorflow.data.TFDataset'
+    dataset: Optional[str] = None
     device: Optional[Literal['cpu', 'cuda']] = None
+    dataloader: Optional[str] = None  # TODO: placeholder, will need to be updated for pytorch implementation
 
 
 class LearnedKernelDriftConfigResolved(DriftDetectorConfigResolved):
@@ -872,7 +849,8 @@ class LearnedKernelDriftConfigResolved(DriftDetectorConfigResolved):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.LearnedKernelDrift` documentation for a description of each field.
     """
-    kernel: Optional[Union[Callable, DeepKernelConfigResolved]] = None
+    p_val: float = .05
+    kernel: Optional[Callable] = None
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
     n_permutations: int = 100
@@ -889,6 +867,314 @@ class LearnedKernelDriftConfigResolved(DriftDetectorConfigResolved):
     train_kwargs: Optional[dict] = None
     dataset: Optional[Callable] = None
     device: Optional[Literal['cpu', 'cuda']] = None
+    dataloader: Optional[Callable] = None  # TODO: placeholder, will need to be updated for pytorch implementation
+
+
+class ContextMMDDriftConfig(DriftDetectorConfig):
+    """
+    Unresolved schema for the
+    `ContextMMDDrift <https://docs.seldon.io/projects/alibi-detect/en/stable/cd/methods/contextmmddrift.html>`_
+    detector.
+
+    Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
+    :class:`~alibi_detect.cd.ContextMMDDrift` documentation for a description of each field.
+    """
+    p_val: float = .05
+    c_ref: str
+    preprocess_at_init: bool = True
+    update_ref: Optional[Dict[str, int]] = None
+    x_kernel: Optional[Union[str, KernelConfig]] = None
+    c_kernel: Optional[Union[str, KernelConfig]] = None
+    n_permutations: int = 100
+    prop_c_held: float = 0.25
+    n_folds: int = 5
+    batch_size: Optional[int] = 256
+    verbose: bool = False
+    device: Optional[Literal['cpu', 'cuda']] = None
+
+
+class ContextMMDDriftConfigResolved(DriftDetectorConfigResolved):
+    """
+    Resolved schema for the
+    `MMDDrift <https://docs.seldon.io/projects/alibi-detect/en/stable/cd/methods/mmddrift.html>`_ detector.
+
+    Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
+    :class:`~alibi_detect.cd.MMDDrift` documentation for a description of each field.
+    """
+    p_val: float = .05
+    c_ref: np.ndarray
+    preprocess_at_init: bool = True
+    update_ref: Optional[Dict[str, int]] = None
+    x_kernel: Optional[Callable] = None
+    c_kernel: Optional[Callable] = None
+    n_permutations: int = 100
+    prop_c_held: float = 0.25
+    n_folds: int = 5
+    batch_size: Optional[int] = 256
+    verbose: bool = False
+    device: Optional[Literal['cpu', 'cuda']] = None
+
+
+class MMDDriftOnlineConfig(DriftDetectorConfig):
+    """
+    Unresolved schema for the
+    `MMDDriftOnline <https://docs.seldon.io/projects/alibi-detect/en/stable/cd/methods/onlinemmddrift.html>`_
+    detector.
+
+    Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
+    :class:`~alibi_detect.cd.MMDDriftOnline` documentation for a description of each field.
+    """
+    ert: float
+    window_size: int
+    kernel: Optional[Union[str, KernelConfig]] = None
+    sigma: Optional[np.ndarray] = None
+    n_bootstraps: int = 1000
+    device: Optional[Literal['cpu', 'cuda']] = None
+    verbose: bool = True
+
+
+class MMDDriftOnlineConfigResolved(DriftDetectorConfigResolved):
+    """
+    Resolved schema for the
+    `MMDDriftOnline <https://docs.seldon.io/projects/alibi-detect/en/stable/cd/methods/onlinemmddrift.html>`_
+    detector.
+
+    Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
+    :class:`~alibi_detect.cd.MMDDriftOnline` documentation for a description of each field.
+    """
+    ert: float
+    window_size: int
+    kernel: Optional[Callable] = None
+    sigma: Optional[np.ndarray] = None
+    n_bootstraps: int = 1000
+    device: Optional[Literal['cpu', 'cuda']] = None
+    verbose: bool = True
+
+
+class LSDDDriftOnlineConfig(DriftDetectorConfig):
+    """
+    Unresolved schema for the
+    `LSDDDriftOnline <https://docs.seldon.io/projects/alibi-detect/en/stable/cd/methods/onlinelsdddrift.html>`_
+    detector.
+
+    Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
+    :class:`~alibi_detect.cd.LSDDDriftOnline` documentation for a description of each field.
+    """
+    ert: float
+    window_size: int
+    sigma: Optional[np.ndarray] = None
+    n_bootstraps: int = 1000
+    n_kernel_centers: Optional[int] = None
+    lambda_rd_max: float = 0.2
+    device: Optional[Literal['cpu', 'cuda']] = None
+    verbose: bool = True
+
+
+class LSDDDriftOnlineConfigResolved(DriftDetectorConfigResolved):
+    """
+    Resolved schema for the
+    `LSDDDriftOnline <https://docs.seldon.io/projects/alibi-detect/en/stable/cd/methods/onlinelsdddrift.html>`_
+    detector.
+
+    Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
+    :class:`~alibi_detect.cd.LSDDDriftOnline` documentation for a description of each field.
+    """
+    ert: float
+    window_size: int
+    sigma: Optional[np.ndarray] = None
+    n_bootstraps: int = 1000
+    n_kernel_centers: Optional[int] = None
+    lambda_rd_max: float = 0.2
+    device: Optional[Literal['cpu', 'cuda']] = None
+    verbose: bool = True
+
+
+class CVMDriftOnlineConfig(DriftDetectorConfig):
+    """
+    Unresolved schema for the
+    `CVMDriftOnline <https://docs.seldon.io/projects/alibi-detect/en/stable/cd/methods/onlinecvmdrift.html>`_
+    detector.
+
+    Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
+    :class:`~alibi_detect.cd.CVMDriftOnline` documentation for a description of each field.
+    """
+    ert: float
+    window_sizes: List[int]
+    n_bootstraps: int = 10000
+    batch_size: int = 64
+    n_features: Optional[int] = None
+    verbose: bool = True
+
+    # validators
+    _coerce_int2list = validator('window_sizes', allow_reuse=True, pre=True)(coerce_int2list)
+
+
+class CVMDriftOnlineConfigResolved(DriftDetectorConfigResolved):
+    """
+    Resolved schema for the
+    `CVMDriftOnline <https://docs.seldon.io/projects/alibi-detect/en/stable/cd/methods/onlinecvmdrift.html>`_
+    detector.
+
+    Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
+    :class:`~alibi_detect.cd.CVMDriftOnline` documentation for a description of each field.
+    """
+    ert: float
+    window_sizes: List[int]
+    n_bootstraps: int = 10000
+    batch_size: int = 64
+    n_features: Optional[int] = None
+    verbose: bool = True
+
+    # validators
+    _coerce_int2list = validator('window_sizes', allow_reuse=True, pre=True)(coerce_int2list)
+
+
+class FETDriftOnlineConfig(DriftDetectorConfig):
+    """
+    Unresolved schema for the
+    `FETDriftOnline <https://docs.seldon.io/projects/alibi-detect/en/stable/cd/methods/onlinefetdrift.html>`_
+    detector.
+
+    Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
+    :class:`~alibi_detect.cd.FETDriftOnline` documentation for a description of each field.
+    """
+    ert: float
+    window_sizes: List[int]
+    n_bootstraps: int = 10000
+    t_max: Optional[int] = None
+    alternative: Literal['greater', 'less'] = 'greater'
+    lam: float = 0.99
+    n_features: Optional[int] = None
+    verbose: bool = True
+
+    # validators
+    _coerce_int2list = validator('window_sizes', allow_reuse=True, pre=True)(coerce_int2list)
+
+
+class FETDriftOnlineConfigResolved(DriftDetectorConfigResolved):
+    """
+    Resolved schema for the
+    `FETDriftOnline <https://docs.seldon.io/projects/alibi-detect/en/stable/cd/methods/onlinefetdrift.html>`_
+    detector.
+
+    Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
+    :class:`~alibi_detect.cd.FETDriftOnline` documentation for a description of each field.
+    """
+    ert: float
+    window_sizes: List[int]
+    n_bootstraps: int = 10000
+    t_max: Optional[int] = None
+    alternative: Literal['greater', 'less'] = 'greater'
+    lam: float = 0.99
+    n_features: Optional[int] = None
+    verbose: bool = True
+
+    # validators
+    _coerce_int2list = validator('window_sizes', allow_reuse=True, pre=True)(coerce_int2list)
+
+
+# The uncertainty detectors don't inherit from DriftDetectorConfig since their kwargs are a little different from the
+# other drift detectors (e.g. no preprocess_fn). Subject to change in the future.
+class ClassifierUncertaintyDriftConfig(DetectorConfig):
+    """
+    Unresolved schema for the
+    `ClassifierUncertaintyDrift <https://docs.seldon.io/projects/alibi-detect/en/stable/cd/methods/modeluncdrift.html>`_
+    detector.
+
+    Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
+    :class:`~alibi_detect.cd.ClassifierUncertaintyDrift` documentation for a description of each field.
+    """
+    x_ref: str
+    model: Union[str, ModelConfig]
+    p_val: float = .05
+    x_ref_preprocessed: bool = False
+    update_x_ref: Optional[Dict[str, int]] = None
+    preds_type: Literal['probs', 'logits'] = 'probs'
+    uncertainty_type: Literal['entropy', 'margin'] = 'entropy'
+    margin_width: float = 0.1
+    batch_size: int = 32
+    preprocess_batch_fn: Optional[str] = None
+    device: Optional[str] = None
+    tokenizer: Optional[Union[str, TokenizerConfig]] = None
+    max_len: Optional[int] = None
+    input_shape: Optional[tuple] = None
+    data_type: Optional[str] = None
+
+
+class ClassifierUncertaintyDriftConfigResolved(DetectorConfig):
+    """
+    Resolved schema for the
+    `ClassifierUncertaintyDrift <https://docs.seldon.io/projects/alibi-detect/en/stable/cd/methods/modeluncdrift.html>`_
+    detector.
+
+    Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
+    :class:`~alibi_detect.cd.ClassifierUncertaintyDrift` documentation for a description of each field.
+    """
+    x_ref: Union[np.ndarray, list]
+    model: Optional[SupportedModels_types] = None
+    p_val: float = .05
+    x_ref_preprocessed: bool = False
+    update_x_ref: Optional[Dict[str, int]] = None
+    preds_type: Literal['probs', 'logits'] = 'probs'
+    uncertainty_type: Literal['entropy', 'margin'] = 'entropy'
+    margin_width: float = 0.1
+    batch_size: int = 32
+    preprocess_batch_fn: Optional[Callable] = None
+    device: Optional[str] = None
+    tokenizer: Optional[Union[str, Callable]] = None
+    max_len: Optional[int] = None
+    input_shape: Optional[tuple] = None
+    data_type: Optional[str] = None
+
+
+class RegressorUncertaintyDriftConfig(DetectorConfig):
+    """
+    Unresolved schema for the
+    `RegressorUncertaintyDrift <https://docs.seldon.io/projects/alibi-detect/en/stable/cd/methods/modeluncdrift.html>`_
+    detector.
+
+    Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
+    :class:`~alibi_detect.cd.RegressorUncertaintyDrift` documentation for a description of each field.
+    """
+    x_ref: str
+    model: Union[str, ModelConfig]
+    p_val: float = .05
+    x_ref_preprocessed: bool = False
+    update_x_ref: Optional[Dict[str, int]] = None
+    uncertainty_type: Literal['mc_dropout', 'ensemble'] = 'mc_dropout'
+    n_evals: int = 25
+    batch_size: int = 32
+    preprocess_batch_fn: Optional[str] = None
+    device: Optional[str] = None
+    tokenizer: Optional[Union[str, TokenizerConfig]] = None
+    max_len: Optional[int] = None
+    input_shape: Optional[tuple] = None
+    data_type: Optional[str] = None
+
+
+class RegressorUncertaintyDriftConfigResolved(DetectorConfig):
+    """
+    Resolved schema for the
+    `RegressorUncertaintyDrift <https://docs.seldon.io/projects/alibi-detect/en/stable/cd/methods/modeluncdrift.html>`_
+    detector.
+
+    Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
+    :class:`~alibi_detect.cd.RegressorUncertaintyDrift` documentation for a description of each field.
+    """
+    x_ref: Union[np.ndarray, list]
+    model: Optional[SupportedModels_types] = None
+    p_val: float = .05
+    x_ref_preprocessed: bool = False
+    update_x_ref: Optional[Dict[str, int]] = None
+    uncertainty_type: Literal['mc_dropout', 'ensemble'] = 'mc_dropout'
+    n_evals: int = 25
+    batch_size: int = 32
+    preprocess_batch_fn: Optional[Callable] = None
+    device: Optional[str] = None
+    tokenizer: Optional[Callable] = None
+    max_len: Optional[int] = None
+    input_shape: Optional[tuple] = None
+    data_type: Optional[str] = None
 
 
 # Unresolved schema dictionary (used in alibi_detect.utils.loading)
@@ -902,8 +1188,15 @@ DETECTOR_CONFIGS = {
     'LSDDDrift': LSDDDriftConfig,
     'ClassifierDrift': ClassifierDriftConfig,
     'SpotTheDiffDrift': SpotTheDiffDriftConfig,
-    'LearnedKernelDrift': LearnedKernelDriftConfig
-}  # type: Dict[str, Type[DriftDetectorConfig]]
+    'LearnedKernelDrift': LearnedKernelDriftConfig,
+    'ContextMMDDrift': ContextMMDDriftConfig,
+    'MMDDriftOnline': MMDDriftOnlineConfig,
+    'LSDDDriftOnline': LSDDDriftOnlineConfig,
+    'CVMDriftOnline': CVMDriftOnlineConfig,
+    'FETDriftOnline': FETDriftOnlineConfig,
+    'ClassifierUncertaintyDrift': ClassifierUncertaintyDriftConfig,
+    'RegressorUncertaintyDrift': RegressorUncertaintyDriftConfig,
+}  # type: Dict[str, Type[DetectorConfig]]
 
 
 # Resolved schema dictionary (used in alibi_detect.utils.loading)
@@ -917,5 +1210,12 @@ DETECTOR_CONFIGS_RESOLVED = {
     'LSDDDrift': LSDDDriftConfigResolved,
     'ClassifierDrift': ClassifierDriftConfigResolved,
     'SpotTheDiffDrift': SpotTheDiffDriftConfigResolved,
-    'LearnedKernelDrift': LearnedKernelDriftConfigResolved
-}  # type: Dict[str, Type[DriftDetectorConfigResolved]]
+    'LearnedKernelDrift': LearnedKernelDriftConfigResolved,
+    'ContextMMDDrift': ContextMMDDriftConfigResolved,
+    'MMDDriftOnline': MMDDriftOnlineConfigResolved,
+    'LSDDDriftOnline': LSDDDriftOnlineConfigResolved,
+    'CVMDriftOnline': CVMDriftOnlineConfigResolved,
+    'FETDriftOnline': FETDriftOnlineConfigResolved,
+    'ClassifierUncertaintyDrift': ClassifierUncertaintyDriftConfigResolved,
+    'RegressorUncertaintyDrift': RegressorUncertaintyDriftConfigResolved,
+}  # type: Dict[str, Type[DetectorConfig]]

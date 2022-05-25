@@ -3,6 +3,7 @@ import numpy as np
 from typing import Callable, Dict, Optional, Union, Tuple
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
 from alibi_detect.utils.warnings import deprecated_alias
+from alibi_detect.base import DriftConfigMixin
 
 if has_pytorch:
     from alibi_detect.cd.pytorch.mmd import MMDDriftTorch
@@ -13,7 +14,7 @@ if has_tensorflow:
 logger = logging.getLogger(__name__)
 
 
-class MMDDrift:
+class MMDDrift(DriftConfigMixin):
     @deprecated_alias(preprocess_x_ref='preprocess_at_init')
     def __init__(
             self,
@@ -74,6 +75,9 @@ class MMDDrift:
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
         super().__init__()
+
+        # Set config
+        self._set_config(locals())
 
         backend = backend.lower()
         if backend == 'tensorflow' and not has_tensorflow or backend == 'pytorch' and not has_pytorch:
@@ -139,13 +143,3 @@ class MMDDrift:
         and the MMD^2 values from the permutation test.
         """
         return self._detector.score(x)
-
-    def get_config(self) -> dict:
-        """
-        Get the detector's configuration dictionary.
-
-        Returns
-        -------
-        The detector's configuration dictionary.
-        """
-        return self._detector.get_config()

@@ -80,7 +80,7 @@ class LSDDDriftTF(BaseLSDDDrift):
         )
         self.meta.update({'backend': 'tensorflow'})
 
-        if self.preprocess_at_init:
+        if self.preprocess_at_init or self.preprocess_fn is None or self.x_ref_preprocessed:
             x_ref = tf.convert_to_tensor(self.x_ref)
             self._configure_normalization(x_ref)
             x_ref = self._normalize(x_ref)
@@ -103,6 +103,7 @@ class LSDDDriftTF(BaseLSDDDrift):
         x_ref_means = tf.reduce_mean(x_ref, axis=0)
         x_ref_stds = tf.math.reduce_std(x_ref, axis=0)
         self._normalize = lambda x: (x - x_ref_means) / (x_ref_stds + eps)  # type: ignore[assignment]
+        self._unnormalize = lambda x: (x * (x_ref_stds + eps) + x_ref_means).numpy()  # type: ignore[assignment]
 
     def _configure_kernel_centers(self, x_ref: tf.Tensor):
         "Set aside reference samples to act as kernel centers"
@@ -132,7 +133,7 @@ class LSDDDriftTF(BaseLSDDDrift):
         """
         x_ref, x = self.preprocess(x)
 
-        if not self.preprocess_at_init:
+        if self.preprocess_fn is not None and not self.preprocess_at_init and not self.x_ref_preprocessed:
             self._configure_normalization(x_ref)
             x_ref = self._normalize(x_ref)
             self._initialize_kernel(x_ref)
@@ -156,15 +157,3 @@ class LSDDDriftTF(BaseLSDDDrift):
 
         p_val = tf.reduce_mean(tf.cast(lsdd <= lsdd_permuted, float))
         return float(p_val), float(lsdd), lsdd_permuted.numpy()
-
-    def get_config(self) -> dict:
-        """
-        Get the detector's configuration dictionary.
-
-        Returns
-        -------
-        The detector's configuration dictionary.
-        """
-        cfg = super().get_config()
-
-        return cfg

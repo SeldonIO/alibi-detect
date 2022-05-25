@@ -2,14 +2,14 @@ from abc import ABC, abstractmethod
 import copy
 import json
 import numpy as np
-from typing import Dict, Any, Optional, Callable
+from typing import Dict, Any, Optional
 from alibi_detect.version import __version__, __config_spec__
 
 DEFAULT_META = {
     "name": None,
     "detector_type": None,  # online or offline
     "data_type": None,  # tabular, image or time-series
-    "version": None,
+    "version": None
 }  # type: Dict
 
 
@@ -93,40 +93,86 @@ class ThresholdMixin(ABC):
         pass
 
 
+# "Large artefacts" - to save memory these are skipped in _set_config(), but added back in get_config()
+# Note: The current implementation assumes the artefact is stored as a class attribute, and as a config field under
+# the same name. Refactoring will be required if this assumption is to be broken.
+LARGE_ARTEFACTS = ['x_ref', 'c_ref', 'preprocess_fn']
+
+
 class DriftConfigMixin:
     """
-    A mixin class to be used by detector `get_config` methods. The `drift_config` method defines the initial
-    generic configuration dict for all detectors, which is then fully populated by a detector's get_config method(s).
+    A mixin class containing methods related to a drift detector's configuration dictionary.
     """
-    x_ref: np.ndarray
-    preprocess_fn: Optional[Callable] = None
+    config: Optional[dict] = None
 
-    def drift_config(self):
+    def get_config(self) -> dict:  # TODO - move to BaseDetector once config save/load implemented for non-drift
+        """
+        Get the detector's configuration dictionary.
+
+        Returns
+        -------
+        The detector's configuration dictionary.
+        """
+        if self.config is not None:
+            # Get config (stored in top-level self)
+            cfg = self.config
+            # Get low-level nested detector (if needed)
+            detector = self._detector if hasattr(self, '_detector') else self  # type: ignore[attr-defined]
+            detector = detector._detector if hasattr(detector, '_detector') else detector  # type: ignore[attr-defined]
+            # Add large artefacts back to config
+            for key in LARGE_ARTEFACTS:
+                if key in cfg:  # self.config is validated, therefore if a key is not in cfg, it isn't valid to insert
+                    cfg[key] = getattr(detector, key)
+            # Set x_ref_preprocessed flag
+            preprocess_at_init = getattr(detector, 'preprocess_at_init', True)  # If no preprocess_at_init, always true!
+            cfg['x_ref_preprocessed'] = preprocess_at_init and detector.preprocess_fn is not None
+            return cfg
+        else:
+            raise NotImplementedError('Getting a config (or saving via a config file) is not yet implemented for this'
+                                      'detector')
+
+    @classmethod
+    def from_config(cls, config: dict):
+        """
+        Instantiate a drift detector from a fully resolved (and validated) config dictionary.
+
+        Parameters
+        ----------
+        config
+            A config dictionary matching the schema's in :class:`~alibi_detect.saving.schemas`.
+        """
+        # Check for exisiting version_warning. meta is pop'd as don't want to pass as arg/kwarg
+        version_warning = config.pop('meta', {}).pop('version_warning', False)
+        # Init detector
+        detector = cls(**config)
+        # Add version_warning
+        detector.meta['version_warning'] = version_warning  # type: ignore[attr-defined]
+        detector.config['meta']['version_warning'] = version_warning
+        return detector
+
+    def _set_config(self, inputs):  # TODO - move to BaseDetector once config save/load implemented for non-drift
+        # Set config metadata
         name = self.__class__.__name__
-        # strip off any backend suffix
-        backends = ['TF', 'Torch', 'Sklearn']
-        for backend in backends:
-            if name.endswith(backend):
-                name = name[:-len(backend)]
+
         # Init config dict
-        cfg: Dict[str, Any] = {'name': name}
-
-        # Add x_ref
-        cfg.update({'x_ref': self.x_ref})
-
-        # Add preprocess_fn field
-        if self.preprocess_fn is not None:
-            cfg.update({'preprocess_fn': self.preprocess_fn})
-
-        # Populate meta dict and add to config
-        cfg_meta = {
-            'version': __version__,
-            'config_spec': __config_spec__,
-            'version_warning': self.meta.get('version_warning', False)
+        self.config: Dict[str, Any] = {
+            'name': name,
+            'meta': {
+                'version': __version__,
+                'config_spec': __config_spec__,
+            }
         }
-        cfg.update({'meta': cfg_meta})
 
-        return cfg
+        # args and kwargs
+        pop_inputs = ['self', '__class__', '__len__', 'name', 'meta']
+        [inputs.pop(k, None) for k in pop_inputs]
+
+        # Overwrite any large artefacts with None to save memory. They'll be added back by get_config()
+        for key in LARGE_ARTEFACTS:
+            if key in inputs:
+                inputs[key] = None
+
+        self.config.update(inputs)
 
 
 class NumpyEncoder(json.JSONEncoder):

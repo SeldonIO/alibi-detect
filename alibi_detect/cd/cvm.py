@@ -71,6 +71,8 @@ class CVMDrift(BaseUnivariateDrift):
             input_shape=input_shape,
             data_type=data_type
         )
+        # Set config
+        self._set_config(locals())
 
     def feature_score(self, x_ref: np.ndarray, x: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -95,15 +97,3 @@ class CVMDrift(BaseUnivariateDrift):
             result = cramervonmises_2samp(x_ref[:, f], x[:, f], method='auto')
             p_val[f], dist[f] = result.pvalue, result.statistic
         return p_val, dist
-
-    def get_config(self) -> dict:
-        """
-        Get the detector's configuration dictionary.
-
-        Returns
-        -------
-        The detector's configuration dictionary.
-        """
-        cfg = super().get_config()
-
-        return cfg

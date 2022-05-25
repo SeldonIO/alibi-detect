@@ -4,14 +4,14 @@ import shutil
 import warnings
 from functools import partial
 from pathlib import Path
-from typing import Callable, Optional, Tuple, Union, get_args
+from typing import Callable, Optional, Tuple, Union
 
 import dill
 import numpy as np
 import toml
 from transformers import PreTrainedTokenizerBase
 
-from alibi_detect.saving.loading import Detector, _replace
+from alibi_detect.saving.loading import Detector, _replace, validate_config
 from alibi_detect.saving.registry import registry
 from alibi_detect.saving.schemas import SupportedModels
 from alibi_detect.saving.tensorflow._saving import save_detector_legacy
@@ -24,6 +24,7 @@ dill.extend(use_dill=False)
 logger = logging.getLogger(__name__)
 
 X_REF_FILENAME = 'x_ref.npy'
+C_REF_FILENAME = 'c_ref.npy'
 
 
 def save_detector(detector: Detector, filepath: Union[str, os.PathLike], legacy: bool = False) -> None:
@@ -46,8 +47,9 @@ def save_detector(detector: Detector, filepath: Union[str, os.PathLike], legacy:
     if 'backend' in list(detector.meta.keys()) and detector.meta['backend'] in ['pytorch', 'sklearn']:
         raise NotImplementedError('Saving detectors with PyTorch or sklearn backend is not yet supported.')
 
+    # TODO: Replace .__args__ w/ typing.get_args() once Python 3.7 dropped (and remove type ignore below)
     detector_name = detector.__class__.__name__
-    if detector_name not in [detector.__name__ for detector in get_args(Detector)]:
+    if detector_name not in [detector.__name__ for detector in Detector.__args__]:  # type: ignore[attr-defined]
         raise NotImplementedError(f'{detector_name} is not supported by `save_detector`.')
 
     # Get a list of all existing files in `filepath` (so we know what not to cleanup if an error occurs)
@@ -132,16 +134,23 @@ def _save_detector_config(detector: Detector, filepath: Union[str, os.PathLike])
         filepath.mkdir(parents=True, exist_ok=True)
 
     # Get the detector config (with artefacts still within it)
-    cfg = getattr(detector, 'get_config', None)
-    if cfg is not None:
-        cfg = cfg()  # TODO - can just do detector.get_config() once all detectors have a .get_config()
+    if hasattr(detector, 'get_config'):
+        cfg = detector.get_config()  # type: ignore[union-attr]  # TODO - remove once all detectors have get_config
+        cfg = validate_config(cfg, resolved=True)
     else:
-        raise NotImplementedError(f'{detector_name} is not supported by `save_detector`.')
+        raise NotImplementedError(f'{detector_name} does not yet support config.toml based saving.')
 
     # Save x_ref
     save_path = filepath.joinpath(X_REF_FILENAME)
     np.save(str(save_path), cfg['x_ref'])
     cfg.update({'x_ref': X_REF_FILENAME})
+
+    # Save c_ref
+    c_ref = cfg.get('c_ref', None)
+    if c_ref is not None:
+        save_path = filepath.joinpath(C_REF_FILENAME)
+        np.save(str(save_path), cfg['c_ref'])
+        cfg.update({'c_ref': C_REF_FILENAME})
 
     # Save preprocess_fn
     preprocess_fn = cfg.get('preprocess_fn', None)
@@ -150,15 +159,14 @@ def _save_detector_config(detector: Detector, filepath: Union[str, os.PathLike])
         preprocess_cfg = _save_preprocess_config(preprocess_fn, backend, cfg['input_shape'], filepath)
         cfg['preprocess_fn'] = preprocess_cfg
 
-    # Serialize kernel
-    kernel = cfg.get('kernel', None)
-    if kernel is not None:
-        device = getattr(detector, 'device', None)
-        device = device.type if device is not None else None
-        cfg['kernel'] = _save_kernel_config(kernel, filepath, device=device)
-        if isinstance(kernel, dict):  # serialise proj from DeepKernel
-            cfg['kernel']['proj'], _ = _save_model_config(kernel['proj'], base_path=filepath,
-                                                          input_shape=cfg['input_shape'], backend=backend)
+    # Serialize kernels
+    for kernel_str in ('kernel', 'x_kernel', 'c_kernel'):
+        kernel = cfg.get(kernel_str, None)
+        if kernel is not None:
+            cfg[kernel_str] = _save_kernel_config(kernel, filepath, Path(kernel_str))
+            if 'proj' in cfg[kernel_str]:  # serialise proj from DeepKernel - do here as need input_shape
+                cfg[kernel_str]['proj'], _ = _save_model_config(cfg[kernel_str]['proj'], base_path=filepath,
+                                                                input_shape=cfg['input_shape'], backend=backend)
 
     # ClassifierDrift and SpotTheDiffDrift specific artefacts.
     # Serialize detector model
@@ -170,7 +178,7 @@ def _save_detector_config(detector: Detector, filepath: Union[str, os.PathLike])
     # Serialize dataset
     dataset = cfg.get('dataset', None)
     if dataset is not None:
-        dataset_cfg, dataset_kwargs = _serialize_function(dataset, filepath, Path('dataset'))
+        dataset_cfg, dataset_kwargs = _serialize_object(dataset, filepath, Path('dataset'))
         cfg.update({'dataset': dataset_cfg})
         if len(dataset_kwargs) != 0:
             cfg['dataset']['kwargs'] = dataset_kwargs
@@ -178,7 +186,7 @@ def _save_detector_config(detector: Detector, filepath: Union[str, os.PathLike])
     # Serialize reg_loss_fn
     reg_loss_fn = cfg.get('reg_loss_fn', None)
     if reg_loss_fn is not None:
-        reg_loss_fn_cfg, _ = _serialize_function(reg_loss_fn, filepath, Path('reg_loss_fn'))
+        reg_loss_fn_cfg, _ = _serialize_object(reg_loss_fn, filepath, Path('reg_loss_fn'))
         cfg['reg_loss_fn'] = reg_loss_fn_cfg
 
     # Save initial_diffs
@@ -203,12 +211,20 @@ def write_config(cfg: dict, filepath: Union[str, os.PathLike]):
     filepath
         Filepath to directory to save 'config.toml' file in.
     """
+    # Create directory if it doesn't exist
     filepath = Path(filepath)
     if not filepath.is_dir():
         logger.warning('Directory {} does not exist and is now created.'.format(filepath))
         filepath.mkdir(parents=True, exist_ok=True)
+    # Convert pathlib.Path's to str's
     cfg = _path2str(cfg)
+    # Validate config before final tweaks
+    validate_config(cfg)  # Must validate here as replacing None w/ str will break validation
+    # Replace None with "None", and dicts with integer keys with str keys
+    # TODO: Subject to change depending on toml library updates
     cfg = _replace(cfg, None, "None")  # Note: None replaced with "None" as None/null not valid TOML
+    cfg = _int2str_keys(cfg)
+    # Write to TOML file
     logger.info('Writing config to {}'.format(filepath.joinpath('config.toml')))
     with open(filepath.joinpath('config.toml'), 'w') as f:
         toml.dump(cfg, f, encoder=toml.TomlNumpyEncoder())  # type: ignore[misc]
@@ -242,7 +258,7 @@ def _save_preprocess_config(preprocess_fn: Callable,
     local_path = Path('preprocess_fn')
 
     # Serialize function
-    func, func_kwargs = _serialize_function(preprocess_fn, filepath, local_path.joinpath('function'))
+    func, func_kwargs = _serialize_object(preprocess_fn, filepath, local_path.joinpath('function'))
     preprocess_cfg.update({'src': func})
 
     # Process partial function kwargs (if they exist)
@@ -262,7 +278,7 @@ def _save_preprocess_config(preprocess_fn: Callable,
 
         # Arbitrary function
         elif callable(v):
-            src, _ = _serialize_function(v, filepath, local_path)
+            src, _ = _serialize_object(v, filepath, local_path)
             kwargs.update({k: src})
 
         # Put remaining kwargs directly into cfg
@@ -277,48 +293,48 @@ def _save_preprocess_config(preprocess_fn: Callable,
     return preprocess_cfg
 
 
-def _serialize_function(func: Callable, base_path: Path,
-                        local_path: Path = Path('function')) -> Tuple[str, dict]:
+def _serialize_object(obj: Callable, base_path: Path,
+                      local_path: Path = Path('.')) -> Tuple[str, dict]:
     """
-    Serializes a generic function. If the function is in the object registry, the registry str is returned.
-    The function is saved to dill, and if wrapped in a functools.partial, the kwargs are returned.
+    Serializes a python object. If the object is in the object registry, the registry str is returned. If not,
+    the object is saved to dill, and if wrapped in a functools.partial, the kwargs are returned.
 
     Parameters
     ----------
-    func
-        The function to serialize.
+    obj
+        The object to serialize.
     base_path
         Base directory to save in.
     local_path
-        A local (relative) filepath to append to base_path. Default is 'function/'.
+        A local (relative) filepath to append to base_path.
 
     Returns
     -------
     Tuple containing a string referencing the save filepath and a dict of kwargs.
     """
-    # If a partial, save function and kwargs
-    if isinstance(func, partial):
-        kwargs = func.keywords
-        func = func.func
+    # If a functools.partial, unpick function and kwargs
+    if isinstance(obj, partial):
+        kwargs = obj.keywords
+        obj = obj.func
     else:
         kwargs = {}
 
-    # If a registered function, save registry string
-    keys = [k for k, v in registry.get_all().items() if func == v]
+    # If object has been registered, save registry string
+    keys = [k for k, v in registry.get_all().items() if obj == v]
     registry_str = keys[0] if len(keys) == 1 else None
-    if registry_str is not None:  # alibi-detect registered function
+    if registry_str is not None:  # alibi-detect registered object
         src = '@' + registry_str
 
     # Otherwise, save as dill
     else:
-        # create folder to save func in
+        # create folder to save object in
         filepath = base_path.joinpath(local_path)
         if not filepath.parent.is_dir():
             logger.warning('Directory {} does not exist and is now created.'.format(filepath.parent))
             filepath.parent.mkdir(parents=True, exist_ok=True)
-        logger.info('Saving function to {}.'.format(filepath.with_suffix('.dill')))
+        logger.info('Saving object to {}.'.format(filepath.with_suffix('.dill')))
         with open(filepath.with_suffix('.dill'), 'wb') as f:
-            dill.dump(func, f)
+            dill.dump(obj, f)
         src = str(local_path.with_suffix('.dill'))
 
     return src, kwargs
@@ -345,8 +361,32 @@ def _path2str(cfg: dict, absolute: bool = False) -> dict:
         elif isinstance(v, Path):
             if absolute:
                 v = v.resolve()
-            cfg.update({k: str(v)})
+            cfg.update({k: str(v.as_posix())})
     return cfg
+
+
+def _int2str_keys(dikt: dict) -> dict:
+    """
+    Private function to traverse a dict and convert any dict's with int keys to str keys (e.g.
+    `categories_per_feature` kwarg for `TabularDrift`.
+
+    Parameters
+    ----------
+    dikt
+        The dictionary.
+
+    Returns
+    -------
+    The converted dictionary.
+    """
+    dikt_copy = dikt.copy()
+    for k, v in dikt.items():
+        if isinstance(k, int):
+            dikt_copy[str(k)] = dikt[k]
+            dikt_copy.pop(k)
+        if isinstance(v, dict):
+            dikt_copy[k] = _int2str_keys(v)
+    return dikt_copy
 
 
 def _save_model_config(model: Callable,
@@ -414,9 +454,8 @@ def _save_tokenizer_config(tokenizer: PreTrainedTokenizerBase,
 
 
 def _save_kernel_config(kernel: Callable,
-                        filepath: Path,
-                        device: Optional[str] = None,
-                        filename: str = 'kernel.dill') -> dict:
+                        base_path: Path,
+                        local_path: Path = Path('.')) -> dict:
     """
     Function to save kernel. If the kernel is stored in the artefact registry, the registry key (and kwargs) are
     written to config. If the kernel is a generic callable, it is pickled.
@@ -425,51 +464,43 @@ def _save_kernel_config(kernel: Callable,
     ----------
     kernel
         The kernel to save.
-    filepath
-        Filepath to save to (if the kernel is a generic callable).
-    device
-        Device. Only needed if pytorch backend being used.
-    filename
-        Filename to save to (if the kernel is a generic callable).
+     base_path
+        Base directory to save in.
+    local_path
+        A local (relative) filepath to append to base_path.
 
     Returns
     -------
     The kernel config dictionary.
     """
-    cfg_kernel = {}
+    # if a DeepKernel
+    if hasattr(kernel, 'proj'):
+        if hasattr(kernel, 'get_config'):
+            cfg_kernel = kernel.get_config()  # type: ignore[attr-defined]
+        else:
+            raise AttributeError("The detector's `kernel` must have a .get_config() method for it to be saved.")
+        # Serialize the kernels (if needed)
+        kernel_a = cfg_kernel.get('kernel_b')
+        kernel_b = cfg_kernel.get('kernel_b')
+        if not isinstance(kernel_a, str):
+            cfg_kernel['kernel_a'] = _save_kernel_config(cfg_kernel['kernel_a'], base_path, Path('kernel_a'))
+        if not isinstance(kernel_b, str) and kernel_b is not None:
+            cfg_kernel['kernel_b'] = _save_kernel_config(cfg_kernel['kernel_b'], base_path, Path('kernel_b'))
 
-    keys = [k for k, v in registry.get_all().items() if type(kernel) == v or kernel == v]
-    registry_str = keys[0] if len(keys) == 1 else None
-    if registry_str is not None:  # alibi-detect registered kernel
-        cfg_kernel.update({'src': '@' + registry_str})
-
-        # kwargs for registered kernel
-        sigma = getattr(kernel, 'sigma', None)
-        sigma = sigma.cpu() if device == 'cuda' else sigma
-        cfg_kernel.update({
-            'sigma': sigma.numpy().tolist(),
-            'trainable': getattr(kernel, 'trainable', None)
-        })
-
-    elif isinstance(kernel, dict):  # DeepKernel config dict
-        kernel_a = _save_kernel_config(kernel['kernel_a'], filepath, device, filename='kernel_a.dill')
-        kernel_b = kernel.get('kernel_b')
-        if kernel_b is not None:
-            kernel_b = _save_kernel_config(kernel['kernel_b'], filepath, device, filename='kernel_b.dill')
-        cfg_kernel.update({
-            'kernel_a': kernel_a,
-            'kernel_b': kernel_b,
-            'proj': kernel['proj'],
-            'eps': kernel['eps']
-        })
-
-    elif callable(kernel):  # generic callable
-        logger.info('Saving kernel to {}.'.format(filepath.joinpath(filename)))
-        with open(filepath.joinpath(filename), 'wb') as f:
-            dill.dump(kernel, f)
-        cfg_kernel.update({'src': filename})
-
-    else:  # kernel could not be saved
-        raise ValueError("Could not save kernel. Is it a valid Callable or a alibi-detect registered kernel?")
+    # If any other kernel, serialize the class to disk and get config
+    else:
+        if isinstance(kernel, type):  # if still a class
+            kernel_class = kernel
+            cfg_kernel = {}
+        else:  # if an object
+            kernel_class = kernel.__class__
+            if hasattr(kernel, 'get_config'):
+                cfg_kernel = kernel.get_config()  # type: ignore[attr-defined]
+                cfg_kernel['init_sigma_fn'], _ = _serialize_object(cfg_kernel['init_sigma_fn'], base_path,
+                                                                   local_path.joinpath('init_sigma_fn'))
+            else:
+                raise AttributeError("The detector's `kernel` must have a .get_config() method for it to be saved.")
+        # Serialize the kernel class
+        cfg_kernel['src'], _ = _serialize_object(kernel_class, base_path, local_path.joinpath('kernel'))
 
     return cfg_kernel

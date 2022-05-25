@@ -209,15 +209,3 @@ class ClassifierDriftTorch(BaseClassifierDrift):
         p_val, dist = self.test_probs(y_oof, probs_oof, n_ref, n_cur)
         probs_sort = probs_oof[np.argsort(idx_oof)]
         return p_val, dist, probs_sort[:n_ref, 1], probs_sort[n_ref:, 1]
-
-    def get_config(self) -> dict:
-        """
-        Get the detector's configuration dictionary.
-
-        Not yet implemented for `ClassifierDrift` with the pytorch backend.
-
-        Returns
-        -------
-        The detector's configuration dictionary.
-        """
-        raise NotImplementedError("get_config not yet implemented for ClassifierDrift with pytorch backend.")

@@ -3,10 +3,9 @@ import os
 import warnings
 from functools import partial
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Tuple, Union, get_args
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
 import dill
-import numpy as np
 import tensorflow as tf
 from tensorflow_probability.python.distributions.distribution import \
     Distribution
@@ -14,11 +13,10 @@ from transformers import AutoTokenizer
 
 from alibi_detect.ad import AdversarialAE, ModelDistillation
 from alibi_detect.ad.adversarialae import DenseHidden
-from alibi_detect.cd import (ChiSquareDrift, ClassifierDrift,
-                             ClassifierUncertaintyDrift, CVMDrift, FETDrift,
-                             KSDrift, LearnedKernelDrift, LSDDDrift, MMDDrift,
-                             RegressorUncertaintyDrift, SpotTheDiffDrift,
-                             TabularDrift)
+from alibi_detect.cd import (ChiSquareDrift, ClassifierDrift, ClassifierUncertaintyDrift, CVMDrift, FETDrift,
+                             KSDrift, LearnedKernelDrift, LSDDDrift, MMDDrift, RegressorUncertaintyDrift,
+                             SpotTheDiffDrift, TabularDrift, ContextMMDDrift, MMDDriftOnline, LSDDDriftOnline,
+                             CVMDriftOnline, FETDriftOnline)
 from alibi_detect.cd.tensorflow import UAE, HiddenOutput
 from alibi_detect.cd.tensorflow.classifier import ClassifierDriftTF
 from alibi_detect.cd.tensorflow.mmd import MMDDriftTF
@@ -31,7 +29,7 @@ from alibi_detect.od import (LLR, IForest, Mahalanobis, OutlierAE,
                              OutlierAEGMM, OutlierProphet, OutlierSeq2Seq,
                              OutlierVAE, OutlierVAEGMM, SpectralResidual)
 from alibi_detect.od.llr import build_model
-from alibi_detect.utils.tensorflow.kernels import DeepKernel, GaussianRBF
+from alibi_detect.utils.tensorflow.kernels import DeepKernel
 # Below imports are used for legacy loading, and will be removed (or moved to utils/loading.py) in the future
 from alibi_detect.version import __version__
 
@@ -65,8 +63,13 @@ Detector = Union[
     ClassifierUncertaintyDrift,
     RegressorUncertaintyDrift,
     LearnedKernelDrift,
+    ContextMMDDrift,
     MMDDriftTF,  # TODO - remove when legacy loading removed
-    ClassifierDriftTF  # TODO - remove when legacy loading removed
+    ClassifierDriftTF,  # TODO - remove when legacy loading removed
+    MMDDriftOnline,
+    LSDDDriftOnline,
+    CVMDriftOnline,
+    FETDriftOnline
 ]
 
 
@@ -151,32 +154,21 @@ def load_kernel_config(cfg: dict) -> Callable:
     The kernel.
     """
     if 'src' in cfg:  # Standard kernel config
-        kernel = cfg['src']
-        sigma = cfg['sigma']
-        if callable(kernel):
-            if kernel.__name__ == 'GaussianRBF':
-                sigma = tf.convert_to_tensor(sigma) if isinstance(sigma, np.ndarray) else sigma
-                kernel = kernel(sigma=sigma, trainable=cfg['trainable'])
-            else:
-                kwargs = cfg['kwargs']
-                kernel = kernel(**kwargs)
+        kernel = cfg.pop('src')
+        if hasattr(kernel, 'from_config'):
+            kernel = kernel.from_config(cfg)
 
     elif 'proj' in cfg:  # DeepKernel config
         # Kernel a
         kernel_a = cfg['kernel_a']
-        if kernel_a == GaussianRBF:  # If uninstantiated GaussianRBF (the default, instantiate as trainable)
-            cfg['kernel_a'] = GaussianRBF(trainable=True)
-        elif isinstance(kernel_a, dict):  # If still a kernel config dict, load
-            cfg['kernel_a'] = load_kernel_config(kernel_a)
-        # Kernel b
         kernel_b = cfg['kernel_b']
-        if kernel_b == GaussianRBF:  # If uninstantiated GaussianRBF (the default, instantiate as trainable)
-            cfg['kernel_b'] = GaussianRBF(trainable=True)
-        elif isinstance(kernel_b, dict):  # If still a kernel config dict, load
+        if kernel_a != 'rbf':
+            cfg['kernel_a'] = load_kernel_config(kernel_a)
+        if kernel_b != 'rbf':
             cfg['kernel_b'] = load_kernel_config(kernel_b)
-
         # Assemble deep kernel
         kernel = DeepKernel.from_config(cfg)
+
     else:
         raise ValueError('Unable to process kernel. The kernel config dict must either be a `KernelConfig` with a '
                          '`src` field, or a `DeepkernelConfig` with a `proj` field.)')
@@ -274,7 +266,7 @@ def load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwarg
         raise NotImplementedError('Detectors with PyTorch backend are not yet supported.')
 
     detector_name = meta_dict['name']
-    if detector_name not in [detector.__name__ for detector in get_args(Detector)]:
+    if detector_name not in [detector.__name__ for detector in Detector.__args__]:  # type: ignore[attr-defined]
         raise NotImplementedError(f'{detector_name} is not supported by `load_detector`.')
 
     # load outlier detector specific parameters
@@ -306,10 +298,8 @@ def load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwarg
         detector = init_ad_ae(state_dict, ae, model, model_hl)
     elif detector_name == 'ModelDistillation':
         md = load_model(filepath, load_dir='distilled_model')
-        print(md)
         custom_objects = kwargs['custom_objects'] if 'custom_objects' in k else None
         model = load_model(filepath, custom_objects=custom_objects)
-        print(model)
         detector = init_ad_md(state_dict, md, model)
     elif detector_name == 'OutlierProphet':
         detector = init_od_prophet(state_dict)
@@ -322,7 +312,10 @@ def load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwarg
         emb, tokenizer = None, None
         if state_dict['other']['load_text_embedding']:
             emb, tokenizer = load_text_embed(filepath)
-        model = load_model(filepath, load_dir='encoder')
+        try:  # legacy load_model behaviour was to return None if not found. Now it raises error, hence need try-except.
+            model = load_model(filepath, load_dir='encoder')
+        except FileNotFoundError:
+            model = None
         if detector_name == 'KSDrift':
             load_fn = init_cd_ksdrift  # type: ignore[assignment]
         elif detector_name == 'MMDDriftTF':
@@ -332,6 +325,7 @@ def load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwarg
         elif detector_name == 'TabularDrift':
             load_fn = init_cd_tabulardrift  # type: ignore[assignment]
         elif detector_name == 'ClassifierDriftTF':
+            # Don't need try-except here since model is not optional for ClassifierDrift
             clf_drift = load_model(filepath, load_dir='clf_drift')
             load_fn = partial(init_cd_classifierdrift, clf_drift)  # type: ignore[assignment]
         else:
@@ -649,7 +643,6 @@ def init_ad_md(state_dict: Dict,
     -------
     Initialized ModelDistillation instance.
     """
-    print(model)
     ad = ModelDistillation(threshold=state_dict['threshold'],
                            distilled_model=distilled_model,
                            model=model,

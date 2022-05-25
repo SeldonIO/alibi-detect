@@ -9614,7 +9614,7 @@ Apache 2.0
 UNKNOWN
 
 tensorflow
-2.8.0
+2.8.1
 Apache Software License
                                  Apache License
                            Version 2.0, January 2004
@@ -9868,6 +9868,11 @@ By contributing to the BVLC/caffe repository through pull-request, comment,
 or otherwise, the contributor releases their content to the
 license and copyright terms herein.
 
+tensorflow-estimator
+2.8.0
+Apache Software License
+UNKNOWN
+
 tensorflow-io-gcs-filesystem
 0.25.0
 Apache Software License
@@ -10104,11 +10109,6 @@ THE SOFTWARE.
 
 
 
-tf-estimator-nightly
-2.8.0.dev2021122109
-Apache Software License
-UNKNOWN
-
 threadpoolctl
 3.1.0
 BSD License
@@ -10296,7 +10296,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 transformers
-4.19.1
+4.19.2
 Apache Software License
 Copyright 2018- The Hugging Face team. All rights reserved.
 

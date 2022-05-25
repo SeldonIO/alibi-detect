@@ -2,6 +2,7 @@ import numpy as np
 from typing import Callable, Dict, Optional, Union, Tuple
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
 from alibi_detect.utils.warnings import deprecated_alias
+from alibi_detect.base import DriftConfigMixin
 
 if has_pytorch:
     from alibi_detect.cd.pytorch.lsdd import LSDDDriftTorch
@@ -10,7 +11,7 @@ if has_tensorflow:
     from alibi_detect.cd.tensorflow.lsdd import LSDDDriftTF
 
 
-class LSDDDrift:
+class LSDDDrift(DriftConfigMixin):
     @deprecated_alias(preprocess_x_ref='preprocess_at_init')
     def __init__(
             self,
@@ -76,6 +77,9 @@ class LSDDDrift:
         """
         super().__init__()
 
+        # Set config
+        self._set_config(locals())
+
         backend = backend.lower()
         if backend == 'tensorflow' and not has_tensorflow or backend == 'pytorch' and not has_pytorch:
             raise ImportError(f'{backend} not installed. Cannot initialize and run the '
@@ -134,7 +138,7 @@ class LSDDDrift:
         """
         return self._detector.score(x)
 
-    def get_config(self) -> dict:
+    def get_config(self) -> dict:  # Needed due to need to unnormalize x_ref
         """
         Get the detector's configuration dictionary.
 
@@ -142,4 +146,9 @@ class LSDDDrift:
         -------
         The detector's configuration dictionary.
         """
-        return self._detector.get_config()
+        cfg = super().get_config()
+        # Unnormalize x_ref
+        if self._detector.preprocess_at_init or self._detector.preprocess_fn is None \
+                or self._detector.x_ref_preprocessed:
+            cfg['x_ref'] = self._detector._unnormalize(cfg['x_ref'])
+        return cfg

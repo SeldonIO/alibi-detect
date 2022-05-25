@@ -227,14 +227,3 @@ class SpotTheDiffDriftTorch:
         if not return_model:
             del preds['data']['model']
         return preds
-
-    def get_config(self) -> dict:
-        """
-        Get the detector's configuration dictionary.
-        Not yet implemented for `SpotTheDiffDrift` with the pytorch backend.
-
-        Returns
-        -------
-        The detector's configuration dictionary.
-        """
-        raise NotImplementedError("get_config not yet implemented for SpotTheDiffDrift with pytorch backend.")

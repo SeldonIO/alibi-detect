@@ -223,39 +223,3 @@ class SpotTheDiffDriftTF:
         if not return_model:
             del preds['data']['model']
         return preds
-
-    def get_config(self) -> dict:
-        """
-        Get the detector's configuration dictionary.
-
-        Returns
-        -------
-        The detector's configuration dictionary.
-        """
-        cfg = self._detector.get_config()  # Call ClassifierTF.get_config()
-        cfg['name'] = 'SpotTheDiffDrift'
-
-        # Remove kwarg's not supported by SpotTheDiff
-        cfg.pop('model')
-        cfg.pop('preprocess_at_init')
-        cfg.pop('preds_type')
-        cfg.pop('reg_loss_fn')
-        cfg.pop('update_x_ref')
-
-        # kernel
-        model_cfg = self._detector.model.get_config()
-        kernel = model_cfg.get('kernel')
-        if isinstance(kernel, GaussianRBF):
-            # If default kernel, we don't need to spec
-            kernel = None
-
-        # kwargs
-        kwargs = {
-            'kernel': kernel,
-            'n_diffs': self.meta['params']['n_diffs'],
-            'initial_diffs': self.meta['params']['initial_diffs'],
-            'l1_reg': self.meta['params']['l1_reg']
-        }
-        cfg.update(kwargs)
-
-        return cfg

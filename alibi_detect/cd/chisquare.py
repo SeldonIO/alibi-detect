@@ -77,6 +77,9 @@ class ChiSquareDrift(BaseUnivariateDrift):
             input_shape=input_shape,
             data_type=data_type
         )
+        # Set config
+        self._set_config(locals())
+
         # construct categories from the user-specified dict
         if isinstance(categories_per_feature, dict):
             vals = list(categories_per_feature.values())
@@ -132,26 +135,3 @@ class ChiSquareDrift(BaseUnivariateDrift):
         Utility method for getting the counts of categories for each categorical variable.
         """
         return {f: [(x[:, f] == v).sum() for v in vals] for f, vals in categories.items()}
-
-    def get_config(self) -> dict:
-        """
-        Get the detector's configuration dictionary.
-
-        Returns
-        -------
-        The detector's configuration dictionary.
-        """
-        cfg = super().get_config()
-
-        # Prep categories_per_feature. NOTE - toml can't write dict with int keys. See loading.read_detector_config
-        categories_per_feature = {}
-        for key in self.x_ref_categories.keys():
-            categories_per_feature[str(key)] = self.x_ref_categories[key]
-
-        # Detector kwargs
-        kwargs = {
-            'categories_per_feature': categories_per_feature,
-        }
-        cfg.update(kwargs)
-
-        return cfg

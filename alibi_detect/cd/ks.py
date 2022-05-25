@@ -71,6 +71,10 @@ class KSDrift(BaseUnivariateDrift):
             input_shape=input_shape,
             data_type=data_type
         )
+        # Set config
+        self._set_config(locals())
+
+        # Other attributes
         self.alternative = alternative
 
     def feature_score(self, x_ref: np.ndarray, x: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
@@ -96,21 +100,3 @@ class KSDrift(BaseUnivariateDrift):
             # TODO: update to 'exact' when bug fix is released in scipy 1.5
             dist[f], p_val[f] = ks_2samp(x_ref[:, f], x[:, f], alternative=self.alternative, mode='asymp')
         return p_val, dist
-
-    def get_config(self) -> dict:
-        """
-        Get the detector's configuration dictionary.
-
-        Returns
-        -------
-        The detector's configuration dictionary.
-        """
-        cfg = super().get_config()
-
-        # Detector kwargs
-        kwargs = {
-            'alternative': self.alternative,
-        }
-        cfg.update(kwargs)
-
-        return cfg

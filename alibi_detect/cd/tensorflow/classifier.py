@@ -126,7 +126,6 @@ class ClassifierDriftTF(BaseClassifierDrift):
             input_shape=input_shape,
             data_type=data_type
         )
-
         if preds_type not in ['probs', 'logits']:
             raise ValueError("'preds_type' should be 'probs' or 'logits'")
 
@@ -190,40 +189,3 @@ class ClassifierDriftTF(BaseClassifierDrift):
         p_val, dist = self.test_probs(y_oof, probs_oof, n_ref, n_cur)
         probs_sort = probs_oof[np.argsort(idx_oof)]
         return p_val, dist, probs_sort[:n_ref, 1], probs_sort[n_ref:, 1]
-
-    def get_config(self) -> dict:
-        """
-        Get the detector's configuration dictionary.
-
-        Returns
-        -------
-        The detector's configuration dictionary.
-        """
-        cfg = super().get_config()
-
-        # Train kwargs
-        train_kwargs = self.train_kwargs.copy()  # copy so that .pop() only affects copy
-
-#        # Optimizer (OK to do here as doesn't save anything to file)
-        optimizer = train_kwargs.pop('optimizer')
-        optimizer_cfg = tf.keras.optimizers.serialize(optimizer)
-
-        # Remove dataset from train_kwargs (dataset is updated in `score`, but we want to save original TFDataset)
-        train_kwargs.pop('dataset', None)
-
-        # Detector kwargs
-        kwargs = {
-            'model': self.original_model,
-            'reg_loss_fn': train_kwargs.pop('reg_loss_fn'),
-            'optimizer': optimizer_cfg,
-            'learning_rate': optimizer.learning_rate.numpy(),
-            'batch_size': self.dataset.keywords['batch_size'],
-            'preprocess_batch_fn': train_kwargs.pop('preprocess_fn'),
-            'epochs': train_kwargs.pop('epochs'),
-            'verbose': train_kwargs.pop('verbose'),
-            'train_kwargs': train_kwargs,  # Should have popped all default train_kwargs by this point
-            'dataset': self.dataset.func
-        }
-        cfg.update(kwargs)
-
-        return cfg

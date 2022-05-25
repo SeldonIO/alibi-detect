@@ -125,32 +125,3 @@ class MMDDriftTF(BaseMMDDrift):
         )
         p_val = (mmd2 <= mmd2_permuted).mean()
         return p_val, mmd2, mmd2_permuted
-
-    def get_config(self) -> dict:
-        """
-        Get the detector's configuration dictionary.
-
-        Returns
-        -------
-        The detector's configuration dictionary.
-        """
-        cfg = super().get_config()
-
-        # kernel logic
-        if isinstance(self.kernel, GaussianRBF):
-            # If default kernel, we don't need to spec
-            sigma = self.kernel.sigma.numpy() if not self.infer_sigma else None
-            kernel = None
-        else:
-            # Else if non-default kernel, we need to spec, but sigma is irrelevant
-            sigma = None
-            kernel = self.kernel
-
-        # Detector kwargs
-        kwargs = {
-            'kernel': kernel,
-            'sigma': sigma
-        }
-        cfg.update(kwargs)
-
-        return cfg

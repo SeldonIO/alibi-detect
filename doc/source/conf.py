@@ -87,8 +87,9 @@ apidoc_separate_modules = True
 apidoc_extra_args = ["-d 6"]
 
 # mock imports
+# numpy, pandas and matplotlib are not included as these are installed on 
+# ReadTheDocs PYTHON_VERSION_39 docker image (https://hub.docker.com/r/readthedocs/build/dockerfile/)
 autodoc_mock_imports = [
-    "pandas",
     "sklearn",
     "skimage",
     "requests",
@@ -99,16 +100,17 @@ autodoc_mock_imports = [
     "PIL",
     "tensorflow",
     "spacy",
-    "numpy",
     "tensorflow_probability",
     "scipy",
-    "matplotlib",
     "fbprophet",
     "torch",
     "transformers",
     "tqdm",
     "dill",
-    "numba"
+    "numba",
+    "pydantic",
+    "toml",
+    "catalogue"
 ]
 
 # Napoleon settings
@@ -205,6 +207,8 @@ latex_elements = {
     'preamble': r''' 
         \DeclareUnicodeCharacter{2588}{=}
         \DeclareUnicodeCharacter{258E}{|} 
+        \DeclareUnicodeCharacter{274C}{$\times$} 
+        \DeclareUnicodeCharacter{2705}{$\checkmark$} 
 
         \usepackage{enumitem}
         \setlistdepth{99}

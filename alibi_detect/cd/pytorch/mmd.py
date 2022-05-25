@@ -141,14 +141,3 @@ class MMDDriftTorch(BaseMMDDrift):
             mmd2, mmd2_permuted = mmd2.cpu(), mmd2_permuted.cpu()
         p_val = (mmd2 <= mmd2_permuted).float().mean()
         return p_val.numpy().item(), mmd2.numpy().item(), mmd2_permuted.numpy()
-
-    def get_config(self) -> dict:
-        """
-        Get the detector's configuration dictionary.
-        Not yet implemented for `MMDDrift` with the pytorch backend.
-
-        Returns
-        -------
-        The detector's configuration dictionary.
-        """
-        raise NotImplementedError("get_config not yet implemented for MMDDrift with pytorch backend.")

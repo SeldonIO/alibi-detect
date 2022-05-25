@@ -2,6 +2,7 @@ import numpy as np
 from typing import Callable, Dict, Optional, Union
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
 from alibi_detect.utils.warnings import deprecated_alias
+from alibi_detect.base import DriftConfigMixin
 
 if has_pytorch:
     from torch.utils.data import DataLoader
@@ -13,7 +14,7 @@ if has_tensorflow:
     from alibi_detect.utils.tensorflow.data import TFDataset
 
 
-class LearnedKernelDrift:
+class LearnedKernelDrift(DriftConfigMixin):
     @deprecated_alias(preprocess_x_ref='preprocess_at_init')
     def __init__(
             self,
@@ -116,6 +117,9 @@ class LearnedKernelDrift:
         """
         super().__init__()
 
+        # Set config
+        self._set_config(locals())
+
         backend = backend.lower()
         if backend == 'tensorflow' and not has_tensorflow or backend == 'pytorch' and not has_pytorch:
             raise ImportError(f'{backend} not installed. Cannot initialize and run the '
@@ -169,13 +173,3 @@ class LearnedKernelDrift:
             trained kernel.
         """
         return self._detector.predict(x, return_p_val, return_distance, return_kernel)
-
-    def get_config(self) -> dict:
-        """
-        Get the detector's configuration dictionary.
-
-        Returns
-        -------
-        The detector's configuration dictionary.
-        """
-        return self._detector.get_config()
