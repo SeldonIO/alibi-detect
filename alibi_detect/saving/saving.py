@@ -52,11 +52,8 @@ def save_detector(detector: Detector, filepath: Union[str, os.PathLike], legacy:
     if detector_name not in [detector.__name__ for detector in Detector.__args__]:  # type: ignore[attr-defined]
         raise NotImplementedError(f'{detector_name} is not supported by `save_detector`.')
 
-    # Get a list of all existing files in `filepath` (so we know what not to cleanup if an error occurs)
-    filepath = Path(filepath)
-    orig_files = set(filepath.iterdir())
-
     # Saving is wrapped in a try, with cleanup in except. To prevent a half-saved detector remaining upon error.
+    filepath = Path(filepath)
     try:
         # Create directory if it doesn't exist
         if not filepath.is_dir():
@@ -72,6 +69,8 @@ def save_detector(detector: Detector, filepath: Union[str, os.PathLike], legacy:
             save_detector_legacy(detector, filepath)
 
     except Exception as error:
+        # Get a list of all existing files in `filepath` (so we know what not to cleanup if an error occurs)
+        orig_files = set(filepath.iterdir())
         _cleanup_filepath(orig_files, filepath)
         raise RuntimeError(f'Saving failed. The save directory {filepath} has been cleaned.') from error
 

@@ -32,6 +32,7 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
             use_calibration: bool = False,
             calibration_kwargs: Optional[dict] = None,
             use_oob: bool = False,
+            input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None,
     ) -> None:
         """
@@ -86,6 +87,8 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
             for more details.
         use_oob
             Whether to use out-of-bag(OOB) predictions. Supported only for `RandomForestClassifier`.
+        input_shape
+            Shape of input data.
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
@@ -102,6 +105,7 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
             n_folds=n_folds,
             retrain_from_scratch=retrain_from_scratch,
             seed=seed,
+            input_shape=input_shape,
             data_type=data_type
         )
 

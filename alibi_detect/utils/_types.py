@@ -18,7 +18,7 @@ else:
 # TODO - above repo also has some very clever functionality to allow passing the numpy array as a npy/npz file.
 #  This could be useful to explore in order to simplify our loading submodule.
 T = TypeVar("T", bound=np.generic)
-if NumpyVersion(np.__version__) < "1.22.0":
+if NumpyVersion(np.__version__) < "1.22.0" or sys.version_info < (3, 9):
     class NDArray(Generic[T], np.ndarray):
         """
         A Generic pydantic model to validate (and coerce) np.ndarray's.

@@ -239,8 +239,8 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
         K, L = K[perm][:, perm], L[perm][:, perm]
         losses = torch.zeros_like(lams, dtype=torch.float).to(K.device)
         for fold in range(n_folds):
-            inds_oof = np.arange(n)[(fold*fold_size):((fold+1)*fold_size)]
-            inds_if = np.setdiff1d(np.arange(n), inds_oof)
+            inds_oof = list(np.arange(n)[(fold*fold_size):((fold+1)*fold_size)])
+            inds_if = list(np.setdiff1d(np.arange(n), inds_oof))
             K_if, L_if = K[inds_if][:, inds_if], L[inds_if][:, inds_if]
             n_if = len(K_if)
             L_inv_lams = torch.stack(
