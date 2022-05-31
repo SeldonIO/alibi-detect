@@ -1,6 +1,7 @@
 import numpy as np
 from typing import Callable, Dict, Optional, Union
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
+from alibi_detect.base import DriftConfigMixin
 
 if has_pytorch:
     from alibi_detect.cd.pytorch.spot_the_diff import SpotTheDiffDriftTorch
@@ -12,12 +13,13 @@ if has_tensorflow:
     from alibi_detect.utils.tensorflow.data import TFDataset
 
 
-class SpotTheDiffDrift:
+class SpotTheDiffDrift(DriftConfigMixin):
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
             backend: str = 'tensorflow',
             p_val: float = .05,
+            x_ref_preprocessed: bool = False,
             preprocess_fn: Optional[Callable] = None,
             kernel: Callable = None,
             n_diffs: int = 1,
@@ -38,6 +40,7 @@ class SpotTheDiffDrift:
             device: Optional[str] = None,
             dataset: Optional[Callable] = None,
             dataloader: Optional[Callable] = None,
+            input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None
     ) -> None:
         """
@@ -59,6 +62,10 @@ class SpotTheDiffDrift:
             Backend used for the training loop implementation.
         p_val
             p-value used for the significance of the test.
+        x_ref_preprocessed
+            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
+            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
+            data will also be preprocessed.
         preprocess_fn
             Function to preprocess the data before computing the data drift metrics.
         kernel
@@ -108,10 +115,15 @@ class SpotTheDiffDrift:
             Dataset object used during training.
         dataloader
             Dataloader object used during training. Only relevant for 'pytorch' backend.
+        input_shape
+            Shape of input data.
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
         super().__init__()
+
+        # Set config
+        self._set_config(locals())
 
         backend = backend.lower()
         if backend == 'tensorflow' and not has_tensorflow or backend == 'pytorch' and not has_pytorch:
