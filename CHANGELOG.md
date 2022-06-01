@@ -4,7 +4,7 @@
 [Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.9.1...v0.10.0rc1)
 
 ### Added
-- **New feature** Drift detectors save/load functionality has been significantly reworked. All offline and online drift detectors (tensorflow backend only) can now be saved and loaded via config.toml files, allowing for more flexibility. Config files are also validated with pydantic. See [the documentation](https://docs.seldon.io/projects/alibi-detect/en/stable/overview/config_files.html) for more info. ([#516](https://github.com/SeldonIO/alibi-detect/pull/516)).
+- **New feature** Drift detectors save/load functionality has been significantly reworked. All offline and online drift detectors (`tensorflow` backend only) can now be saved and loaded via `config.toml` files, allowing for more flexibility. Config files are also validated with `pydantic`. See [the documentation](https://docs.seldon.io/projects/alibi-detect/en/stable/overview/config_files.html) for more info. ([#516](https://github.com/SeldonIO/alibi-detect/pull/516)).
 - **New feature** Option to use out-of-bag predictions when using a `RandomForestClassifier` with `ClassifierDrift` ([#426](https://github.com/SeldonIO/alibi-detect/pull/426)).
 - Python 3.10 support. Note that PyTorch at the time of writing doesn't support Python 3.10 on Windows. ([#485](https://github.com/SeldonIO/alibi-detect/pull/485)).
 
