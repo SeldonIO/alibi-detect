@@ -37,7 +37,7 @@ def eval_roc(
     # Evaluate False Positive Rates
     if verbose:
         print('Computing False Positive Rates...')
-    p_vals = eval_calibration(detector, X_ref, C=C_ref, model=model, detector_kwargs=detector_kwargs, sig_level=0.05,
+    p_vals = eval_calibration(detector, X_ref, C=C_ref, model=model, detector_kwargs=detector_kwargs,
                               n_runs=n_runs, n_samples=n_samples, verbose=verbose, hist_plot=hist_plot, qq_plot=qq_plot,
                               save_dir=save_dir, random_seed=random_seed)
     FPR = [np.sum(p_vals <= sig_levels[i])/len(p_vals) for i in range(len(sig_levels))]
@@ -71,7 +71,6 @@ def eval_calibration(
         C: Optional[np.ndarray] = None,
         model: Optional[Callable] = None,
         detector_kwargs: Optional[dict] = None,
-        sig_level: float = 0.05,
         n_runs: int = 100,
         n_samples: Tuple[int, int] = (500, 500),
         qq_plot: bool = False,
@@ -160,7 +159,7 @@ def eval_calibration(
             detector_args.append(model)
 
         # Init detector and predict
-        dd = detector(*detector_args, p_val=sig_level, **detector_kwargs)
+        dd = detector(*detector_args, **detector_kwargs)
         preds = dd.predict(*predict_args)
         p_vals_list.append(preds['data']['p_val'])
     p_vals = np.array(p_vals_list)
