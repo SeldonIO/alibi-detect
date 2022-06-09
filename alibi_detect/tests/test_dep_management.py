@@ -61,14 +61,45 @@ def test_cd_dependencies(opt_dep):
         check_correct_dependencies(cd, dependency_map, opt_dep)
 
 
+def test_cd_torch_dependencies(opt_dep):
+    """Tests that the cd module correctly protects against uninstalled optional dependencies.
+    """
+
+    dependency_map = defaultdict(lambda: ['default'])
+    for dependency, relations in [
+        ("HiddenOutput", ['torch']),
+        ("preprocess_drift", ['torch'])
+    ]:
+        dependency_map[dependency] = relations
+    if opt_dep != 'all':
+        from alibi_detect.cd import pytorch as cd_pytorch
+        check_correct_dependencies(cd_pytorch, dependency_map, opt_dep)
+
+
+def test_cd_tensorflow_dependencies(opt_dep):
+    """Tests that the cd module correctly protects against uninstalled optional dependencies.
+    """
+
+    dependency_map = defaultdict(lambda: ['default'])
+    for dependency, relations in [
+        ("HiddenOutput", ['tensorflow', 'tf-tfp']),
+        ("UAE", ['tensorflow', 'tf-tfp']),
+        ("preprocess_drift", ['tensorflow', 'tf-tfp'])
+    ]:
+        dependency_map[dependency] = relations
+    if opt_dep != 'all':
+        from alibi_detect.cd import tensorflow as tensorflow_cd
+        check_correct_dependencies(tensorflow_cd, dependency_map, opt_dep)
+
+
 def test_ad_dependencies(opt_dep):
     """Tests that the ad module correctly protects against uninstalled optional dependencies.
     """
 
     dependency_map = defaultdict(lambda: ['default'])
     for dependency, relations in [
-            ('AdversarialAE', ['tf-tfp']),
-            ('ModelDistillation', ['tf-tfp'])
+            ('AdversarialAE', ['tensorflow', 'tf-tfp']),
+            ('ModelDistillation', ['tensorflow', 'tf-tfp'])
             ]:
         dependency_map[dependency] = relations
     if opt_dep != 'all':
@@ -86,7 +117,7 @@ def test_od_dependencies(opt_dep):
             ('OutlierVAE', ['tf-tfp']),
             ('OutlierVAEGMM', ['tf-tfp']),
             ('OutlierAE', ['tensorflow', 'tf-tfp']),
-            ('OutlierAEGMM', ['tf-tfp']),
+            ('OutlierAEGMM', ['tensorflow', 'tf-tfp']),
             ('OutlierSeq2Seq', ['tensorflow', 'tf-tfp']),
             ]:
         dependency_map[dependency] = relations
@@ -109,7 +140,13 @@ def test_tensorflow_model_dependencies(opt_dep):
             ("resnet", ['tensorflow', 'tf-tfp']),
             ("PixelCNN", ['tf-tfp']),
             ("TransformerEmbedding", ['tensorflow', 'tf-tfp']),
-            ("trainer", ['tensorflow', 'tf-tfp'])
+            ("trainer", ['tensorflow', 'tf-tfp']),
+            ("eucl_cosim_features", ['tensorflow', 'tf-tfp']),
+            ("elbo", ['tf-tfp']),
+            ("loss_vaegmm", ['tf-tfp']),
+            ("loss_aegmm", ['tensorflow', 'tf-tfp']),
+            ("loss_adv_ae", ['tensorflow', 'tf-tfp']),
+            ("loss_distillation", ['tensorflow', 'tf-tfp']),
             ]:
         dependency_map[dependency] = relations
     if opt_dep != 'all':
@@ -142,6 +179,86 @@ def test_dataset_dependencies(opt_dep):
     if opt_dep != 'all':
         from alibi_detect import datasets
         check_correct_dependencies(datasets, dependency_map, opt_dep)
+
+
+def test_fetching_utils_dependencies(opt_dep):
+    """Tests that the fetching utils module correctly protects against uninstalled optional dependencies.
+    """
+
+    dependency_map = defaultdict(lambda: ['default'])
+    for dependency, relations in [
+        ('fetch_detector', ['tensorflow', 'tf-tfp']),
+    ]:
+        dependency_map[dependency] = relations
+    if opt_dep != 'all':
+        from alibi_detect.utils import fetching
+        check_correct_dependencies(fetching, dependency_map, opt_dep)
+
+
+def test_saving_utils_dependencies(opt_dep):
+    """Tests that the saving utils module correctly protects against uninstalled optional dependencies.
+    """
+
+    dependency_map = defaultdict(lambda: ['default'])
+    for dependency, relations in [
+        ('load_detector', ['tf-tfp']),
+        ('save_detector', ['tf-tfp'])
+    ]:
+        dependency_map[dependency] = relations
+    if opt_dep != 'all':
+        from alibi_detect.utils import saving
+        check_correct_dependencies(saving, dependency_map, opt_dep)
+
+
+def test_tensorflow_utils_dependencies(opt_dep):
+    """Tests that the saving utils module correctly protects against uninstalled optional dependencies.
+    """
+
+    dependency_map = defaultdict(lambda: ['default'])
+    for dependency, relations in [
+            ("batch_compute_kernel_matrix", ['tensorflow', 'tf-tfp']),
+            ("mmd2", ['tensorflow', 'tf-tfp']),
+            ("mmd2_from_kernel_matrix", ['tensorflow', 'tf-tfp']),
+            ("relative_euclidean_distance", ['tensorflow', 'tf-tfp']),
+            ("squared_pairwise_distance", ['tensorflow', 'tf-tfp']),
+            ("GaussianRBF", ['tensorflow', 'tf-tfp']),
+            ("DeepKernel", ['tensorflow', 'tf-tfp']),
+            ("permed_lsdds", ['tensorflow', 'tf-tfp']),
+            ("predict_batch", ['tensorflow', 'tf-tfp']),
+            ("predict_batch_transformer", ['tensorflow', 'tf-tfp']),
+            ("quantile", ['tensorflow', 'tf-tfp']),
+            ("subset_matrix", ['tensorflow', 'tf-tfp']),
+            ("zero_diag", ['tensorflow', 'tf-tfp'])
+            ]:
+        dependency_map[dependency] = relations
+    if opt_dep != 'all':
+        from alibi_detect.utils import tensorflow as tensorflow_utils
+        check_correct_dependencies(tensorflow_utils, dependency_map, opt_dep)
+
+
+def test_pytorch_utils_dependencies(opt_dep):
+    """Tests that the pytorch utils module correctly protects against uninstalled optional dependencies.
+    """
+
+    dependency_map = defaultdict(lambda: ['default'])
+    for dependency, relations in [
+        ("batch_compute_kernel_matrix", ['torch']),
+        ("mmd2", ['torch']),
+        ("mmd2_from_kernel_matrix", ['torch']),
+        ("squared_pairwise_distance", ['torch']),
+        ("GaussianRBF", ['torch']),
+        ("DeepKernel", ['torch']),
+        ("permed_lsdds", ['torch']),
+        ("predict_batch", ['torch']),
+        ("predict_batch_transformer", ['torch']),
+        ("quantile", ['torch']),
+        ("zero_diag", ['torch']),
+        ("TorchDataset", ['torch']),
+    ]:
+        dependency_map[dependency] = relations
+    if opt_dep != 'all':
+        from alibi_detect.utils import pytorch as pytorch_utils
+        check_correct_dependencies(pytorch_utils, dependency_map, opt_dep)
 
 
 # def test_utils_dependencies(opt_dep):

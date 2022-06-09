@@ -1,8 +1,30 @@
-from .distance import mmd2, mmd2_from_kernel_matrix, batch_compute_kernel_matrix
-from .distance import relative_euclidean_distance, squared_pairwise_distance, permed_lsdds
-from .kernels import GaussianRBF, DeepKernel
-from .prediction import predict_batch, predict_batch_transformer
-from .misc import zero_diag, quantile, subset_matrix
+from alibi_detect.utils.missing_optional_dependency import import_optional
+
+mmd2, mmd2_from_kernel_matrix, batch_compute_kernel_matrix, relative_euclidean_distance, squared_pairwise_distance, \
+    permed_lsdds = import_optional(
+        'alibi_detect.utils.tensorflow.distance',
+        names=['mmd2', 'mmd2_from_kernel_matrix', 'batch_compute_kernel_matrix', 'relative_euclidean_distance',
+               'squared_pairwise_distance', 'permed_lsdds']
+    )
+
+
+GaussianRBF, DeepKernel = import_optional(
+    'alibi_detect.utils.tensorflow.kernels',
+    names=['GaussianRBF', 'DeepKernel']
+)
+
+
+predict_batch, predict_batch_transformer = import_optional(
+    'alibi_detect.utils.tensorflow.prediction',
+    names=['predict_batch', 'predict_batch_transformer']
+)
+
+
+zero_diag, quantile, subset_matrix = import_optional(
+    'alibi_detect.utils.tensorflow.misc',
+    names=['zero_diag', 'quantile', 'subset_matrix']
+)
+
 
 __all__ = [
     "batch_compute_kernel_matrix",

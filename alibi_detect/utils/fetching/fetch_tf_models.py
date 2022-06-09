@@ -8,34 +8,13 @@ from typing import Tuple, Union
 from io import BytesIO
 import requests
 from requests import RequestException
-from alibi_detect.base import BaseDetector
-from alibi_detect.ad import AdversarialAE, ModelDistillation
 from alibi_detect.models.tensorflow import PixelCNN
-from alibi_detect.od import (IForest, LLR, Mahalanobis, OutlierAE, OutlierAEGMM, OutlierProphet,
-                             OutlierSeq2Seq, OutlierVAE, OutlierVAEGMM, SpectralResidual)
-from alibi_detect.utils.saving import load_detector  # type: ignore
-from alibi_detect.utils.url import _join_url
+from alibi_detect.utils.fetching.url import _join_url
 
 # do not extend pickle dispatch table so as not to change pickle behaviour
 dill.extend(use_dill=False)
 
 logger = logging.getLogger(__name__)
-
-Data = Union[
-    BaseDetector,
-    AdversarialAE,
-    ModelDistillation,
-    IForest,
-    LLR,
-    Mahalanobis,
-    OutlierAEGMM,
-    OutlierAE,
-    OutlierProphet,
-    OutlierSeq2Seq,
-    OutlierVAE,
-    OutlierVAEGMM,
-    SpectralResidual
-]
 
 """Number of seconds to wait for URL requests before raising an error."""
 TIMEOUT = 10
@@ -445,77 +424,3 @@ def fetch_state_dict(url: str, filepath: Union[str, os.PathLike],
         with open(filepath.joinpath(meta['name'] + '.dill'), 'wb') as f:
             dill.dump(state_dict, f)
     return meta, state_dict
-
-
-def fetch_detector(filepath: Union[str, os.PathLike],
-                   detector_type: str,
-                   dataset: str,
-                   detector_name: str,
-                   model: str = None) -> Data:
-    """
-    Fetch an outlier or adversarial detector from a google bucket, save it locally and return
-    the initialised detector.
-
-    Parameters
-    ----------
-    filepath
-        Local directory to save detector to.
-    detector_type
-        `outlier` or `adversarial`.
-    dataset
-        Dataset of pre-trained detector. E.g. `kddcup`, `cifar10` or `ecg`.
-    detector_name
-        Name of the detector in the bucket.
-    model
-        Classification model used for adversarial detection.
-
-    Returns
-    -------
-    Initialised pre-trained detector.
-    """
-    # create path (if needed)
-    filepath = Path(filepath)
-    if not filepath.is_dir():
-        filepath.mkdir(parents=True, exist_ok=True)
-        logger.warning('Directory {} does not exist and is now created.'.format(filepath))
-    # create url of detector
-    url = 'https://storage.googleapis.com/seldon-models/alibi-detect/'
-    if detector_type == 'adversarial':
-        url = _join_url(url, ['ad', dataset, model, detector_name])
-    elif detector_type == 'outlier':
-        url = _join_url(url, ['od', detector_name, dataset])
-
-    # fetch the metadata and state dict
-    meta, state_dict = fetch_state_dict(url, filepath, save_state_dict=True)
-
-    # load detector
-    name = meta['name']
-    kwargs = {}  # type: dict
-    if name == 'OutlierAE':
-        fetch_ae(url, filepath)
-    elif name == 'OutlierAEGMM':
-        fetch_aegmm(url, filepath)
-    elif name == 'OutlierVAE':
-        fetch_vae(url, filepath)
-    elif name == 'OutlierVAEGMM':
-        fetch_vaegmm(url, filepath)
-    elif name == 'OutlierSeq2Seq':
-        fetch_seq2seq(url, filepath)
-    elif name == 'AdversarialAE':
-        fetch_ad_ae(url, filepath, state_dict)
-        if model == 'resnet56':
-            kwargs = {'custom_objects': {'backend': backend}}
-    elif name == 'ModelDistillation':
-        fetch_ad_md(url, filepath)
-        if model == 'resnet56':
-            kwargs = {'custom_objects': {'backend': backend}}
-    elif name == 'LLR':
-        model_type = fetch_llr(url, filepath)
-        if model_type == 'weights':
-            kwargs = get_pixelcnn_default_kwargs()
-    detector = load_detector(filepath, **kwargs)
-    return detector
-
-# ###### CHANGED in TF-TFP-TORCH OPTIONAL DEPS PR ######
-# these comments should be removed prior to PR merge. The function `_join_url` has been moved to `utils/url.py`
-# to avoid tensorflow optional dependency errors when importing into datasets.

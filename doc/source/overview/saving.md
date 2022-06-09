@@ -6,9 +6,9 @@ one will be created if it doesn't exist):
 
 ```python
 from alibi_detect.od import OutlierVAE
-from alibi_detect.utils.saving import save_detector
+from alibi_detect.utils.saving.saving import save_detector
 
-od = OutlierVAE(...) 
+od = OutlierVAE(...)
 
 filepath = './my_detector/'
 save_detector(od, filepath)
@@ -18,7 +18,7 @@ To load a previously saved detector, use the `load_detector` method and provide 
 path to the directory the detector is saved in:
 
 ```python
-from alibi_detect.utils.saving import load_detector
+from alibi_detect.utils.saving.saving import load_detector
 
 filepath = './my_detector/'
 od = load_detector(filepath)
