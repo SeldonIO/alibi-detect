@@ -22,9 +22,9 @@ predict_batch, predict_batch_transformer = import_optional(
     names=['predict_batch', 'predict_batch_transformer']
 )
 
-zero_diag, quantile = import_optional(
+get_device, quantile, zero_diag = import_optional(
     'alibi_detect.utils.pytorch.misc',
-    names=['zero_diag', 'quantile']
+    names=['get_device', 'quantile', 'zero_diag']
 )
 
 
@@ -38,6 +38,7 @@ __all__ = [
     "permed_lsdds",
     "predict_batch",
     "predict_batch_transformer",
+    "get_device",
     "quantile",
     "zero_diag",
     "TorchDataset"
