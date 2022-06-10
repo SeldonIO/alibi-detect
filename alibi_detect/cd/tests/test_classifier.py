@@ -7,29 +7,33 @@ import torch.nn as nn
 from alibi_detect.cd import ClassifierDrift
 from alibi_detect.cd.pytorch.classifier import ClassifierDriftTorch
 from alibi_detect.cd.tensorflow.classifier import ClassifierDriftTF
+from alibi_detect.cd.sklearn.classifier import ClassifierDriftSklearn
+from sklearn.neural_network import MLPClassifier
+from typing import Tuple
 
 n, n_features = 100, 5
 
 
-def mymodel(shape):
-    x_in = Input(shape=shape)
+def tensorflow_model(input_shape: Tuple[int]):
+    x_in = Input(shape=input_shape)
     x = Dense(20, activation=tf.nn.relu)(x_in)
     x_out = Dense(2, activation='softmax')(x)
     return tf.keras.models.Model(inputs=x_in, outputs=x_out)
 
 
-class MyModel(nn.Module):
-    def __init__(self, n_features: int):
-        super().__init__()
-        self.dense1 = nn.Linear(n_features, 20)
-        self.dense2 = nn.Linear(20, 2)
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = nn.ReLU()(self.dense1(x))
-        return self.dense2(x)
+def pytorch_model(input_shape: int):
+    return torch.nn.Sequential(
+        nn.Linear(input_shape, 20),
+        nn.ReLU(),
+        nn.Linear(20, 2)
+    )
 
 
-tests_clfdrift = ['tensorflow', 'pytorch', 'PyToRcH', 'mxnet']
+def sklearn_model():
+    return MLPClassifier(hidden_layer_sizes=(20, ))
+
+
+tests_clfdrift = ['tensorflow', 'pytorch', 'PyToRcH', 'sklearn', 'mxnet']
 n_tests = len(tests_clfdrift)
 
 
@@ -42,9 +46,11 @@ def clfdrift_params(request):
 def test_clfdrift(clfdrift_params):
     backend = clfdrift_params
     if backend.lower() == 'pytorch':
-        model = MyModel(n_features)
+        model = pytorch_model(n_features)
     elif backend.lower() == 'tensorflow':
-        model = mymodel((n_features,))
+        model = tensorflow_model((n_features,))
+    elif backend.lower() == 'sklearn':
+        model = sklearn_model()
     else:
         model = None
     x_ref = np.random.randn(*(n, n_features))
@@ -58,5 +64,7 @@ def test_clfdrift(clfdrift_params):
         assert isinstance(cd._detector, ClassifierDriftTorch)
     elif backend.lower() == 'tensorflow':
         assert isinstance(cd._detector, ClassifierDriftTF)
+    elif backend.lower() == 'sklearn':
+        assert isinstance(cd._detector, ClassifierDriftSklearn)
     else:
         assert cd is None

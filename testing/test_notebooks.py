@@ -44,6 +44,8 @@ EXCLUDE_NOTEBOOKS = {
     'cd_text_amazon.ipynb',
     # the following require complex dependencies
     'cd_mol.ipynb',  # complex to install pytorch-geometric
+    # the following require remote artefacts to be updated
+    'ad_ae_cifar10.ipynb',  # bad marshal data error when fetching cifar10-resnet56 model
 }
 if not PROPHET_INSTALLED:
     EXCLUDE_NOTEBOOKS.add('od_prophet_weather.ipynb')  # Exclude if fbprophet not installed i.e. on Windows
