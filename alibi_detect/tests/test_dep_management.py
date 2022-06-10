@@ -254,6 +254,7 @@ def test_pytorch_utils_dependencies(opt_dep):
         ("quantile", ['torch']),
         ("zero_diag", ['torch']),
         ("TorchDataset", ['torch']),
+        ("get_device", ['torch']),
     ]:
         dependency_map[dependency] = relations
     if opt_dep != 'all':
