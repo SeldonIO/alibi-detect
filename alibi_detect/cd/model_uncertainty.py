@@ -72,7 +72,8 @@ class ClassifierUncertaintyDrift:
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
 
-        backend = backend.lower()
+        if backend:
+            backend = backend.lower()
         BackendValidator(backend_options={'tensorflow': ['tensorflow'],
                                           'pytorch': ['pytorch'],
                                           None: []},
