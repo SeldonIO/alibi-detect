@@ -80,12 +80,6 @@ class LSDDDriftOnline:
             construct_name='LSDDDriftOnline'
         ).verify_backend(backend)
 
-        # if backend == 'tensorflow' and not has_tensorflow or backend == 'pytorch' and not has_pytorch:
-        #     raise ImportError(f'{backend} not installed. Cannot initialize and run the '
-        #                       f'MMDDrift detector with {backend} backend.')
-        # elif backend not in ['tensorflow', 'pytorch']:
-        #     raise NotImplementedError(f'{backend} not implemented. Use tensorflow or pytorch instead.')
-
         kwargs = locals()
         args = [kwargs['x_ref'], kwargs['ert'], kwargs['window_size']]
         pop_kwargs = ['self', 'x_ref', 'ert', 'window_size', 'backend', '__class__']
