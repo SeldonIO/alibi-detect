@@ -147,6 +147,7 @@ def test_tensorflow_model_dependencies(opt_dep):
             ("loss_aegmm", ['tensorflow', 'tf-tfp']),
             ("loss_adv_ae", ['tensorflow', 'tf-tfp']),
             ("loss_distillation", ['tensorflow', 'tf-tfp']),
+            ("scale_by_instance", ['tensorflow', 'tf-tfp'])
             ]:
         dependency_map[dependency] = relations
     if opt_dep != 'all':
@@ -229,7 +230,8 @@ def test_tensorflow_utils_dependencies(opt_dep):
             ("predict_batch_transformer", ['tensorflow', 'tf-tfp']),
             ("quantile", ['tensorflow', 'tf-tfp']),
             ("subset_matrix", ['tensorflow', 'tf-tfp']),
-            ("zero_diag", ['tensorflow', 'tf-tfp'])
+            ("zero_diag", ['tensorflow', 'tf-tfp']),
+            ("mutate_categorical", ['tensorflow', 'tf-tfp'])
             ]:
         dependency_map[dependency] = relations
     if opt_dep != 'all':
@@ -261,15 +263,3 @@ def test_pytorch_utils_dependencies(opt_dep):
     if opt_dep != 'all':
         from alibi_detect.utils import pytorch as pytorch_utils
         check_correct_dependencies(pytorch_utils, dependency_map, opt_dep)
-
-
-# def test_utils_dependencies(opt_dep):
-#     """Tests that the datasets module correctly protects against uninstalled optional dependencies.
-#     """
-#
-#     dependency_map = defaultdict(lambda: ['default'])
-#     for dependency, relations in []:
-#         dependency_map[dependency] = relations
-#     if opt_dep != 'all':
-#         from alibi_detect import utils
-#         check_correct_dependencies(utils, dependency_map, opt_dep)

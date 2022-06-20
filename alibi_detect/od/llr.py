@@ -10,7 +10,7 @@ from alibi_detect.models.tensorflow.pixelcnn import PixelCNN
 from alibi_detect.models.tensorflow.trainer import trainer
 from alibi_detect.base import BaseDetector, FitMixin, ThresholdMixin, outlier_prediction_dict
 from alibi_detect.utils.tensorflow.prediction import predict_batch
-from alibi_detect.utils.mutate_categorical import mutate_categorical
+from alibi_detect.utils.tensorflow.misc import mutate_categorical
 
 logger = logging.getLogger(__name__)
 

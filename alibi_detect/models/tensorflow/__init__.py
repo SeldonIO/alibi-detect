@@ -21,9 +21,9 @@ PixelCNN = import_optional(
     'alibi_detect.models.tensorflow.pixelcnn',
     names=['PixelCNN'])
 
-resnet = import_optional(
+resnet, scale_by_instance = import_optional(
     'alibi_detect.models.tensorflow.resnet',
-    names=['resnet'])
+    names=['resnet', 'scale_by_instance'])
 
 trainer = import_optional(
     'alibi_detect.models.tensorflow.trainer',
@@ -46,6 +46,7 @@ __all__ = [
     "VAE",
     "VAEGMM",
     "resnet",
+    "scale_by_instance",
     "PixelCNN",
     "TransformerEmbedding",
     "trainer",
