@@ -188,6 +188,7 @@ def test_fetching_utils_dependencies(opt_dep):
     dependency_map = defaultdict(lambda: ['default'])
     for dependency, relations in [
         ('fetch_detector', ['tensorflow', 'tf-tfp']),
+        ('fetch_tf_model', ['tensorflow', 'tf-tfp'])
     ]:
         dependency_map[dependency] = relations
     if opt_dep != 'all':
