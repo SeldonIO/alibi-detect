@@ -795,7 +795,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 absl-py
-1.0.0
+1.1.0
 Apache Software License
 
                                  Apache License
@@ -1277,7 +1277,7 @@ Agreement.
 
 
 cachetools
-5.1.0
+5.2.0
 MIT License
 The MIT License (MIT)
 
@@ -1302,7 +1302,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 certifi
-2022.5.18.1
+2022.6.15
 Mozilla Public License 2.0 (MPL 2.0)
 This package contains a modified version of ca-bundle.crt:
 
@@ -1704,7 +1704,7 @@ Apache Software License
 
 
 filelock
-3.7.0
+3.7.1
 Public Domain
 This is free and unencumbered software released into the public domain.
 
@@ -1832,7 +1832,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 google-auth
-2.6.6
+2.8.0
 Apache Software License
                                  Apache License
                            Version 2.0, January 2004
@@ -2698,7 +2698,7 @@ obtain one at https://mozilla.org/MPL/2.0/.
 
 
 h5py
-3.6.0
+3.7.0
 BSD License
 Copyright (c) 2008 Andrew Collette and contributors
 All rights reserved.
@@ -2733,7 +2733,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 huggingface-hub
-0.6.0
+0.7.0
 Apache Software License
                                  Apache License
                            Version 2.0, January 2004
@@ -3000,7 +3000,7 @@ THE SOFTWARE.
 
 
 imageio
-2.19.2
+2.19.3
 BSD License
 Copyright (c) 2014-2022, imageio developers
 All rights reserved.
@@ -3287,7 +3287,7 @@ Apache Software License
    limitations under the License.
 
 kiwisolver
-1.4.2
+1.4.3
 BSD License
 =========================
  The Kiwi licensing terms
@@ -3805,7 +3805,7 @@ Licensee agrees to be bound by the terms and conditions of this License
 Agreement.
 
 networkx
-2.8.2
+2.8.4
 BSD License
 NetworkX is distributed with the 3-clause BSD license.
 
@@ -3847,7 +3847,7 @@ NetworkX is distributed with the 3-clause BSD license.
 
 
 numba
-0.55.1
+0.55.2
 BSD License
 Copyright (c) 2012, Anaconda, Inc.
 All rights reserved.
@@ -3876,9 +3876,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 numpy
-1.21.6
+1.22.4
 BSD License
-Copyright (c) 2005-2021, NumPy Developers.
+Copyright (c) 2005-2022, NumPy Developers.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -4823,7 +4823,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 opencv-python
-4.5.5.64
+4.6.0.66
 MIT License
 OpenCV library is redistributed within opencv-python package.
 This license applies to OpenCV binary in the directory cv2/.
@@ -7537,7 +7537,7 @@ DEALINGS IN THE SOFTWARE.
 
 
 regex
-2022.4.24
+2022.6.2
 Apache Software License
 This work was derived from the 're' module of CPython 2.6 and CPython 3.1,
 copyright (c) 1998-2001 by Secret Labs AB and licensed under CNRI's Python 1.6
@@ -7750,7 +7750,7 @@ All additions and alterations are licensed under the Apache 2.0 License.
 
 
 requests
-2.27.1
+2.28.0
 Apache Software License
 
                                  Apache License
@@ -7968,7 +7968,7 @@ limitations under the License.
 
 
 scikit-image
-0.19.2
+0.19.3
 BSD License
 Copyright (C) 2019, the scikit-image team
 All rights reserved.
@@ -9026,7 +9026,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 tensorboard
-2.9.0
+2.9.1
 Apache Software License
 # TensorBoard License
 
@@ -10259,7 +10259,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 transformers
-4.19.2
+4.20.0
 Apache Software License
 Copyright 2018- The Hugging Face team. All rights reserved.
 
