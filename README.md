@@ -117,7 +117,7 @@ We will use the [VAE outlier detector](https://docs.seldon.io/projects/alibi-det
 
 ```python
 from alibi_detect.od import OutlierVAE
-from alibi_detect.utils import save_detector, load_detector
+from alibi_detect.utils.saving import save_detector, load_detector
 
 # initialize and fit detector
 od = OutlierVAE(threshold=0.1, encoder_net=encoder_net, decoder_net=decoder_net, latent_dim=1024)
