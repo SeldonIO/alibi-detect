@@ -20,9 +20,15 @@ predict_batch, predict_batch_transformer = import_optional(
 )
 
 
-zero_diag, quantile, subset_matrix, mutate_categorical = import_optional(
+zero_diag, quantile, subset_matrix = import_optional(
     'alibi_detect.utils.tensorflow.misc',
-    names=['zero_diag', 'quantile', 'subset_matrix', 'mutate_categorical']
+    names=['zero_diag', 'quantile', 'subset_matrix']
+)
+
+
+mutate_categorical = import_optional(
+    'alibi_detect.utils.tensorflow.perturbation',
+    names=['mutate_categorical']
 )
 
 

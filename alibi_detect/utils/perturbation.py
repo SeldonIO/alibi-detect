@@ -1,3 +1,11 @@
+# ###### CHANGED in TF-TFP-TORCH OPTIONAL DEPS PR ####################
+# ###### these comments should be removed prior to PR merge. #########
+# ####################################################################
+#
+# 1. The function `mutate_categorical` has been moved from here to
+# `utils/tensorflow/perturbation.py` to avoid tensorflow optional
+# dependency errors
+
 import random
 from io import BytesIO
 from typing import List, Tuple
@@ -13,11 +21,6 @@ from PIL import Image
 from scipy.ndimage import zoom
 from scipy.ndimage.interpolation import map_coordinates
 from skimage.filters import gaussian
-
-
-# ###### CHANGED in TF-TFP-TORCH OPTIONAL DEPS PR ######
-# these comments should be removed prior to PR merge. The function `mutate_categorical` has been moved to
-# `utils/mutate_categorical.py` to avoid tensorflow optional dependency errors when importing into `utils/__init__.py`.
 
 
 def apply_mask(X: np.ndarray,

@@ -2,8 +2,9 @@
 # ###### these comments should be removed prior to PR merge. #########
 # ####################################################################
 #
-# 1. losses.py has been split into `prob_losses.py` and `losses.py` in
-#  order to fix import errors for tensorflow_probability.
+# 1. loss functions that require tensorflow-probability have been
+# split out into `prob_losses.py` in order to  fix import errors for
+# tensorflow_probability.
 
 
 from alibi_detect.utils.missing_optional_dependency import import_optional
