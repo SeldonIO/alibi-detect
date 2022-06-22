@@ -1,8 +1,5 @@
 from alibi_detect.utils.missing_optional_dependency import import_optional
 
-CVMDriftOnline = import_optional('alibi_detect.cd.cvm_online', names=['CVMDriftOnline'])
-FETDriftOnline = import_optional('alibi_detect.cd.fet_online', names=['FETDriftOnline'])
-
 from .chisquare import ChiSquareDrift
 from .classifier import ClassifierDrift
 from .ks import KSDrift
@@ -17,6 +14,10 @@ from .tabular import TabularDrift
 from .cvm import CVMDrift
 from .fet import FETDrift
 from .context_aware import ContextMMDDrift
+
+CVMDriftOnline = import_optional('alibi_detect.cd.cvm_online', names=['CVMDriftOnline'])
+FETDriftOnline = import_optional('alibi_detect.cd.fet_online', names=['FETDriftOnline'])
+
 
 __all__ = [
     "ChiSquareDrift",
