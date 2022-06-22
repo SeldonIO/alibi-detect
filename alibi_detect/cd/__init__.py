@@ -1,3 +1,8 @@
+from alibi_detect.utils.missing_optional_dependency import import_optional
+
+CVMDriftOnline = import_optional('alibi_detect.cd.cvm_online', names=['CVMDriftOnline'])
+FETDriftOnline = import_optional('alibi_detect.cd.fet_online', names=['FETDriftOnline'])
+
 from .chisquare import ChiSquareDrift
 from .classifier import ClassifierDrift
 from .ks import KSDrift
@@ -10,9 +15,7 @@ from .mmd_online import MMDDriftOnline
 from .model_uncertainty import ClassifierUncertaintyDrift, RegressorUncertaintyDrift
 from .tabular import TabularDrift
 from .cvm import CVMDrift
-from .cvm_online import CVMDriftOnline
 from .fet import FETDrift
-from .fet_online import FETDriftOnline
 from .context_aware import ContextMMDDrift
 
 __all__ = [
