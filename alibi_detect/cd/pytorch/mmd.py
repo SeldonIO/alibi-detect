@@ -117,7 +117,7 @@ class MMDDriftTorch(BaseMMDDrift):
         x_ref = torch.from_numpy(x_ref).to(self.device)  # type: ignore[assignment]
         x = torch.from_numpy(x).to(self.device)  # type: ignore[assignment]
         # compute kernel matrix, MMD^2 and apply permutation test using the kernel matrix
-        n = x.shape[0]
+        n = x.shape[0]  # type: ignore
         kernel_mat = self.kernel_matrix(x_ref, x)  # type: ignore[arg-type]
         kernel_mat = kernel_mat - torch.diag(kernel_mat.diag())  # zero diagonal
         mmd2 = mmd2_from_kernel_matrix(kernel_mat, n, permute=False, zero_diag=False)
