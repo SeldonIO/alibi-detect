@@ -16,7 +16,7 @@ extras_require = {
         "pystan<3.0"
     ],
     "torch": [
-        # "torch>=1.7.0"
+        "torch>=1.7.0"
     ],
     # https://github.com/SeldonIO/alibi-detect/issues/375 and 387
     "tensorflow": [
