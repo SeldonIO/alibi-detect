@@ -282,5 +282,5 @@ def _sigma_median_diag(x: tf.Tensor, y: tf.Tensor, dist: tf.Tensor) -> tf.Tensor
     The computed bandwidth, `sigma`.
     """
     n_median = tf.math.reduce_prod(dist.shape) // 2
-    sigma = tf.expand_dims((.5 * tf.sort(tf.reshape(dist, (-1,)))[int(n_median)]) ** .5, axis=0)
+    sigma = tf.expand_dims((.5 * tf.sort(tf.reshape(dist, (-1,)))[n_median]) ** .5, axis=0)
     return sigma
