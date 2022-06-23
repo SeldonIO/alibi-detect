@@ -33,7 +33,7 @@ def prophet_params(request):
 
 @pytest.mark.parametrize('prophet_params', list(range(n_tests)), indirect=True)
 def test_prophet(prophet_params):
-    fbprophet = pytest.importorskip('fbprophet', "Prophet tests skipped as Prophet not installed")
+    fbprophet = pytest.importorskip('fbprophet', reason="Prophet tests skipped as Prophet not installed")
     growth, return_instance_score, return_forecast = prophet_params
     od = OutlierProphet(growth=growth)
     assert isinstance(od.model, fbprophet.forecaster.Prophet)
