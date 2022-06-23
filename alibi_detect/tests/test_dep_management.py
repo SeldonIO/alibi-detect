@@ -115,6 +115,7 @@ def test_od_dependencies(opt_dep):
             ('OutlierAE', ['tensorflow']),
             ('OutlierAEGMM', ['tensorflow']),
             ('OutlierSeq2Seq', ['tensorflow']),
+            ("OutlierProphet", ['prophet'])
             ]:
         dependency_map[dependency] = relations
     from alibi_detect import od
