@@ -25,7 +25,7 @@ class GaussianRBF(nn.Module):
             Can pass multiple values to eval kernel with and then average.
         init_sigma_fn
             Function used to compute the bandwidth `sigma`. Used when `sigma` is to be inferred.
-            The function's signature should match :py:func:`~alibi_detect.utils.pytorch.kernels.sigma_median`,
+            The function's signature should match :py:func:`~alibi_detect.utils.keops.kernels.sigma_median`,
             meaning that it should take in the tensors `x`, `y` and `dist` and return `sigma`.
         trainable
             Whether or not to track gradients w.r.t. `sigma` to allow it to be trained.
