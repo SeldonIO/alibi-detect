@@ -9,7 +9,23 @@ by following the instructions below.
 ``````{dropdown} Install via PyPI
 
 ```{div} sd-mb-3
-- Alibi Detect can be installed from [PyPI](https://pypi.org/project/alibi-detect/) with `pip`:
+Alibi Detect can be installed from [PyPI](https://pypi.org/project/alibi-detect/) with `pip`. We provide optional 
+dependencies for a number of modules that are large or sometimes tricky to install. Many detectors are supported out 
+the box with the default install but some detectors require a specific optional dependency installation in order to 
+use. For instance the OutlierProphet detector requires the prophet installation in order to use. Other detectors have 
+a choice of backend. For instance the LSDDDrift detector has a choice of tensorflow or pytorch backends. The tabs 
+bellow list the full set of detector functionality provided by each optional dependency. If your unsure, or wish to 
+have access to as many as possible the recomended installation is:
+```
+
+```bash
+pip install alibi-detect[tensorflow,tensorflow-probability,numba,prophet]
+```
+
+or 
+
+```bash
+pip install alibi-detect[torch,numba,prophet]
 ```
 
 `````{tab-set}
@@ -19,11 +35,22 @@ by following the instructions below.
 :class-label: sd-pt-0
 
 ```{div} sd-mb-1
-Installation with default [TensorFlow](https://www.tensorflow.org/) backend.
+Default installation.
 ```
 
 ```bash
 pip install alibi-detect
+```
+
+```{div} sd-mb-1
+The default installation provides out the box support for the following detectors:
+- ChiSquareDrift
+- CVMDrift
+- FetDrift
+- KSDrift
+- TabularDrift
+- Mahanobis
+- SpectralResidual
 ```
 ````
 
@@ -32,11 +59,23 @@ pip install alibi-detect
 :class-label: sd-pt-0
 
 ```{div} sd-mb-1
-Installation with [TensorFlow](https://www.tensorflow.org/) and [PyTorch](https://pytorch.org/) backends.
+Installation with [PyTorch](https://pytorch.org/) backend.
 ```
 
 ```bash
 pip install alibi-detect[torch]
+```
+
+```{div} sd-mb-1
+The PyTorch installation is required to use the PyTorch backend for the following detectors
+- ClassifierDrift
+- LearnedKernelDrift
+- LSDDDrift
+- LSDDDriftOnline
+- MMDDrift
+- MMDDriftOnline
+- SpotTheDiffDrift
+- ContextMMDDrfit
 ```
 
 ```{note}
@@ -45,15 +84,108 @@ prior to installing alibi-detect.
 ```
 ````
 
+````{tab-item} TensorFlow
+:sync: label-tensorflow
+:class-label: sd-pt-0
+
+```{div} sd-mb-1
+Installation with [TensorFlow](https://www.tensorflow.org/) backend.
+```
+
+```bash
+pip install alibi-detect[tensorflow]
+```
+
+```{div} sd-mb-1
+The TensorFlow installation is required to use the TensorFlow backend for the following detectors
+- LearnedKernelDrift
+- LSDDDrift
+- LSDDDriftOnline
+- MMDDrift
+- MMDDriftOnline
+- SpotTheDiffDrift
+- ContextMMDDrfit
+
+The TensorFlow installation is **required** to use the following detectors
+- OutlinerAE
+```
+
+````
+
+````{tab-item} TensorFlow-Probability
+:sync: label-tensorflow-probability
+:class-label: sd-pt-0
+
+```{div} sd-mb-1
+Installation with [TensorFlow Probability](https://www.tensorflow.org/probability).
+```
+
+```bash
+pip install alibi-detect[tensorflow_probability]
+```
+
+```{div} sd-mb-1
+The TensorFlow and Tensorflow-Probability installations are required to use the TensorFlow backend for the following 
+detectors
+- ClassifierDrift
+
+The TensorFlow and Tensorflow-Probability installations are **required** to use the following detectors
+- OutlinerAEGMM
+- LLR
+- OutlierSeq2Seq
+- OutlierVAE
+- OutlierVAEGMM
+- AdversarialAE
+- ModelDistillation
+```
+````
+
+````{tab-item} Numba
+:sync: label-numba
+:class-label: sd-pt-0
+
+```{div} sd-mb-1
+Installation with [Numba](https://numba.pydata.org/)
+```
+
+```bash
+pip install alibi-detect[numba]
+```
+
+```{div} sd-mb-1
+The Numba installation is **required** to use the following detectors:
+- CVMDriftOnline
+- FETDriftOnline
+```
+````
+
 ````{tab-item} Prophet
 :class-label: sd-pt-0
 
 ```{div} sd-mb-1
-Installation with the [Prophet](../od/methods/prophet.ipynb) time series outlier detector enabled.
+Installation with [Prophet](https://facebook.github.io/prophet/) support.
+
 ```
 
 ```bash
 pip install alibi-detect[prophet]
+```
+
+```{div} sd-mb-1
+Provides support for the [OutlierProphet](../od/methods/prophet.ipynb) time series outlier detector.
+```
+````
+
+````{tab-item} All
+:sync: label-all
+:class-label: sd-pt-0
+
+```{div} sd-mb-1
+Install all optional dependencies.
+```
+
+```bash
+pip install alibi-detect[all]
 ```
 ````
 
