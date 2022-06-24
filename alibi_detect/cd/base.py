@@ -505,6 +505,7 @@ class BaseMMDDrift(BaseDetector):
         self.infer_sigma = configure_kernel_from_x_ref
         if configure_kernel_from_x_ref and isinstance(sigma, np.ndarray):
             self.infer_sigma = False
+            # TODO: this might print a message for keops despite not existing configure_kernel_from_x_ref
             logger.warning('`sigma` is specified for the kernel and `configure_kernel_from_x_ref` '
                            'is set to True. `sigma` argument takes priority over '
                            '`configure_kernel_from_x_ref` (set to False).')
@@ -547,6 +548,7 @@ class BaseMMDDrift(BaseDetector):
         else:
             return self.x_ref, x  # type: ignore[return-value]
 
+    # TODO: not absolutely required for keops...?!
     @abstractmethod
     def kernel_matrix(self, x: Union['torch.Tensor', 'tf.Tensor'], y: Union['torch.Tensor', 'tf.Tensor']) \
             -> Union['torch.Tensor', 'tf.Tensor']:

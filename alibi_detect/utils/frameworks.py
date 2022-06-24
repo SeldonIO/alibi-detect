@@ -15,3 +15,9 @@ try:
     has_sklearn = True
 except ImportError:
     has_sklearn = False
+
+try:
+    import keops  # noqa
+    has_keops = True
+except ImportError:
+    has_keops = False

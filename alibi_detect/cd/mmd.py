@@ -1,7 +1,10 @@
 import logging
 import numpy as np
 from typing import Callable, Dict, Optional, Union, Tuple
-from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
+from alibi_detect.utils.frameworks import has_keops, has_pytorch, has_tensorflow
+
+if has_keops:
+    from alibi_detect.cd.keops import MMDDriftKeops
 
 if has_pytorch:
     from alibi_detect.cd.pytorch.mmd import MMDDriftTorch
@@ -68,10 +71,11 @@ class MMDDrift:
         super().__init__()
 
         backend = backend.lower()
-        if backend == 'tensorflow' and not has_tensorflow or backend == 'pytorch' and not has_pytorch:
+        if backend == 'tensorflow' and not has_tensorflow or backend == 'pytorch' and not has_pytorch \
+                or backend == 'keops' and not has_keops:
             raise ImportError(f'{backend} not installed. Cannot initialize and run the '
                               f'MMDDrift detector with {backend} backend.')
-        elif backend not in ['tensorflow', 'pytorch']:
+        elif backend not in ['tensorflow', 'pytorch', 'keops']:
             raise NotImplementedError(f'{backend} not implemented. Use tensorflow or pytorch instead.')
 
         kwargs = locals()
@@ -82,15 +86,20 @@ class MMDDrift:
         if kernel is None:
             if backend == 'tensorflow':
                 from alibi_detect.utils.tensorflow.kernels import GaussianRBF
-            else:
+            elif backend == 'pytorch':
                 from alibi_detect.utils.pytorch.kernels import GaussianRBF  # type: ignore
+            else:
+                from alibi_detect.utils.keops.kernels import GaussianRBF  # type: ignore
             kwargs.update({'kernel': GaussianRBF})
 
         if backend == 'tensorflow' and has_tensorflow:
             kwargs.pop('device', None)
             self._detector = MMDDriftTF(*args, **kwargs)  # type: ignore
-        else:
+        elif backend == 'pytorch' and has_pytorch:
             self._detector = MMDDriftTorch(*args, **kwargs)  # type: ignore
+        else:
+            kwargs.pop('configure_kernel_from_x_ref', None)
+            self._detector = MMDDriftKeops(*args, **kwargs)  # type: ignore
         self.meta = self._detector.meta
 
     def predict(self, x: Union[np.ndarray, list], return_p_val: bool = True, return_distance: bool = True) \
