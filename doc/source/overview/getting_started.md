@@ -268,8 +268,8 @@ prior to installing alibi-detect.
 [Alibi Detect](https://github.com/SeldonIO/alibi-detect) is an open source Python library focused on 
 **outlier**, **adversarial** and **drift** detection. The package aims to cover both 
 online and offline detectors for tabular data, text, images and time series. 
-Both **TensorFlow** and **PyTorch** backends are supported for drift detection. Alibi Detect does however 
-not install PyTorch for you. Check the [PyTorch docs](https://pytorch.org/) how to do this.
+Both **TensorFlow** and **PyTorch** backends are supported for drift detection. Alibi-Detect does not install these as 
+default. See [installation options](#installation) for more details.
 
 To get a list of respectively the latest outlier, adversarial and drift detection algorithms, you can type:
 

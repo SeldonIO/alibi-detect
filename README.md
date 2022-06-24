@@ -80,7 +80,17 @@ The package, `alibi-detect` can be installed from:
    pip install git+https://github.com/SeldonIO/alibi-detect.git
    ```
 
-- To install with the PyTorch backend (in addition to the default TensorFlow backend):
+- To install with the tensorflow backend:
+  ```bash
+  pip install alibi-detect[tensorflow]
+  ```
+  
+- To install with tensorflow-probability:
+  ```bash
+  pip install alibi-detect[tensorflow_probability]
+  ```
+
+- To install with the PyTorch backend:
   ```bash
   pip install alibi-detect[torch]
   ```
@@ -90,6 +100,12 @@ The package, `alibi-detect` can be installed from:
    ```bash
    pip install alibi-detect[prophet]
    ```
+
+- To use the `CVMDriftOnline` or `FetDriftOnline` drift detectors install with Numba:
+   ```bash
+   pip install alibi-detect[numba]
+   ```
+
 
 ### With conda
 
@@ -181,8 +197,8 @@ The following tables show the advised use cases for each algorithm. The column *
 
 #### TensorFlow and PyTorch support
 
-The drift detectors support TensorFlow and PyTorch backends. Alibi Detect does however not install PyTorch for you. 
-Check the [PyTorch docs](https://pytorch.org/) how to do this. Example:
+The drift detectors support TensorFlow and PyTorch backends. Alibi Detect does not install these as default. See the 
+[installation options](#installation-and-usage) for more details
 
 ```python
 from alibi_detect.cd import MMDDrift
