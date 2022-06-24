@@ -114,10 +114,6 @@ class MMDDriftKeops(BaseMMDDrift):
 
         # compute summed kernel matrices
         c_xx, c_yy, c_xy = 1 / (m * (m - 1)), 1 / (n * (n - 1)), 2. / (m * n)
-        # TODO: check where permutations=True and reduce_sum=True belong
-        #k_xx = self.kernel(x, x, permutations=True, reduce_sum=True)
-        #k_yy = self.kernel(y, y, permutations=True, reduce_sum=True)
-        #k_xy = self.kernel(x, y, permutations=True, reduce_sum=True)
         k_xx = self.kernel(LazyTensor(x[:, :, None, :]), LazyTensor(x[:, None, :, :])).sum(1).sum(1).squeeze(-1)
         k_yy = self.kernel(LazyTensor(y[:, :, None, :]), LazyTensor(y[:, None, :, :])).sum(1).sum(1).squeeze(-1)
         k_xy = self.kernel(LazyTensor(x[:, :, None, :]), LazyTensor(y[:, None, :, :])).sum(1).sum(1).squeeze(-1)
@@ -157,9 +153,6 @@ class MMDDriftKeops(BaseMMDDrift):
             x, y = x.to(self.device), y.to(self.device)
 
             # batch-wise kernel matrix computation over the permutations
-            #k_xx.append(self.kernel(x, x, permutations=True, reduce_sum=True))
-            #k_yy.append(self.kernel(y, y, permutations=True, reduce_sum=True))
-            #k_xy.append(self.kernel(x, y, permutations=True, reduce_sum=True))
             k_xx.append(self.kernel(
                 LazyTensor(x[:, :, None, :]), LazyTensor(x[:, None, :, :])).sum(1).sum(1).squeeze(-1))
             k_yy.append(self.kernel(

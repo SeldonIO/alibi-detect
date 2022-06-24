@@ -10,7 +10,7 @@ class GaussianRBF(nn.Module):
     def __init__(
         self,
         sigma: torch.Tensor = None,
-        init_sigma_fn: Callable = sigma_median,
+        init_sigma_fn: Callable = sigma_median,  # TODO: would not work with default init fn
         trainable: bool = False
     ) -> None:
         """
@@ -35,7 +35,7 @@ class GaussianRBF(nn.Module):
             self.log_sigma = nn.Parameter(torch.empty(1), requires_grad=trainable)
             self.init_required = True
         else:
-            sigma = sigma.reshape(-1)  # [Ns,]  TODO: ensure this works with keops
+            sigma = sigma.reshape(-1)  # [Ns,]
             self.log_sigma = nn.Parameter(sigma.log(), requires_grad=trainable)
             self.init_required = False
         self.init_sigma_fn = init_sigma_fn
@@ -45,41 +45,6 @@ class GaussianRBF(nn.Module):
     def sigma(self) -> torch.Tensor:
         return self.log_sigma.exp()
 
-    # TODO: could use original kernel with some tweaks?
-    #   - LazyTensor input ->
-    #   - permutations input
-    #   - reduce_sum done in main detector
-    def _forward(self, x: Union[np.ndarray, torch.Tensor], y: Union[np.ndarray, torch.Tensor],
-                infer_sigma: bool = False, permutations: bool = False, reduce_sum: bool = False) -> LazyTensor:
-
-        x, y = torch.as_tensor(x), torch.as_tensor(y)
-
-        if not permutations:
-            x_i = LazyTensor(x[:, None, :])  # [n, 1, d]
-            y_j = LazyTensor(y[None, :, :])  # [1, m, d]
-        else:
-            x_i = LazyTensor(x[:, :, None, :])  # [perms+1, n, 1, d]
-            y_j = LazyTensor(y[:, None, :, :])  # [perms+1, 1, m, d]
-        d_ij = ((x_i - y_j) ** 2).sum(-1)  # [n, m]
-
-        if infer_sigma or self.init_required:
-            if self.trainable and infer_sigma:
-                raise ValueError("Gradients cannot be computed w.r.t. an inferred sigma value")
-            sigma = self.init_sigma_fn(x, y, d_ij)  # TODO: would not work with default init fn
-            with torch.no_grad():
-                self.log_sigma.copy_(sigma.log().clone())
-            self.init_required = False
-
-        gamma = 1. / (2. * self.sigma ** 2)   # [1] TODO: [Ns,]?
-        if not permutations:
-            gamma = LazyTensor(gamma[None, None, :])  # [1, 1, 1]
-        else:
-            gamma = LazyTensor(gamma[None, None, None, :])  # [1, 1, 1, 1]
-        k_ij = (- gamma * d_ij).exp()  # [n, m] or [perms+1, n, m]
-        if reduce_sum:
-            k_ij = k_ij.sum(1).sum(1).squeeze(-1)   # [1] or [perms+1]
-        return k_ij
-
     def forward(self, x: LazyTensor, y: LazyTensor, infer_sigma: bool = False) -> LazyTensor:
 
         dist = ((x - y) ** 2).sum(-1)
@@ -87,14 +52,16 @@ class GaussianRBF(nn.Module):
         if infer_sigma or self.init_required:
             if self.trainable and infer_sigma:
                 raise ValueError("Gradients cannot be computed w.r.t. an inferred sigma value")
-            sigma = self.init_sigma_fn(x, y, d_ij)  # TODO: would not work with default init fn
+            sigma = self.init_sigma_fn(x, y, dist)
             with torch.no_grad():
                 self.log_sigma.copy_(sigma.log().clone())
             self.init_required = False
 
-        gamma = 1. / (2. * self.sigma ** 2)   # [1] TODO: [Ns,]?
+        gamma = 1. / (2. * self.sigma ** 2)
         gamma = LazyTensor(gamma[None, None, :]) if len(dist.shape) == 2 else LazyTensor(gamma[None, None, None, :])
-        kernel_mat = (- gamma * d_ij).exp()
+        kernel_mat = (- gamma * dist).exp()
+        if len(dist.shape) < len(gamma.shape):
+            kernel_mat = kernel_mat.sum(-1) / len(self.sigma)
         return kernel_mat
 
 
