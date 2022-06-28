@@ -1,12 +1,12 @@
 import logging
 import numpy as np
 from typing import Callable, Dict, Optional, Union, Tuple
-from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, has_tensorflow_probability, BackendValidator
+from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, BackendValidator
 
 if has_pytorch:
     from alibi_detect.cd.pytorch.context_aware import ContextMMDDriftTorch
 
-if has_tensorflow and has_tensorflow_probability:
+if has_tensorflow:
     from alibi_detect.cd.tensorflow.context_aware import ContextMMDDriftTF
 
 logger = logging.getLogger(__name__)
@@ -80,7 +80,7 @@ class ContextMMDDrift:
         super().__init__()
 
         backend = backend.lower()
-        BackendValidator(backend_options={'tensorflow': ['tensorflow', 'tensorflow_probability'],
+        BackendValidator(backend_options={'tensorflow': ['tensorflow'],
                                           'pytorch': ['pytorch']},
                          construct_name='ContextMMDDrift').verify_backend(backend)
 

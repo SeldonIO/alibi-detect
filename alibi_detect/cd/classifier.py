@@ -1,6 +1,6 @@
 import numpy as np
 from typing import Callable, Dict, Optional, Union
-from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, has_tensorflow_probability, has_sklearn, \
+from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, has_sklearn, \
     BackendValidator
 
 if has_sklearn:
@@ -12,7 +12,7 @@ if has_pytorch:
     from alibi_detect.cd.pytorch.classifier import ClassifierDriftTorch
     from alibi_detect.utils.pytorch.data import TorchDataset
 
-if has_tensorflow and has_tensorflow_probability:
+if has_tensorflow:
     from alibi_detect.cd.tensorflow.classifier import ClassifierDriftTF
     from alibi_detect.utils.tensorflow.data import TFDataset
 
@@ -135,7 +135,7 @@ class ClassifierDrift:
         super().__init__()
         backend = backend.lower()
         BackendValidator(
-            backend_options={'tensorflow': ['tensorflow', 'tensorflow_probability'],
+            backend_options={'tensorflow': ['tensorflow'],
                              'pytorch': ['pytorch'],
                              'sklearn': ['sklearn']},
             construct_name='ClassifierDrift'

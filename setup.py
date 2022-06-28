@@ -21,10 +21,11 @@ extras_require = {
     # https://github.com/SeldonIO/alibi-detect/issues/375 and 387
     "tensorflow": [
         "tensorflow>=2.2.0, !=2.6.0, !=2.6.1, <2.10.0",
-    ],
-    "tensorflow_probability": [
         "tensorflow_probability>=0.8.0, <0.17.0"
     ],
+    # "tensorflow_probability": [
+    #     "tensorflow_probability>=0.8.0, <0.17.0"
+    # ],
     "numba": [
         # "numba>=0.50.0, !=0.54.0, <0.56.0"
     ],

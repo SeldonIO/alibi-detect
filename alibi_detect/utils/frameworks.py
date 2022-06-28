@@ -8,12 +8,6 @@ except ImportError:
     has_tensorflow = False
 
 try:
-    import tensorflow_probability # noqa
-    has_tensorflow_probability = True
-except ImportError:
-    has_tensorflow_probability = False
-
-try:
     import torch  # noqa
     has_pytorch = True
 except ImportError:
@@ -28,7 +22,6 @@ except ImportError:
 
 HAS_BACKEND = {
     'tensorflow': has_tensorflow,
-    'tensorflow_probability': has_tensorflow_probability,
     'sklearn': has_sklearn,
     'pytorch': has_pytorch,
 }
@@ -104,7 +97,7 @@ class BackendValidator:
                      f'with {backend} backend.')
         pip_msg = '' if not optional_dependencies else \
             (f'The necessary missing dependencies can be installed using '
-             f'`pip install alibi-detect[{",".join(optional_dependencies)}]`.')
+             f'`pip install alibi-detect[{" ".join(optional_dependencies)}]`.')
         raise ImportError(f'{error_msg} {pip_msg}')
 
     def _raise_implementation_error(self, backend: str):

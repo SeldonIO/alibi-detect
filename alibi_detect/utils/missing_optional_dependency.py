@@ -23,21 +23,10 @@ ERROR_TYPES = {
     "holidays": 'prophet',
     "pystan": 'prophet',
     "numba": 'numba',
-    "tensorflow_probability": 'tensorflow_probability',
+    "tensorflow_probability": 'tensorflow',
     "tensorflow": 'tensorflow',
     "torch": 'torch',
     "pytorch": 'torch'
-}
-
-ERROR_API_MAP = {
-    "LLR": 'tensorflow,tensorflow_probability',
-    "OutlierVAE": 'tensorflow,tensorflow_probability',
-    "OutlierVAEGMM": 'tensorflow,tensorflow_probability',
-    "OutlierAEGMM": 'tensorflow,tensorflow_probability',
-    "OutlierSeq2Seq": 'tensorflow,tensorflow_probability',
-    "AdversarialAE": 'tensorflow,tensorflow_probability',
-    "ModelDistillation": 'tensorflow,tensorflow_probability',
-    "PixelCNN": 'tensorflow,tensorflow_probability'
 }
 
 
@@ -114,12 +103,7 @@ def import_optional(module_name: str, names: Optional[List[str]] = None) -> Any:
         if str(err.name) not in ERROR_TYPES:
             raise err
 
-        # The object being imported might have multiple optional dependencies. Such cases are captured in ERROR_API_MAP.
-        # We first check for these and assign to missing_dependency, if this isn't the case we etect hte optional
-        # dependency option using ERROR_TYPES.
         missing_dependency = None
-        for name in names:
-            missing_dependency = ERROR_API_MAP.get(name)
         if not missing_dependency:
             missing_dependency = ERROR_TYPES[err.name]
 

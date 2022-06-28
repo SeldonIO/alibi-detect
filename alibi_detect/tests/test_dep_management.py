@@ -82,9 +82,9 @@ def test_cd_tensorflow_dependencies(opt_dep):
 
     dependency_map = defaultdict(lambda: ['default'])
     for dependency, relations in [
-        ("HiddenOutput", ['tensorflow', 'tf-tfp']),
-        ("UAE", ['tensorflow', 'tf-tfp']),
-        ("preprocess_drift", ['tensorflow', 'tf-tfp'])
+        ("HiddenOutput", ['tensorflow']),
+        ("UAE", ['tensorflow']),
+        ("preprocess_drift", ['tensorflow'])
     ]:
         dependency_map[dependency] = relations
     if opt_dep != 'all':
@@ -98,8 +98,8 @@ def test_ad_dependencies(opt_dep):
 
     dependency_map = defaultdict(lambda: ['default'])
     for dependency, relations in [
-            ('AdversarialAE', ['tensorflow', 'tf-tfp']),
-            ('ModelDistillation', ['tensorflow', 'tf-tfp'])
+            ('AdversarialAE', ['tensorflow']),
+            ('ModelDistillation', ['tensorflow'])
             ]:
         dependency_map[dependency] = relations
     if opt_dep != 'all':
@@ -113,12 +113,12 @@ def test_od_dependencies(opt_dep):
 
     dependency_map = defaultdict(lambda: ['default'])
     for dependency, relations in [
-            ('LLR', ['tf-tfp']),
-            ('OutlierVAE', ['tf-tfp']),
-            ('OutlierVAEGMM', ['tf-tfp']),
-            ('OutlierAE', ['tensorflow', 'tf-tfp']),
-            ('OutlierAEGMM', ['tensorflow', 'tf-tfp']),
-            ('OutlierSeq2Seq', ['tensorflow', 'tf-tfp']),
+            ('LLR', ['tensorflow']),
+            ('OutlierVAE', ['tensorflow']),
+            ('OutlierVAEGMM', ['tensorflow']),
+            ('OutlierAE', ['tensorflow']),
+            ('OutlierAEGMM', ['tensorflow']),
+            ('OutlierSeq2Seq', ['tensorflow']),
             ]:
         dependency_map[dependency] = relations
     if opt_dep != 'all':
@@ -132,22 +132,22 @@ def test_tensorflow_model_dependencies(opt_dep):
 
     dependency_map = defaultdict(lambda: ['default'])
     for dependency, relations in [
-            ("AE", ['tensorflow', 'tf-tfp']),
-            ("AEGMM", ['tensorflow', 'tf-tfp']),
-            ("Seq2Seq", ['tensorflow', 'tf-tfp']),
-            ("VAE", ['tensorflow', 'tf-tfp']),
-            ("VAEGMM", ['tensorflow', 'tf-tfp']),
-            ("resnet", ['tensorflow', 'tf-tfp']),
-            ("PixelCNN", ['tf-tfp']),
-            ("TransformerEmbedding", ['tensorflow', 'tf-tfp']),
-            ("trainer", ['tensorflow', 'tf-tfp']),
-            ("eucl_cosim_features", ['tensorflow', 'tf-tfp']),
-            ("elbo", ['tf-tfp']),
-            ("loss_vaegmm", ['tf-tfp']),
-            ("loss_aegmm", ['tensorflow', 'tf-tfp']),
-            ("loss_adv_ae", ['tensorflow', 'tf-tfp']),
-            ("loss_distillation", ['tensorflow', 'tf-tfp']),
-            ("scale_by_instance", ['tensorflow', 'tf-tfp'])
+            ("AE", ['tensorflow']),
+            ("AEGMM", ['tensorflow']),
+            ("Seq2Seq", ['tensorflow']),
+            ("VAE", ['tensorflow']),
+            ("VAEGMM", ['tensorflow']),
+            ("resnet", ['tensorflow']),
+            ("PixelCNN", ['tensorflow']),
+            ("TransformerEmbedding", ['tensorflow']),
+            ("trainer", ['tensorflow']),
+            ("eucl_cosim_features", ['tensorflow']),
+            ("elbo", ['tensorflow']),
+            ("loss_vaegmm", ['tensorflow']),
+            ("loss_aegmm", ['tensorflow']),
+            ("loss_adv_ae", ['tensorflow']),
+            ("loss_distillation", ['tensorflow']),
+            ("scale_by_instance", ['tensorflow'])
             ]:
         dependency_map[dependency] = relations
     if opt_dep != 'all':
@@ -188,8 +188,8 @@ def test_fetching_utils_dependencies(opt_dep):
 
     dependency_map = defaultdict(lambda: ['default'])
     for dependency, relations in [
-        ('fetch_detector', ['tensorflow', 'tf-tfp']),
-        ('fetch_tf_model', ['tensorflow', 'tf-tfp'])
+        ('fetch_detector', ['tensorflow']),
+        ('fetch_tf_model', ['tensorflow'])
     ]:
         dependency_map[dependency] = relations
     if opt_dep != 'all':
@@ -203,8 +203,8 @@ def test_saving_utils_dependencies(opt_dep):
 
     dependency_map = defaultdict(lambda: ['default'])
     for dependency, relations in [
-        ('load_detector', ['tf-tfp']),
-        ('save_detector', ['tf-tfp'])
+        ('load_detector', ['tensorflow']),
+        ('save_detector', ['tensorflow'])
     ]:
         dependency_map[dependency] = relations
     if opt_dep != 'all':
@@ -218,20 +218,20 @@ def test_tensorflow_utils_dependencies(opt_dep):
 
     dependency_map = defaultdict(lambda: ['default'])
     for dependency, relations in [
-            ("batch_compute_kernel_matrix", ['tensorflow', 'tf-tfp']),
-            ("mmd2", ['tensorflow', 'tf-tfp']),
-            ("mmd2_from_kernel_matrix", ['tensorflow', 'tf-tfp']),
-            ("relative_euclidean_distance", ['tensorflow', 'tf-tfp']),
-            ("squared_pairwise_distance", ['tensorflow', 'tf-tfp']),
-            ("GaussianRBF", ['tensorflow', 'tf-tfp']),
-            ("DeepKernel", ['tensorflow', 'tf-tfp']),
-            ("permed_lsdds", ['tensorflow', 'tf-tfp']),
-            ("predict_batch", ['tensorflow', 'tf-tfp']),
-            ("predict_batch_transformer", ['tensorflow', 'tf-tfp']),
-            ("quantile", ['tensorflow', 'tf-tfp']),
-            ("subset_matrix", ['tensorflow', 'tf-tfp']),
-            ("zero_diag", ['tensorflow', 'tf-tfp']),
-            ("mutate_categorical", ['tensorflow', 'tf-tfp'])
+            ("batch_compute_kernel_matrix", ['tensorflow']),
+            ("mmd2", ['tensorflow']),
+            ("mmd2_from_kernel_matrix", ['tensorflow']),
+            ("relative_euclidean_distance", ['tensorflow']),
+            ("squared_pairwise_distance", ['tensorflow']),
+            ("GaussianRBF", ['tensorflow']),
+            ("DeepKernel", ['tensorflow']),
+            ("permed_lsdds", ['tensorflow']),
+            ("predict_batch", ['tensorflow']),
+            ("predict_batch_transformer", ['tensorflow']),
+            ("quantile", ['tensorflow']),
+            ("subset_matrix", ['tensorflow']),
+            ("zero_diag", ['tensorflow']),
+            ("mutate_categorical", ['tensorflow'])
             ]:
         dependency_map[dependency] = relations
     if opt_dep != 'all':
