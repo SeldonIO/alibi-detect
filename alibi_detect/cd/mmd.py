@@ -28,6 +28,7 @@ class MMDDrift:
             sigma: Optional[np.ndarray] = None,
             configure_kernel_from_x_ref: bool = True,
             n_permutations: int = 100,
+            batch_size_permutations: int = 1000000,
             device: Optional[str] = None,
             input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None
@@ -60,6 +61,9 @@ class MMDDrift:
             Whether to already configure the kernel bandwidth from the reference data.
         n_permutations
             Number of permutations used in the permutation test.
+        batch_size_permutations
+            KeOps computes the n_permutations of the MMD^2 statistics in chunks of batch_size_permutations.
+            Only relevant for 'keops' backend.
         device
             Device type used. The default None tries to use the GPU and falls back on CPU if needed.
             Can be specified by passing either 'cuda', 'gpu' or 'cpu'. Only relevant for 'pytorch' backend.
@@ -81,6 +85,15 @@ class MMDDrift:
         kwargs = locals()
         args = [kwargs['x_ref']]
         pop_kwargs = ['self', 'x_ref', 'backend', '__class__']
+        if backend == 'tensorflow' and has_tensorflow:
+            pop_kwargs += ['device', 'batch_size_permutations']
+            detector = MMDDriftTF
+        elif backend == 'pytorch' and has_pytorch:
+            pop_kwargs += ['batch_size_permutations']
+            detector = MMDDriftTorch
+        else:
+            pop_kwargs += ['configure_kernel_from_x_ref']
+            detector = MMDDriftKeops
         [kwargs.pop(k, None) for k in pop_kwargs]
 
         if kernel is None:
@@ -92,14 +105,7 @@ class MMDDrift:
                 from alibi_detect.utils.keops.kernels import GaussianRBF  # type: ignore
             kwargs.update({'kernel': GaussianRBF})
 
-        if backend == 'tensorflow' and has_tensorflow:
-            kwargs.pop('device', None)
-            self._detector = MMDDriftTF(*args, **kwargs)  # type: ignore
-        elif backend == 'pytorch' and has_pytorch:
-            self._detector = MMDDriftTorch(*args, **kwargs)  # type: ignore
-        else:
-            kwargs.pop('configure_kernel_from_x_ref', None)
-            self._detector = MMDDriftKeops(*args, **kwargs)  # type: ignore
+        self._detector = detector(*args, **kwargs)  # type: ignore
         self.meta = self._detector.meta
 
     def predict(self, x: Union[np.ndarray, list], return_p_val: bool = True, return_distance: bool = True) \
