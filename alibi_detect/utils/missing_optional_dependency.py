@@ -74,7 +74,6 @@ def import_optional(module_name: str, names: Optional[List[str]] = None) -> Any:
     Note: This function is used to import modules that depend on optional dependencies. Because it mirrors the python
     import functionality its return type has to be `Any`. Using objects imported with this function can lead to
     misspecification of types as `Any` when the developer intended to be more restrictive.
-
     Parameters
     ----------
         module_name
