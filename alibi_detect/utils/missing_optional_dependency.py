@@ -14,7 +14,7 @@ err_msg_template = Template((
     "Attempted to use $object_name without the correct optional dependencies installed. To install "
     + "the correct optional dependencies, run `pip install alibi-detect[$missing_dependency]` "
     + "from the command line. For more information, check the Installation documentation "
-    + "at https://docs.seldon.io/projects/alibi/en/latest/overview/getting_started.html."
+    + "at https://docs.seldon.io/projects/alibi-detect/en/latest/overview/getting_started.html."
 ))
 
 
@@ -23,15 +23,10 @@ ERROR_TYPES = {
     "holidays": 'prophet',
     "pystan": 'prophet',
     "numba": 'numba',
-    "tensorflow_probability": 'tensorflow_probability',
+    "tensorflow_probability": 'tensorflow',
     "tensorflow": 'tensorflow',
-    "torch": 'torch'
-}
-
-ERROR_API_MAP = {
-    "LLR": 'tensorflow,tensorflow-probability',
-    "OutlierVAE": 'tensorflow,tensorflow-probability',
-    "OutlierVAEGMM": 'tensorflow,tensorflow-probability',
+    "torch": 'torch',
+    "pytorch": 'torch'
 }
 
 
@@ -79,7 +74,6 @@ def import_optional(module_name: str, names: Optional[List[str]] = None) -> Any:
     Note: This function is used to import modules that depend on optional dependencies. Because it mirrors the python
     import functionality its return type has to be `Any`. Using objects imported with this function can lead to
     misspecification of types as `Any` when the developer intended to be more restrictive.
-
     Parameters
     ----------
         module_name
@@ -108,12 +102,7 @@ def import_optional(module_name: str, names: Optional[List[str]] = None) -> Any:
         if str(err.name) not in ERROR_TYPES:
             raise err
 
-        # The object being imported might have multiple optional dependencies. Such cases are captured in ERROR_API_MAP.
-        # We first check for these and assign to missing_dependency, if this isn't the case we etect hte optional
-        # dependency option using ERROR_TYPES.
         missing_dependency = None
-        for name in names:
-            missing_dependency = ERROR_API_MAP.get(name)
         if not missing_dependency:
             missing_dependency = ERROR_TYPES[err.name]
 
