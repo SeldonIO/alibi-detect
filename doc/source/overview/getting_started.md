@@ -168,7 +168,7 @@ pip install alibi-detect[numba]
 ```
 
 ```{div} sd-mb-1
-The Numba installation is **required** to use the following detectors:
+The Numba installation is required to use the following detectors:
 - CVMDriftOnline
 - FETDriftOnline
 ```
