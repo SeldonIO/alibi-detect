@@ -69,13 +69,11 @@ The package, `alibi-detect` can be installed from:
 ### With pip
 
 - alibi-detect can be installed from [PyPI](https://pypi.org/project/alibi-detect):
-
    ```bash
    pip install alibi-detect
    ```
    
 - Alternatively, the development version can be installed:
-
    ```bash
    pip install git+https://github.com/SeldonIO/alibi-detect.git
    ```
@@ -83,11 +81,6 @@ The package, `alibi-detect` can be installed from:
 - To install with the tensorflow backend:
   ```bash
   pip install alibi-detect[tensorflow]
-  ```
-  
-- To install with tensorflow-probability:
-  ```bash
-  pip install alibi-detect[tensorflow_probability]
   ```
 
 - To install with the PyTorch backend:
@@ -116,17 +109,12 @@ which can be installed to the *base* conda enviroment with:
 conda install mamba -n base -c conda-forge
 ```
 
-- To install alibi-detect with the default TensorFlow backend:
+To install alibi-detect:
 
-  ```bash
-  mamba install -c conda-forge alibi-detect
-  ```
+```bash
+mamba install -c conda-forge alibi-detect
+```
 
-- To install with the PyTorch backend:
-
-  ```bash
-  mamba install -c conda-forge alibi-detect pytorch
-  ```
 
 ### Usage
 We will use the [VAE outlier detector](https://docs.seldon.io/projects/alibi-detect/en/stable/od/methods/vae.html) to illustrate the API.

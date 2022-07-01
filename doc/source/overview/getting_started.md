@@ -21,8 +21,8 @@ ___
 
 `````{tab-set}
 
-````{tab-item} Standard
-:sync: label-standard
+````{tab-item} Default
+:sync: label-default
 :class-label: sd-pt-0
 
 ```{div} sd-mb-1
@@ -54,7 +54,7 @@ If you are unsure which detector to use, or wish to have access to as many as po
 ```
 
 ```bash
-pip install alibi-detect[tensorflow,tensorflow-probability,numba,prophet]
+pip install alibi-detect[tensorflow,numba,prophet]
 ```
 
 ```{div} sd-mb-1
@@ -66,7 +66,7 @@ pip install alibi-detect[torch,numba,prophet]
 ```
 
 ```{div} sd-mb-1
-The following detectors do not have `pytorch` backend support:
+However, the following detectors do not have `pytorch` backend support:
 
 - OutlierAE
 - OutlierAEGMM
@@ -85,8 +85,8 @@ pip install alibi-detect[all]
 ```
 
 ```{note}
-If you wish to use the GPU version of PyTorch, or are installing on Windows, it is recommended to [install and test PyTorch](https://pytorch.org/get-started/locally/) 
-prior to installing alibi-detect.
+If you wish to use the GPU version of PyTorch, or are installing on Windows, it is recommended to 
+[install and test PyTorch](https://pytorch.org/get-started/locally/) prior to installing alibi-detect.
 ```
 ````
 
@@ -115,8 +115,8 @@ The PyTorch installation is required to use the PyTorch backend for the followin
 ```
 
 ```{note}
-If you wish to use the GPU version of PyTorch, or are installing on Windows, it is recommended to [install and test PyTorch](https://pytorch.org/get-started/locally/) 
-prior to installing alibi-detect.
+If you wish to use the GPU version of PyTorch, or are installing on Windows, it is recommended to 
+[install and test PyTorch](https://pytorch.org/get-started/locally/) prior to installing alibi-detect.
 ```
 ````
 
@@ -134,6 +134,7 @@ pip install alibi-detect[tensorflow]
 
 ```{div} sd-mb-1
 The TensorFlow installation is required to use the TensorFlow backend for the following detectors
+- ClassifierDrift
 - LearnedKernelDrift
 - LSDDDrift
 - LSDDDriftOnline
@@ -142,30 +143,8 @@ The TensorFlow installation is required to use the TensorFlow backend for the fo
 - SpotTheDiffDrift
 - ContextMMDDrfit
 
-The TensorFlow installation is **required** to use the following detectors
+The TensorFlow installation is required to use the following detectors
 - OutlinerAE
-```
-
-````
-
-````{tab-item} TensorFlow-Probability
-:sync: label-tensorflow-probability
-:class-label: sd-pt-0
-
-```{div} sd-mb-1
-Installation with [TensorFlow Probability](https://www.tensorflow.org/probability).
-```
-
-```bash
-pip install alibi-detect[tensorflow_probability]
-```
-
-```{div} sd-mb-1
-The TensorFlow and Tensorflow-Probability installations are required to use the TensorFlow backend for the following 
-detectors
-- ClassifierDrift
-
-The TensorFlow and Tensorflow-Probability installations are **required** to use the following detectors
 - OutlinerAEGMM
 - LLR
 - OutlierSeq2Seq
@@ -200,7 +179,6 @@ The Numba installation is **required** to use the following detectors:
 
 ```{div} sd-mb-1
 Installation with [Prophet](https://facebook.github.io/prophet/) support.
-
 ```
 
 ```bash
@@ -230,36 +208,9 @@ conda install mamba -n base -c conda-forge
 - `mamba` can then be used to install alibi-detect in a conda enviroment:
 ```
 
-`````{tab-set}
-
-````{tab-item} Standard
-:sync: label-standard
-:class-label: sd-pt-0
-
-Installation with default [TensorFlow](https://www.tensorflow.org/) backend.
-
 ```bash
 mamba install -c conda-forge alibi-detect
 ```
-````
-
-````{tab-item} PyTorch
-:sync: label-torch
-:class-label: sd-pt-0
-
-Installation with [TensorFlow](https://www.tensorflow.org/) and [PyTorch](https://pytorch.org/) backends.
-
-```bash
-mamba install -c conda-forge alibi-detect pytorch
-```
-
-```{note}
-If you wish to use the GPU version of PyTorch, or are installing on Windows, it is recommended to [install and test PyTorch](https://pytorch.org/get-started/locally/) 
-prior to installing alibi-detect.
-```
-````
-
-`````
 ``````
 
 
