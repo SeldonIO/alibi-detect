@@ -548,12 +548,6 @@ class BaseMMDDrift(BaseDetector):
         else:
             return self.x_ref, x  # type: ignore[return-value]
 
-    # TODO: not absolutely required for keops...?!
-    @abstractmethod
-    def kernel_matrix(self, x: Union['torch.Tensor', 'tf.Tensor'], y: Union['torch.Tensor', 'tf.Tensor']) \
-            -> Union['torch.Tensor', 'tf.Tensor']:
-        pass
-
     @abstractmethod
     def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, float]:
         pass
