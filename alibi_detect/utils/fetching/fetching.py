@@ -14,8 +14,7 @@ from tensorflow.python.keras import backend
 from alibi_detect.models.tensorflow import PixelCNN
 
 if TYPE_CHECKING:
-    # Import the true objects directly for typechecking. If we import at the module level the import_optional method
-    # replaces them with all type.
+    # Import the true objects directly for typechecking. (See note in CONTRIBUTING.md in Optional Dependencies section)
     from alibi_detect.ad.adversarialae import AdversarialAE  # noqa
     from alibi_detect.ad.model_distillation import ModelDistillation  # noqa
     from alibi_detect.base import BaseDetector  # noqa
