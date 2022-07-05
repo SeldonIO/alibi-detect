@@ -30,7 +30,7 @@ if TYPE_CHECKING:
     from alibi_detect.od.vaegmm import OutlierVAEGMM  # noqa
     from alibi_detect.od.sr import SpectralResidual  # noqa
 
-from alibi_detect.utils.fetching.url import _join_url
+from alibi_detect.utils.url import _join_url
 from alibi_detect.utils.saving import load_detector
 
 # do not extend pickle dispatch table so as not to change pickle behaviour
