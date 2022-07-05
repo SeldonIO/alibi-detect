@@ -30,15 +30,11 @@ trainer = import_optional(
     'alibi_detect.models.tensorflow.trainer',
     names=['trainer'])
 
-loss_aegmm, loss_adv_ae, loss_distillation = import_optional(
+loss_aegmm, loss_adv_ae, loss_distillation, elbo, loss_vaegmm = import_optional(
     'alibi_detect.models.tensorflow.losses',
-    names=['loss_aegmm', 'loss_adv_ae', 'loss_distillation']
+    names=['loss_aegmm', 'loss_adv_ae', 'loss_distillation', 'elbo', 'loss_vaegmm']
 )
 
-elbo, loss_vaegmm = import_optional(
-    'alibi_detect.models.tensorflow.prob_losses',
-    names=['elbo', 'loss_vaegmm']
-)
 
 __all__ = [
     "AE",
