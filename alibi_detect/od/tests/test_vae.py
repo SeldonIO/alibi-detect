@@ -5,7 +5,7 @@ from sklearn.datasets import load_iris
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, InputLayer
 from alibi_detect.od import OutlierVAE
-from alibi_detect.models.tensorflow.prob_losses import elbo
+from alibi_detect.models.tensorflow.losses import elbo
 from alibi_detect.version import __version__
 
 threshold = [None, 5.]

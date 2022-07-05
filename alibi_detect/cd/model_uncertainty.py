@@ -216,7 +216,7 @@ class RegressorUncertaintyDrift:
         BackendValidator(backend_options={'tensorflow': ['tensorflow'],
                                           'pytorch': ['pytorch'],
                                           None: []},
-                         construct_name='ClassifierUncertaintyDrift').verify_backend(backend)
+                         construct_name='RegressorUncertaintyDrift').verify_backend(backend)
 
         if backend is None:
             model_fn = model

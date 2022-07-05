@@ -25,7 +25,7 @@ def sigma_median(x: torch.Tensor, y: torch.Tensor, dist: torch.Tensor) -> torch.
     n = min(x.shape[0], y.shape[0])
     n = n if (x[:n] == y[:n]).all() and x.shape == y.shape else 0
     n_median = n + (np.prod(dist.shape) - n) // 2 - 1
-    sigma = (.5 * dist.flatten().sort().values[n_median].unsqueeze(dim=-1)) ** .5
+    sigma = (.5 * dist.flatten().sort().values[int(n_median)].unsqueeze(dim=-1)) ** .5
     return sigma
 
 
