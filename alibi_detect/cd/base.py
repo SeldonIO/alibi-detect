@@ -502,6 +502,7 @@ class BaseMMDDrift(BaseDetector):
         if p_val is None:
             logger.warning('No p-value set for the drift threshold. Need to set it to detect data drift.')
 
+        # TODO: now not supported by KeOps detector -> either support or move to framework-specific implementations
         self.infer_sigma = configure_kernel_from_x_ref
         if configure_kernel_from_x_ref and isinstance(sigma, np.ndarray):
             self.infer_sigma = False

@@ -84,44 +84,8 @@ class MMDDriftKeops(BaseMMDDrift):
         # set the correct MMD^2 function based on the batch size for the permutations
         self.batch_size = batch_size_permutations
         self.n_batches = 1 + (n_permutations - 1) // batch_size_permutations
-        self.mmd2 = self._mmd2 if self.n_batches == 1 else self._batched_mmd2
 
     def _mmd2(self, x_all: torch.Tensor, perms: List[torch.Tensor], m: int, n: int) \
-            -> Tuple[torch.Tensor, torch.Tensor]:
-        """
-        Compute MMD^2 for the original test statistic and all permutations at once.
-
-        Parameters
-        ----------
-        x_all
-            Concatenated reference and test instances.
-        perms
-            List with permutation vectors.
-        m
-            Number of reference instances.
-        n
-            Number of test instances.
-
-        Returns
-        -------
-        MMD^2 statistic for the original and permuted reference and test sets.
-        """
-        x_all = x_all.to(self.device)
-
-        # construct stacked tensors with all permutations for the reference set x and test set y
-        x = torch.cat([x_all[None, :m, :], torch.cat([x_all[perm[:m]][None, :, :] for perm in perms], 0)], 0)
-        y = torch.cat([x_all[None, m:, :], torch.cat([x_all[perm[m:]][None, :, :] for perm in perms], 0)], 0)
-
-        # compute summed kernel matrices
-        c_xx, c_yy, c_xy = 1 / (m * (m - 1)), 1 / (n * (n - 1)), 2. / (m * n)
-        k_xx = self.kernel(LazyTensor(x[:, :, None, :]), LazyTensor(x[:, None, :, :])).sum(1).sum(1).squeeze(-1)
-        k_yy = self.kernel(LazyTensor(y[:, :, None, :]), LazyTensor(y[:, None, :, :])).sum(1).sum(1).squeeze(-1)
-        k_xy = self.kernel(LazyTensor(x[:, :, None, :]), LazyTensor(y[:, None, :, :])).sum(1).sum(1).squeeze(-1)
-        stats = c_xx * (k_xx - m) + c_yy * (k_yy - n) - c_xy * k_xy  # TODO: check diagonal adjustment
-        return stats[0], stats[1:]
-
-    # TODO: just use _batched_mmd2?! Need to check time diff with original approach which should be minimal
-    def _batched_mmd2(self, x_all: torch.Tensor, perms: List[torch.Tensor], m: int, n: int) \
             -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Batched (across the permutations) MMD^2 computation for the original test statistic and the permutations.
@@ -185,7 +149,7 @@ class MMDDriftKeops(BaseMMDDrift):
         m, n = x_ref.shape[0], x.shape[0]
         perms = [torch.randperm(m + n) for _ in range(self.n_permutations)]
         x_all = torch.cat([x_ref, x], 0)
-        mmd2, mmd2_permuted = self.mmd2(x_all, perms, m, n)
+        mmd2, mmd2_permuted = self._mmd2(x_all, perms, m, n)
         if self.device.type == 'cuda':
             mmd2, mmd2_permuted = mmd2.cpu(), mmd2_permuted.cpu()
         p_val = (mmd2 <= mmd2_permuted).float().mean()
