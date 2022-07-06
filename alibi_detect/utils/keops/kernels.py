@@ -1,4 +1,3 @@
-from alibi_detect.utils.pytorch.kernels import sigma_median  # TODO: keops sigma_median?
 import numpy as np
 from pykeops.torch import LazyTensor
 import torch
@@ -6,11 +5,38 @@ import torch.nn as nn
 from typing import Callable, List, Tuple, Union
 
 
+def sigma_mean(x: LazyTensor, y: LazyTensor, dist: LazyTensor) -> torch.Tensor:
+    """
+    Bandwidth estimation using the mean heuristic.
+
+    Parameters
+    ----------
+    x
+        LazyTensor of instances with dimension [Nx, 1, features].
+    y
+        LazyTensor of instances with dimension [1, Ny, features].
+    dist
+        LazyTensor with dimensions [Nx, Ny], containing the pairwise distances between `x` and `y`.
+
+    Returns
+    -------
+    The computed bandwidth, `sigma`.
+    """
+    n = x.shape[0]
+    if (dist.min(axis=1) == 0.).all() and (torch.arange(n) == dist.argmin(axis=1).view(-1)).all() \
+            and x.shape == y.shape:
+        n_mean = n * (n - 1)
+    else:
+        n_mean = np.prod(dist.shape)
+    sigma = (.5 * dist.sum(1).sum().unsqueeze(-1) / n_mean) ** .5
+    return sigma
+
+
 class GaussianRBF(nn.Module):
     def __init__(
         self,
         sigma: torch.Tensor = None,
-        init_sigma_fn: Callable = sigma_median,  # TODO: would not work with default init fn
+        init_sigma_fn: Callable = sigma_mean,
         trainable: bool = False
     ) -> None:
         """
@@ -25,7 +51,7 @@ class GaussianRBF(nn.Module):
             Can pass multiple values to eval kernel with and then average.
         init_sigma_fn
             Function used to compute the bandwidth `sigma`. Used when `sigma` is to be inferred.
-            The function's signature should match :py:func:`~alibi_detect.utils.keops.kernels.sigma_median`,
+            The function's signature should match :py:func:`~alibi_detect.utils.keops.kernels.sigma_mean`,
             meaning that it should take in the tensors `x`, `y` and `dist` and return `sigma`.
         trainable
             Whether or not to track gradients w.r.t. `sigma` to allow it to be trained.

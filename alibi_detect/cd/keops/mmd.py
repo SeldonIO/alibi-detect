@@ -20,6 +20,7 @@ class MMDDriftKeops(BaseMMDDrift):
             preprocess_fn: Optional[Callable] = None,
             kernel: Callable = GaussianRBF,
             sigma: Optional[np.ndarray] = None,
+            configure_kernel_from_x_ref: bool = True,
             n_permutations: int = 100,
             batch_size_permutations: int = 1000000,
             device: Optional[str] = None,
@@ -48,6 +49,8 @@ class MMDDriftKeops(BaseMMDDrift):
         sigma
             Optionally set the GaussianRBF kernel bandwidth. Can also pass multiple bandwidth values as an array.
             The kernel evaluation is then averaged over those bandwidths.
+        configure_kernel_from_x_ref
+            Whether to already configure the kernel bandwidth from the reference data.
         n_permutations
             Number of permutations used in the permutation test.
         batch_size_permutations
@@ -67,6 +70,7 @@ class MMDDriftKeops(BaseMMDDrift):
             update_x_ref=update_x_ref,
             preprocess_fn=preprocess_fn,
             sigma=sigma,
+            configure_kernel_from_x_ref=configure_kernel_from_x_ref,
             n_permutations=n_permutations,
             input_shape=input_shape,
             data_type=data_type
@@ -84,6 +88,14 @@ class MMDDriftKeops(BaseMMDDrift):
         # set the correct MMD^2 function based on the batch size for the permutations
         self.batch_size = batch_size_permutations
         self.n_batches = 1 + (n_permutations - 1) // batch_size_permutations
+
+        # infer the kernel bandwidth from the reference data
+        if self.infer_sigma or isinstance(sigma, torch.Tensor):
+            x = torch.from_numpy(self.x_ref).to(self.device)
+            _ = self.kernel(LazyTensor(x[:, None, :]), LazyTensor(x[None, :, :]), infer_sigma=self.infer_sigma)
+            self.infer_sigma = False
+        else:
+            self.infer_sigma = True
 
     def _mmd2(self, x_all: torch.Tensor, perms: List[torch.Tensor], m: int, n: int) \
             -> Tuple[torch.Tensor, torch.Tensor]:
