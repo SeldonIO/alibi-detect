@@ -1,8 +1,7 @@
 import tensorflow as tf
-import tensorflow_probability as tfp
-from tensorflow.keras.losses import kld, categorical_crossentropy
 from tensorflow.python.keras.layers import Flatten
-
+from tensorflow.keras.losses import kld, categorical_crossentropy
+import tensorflow_probability as tfp
 from alibi_detect.models.tensorflow.gmm import gmm_params, gmm_energy
 
 
