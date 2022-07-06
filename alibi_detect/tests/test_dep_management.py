@@ -231,7 +231,8 @@ def test_tensorflow_utils_dependencies(opt_dep):
             ("quantile", ['tensorflow']),
             ("subset_matrix", ['tensorflow']),
             ("zero_diag", ['tensorflow']),
-            ("mutate_categorical", ['tensorflow'])
+            ("mutate_categorical", ['tensorflow']),
+            ("TFDataset", ['tensorflow'])
             ]:
         dependency_map[dependency] = relations
     if opt_dep != 'all':

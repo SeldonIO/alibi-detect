@@ -32,6 +32,12 @@ mutate_categorical = import_optional(
 )
 
 
+TFDataset = import_optional(
+    'alibi_detect.utils.tensorflow.data',
+    names=['TFDataset']
+)
+
+
 __all__ = [
     "batch_compute_kernel_matrix",
     "mmd2",
@@ -46,5 +52,6 @@ __all__ = [
     "quantile",
     "subset_matrix",
     "zero_diag",
-    "mutate_categorical"
+    "mutate_categorical",
+    "TFDataset"
 ]

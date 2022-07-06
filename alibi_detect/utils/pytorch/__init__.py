@@ -27,7 +27,6 @@ get_device, quantile, zero_diag = import_optional(
     names=['get_device', 'quantile', 'zero_diag']
 )
 
-
 __all__ = [
     "batch_compute_kernel_matrix",
     "mmd2",
