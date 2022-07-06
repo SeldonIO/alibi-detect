@@ -1,5 +1,5 @@
 import tensorflow as tf
-from tensorflow.python.keras.layers import Flatten
+from tensorflow.keras.layers import Flatten
 from tensorflow.keras.losses import kld, categorical_crossentropy
 import tensorflow_probability as tfp
 from alibi_detect.models.tensorflow.gmm import gmm_params, gmm_energy
