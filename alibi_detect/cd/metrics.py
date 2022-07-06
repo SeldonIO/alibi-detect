@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 import numpy as np
 from typing import Union, List, Optional, Tuple, Callable, Dict, Any
+from alibi_detect.utils._types import Literal
 import matplotlib.pyplot as plt
 from scipy.stats import uniform
 import statsmodels.api as sm
@@ -12,55 +13,55 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def eval_roc(
+def eval_detector(
         detector: type,  # TODO: type w/ BaseDriftDetector if introduced.
         X_ref: Union[np.ndarray, list],
         X_drift: Optional[Union[np.ndarray, list]] = None,
         C_ref: Optional[np.ndarray] = None,
         C_drift: Optional[np.ndarray] = None,
-        model: Optional[Callable] = None,
-        detector_kwargs: Optional[dict] = None,
-        sig_levels: np.ndarray = np.linspace(0.01, 0.3, 10),
-        n_runs: int = 100,
-        n_samples: Tuple[int, int] = (500, 500),
-        qq_plot: bool = False,
-        hist_plot: bool = False,
-        power_plot: bool = False,
         roc_plot: bool = False,
         save_dir: Optional[os.PathLike] = None,
-        random_seed: Optional[Union[int, np.random.Generator]] = None,
         verbose: bool = False,
+        **kwargs: dict
 ) -> Dict[str, Any]:
-    # Check data sizes
-    _check_sufficient_data_size(X_ref, n_samples, n_runs, X_test=X_drift)
+    """
 
+    Parameters
+    ----------
+    detector
+    X_ref
+    X_drift
+    C_ref
+    C_drift
+    roc_plot
+    save_dir
+    verbose
+    kwargs
+
+    Returns
+    -------
+
+    """
     # Evaluate False Positive Rates
     if verbose:
         print('Computing False Positive Rates...')
-    p_vals = eval_calibration(detector, X_ref, C=C_ref, model=model, detector_kwargs=detector_kwargs,
-                              n_runs=n_runs, n_samples=n_samples, verbose=verbose, hist_plot=hist_plot, qq_plot=qq_plot,
-                              save_dir=save_dir, random_seed=random_seed)
-    FPR = [np.sum(p_vals <= sig_levels[i])/len(p_vals) for i in range(len(sig_levels))]
-    FPR = np.array(FPR)
+    FPR, _ = eval_calibration(detector, X_ref, C=C_ref, verbose=verbose, save_dir=save_dir, **kwargs)
     results = {'FPR': FPR}
 
     # Evaluate True Positive Rates
-    if X_drift is not None:
-        if verbose:
-            print('Computing True Positive Rates...')
-        TPR = eval_test_power(detector, X_ref=X_ref, X_drift=X_drift, C_ref=C_ref, C_drift=C_drift, model=model,
-                              detector_kwargs=detector_kwargs, sig_levels=sig_levels, n_runs=n_runs,
-                              n_samples=n_samples, power_plot=power_plot, random_seed=random_seed, verbose=verbose,
-                              save_dir=save_dir)
-        results['TPR'] = TPR
+    if verbose:
+        print('Computing True Positive Rates...')
+    TPR, _ = eval_test_power(detector, X_ref=X_ref, X_drift=X_drift, C_ref=C_ref, C_drift=C_drift,
+                             verbose=verbose, save_dir=save_dir, **kwargs)
+    results['TPR'] = TPR
 
-        if sig_levels is not None:
-            AUC = compute_auc(FPR, TPR)
-            results['AUC'] = AUC
+    if len(FPR) > 1:
+        AUC = compute_auc(FPR, TPR)
+        results['AUC'] = AUC
 
-        if roc_plot:
-            save_file = Path(save_dir).joinpath('roc_plot.png') if save_dir is not None else None
-            plot_roc(FPR, TPR, save_file=save_file)
+    if roc_plot:
+        save_file = Path(save_dir).joinpath('roc_plot.png') if save_dir is not None else None
+        plot_roc(FPR, TPR, save_file=save_file)
 
     return results
 
@@ -73,12 +74,14 @@ def eval_calibration(
         detector_kwargs: Optional[dict] = None,
         n_runs: int = 100,
         n_samples: Tuple[int, int] = (500, 500),
+        correction: Optional[Literal['bonferroni', 'fdr']] = None,
+        sig_levels: Optional[Union[List[float], np.ndarray]] = None,
         qq_plot: bool = False,
         hist_plot: bool = False,
         save_dir: Optional[os.PathLike] = None,
         random_seed: Optional[Union[int, np.random.Generator]] = None,
         verbose: bool = True
-) -> np.ndarray:
+) -> Tuple[np.ndarray, np.ndarray]:
     """
     TODO
 
@@ -107,6 +110,10 @@ def eval_calibration(
         The number of samples to randomly sample from the data reservoir to create reference and test data for each run.
         The two data subsampled data sets will each contain `n_samples` instances, such that `2*n_samples` instances
         are sampled in total. TODO - update
+    correction
+        TODO
+    sig_levels
+        TODO
     qq_plot
         Whether to visualise the p-values on a Quantile-Quantile plot. This can also be done later with the
         :func:`~plot_qq` function.
@@ -146,7 +153,7 @@ def eval_calibration(
     for _ in runs:
         # Subsample data
         idx = rng.choice(n_data, size=n_data, replace=False)
-        idx_ref, idx_nodrift = idx[:n_samples[0]], idx[n_samples[0]:2*n_samples[1]]
+        idx_ref, idx_nodrift = idx[:n_samples[0]], idx[n_samples[0]:n_samples[0]+n_samples[1]]
         x_ref, x_nodrift = X[idx_ref], X[idx_nodrift]
         detector_args, predict_args = [x_ref], [x_nodrift]
 
@@ -165,15 +172,15 @@ def eval_calibration(
     p_vals = np.array(p_vals_list)
 
     # Apply univariate correction (if a univariate detector)
-    correction = getattr(dd, 'correction', None)
-    if correction is not None:
-        n_features = p_vals.shape[1]
-        if correction == 'bonferroni':
-            p_vals = np.min(p_vals, axis=1)*n_features
-            p_vals = np.clip(p_vals, None, 1.0)  # Clipped as suggested by doi.org/10.1093/biomet/asaa027 (page 2)
-        elif correction == 'fdr':
-            p_vals_sorted = np.sort(p_vals, axis=1)
-            p_vals = np.min(p_vals_sorted/(np.arange(n_features)+1), axis=1)*n_features
+    if hasattr(dd, 'correction'):
+        if correction is None:
+            correction = getattr(dd, 'correction')
+        p_vals = _multivariate_correction(p_vals, correction)
+
+    # Apply significance tests
+    if sig_levels is None:
+        sig_levels = [getattr(dd, 'p_val')]
+    FPR = np.array([np.sum(p_vals <= sig_levels[i]) / len(p_vals) for i in range(len(sig_levels))])
 
     # QQ-plot
     if qq_plot:
@@ -182,9 +189,10 @@ def eval_calibration(
     # Histogram plot
     if hist_plot:
         save_file = Path(save_dir).joinpath('hist_plot.png') if save_dir is not None else None
-        plot_hist(p_vals, save_file=save_file)
+        sig_level = sig_levels[0] if sig_levels is not None else None
+        plot_hist(p_vals, save_file=save_file, sig_level=sig_level)
 
-    return p_vals
+    return FPR, p_vals
 
 
 def eval_test_power(
@@ -195,12 +203,12 @@ def eval_test_power(
     C_drift: Optional[np.ndarray] = None,
     model: Optional[Callable] = None,
     detector_kwargs: Optional[dict] = None,
-    sig_levels: np.ndarray = np.linspace(0.01, 0.3, 10),
+    correction: Optional[Literal['bonferroni', 'fdr']] = None,
+    sig_levels: Union[List[float], np.ndarray] = np.linspace(0.01, 0.3, 10),
     n_runs: int = 100,
     n_samples: Tuple[int, int] = (500, 500),
     power_plot: bool = False,
     save_dir: Optional[os.PathLike] = None,
-    return_power_auc: bool = False,
     random_seed: Optional[Union[int, np.random.Generator]] = None,
     verbose: bool = False,
 ) -> np.ndarray:
@@ -223,7 +231,6 @@ def eval_test_power(
     # Setup detector_kwargs
     if detector_kwargs is None:
         detector_kwargs = {}
-    detector_kwargs.pop('p_val', None)  # Set via sig_levels
 
     # Perform preprocessing (if preprocess_fn exists) to save repeated compute in loop
     preprocess_fn = detector_kwargs.pop('preprocess_fn', None)
@@ -235,7 +242,7 @@ def eval_test_power(
     rng = np.random.default_rng(random_seed)
 
     # Main experiment loop
-    power = np.zeros(len(sig_levels), dtype=float)
+    p_vals_list = []
     runs = tqdm(range(n_runs)) if verbose else range(n_runs)
     for _ in runs:
         # Subsample data
@@ -253,21 +260,27 @@ def eval_test_power(
             detector_args.append(model)
 
         # Init detector and predict
-        for i, sig in enumerate(sig_levels):
-            dd = detector(*detector_args, p_val=sig, **detector_kwargs)
-            preds = dd.predict(*predict_args)
-            power[i] += preds['data']['is_drift']
-    power /= n_runs
+        dd = detector(*detector_args, **detector_kwargs)
+        preds = dd.predict(*predict_args)
+        p_vals_list.append(preds['data']['p_val'])
+    p_vals = np.array(p_vals_list)
+
+    # Apply univariate correction (if a univariate detector)
+    if hasattr(dd, 'correction'):
+        if correction is None:
+            correction = getattr(dd, 'correction')
+        p_vals = _multivariate_correction(p_vals, correction)
+
+    # Apply significance tests
+    if sig_levels is None:
+        sig_levels = [getattr(dd, 'p_val')]
+    power = np.array([np.sum(p_vals <= sig_levels[i]) / len(p_vals) for i in range(len(sig_levels))])
 
     if power_plot:
         save_file = Path(save_dir).joinpath('power_plot.png') if save_dir is not None else None
         plot_power(sig_levels, power, save_file=save_file)
 
-    if return_power_auc:
-        power_auc = compute_auc(sig_levels, power)
-        return power, power_auc
-
-    return power
+    return power, p_vals
 
 
 def plot_qq(p_vals: np.ndarray,
@@ -317,6 +330,7 @@ def plot_hist(
     labels: Optional[Union[str, List[str]]] = None,
     ylim: Optional[tuple] = None,
     binwidth: float = 0.05,
+    sig_level: Optional[float] = None,
     ax: Optional[plt.Axes] = None,
     save_file: Optional[os.PathLike] = None
 ) -> plt.Axes:
@@ -344,6 +358,8 @@ def plot_hist(
     labels = [labels] if not isinstance(labels, list) else labels
     for p_val, label, color in zip(p_vals, labels, colors):
         sns.histplot(p_val, color=color, label=label, binwidth=binwidth, stat='probability', ax=ax)
+    if sig_level is not None:
+        ax.axvline(sig_level, ls='--', color='firebrick', alpha=0.7)
     if label is not None:
         ax.legend(loc='upper right')
     ax.set_xlim(-0.02, 1.02)
@@ -430,6 +446,17 @@ def plot_roc(
         _save_fig(save_file)
 
     return ax
+
+
+def _multivariate_correction(p_vals: np.ndarray, correction: Literal['bonferroni', 'fdr']) -> np.ndarray:
+    n_features = p_vals.shape[1]
+    if correction == 'bonferroni':
+        p_vals = np.min(p_vals, axis=1)*n_features
+        p_vals = np.clip(p_vals, None, 1.0)  # Clipped as suggested by doi.org/10.1093/biomet/asaa027 (page 2)
+    elif correction == 'fdr':
+        p_vals_sorted = np.sort(p_vals, axis=1)
+        p_vals = np.min(p_vals_sorted/(np.arange(n_features)+1), axis=1)*n_features
+    return p_vals
 
 
 def compute_auc(x: np.ndarray, y: np.ndarray):
