@@ -8,7 +8,7 @@ one will be created if it doesn't exist):
 from alibi_detect.od import OutlierVAE
 from alibi_detect.utils.saving import save_detector
 
-od = OutlierVAE(...)
+od = OutlierVAE(...) 
 
 filepath = './my_detector/'
 save_detector(od, filepath)
