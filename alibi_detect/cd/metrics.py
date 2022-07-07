@@ -22,7 +22,7 @@ def eval_detector(
         roc_plot: bool = False,
         save_dir: Optional[os.PathLike] = None,
         verbose: bool = False,
-        **kwargs: dict
+        **kwargs
 ) -> Dict[str, Any]:
     """
 
@@ -172,6 +172,8 @@ def eval_calibration(
     p_vals = np.array(p_vals_list)
 
     # Apply univariate correction (if a univariate detector)
+    if hasattr(dd, '_detector'):
+        dd = dd._detector
     if hasattr(dd, 'correction'):
         if correction is None:
             correction = getattr(dd, 'correction')
@@ -266,6 +268,8 @@ def eval_test_power(
     p_vals = np.array(p_vals_list)
 
     # Apply univariate correction (if a univariate detector)
+    if hasattr(dd, '_detector'):
+        dd = dd._detector
     if hasattr(dd, 'correction'):
         if correction is None:
             correction = getattr(dd, 'correction')
