@@ -36,12 +36,12 @@ pip install alibi-detect
 ```{div} sd-mb-1
 The default installation provides out the box support for the following detectors:
 - [ChiSquareDrift](../cd/methods/chisquaredrift.ipynb)
-- CVMDrift
-- FETDrift
-- KSDrift
-- TabularDrift
-- Mahanobis
-- SpectralResidual
+- [CVMDrift](../cd/methods/cvmdrift.ipynb)
+- [FETDrift](../cd/methods/fetdrift.ipynb)
+- [KSDrift](../cd/methods/ksdrift.ipynb)
+- [TabularDrift](../cd/methods/tabulardrift.ipynb)
+- [Mahalanobis](../od/methods/mahalanobis.ipynb)
+- [SpectralResidual](../od/methods/sr.ipynb)
 ```
 ````
 
@@ -68,14 +68,14 @@ pip install alibi-detect[torch,numba,prophet]
 ```{div} sd-mb-1
 However, the following detectors do not have `pytorch` backend support:
 
-- OutlierAE
-- OutlierAEGMM
-- LLR
-- OutlierSeq2Seq
-- OutlierVAE
-- OutlierVAEGMM
-- AdversarialAW
-- ModelDistillation
+- [OutlierAE](../od/methods/ae.ipynb)
+- [OutlierAEGMM](../od/methods/aegmm.ipynb)
+- [LLR](../od/methods/llr.ipynb)
+- [OutlierSeq2Seq](../od/methods/seq2seq.ipynb)
+- [OutlierVAE](../od/methods/vae.ipynb)
+- [OutlierVAEGMM](../od/methods/vaegmm.ipynb)
+- [AdversarialAE](../ad/methods/adversarialae.ipynb)
+- [ModelDistillation](../ad/methods/modeldistillation.ipynb)
 
 Alternatively you can install all the dependencies using (this will include both `tensorflow` and `pytorch`):
 ```
@@ -104,14 +104,14 @@ pip install alibi-detect[torch]
 
 ```{div} sd-mb-1
 The PyTorch installation is required to use the PyTorch backend for the following detectors:
-- ClassifierDrift
-- LearnedKernelDrift
-- LSDDDrift
-- LSDDDriftOnline
-- MMDDrift
-- MMDDriftOnline
-- SpotTheDiffDrift
-- ContextMMDDrift
+- [ClassifierDrift](../cd/methods/classifierdrift.ipynb)
+- [LearnedKernelDrift](../cd/methods/learnedkerneldrift.ipynb)
+- [LSDDDrift](../cd/methods/lsdddrift.ipynb)
+- [LSDDDriftOnline](../cd/methods/onlinelsdddrift.ipynb)
+- [MMDDrift](../cd/methods/mmddrift.ipynb)
+- [MMDDriftOnline](../cd/methods/onlinemmddrift.ipynb)
+- [SpotTheDiffDrift](../cd/methods/spotthediffdrift.ipynb)
+- [ContextMMDDrift](../cd/methods/contextmmddrift.ipynb)
 ```
 
 ```{note}
@@ -134,24 +134,24 @@ pip install alibi-detect[tensorflow]
 
 ```{div} sd-mb-1
 The TensorFlow installation is required to use the TensorFlow backend for the following detectors:
-- ClassifierDrift
-- LearnedKernelDrift
-- LSDDDrift
-- LSDDDriftOnline
-- MMDDrift
-- MMDDriftOnline
-- SpotTheDiffDrift
-- ContextMMDDrift
+- [ClassifierDrift](../cd/methods/classifierdrift.ipynb)
+- [LearnedKernelDrift](../cd/methods/learnedkerneldrift.ipynb)
+- [LSDDDrift](../cd/methods/lsdddrift.ipynb)
+- [LSDDDriftOnline](../cd/methods/onlinelsdddrift.ipynb)
+- [MMDDrift](../cd/methods/mmddrift.ipynb)
+- [MMDDriftOnline](../cd/methods/onlinemmddrift.ipynb)
+- [SpotTheDiffDrift](../cd/methods/spotthediffdrift.ipynb)
+- [ContextMMDDrift](../cd/methods/contextmmddrift.ipynb)
 
 The TensorFlow installation is required to use the following detectors:
-- OutlierAE
-- OutlierAEGMM
-- LLR
-- OutlierSeq2Seq
-- OutlierVAE
-- OutlierVAEGMM
-- AdversarialAE
-- ModelDistillation
+- [OutlierAE](../od/methods/ae.ipynb)
+- [OutlierAEGMM](../od/methods/aegmm.ipynb)
+- [LLR](../od/methods/llr.ipynb)
+- [OutlierSeq2Seq](../od/methods/seq2seq.ipynb)
+- [OutlierVAE](../od/methods/vae.ipynb)
+- [OutlierVAEGMM](../od/methods/vaegmm.ipynb)
+- [AdversarialAE](../ad/methods/adversarialae.ipynb)
+- [ModelDistillation](../ad/methods/modeldistillation.ipynb)
 ```
 ````
 
@@ -169,8 +169,8 @@ pip install alibi-detect[numba]
 
 ```{div} sd-mb-1
 The Numba installation is required to use the following detectors:
-- CVMDriftOnline
-- FETDriftOnline
+- [CVMDriftOnline](../cd/methods/cvmdrift.ipynb)
+- [FETDriftOnline](../cd/methods/fetdrift.ipynb)
 ```
 ````
 
