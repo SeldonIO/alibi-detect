@@ -17,7 +17,7 @@ except ImportError:
     has_sklearn = False
 
 try:
-    import keops  # noqa
+    import pykeops  # noqa
     has_keops = True
 except ImportError:
     has_keops = False

@@ -2,7 +2,7 @@ import numpy as np
 from pykeops.torch import LazyTensor
 import torch
 import torch.nn as nn
-from typing import Callable, List, Tuple, Union
+from typing import Callable, List, Optional, Tuple, Union
 
 
 def sigma_mean(x: LazyTensor, y: LazyTensor, dist: LazyTensor) -> torch.Tensor:
@@ -23,7 +23,7 @@ def sigma_mean(x: LazyTensor, y: LazyTensor, dist: LazyTensor) -> torch.Tensor:
     The computed bandwidth, `sigma`.
     """
     n = x.shape[0]
-    if (dist.min(axis=1) == 0.).all() and (torch.arange(n) == dist.argmin(axis=1).view(-1)).all() \
+    if (dist.min(axis=1) == 0.).all() and (torch.arange(n) == dist.argmin(axis=1).cpu().view(-1)).all() \
             and x.shape == y.shape:
         n_mean = n * (n - 1)
     else:
@@ -35,7 +35,7 @@ def sigma_mean(x: LazyTensor, y: LazyTensor, dist: LazyTensor) -> torch.Tensor:
 class GaussianRBF(nn.Module):
     def __init__(
         self,
-        sigma: torch.Tensor = None,
+        sigma: Optional[torch.Tensor] = None,
         init_sigma_fn: Callable = sigma_mean,
         trainable: bool = False
     ) -> None:
@@ -78,7 +78,7 @@ class GaussianRBF(nn.Module):
         if infer_sigma or self.init_required:
             if self.trainable and infer_sigma:
                 raise ValueError("Gradients cannot be computed w.r.t. an inferred sigma value")
-            sigma = self.init_sigma_fn(x, y, dist)
+            sigma = self.init_sigma_fn(x, y, dist)  # .to(x.device)
             with torch.no_grad():
                 self.log_sigma.copy_(sigma.log().clone())
             self.init_required = False

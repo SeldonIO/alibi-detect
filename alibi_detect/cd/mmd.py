@@ -4,7 +4,7 @@ from typing import Callable, Dict, Optional, Union, Tuple
 from alibi_detect.utils.frameworks import has_keops, has_pytorch, has_tensorflow
 
 if has_keops:
-    from alibi_detect.cd.keops import MMDDriftKeops
+    from alibi_detect.cd.keops.mmd import MMDDriftKeops
 
 if has_pytorch:
     from alibi_detect.cd.pytorch.mmd import MMDDriftTorch
@@ -80,7 +80,7 @@ class MMDDrift:
             raise ImportError(f'{backend} not installed. Cannot initialize and run the '
                               f'MMDDrift detector with {backend} backend.')
         elif backend not in ['tensorflow', 'pytorch', 'keops']:
-            raise NotImplementedError(f'{backend} not implemented. Use tensorflow or pytorch instead.')
+            raise NotImplementedError(f'{backend} not implemented. Use tensorflow, pytorch or keops instead.')
 
         kwargs = locals()
         args = [kwargs['x_ref']]

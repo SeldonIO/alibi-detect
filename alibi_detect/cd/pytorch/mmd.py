@@ -80,7 +80,7 @@ class MMDDriftTorch(BaseMMDDrift):
         # initialize kernel
         sigma = torch.from_numpy(sigma).to(self.device) if isinstance(sigma,  # type: ignore[assignment]
                                                                       np.ndarray) else None
-        self.kernel = kernel(sigma) if kernel == GaussianRBF else kernel
+        self.kernel = kernel(sigma).to(self.device) if kernel == GaussianRBF else kernel
 
         # compute kernel matrix for the reference data
         if self.infer_sigma or isinstance(sigma, torch.Tensor):
