@@ -208,7 +208,7 @@ Dimension reduction approaches can be broadly categorised under:
 high degree of flexibility here, with a user’s chosen dimension
 reduction technique able to be incorporated into their chosen detector
 via the `preprocess_fn` argument (and sometimes
-`preprocess_batch_fn` and `preprocess_at_init`, depending on the
+`preprocess_batch_fn` and `preprocess_x_ref`, depending on the
 detector). In the following sections, the three categories of techniques
 are briefly introduced. Alibi Detect offers the following functionality
 using either [TensorFlow](https://www.tensorflow.org/) or

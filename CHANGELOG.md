@@ -1,28 +1,5 @@
 # Change Log
 
-## [v0.10.0rc1](https://github.com/SeldonIO/alibi-detect/tree/v0.10.0rc1) (2022-06-01)
-[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.9.1...v0.10.0rc1)
-
-### Added
-- **New feature** Drift detectors save/load functionality has been significantly reworked. All offline and online drift detectors (`tensorflow` backend only) can now be saved and loaded via `config.toml` files, allowing for more flexibility. Config files are also validated with `pydantic`. See [the documentation](https://docs.seldon.io/projects/alibi-detect/en/stable/overview/config_files.html) for more info. ([#516](https://github.com/SeldonIO/alibi-detect/pull/516)).
-- **New feature** Option to use out-of-bag predictions when using a `RandomForestClassifier` with `ClassifierDrift` ([#426](https://github.com/SeldonIO/alibi-detect/pull/426)).
-- Python 3.10 support. Note that PyTorch at the time of writing doesn't support Python 3.10 on Windows. ([#485](https://github.com/SeldonIO/alibi-detect/pull/485)).
-
-### Fixed
-- Fixed a bug in the TensorFlow trainer which occured when the data was a minibatch of size 2 ([#492](https://github.com/SeldonIO/alibi-detect/pull/492)).
-
-### Changed
-- The maximum `tensorflow` version has been bumped from 2.8 to 2.9 ([#508](https://github.com/SeldonIO/alibi-detect/pull/508)).
-
-### Development
-- Added missing CI test for `ClassifierDrift` with `sklearn` backend ([#523](https://github.com/SeldonIO/alibi-detect/pull/523)).
-- Fixed typing for `ContextMMDDrift` `pytorch` backend with `numpy`>=1.22 ([#520](https://github.com/SeldonIO/alibi-detect/pull/520)).
-- Drift detectors with backends refactored to perform distance threshold computation in `score` instead of `predict` ([#489](https://github.com/SeldonIO/alibi-detect/pull/489)).
-- Factored out PyTorch device setting to `utils.pytorch.misc.get_device()` ([#503](https://github.com/SeldonIO/alibi-detect/pull/503)).
-- Added `utils._random` submodule and `pytest-randomly` to manage determinism in CI build tests ([#496](https://github.com/SeldonIO/alibi-detect/pull/496)).
-- From this release onwards we exclude the directories `doc/` and `examples/` from the source distribution (by adding `prune` directives in `MANIFEST.in`). This results in considerably smaller file sizes for the source distribution.
-- `mypy` has been updated to `~=0.900` which requires additional development dependencies for type stubs, currently only `types-requests` and `types-toml` have been necessary to add to `requirements/dev.txt`.
-
 ## [v0.9.1](https://github.com/SeldonIO/alibi-detect/tree/v0.9.1) (2022-04-01)
 [Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.9.0...v0.9.1)
 

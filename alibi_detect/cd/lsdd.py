@@ -1,8 +1,6 @@
 import numpy as np
 from typing import Callable, Dict, Optional, Union, Tuple
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
-from alibi_detect.utils.warnings import deprecated_alias
-from alibi_detect.base import DriftConfigMixin
 
 if has_pytorch:
     from alibi_detect.cd.pytorch.lsdd import LSDDDriftTorch
@@ -11,15 +9,13 @@ if has_tensorflow:
     from alibi_detect.cd.tensorflow.lsdd import LSDDDriftTF
 
 
-class LSDDDrift(DriftConfigMixin):
-    @deprecated_alias(preprocess_x_ref='preprocess_at_init')
+class LSDDDrift:
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
             backend: str = 'tensorflow',
             p_val: float = .05,
-            x_ref_preprocessed: bool = False,
-            preprocess_at_init: bool = True,
+            preprocess_x_ref: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
             sigma: Optional[np.ndarray] = None,
@@ -41,13 +37,8 @@ class LSDDDrift(DriftConfigMixin):
             Backend used for the LSDD implementation.
         p_val
             p-value used for the significance of the permutation test.
-        x_ref_preprocessed
-            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
-            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
-            data will also be preprocessed.
-        preprocess_at_init
-            Whether to preprocess the reference data when the detector is instantiated. Otherwise, the reference
-            data will be preprocessed at prediction time. Only applies if `x_ref_preprocessed=False`.
+        preprocess_x_ref
+            Whether to already preprocess and store the reference data.
         update_x_ref
             Reference data can optionally be updated to the last n instances seen by the detector
             or via reservoir sampling with size n. For the former, the parameter equals {'last': n} while
@@ -76,9 +67,6 @@ class LSDDDrift(DriftConfigMixin):
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
         super().__init__()
-
-        # Set config
-        self._set_config(locals())
 
         backend = backend.lower()
         if backend == 'tensorflow' and not has_tensorflow or backend == 'pytorch' and not has_pytorch:
@@ -137,18 +125,3 @@ class LSDDDrift(DriftConfigMixin):
         and the LSDD threshold above which drift is flagged.
         """
         return self._detector.score(x)
-
-    def get_config(self) -> dict:  # Needed due to need to unnormalize x_ref
-        """
-        Get the detector's configuration dictionary.
-
-        Returns
-        -------
-        The detector's configuration dictionary.
-        """
-        cfg = super().get_config()
-        # Unnormalize x_ref
-        if self._detector.preprocess_at_init or self._detector.preprocess_fn is None \
-                or self._detector.x_ref_preprocessed:
-            cfg['x_ref'] = self._detector._unnormalize(cfg['x_ref'])
-        return cfg

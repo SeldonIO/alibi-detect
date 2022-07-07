@@ -7,20 +7,17 @@ from sklearn.calibration import CalibratedClassifierCV
 from sklearn.exceptions import NotFittedError
 from sklearn.ensemble import RandomForestClassifier
 from alibi_detect.cd.base import BaseClassifierDrift
-from alibi_detect.utils.warnings import deprecated_alias
 
 logger = logging.getLogger(__name__)
 
 
 class ClassifierDriftSklearn(BaseClassifierDrift):
-    @deprecated_alias(preprocess_x_ref='preprocess_at_init')
     def __init__(
             self,
             x_ref: np.ndarray,
             model: ClassifierMixin,
             p_val: float = .05,
-            x_ref_preprocessed: bool = False,
-            preprocess_at_init: bool = True,
+            preprocess_x_ref: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
             preds_type: str = 'probs',
@@ -32,7 +29,6 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
             use_calibration: bool = False,
             calibration_kwargs: Optional[dict] = None,
             use_oob: bool = False,
-            input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None,
     ) -> None:
         """
@@ -48,13 +44,8 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
             Sklearn classification model used for drift detection.
         p_val
             p-value used for the significance of the test.
-        x_ref_preprocessed
-            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
-            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
-            data will also be preprocessed.
-        preprocess_at_init
-            Whether to preprocess the reference data when the detector is instantiated. Otherwise, the reference
-            data will be preprocessed at prediction time. Only applies if `x_ref_preprocessed=False`.
+        preprocess_x_ref
+            Whether to already preprocess and store the reference data.
         update_x_ref
             Reference data can optionally be updated to the last n instances seen by the detector
             or via reservoir sampling with size n. For the former, the parameter equals {'last': n} while
@@ -87,16 +78,13 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
             for more details.
         use_oob
             Whether to use out-of-bag(OOB) predictions. Supported only for `RandomForestClassifier`.
-        input_shape
-            Shape of input data.
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
         super().__init__(
             x_ref=x_ref,
             p_val=p_val,
-            x_ref_preprocessed=x_ref_preprocessed,
-            preprocess_at_init=preprocess_at_init,
+            preprocess_x_ref=preprocess_x_ref,
             update_x_ref=update_x_ref,
             preprocess_fn=preprocess_fn,
             preds_type=preds_type,
@@ -105,7 +93,6 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
             n_folds=n_folds,
             retrain_from_scratch=retrain_from_scratch,
             seed=seed,
-            input_shape=input_shape,
             data_type=data_type
         )
 

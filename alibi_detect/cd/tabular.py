@@ -2,18 +2,15 @@ import numpy as np
 from scipy.stats import chi2_contingency, ks_2samp
 from typing import Callable, Dict, List, Optional, Tuple, Union
 from alibi_detect.cd.base import BaseUnivariateDrift
-from alibi_detect.utils.warnings import deprecated_alias
 
 
 class TabularDrift(BaseUnivariateDrift):
-    @deprecated_alias(preprocess_x_ref='preprocess_at_init')
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
             p_val: float = .05,
             categories_per_feature: Dict[int, Optional[int]] = None,
-            x_ref_preprocessed: bool = False,
-            preprocess_at_init: bool = True,
+            preprocess_x_ref: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
             correction: str = 'bonferroni',
@@ -45,13 +42,8 @@ class TabularDrift(BaseUnivariateDrift):
             values for the feature are [0, ..., N-1]. You can also explicitly pass the possible categories in the
             Dict[int, List[int]] format, e.g. {0: [0, 1, 2], 3: [0, 55]}. Note that the categories can be
             arbitrary int values.
-         x_ref_preprocessed
-            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
-            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
-            data will also be preprocessed.
-        preprocess_at_init
-            Whether to preprocess the reference data when the detector is instantiated. Otherwise, the reference
-            data will be preprocessed at prediction time. Only applies if `x_ref_preprocessed=False`.
+        preprocess_x_ref
+            Whether to already preprocess and infer categories and frequencies for categorical reference data.
         update_x_ref
             Reference data can optionally be updated to the last n instances seen by the detector
             or via reservoir sampling with size n. For the former, the parameter equals {'last': n} while
@@ -75,8 +67,7 @@ class TabularDrift(BaseUnivariateDrift):
         super().__init__(
             x_ref=x_ref,
             p_val=p_val,
-            x_ref_preprocessed=x_ref_preprocessed,
-            preprocess_at_init=preprocess_at_init,
+            preprocess_x_ref=preprocess_x_ref,
             update_x_ref=update_x_ref,
             preprocess_fn=preprocess_fn,
             correction=correction,
@@ -84,10 +75,8 @@ class TabularDrift(BaseUnivariateDrift):
             input_shape=input_shape,
             data_type=data_type
         )
-        # Set config
-        self._set_config(locals())
-
         self.alternative = alternative
+
         self.x_ref_categories, self.cat_vars = {}, []  # no categorical features assumed present
         if isinstance(categories_per_feature, dict):
             vals = list(categories_per_feature.values())
