@@ -35,9 +35,9 @@ pip install alibi-detect
 
 ```{div} sd-mb-1
 The default installation provides out the box support for the following detectors:
-- ChiSquareDrift
+- [ChiSquareDrift](../cd/methods/chisquaredrift.ipynb)
 - CVMDrift
-- FetDrift
+- FETDrift
 - KSDrift
 - TabularDrift
 - Mahanobis
@@ -103,7 +103,7 @@ pip install alibi-detect[torch]
 ```
 
 ```{div} sd-mb-1
-The PyTorch installation is required to use the PyTorch backend for the following detectors
+The PyTorch installation is required to use the PyTorch backend for the following detectors:
 - ClassifierDrift
 - LearnedKernelDrift
 - LSDDDrift
@@ -111,7 +111,7 @@ The PyTorch installation is required to use the PyTorch backend for the followin
 - MMDDrift
 - MMDDriftOnline
 - SpotTheDiffDrift
-- ContextMMDDrfit
+- ContextMMDDrift
 ```
 
 ```{note}
@@ -133,7 +133,7 @@ pip install alibi-detect[tensorflow]
 ```
 
 ```{div} sd-mb-1
-The TensorFlow installation is required to use the TensorFlow backend for the following detectors
+The TensorFlow installation is required to use the TensorFlow backend for the following detectors:
 - ClassifierDrift
 - LearnedKernelDrift
 - LSDDDrift
@@ -141,11 +141,11 @@ The TensorFlow installation is required to use the TensorFlow backend for the fo
 - MMDDrift
 - MMDDriftOnline
 - SpotTheDiffDrift
-- ContextMMDDrfit
+- ContextMMDDrift
 
-The TensorFlow installation is required to use the following detectors
-- OutlinerAE
-- OutlinerAEGMM
+The TensorFlow installation is required to use the following detectors:
+- OutlierAE
+- OutlierAEGMM
 - LLR
 - OutlierSeq2Seq
 - OutlierVAE
@@ -236,7 +236,7 @@ alibi_detect.od.__all__
  'OutlierAE',
  'OutlierVAE',
  'OutlierVAEGMM',
- 'OutlierProphet',  # requires prophet: pip install alibi-detect[prophet]
+ 'OutlierProphet',
  'OutlierSeq2Seq',
  'SpectralResidual',
  'LLR']
