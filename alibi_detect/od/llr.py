@@ -6,11 +6,11 @@ from tensorflow.keras.layers import Input
 from tensorflow.keras.models import Model
 from tensorflow_probability.python.distributions.distribution import Distribution
 from typing import Callable, Dict, Tuple, Union
-from alibi_detect.models.tensorflow import PixelCNN
+from alibi_detect.models.tensorflow.pixelcnn import PixelCNN
 from alibi_detect.models.tensorflow.trainer import trainer
 from alibi_detect.base import BaseDetector, FitMixin, ThresholdMixin, outlier_prediction_dict
 from alibi_detect.utils.tensorflow.prediction import predict_batch
-from alibi_detect.utils.perturbation import mutate_categorical
+from alibi_detect.utils.tensorflow.perturbation import mutate_categorical
 
 logger = logging.getLogger(__name__)
 

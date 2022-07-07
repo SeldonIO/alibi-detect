@@ -6,7 +6,7 @@ from alibi_detect.cd.ks import KSDrift
 from alibi_detect.cd.chisquare import ChiSquareDrift
 from alibi_detect.cd.preprocess import classifier_uncertainty, regressor_uncertainty
 from alibi_detect.cd.utils import encompass_batching, encompass_shuffling_and_batch_filling
-from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
+from alibi_detect.utils.frameworks import BackendValidator
 from alibi_detect.base import DriftConfigMixin
 
 logger = logging.getLogger(__name__)
@@ -83,9 +83,12 @@ class ClassifierUncertaintyDrift(DriftConfigMixin):
         # Set config
         self._set_config(locals())
 
-        if backend == 'tensorflow' and not has_tensorflow or backend == 'pytorch' and not has_pytorch:
-            raise ImportError(f'{backend} not installed. Cannot initialize and run the '
-                              f'ClassifierUncertaintyDrift detector with {backend} backend.')
+        if backend:
+            backend = backend.lower()
+        BackendValidator(backend_options={'tensorflow': ['tensorflow'],
+                                          'pytorch': ['pytorch'],
+                                          None: []},
+                         construct_name='ClassifierUncertaintyDrift').verify_backend(backend)
 
         if backend is None:
             if device not in [None, 'cpu']:
@@ -233,9 +236,12 @@ class RegressorUncertaintyDrift(DriftConfigMixin):
         # Set config
         self._set_config(locals())
 
-        if backend == 'tensorflow' and not has_tensorflow or backend == 'pytorch' and not has_pytorch:
-            raise ImportError(f'{backend} not installed. Cannot initialize and run the '
-                              f'RegressorUncertaintyDrift detector with {backend} backend.')
+        if backend:
+            backend = backend.lower()
+        BackendValidator(backend_options={'tensorflow': ['tensorflow'],
+                                          'pytorch': ['pytorch'],
+                                          None: []},
+                         construct_name='RegressorUncertaintyDrift').verify_backend(backend)
 
         if backend is None:
             model_fn = model

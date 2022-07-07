@@ -274,5 +274,5 @@ def _sigma_median_diag(x: torch.Tensor, y: torch.Tensor, dist: torch.Tensor) -> 
     The computed bandwidth, `sigma`.
     """
     n_median = np.prod(dist.shape) // 2
-    sigma = (.5 * dist.flatten().sort().values[n_median].unsqueeze(dim=-1)) ** .5
+    sigma = (.5 * dist.flatten().sort().values[int(n_median)].unsqueeze(dim=-1)) ** .5
     return sigma

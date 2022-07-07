@@ -1,6 +1,7 @@
 import numpy as np
 from typing import Callable, Dict, Optional, Union
-from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, has_sklearn
+from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, has_sklearn, \
+    BackendValidator
 from alibi_detect.base import DriftConfigMixin
 
 if has_sklearn:
@@ -147,12 +148,12 @@ class ClassifierDrift(DriftConfigMixin):
         self._set_config(locals())
 
         backend = backend.lower()
-        if (backend == 'tensorflow' and not has_tensorflow) or (backend == 'pytorch' and not has_pytorch) or \
-                (backend == 'sklearn' and not has_sklearn):
-            raise ImportError(f'{backend} not installed. Cannot initialize and run the '
-                              f'ClassifierDrift detector with {backend} backend.')
-        elif backend not in ['tensorflow', 'pytorch', 'sklearn']:
-            raise NotImplementedError(f"{backend} not implemented. Use 'tensorflow', 'pytorch' or 'sklearn' instead.")
+        BackendValidator(
+            backend_options={'tensorflow': ['tensorflow'],
+                             'pytorch': ['pytorch'],
+                             'sklearn': ['sklearn']},
+            construct_name='ClassifierDrift'
+        ).verify_backend(backend)
 
         kwargs = locals()
         args = [kwargs['x_ref'], kwargs['model']]

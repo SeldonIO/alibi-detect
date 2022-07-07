@@ -1,6 +1,6 @@
 import numpy as np
 from typing import Any, Callable, Dict, Optional, Union
-from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
+from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, BackendValidator
 from alibi_detect.base import DriftConfigMixin
 
 if has_pytorch:
@@ -75,11 +75,11 @@ class MMDDriftOnline(DriftConfigMixin):
         self._set_config(locals())
 
         backend = backend.lower()
-        if backend == 'tensorflow' and not has_tensorflow or backend == 'pytorch' and not has_pytorch:
-            raise ImportError(f'{backend} not installed. Cannot initialize and run the '
-                              f'MMDDrift detector with {backend} backend.')
-        elif backend not in ['tensorflow', 'pytorch']:
-            raise NotImplementedError(f'{backend} not implemented. Use tensorflow or pytorch instead.')
+        BackendValidator(
+            backend_options={'tensorflow': ['tensorflow'],
+                             'pytorch': ['pytorch']},
+            construct_name='MMDDriftOnline'
+        ).verify_backend(backend)
 
         kwargs = locals()
         args = [kwargs['x_ref'], kwargs['ert'], kwargs['window_size']]
