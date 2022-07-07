@@ -1,3 +1,7 @@
+"""
+Tests for saving/loading of detectors with legacy .dill state_dict. As legacy save/load functionality becomes
+deprecated, these tests will be removed, and more tests will be added to test_savin.py.
+"""
 from functools import partial
 import numpy as np
 import pytest
@@ -13,7 +17,7 @@ from alibi_detect.models.tensorflow.autoencoder import DecoderLSTM, EncoderLSTM
 from alibi_detect.od import (IForest, LLR, Mahalanobis, OutlierAEGMM, OutlierVAE, OutlierVAEGMM,
                              OutlierProphet, SpectralResidual, OutlierSeq2Seq, OutlierAE)
 from alibi_detect.od.prophet import PROPHET_INSTALLED
-from alibi_detect.utils.saving import save_detector, load_detector  # type: ignore
+from alibi_detect.saving import save_detector, load_detector
 
 input_dim = 4
 latent_dim = 2
@@ -146,10 +150,9 @@ def select_detector(request):
 def test_save_load(select_detector):
     det = select_detector
     det_name = det.meta['name']
-
     with TemporaryDirectory() as temp_dir:
         temp_dir += '/'
-        save_detector(det, temp_dir)
+        save_detector(det, temp_dir, legacy=True)
         det_load = load_detector(temp_dir)
         det_load_name = det_load.meta['name']
         assert det_load_name == det_name

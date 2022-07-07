@@ -80,14 +80,14 @@ jobs:
     runs-on: ubuntu-18.04
 
     container:
-      image: readthedocs/build:latest
+      image: readthedocs/build:7.0  # 7.0 to get Python 3.9
       options: --user root
 
     steps:
       - uses: actions/checkout@v2
       - name: Create a virtualenv to use for docs build
         run: |
-          python3.8 -m virtualenv $HOME/docs
+          python3.9 -m virtualenv $HOME/docs
       - name: Install dependencies
         run: |
           . $HOME/docs/bin/activate

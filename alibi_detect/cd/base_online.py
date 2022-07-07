@@ -25,6 +25,7 @@ class BaseMultiDriftOnline(BaseDetector):
             ert: float,
             window_size: int,
             preprocess_fn: Optional[Callable] = None,
+            x_ref_preprocessed: bool = False,
             n_bootstraps: int = 1000,
             verbose: bool = True,
             input_shape: Optional[tuple] = None,
@@ -46,6 +47,10 @@ class BaseMultiDriftOnline(BaseDetector):
             ability to detect slight drift.
         preprocess_fn
             Function to preprocess the data before computing the data drift metrics.
+        x_ref_preprocessed
+            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
+            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
+            data will also be preprocessed.
         n_bootstraps
             The number of bootstrap simulations used to configure the thresholds. The larger this is the
             more accurately the desired ERT will be targeted. Should ideally be at least an order of magnitude
@@ -66,8 +71,11 @@ class BaseMultiDriftOnline(BaseDetector):
         self.fpr = 1 / ert
         self.window_size = window_size
 
-        # Preprocess reference data
-        if isinstance(preprocess_fn, Callable):  # type: ignore[arg-type]
+        # x_ref preprocessing
+        self.x_ref_preprocessed = x_ref_preprocessed
+        if preprocess_fn is not None and not isinstance(preprocess_fn, Callable):  # type: ignore[arg-type]
+            raise ValueError("`preprocess_fn` is not a valid Callable.")
+        if not self.x_ref_preprocessed and preprocess_fn is not None:
             self.x_ref = preprocess_fn(x_ref)
         else:
             self.x_ref = x_ref
@@ -111,7 +119,7 @@ class BaseMultiDriftOnline(BaseDetector):
         The preprocessed test instance `x_t`.
         """
         # preprocess if necessary
-        if isinstance(self.preprocess_fn, Callable):  # type: ignore[arg-type]
+        if self.preprocess_fn is not None:
             x_t = x_t[None, :] if isinstance(x_t, np.ndarray) else [x_t]
             x_t = self.preprocess_fn(x_t)[0]
         return x_t[None, :]
@@ -177,6 +185,7 @@ class BaseUniDriftOnline(BaseDetector):
             ert: float,
             window_sizes: List[int],
             preprocess_fn: Optional[Callable] = None,
+            x_ref_preprocessed: bool = False,
             n_bootstraps: int = 1000,
             n_features: Optional[int] = None,
             verbose: bool = True,
@@ -201,6 +210,10 @@ class BaseUniDriftOnline(BaseDetector):
             ability to detect slight drift.
         preprocess_fn
             Function to preprocess the data before computing the data drift metrics.
+        x_ref_preprocessed
+            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
+            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
+            data will also be preprocessed.
         n_bootstraps
             The number of bootstrap simulations used to configure the thresholds. The larger this is the
             more accurately the desired ERT will be targeted. Should ideally be at least an order of magnitude
@@ -229,8 +242,11 @@ class BaseUniDriftOnline(BaseDetector):
         self.max_ws = np.max(self.window_sizes)
         self.min_ws = np.min(self.window_sizes)
 
-        # Preprocess reference data
-        if isinstance(preprocess_fn, Callable):  # type: ignore[arg-type]
+        # x_ref preprocessing
+        self.x_ref_preprocessed = x_ref_preprocessed
+        if preprocess_fn is not None and not isinstance(preprocess_fn, Callable):  # type: ignore[arg-type]
+            raise ValueError("`preprocess_fn` is not a valid Callable.")
+        if not self.x_ref_preprocessed and preprocess_fn is not None:
             self.x_ref = preprocess_fn(x_ref)
         else:
             self.x_ref = x_ref
@@ -246,7 +262,7 @@ class BaseUniDriftOnline(BaseDetector):
         # compute number of features for the univariate tests
         if isinstance(n_features, int):
             self.n_features = n_features
-        elif not isinstance(preprocess_fn, Callable):
+        elif not isinstance(preprocess_fn, Callable) or x_ref_preprocessed:
             # infer features from preprocessed reference data
             self.n_features = self.x_ref.reshape(self.x_ref.shape[0], -1).shape[-1]
         else:  # infer number of features after applying preprocessing step
@@ -307,7 +323,7 @@ class BaseUniDriftOnline(BaseDetector):
         The preprocessed test instance `x_t`.
         """
         # preprocess if necessary
-        if isinstance(self.preprocess_fn, Callable):  # type: ignore[arg-type]
+        if self.preprocess_fn is not None:
             x_t = x_t[None, :] if isinstance(x_t, np.ndarray) else [x_t]
             x_t = self.preprocess_fn(x_t)[0]
         # Now check the final data is a 2D ndarray

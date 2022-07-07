@@ -3,7 +3,7 @@ from abc import abstractmethod
 from typing import Callable, Dict, List, Optional, Tuple, Union, Any
 
 import numpy as np
-from alibi_detect.base import BaseDetector, concept_drift_dict
+from alibi_detect.base import BaseDetector, concept_drift_dict, DriftConfigMixin
 from alibi_detect.cd.utils import get_input_shape, update_reference
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
 from alibi_detect.utils.statstest import fdr
@@ -26,7 +26,8 @@ class BaseClassifierDrift(BaseDetector):
             self,
             x_ref: Union[np.ndarray, list],
             p_val: float = .05,
-            preprocess_x_ref: bool = True,
+            x_ref_preprocessed: bool = False,
+            preprocess_at_init: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
             preds_type: str = 'probs',
@@ -35,7 +36,8 @@ class BaseClassifierDrift(BaseDetector):
             n_folds: Optional[int] = None,
             retrain_from_scratch: bool = True,
             seed: int = 0,
-            data_type: Optional[str] = None
+            input_shape: Optional[tuple] = None,
+            data_type: Optional[str] = None,
     ) -> None:
         """
         A context-aware drift detector based on a conditional analogue of the maximum mean discrepancy (MMD).
@@ -48,8 +50,13 @@ class BaseClassifierDrift(BaseDetector):
             Data used as reference distribution.
         p_val
             p-value used for the significance of the test.
-        preprocess_x_ref
-            Whether to already preprocess and store the reference data.
+        x_ref_preprocessed
+            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
+            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
+            data will also be preprocessed.
+        preprocess_at_init
+            Whether to preprocess the reference data when the detector is instantiated. Otherwise, the reference
+            data will be preprocessed at prediction time. Only applies if `x_ref_preprocessed=False`.
         update_x_ref
             Reference data can optionally be updated to the last n instances seen by the detector
             or via reservoir sampling with size n. For the former, the parameter equals {'last': n} while
@@ -74,6 +81,8 @@ class BaseClassifierDrift(BaseDetector):
             it should instead continue training from where it left off on the previous set.
         seed
             Optional random seed for fold selection.
+        input_shape
+            Shape of input data.
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
@@ -88,13 +97,18 @@ class BaseClassifierDrift(BaseDetector):
         if n_folds is not None and n_folds > 1 and not retrain_from_scratch:
             raise ValueError("If using multiple folds the model must be retrained from scratch for each fold.")
 
-        # optionally already preprocess reference data
-        self.p_val = p_val
-        if preprocess_x_ref and isinstance(preprocess_fn, Callable):  # type: ignore[arg-type]
+        # x_ref preprocessing
+        self.preprocess_at_init = preprocess_at_init
+        self.x_ref_preprocessed = x_ref_preprocessed
+        if preprocess_fn is not None and not isinstance(preprocess_fn, Callable):  # type: ignore[arg-type]
+            raise ValueError("`preprocess_fn` is not a valid Callable.")
+        if self.preprocess_at_init and not self.x_ref_preprocessed and preprocess_fn is not None:
             self.x_ref = preprocess_fn(x_ref)
         else:
             self.x_ref = x_ref
-        self.preprocess_x_ref = preprocess_x_ref
+
+        # Other attributes
+        self.p_val = p_val
         self.update_x_ref = update_x_ref
         self.preprocess_fn = preprocess_fn
         self.n = len(x_ref)
@@ -108,6 +122,9 @@ class BaseClassifierDrift(BaseDetector):
         else:
             self.train_size, self.skf = train_size, None
         self.retrain_from_scratch = retrain_from_scratch
+
+        # store input shape for save and load functionality
+        self.input_shape = get_input_shape(input_shape, x_ref)
 
         # set metadata
         self.meta['detector_type'] = 'offline'
@@ -125,12 +142,15 @@ class BaseClassifierDrift(BaseDetector):
         -------
         Preprocessed reference data and new instances.
         """
-        if isinstance(self.preprocess_fn, Callable):  # type: ignore[arg-type]
+        if self.preprocess_fn is not None:
             x = self.preprocess_fn(x)
-            x_ref = self.x_ref if self.preprocess_x_ref else self.preprocess_fn(self.x_ref)
-            return x_ref, x
+            if not self.preprocess_at_init and not self.x_ref_preprocessed:
+                x_ref = self.preprocess_fn(self.x_ref)
+            else:
+                x_ref = self.x_ref
+            return x_ref, x  # type: ignore[return-value]
         else:
-            return self.x_ref, x
+            return self.x_ref, x  # type: ignore[return-value]
 
     def get_splits(self,
                    x_ref: Union[np.ndarray, list],
@@ -257,7 +277,7 @@ class BaseClassifierDrift(BaseDetector):
         drift_pred = int(p_val < self.p_val)
 
         # update reference dataset
-        if isinstance(self.update_x_ref, dict) and self.preprocess_fn is not None and self.preprocess_x_ref:
+        if isinstance(self.update_x_ref, dict) and self.preprocess_fn is not None and self.preprocess_at_init:
             x = self.preprocess_fn(x)
         # TODO: TBD: can `x` ever be a `list` after pre-processing? update_references and downstream functions
         # don't support list inputs and without the type: ignore[arg-type] mypy complains
@@ -289,12 +309,14 @@ class BaseLearnedKernelDrift(BaseDetector):
             self,
             x_ref: Union[np.ndarray, list],
             p_val: float = .05,
-            preprocess_x_ref: bool = True,
+            x_ref_preprocessed: bool = False,
+            preprocess_at_init: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
             n_permutations: int = 100,
             train_size: Optional[float] = .75,
             retrain_from_scratch: bool = True,
+            input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None
     ) -> None:
         """
@@ -306,8 +328,13 @@ class BaseLearnedKernelDrift(BaseDetector):
             Data used as reference distribution.
         p_val
             p-value used for the significance of the test.
-        preprocess_x_ref
-            Whether to already preprocess and store the reference data.
+        x_ref_preprocessed
+            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
+            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
+            data will also be preprocessed.
+        preprocess_at_init
+            Whether to preprocess the reference data when the detector is instantiated. Otherwise, the reference
+            data will be preprocessed at prediction time. Only applies if `x_ref_preprocessed=False`.
         update_x_ref
             Reference data can optionally be updated to the last n instances seen by the detector
             or via reservoir sampling with size n. For the former, the parameter equals {'last': n} while
@@ -322,21 +349,27 @@ class BaseLearnedKernelDrift(BaseDetector):
         retrain_from_scratch
             Whether the kernel should be retrained from scratch for each set of test data or whether
             it should instead continue training from where it left off on the previous set.
+        input_shape
+            Shape of input data.
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
         super().__init__()
-
         if p_val is None:
             logger.warning('No p-value set for the drift threshold. Need to set it to detect data drift.')
 
-        # optionally already preprocess reference data
-        self.p_val = p_val
-        if preprocess_x_ref and isinstance(preprocess_fn, Callable):  # type: ignore[arg-type]
+        # x_ref preprocessing
+        self.preprocess_at_init = preprocess_at_init
+        self.x_ref_preprocessed = x_ref_preprocessed
+        if preprocess_fn is not None and not isinstance(preprocess_fn, Callable):  # type: ignore[arg-type]
+            raise ValueError("`preprocess_fn` is not a valid Callable.")
+        if self.preprocess_at_init and not self.x_ref_preprocessed and preprocess_fn is not None:
             self.x_ref = preprocess_fn(x_ref)
         else:
             self.x_ref = x_ref
-        self.preprocess_x_ref = preprocess_x_ref
+
+        # Other attributes
+        self.p_val = p_val
         self.update_x_ref = update_x_ref
         self.preprocess_fn = preprocess_fn
         self.n = len(x_ref)
@@ -344,6 +377,9 @@ class BaseLearnedKernelDrift(BaseDetector):
         self.n_permutations = n_permutations
         self.train_size = train_size
         self.retrain_from_scratch = retrain_from_scratch
+
+        # store input shape for save and load functionality
+        self.input_shape = get_input_shape(input_shape, x_ref)
 
         # set metadata
         self.meta['detector_type'] = 'offline'
@@ -360,12 +396,15 @@ class BaseLearnedKernelDrift(BaseDetector):
         -------
         Preprocessed reference data and new instances.
         """
-        if isinstance(self.preprocess_fn, Callable):  # type: ignore[arg-type]
+        if self.preprocess_fn is not None:
             x = self.preprocess_fn(x)
-            x_ref = self.x_ref if self.preprocess_x_ref else self.preprocess_fn(self.x_ref)
-            return x_ref, x
+            if not self.preprocess_at_init and not self.x_ref_preprocessed:
+                x_ref = self.preprocess_fn(self.x_ref)
+            else:
+                x_ref = self.x_ref
+            return x_ref, x  # type: ignore[return-value]
         else:
-            return self.x_ref, x
+            return self.x_ref, x  # type: ignore[return-value]
 
     def get_splits(self, x_ref: Union[np.ndarray, list], x: Union[np.ndarray, list]) \
             -> Tuple[Tuple[Union[np.ndarray, list], Union[np.ndarray, list]],
@@ -433,7 +472,7 @@ class BaseLearnedKernelDrift(BaseDetector):
         drift_pred = int(p_val < self.p_val)
 
         # update reference dataset
-        if isinstance(self.update_x_ref, dict) and self.preprocess_fn is not None and self.preprocess_x_ref:
+        if isinstance(self.update_x_ref, dict) and self.preprocess_fn is not None and self.preprocess_at_init:
             x = self.preprocess_fn(x)
         self.x_ref = update_reference(self.x_ref, x, self.n, self.update_x_ref)  # type: ignore[arg-type]
         # used for reservoir sampling
@@ -459,7 +498,8 @@ class BaseMMDDrift(BaseDetector):
             self,
             x_ref: Union[np.ndarray, list],
             p_val: float = .05,
-            preprocess_x_ref: bool = True,
+            x_ref_preprocessed: bool = False,
+            preprocess_at_init: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
             sigma: Optional[np.ndarray] = None,
@@ -477,8 +517,13 @@ class BaseMMDDrift(BaseDetector):
             Data used as reference distribution.
         p_val
             p-value used for the significance of the permutation test.
-        preprocess_x_ref
-            Whether to already preprocess and store the reference data.
+        x_ref_preprocessed
+            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
+            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
+            data will also be preprocessed.
+        preprocess_at_init
+            Whether to preprocess the reference data when the detector is instantiated. Otherwise, the reference
+            data will be preprocessed at prediction time. Only applies if `x_ref_preprocessed=False`.
         update_x_ref
             Reference data can optionally be updated to the last n instances seen by the detector
             or via reservoir sampling with size n. For the former, the parameter equals {'last': n} while
@@ -509,13 +554,18 @@ class BaseMMDDrift(BaseDetector):
                            'is set to True. `sigma` argument takes priority over '
                            '`configure_kernel_from_x_ref` (set to False).')
 
-        # optionally already preprocess reference data
-        self.p_val = p_val
-        if preprocess_x_ref and isinstance(preprocess_fn, Callable):  # type: ignore[arg-type]
+        # x_ref preprocessing
+        self.preprocess_at_init = preprocess_at_init
+        self.x_ref_preprocessed = x_ref_preprocessed
+        if preprocess_fn is not None and not isinstance(preprocess_fn, Callable):  # type: ignore[arg-type]
+            raise ValueError("`preprocess_fn` is not a valid Callable.")
+        if self.preprocess_at_init and not self.x_ref_preprocessed and preprocess_fn is not None:
             self.x_ref = preprocess_fn(x_ref)
         else:
             self.x_ref = x_ref
-        self.preprocess_x_ref = preprocess_x_ref
+
+        # Other attributes
+        self.p_val = p_val
         self.update_x_ref = update_x_ref
         self.preprocess_fn = preprocess_fn
         self.n = len(x_ref)
@@ -538,11 +588,14 @@ class BaseMMDDrift(BaseDetector):
         -------
         Preprocessed reference data and new instances.
         """
-        if isinstance(self.preprocess_fn, Callable):  # type: ignore[arg-type]
+        if self.preprocess_fn is not None:
             x = self.preprocess_fn(x)
-            x_ref = self.x_ref if self.preprocess_x_ref else self.preprocess_fn(self.x_ref)
-            # TODO: TBD: similar to above, can x be a list here? x_ref is also revealed to be Any,
-            #  can we tighten the type up (e.g. by typing Callable with stricter inputs/outputs?
+            if not self.preprocess_at_init and not self.x_ref_preprocessed:
+                x_ref = self.preprocess_fn(self.x_ref)
+                # TODO: TBD: similar to above, can x be a list here? x_ref is also revealed to be Any,
+                #  can we tighten the type up (e.g. by typing Callable with stricter inputs/outputs?
+            else:
+                x_ref = self.x_ref
             return x_ref, x  # type: ignore[return-value]
         else:
             return self.x_ref, x  # type: ignore[return-value]
@@ -581,7 +634,7 @@ class BaseMMDDrift(BaseDetector):
         drift_pred = int(p_val < self.p_val)
 
         # update reference dataset
-        if isinstance(self.update_x_ref, dict) and self.preprocess_fn is not None and self.preprocess_x_ref:
+        if isinstance(self.update_x_ref, dict) and self.preprocess_fn is not None and self.preprocess_at_init:
             x = self.preprocess_fn(x)
         self.x_ref = update_reference(self.x_ref, x, self.n, self.update_x_ref)  # type: ignore[arg-type]
         # used for reservoir sampling
@@ -604,12 +657,14 @@ class BaseLSDDDrift(BaseDetector):
     # TODO: TBD: this is only created when _configure_normalization is called from backend-specific classes,
     # is declaring it here the right thing to do?
     _normalize: Callable
+    _unnormalize: Callable
 
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
             p_val: float = .05,
-            preprocess_x_ref: bool = True,
+            x_ref_preprocessed: bool = False,
+            preprocess_at_init: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
             sigma: Optional[np.ndarray] = None,
@@ -628,8 +683,13 @@ class BaseLSDDDrift(BaseDetector):
             Data used as reference distribution.
         p_val
             p-value used for the significance of the permutation test.
-        preprocess_x_ref
-            Whether to already preprocess and store the reference data.
+        x_ref_preprocessed
+            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
+            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
+            data will also be preprocessed.
+        preprocess_at_init
+            Whether to preprocess the reference data when the detector is instantiated. Otherwise, the reference
+            data will be preprocessed at prediction time. Only applies if `x_ref_preprocessed=False`.
         update_x_ref
             Reference data can optionally be updated to the last n instances seen by the detector
             or via reservoir sampling with size n. For the former, the parameter equals {'last': n} while
@@ -655,18 +715,22 @@ class BaseLSDDDrift(BaseDetector):
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
         super().__init__()
-
         if p_val is None:
             logger.warning('No p-value set for the drift threshold. Need to set it to detect data drift.')
 
-        # optionally already preprocess reference data
-        self.p_val = p_val
-        if preprocess_x_ref and isinstance(preprocess_fn, Callable):  # type: ignore[arg-type]
+        # x_ref preprocessing
+        self.preprocess_at_init = preprocess_at_init
+        self.x_ref_preprocessed = x_ref_preprocessed
+        if preprocess_fn is not None and not isinstance(preprocess_fn, Callable):  # type: ignore[arg-type]
+            raise ValueError("`preprocess_fn` is not a valid Callable.")
+        if self.preprocess_at_init and not self.x_ref_preprocessed and preprocess_fn is not None:
             self.x_ref = preprocess_fn(x_ref)
         else:
             self.x_ref = x_ref
+
+        # Other attributes
+        self.p_val = p_val
         self.sigma = sigma
-        self.preprocess_x_ref = preprocess_x_ref
         self.update_x_ref = update_x_ref
         self.preprocess_fn = preprocess_fn
         self.n = len(x_ref)
@@ -691,9 +755,12 @@ class BaseLSDDDrift(BaseDetector):
         -------
         Preprocessed reference data and new instances.
         """
-        if isinstance(self.preprocess_fn, Callable):  # type: ignore[arg-type]
+        if self.preprocess_fn is not None:
             x = self.preprocess_fn(x)
-            x_ref = self.x_ref if self.preprocess_x_ref else self.preprocess_fn(self.x_ref)
+            if not self.preprocess_at_init and not self.x_ref_preprocessed:
+                x_ref = self.preprocess_fn(self.x_ref)
+            else:
+                x_ref = self.x_ref
             return x_ref, x  # type: ignore[return-value]
         else:
             return self.x_ref, x  # type: ignore[return-value]
@@ -728,7 +795,7 @@ class BaseLSDDDrift(BaseDetector):
 
         # update reference dataset
         if isinstance(self.update_x_ref, dict):
-            if self.preprocess_fn is not None and self.preprocess_x_ref:
+            if self.preprocess_fn is not None and self.preprocess_at_init:
                 x = self.preprocess_fn(x)
                 x = self._normalize(x)
             elif self.preprocess_fn is None:
@@ -752,12 +819,13 @@ class BaseLSDDDrift(BaseDetector):
         return cd
 
 
-class BaseUnivariateDrift(BaseDetector):
+class BaseUnivariateDrift(BaseDetector, DriftConfigMixin):
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
             p_val: float = .05,
-            preprocess_x_ref: bool = True,
+            x_ref_preprocessed: bool = False,
+            preprocess_at_init: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
             correction: str = 'bonferroni',
@@ -778,8 +846,13 @@ class BaseUnivariateDrift(BaseDetector):
         p_val
             p-value used for significance of the statistical test for each feature. If the FDR correction method
             is used, this corresponds to the acceptable q-value.
-        preprocess_x_ref
-            Whether to already preprocess and store the reference data.
+        x_ref_preprocessed
+            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
+            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
+            data will also be preprocessed.
+        preprocess_at_init
+            Whether to preprocess the reference data when the detector is instantiated. Otherwise, the reference
+            data will be preprocessed at prediction time. Only applies if `x_ref_preprocessed=False`.
         update_x_ref
             Reference data can optionally be updated to the last n instances seen by the detector
             or via reservoir sampling with size n. For the former, the parameter equals {'last': n} while
@@ -799,17 +872,21 @@ class BaseUnivariateDrift(BaseDetector):
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
         super().__init__()
-
         if p_val is None:
             logger.warning('No p-value set for the drift threshold. Need to set it to detect data drift.')
 
-        # optionally already preprocess reference data
-        self.p_val = p_val
-        if preprocess_x_ref and isinstance(preprocess_fn, Callable):  # type: ignore[arg-type]
+        # x_ref preprocessing
+        self.preprocess_at_init = preprocess_at_init
+        self.x_ref_preprocessed = x_ref_preprocessed
+        if preprocess_fn is not None and not isinstance(preprocess_fn, Callable):  # type: ignore[arg-type]
+            raise ValueError("`preprocess_fn` is not a valid Callable.")
+        if self.preprocess_at_init and not self.x_ref_preprocessed and preprocess_fn is not None:
             self.x_ref = preprocess_fn(x_ref)
         else:
             self.x_ref = x_ref
-        self.preprocess_x_ref = preprocess_x_ref
+
+        # Other attributes
+        self.p_val = p_val
         self.update_x_ref = update_x_ref
         self.preprocess_fn = preprocess_fn
         self.correction = correction
@@ -821,7 +898,7 @@ class BaseUnivariateDrift(BaseDetector):
         # compute number of features for the univariate tests
         if isinstance(n_features, int):
             self.n_features = n_features
-        elif not isinstance(preprocess_fn, Callable) or preprocess_x_ref:
+        elif not isinstance(preprocess_fn, Callable) or preprocess_at_init or x_ref_preprocessed:
             # infer features from preprocessed reference data
             self.n_features = self.x_ref.reshape(self.x_ref.shape[0], -1).shape[-1]
         else:  # infer number of features after applying preprocessing step
@@ -848,9 +925,12 @@ class BaseUnivariateDrift(BaseDetector):
         -------
         Preprocessed reference data and new instances.
         """
-        if isinstance(self.preprocess_fn, Callable):  # type: ignore[arg-type]
+        if self.preprocess_fn is not None:
             x = self.preprocess_fn(x)
-            x_ref = self.x_ref if self.preprocess_x_ref else self.preprocess_fn(self.x_ref)
+            if not self.preprocess_at_init and not self.x_ref_preprocessed:
+                x_ref = self.preprocess_fn(self.x_ref)
+            else:
+                x_ref = self.x_ref
             return x_ref, x  # type: ignore[return-value]
         else:
             return self.x_ref, x  # type: ignore[return-value]
@@ -918,7 +998,7 @@ class BaseUnivariateDrift(BaseDetector):
             raise ValueError('`drift_type` needs to be either `feature` or `batch`.')
 
         # update reference dataset
-        if isinstance(self.update_x_ref, dict) and self.preprocess_fn is not None and self.preprocess_x_ref:
+        if isinstance(self.update_x_ref, dict) and self.preprocess_fn is not None and self.preprocess_at_init:
             x = self.preprocess_fn(x)
         self.x_ref = update_reference(self.x_ref, x, self.n, self.update_x_ref)  # type: ignore[arg-type]
         # used for reservoir sampling
@@ -944,7 +1024,8 @@ class BaseContextMMDDrift(BaseDetector):
             x_ref: Union[np.ndarray, list],
             c_ref: np.ndarray,
             p_val: float = .05,
-            preprocess_x_ref: bool = True,
+            x_ref_preprocessed: bool = False,
+            preprocess_at_init: bool = True,
             update_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
             x_kernel: Callable = None,
@@ -955,7 +1036,7 @@ class BaseContextMMDDrift(BaseDetector):
             batch_size: Optional[int] = 256,
             input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None,
-            verbose: bool = False
+            verbose: bool = False,
     ) -> None:
         """
         Maximum Mean Discrepancy (MMD) based context aware drift detector.
@@ -968,8 +1049,13 @@ class BaseContextMMDDrift(BaseDetector):
             Context for the reference distribution.
         p_val
             p-value used for the significance of the permutation test.
-        preprocess_x_ref
-            Whether to already preprocess and store the reference data `x_ref`.
+        x_ref_preprocessed
+            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
+            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
+            data will also be preprocessed.
+        preprocess_at_init
+            Whether to preprocess the reference data when the detector is instantiated. Otherwise, the reference
+            data will be preprocessed at prediction time. Only applies if `x_ref_preprocessed=False`.
         update_ref
             Reference data can optionally be updated to the last N instances seen by the detector.
             The parameter should be passed as a dictionary *{'last': N}*.
@@ -995,17 +1081,21 @@ class BaseContextMMDDrift(BaseDetector):
             Whether or not to print progress during configuration.
         """
         super().__init__()
-
         if p_val is None:
             logger.warning('No p-value set for the drift threshold. Need to set it to detect data drift.')
 
-        # optionally already preprocess reference data
-        self.p_val = p_val
-        if preprocess_x_ref and isinstance(preprocess_fn, Callable):  # type: ignore[arg-type]
+        # x_ref preprocessing
+        self.preprocess_at_init = preprocess_at_init
+        self.x_ref_preprocessed = x_ref_preprocessed
+        if preprocess_fn is not None and not isinstance(preprocess_fn, Callable):  # type: ignore[arg-type]
+            raise ValueError("`preprocess_fn` is not a valid Callable.")
+        if self.preprocess_at_init and not self.x_ref_preprocessed and preprocess_fn is not None:
             self.x_ref = preprocess_fn(x_ref)
         else:
             self.x_ref = x_ref
-        self.preprocess_x_ref = preprocess_x_ref
+
+        # Other attributes
+        self.p_val = p_val
         self.preprocess_fn = preprocess_fn
         self.n = len(x_ref)
         self.n_permutations = n_permutations  # nb of iterations through permutation test
@@ -1052,11 +1142,12 @@ class BaseContextMMDDrift(BaseDetector):
         -------
         Preprocessed reference data and new instances.
         """
-        if isinstance(self.preprocess_fn, Callable):  # type: ignore[arg-type]
+        if self.preprocess_fn is not None:
             x = self.preprocess_fn(x)
-            x_ref = self.x_ref if self.preprocess_x_ref else self.preprocess_fn(self.x_ref)
-            # TODO: TBD: similar to above, can x be a list here? x_ref is also revealed to be Any,
-            #  can we tighten the type up (e.g. by typing Callable with stricter inputs/outputs?
+            if not self.preprocess_at_init and not self.x_ref_preprocessed:
+                x_ref = self.preprocess_fn(self.x_ref)
+            else:
+                x_ref = self.x_ref
             return x_ref, x  # type: ignore[return-value]
         else:
             return self.x_ref, x  # type: ignore[return-value]
@@ -1098,7 +1189,7 @@ class BaseContextMMDDrift(BaseDetector):
         drift_pred = int(p_val < self.p_val)
 
         # update reference dataset
-        if isinstance(self.update_ref, dict) and self.preprocess_fn is not None and self.preprocess_x_ref:
+        if isinstance(self.update_ref, dict) and self.preprocess_fn is not None and self.preprocess_at_init:
             x = self.preprocess_fn(x)
         self.x_ref = update_reference(self.x_ref, x, self.n, self.update_ref)  # type: ignore[arg-type]
         self.c_ref = update_reference(self.c_ref, c, self.n, self.update_ref)  # type: ignore[arg-type]
