@@ -14,7 +14,6 @@ class LSDDDriftOnlineTorch(BaseMultiDriftOnline):
             ert: float,
             window_size: int,
             preprocess_fn: Optional[Callable] = None,
-            x_ref_preprocessed: bool = False,
             sigma: Optional[np.ndarray] = None,
             n_bootstraps: int = 1000,
             n_kernel_centers: Optional[int] = None,
@@ -41,11 +40,7 @@ class LSDDDriftOnlineTorch(BaseMultiDriftOnline):
             Smaller windows focus on responding quickly to severe drift, larger windows focus on
             ability to detect slight drift.
         preprocess_fn
-            Function to preprocess the data before computing the data drift metrics.
-        x_ref_preprocessed
-            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
-            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
-            data will also be preprocessed.
+            Function to preprocess the data before computing the data drift metrics.s
         sigma
             Optionally set the bandwidth of the Gaussian kernel used in estimating the LSDD. Can also pass multiple
             bandwidth values as an array. The kernel evaluation is then averaged over those bandwidths. If `sigma`
@@ -76,7 +71,6 @@ class LSDDDriftOnlineTorch(BaseMultiDriftOnline):
             ert=ert,
             window_size=window_size,
             preprocess_fn=preprocess_fn,
-            x_ref_preprocessed=x_ref_preprocessed,
             n_bootstraps=n_bootstraps,
             verbose=verbose,
             input_shape=input_shape,

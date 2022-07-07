@@ -1,7 +1,6 @@
 import numpy as np
 from typing import Any, Callable, Dict, Optional, Union
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
-from alibi_detect.base import DriftConfigMixin
 
 if has_pytorch:
     from alibi_detect.cd.pytorch.mmd_online import MMDDriftOnlineTorch
@@ -10,7 +9,7 @@ if has_tensorflow:
     from alibi_detect.cd.tensorflow.mmd_online import MMDDriftOnlineTF
 
 
-class MMDDriftOnline(DriftConfigMixin):
+class MMDDriftOnline:
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
@@ -18,8 +17,7 @@ class MMDDriftOnline(DriftConfigMixin):
             window_size: int,
             backend: str = 'tensorflow',
             preprocess_fn: Optional[Callable] = None,
-            x_ref_preprocessed: bool = False,
-            kernel: Optional[Callable] = None,
+            kernel: Callable = None,
             sigma: Optional[np.ndarray] = None,
             n_bootstraps: int = 1000,
             device: Optional[str] = None,
@@ -45,10 +43,6 @@ class MMDDriftOnline(DriftConfigMixin):
             Backend used for the MMD implementation and configuration.
         preprocess_fn
             Function to preprocess the data before computing the data drift metrics.
-        x_ref_preprocessed
-            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
-            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
-            data will also be preprocessed.
         kernel
             Kernel used for the MMD computation, defaults to Gaussian RBF kernel.
         sigma
@@ -70,9 +64,6 @@ class MMDDriftOnline(DriftConfigMixin):
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
         super().__init__()
-
-        # Set config
-        self._set_config(locals())
 
         backend = backend.lower()
         if backend == 'tensorflow' and not has_tensorflow or backend == 'pytorch' and not has_pytorch:

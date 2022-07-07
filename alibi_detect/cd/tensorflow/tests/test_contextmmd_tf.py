@@ -34,10 +34,10 @@ preprocess = [
     (preprocess_list, None)
 ]
 update_ref = [{'last': 750}, None]
-preprocess_at_init = [True, False]
+preprocess_x_ref = [True, False]
 n_permutations = [10]
 tests_context_mmddrift = list(product(n_features, n_enc, preprocess,
-                              n_permutations, update_ref, preprocess_at_init))
+                              n_permutations, update_ref, preprocess_x_ref))
 n_tests = len(tests_context_mmddrift)
 
 
@@ -48,7 +48,7 @@ def context_mmd_params(request):
 
 @pytest.mark.parametrize('context_mmd_params', list(range(n_tests)), indirect=True)
 def test_context_mmd(context_mmd_params):
-    n_features, n_enc, preprocess, n_permutations, update_ref, preprocess_at_init = context_mmd_params
+    n_features, n_enc, preprocess, n_permutations, update_ref, preprocess_x_ref = context_mmd_params
 
     np.random.seed(0)
 
@@ -58,8 +58,8 @@ def test_context_mmd(context_mmd_params):
     preprocess_fn, preprocess_kwargs = preprocess
     to_list = False
     if hasattr(preprocess_fn, '__name__') and preprocess_fn.__name__ == 'preprocess_list':
-        if not preprocess_at_init:
-            pytest.skip("Skip tests where preprocess_at_init=False and x_ref is list.")
+        if not preprocess_x_ref:
+            pytest.skip("Skip tests where preprocess_x_ref=False and x_ref is list.")
         to_list = True
         x_ref = [_[None, :] for _ in x_ref]
     elif isinstance(preprocess_fn, Callable):
@@ -85,7 +85,7 @@ def test_context_mmd(context_mmd_params):
         x_ref=x_ref,
         c_ref=c_ref,
         p_val=.05,
-        preprocess_at_init=preprocess_at_init if isinstance(preprocess_fn, Callable) else False,
+        preprocess_x_ref=preprocess_x_ref if isinstance(preprocess_fn, Callable) else False,
         update_ref=update_ref,
         preprocess_fn=preprocess_fn,
         n_permutations=n_permutations

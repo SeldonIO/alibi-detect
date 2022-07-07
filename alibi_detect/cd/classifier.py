@@ -1,7 +1,6 @@
 import numpy as np
 from typing import Callable, Dict, Optional, Union
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, has_sklearn
-from alibi_detect.base import DriftConfigMixin
 
 if has_sklearn:
     from sklearn.base import ClassifierMixin
@@ -17,15 +16,14 @@ if has_tensorflow:
     from alibi_detect.utils.tensorflow.data import TFDataset
 
 
-class ClassifierDrift(DriftConfigMixin):
+class ClassifierDrift:
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
             model: Union[ClassifierMixin, Callable],
             backend: str = 'tensorflow',
             p_val: float = .05,
-            x_ref_preprocessed: bool = False,
-            preprocess_at_init: bool = True,
+            preprocess_x_ref: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
             preds_type: str = 'probs',
@@ -45,7 +43,6 @@ class ClassifierDrift(DriftConfigMixin):
             device: Optional[str] = None,
             dataset: Optional[Callable] = None,
             dataloader: Optional[Callable] = None,
-            input_shape: Optional[tuple] = None,
             use_calibration: bool = False,
             calibration_kwargs: Optional[dict] = None,
             use_oob: bool = False,
@@ -66,13 +63,8 @@ class ClassifierDrift(DriftConfigMixin):
             Backend used for the training loop implementation. Supported: 'tensorflow' | 'pytorch' | 'sklearn'.
         p_val
             p-value used for the significance of the test.
-        x_ref_preprocessed
-            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
-            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
-            data will also be preprocessed.
-        preprocess_at_init
-            Whether to preprocess the reference data when the detector is instantiated. Otherwise, the reference
-            data will be preprocessed at prediction time. Only applies if `x_ref_preprocessed=False`.
+        preprocess_x_ref
+            Whether to already preprocess and store the reference data.
         update_x_ref
             Reference data can optionally be updated to the last `n` instances seen by the detector
             or via reservoir sampling with size `n`. For the former, the parameter equals `{'last': n}` while
@@ -127,8 +119,6 @@ class ClassifierDrift(DriftConfigMixin):
             Dataset object used during training. Only relevant for 'tensorflow' and 'pytorch' backends.
         dataloader
             Dataloader object used during training. Only relevant for 'pytorch' backend.
-        input_shape
-            Shape of input data.
         use_calibration
             Whether to use calibration. Calibration can be used on top of any model.
             Only relevant for 'sklearn' backend.
@@ -142,9 +132,6 @@ class ClassifierDrift(DriftConfigMixin):
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
         super().__init__()
-
-        # Set config
-        self._set_config(locals())
 
         backend = backend.lower()
         if (backend == 'tensorflow' and not has_tensorflow) or (backend == 'pytorch' and not has_pytorch) or \

@@ -7,18 +7,16 @@ from alibi_detect.cd.chisquare import ChiSquareDrift
 from alibi_detect.cd.preprocess import classifier_uncertainty, regressor_uncertainty
 from alibi_detect.cd.utils import encompass_batching, encompass_shuffling_and_batch_filling
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
-from alibi_detect.base import DriftConfigMixin
 
 logger = logging.getLogger(__name__)
 
 
-class ClassifierUncertaintyDrift(DriftConfigMixin):
+class ClassifierUncertaintyDrift:
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
             model: Callable,
             p_val: float = .05,
-            x_ref_preprocessed: bool = False,
             backend: Optional[str] = None,
             update_x_ref: Optional[Dict[str, int]] = None,
             preds_type: str = 'probs',
@@ -29,7 +27,6 @@ class ClassifierUncertaintyDrift(DriftConfigMixin):
             device: Optional[str] = None,
             tokenizer: Optional[Callable] = None,
             max_len: Optional[int] = None,
-            input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None,
     ) -> None:
         """
@@ -48,10 +45,6 @@ class ClassifierUncertaintyDrift(DriftConfigMixin):
             Backend to use if model requires batch prediction. Options are 'tensorflow' or 'pytorch'.
         p_val
             p-value used for the significance of the test.
-        x_ref_preprocessed
-            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
-            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
-            data will also be preprocessed.
         update_x_ref
             Reference data can optionally be updated to the last n instances seen by the detector
             or via reservoir sampling with size n. For the former, the parameter equals {'last': n} while
@@ -75,13 +68,9 @@ class ClassifierUncertaintyDrift(DriftConfigMixin):
             Optional tokenizer for NLP models.
         max_len
             Optional max token length for NLP models.
-        input_shape
-            Shape of input data.
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
-        # Set config
-        self._set_config(locals())
 
         if backend == 'tensorflow' and not has_tensorflow or backend == 'pytorch' and not has_pytorch:
             raise ImportError(f'{backend} not installed. Cannot initialize and run the '
@@ -116,22 +105,18 @@ class ClassifierUncertaintyDrift(DriftConfigMixin):
             self._detector = KSDrift(
                 x_ref=x_ref,
                 p_val=p_val,
-                x_ref_preprocessed=x_ref_preprocessed,
-                preprocess_at_init=True,
+                preprocess_x_ref=True,
                 update_x_ref=update_x_ref,
                 preprocess_fn=preprocess_fn,
-                input_shape=input_shape,
                 data_type=data_type
             )
         elif uncertainty_type == 'margin':
             self._detector = ChiSquareDrift(
                 x_ref=x_ref,
                 p_val=p_val,
-                x_ref_preprocessed=x_ref_preprocessed,
-                preprocess_at_init=True,
+                preprocess_x_ref=True,
                 update_x_ref=update_x_ref,
                 preprocess_fn=preprocess_fn,
-                input_shape=input_shape,
                 data_type=data_type
             )
         else:
@@ -163,13 +148,12 @@ class ClassifierUncertaintyDrift(DriftConfigMixin):
         return self._detector.predict(x, return_p_val=return_p_val, return_distance=return_distance)
 
 
-class RegressorUncertaintyDrift(DriftConfigMixin):
+class RegressorUncertaintyDrift:
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
             model: Callable,
             p_val: float = .05,
-            x_ref_preprocessed: bool = False,
             backend: Optional[str] = None,
             update_x_ref: Optional[Dict[str, int]] = None,
             uncertainty_type: str = 'mc_dropout',
@@ -179,7 +163,6 @@ class RegressorUncertaintyDrift(DriftConfigMixin):
             device: Optional[str] = None,
             tokenizer: Optional[Callable] = None,
             max_len: Optional[int] = None,
-            input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None,
     ) -> None:
         """
@@ -198,10 +181,6 @@ class RegressorUncertaintyDrift(DriftConfigMixin):
             Backend to use if model requires batch prediction. Options are 'tensorflow' or 'pytorch'.
         p_val
             p-value used for the significance of the test.
-        x_ref_preprocessed
-            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
-            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
-            data will also be preprocessed.
         update_x_ref
             Reference data can optionally be updated to the last n instances seen by the detector
             or via reservoir sampling with size n. For the former, the parameter equals {'last': n} while
@@ -225,13 +204,9 @@ class RegressorUncertaintyDrift(DriftConfigMixin):
             Optional tokenizer for NLP models.
         max_len
             Optional max token length for NLP models.
-        input_shape
-            Shape of input data.
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
-        # Set config
-        self._set_config(locals())
 
         if backend == 'tensorflow' and not has_tensorflow or backend == 'pytorch' and not has_pytorch:
             raise ImportError(f'{backend} not installed. Cannot initialize and run the '
@@ -276,11 +251,9 @@ class RegressorUncertaintyDrift(DriftConfigMixin):
         self._detector = KSDrift(
             x_ref=x_ref,
             p_val=p_val,
-            x_ref_preprocessed=x_ref_preprocessed,
-            preprocess_at_init=True,
+            preprocess_x_ref=True,
             update_x_ref=update_x_ref,
             preprocess_fn=preprocess_fn,
-            input_shape=input_shape,
             data_type=data_type
         )
 

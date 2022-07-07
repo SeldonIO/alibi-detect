@@ -1,6 +1,5 @@
 import numpy as np
 from typing import Any, Callable, List, Optional, Union
-from alibi_detect.base import DriftConfigMixin
 from alibi_detect.cd.base_online import BaseUniDriftOnline
 from alibi_detect.utils.misc import quantile
 import numba as nb
@@ -8,14 +7,13 @@ from tqdm import tqdm
 import warnings
 
 
-class CVMDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
+class CVMDriftOnline(BaseUniDriftOnline):
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
             ert: float,
             window_sizes: List[int],
             preprocess_fn: Optional[Callable] = None,
-            x_ref_preprocessed: bool = False,
             n_bootstraps: int = 10000,
             batch_size: int = 64,
             n_features: Optional[int] = None,
@@ -52,10 +50,6 @@ class CVMDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
             ability to detect slight drift.
         preprocess_fn
             Function to preprocess the data before computing the data drift metrics.
-        x_ref_preprocessed
-            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
-            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
-            data will also be preprocessed.
         n_bootstraps
             The number of bootstrap simulations used to configure the thresholds. The larger this is the
             more accurately the desired ERT will be targeted. Should ideally be at least an order of magnitude
@@ -79,16 +73,12 @@ class CVMDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
             ert=ert,
             window_sizes=window_sizes,
             preprocess_fn=preprocess_fn,
-            x_ref_preprocessed=x_ref_preprocessed,
             n_bootstraps=n_bootstraps,
             n_features=n_features,
             verbose=verbose,
             input_shape=input_shape,
             data_type=data_type
         )
-        # Set config
-        self._set_config(locals())
-
         self.batch_size = n_bootstraps if batch_size is None else batch_size
 
         # Configure thresholds and initialise detector
