@@ -1,7 +1,7 @@
 import numpy as np
 from typing import Any, Callable, Dict, Optional, Union
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
-
+from alibi_detect.base import DriftConfigMixin
 if has_pytorch:
     from alibi_detect.cd.pytorch.lsdd_online import LSDDDriftOnlineTorch
 
@@ -9,7 +9,7 @@ if has_tensorflow:
     from alibi_detect.cd.tensorflow.lsdd_online import LSDDDriftOnlineTF
 
 
-class LSDDDriftOnline:
+class LSDDDriftOnline(DriftConfigMixin):
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
@@ -17,6 +17,7 @@ class LSDDDriftOnline:
             window_size: int,
             backend: str = 'tensorflow',
             preprocess_fn: Optional[Callable] = None,
+            x_ref_preprocessed: bool = False,
             sigma: Optional[np.ndarray] = None,
             n_bootstraps: int = 1000,
             n_kernel_centers: Optional[int] = None,
@@ -45,7 +46,11 @@ class LSDDDriftOnline:
         backend
             Backend used for the LSDD implementation and configuration.
         preprocess_fn
-            Function to preprocess the data before computing the data drift metrics.s
+            Function to preprocess the data before computing the data drift metrics.
+        x_ref_preprocessed
+            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
+            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
+            data will also be preprocessed.
         sigma
             Optionally set the bandwidth of the Gaussian kernel used in estimating the LSDD. Can also pass multiple
             bandwidth values as an array. The kernel evaluation is then averaged over those bandwidths. If `sigma`
@@ -72,6 +77,9 @@ class LSDDDriftOnline:
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
         super().__init__()
+
+        # Set config
+        self._set_config(locals())
 
         backend = backend.lower()
         if backend == 'tensorflow' and not has_tensorflow or backend == 'pytorch' and not has_pytorch:
@@ -142,3 +150,16 @@ class LSDDDriftOnline:
         LSDD estimate between reference window and test window.
         """
         return self._detector.score(x_t)
+
+    def get_config(self) -> dict:  # Needed due to need to unnormalize x_ref
+        """
+        Get the detector's configuration dictionary.
+
+        Returns
+        -------
+        The detector's configuration dictionary.
+        """
+        cfg = super().get_config()
+        # Unnormalize x_ref
+        cfg['x_ref'] = self._detector._unnormalize(cfg['x_ref'])
+        return cfg

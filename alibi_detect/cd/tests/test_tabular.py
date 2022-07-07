@@ -10,10 +10,10 @@ n_cat = [0, 2, n_features]
 categories_per_feature = [None, int, list]
 correction = ['bonferroni', 'fdr']
 update_x_ref = [{'last': 1000}, {'reservoir_sampling': 1000}]
-preprocess_x_ref = [True, False]
+preprocess_at_init = [True, False]
 new_categories = [True, False]
 tests_tabulardrift = list(product(n_cat, categories_per_feature, correction,
-                                  update_x_ref, preprocess_x_ref, new_categories))
+                                  update_x_ref, preprocess_at_init, new_categories))
 n_tests = len(tests_tabulardrift)
 
 
@@ -25,7 +25,7 @@ def tabulardrift_params(request):
 @pytest.mark.parametrize('tabulardrift_params', list(range(n_tests)), indirect=True)
 def test_tabulardrift(tabulardrift_params):
     n_cat, categories_per_feature, correction, \
-        update_x_ref, preprocess_x_ref, new_categories = tabulardrift_params
+        update_x_ref, preprocess_at_init, new_categories = tabulardrift_params
     np.random.seed(0)
     # add categorical variables
     x_ref = np.random.randn(n * n_features).reshape(n, n_features).astype(np.float32)
@@ -45,7 +45,7 @@ def test_tabulardrift(tabulardrift_params):
         x_ref=x_ref,
         p_val=.05,
         categories_per_feature=categories_per_feature,
-        preprocess_x_ref=preprocess_x_ref,
+        preprocess_at_init=preprocess_at_init,
         update_x_ref=update_x_ref,
         correction=correction,
     )
