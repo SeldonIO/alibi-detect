@@ -23,8 +23,8 @@ def sigma_mean(x: LazyTensor, y: LazyTensor, dist: LazyTensor) -> torch.Tensor:
     The computed bandwidth, `sigma`.
     """
     n = x.shape[0]
-    if (dist.min(axis=1) == 0.).all() and (torch.arange(n) == dist.argmin(axis=1).cpu().view(-1)).all() \
-            and x.shape == y.shape:
+    if x.shape == y.shape and (dist.min(axis=1) == 0.).all() and \
+            (torch.arange(n) == dist.argmin(axis=1).cpu().view(-1)).all():
         n_mean = n * (n - 1)
     else:
         n_mean = np.prod(dist.shape)
