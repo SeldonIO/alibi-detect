@@ -181,8 +181,9 @@ The following tables show the advised use cases for each algorithm. The column *
 
 #### TensorFlow and PyTorch support
 
-The drift detectors support TensorFlow and PyTorch backends. Alibi Detect does however not install PyTorch for you. 
-Check the [PyTorch docs](https://pytorch.org/) how to do this. Example:
+The drift detectors support TensorFlow, PyTorch and (where applicable) [KeOps](https://www.kernel-operations.io/keops/index.html) backends. 
+Alibi Detect does however not install PyTorch or KeOps for you. 
+Check the [PyTorch docs](https://pytorch.org/) how to do this. KeOps can be installed via pip: ```pip install pykeops```. Example:
 
 ```python
 from alibi_detect.cd import MMDDrift
@@ -195,6 +196,13 @@ The same detector in PyTorch:
 
 ```python
 cd = MMDDrift(x_ref, backend='pytorch', p_val=.05)
+preds = cd.predict(x)
+```
+
+Or in KeOps:
+
+```python
+cd = MMDDrift(x_ref, backend='keops', p_val=.05)
 preds = cd.predict(x)
 ```
 
