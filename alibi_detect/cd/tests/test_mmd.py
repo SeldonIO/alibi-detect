@@ -1,12 +1,13 @@
 import numpy as np
 import pytest
 from alibi_detect.cd import MMDDrift
+from alibi_detect.cd.keops.mmd import MMDDriftKeops
 from alibi_detect.cd.pytorch.mmd import MMDDriftTorch
 from alibi_detect.cd.tensorflow.mmd import MMDDriftTF
 
 n, n_features = 100, 5
 
-tests_mmddrift = ['tensorflow', 'pytorch', 'PyToRcH', 'mxnet']
+tests_mmddrift = ['tensorflow', 'pytorch', 'keops', 'PyToRcH', 'mxnet']
 n_tests = len(tests_mmddrift)
 
 
@@ -29,5 +30,7 @@ def test_mmddrift(mmddrift_params):
         assert isinstance(cd._detector, MMDDriftTorch)
     elif backend.lower() == 'tensorflow':
         assert isinstance(cd._detector, MMDDriftTF)
+    elif backend.lower() == 'keops':
+        assert isinstance(cd._detector, MMDDriftKeops)
     else:
         assert cd is None
