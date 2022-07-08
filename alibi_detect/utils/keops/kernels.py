@@ -2,7 +2,7 @@ import numpy as np
 from pykeops.torch import LazyTensor
 import torch
 import torch.nn as nn
-from typing import Callable, List, Optional, Tuple, Union
+from typing import Callable, Optional
 
 
 def sigma_mean(x: LazyTensor, y: LazyTensor, dist: LazyTensor) -> torch.Tensor:
