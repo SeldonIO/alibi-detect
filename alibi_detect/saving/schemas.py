@@ -41,7 +41,7 @@ if has_tensorflow:
 SupportedModels = tuple(SupportedModels_list)
 # SupportedModels_types is a typing Union for use with pydantic. We include all optional deps in here so that they
 # are all documented in the api docs (where the optional deps are not installed at build time)
-SupportedModels_types = Union['tf.keras.Model', UAE_tf, HiddenOutput_tf]
+SupportedModels_types = Union['tf.keras.Model', 'UAE_tf', 'HiddenOutput_tf']
 
 
 # Custom validators (defined here for reuse in multiple pydantic models)

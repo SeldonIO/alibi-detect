@@ -188,7 +188,7 @@ def test_fetching_utils_dependencies(opt_dep):
     check_correct_dependencies(fetching, dependency_map, opt_dep)
 
 
-def test_saving_utils_dependencies(opt_dep):
+def test_saving_dependencies(opt_dep):
     """Tests that the saving utils module correctly protects against uninstalled optional dependencies.
     """
 
@@ -198,7 +198,7 @@ def test_saving_utils_dependencies(opt_dep):
         ('save_detector', ['tensorflow'])
     ]:
         dependency_map[dependency] = relations
-    from alibi_detect.utils import saving
+    from alibi_detect import saving
     check_correct_dependencies(saving, dependency_map, opt_dep)
 
 
