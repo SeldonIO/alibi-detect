@@ -54,8 +54,6 @@ def test_mmd(mmd_params):
     n_features, n_enc, preprocess, n_permutations, update_x_ref, preprocess_x_ref, \
         batch_size_permutations, configure_kernel_from_x_ref = mmd_params
 
-    print(configure_kernel_from_x_ref, batch_size_permutations, n_features, update_x_ref, preprocess_x_ref)
-
     np.random.seed(0)
     torch.manual_seed(0)
 
