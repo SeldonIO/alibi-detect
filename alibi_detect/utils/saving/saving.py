@@ -2,12 +2,12 @@
 # TODO: Remove in future
 from alibi_detect.saving import load_detector as _load_detector, save_detector as _save_detector
 from typing import Union
-from alibi_detect.saving.tensorflow._loading import Detector
+from alibi_detect.saving.typing import ConfigDetector
 import warnings
 import os
 
 
-def save_detector(detector: Detector, filepath: Union[str, os.PathLike], legacy: bool = False) -> None:
+def save_detector(detector: ConfigDetector, filepath: Union[str, os.PathLike], legacy: bool = False) -> None:
     """
     Save outlier, drift or adversarial detector.
 
@@ -25,7 +25,7 @@ def save_detector(detector: Detector, filepath: Union[str, os.PathLike], legacy:
     return _save_detector(detector, filepath, legacy)
 
 
-def load_detector(filepath: Union[str, os.PathLike], **kwargs) -> Detector:
+def load_detector(filepath: Union[str, os.PathLike], **kwargs) -> ConfigDetector:
     """
     Load outlier, drift or adversarial detector.
 
