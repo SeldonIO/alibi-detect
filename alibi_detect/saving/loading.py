@@ -4,27 +4,20 @@ import os
 from functools import partial
 from importlib import import_module
 from pathlib import Path
-from typing import Any, Callable, Optional, Union
+from typing import Any, Callable, Optional, Union, TYPE_CHECKING
 
 import dill
 import numpy as np
-import tensorflow as tf  # TODO - this is currently only required for FIELDS_TO_DTYPE conversion. Remove in future.
 import toml
 from transformers import AutoTokenizer
 
 from alibi_detect.saving.registry import registry
-from alibi_detect.saving.tensorflow._loading import (Detector,
-                                                     load_detector_legacy)
-from alibi_detect.saving.tensorflow._loading import \
-    load_embedding as load_embedding_tf
-from alibi_detect.saving.tensorflow._loading import \
-    load_kernel_config as load_kernel_config_tf
-from alibi_detect.saving.tensorflow._loading import load_model as load_model_tf
-from alibi_detect.saving.tensorflow._loading import \
-    load_optimizer as load_optimizer_tf
-from alibi_detect.saving.tensorflow._loading import \
-    prep_model_and_emb as prep_model_and_emb_tf
+from alibi_detect.saving.tensorflow import Detector, load_detector_legacy, load_embedding_tf, load_kernel_config_tf, \
+    load_model_tf, load_optimizer_tf, prep_model_and_emb_tf, get_tf_dtype
 from alibi_detect.saving.validate import validate_config
+
+if TYPE_CHECKING:
+    import tensorflow as tf
 
 logger = logging.getLogger(__name__)
 
@@ -404,10 +397,12 @@ def _set_dtypes(cfg: dict):
             lib, dtype, *_ = val.split('.')
             # val[0] = np if val[0] == 'np' else tf if val[0] == 'tf' else torch if val[0] == 'torch' else None
             # TODO - add above back in once optional deps are handled properly
-            lib = np if lib == 'np' else tf if lib == 'tf' else None
             if lib is None:
                 raise ValueError("`dtype` must be in format np.<dtype>, tf.<dtype> or torch.<dtype>.")
-            _set_nested_value(cfg, key, getattr(lib, dtype))
+            {
+                'tf': lambda: _set_nested_value(cfg, key, get_tf_dtype(dtype)),
+                'np': lambda: _set_nested_value(cfg, key, getattr(np, dtype)),
+            }[lib]()
 
 
 def read_config(filepath: Union[os.PathLike, str]) -> dict:

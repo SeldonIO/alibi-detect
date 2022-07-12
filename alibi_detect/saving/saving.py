@@ -14,9 +14,7 @@ from transformers import PreTrainedTokenizerBase
 from alibi_detect.saving.loading import Detector, _replace, validate_config
 from alibi_detect.saving.registry import registry
 from alibi_detect.saving.schemas import SupportedModels
-from alibi_detect.saving.tensorflow._saving import save_detector_legacy
-from alibi_detect.saving.tensorflow._saving import \
-    save_model_config as save_model_config_tf
+from alibi_detect.saving.tensorflow import save_detector_legacy, save_model_config_tf
 
 # do not extend pickle dispatch table so as not to change pickle behaviour
 dill.extend(use_dill=False)

@@ -3,8 +3,11 @@ import pytest
 from pydantic import ValidationError
 
 from alibi_detect.saving import validate_config
-from alibi_detect.saving.saving import X_REF_FILENAME
+# from alibi_detect.saving.saving import X_REF_FILENAME
 from alibi_detect.version import __config_spec__, __version__
+
+# avoids optional dep conflicts
+X_REF_FILENAME = 'x_ref.npy'
 
 # Define a detector config dict
 mmd_cfg = {
