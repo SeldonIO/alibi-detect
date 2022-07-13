@@ -54,7 +54,7 @@ If you are unsure which detector to use, or wish to have access to as many as po
 ```
 
 ```bash
-pip install alibi-detect[tensorflow,numba,prophet]
+pip install alibi-detect[tensorflow,prophet]
 ```
 
 ```{div} sd-mb-1
@@ -62,7 +62,7 @@ If you would rather use `pytorch` backends then you can use:
 ```
 
 ```bash
-pip install alibi-detect[torch,numba,prophet]
+pip install alibi-detect[torch,prophet]
 ```
 
 ```{div} sd-mb-1
@@ -152,25 +152,6 @@ The TensorFlow installation is required to use the following detectors:
 - [OutlierVAEGMM](../od/methods/vaegmm.ipynb)
 - [AdversarialAE](../ad/methods/adversarialae.ipynb)
 - [ModelDistillation](../ad/methods/modeldistillation.ipynb)
-```
-````
-
-````{tab-item} Numba
-:sync: label-numba
-:class-label: sd-pt-0
-
-```{div} sd-mb-1
-Installation with [Numba](https://numba.pydata.org/) support.
-```
-
-```bash
-pip install alibi-detect[numba]
-```
-
-```{div} sd-mb-1
-The Numba installation is required to use the following detectors:
-- [CVMDriftOnline](../cd/methods/cvmdrift.ipynb)
-- [FETDriftOnline](../cd/methods/fetdrift.ipynb)
 ```
 ````
 

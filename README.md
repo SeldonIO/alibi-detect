@@ -94,11 +94,6 @@ The package, `alibi-detect` can be installed from:
    pip install alibi-detect[prophet]
    ```
 
-- To use the `CVMDriftOnline` or `FetDriftOnline` drift detectors install with Numba:
-   ```bash
-   pip install alibi-detect[numba]
-   ```
-
 
 ### With conda
 
