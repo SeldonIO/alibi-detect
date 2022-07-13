@@ -22,7 +22,6 @@ ERROR_TYPES = {
     "fbprophet": 'prophet',
     "holidays": 'prophet',
     "pystan": 'prophet',
-    "numba": 'numba',
     "tensorflow_probability": 'tensorflow',
     "tensorflow": 'tensorflow',
     "torch": 'torch',
