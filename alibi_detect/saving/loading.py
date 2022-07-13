@@ -470,7 +470,14 @@ def resolve_config(cfg: dict, config_dir: Optional[Path]) -> dict:
                 if src in registry.get_all():
                     obj = registry.get(src)
                 else:
-                    raise ValueError("Can't find {} in the custom function registry".format(src))
+                    raise ValueError(
+                        "Can't find {} in the custom function registry, It may be misspelled or missing "
+                        "if you have incorrect optional dependencies installed. Make sure the loading environment"
+                        " is the same as the saving environment. For more information, check the Installation "
+                        "documentation at "
+                        "https://docs.seldon.io/projects/alibi-detect/en/latest/overview/getting_started.html."
+                        .format(src)
+                    )
                 logger.info('Successfully resolved registry entry {}'.format(src))
 
             # Resolve dill or numpy file references
