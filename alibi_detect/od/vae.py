@@ -108,6 +108,8 @@ class OutlierVAE(BaseDetector, FitMixin, ThresholdMixin):
             Whether to print training progress.
         log_metric
             Additional metrics whose progress will be displayed if verbose equals True.
+        preprocess_fn
+            Preprocessing function applied to each training batch.
         callbacks
             Callbacks used during training.
         """
