@@ -2,7 +2,7 @@ import logging
 import numpy as np
 import tensorflow as tf
 import tensorflow_probability as tfp
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Callable
 from alibi_detect.models.tensorflow.autoencoder import VAE
 from alibi_detect.models.tensorflow.trainer import trainer
 from alibi_detect.models.tensorflow.losses import elbo
@@ -81,6 +81,7 @@ class OutlierVAE(BaseDetector, FitMixin, ThresholdMixin):
             batch_size: int = 64,
             verbose: bool = True,
             log_metric: Tuple[str, "tf.keras.metrics"] = None,
+            preprocess_fn: Callable = None,
             callbacks: tf.keras.callbacks = None,
             ) -> None:
         """
@@ -117,7 +118,8 @@ class OutlierVAE(BaseDetector, FitMixin, ThresholdMixin):
                   'batch_size': batch_size,
                   'verbose': verbose,
                   'log_metric': log_metric,
-                  'callbacks': callbacks}
+                  'callbacks': callbacks, 
+                  'preprocess_fn': preprocess_fn}
 
         # initialize covariance matrix if elbo loss fn is used
         use_elbo = loss_fn.__name__ == 'elbo'
