@@ -29,12 +29,66 @@ def sigma_median(x: torch.Tensor, y: torch.Tensor, dist: torch.Tensor) -> torch.
     return sigma
 
 
-class GaussianRBF(nn.Module):
+class BaseKernel(nn.Module):
+    """
+    The base class for all kernels.
+    Args:
+        nn (_type_): _description_
+    """
+    def __init__(self) -> None:
+        super().__init__()
+        self.parameter_dict: dict = {}
+        self.active_dims: Optional[list] = None
+
+    def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+        raise NotImplementedError
+
+
+class SumKernel(nn.Module):
+    """
+    Construct a kernel by summing two kernels.
+    Args:
+        nn (_type_): _description_
+    """
     def __init__(
         self,
-        sigma: Optional[torch.Tensor] = None,
-        init_sigma_fn: Callable = sigma_median,
-        trainable: bool = False
+        kernel_a: BaseKernel,
+        kernel_b: BaseKernel
+    ) -> None:
+        super().__init__()
+        self.kernel_a = kernel_a
+        self.kernel_b = kernel_b
+
+    def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+        return self.kernel_a(x, y) + self.kernel_b(x, y)
+
+
+class ProductKernel(nn.Module):
+    """
+    Construct a kernel by multiplying two kernels.
+    Args:
+        nn (_type_): _description_
+    """
+    def __init__(
+        self,
+        kernel_a: BaseKernel,
+        kernel_b: BaseKernel
+    ) -> None:
+        super().__init__()
+        self.kernel_a = kernel_a
+        self.kernel_b = kernel_b
+
+    def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+        return self.kernel_a(x, y) * self.kernel_b(x, y)
+
+
+class GaussianRBF(BaseKernel):
+    def __init__(
+       self,
+       sigma: Optional[torch.Tensor] = None,
+       init_fn_sigma: Callable = sigma_median,
+       trainable: bool = False,
+       active_dims: Optional[list] = None
     ) -> None:
         """
         Gaussian RBF kernel: k(x,y) = exp(-(1/(2*sigma^2)||x-y||^2). A forward pass takes
@@ -54,28 +108,28 @@ class GaussianRBF(nn.Module):
             Whether or not to track gradients w.r.t. `sigma` to allow it to be trained.
         """
         super().__init__()
+        self.parameter_dict['sigma'] = 'bandwidth'
         if sigma is None:
             self.log_sigma = nn.Parameter(torch.empty(1), requires_grad=trainable)
             self.init_required = True
         else:
-            sigma = sigma.reshape(-1)  # [Ns,]
             self.log_sigma = nn.Parameter(sigma.log(), requires_grad=trainable)
             self.init_required = False
-        self.init_sigma_fn = init_sigma_fn
-        self.trainable = trainable
+        self.init_fn_sigma = init_fn_sigma
+        self.active_dims = active_dims
 
     @property
     def sigma(self) -> torch.Tensor:
         return self.log_sigma.exp()
 
     def forward(self, x: Union[np.ndarray, torch.Tensor], y: Union[np.ndarray, torch.Tensor],
-                infer_sigma: bool = False) -> torch.Tensor:
+                infer_parameter: bool = False) -> torch.Tensor:
 
         x, y = torch.as_tensor(x), torch.as_tensor(y)
         dist = distance.squared_pairwise_distance(x.flatten(1), y.flatten(1))  # [Nx, Ny]
 
-        if infer_sigma or self.init_required:
-            if self.trainable and infer_sigma:
+        if infer_parameter or self.init_required:
+            if self.trainable and infer_parameter:
                 raise ValueError("Gradients cannot be computed w.r.t. an inferred sigma value")
             sigma = self.init_sigma_fn(x, y, dist)
             with torch.no_grad():
@@ -86,6 +140,173 @@ class GaussianRBF(nn.Module):
         # TODO: do matrix multiplication after all?
         kernel_mat = torch.exp(- torch.cat([(g * dist)[None, :, :] for g in gamma], dim=0))  # [Ns, Nx, Ny]
         return kernel_mat.mean(dim=0)  # [Nx, Ny]
+
+
+class RationalQuadratic(nn.Module):
+    def __init__(
+        self,
+        alpha: torch.Tensor = None,
+        init_fn_alpha: Callable = None,
+        sigma: torch.Tensor = None,
+        init_fn_sigma: Callable = None,
+        trainable: bool = False,
+        active_dims: Optional[list] = None
+    ) -> None:
+        """
+        Rational Quadratic kernel: k(x,y) = (1 + ||x-y||^2 / (2*sigma^2))^(-alpha).
+        A forward pass takesa batch of instances x [Nx, features] and y [Ny, features]
+        and returns the kernel matrix [Nx, Ny].
+
+        Parameters
+        ----------
+        alpha
+            Exponent parameter of the kernel.
+        sigma
+            Bandwidth used for the kernel.
+        """
+        super().__init__()
+        self.parameter_dict['alpha'] = 'exponent'
+        self.parameter_dict['sigma'] = 'bandwidth'
+        if alpha is None:
+            self.alpha = nn.Parameter(torch.empty(1), requires_grad=trainable)
+            self.init_required = True
+        else:
+            self.alpha = alpha
+            self.init_required = False
+        if sigma is None:
+            self.log_sigma = nn.Parameter(torch.empty(1), requires_grad=trainable)
+            self.init_required = True
+        else:
+            self.log_sigma = nn.Parameter(sigma.log(), requires_grad=trainable)
+            self.init_required = False
+        self.init_fn_alpha = init_fn_alpha
+        self.init_fn_sigma = init_fn_sigma
+        self.active_dims = active_dims
+
+    @property
+    def sigma(self) -> torch.Tensor:
+        return self.log_sigma.exp()
+
+    def forward(self, x: Union[np.ndarray, torch.Tensor], y: Union[np.ndarray, torch.Tensor]) -> torch.Tensor:
+        x, y = torch.as_tensor(x), torch.as_tensor(y)
+        dist = distance.squared_pairwise_distance(x.flatten(1), y.flatten(1))
+        kernel_mat = (1 + torch.square(dist) / (2 * self.alpha * (self.sigma ** 2))) ** (-self.alpha)
+        return kernel_mat
+
+
+class Periodic(nn.Module):
+    def __init__(
+        self,
+        tau: torch.Tensor = None,
+        init_fn_tau: Callable = None,
+        sigma: torch.Tensor = None,
+        init_fn_sigma: Callable = None,
+        trainable: bool = False,
+        active_dims: Optional[list] = None
+    ) -> None:
+        """
+        Periodic kernel: k(x,y) = .
+        A forward pass takesa batch of instances x [Nx, features] and y [Ny, features]
+        and returns the kernel matrix [Nx, Ny].
+
+        Parameters
+        ----------
+        tau
+            Period of the periodic kernel.
+        sigma
+            Bandwidth used for the kernel.
+        """
+        super().__init__()
+        self.parameter_dict['tau'] = 'period'
+        self.parameter_dict['sigma'] = 'bandwidth'
+        if tau is None:
+            self.log_tau = nn.Parameter(torch.empty(1), requires_grad=trainable)
+            self.init_required = True
+        else:
+            self.log_tau = nn.Parameter(tau.log(), requires_grad=trainable)
+            self.init_required = False
+        if sigma is None:
+            self.log_sigma = nn.Parameter(torch.empty(1), requires_grad=trainable)
+            self.init_required = True
+        else:
+            self.log_sigma = nn.Parameter(sigma.log(), requires_grad=trainable)
+            self.init_required = False
+        self.init_fn_tau = init_fn_tau
+        self.init_fn_sigma = init_fn_sigma
+        self.active_dims = active_dims
+
+    @property
+    def tau(self) -> torch.Tensor:
+        return self.log_tau.exp()
+
+    @property
+    def sigma(self) -> torch.Tensor:
+        return self.log_sigma.exp()
+
+    def forward(self, x: Union[np.ndarray, torch.Tensor], y: Union[np.ndarray, torch.Tensor]) -> torch.Tensor:
+        x, y = torch.as_tensor(x), torch.as_tensor(y)
+        dist = torch.sqrt(distance.squared_pairwise_distance(x.flatten(1), y.flatten(1)))
+        kernel_mat = torch.exp(-2 * torch.square(
+            torch.sin(torch.as_tensor(np.pi) * dist / self.tau)) / (self.sigma ** 2))
+        return kernel_mat
+
+
+class LocalPeriodic(nn.Module):
+    def __init__(
+        self,
+        tau: torch.Tensor = None,
+        init_fn_tau: Callable = None,
+        sigma: torch.Tensor = None,
+        init_fn_sigma: Callable = None,
+        trainable: bool = False,
+        active_dims: Optional[list] = None
+    ) -> None:
+        """
+        Local periodic kernel: k(x,y) = .
+        A forward pass takesa batch of instances x [Nx, features] and y [Ny, features]
+        and returns the kernel matrix [Nx, Ny].
+
+        Parameters
+        ----------
+        tau
+            Period of the periodic kernel.
+        sigma
+            Bandwidth used for the kernel.
+        """
+        super().__init__()
+        self.parameter_dict['tau'] = 'period'
+        self.parameter_dict['sigma'] = 'bandwidth'
+        if tau is None:
+            self.log_tau = nn.Parameter(torch.empty(1), requires_grad=trainable)
+            self.init_required = True
+        else:
+            self.log_tau = nn.Parameter(tau.log(), requires_grad=trainable)
+            self.init_required = False
+        if sigma is None:
+            self.log_sigma = nn.Parameter(torch.empty(1), requires_grad=trainable)
+            self.init_required = True
+        else:
+            self.log_sigma = nn.Parameter(sigma.log(), requires_grad=trainable)
+            self.init_required = False
+        self.init_fn_tau = init_fn_tau
+        self.init_fn_sigma = init_fn_sigma
+        self.active_dims = active_dims
+
+    @property
+    def tau(self) -> torch.Tensor:
+        return self.log_tau.exp()
+
+    @property
+    def sigma(self) -> torch.Tensor:
+        return self.log_sigma.exp()
+
+    def forward(self, x: Union[np.ndarray, torch.Tensor], y: Union[np.ndarray, torch.Tensor]) -> torch.Tensor:
+        x, y = torch.as_tensor(x), torch.as_tensor(y)
+        dist = distance.squared_pairwise_distance(x.flatten(1), y.flatten(1))
+        kernel_mat = torch.exp(-2 * torch.square(
+            torch.sin(torch.as_tensor(np.pi) * dist / self.tau)) / (self.sigma ** 2)) * \
+            torch.exp(-0.5 * torch.square(dist / self.tau))
+        return kernel_mat
 
 
 class DeepKernel(nn.Module):
