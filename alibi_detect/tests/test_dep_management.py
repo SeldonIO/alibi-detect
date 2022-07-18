@@ -56,9 +56,8 @@ def test_cd_dependencies(opt_dep):
     dependency_map = defaultdict(lambda: ['default'])
     for dependency, relations in []:
         dependency_map[dependency] = relations
-    if opt_dep != 'all':
-        from alibi_detect import cd
-        check_correct_dependencies(cd, dependency_map, opt_dep)
+    from alibi_detect import cd
+    check_correct_dependencies(cd, dependency_map, opt_dep)
 
 
 def test_cd_torch_dependencies(opt_dep):
@@ -71,9 +70,8 @@ def test_cd_torch_dependencies(opt_dep):
         ("preprocess_drift", ['torch'])
     ]:
         dependency_map[dependency] = relations
-    if opt_dep != 'all':
-        from alibi_detect.cd import pytorch as cd_pytorch
-        check_correct_dependencies(cd_pytorch, dependency_map, opt_dep)
+    from alibi_detect.cd import pytorch as cd_pytorch
+    check_correct_dependencies(cd_pytorch, dependency_map, opt_dep)
 
 
 def test_cd_tensorflow_dependencies(opt_dep):
@@ -87,9 +85,8 @@ def test_cd_tensorflow_dependencies(opt_dep):
         ("preprocess_drift", ['tensorflow'])
     ]:
         dependency_map[dependency] = relations
-    if opt_dep != 'all':
-        from alibi_detect.cd import tensorflow as tensorflow_cd
-        check_correct_dependencies(tensorflow_cd, dependency_map, opt_dep)
+    from alibi_detect.cd import tensorflow as tensorflow_cd
+    check_correct_dependencies(tensorflow_cd, dependency_map, opt_dep)
 
 
 def test_ad_dependencies(opt_dep):
@@ -102,9 +99,8 @@ def test_ad_dependencies(opt_dep):
             ('ModelDistillation', ['tensorflow'])
             ]:
         dependency_map[dependency] = relations
-    if opt_dep != 'all':
-        from alibi_detect import ad
-        check_correct_dependencies(ad, dependency_map, opt_dep)
+    from alibi_detect import ad
+    check_correct_dependencies(ad, dependency_map, opt_dep)
 
 
 def test_od_dependencies(opt_dep):
@@ -121,9 +117,8 @@ def test_od_dependencies(opt_dep):
             ('OutlierSeq2Seq', ['tensorflow']),
             ]:
         dependency_map[dependency] = relations
-    if opt_dep != 'all':
-        from alibi_detect import od
-        check_correct_dependencies(od, dependency_map, opt_dep)
+    from alibi_detect import od
+    check_correct_dependencies(od, dependency_map, opt_dep)
 
 
 def test_tensorflow_model_dependencies(opt_dep):
@@ -150,9 +145,8 @@ def test_tensorflow_model_dependencies(opt_dep):
             ("scale_by_instance", ['tensorflow'])
             ]:
         dependency_map[dependency] = relations
-    if opt_dep != 'all':
-        from alibi_detect.models import tensorflow as tf_models
-        check_correct_dependencies(tf_models, dependency_map, opt_dep)
+    from alibi_detect.models import tensorflow as tf_models
+    check_correct_dependencies(tf_models, dependency_map, opt_dep)
 
 
 def test_torch_model_dependencies(opt_dep):
@@ -165,9 +159,8 @@ def test_torch_model_dependencies(opt_dep):
             ("trainer", ['torch']),
             ]:
         dependency_map[dependency] = relations
-    if opt_dep != 'all':
-        from alibi_detect.models import pytorch as torch_models
-        check_correct_dependencies(torch_models, dependency_map, opt_dep)
+    from alibi_detect.models import pytorch as torch_models
+    check_correct_dependencies(torch_models, dependency_map, opt_dep)
 
 
 def test_dataset_dependencies(opt_dep):
@@ -177,9 +170,8 @@ def test_dataset_dependencies(opt_dep):
     dependency_map = defaultdict(lambda: ['default'])
     for dependency, relations in []:
         dependency_map[dependency] = relations
-    if opt_dep != 'all':
-        from alibi_detect import datasets
-        check_correct_dependencies(datasets, dependency_map, opt_dep)
+    from alibi_detect import datasets
+    check_correct_dependencies(datasets, dependency_map, opt_dep)
 
 
 def test_fetching_utils_dependencies(opt_dep):
@@ -192,9 +184,8 @@ def test_fetching_utils_dependencies(opt_dep):
         ('fetch_tf_model', ['tensorflow'])
     ]:
         dependency_map[dependency] = relations
-    if opt_dep != 'all':
-        from alibi_detect.utils import fetching
-        check_correct_dependencies(fetching, dependency_map, opt_dep)
+    from alibi_detect.utils import fetching
+    check_correct_dependencies(fetching, dependency_map, opt_dep)
 
 
 def test_saving_utils_dependencies(opt_dep):
@@ -207,9 +198,8 @@ def test_saving_utils_dependencies(opt_dep):
         ('save_detector', ['tensorflow'])
     ]:
         dependency_map[dependency] = relations
-    if opt_dep != 'all':
-        from alibi_detect.utils import saving
-        check_correct_dependencies(saving, dependency_map, opt_dep)
+    from alibi_detect.utils import saving
+    check_correct_dependencies(saving, dependency_map, opt_dep)
 
 
 def test_tensorflow_utils_dependencies(opt_dep):
@@ -235,9 +225,8 @@ def test_tensorflow_utils_dependencies(opt_dep):
             ("TFDataset", ['tensorflow'])
             ]:
         dependency_map[dependency] = relations
-    if opt_dep != 'all':
-        from alibi_detect.utils import tensorflow as tensorflow_utils
-        check_correct_dependencies(tensorflow_utils, dependency_map, opt_dep)
+    from alibi_detect.utils import tensorflow as tensorflow_utils
+    check_correct_dependencies(tensorflow_utils, dependency_map, opt_dep)
 
 
 def test_pytorch_utils_dependencies(opt_dep):
@@ -261,6 +250,5 @@ def test_pytorch_utils_dependencies(opt_dep):
         ("get_device", ['torch']),
     ]:
         dependency_map[dependency] = relations
-    if opt_dep != 'all':
-        from alibi_detect.utils import pytorch as pytorch_utils
-        check_correct_dependencies(pytorch_utils, dependency_map, opt_dep)
+    from alibi_detect.utils import pytorch as pytorch_utils
+    check_correct_dependencies(pytorch_utils, dependency_map, opt_dep)
