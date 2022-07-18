@@ -126,9 +126,10 @@ class SpotTheDiffDrift(DriftConfigMixin):
         self._set_config(locals())
 
         backend = backend.lower()
-        BackendValidator(backend_options={'tensorflow': ['tensorflow'],
-                                          'pytorch': ['pytorch']},
-                         construct_name=self.__class__.__name__
+        BackendValidator(
+            backend_options={'tensorflow': ['tensorflow'],
+                             'pytorch': ['pytorch']},
+            construct_name=self.__class__.__name__
         ).verify_backend(backend)
         kwargs = locals()
         args = [kwargs['x_ref']]
