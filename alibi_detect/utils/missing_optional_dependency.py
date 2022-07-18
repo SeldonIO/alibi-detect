@@ -39,14 +39,15 @@ class MissingDependency:
                  err: Union[ModuleNotFoundError, ImportError],
                  missing_dependency: str = 'all',):
         """ Metaclass for MissingDependency classes
+
         Parameters
         ----------
         object_name
             Name of object we are replacing
-        missing_dependency
-            Name of missing dependency required for object
         err
             Error to be raised when the class is initialized or used
+        missing_dependency
+            Name of missing dependency required for object
         """
         self.missing_dependency = missing_dependency
         self.object_name = object_name
@@ -73,39 +74,34 @@ def import_optional(module_name: str, names: Optional[List[str]] = None) -> Any:
     Note: This function is used to import modules that depend on optional dependencies. Because it mirrors the python
     import functionality its return type has to be `Any`. Using objects imported with this function can lead to
     misspecification of types as `Any` when the developer intended to be more restrictive.
+
     Parameters
     ----------
-        module_name
-            The module to import
-        names
-            The names to import from the module. If None, all names are imported.
+    module_name
+        The module to import
+    names
+        The names to import from the module. If None, all names are imported.
+
     Returns
     -------
-        The module or named objects within the modules if names is not None. If the import fails due to a
-        ModuleNotFoundError or ImportError then the requested module or named objects are replaced with instances of
-        the MissingDependency class above.
+    The module or named objects within the modules if names is not None. If the import fails due to a
+    ModuleNotFoundError or ImportError then the requested module or named objects are replaced with instances of
+    the MissingDependency class above.
     """
-    if not names:
-        names = []
-
     try:
         module = import_module(module_name)
-        # TODO: We should check against specific dependency versions here.
-        if names:
+        if names is not None:
             objs = tuple(getattr(module, name) for name in names)
             return objs if len(objs) > 1 else objs[0]
         return module
     except (ImportError, ModuleNotFoundError) as err:
         if err.name is None:
             raise TypeError()
-        if str(err.name) not in ERROR_TYPES:
+        dep_name, *_ = err.name.split('.')
+        if str(dep_name) not in ERROR_TYPES:
             raise err
-
-        missing_dependency = None
-        if not missing_dependency:
-            missing_dependency = ERROR_TYPES[err.name]
-
-        if names:
+        missing_dependency = ERROR_TYPES[dep_name]
+        if names is not None:
             missing_dependencies = \
                 tuple(MissingDependency(
                     missing_dependency=missing_dependency,
