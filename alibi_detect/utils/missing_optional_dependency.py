@@ -54,7 +54,7 @@ class MissingDependency:
         self.err = err
 
     @property
-    def err_msg(self):
+    def err_msg(self) -> str:
         """Generate error message informing user to install missing dependencies."""
         return err_msg_template.substitute(
             object_name=self.object_name,

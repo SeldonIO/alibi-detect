@@ -88,7 +88,7 @@ class ClassifierUncertaintyDrift(DriftConfigMixin):
         BackendValidator(backend_options={'tensorflow': ['tensorflow'],
                                           'pytorch': ['pytorch'],
                                           None: []},
-                         construct_name='ClassifierUncertaintyDrift').verify_backend(backend)
+                         construct_name=self.__class__.__name__).verify_backend(backend)
 
         if backend is None:
             if device not in [None, 'cpu']:
@@ -241,7 +241,7 @@ class RegressorUncertaintyDrift(DriftConfigMixin):
         BackendValidator(backend_options={'tensorflow': ['tensorflow'],
                                           'pytorch': ['pytorch'],
                                           None: []},
-                         construct_name='RegressorUncertaintyDrift').verify_backend(backend)
+                         construct_name=self.__class__.__name__).verify_backend(backend)
 
         if backend is None:
             model_fn = model

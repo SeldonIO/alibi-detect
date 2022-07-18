@@ -60,8 +60,7 @@ class TestBackendValidator:
         # including error message listing missing dependencies.
         with pytest.raises(ImportError) as err:
             BackendValidator(backend_options=options, construct_name='test').verify_backend('backend_3')
-        assert 'backend_D' in str(err.value).split('.')[0]
-        assert 'backend_E' in str(err.value).split('.')[0]
-        assert 'backend_3' in str(err.value)
-        assert 'backend_D' in str(err.value).split('pip install alibi-detect')[1]
-        assert 'backend_E' in str(err.value).split('pip install alibi-detect')[1]
+
+        assert ('`backend_D` and `backend_E` not installed. Cannot initialize and run test with backend_3 backend. '
+                'The necessary missing dependencies can be installed using `pip install '
+                'alibi-detect[backend_D backend_E]`.') == str(err.value)

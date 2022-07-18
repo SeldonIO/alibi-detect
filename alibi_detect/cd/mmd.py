@@ -83,7 +83,7 @@ class MMDDrift(DriftConfigMixin):
         BackendValidator(
             backend_options={'tensorflow': ['tensorflow'],
                              'pytorch': ['pytorch']},
-            construct_name='MMDDrift'
+            construct_name=self.__class__.__name__
         ).verify_backend(backend)
 
         kwargs = locals()

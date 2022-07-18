@@ -34,9 +34,9 @@ if has_tensorflow:
 # if has_pytorch:
 #    import torch
 #    SupportedModels_list.append()  # TODO
-# if has_sklearn:
-#    import sklearn
-#    SupportedModels_list.append()  # TODO
+
+# import sklearn
+# SupportedModels_list.append()  # TODO
 # SupportedModels is a tuple of possible models (conditional on installed deps). This is used in isinstance() etc.
 SupportedModels = tuple(SupportedModels_list)
 # SupportedModels_types is a typing Union for use with pydantic. We include all optional deps in here so that they

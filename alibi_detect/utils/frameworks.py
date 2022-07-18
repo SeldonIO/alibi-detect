@@ -1,5 +1,5 @@
 from .missing_optional_dependency import ERROR_TYPES
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Iterable
 
 try:
     import tensorflow as tf  # noqa
@@ -13,21 +13,15 @@ try:
 except ImportError:
     has_pytorch = False
 
-try:
-    import sklearn  # noqa
-    has_sklearn = True
-except ImportError:
-    has_sklearn = False
-
 
 HAS_BACKEND = {
     'tensorflow': has_tensorflow,
-    'sklearn': has_sklearn,
     'pytorch': has_pytorch,
+    'sklearn': True
 }
 
 
-def _iter_to_str(iterable):
+def _iter_to_str(iterable: Iterable[str]) -> str:
     """ Correctly format iterable of items to comma seperated sentence string."""
     items = [f'`{option}`' for option in iterable]
     last_item_str = f'{items[-1]}' if not items[:-1] else f' and {items[-1]}'
@@ -36,7 +30,7 @@ def _iter_to_str(iterable):
 
 class BackendValidator:
     def __init__(self, backend_options: Dict[Optional[str], List[str]], construct_name: str):
-        """Checks for requires sets of backend options.
+        """Checks for required sets of backend options.
 
         Takes a dictionary of backends plus extra dependencies and generates correct error messages if they are unmet.
 
@@ -92,7 +86,8 @@ class BackendValidator:
     def _raise_import_error(self, missing_deps: List[str], backend: str):
         """Raises import error if backend choice has missing dependency."""
 
-        optional_dependencies = set(ERROR_TYPES[missing_dep] for missing_dep in missing_deps)
+        optional_dependencies = list(ERROR_TYPES[missing_dep] for missing_dep in missing_deps)
+        optional_dependencies.sort()
         missing_deps_str = _iter_to_str(missing_deps)
         error_msg = (f'{missing_deps_str} not installed. Cannot initialize and run {self.construct_name} '
                      f'with {backend} backend.')

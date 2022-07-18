@@ -1,12 +1,12 @@
 import numpy as np
 from typing import Callable, Dict, Optional, Union
-from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, has_sklearn, \
+from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, \
     BackendValidator
 from alibi_detect.base import DriftConfigMixin
 
-if has_sklearn:
-    from sklearn.base import ClassifierMixin
-    from alibi_detect.cd.sklearn.classifier import ClassifierDriftSklearn
+
+from sklearn.base import ClassifierMixin
+from alibi_detect.cd.sklearn.classifier import ClassifierDriftSklearn
 
 if has_pytorch:
     from torch.utils.data import DataLoader
@@ -152,7 +152,7 @@ class ClassifierDrift(DriftConfigMixin):
             backend_options={'tensorflow': ['tensorflow'],
                              'pytorch': ['pytorch'],
                              'sklearn': ['sklearn']},
-            construct_name='ClassifierDrift'
+            construct_name=self.__class__.__name__
         ).verify_backend(backend)
 
         kwargs = locals()

@@ -94,7 +94,8 @@ class ContextMMDDrift(DriftConfigMixin):
         backend = backend.lower()
         BackendValidator(backend_options={'tensorflow': ['tensorflow'],
                                           'pytorch': ['pytorch']},
-                         construct_name='ContextMMDDrift').verify_backend(backend)
+                         construct_name=self.__class__.__name__
+        ).verify_backend(backend)
 
         kwargs = locals()
         args = [kwargs['x_ref'], kwargs['c_ref']]
