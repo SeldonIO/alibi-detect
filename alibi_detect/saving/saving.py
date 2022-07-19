@@ -10,13 +10,12 @@ import numpy as np
 import toml
 from transformers import PreTrainedTokenizerBase
 
-from alibi_detect.saving.typing import ALLOWED_DETECTORS, ConfigurableDetector
+from alibi_detect.saving.validate import ALLOWED_DETECTORS
 from alibi_detect.saving.loading import _replace, validate_config
 from alibi_detect.saving.registry import registry
 from alibi_detect.saving.schemas import SupportedModels
 from alibi_detect.saving.tensorflow import save_detector_legacy, save_model_config_tf
-
-from alibi_detect.base import BaseDetector
+from alibi_detect.base import BaseDetector, ConfigurableDetector
 
 # do not extend pickle dispatch table so as not to change pickle behaviour
 dill.extend(use_dill=False)

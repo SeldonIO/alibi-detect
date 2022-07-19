@@ -4,7 +4,7 @@ from alibi_detect.saving import load_detector as _load_detector, save_detector a
 from alibi_detect.base import BaseDetector
 
 from typing import Union
-from alibi_detect.saving.typing import ConfigurableDetector
+from alibi_detect.base import ConfigurableDetector
 import warnings
 import os
 

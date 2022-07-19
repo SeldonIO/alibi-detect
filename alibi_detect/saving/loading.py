@@ -15,8 +15,7 @@ from alibi_detect.saving.registry import registry
 from alibi_detect.saving.tensorflow import load_detector_legacy, load_embedding_tf, load_kernel_config_tf, \
     load_model_tf, load_optimizer_tf, prep_model_and_emb_tf, get_tf_dtype
 from alibi_detect.saving.validate import validate_config
-from alibi_detect.saving.typing import ConfigurableDetector
-from alibi_detect.base import BaseDetector
+from alibi_detect.base import BaseDetector, ConfigurableDetector
 
 if TYPE_CHECKING:
     import tensorflow as tf

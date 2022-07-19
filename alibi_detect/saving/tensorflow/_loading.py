@@ -30,7 +30,7 @@ from alibi_detect.utils.tensorflow.kernels import DeepKernel
 # Below imports are used for legacy loading, and will be removed (or moved to utils/loading.py) in the future
 from alibi_detect.version import __version__
 from alibi_detect.base import BaseDetector
-from alibi_detect.saving.typing import ALLOWED_DETECTORS
+from alibi_detect.saving.validate import ALLOWED_DETECTORS
 
 logger = logging.getLogger(__name__)
 
