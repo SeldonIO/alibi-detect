@@ -178,7 +178,22 @@ class DriftConfigMixin:
 
 
 @runtime_checkable
-class ConfigurableDetector(Protocol):
+class Detector(Protocol):
+    """Type Protocol for all detectors.
+
+    Used for typing legacy save and load functionality in `alibi_detect.saving.tensorflow._saving.py`.
+
+    Note:
+        This exists to distinguish between detectors with and without support for config saving and loading. Once all
+        detector support this then this protocol will be removed.
+    """
+    meta: Dict
+
+    def predict(self): ...
+
+
+@runtime_checkable
+class ConfigurableDetector(Detector, Protocol):
     """Type Protocol for detectors that have support for saving via config.
 
     Used for typing save and load functionality in `alibi_detect.saving.saving.py`.
@@ -187,15 +202,11 @@ class ConfigurableDetector(Protocol):
         This exists to distinguish between detectors with and without support for config saving and loading. Once all
         detector support this then this protocol will be removed.
     """
-    meta: Dict
-
     def get_config(self): ...
 
     def from_config(self): ...
 
     def _set_config(self): ...
-
-    def predict(self): ...
 
 
 class NumpyEncoder(json.JSONEncoder):

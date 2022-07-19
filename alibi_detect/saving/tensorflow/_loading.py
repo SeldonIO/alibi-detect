@@ -27,7 +27,7 @@ from alibi_detect.od.llr import build_model
 from alibi_detect.utils.tensorflow.kernels import DeepKernel
 # Below imports are used for legacy loading, and will be removed (or moved to utils/loading.py) in the future
 from alibi_detect.version import __version__
-from alibi_detect.base import BaseDetector
+from alibi_detect.base import Detector
 from alibi_detect.saving.validate import ALLOWED_DETECTORS
 
 logger = logging.getLogger(__name__)
@@ -179,7 +179,7 @@ def load_embedding(src: str, embedding_type, layers) -> TransformerEmbedding:
 #######################################################################################################
 # TODO: Everything below here is legacy loading code, and will be removed in the future
 #######################################################################################################
-def load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwargs) -> BaseDetector:
+def load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwargs) -> Detector:
     """
     Legacy function to load outlier, drift or adversarial detectors stored dill or pickle files.
 
@@ -233,7 +233,7 @@ def load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwarg
     state_dict = dill.load(open(filepath.joinpath(detector_name + suffix), 'rb'))
 
     # initialize detector
-    detector = None  # type: Optional[BaseDetector]  # to avoid mypy errors
+    detector = None  # type: Optional[Detector]  # to avoid mypy errors
     if detector_name == 'OutlierAE':
         ae = load_tf_ae(filepath)
         detector = init_od_ae(state_dict, ae)
@@ -241,9 +241,9 @@ def load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwarg
         vae = load_tf_vae(filepath, state_dict)
         detector = init_od_vae(state_dict, vae)
     elif detector_name == 'Mahalanobis':
-        detector = init_od_mahalanobis(state_dict)
+        detector = init_od_mahalanobis(state_dict)  # type: ignore[assignment]
     elif detector_name == 'IForest':
-        detector = init_od_iforest(state_dict)
+        detector = init_od_iforest(state_dict)  # type: ignore[assignment]
     elif detector_name == 'OutlierAEGMM':
         aegmm = load_tf_aegmm(filepath, state_dict)
         detector = init_od_aegmm(state_dict, aegmm)
@@ -262,9 +262,9 @@ def load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwarg
         model = load_model(filepath, custom_objects=custom_objects)
         detector = init_ad_md(state_dict, md, model)
     elif detector_name == 'OutlierProphet':
-        detector = init_od_prophet(state_dict)
+        detector = init_od_prophet(state_dict)  # type: ignore[assignment]
     elif detector_name == 'SpectralResidual':
-        detector = init_od_sr(state_dict)
+        detector = init_od_sr(state_dict)  # type: ignore[assignment]
     elif detector_name == 'OutlierSeq2Seq':
         seq2seq = load_tf_s2s(filepath, state_dict)
         detector = init_od_s2s(state_dict, seq2seq)
@@ -290,7 +290,7 @@ def load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwarg
             load_fn = partial(init_cd_classifierdrift, clf_drift)  # type: ignore[assignment]
         else:
             raise NotImplementedError
-        detector = load_fn(state_dict, model, emb, tokenizer, **kwargs)
+        detector = load_fn(state_dict, model, emb, tokenizer, **kwargs)  # type: ignore[assignment]
     elif detector_name == 'LLR':
         models = load_tf_llr(filepath, **kwargs)
         detector = init_od_llr(state_dict, models)
