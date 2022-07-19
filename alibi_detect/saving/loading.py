@@ -15,7 +15,8 @@ from alibi_detect.saving.registry import registry
 from alibi_detect.saving.tensorflow import load_detector_legacy, load_embedding_tf, load_kernel_config_tf, \
     load_model_tf, load_optimizer_tf, prep_model_and_emb_tf, get_tf_dtype
 from alibi_detect.saving.validate import validate_config
-from alibi_detect.saving.typing import ConfigDetector
+from alibi_detect.saving.typing import ConfigurableDetector
+from alibi_detect.base import BaseDetector
 
 if TYPE_CHECKING:
     import tensorflow as tf
@@ -62,7 +63,7 @@ FIELDS_TO_DTYPE = [
 ]
 
 
-def load_detector(filepath: Union[str, os.PathLike], **kwargs) -> ConfigDetector:
+def load_detector(filepath: Union[str, os.PathLike], **kwargs) -> Union[BaseDetector, ConfigurableDetector]:
     """
     Load outlier, drift or adversarial detector.
 
@@ -98,7 +99,7 @@ def load_detector(filepath: Union[str, os.PathLike], **kwargs) -> ConfigDetector
 
 
 # TODO - will eventually become load_detector
-def _load_detector_config(filepath: Union[str, os.PathLike]) -> ConfigDetector:
+def _load_detector_config(filepath: Union[str, os.PathLike]) -> ConfigurableDetector:
     """
     Loads a drift detector specified in a detector config dict. Validation is performed with pydantic.
 
@@ -138,7 +139,7 @@ def _load_detector_config(filepath: Union[str, os.PathLike]) -> ConfigDetector:
     return detector
 
 
-def _init_detector(cfg: dict) -> ConfigDetector:
+def _init_detector(cfg: dict) -> ConfigurableDetector:
     """
     Instantiates a detector from a fully resolved config dictionary.
 

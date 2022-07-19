@@ -1,13 +1,17 @@
 # This submodule provides a link for the legacy alibi_detect.utils.saving location of load_detector and save_detector.
 # TODO: Remove in future
 from alibi_detect.saving import load_detector as _load_detector, save_detector as _save_detector
+from alibi_detect.base import BaseDetector
+
 from typing import Union
-from alibi_detect.saving.typing import ConfigDetector
+from alibi_detect.saving.typing import ConfigurableDetector
 import warnings
 import os
 
 
-def save_detector(detector: ConfigDetector, filepath: Union[str, os.PathLike], legacy: bool = False) -> None:
+def save_detector(
+        detector: Union[BaseDetector, ConfigurableDetector],
+        filepath: Union[str, os.PathLike], legacy: bool = False) -> None:
     """
     Save outlier, drift or adversarial detector.
 
@@ -25,7 +29,7 @@ def save_detector(detector: ConfigDetector, filepath: Union[str, os.PathLike], l
     return _save_detector(detector, filepath, legacy)
 
 
-def load_detector(filepath: Union[str, os.PathLike], **kwargs) -> ConfigDetector:
+def load_detector(filepath: Union[str, os.PathLike], **kwargs) -> Union[BaseDetector, ConfigurableDetector]:
     """
     Load outlier, drift or adversarial detector.
 

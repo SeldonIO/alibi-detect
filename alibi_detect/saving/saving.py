@@ -5,17 +5,18 @@ import warnings
 from functools import partial
 from pathlib import Path
 from typing import Callable, Optional, Tuple, Union
-
 import dill
 import numpy as np
 import toml
 from transformers import PreTrainedTokenizerBase
 
-from alibi_detect.saving.typing import ALLOWED_DETECTORS, ConfigDetector
+from alibi_detect.saving.typing import ALLOWED_DETECTORS, ConfigurableDetector
 from alibi_detect.saving.loading import _replace, validate_config
 from alibi_detect.saving.registry import registry
 from alibi_detect.saving.schemas import SupportedModels
 from alibi_detect.saving.tensorflow import save_detector_legacy, save_model_config_tf
+
+from alibi_detect.base import BaseDetector
 
 # do not extend pickle dispatch table so as not to change pickle behaviour
 dill.extend(use_dill=False)
@@ -26,7 +27,37 @@ X_REF_FILENAME = 'x_ref.npy'
 C_REF_FILENAME = 'c_ref.npy'
 
 
-def save_detector(detector: ConfigDetector, filepath: Union[str, os.PathLike], legacy: bool = False) -> None:
+def _cleanup_filepath(orig_files: set, filepath: Path):
+    """
+    Cleans up the `filepath` directory in the event of a saving failure.
+
+    Parameters
+    ----------
+    orig_files
+        Set of original files (not to delete).
+    filepath
+        The directory to clean up.
+    """
+    # Find new files
+    new_files = set(filepath.iterdir())
+    files_to_rm = new_files - orig_files
+    # Delete new files
+    for file in files_to_rm:
+        if file.is_dir():
+            shutil.rmtree(file)
+        elif file.is_file():
+            file.unlink()
+
+    # Delete filepath directory if it is now empty
+    if filepath is not None:
+        if not any(filepath.iterdir()):
+            filepath.rmdir()
+
+
+def save_detector(
+        detector: Union[BaseDetector, ConfigurableDetector],
+        filepath: Union[str, os.PathLike], legacy: bool = False
+        ) -> None:
     """
     Save outlier, drift or adversarial detector.
 
@@ -60,7 +91,7 @@ def save_detector(detector: ConfigDetector, filepath: Union[str, os.PathLike], l
             filepath.mkdir(parents=True, exist_ok=True)
 
         # If a drift detector, wrap drift detector save method
-        if hasattr(detector, 'get_config') and not legacy:
+        if isinstance(detector, ConfigurableDetector) and not legacy:
             _save_detector_config(detector, filepath)
 
         # Otherwise, save via the previous meta and state_dict approach
@@ -76,35 +107,8 @@ def save_detector(detector: ConfigDetector, filepath: Union[str, os.PathLike], l
     logger.info('finished saving.')
 
 
-def _cleanup_filepath(orig_files: set, filepath: Path):
-    """
-    Cleans up the `filepath` directory in the event of a saving failure.
-
-    Parameters
-    ----------
-    orig_files
-        Set of original files (not to delete).
-    filepath
-        The directory to clean up.
-    """
-    # Find new files
-    new_files = set(filepath.iterdir())
-    files_to_rm = new_files - orig_files
-    # Delete new files
-    for file in files_to_rm:
-        if file.is_dir():
-            shutil.rmtree(file)
-        elif file.is_file():
-            file.unlink()
-
-    # Delete filepath directory if it is now empty
-    if filepath is not None:
-        if not any(filepath.iterdir()):
-            filepath.rmdir()
-
-
 # TODO - eventually this will become save_detector (once outlier and adversarial updated to save via config.toml)
-def _save_detector_config(detector: ConfigDetector, filepath: Union[str, os.PathLike]):
+def _save_detector_config(detector: ConfigurableDetector, filepath: Union[str, os.PathLike]):
     """
     Save a drift detector. The detector is saved as a yaml config file. Artefacts such as
     `preprocess_fn`, models, embeddings, tokenizers etc are serialized, and their filepaths are

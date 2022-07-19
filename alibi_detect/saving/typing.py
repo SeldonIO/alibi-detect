@@ -1,6 +1,13 @@
-from abc import ABC
+"""Typing and validation
 
-from alibi_detect.base import BaseDetector, DriftConfigMixin
+This module contains list of detectors for which save and load functionality is supported. As well as this a
+ConfigDetector class that is used to type the save and load
+
+"""
+
+
+import typing
+from typing import Protocol, Dict
 
 ALLOWED_DETECTORS = [
     'AdversarialAE',
@@ -37,5 +44,9 @@ ALLOWED_DETECTORS = [
 ]
 
 
-class ConfigDetector(BaseDetector, DriftConfigMixin, ABC):
-    pass
+@typing.runtime_checkable
+class ConfigurableDetector(Protocol):
+    meta: Dict
+
+    def get_config(self):
+        ...
