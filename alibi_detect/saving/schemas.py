@@ -56,12 +56,12 @@ def coerce_int2list(value: int) -> List[int]:
 def validate_model(model: Callable, values: dict) -> Callable:
     """Validator to check the model is compatible with the given backend"""
     backend = values['backend']
-    if backend == 'tensorflow':
-        assert isinstance(model, SupportedModels_tf)
-    elif backend == 'pytorch':
-        assert isinstance(model, SupportedModels_torch)
-    elif backend == 'sklearn':
-        assert isinstance(model, SupportedModels_sklearn)
+    if backend == 'tensorflow' and not isinstance(model, SupportedModels_tf):
+        raise ValueError('A TensorFlow backend is not available for this model')
+    elif backend == 'pytorch' and not isinstance(model, SupportedModels_torch):
+        raise ValueError('A PyTorch backend is not available for this model')
+    elif backend == 'sklearn' and not isinstance(model, SupportedModels_sklearn):
+        raise ValueError('A sklearn backend is not available for this model')
     return model
 
 

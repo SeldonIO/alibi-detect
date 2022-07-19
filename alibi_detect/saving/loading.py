@@ -435,7 +435,7 @@ def resolve_config(cfg: dict, config_dir: Optional[Path]) -> dict:
     """
     Resolves artefacts in a config dict. For example x_ref='x_ref.npy' is resolved by loading the np.ndarray from
     the .npy file. For a list of fields that are resolved, see
-    https://docs.seldon.io/projects/alibi-detect/en/latest/overview/config_file.html.
+    https://docs.seldon.io/projects/alibi-detect/en/stable/overview/config_file.html.
 
     Parameters
     ----------
@@ -471,12 +471,11 @@ def resolve_config(cfg: dict, config_dir: Optional[Path]) -> dict:
                     obj = registry.get(src)
                 else:
                     raise ValueError(
-                        "Can't find {} in the custom function registry, It may be misspelled or missing "
+                        f"Can't find {src} in the custom function registry, It may be misspelled or missing "
                         "if you have incorrect optional dependencies installed. Make sure the loading environment"
                         " is the same as the saving environment. For more information, check the Installation "
                         "documentation at "
-                        "https://docs.seldon.io/projects/alibi-detect/en/latest/overview/getting_started.html."
-                        .format(src)
+                        "https://docs.seldon.io/projects/alibi-detect/en/stable/overview/getting_started.html."
                     )
                 logger.info('Successfully resolved registry entry {}'.format(src))
 

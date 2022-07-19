@@ -51,7 +51,7 @@ def save_detector(
 
     # TODO: Replace .__args__ w/ typing.get_args() once Python 3.7 dropped (and remove type ignore below)
     detector_name = detector.__class__.__name__
-    if detector_name not in [detector for detector in ALLOWED_DETECTORS]:  # type: ignore[attr-defined]
+    if detector_name not in [detector for detector in ALLOWED_DETECTORS]:
         raise NotImplementedError(f'{detector_name} is not supported by `save_detector`.')
 
     # Saving is wrapped in a try, with cleanup in except. To prevent a half-saved detector remaining upon error.

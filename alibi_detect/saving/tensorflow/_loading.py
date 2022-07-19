@@ -15,8 +15,6 @@ from alibi_detect.ad import AdversarialAE, ModelDistillation
 from alibi_detect.ad.adversarialae import DenseHidden
 from alibi_detect.cd import (ChiSquareDrift, ClassifierDrift, KSDrift, MMDDrift, TabularDrift)
 from alibi_detect.cd.tensorflow import UAE, HiddenOutput
-# from alibi_detect.cd.tensorflow.classifier import ClassifierDriftTF
-# from alibi_detect.cd.tensorflow.mmd import MMDDriftTF
 from alibi_detect.cd.tensorflow.preprocess import _Encoder
 from alibi_detect.models.tensorflow import PixelCNN, TransformerEmbedding
 from alibi_detect.models.tensorflow.autoencoder import (AE, AEGMM, VAE, VAEGMM,
@@ -228,7 +226,7 @@ def load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwarg
         raise NotImplementedError('Detectors with PyTorch backend are not yet supported.')
 
     detector_name = meta_dict['name']
-    if detector_name not in [detector for detector in ALLOWED_DETECTORS]:  # type: ignore[attr-defined]
+    if detector_name not in [detector for detector in ALLOWED_DETECTORS]:
         raise NotImplementedError(f'{detector_name} is not supported by `load_detector`.')
 
     # load outlier detector specific parameters
