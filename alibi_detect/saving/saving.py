@@ -27,33 +27,6 @@ X_REF_FILENAME = 'x_ref.npy'
 C_REF_FILENAME = 'c_ref.npy'
 
 
-def _cleanup_filepath(orig_files: set, filepath: Path):
-    """
-    Cleans up the `filepath` directory in the event of a saving failure.
-
-    Parameters
-    ----------
-    orig_files
-        Set of original files (not to delete).
-    filepath
-        The directory to clean up.
-    """
-    # Find new files
-    new_files = set(filepath.iterdir())
-    files_to_rm = new_files - orig_files
-    # Delete new files
-    for file in files_to_rm:
-        if file.is_dir():
-            shutil.rmtree(file)
-        elif file.is_file():
-            file.unlink()
-
-    # Delete filepath directory if it is now empty
-    if filepath is not None:
-        if not any(filepath.iterdir()):
-            filepath.rmdir()
-
-
 def save_detector(
         detector: Union[BaseDetector, ConfigurableDetector],
         filepath: Union[str, os.PathLike], legacy: bool = False
@@ -105,6 +78,33 @@ def save_detector(
         raise RuntimeError(f'Saving failed. The save directory {filepath} has been cleaned.') from error
 
     logger.info('finished saving.')
+
+
+def _cleanup_filepath(orig_files: set, filepath: Path):
+    """
+    Cleans up the `filepath` directory in the event of a saving failure.
+
+    Parameters
+    ----------
+    orig_files
+        Set of original files (not to delete).
+    filepath
+        The directory to clean up.
+    """
+    # Find new files
+    new_files = set(filepath.iterdir())
+    files_to_rm = new_files - orig_files
+    # Delete new files
+    for file in files_to_rm:
+        if file.is_dir():
+            shutil.rmtree(file)
+        elif file.is_file():
+            file.unlink()
+
+    # Delete filepath directory if it is now empty
+    if filepath is not None:
+        if not any(filepath.iterdir()):
+            filepath.rmdir()
 
 
 # TODO - eventually this will become save_detector (once outlier and adversarial updated to save via config.toml)
