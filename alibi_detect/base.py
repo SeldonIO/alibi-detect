@@ -189,7 +189,7 @@ class Detector(Protocol):
     """
     meta: Dict
 
-    def predict(self): ...
+    def predict(self) -> Any: ...
 
 
 @runtime_checkable

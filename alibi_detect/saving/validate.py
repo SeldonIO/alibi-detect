@@ -5,41 +5,6 @@ from alibi_detect.saving.schemas import (  # type: ignore[attr-defined]
 from alibi_detect.version import __config_spec__, __version__
 
 
-ALLOWED_DETECTORS = [
-    'AdversarialAE',
-    'ChiSquareDrift',
-    'ClassifierDrift',
-    'IForest',
-    'KSDrift',
-    'LLR',
-    'Mahalanobis',
-    'MMDDrift',
-    'LSDDDrift',
-    'ModelDistillation',
-    'OutlierAE',
-    'OutlierAEGMM',
-    'OutlierProphet',
-    'OutlierSeq2Seq',
-    'OutlierVAE',
-    'OutlierVAEGMM',
-    'SpectralResidual',
-    'TabularDrift',
-    'CVMDrift',
-    'FETDrift',
-    'SpotTheDiffDrift',
-    'ClassifierUncertaintyDrift',
-    'RegressorUncertaintyDrift',
-    'LearnedKernelDrift',
-    'ContextMMDDrift',
-    'MMDDriftTF',  # TODO - remove when legacy loading removed
-    'ClassifierDriftTF',  # TODO - remove when legacy loading removed
-    'MMDDriftOnline',
-    'LSDDDriftOnline',
-    'CVMDriftOnline',
-    'FETDriftOnline'
-]
-
-
 def validate_config(cfg: dict, resolved: bool = False) -> dict:
     """
     Validates a detector config dict by passing the dict to the detector's pydantic model schema.

@@ -63,7 +63,8 @@ setup(
         "pydantic>=1.8.0, <2.0.0",
         "toml>=0.10.1, <1.0.0",  # STC, see https://discuss.python.org/t/adopting-recommending-a-toml-parser/4068
         "catalogue>=2.0.0, <3.0.0",
-        "numba>=0.50.0, !=0.54.0, <0.56.0"  # Avoid 0.54 due to: https://github.com/SeldonIO/alibi/issues/466
+        "numba>=0.50.0, !=0.54.0, <0.56.0",  # Avoid 0.54 due to: https://github.com/SeldonIO/alibi/issues/466
+        "typing-extensions>=3.7.4.3"
     ],
     extras_require=extras_require,
     test_suite="tests",

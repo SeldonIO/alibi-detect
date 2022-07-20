@@ -28,7 +28,7 @@ from alibi_detect.utils.tensorflow.kernels import DeepKernel
 # Below imports are used for legacy loading, and will be removed (or moved to utils/loading.py) in the future
 from alibi_detect.version import __version__
 from alibi_detect.base import Detector
-from alibi_detect.saving.validate import ALLOWED_DETECTORS
+from alibi_detect.saving._typing import VALID_DETECTORS
 
 logger = logging.getLogger(__name__)
 
@@ -226,7 +226,7 @@ def load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwarg
         raise NotImplementedError('Detectors with PyTorch backend are not yet supported.')
 
     detector_name = meta_dict['name']
-    if detector_name not in [detector for detector in ALLOWED_DETECTORS]:
+    if detector_name not in [detector for detector in VALID_DETECTORS]:
         raise NotImplementedError(f'{detector_name} is not supported by `load_detector`.')
 
     # load outlier detector specific parameters

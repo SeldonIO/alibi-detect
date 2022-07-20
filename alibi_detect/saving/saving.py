@@ -10,12 +10,12 @@ import numpy as np
 import toml
 from transformers import PreTrainedTokenizerBase
 
-from alibi_detect.saving.validate import ALLOWED_DETECTORS
+from alibi_detect.saving._typing import VALID_DETECTORS
 from alibi_detect.saving.loading import _replace, validate_config
 from alibi_detect.saving.registry import registry
 from alibi_detect.saving.schemas import SupportedModels
 from alibi_detect.saving.tensorflow import save_detector_legacy, save_model_config_tf
-from alibi_detect.base import BaseDetector, ConfigurableDetector
+from alibi_detect.base import Detector, ConfigurableDetector
 
 # do not extend pickle dispatch table so as not to change pickle behaviour
 dill.extend(use_dill=False)
@@ -27,7 +27,7 @@ C_REF_FILENAME = 'c_ref.npy'
 
 
 def save_detector(
-        detector: Union[BaseDetector, ConfigurableDetector],
+        detector: Union[Detector, ConfigurableDetector],
         filepath: Union[str, os.PathLike], legacy: bool = False
         ) -> None:
     """
@@ -51,7 +51,7 @@ def save_detector(
 
     # TODO: Replace .__args__ w/ typing.get_args() once Python 3.7 dropped (and remove type ignore below)
     detector_name = detector.__class__.__name__
-    if detector_name not in [detector for detector in ALLOWED_DETECTORS]:
+    if detector_name not in [detector for detector in VALID_DETECTORS]:
         raise NotImplementedError(f'{detector_name} is not supported by `save_detector`.')
 
     # Saving is wrapped in a try, with cleanup in except. To prevent a half-saved detector remaining upon error.
