@@ -13,13 +13,8 @@ from transformers import AutoTokenizer
 
 from alibi_detect.ad import AdversarialAE, ModelDistillation
 from alibi_detect.ad.adversarialae import DenseHidden
-from alibi_detect.cd import (ChiSquareDrift, ClassifierDrift, ClassifierUncertaintyDrift, CVMDrift, FETDrift,
-                             KSDrift, LearnedKernelDrift, LSDDDrift, MMDDrift, RegressorUncertaintyDrift,
-                             SpotTheDiffDrift, TabularDrift, ContextMMDDrift, MMDDriftOnline, LSDDDriftOnline,
-                             CVMDriftOnline, FETDriftOnline)
+from alibi_detect.cd import (ChiSquareDrift, ClassifierDrift, KSDrift, MMDDrift, TabularDrift)
 from alibi_detect.cd.tensorflow import UAE, HiddenOutput
-from alibi_detect.cd.tensorflow.classifier import ClassifierDriftTF
-from alibi_detect.cd.tensorflow.mmd import MMDDriftTF
 from alibi_detect.cd.tensorflow.preprocess import _Encoder
 from alibi_detect.models.tensorflow import PixelCNN, TransformerEmbedding
 from alibi_detect.models.tensorflow.autoencoder import (AE, AEGMM, VAE, VAEGMM,
@@ -32,45 +27,10 @@ from alibi_detect.od.llr import build_model
 from alibi_detect.utils.tensorflow.kernels import DeepKernel
 # Below imports are used for legacy loading, and will be removed (or moved to utils/loading.py) in the future
 from alibi_detect.version import __version__
+from alibi_detect.base import Detector
+from alibi_detect.saving._typing import VALID_DETECTORS
 
 logger = logging.getLogger(__name__)
-
-
-# This list is currently defined in here to avoid circular dependency (it is needed in saving/loading.py). Once the
-# legacy loading support is removed, this will be moved to utils/loading.py
-Detector = Union[
-    AdversarialAE,
-    ChiSquareDrift,
-    ClassifierDrift,
-    IForest,
-    KSDrift,
-    LLR,
-    Mahalanobis,
-    MMDDrift,
-    LSDDDrift,
-    ModelDistillation,
-    OutlierAE,
-    OutlierAEGMM,
-    OutlierProphet,
-    OutlierSeq2Seq,
-    OutlierVAE,
-    OutlierVAEGMM,
-    SpectralResidual,
-    TabularDrift,
-    CVMDrift,
-    FETDrift,
-    SpotTheDiffDrift,
-    ClassifierUncertaintyDrift,
-    RegressorUncertaintyDrift,
-    LearnedKernelDrift,
-    ContextMMDDrift,
-    MMDDriftTF,  # TODO - remove when legacy loading removed
-    ClassifierDriftTF,  # TODO - remove when legacy loading removed
-    MMDDriftOnline,
-    LSDDDriftOnline,
-    CVMDriftOnline,
-    FETDriftOnline
-]
 
 
 def load_model(filepath: Union[str, os.PathLike],
@@ -266,7 +226,7 @@ def load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwarg
         raise NotImplementedError('Detectors with PyTorch backend are not yet supported.')
 
     detector_name = meta_dict['name']
-    if detector_name not in [detector.__name__ for detector in Detector.__args__]:  # type: ignore[attr-defined]
+    if detector_name not in [detector for detector in VALID_DETECTORS]:
         raise NotImplementedError(f'{detector_name} is not supported by `load_detector`.')
 
     # load outlier detector specific parameters
@@ -281,9 +241,9 @@ def load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwarg
         vae = load_tf_vae(filepath, state_dict)
         detector = init_od_vae(state_dict, vae)
     elif detector_name == 'Mahalanobis':
-        detector = init_od_mahalanobis(state_dict)
+        detector = init_od_mahalanobis(state_dict)  # type: ignore[assignment]
     elif detector_name == 'IForest':
-        detector = init_od_iforest(state_dict)
+        detector = init_od_iforest(state_dict)  # type: ignore[assignment]
     elif detector_name == 'OutlierAEGMM':
         aegmm = load_tf_aegmm(filepath, state_dict)
         detector = init_od_aegmm(state_dict, aegmm)
@@ -302,9 +262,9 @@ def load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwarg
         model = load_model(filepath, custom_objects=custom_objects)
         detector = init_ad_md(state_dict, md, model)
     elif detector_name == 'OutlierProphet':
-        detector = init_od_prophet(state_dict)
+        detector = init_od_prophet(state_dict)  # type: ignore[assignment]
     elif detector_name == 'SpectralResidual':
-        detector = init_od_sr(state_dict)
+        detector = init_od_sr(state_dict)  # type: ignore[assignment]
     elif detector_name == 'OutlierSeq2Seq':
         seq2seq = load_tf_s2s(filepath, state_dict)
         detector = init_od_s2s(state_dict, seq2seq)
@@ -330,7 +290,7 @@ def load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwarg
             load_fn = partial(init_cd_classifierdrift, clf_drift)  # type: ignore[assignment]
         else:
             raise NotImplementedError
-        detector = load_fn(state_dict, model, emb, tokenizer, **kwargs)
+        detector = load_fn(state_dict, model, emb, tokenizer, **kwargs)  # type: ignore[assignment]
     elif detector_name == 'LLR':
         models = load_tf_llr(filepath, **kwargs)
         detector = init_od_llr(state_dict, models)

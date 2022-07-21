@@ -14,7 +14,7 @@ err_msg_template = Template((
     "Attempted to use $object_name without the correct optional dependencies installed. To install "
     + "the correct optional dependencies, run `pip install alibi-detect[$missing_dependency]` "
     + "from the command line. For more information, check the Installation documentation "
-    + "at https://docs.seldon.io/projects/alibi-detect/en/latest/overview/getting_started.html."
+    + "at https://docs.seldon.io/projects/alibi-detect/en/stable/overview/getting_started.html."
 ))
 
 

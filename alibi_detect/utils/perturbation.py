@@ -1,11 +1,3 @@
-# ###### CHANGED in TF-TFP-TORCH OPTIONAL DEPS PR ####################
-# ###### these comments should be removed prior to PR merge. #########
-# ####################################################################
-#
-# 1. The function `mutate_categorical` has been moved from here to
-# `utils/tensorflow/perturbation.py` to avoid tensorflow optional
-# dependency errors
-
 import random
 from io import BytesIO
 from typing import List, Tuple

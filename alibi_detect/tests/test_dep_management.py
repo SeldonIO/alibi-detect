@@ -188,17 +188,36 @@ def test_fetching_utils_dependencies(opt_dep):
     check_correct_dependencies(fetching, dependency_map, opt_dep)
 
 
-def test_saving_utils_dependencies(opt_dep):
-    """Tests that the saving utils module correctly protects against uninstalled optional dependencies.
+def test_saving_tf_dependencies(opt_dep):
+    """Tests that the alibi_detect.saving.tensorflow module correctly protects against uninstalled optional
+    dependencies.
     """
 
     dependency_map = defaultdict(lambda: ['default'])
     for dependency, relations in [
-        ('load_detector', ['tensorflow']),
-        ('save_detector', ['tensorflow'])
+        ('Detector', ['tensorflow']),
+        ('load_detector_legacy', ['tensorflow']),
+        ('load_embedding_tf', ['tensorflow']),
+        ('load_kernel_config_tf', ['tensorflow']),
+        ('load_model_tf', ['tensorflow']),
+        ('load_optimizer_tf', ['tensorflow']),
+        ('prep_model_and_emb_tf', ['tensorflow']),
+        ('save_detector_legacy', ['tensorflow']),
+        ('save_model_config_tf', ['tensorflow']),
+        ('get_tf_dtype', ['tensorflow'])
     ]:
         dependency_map[dependency] = relations
-    from alibi_detect.utils import saving
+    from alibi_detect.saving import tensorflow as tf_saving
+    check_correct_dependencies(tf_saving, dependency_map, opt_dep)
+
+
+def test_saving_dependencies(opt_dep):
+    """Tests that the alibi_detect.saving module correctly protects against uninstalled optional dependencies."""
+
+    dependency_map = defaultdict(lambda: ['default'])
+    for dependency, relations in []:
+        dependency_map[dependency] = relations
+    from alibi_detect import saving
     check_correct_dependencies(saving, dependency_map, opt_dep)
 
 
