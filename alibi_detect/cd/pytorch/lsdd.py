@@ -3,7 +3,7 @@ import torch
 from typing import Callable, Dict, Optional, Tuple, Union
 from alibi_detect.cd.base import BaseLSDDDrift
 from alibi_detect.utils.pytorch import get_device
-from alibi_detect.utils.pytorch.kernels import GaussianRBF
+from alibi_detect.utils.pytorch.kernels import BaseKernel, GaussianRBF
 from alibi_detect.utils.pytorch.distance import permed_lsdds
 
 
@@ -15,7 +15,8 @@ class LSDDDriftTorch(BaseLSDDDrift):
             preprocess_x_ref: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
-            sigma: Optional[np.ndarray] = None,
+            # sigma: Optional[np.ndarray] = None,
+            kernel: BaseKernel = GaussianRBF(),
             n_permutations: int = 100,
             n_kernel_centers: Optional[int] = None,
             lambda_rd_max: float = 0.2,
@@ -67,7 +68,8 @@ class LSDDDriftTorch(BaseLSDDDrift):
             preprocess_x_ref=preprocess_x_ref,
             update_x_ref=update_x_ref,
             preprocess_fn=preprocess_fn,
-            sigma=sigma,
+            # sigma=sigma,
+            # kernel=kernel,
             n_permutations=n_permutations,
             n_kernel_centers=n_kernel_centers,
             lambda_rd_max=lambda_rd_max,
@@ -83,24 +85,25 @@ class LSDDDriftTorch(BaseLSDDDrift):
         #  in the method signature, so we can't cast it to torch.Tensor unless we change the signature
         #  to also accept torch.Tensor. We also can't redefine it's type as that would involve enabling
         #  --allow-redefinitions in mypy settings (which we might do eventually).
+        self.kernel = kernel
         if self.preprocess_x_ref or self.preprocess_fn is None:
             x_ref = torch.as_tensor(self.x_ref).to(self.device)  # type: ignore[assignment]
             self._configure_normalization(x_ref)  # type: ignore[arg-type]
             x_ref = self._normalize(x_ref)
-            self._initialize_kernel(x_ref)  # type: ignore[arg-type]
+            # self._initialize_kernel(x_ref)  # type: ignore[arg-type]
             self._configure_kernel_centers(x_ref)  # type: ignore[arg-type]
             self.x_ref = x_ref.cpu().numpy()  # type: ignore[union-attr]
             # For stability in high dimensions we don't divide H by (pi*sigma^2)^(d/2)
             # Results in an alternative test-stat of LSDD*(pi*sigma^2)^(d/2). Same p-vals etc.
             self.H = GaussianRBF(np.sqrt(2.) * self.kernel.sigma)(self.kernel_centers, self.kernel_centers)
 
-    def _initialize_kernel(self, x_ref: torch.Tensor):
-        if self.sigma is None:
-            self.kernel = GaussianRBF()
-            _ = self.kernel(x_ref, x_ref, infer_sigma=True)
-        else:
-            sigma = torch.from_numpy(self.sigma)
-            self.kernel = GaussianRBF(sigma)
+    # def _initialize_kernel(self, x_ref: torch.Tensor):
+    #     if self.sigma is None:
+    #         self.kernel = GaussianRBF()
+    #         _ = self.kernel(x_ref, x_ref, infer_sigma=True)
+    #     else:
+    #         sigma = torch.from_numpy(self.sigma)
+    #         self.kernel = GaussianRBF(sigma)
 
     def _configure_normalization(self, x_ref: torch.Tensor, eps: float = 1e-12):
         x_ref_means = x_ref.mean(0)
@@ -140,7 +143,7 @@ class LSDDDriftTorch(BaseLSDDDrift):
         if self.preprocess_fn is not None and self.preprocess_x_ref is False:
             self._configure_normalization(x_ref)  # type: ignore[arg-type]
             x_ref = self._normalize(x_ref)
-            self._initialize_kernel(x_ref)  # type: ignore[arg-type]
+            # self._initialize_kernel(x_ref)  # type: ignore[arg-type]
             self._configure_kernel_centers(x_ref)  # type: ignore[arg-type]
             self.H = GaussianRBF(np.sqrt(2.) * self.kernel.sigma)(self.kernel_centers, self.kernel_centers)
 

@@ -1,6 +1,7 @@
 import numpy as np
 from typing import Any, Callable, Dict, Optional, Union
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
+from alibi_detect.utils.pytorch.kernels import BaseKernel
 
 if has_pytorch:
     from alibi_detect.cd.pytorch.lsdd_online import LSDDDriftOnlineTorch
@@ -17,7 +18,8 @@ class LSDDDriftOnline:
             window_size: int,
             backend: str = 'tensorflow',
             preprocess_fn: Optional[Callable] = None,
-            sigma: Optional[np.ndarray] = None,
+            # sigma: Optional[np.ndarray] = None,
+            kernel: BaseKernel = None,
             n_bootstraps: int = 1000,
             n_kernel_centers: Optional[int] = None,
             lambda_rd_max: float = 0.2,

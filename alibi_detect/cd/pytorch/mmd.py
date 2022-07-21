@@ -5,7 +5,7 @@ from typing import Callable, Dict, Optional, Tuple, Union
 from alibi_detect.cd.base import BaseMMDDrift
 from alibi_detect.utils.pytorch import get_device
 from alibi_detect.utils.pytorch.distance import mmd2_from_kernel_matrix
-from alibi_detect.utils.pytorch.kernels import GaussianRBF
+from alibi_detect.utils.pytorch.kernels import BaseKernel, GaussianRBF
 
 logger = logging.getLogger(__name__)
 
@@ -18,8 +18,9 @@ class MMDDriftTorch(BaseMMDDrift):
             preprocess_x_ref: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
-            kernel: Callable = GaussianRBF,
-            sigma: Optional[np.ndarray] = None,
+            # kernel: Callable = GaussianRBF,
+            kernel: BaseKernel = GaussianRBF(),
+            # sigma: Optional[np.ndarray] = None,
             configure_kernel_from_x_ref: bool = True,
             n_permutations: int = 100,
             device: Optional[str] = None,
@@ -66,7 +67,7 @@ class MMDDriftTorch(BaseMMDDrift):
             preprocess_x_ref=preprocess_x_ref,
             update_x_ref=update_x_ref,
             preprocess_fn=preprocess_fn,
-            sigma=sigma,
+            # sigma=sigma,
             configure_kernel_from_x_ref=configure_kernel_from_x_ref,
             n_permutations=n_permutations,
             input_shape=input_shape,
@@ -78,21 +79,23 @@ class MMDDriftTorch(BaseMMDDrift):
         self.device = get_device(device)
 
         # initialize kernel
-        sigma = torch.from_numpy(sigma).to(self.device) if isinstance(sigma,  # type: ignore[assignment]
-                                                                      np.ndarray) else None
-        self.kernel = kernel(sigma) if kernel == GaussianRBF else kernel
+        # sigma = torch.from_numpy(sigma).to(self.device) if isinstance(sigma,  # type: ignore[assignment]
+        #                                                               np.ndarray) else None
+        # self.kernel = kernel(sigma) if kernel == GaussianRBF else kernel
+        self.kernel = kernel
 
         # compute kernel matrix for the reference data
-        if self.infer_sigma or isinstance(sigma, torch.Tensor):
+        # if self.infer_sigma or isinstance(sigma, torch.Tensor):
+        if self.infer_parameter:
             x = torch.from_numpy(self.x_ref).to(self.device)
-            self.k_xx = self.kernel(x, x, infer_sigma=self.infer_sigma)
-            self.infer_sigma = False
+            self.k_xx = self.kernel(x, x, infer_parameter=self.infer_parameter)
+            self.infer_parameter = False
         else:
-            self.k_xx, self.infer_sigma = None, True
+            self.k_xx, self.infer_parameter = None, True
 
     def kernel_matrix(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         """ Compute and return full kernel matrix between arrays x and y. """
-        k_xy = self.kernel(x, y, self.infer_sigma)
+        k_xy = self.kernel(x, y, self.infer_parameter)
         k_xx = self.k_xx if self.k_xx is not None and self.update_x_ref is None else self.kernel(x, x)
         k_yy = self.kernel(y, y)
         kernel_mat = torch.cat([torch.cat([k_xx, k_xy], 1), torch.cat([k_xy.T, k_yy], 1)], 0)

@@ -2,6 +2,7 @@ import logging
 import numpy as np
 from typing import Callable, Dict, Optional, Union, Tuple
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
+from alibi_detect.utils.pytorch.kernels import BaseKernel
 
 if has_pytorch:
     from alibi_detect.cd.pytorch.context_aware import ContextMMDDriftTorch
@@ -22,8 +23,10 @@ class ContextMMDDrift:
             preprocess_x_ref: bool = True,
             update_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
-            x_kernel: Callable = None,
-            c_kernel: Callable = None,
+            # x_kernel: Callable = None,
+            x_kernel: BaseKernel = None,
+            # c_kernel: Callable = None,
+            c_kernel: BaseKernel = None,
             n_permutations: int = 1000,
             prop_c_held: float = 0.25,
             n_folds: int = 5,
