@@ -2,7 +2,6 @@ from alibi_detect.utils.missing_optional_dependency import import_optional
 
 from .isolationforest import IForest
 from .mahalanobis import Mahalanobis
-from .prophet import OutlierProphet
 from .sr import SpectralResidual
 
 OutlierAEGMM = import_optional('alibi_detect.od.aegmm', names=['OutlierAEGMM'])
