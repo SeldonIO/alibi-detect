@@ -4,7 +4,8 @@ import torch
 from typing import Any, Callable, Optional, Union
 from alibi_detect.cd.base_online import BaseMultiDriftOnline
 from alibi_detect.utils.pytorch import get_device
-from alibi_detect.utils.pytorch import GaussianRBF, permed_lsdds, quantile
+from alibi_detect.utils.pytorch import permed_lsdds, quantile
+from alibi_detect.utils.pytorch.kernels import BaseKernel, GaussianRBF
 from alibi_detect.utils.frameworks import Framework
 from alibi_detect.base import DriftConfigMixin
 
@@ -17,7 +18,8 @@ class LSDDDriftOnlineTorch(BaseMultiDriftOnline, DriftConfigMixin):
             window_size: int,
             preprocess_fn: Optional[Callable] = None,
             x_ref_preprocessed: bool = False,
-            sigma: Optional[np.ndarray] = None,
+            # sigma: Optional[np.ndarray] = None,
+            kernel: BaseKernel = GaussianRBF(),
             n_bootstraps: int = 1000,
             n_kernel_centers: Optional[int] = None,
             lambda_rd_max: float = 0.2,
@@ -94,14 +96,15 @@ class LSDDDriftOnlineTorch(BaseMultiDriftOnline, DriftConfigMixin):
         self._configure_normalization()
 
         # initialize kernel
-        if sigma is None:
-            x_ref = torch.from_numpy(self.x_ref).to(self.device)  # type: ignore[assignment]
-            self.kernel = GaussianRBF()
-            _ = self.kernel(x_ref, x_ref, infer_sigma=True)
-        else:
-            sigma = torch.from_numpy(sigma).to(self.device) if isinstance(sigma,  # type: ignore[assignment]
-                                                                          np.ndarray) else None
-            self.kernel = GaussianRBF(sigma)  # type: ignore[arg-type]
+        # if sigma is None:
+        #     x_ref = torch.from_numpy(self.x_ref).to(self.device)  # type: ignore[assignment]
+        #     self.kernel = GaussianRBF()
+        #     _ = self.kernel(x_ref, x_ref, infer_sigma=True)
+        # else:
+        #     sigma = torch.from_numpy(sigma).to(self.device) if isinstance(sigma,  # type: ignore[assignment]
+        #                                                                   np.ndarray) else None
+        #     self.kernel = GaussianRBF(sigma)  # type: ignore[arg-type]
+        self.kernel = kernel
 
         if self.n_kernel_centers is None:
             self.n_kernel_centers = 2 * window_size

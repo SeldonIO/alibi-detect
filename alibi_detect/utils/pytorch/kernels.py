@@ -121,6 +121,7 @@ class GaussianRBF(BaseKernel):
             self.init_required = False
         self.init_sigma_fn = init_sigma_fn
         self.active_dims = active_dims
+        self.trainable = trainable
 
     @property
     def sigma(self) -> torch.Tensor:
@@ -169,7 +170,7 @@ class GaussianRBF(BaseKernel):
         return cls(**config)
 
 
-class RationalQuadratic(nn.Module):
+class RationalQuadratic(BaseKernel):
     def __init__(
         self,
         alpha: torch.Tensor = None,
@@ -195,10 +196,10 @@ class RationalQuadratic(nn.Module):
         self.parameter_dict['alpha'] = 'exponent'
         self.parameter_dict['sigma'] = 'bandwidth'
         if alpha is None:
-            self.alpha = nn.Parameter(torch.empty(1), requires_grad=trainable)
+            self.raw_alpha = nn.Parameter(torch.empty(1), requires_grad=trainable)
             self.init_required = True
         else:
-            self.alpha = alpha
+            self.raw_alpha = nn.Parameter(alpha, requires_grad=trainable)
             self.init_required = False
         if sigma is None:
             self.log_sigma = nn.Parameter(torch.empty(1), requires_grad=trainable)
@@ -209,6 +210,11 @@ class RationalQuadratic(nn.Module):
         self.init_fn_alpha = init_fn_alpha
         self.init_fn_sigma = init_fn_sigma
         self.active_dims = active_dims
+        self.trainable = trainable
+
+    @property
+    def alpha(self) -> torch.Tensor:
+        return self.raw_alpha
 
     @property
     def sigma(self) -> torch.Tensor:
@@ -221,7 +227,7 @@ class RationalQuadratic(nn.Module):
         return kernel_mat
 
 
-class Periodic(nn.Module):
+class Periodic(BaseKernel):
     def __init__(
         self,
         tau: torch.Tensor = None,
@@ -261,6 +267,7 @@ class Periodic(nn.Module):
         self.init_fn_tau = init_fn_tau
         self.init_fn_sigma = init_fn_sigma
         self.active_dims = active_dims
+        self.trainable = trainable
 
     @property
     def tau(self) -> torch.Tensor:
@@ -278,7 +285,7 @@ class Periodic(nn.Module):
         return kernel_mat
 
 
-class LocalPeriodic(nn.Module):
+class LocalPeriodic(BaseKernel):
     def __init__(
         self,
         tau: torch.Tensor = None,
@@ -318,6 +325,7 @@ class LocalPeriodic(nn.Module):
         self.init_fn_tau = init_fn_tau
         self.init_fn_sigma = init_fn_sigma
         self.active_dims = active_dims
+        self.trainable = trainable
 
     @property
     def tau(self) -> torch.Tensor:

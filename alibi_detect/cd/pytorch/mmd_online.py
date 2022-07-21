@@ -4,7 +4,7 @@ import torch
 from typing import Any, Callable, Optional, Union
 from alibi_detect.cd.base_online import BaseMultiDriftOnline
 from alibi_detect.utils.pytorch import get_device
-from alibi_detect.utils.pytorch.kernels import GaussianRBF
+from alibi_detect.utils.pytorch.kernels import BaseKernel, GaussianRBF
 from alibi_detect.utils.pytorch import zero_diag, quantile
 from alibi_detect.utils.frameworks import Framework
 
@@ -17,8 +17,9 @@ class MMDDriftOnlineTorch(BaseMultiDriftOnline):
             window_size: int,
             preprocess_fn: Optional[Callable] = None,
             x_ref_preprocessed: bool = False,
-            kernel: Callable = GaussianRBF,
-            sigma: Optional[np.ndarray] = None,
+            kernel: BaseKernel = GaussianRBF(),
+            # kernel: Callable = GaussianRBF,
+            # sigma: Optional[np.ndarray] = None,
             n_bootstraps: int = 1000,
             device: Optional[str] = None,
             verbose: bool = True,
@@ -82,13 +83,15 @@ class MMDDriftOnlineTorch(BaseMultiDriftOnline):
         self.device = get_device(device)
 
         # initialize kernel
-        sigma = torch.from_numpy(sigma).to(self.device) if isinstance(sigma,  # type: ignore[assignment]
-                                                                      np.ndarray) else None
-        self.kernel = kernel(sigma) if kernel == GaussianRBF else kernel
+        # sigma = torch.from_numpy(sigma).to(self.device) if isinstance(sigma,  # type: ignore[assignment]
+        #                                                               np.ndarray) else None
+        # self.kernel = kernel(sigma) if kernel == GaussianRBF else kernel
+        self.kernel = kernel
 
         # compute kernel matrix for the reference data
         self.x_ref = torch.from_numpy(self.x_ref).to(self.device)
-        self.k_xx = self.kernel(self.x_ref, self.x_ref, infer_sigma=(sigma is None))
+        # self.k_xx = self.kernel(self.x_ref, self.x_ref, infer_sigma=(sigma is None))
+        self.k_xx = self.kernel(self.x_ref, self.x_ref, infer_parameter=self.kernel.init_required)
 
         self._configure_thresholds()
         self._initialise()
