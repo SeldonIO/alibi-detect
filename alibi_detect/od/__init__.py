@@ -2,7 +2,6 @@ from alibi_detect.utils.missing_optional_dependency import import_optional
 
 from .isolationforest import IForest
 from .mahalanobis import Mahalanobis
-from .prophet import PROPHET_INSTALLED, OutlierProphet
 from .sr import SpectralResidual
 
 OutlierAEGMM = import_optional('alibi_detect.od.aegmm', names=['OutlierAEGMM'])
@@ -11,6 +10,7 @@ OutlierVAE = import_optional('alibi_detect.od.vae', names=['OutlierVAE'])
 OutlierVAEGMM = import_optional('alibi_detect.od.vaegmm', names=['OutlierVAEGMM'])
 OutlierSeq2Seq = import_optional('alibi_detect.od.seq2seq', names=['OutlierSeq2Seq'])
 LLR = import_optional('alibi_detect.od.llr', names=['LLR'])
+OutlierProphet = import_optional('alibi_detect.od.prophet', names=['OutlierProphet'])
 
 __all__ = [
     "OutlierAEGMM",
@@ -21,8 +21,6 @@ __all__ = [
     "OutlierVAEGMM",
     "OutlierSeq2Seq",
     "SpectralResidual",
-    "LLR"
+    "LLR",
+    "OutlierProphet"
 ]
-
-if PROPHET_INSTALLED:
-    __all__ += ["OutlierProphet"]
