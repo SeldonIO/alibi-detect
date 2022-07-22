@@ -7,9 +7,10 @@ from alibi_detect.version import __version__, __config_spec__
 
 DEFAULT_META = {
     "name": None,
-    "detector_type": None,  # online or offline
+    "online": None,  # true or false
     "data_type": None,  # tabular, image or time-series
-    "version": None
+    "version": None,
+    "detector_type": None  # drift, outlier or adversarial
 }  # type: Dict
 
 
@@ -126,6 +127,9 @@ class DriftConfigMixin:
             # Set x_ref_preprocessed flag
             preprocess_at_init = getattr(detector, 'preprocess_at_init', True)  # If no preprocess_at_init, always true!
             cfg['x_ref_preprocessed'] = preprocess_at_init and detector.preprocess_fn is not None
+            # Add in detector metadata
+            cfg['meta'] = self.meta  # type: ignore[attr-defined]
+            cfg['meta']['config_spec'] = __config_spec__
             return cfg
         else:
             raise NotImplementedError('Getting a config (or saving via a config file) is not yet implemented for this'
@@ -151,16 +155,26 @@ class DriftConfigMixin:
         return detector
 
     def _set_config(self, inputs):  # TODO - move to BaseDetector once config save/load implemented for non-drift
+        """
+        Set a detectors `config` attribute upon detector instantiation.
+
+        Large artefacts are overwritten with `None` in order to avoid memory duplication. They're added back into
+        the config later on by `get_config()`. The detector's `meta` attribute is also not added into the config
+        until `get_config()` is called, since `self.meta` is not yet set when `_set_config` is called in detector
+        `__init__` methods.
+
+        Parameters
+        ----------
+        inputs
+            The inputs (args/kwargs) given to the detector at instantiation.
+        """
         # Set config metadata
         name = self.__class__.__name__
 
         # Init config dict
         self.config: Dict[str, Any] = {
             'name': name,
-            'meta': {
-                'version': __version__,
-                'config_spec': __config_spec__,
-            }
+            'meta': {}  # Leave empty and fill from self.meta in get_config()
         }
 
         # args and kwargs

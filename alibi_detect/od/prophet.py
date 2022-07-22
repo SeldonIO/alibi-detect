@@ -117,8 +117,9 @@ class OutlierProphet(BaseDetector, FitMixin):
         self.cap = cap
 
         # set metadata
-        self.meta['detector_type'] = 'offline'
+        self.meta['detector_type'] = 'outlier'
         self.meta['data_type'] = 'time-series'
+        self.meta['online'] = False
 
     def fit(self, df: pd.DataFrame) -> None:
         """

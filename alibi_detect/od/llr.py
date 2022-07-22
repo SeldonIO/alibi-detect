@@ -94,8 +94,9 @@ class LLR(BaseDetector, FitMixin, ThresholdMixin):
             self.dist_b = model_background
 
         # set metadata
-        self.meta['detector_type'] = 'offline'
+        self.meta['detector_type'] = 'outlier'
         self.meta['data_type'] = data_type
+        self.meta['online'] = False
 
     def fit(self,
             X: np.ndarray,

@@ -90,8 +90,9 @@ class BaseMultiDriftOnline(BaseDetector):
         self.input_shape = get_input_shape(input_shape, x_ref)
 
         # set metadata
-        self.meta['detector_type'] = 'online'
+        self.meta['detector_type'] = 'drift'
         self.meta['data_type'] = data_type
+        self.meta['online'] = True
 
     @abstractmethod
     def _configure_thresholds(self):
@@ -273,8 +274,9 @@ class BaseUniDriftOnline(BaseDetector):
         self.input_shape = get_input_shape(input_shape, x_ref)
 
         # set metadata
-        self.meta['detector_type'] = 'online'
+        self.meta['detector_type'] = 'drift'
         self.meta['data_type'] = data_type
+        self.meta['online'] = True
 
     @abstractmethod
     def _configure_thresholds(self):
