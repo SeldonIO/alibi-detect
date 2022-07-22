@@ -1,5 +1,31 @@
 # Change Log
 
+## [v0.10.0](https://github.com/SeldonIO/alibi-detect/tree/v0.10.0) (2022-06-01)
+[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.10.0rc1...v0.10.0)
+
+### Added
+- **New feature** TensorFlow is now an optional dependency. Error messages for incorrect use of detectors that are dependent on missing optional dependencies have been improved to include installation instructions and be more informative.
+
+### Changed
+- The optional dependency work has resulted in some imports being reorganised. This doesn't affect legacy imports as long as the installed dependencies are the same. ([#538](https://github.com/SeldonIO/alibi-detect/pull/538)).
+  - `from alibi_detect.utils.tensorflow.kernels import DeepKernel` -> `from alibi_detect.utils.tensorflow import DeepKernel`
+  - `from alibi_detect.utils.tensorflow.prediction import predict_batch` -> `from alibi_detect.utils.tensorflow import predict_batch`
+  - `from alibi_detect.utils.pytorch.data import TorchDataset` -> `from alibi_detect.utils.pytorch import TorchDataset`
+  - `from alibi_detect.models.pytorch.trainer import trainer` -> `from alibi_detect.models.pytorch import trainer`
+  - `from alibi_detect.models.tensorflow.resnet import scale_by_instance` -> `from alibi_detect.models.tensorflow import scale_by_instance`
+  - `from alibi_detect.models.tensorflow.resnet import scale_by_instance` -> `from alibi_detect.models.tensorflow import scale_by_instance`
+  - `from alibi_detect.utils.pytorch.kernels import DeepKernel` -> `from alibi_detect.utils.pytorch import DeepKernel`
+  - `from alibi_detect.models.tensorflow.autoencoder import eucl_cosim_features` -> `from alibi_detect.models.tensorflow import eucl_cosim_features`
+  - `from alibi_detect.utils.tensorflow.prediction import predict_batch` -> `from alibi_detect.utils.tensorflow import predict_batch`
+  - `from alibi_detect.models.tensorflow.losses import elbo` -> `from alibi_detect.models.tensorflow import elbo`
+  - `from alibi_detect.models import PixelCNN` -> `from alibi_detect.models.tensorflow import PixelCNN`
+  - `from alibi_detect.utils.tensorflow.data import TFDataset` -> `from alibi_detect.utils.tensorflow import TFDataset`
+  - `from alibi_detect.utils.pytorch.data import TorchDataset` -> `from alibi_detect.utils.pytorch import TorchDataset`
+
+### Development
+- Added `MissingDependency` class and `import_optional` for protecting objects that are dependent on optional dependencies ([#537](https://github.com/SeldonIO/alibi-detect/pull/537)).
+- Added `BackendValidator` to factor out similar logic across detectors with backends ([#538](https://github.com/SeldonIO/alibi-detect/pull/538)).
+
 ## [v0.10.0rc1](https://github.com/SeldonIO/alibi-detect/tree/v0.10.0rc1) (2022-06-01)
 [Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.9.1...v0.10.0rc1)
 
