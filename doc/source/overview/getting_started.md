@@ -9,21 +9,84 @@ by following the instructions below.
 ``````{dropdown} Install via PyPI
 
 ```{div} sd-mb-3
-- Alibi Detect can be installed from [PyPI](https://pypi.org/project/alibi-detect/) with `pip`:
+Alibi Detect can be installed from [PyPI](https://pypi.org/project/alibi-detect/) with `pip`. We provide optional 
+dependency buckets for several modules that are large or sometimes tricky to install. Many detectors are supported out 
+of the box with the default install but some detectors require a specific optional dependency installation to use. For 
+instance, the `OutlierProphet` detector requires the prophet installation. Other detectors have a choice of backend. 
+For instance, the `LSDDDrift` detector has a choice of `tensorflow` or `pytorch` backends. The tabs below list the full
+set of detector functionality provided by each optional dependency. 
 ```
+
+___
 
 `````{tab-set}
 
-````{tab-item} Standard
-:sync: label-standard
+````{tab-item} Default
+:sync: label-default
 :class-label: sd-pt-0
 
 ```{div} sd-mb-1
-Installation with default [TensorFlow](https://www.tensorflow.org/) backend.
+Default installation.
 ```
 
 ```bash
 pip install alibi-detect
+```
+
+```{div} sd-mb-1
+The default installation provides out the box support for the following detectors:
+- [ChiSquareDrift](../cd/methods/chisquaredrift.ipynb)
+- [CVMDrift](../cd/methods/cvmdrift.ipynb)
+- [FETDrift](../cd/methods/fetdrift.ipynb)
+- [KSDrift](../cd/methods/ksdrift.ipynb)
+- [TabularDrift](../cd/methods/tabulardrift.ipynb)
+- [Mahalanobis](../od/methods/mahalanobis.ipynb)
+- [SpectralResidual](../od/methods/sr.ipynb)
+```
+````
+
+````{tab-item} Recommended
+:sync: label-recommended
+:class-label: sd-pt-0
+
+```{div} sd-mb-1
+If you are unsure which detector to use, or wish to have access to as many as possible the recommended installation is:
+```
+
+```bash
+pip install alibi-detect[tensorflow,prophet]
+```
+
+```{div} sd-mb-1
+If you would rather use `pytorch` backends then you can use:
+```
+
+```bash
+pip install alibi-detect[torch,prophet]
+```
+
+```{div} sd-mb-1
+However, the following detectors do not have `pytorch` backend support:
+
+- [OutlierAE](../od/methods/ae.ipynb)
+- [OutlierAEGMM](../od/methods/aegmm.ipynb)
+- [LLR](../od/methods/llr.ipynb)
+- [OutlierSeq2Seq](../od/methods/seq2seq.ipynb)
+- [OutlierVAE](../od/methods/vae.ipynb)
+- [OutlierVAEGMM](../od/methods/vaegmm.ipynb)
+- [AdversarialAE](../ad/methods/adversarialae.ipynb)
+- [ModelDistillation](../ad/methods/modeldistillation.ipynb)
+
+Alternatively you can install all the dependencies using (this will include both `tensorflow` and `pytorch`):
+```
+
+```bash
+pip install alibi-detect[all]
+```
+
+```{note}
+If you wish to use the GPU version of PyTorch, or are installing on Windows, it is recommended to 
+[install and test PyTorch](https://pytorch.org/get-started/locally/) prior to installing alibi-detect.
 ```
 ````
 
@@ -32,16 +95,63 @@ pip install alibi-detect
 :class-label: sd-pt-0
 
 ```{div} sd-mb-1
-Installation with [TensorFlow](https://www.tensorflow.org/) and [PyTorch](https://pytorch.org/) backends.
+Installation with [PyTorch](https://pytorch.org/) backend.
 ```
 
 ```bash
 pip install alibi-detect[torch]
 ```
 
+```{div} sd-mb-1
+The PyTorch installation is required to use the PyTorch backend for the following detectors:
+- [ClassifierDrift](../cd/methods/classifierdrift.ipynb)
+- [LearnedKernelDrift](../cd/methods/learnedkerneldrift.ipynb)
+- [LSDDDrift](../cd/methods/lsdddrift.ipynb)
+- [LSDDDriftOnline](../cd/methods/onlinelsdddrift.ipynb)
+- [MMDDrift](../cd/methods/mmddrift.ipynb)
+- [MMDDriftOnline](../cd/methods/onlinemmddrift.ipynb)
+- [SpotTheDiffDrift](../cd/methods/spotthediffdrift.ipynb)
+- [ContextMMDDrift](../cd/methods/contextmmddrift.ipynb)
+```
+
 ```{note}
-If you wish to use the GPU version of PyTorch, or are installing on Windows, it is recommended to [install and test PyTorch](https://pytorch.org/get-started/locally/) 
-prior to installing alibi-detect.
+If you wish to use the GPU version of PyTorch, or are installing on Windows, it is recommended to 
+[install and test PyTorch](https://pytorch.org/get-started/locally/) prior to installing alibi-detect.
+```
+````
+
+````{tab-item} TensorFlow
+:sync: label-tensorflow
+:class-label: sd-pt-0
+
+```{div} sd-mb-1
+Installation with [TensorFlow](https://www.tensorflow.org/) backend.
+```
+
+```bash
+pip install alibi-detect[tensorflow]
+```
+
+```{div} sd-mb-1
+The TensorFlow installation is required to use the TensorFlow backend for the following detectors:
+- [ClassifierDrift](../cd/methods/classifierdrift.ipynb)
+- [LearnedKernelDrift](../cd/methods/learnedkerneldrift.ipynb)
+- [LSDDDrift](../cd/methods/lsdddrift.ipynb)
+- [LSDDDriftOnline](../cd/methods/onlinelsdddrift.ipynb)
+- [MMDDrift](../cd/methods/mmddrift.ipynb)
+- [MMDDriftOnline](../cd/methods/onlinemmddrift.ipynb)
+- [SpotTheDiffDrift](../cd/methods/spotthediffdrift.ipynb)
+- [ContextMMDDrift](../cd/methods/contextmmddrift.ipynb)
+
+The TensorFlow installation is required to use the following detectors:
+- [OutlierAE](../od/methods/ae.ipynb)
+- [OutlierAEGMM](../od/methods/aegmm.ipynb)
+- [LLR](../od/methods/llr.ipynb)
+- [OutlierSeq2Seq](../od/methods/seq2seq.ipynb)
+- [OutlierVAE](../od/methods/vae.ipynb)
+- [OutlierVAEGMM](../od/methods/vaegmm.ipynb)
+- [AdversarialAE](../ad/methods/adversarialae.ipynb)
+- [ModelDistillation](../ad/methods/modeldistillation.ipynb)
 ```
 ````
 
@@ -49,14 +159,17 @@ prior to installing alibi-detect.
 :class-label: sd-pt-0
 
 ```{div} sd-mb-1
-Installation with the [Prophet](../od/methods/prophet.ipynb) time series outlier detector enabled.
+Installation with [Prophet](https://facebook.github.io/prophet/) support.
 ```
 
 ```bash
 pip install alibi-detect[prophet]
 ```
-````
 
+```{div} sd-mb-1
+Provides support for the [OutlierProphet](../od/methods/prophet.ipynb) time series outlier detector.
+```
+````
 `````
 ``````
 
@@ -76,36 +189,9 @@ conda install mamba -n base -c conda-forge
 - `mamba` can then be used to install alibi-detect in a conda enviroment:
 ```
 
-`````{tab-set}
-
-````{tab-item} Standard
-:sync: label-standard
-:class-label: sd-pt-0
-
-Installation with default [TensorFlow](https://www.tensorflow.org/) backend.
-
 ```bash
 mamba install -c conda-forge alibi-detect
 ```
-````
-
-````{tab-item} PyTorch
-:sync: label-torch
-:class-label: sd-pt-0
-
-Installation with [TensorFlow](https://www.tensorflow.org/) and [PyTorch](https://pytorch.org/) backends.
-
-```bash
-mamba install -c conda-forge alibi-detect pytorch
-```
-
-```{note}
-If you wish to use the GPU version of PyTorch, or are installing on Windows, it is recommended to [install and test PyTorch](https://pytorch.org/get-started/locally/) 
-prior to installing alibi-detect.
-```
-````
-
-`````
 ``````
 
 
@@ -114,8 +200,8 @@ prior to installing alibi-detect.
 [Alibi Detect](https://github.com/SeldonIO/alibi-detect) is an open source Python library focused on 
 **outlier**, **adversarial** and **drift** detection. The package aims to cover both 
 online and offline detectors for tabular data, text, images and time series. 
-Both **TensorFlow** and **PyTorch** backends are supported for drift detection. Alibi Detect does however 
-not install PyTorch for you. Check the [PyTorch docs](https://pytorch.org/) how to do this.
+Both **TensorFlow** and **PyTorch** backends are supported for drift detection. Alibi-Detect does not install these as 
+default. See [installation options](#installation) for more details.
 
 To get a list of respectively the latest outlier, adversarial and drift detection algorithms, you can type:
 
@@ -131,7 +217,7 @@ alibi_detect.od.__all__
  'OutlierAE',
  'OutlierVAE',
  'OutlierVAEGMM',
- 'OutlierProphet',  # requires prophet: pip install alibi-detect[prophet]
+ 'OutlierProphet',
  'OutlierSeq2Seq',
  'SpectralResidual',
  'LLR']

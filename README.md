@@ -69,18 +69,21 @@ The package, `alibi-detect` can be installed from:
 ### With pip
 
 - alibi-detect can be installed from [PyPI](https://pypi.org/project/alibi-detect):
-
    ```bash
    pip install alibi-detect
    ```
    
 - Alternatively, the development version can be installed:
-
    ```bash
    pip install git+https://github.com/SeldonIO/alibi-detect.git
    ```
 
-- To install with the PyTorch backend (in addition to the default TensorFlow backend):
+- To install with the tensorflow backend:
+  ```bash
+  pip install alibi-detect[tensorflow]
+  ```
+
+- To install with the PyTorch backend:
   ```bash
   pip install alibi-detect[torch]
   ```
@@ -91,6 +94,7 @@ The package, `alibi-detect` can be installed from:
    pip install alibi-detect[prophet]
    ```
 
+
 ### With conda
 
 To install from [conda-forge](https://conda-forge.org/) it is recommended to use [mamba](https://mamba.readthedocs.io/en/stable/), 
@@ -100,17 +104,12 @@ which can be installed to the *base* conda enviroment with:
 conda install mamba -n base -c conda-forge
 ```
 
-- To install alibi-detect with the default TensorFlow backend:
+To install alibi-detect:
 
-  ```bash
-  mamba install -c conda-forge alibi-detect
-  ```
+```bash
+mamba install -c conda-forge alibi-detect
+```
 
-- To install with the PyTorch backend:
-
-  ```bash
-  mamba install -c conda-forge alibi-detect pytorch
-  ```
 
 ### Usage
 We will use the [VAE outlier detector](https://docs.seldon.io/projects/alibi-detect/en/stable/od/methods/vae.html) to illustrate the API.
@@ -181,8 +180,8 @@ The following tables show the advised use cases for each algorithm. The column *
 
 #### TensorFlow and PyTorch support
 
-The drift detectors support TensorFlow and PyTorch backends. Alibi Detect does however not install PyTorch for you. 
-Check the [PyTorch docs](https://pytorch.org/) how to do this. Example:
+The drift detectors support TensorFlow and PyTorch backends. Alibi Detect does not install these as default. See the 
+[installation options](#installation-and-usage) for more details.
 
 ```python
 from alibi_detect.cd import MMDDrift
