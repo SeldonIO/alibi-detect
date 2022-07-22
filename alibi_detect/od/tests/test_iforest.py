@@ -24,8 +24,8 @@ def test_isolation_forest(iforest_params):
     X, y = load_iris(return_X_y=True)
     iforest = IForest(threshold)
     assert iforest.threshold == threshold
-    assert iforest.meta == {'name': 'IForest', 'detector_type': 'offline', 'data_type': 'tabular',
-                            'version': __version__}
+    assert iforest.meta == {'name': 'IForest', 'detector_type': 'outlier', 'data_type': 'tabular',
+                            'online': False, 'version': __version__}
     iforest.fit(X)
     iforest.infer_threshold(X, threshold_perc=threshold_perc)
     iscore = iforest.score(X)

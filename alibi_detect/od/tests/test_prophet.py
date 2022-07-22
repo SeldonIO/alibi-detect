@@ -40,8 +40,8 @@ def test_prophet(prophet_params):
     growth, return_instance_score, return_forecast = prophet_params
     od = OutlierProphet(growth=growth)
     assert isinstance(od.model, fbprophet.forecaster.Prophet)
-    assert od.meta == {'name': 'OutlierProphet', 'detector_type': 'offline', 'data_type': 'time-series',
-                       'version': __version__}
+    assert od.meta == {'name': 'OutlierProphet', 'detector_type': 'outlier', 'data_type': 'time-series',
+                       'online': False, 'version': __version__}
     if growth == 'logistic':
         df_fit['cap'] = 10.
         df_test['cap'] = 10.

@@ -70,7 +70,8 @@ def test_aegmm(aegmm_params):
     )
 
     assert aegmm.threshold == threshold
-    assert aegmm.meta == {'name': 'OutlierAEGMM', 'detector_type': 'offline', 'data_type': None, 'version': __version__}
+    assert aegmm.meta == {'name': 'OutlierAEGMM', 'detector_type': 'outlier', 'data_type': None,
+                          'online': False, 'version': __version__}
 
     # fit OutlierAEGMM, infer threshold and compute scores
     aegmm.fit(X, w_energy=w_energy, epochs=5, batch_size=1000, verbose=False)
