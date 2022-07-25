@@ -1,20 +1,36 @@
 import logging
 import os
-from urllib.parse import urljoin, quote_plus
-from pathlib import Path
-import dill
-import tensorflow as tf
-from tensorflow.python.keras import backend
-from typing import Tuple, Union, List
 from io import BytesIO
+from pathlib import Path
+from typing import Union, TYPE_CHECKING, Tuple
+import dill
+
 import requests
 from requests import RequestException
-from alibi_detect.base import BaseDetector
-from alibi_detect.ad import AdversarialAE, ModelDistillation
+
+import tensorflow as tf
+from tensorflow.python.keras import backend
+
 from alibi_detect.models.tensorflow import PixelCNN
-from alibi_detect.od import (IForest, LLR, Mahalanobis, OutlierAE, OutlierAEGMM, OutlierProphet,
-                             OutlierSeq2Seq, OutlierVAE, OutlierVAEGMM, SpectralResidual)
 from alibi_detect.saving import load_detector
+
+if TYPE_CHECKING:
+    # Import the true objects directly for typechecking. (See note in CONTRIBUTING.md in Optional Dependencies section)
+    from alibi_detect.ad.adversarialae import AdversarialAE  # noqa
+    from alibi_detect.ad.model_distillation import ModelDistillation  # noqa
+    from alibi_detect.base import BaseDetector  # noqa
+    from alibi_detect.od.llr import LLR  # noqa
+    from alibi_detect.od.isolationforest import IForest  # noqa
+    from alibi_detect.od.mahalanobis import Mahalanobis  # noqa
+    from alibi_detect.od.aegmm import OutlierAEGMM  # noqa
+    from alibi_detect.od.ae import OutlierAE  # noqa
+    from alibi_detect.od.prophet import OutlierProphet  # noqa
+    from alibi_detect.od.seq2seq import OutlierSeq2Seq  # noqa
+    from alibi_detect.od.vae import OutlierVAE  # noqa
+    from alibi_detect.od.vaegmm import OutlierVAEGMM  # noqa
+    from alibi_detect.od.sr import SpectralResidual  # noqa
+
+from alibi_detect.utils.url import _join_url
 
 # do not extend pickle dispatch table so as not to change pickle behaviour
 dill.extend(use_dill=False)
@@ -22,19 +38,19 @@ dill.extend(use_dill=False)
 logger = logging.getLogger(__name__)
 
 Data = Union[
-    BaseDetector,
-    AdversarialAE,
-    ModelDistillation,
-    IForest,
-    LLR,
-    Mahalanobis,
-    OutlierAEGMM,
-    OutlierAE,
-    OutlierProphet,
-    OutlierSeq2Seq,
-    OutlierVAE,
-    OutlierVAEGMM,
-    SpectralResidual
+    'BaseDetector',
+    'AdversarialAE',
+    'ModelDistillation',
+    'IForest',
+    'LLR',
+    'Mahalanobis',
+    'OutlierAEGMM',
+    'OutlierAE',
+    'OutlierProphet',
+    'OutlierSeq2Seq',
+    'OutlierVAE',
+    'OutlierVAEGMM',
+    'SpectralResidual'
 ]
 
 """Number of seconds to wait for URL requests before raising an error."""
@@ -516,26 +532,3 @@ def fetch_detector(filepath: Union[str, os.PathLike],
     detector = load_detector(filepath, **kwargs)
     return detector  # type: ignore[return-value] # load_detector returns drift detectors but `Data` doesn't inc. them
     # TODO - above type ignore can be removed once all detectors use the config based approach.
-
-
-def _join_url(base: str, parts: Union[str, List[str]]) -> str:
-    """
-    Constructs a full (“absolute”) URL by combining a “base URL” (base) with additional relative URL parts.
-    The behaviour is similar to os.path.join() on linux, but also behaves consistently on Windows.
-
-    Parameters
-    ----------
-    base
-        The base URL, e.g. `'https://mysite.com/'`.
-    parts
-        Part to append, or list of parts to append e.g. `['/dir1/', 'dir2', 'dir3']`.
-
-    Returns
-    -------
-    The joined url e.g. `https://mysite.com/dir1/dir2/dir3`.
-    """
-    parts = [parts] if isinstance(parts, str) else parts
-    if len(parts) == 0:
-        raise TypeError("The `parts` argument must contain at least one item.")
-    url = urljoin(base + "/", "/".join(quote_plus(part.strip(r"\/"), safe="/") for part in parts))
-    return url

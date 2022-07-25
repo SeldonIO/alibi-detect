@@ -1,10 +1,4 @@
-try:
-    from fbprophet import Prophet
-
-    PROPHET_INSTALLED = True
-except ImportError:
-    PROPHET_INSTALLED = False
-
+from fbprophet import Prophet
 import logging
 import pandas as pd
 from typing import Dict, List, Union

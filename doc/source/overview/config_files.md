@@ -328,8 +328,8 @@ which allows models, tokenizers and embeddings to be easily specified for prepro
 
 This example presents a configuration for the {class}`~alibi_detect.cd.MMDDrift` detector used in
 [Text drift detection on IMDB movie reviews](../examples/cd_text_imdb.ipynb). The detector will pass the input text 
-data through a `preprocess_fn` step consisting of a `tokenizer`, `embedding` and `model`. A
-[Untrained AutoEncoder (UAE)](https://docs.seldon.io/projects/alibi-detect/en/latest/api/alibi_detect.cd.tensorflow.html?highlight=uae#alibi_detect.cd.tensorflow.UAE)
+data through a `preprocess_fn` step consisting of a `tokenizer`, `embedding` and `model`. An
+[Untrained AutoEncoder (UAE)](https://docs.seldon.io/projects/alibi-detect/en/stable/api/alibi_detect.cd.tensorflow.html?highlight=uae#alibi_detect.cd.tensorflow.UAE)
 model is included in order to reduce the dimensionality of the embedding space, which consists of a 768-dimensional 
 vector for each instance.
 

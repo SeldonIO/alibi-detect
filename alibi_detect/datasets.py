@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 import requests
 from alibi_detect.utils.data import Bunch
-from alibi_detect.utils.fetching import _join_url
+from alibi_detect.utils.url import _join_url
 from requests import RequestException
 from scipy.io import arff
 from sklearn.datasets import fetch_kddcup99
