@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf
 from typing import Callable, Dict, Optional, Tuple, Union
 from alibi_detect.cd.base import BaseLSDDDrift
-from alibi_detect.utils.tensorflow.kernels import GaussianRBF
+from alibi_detect.utils.tensorflow.kernels import BaseKernel, GaussianRBF
 from alibi_detect.utils.tensorflow.distance import permed_lsdds
 from alibi_detect.utils.warnings import deprecated_alias
 from alibi_detect.utils.frameworks import Framework
@@ -18,7 +18,8 @@ class LSDDDriftTF(BaseLSDDDrift):
             preprocess_at_init: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
-            sigma: Optional[np.ndarray] = None,
+            # sigma: Optional[np.ndarray] = None,
+            kernel: BaseKernel = GaussianRBF(),
             n_permutations: int = 100,
             n_kernel_centers: Optional[int] = None,
             lambda_rd_max: float = 0.2,
@@ -72,7 +73,7 @@ class LSDDDriftTF(BaseLSDDDrift):
             preprocess_at_init=preprocess_at_init,
             update_x_ref=update_x_ref,
             preprocess_fn=preprocess_fn,
-            sigma=sigma,
+            # sigma=sigma,
             n_permutations=n_permutations,
             n_kernel_centers=n_kernel_centers,
             lambda_rd_max=lambda_rd_max,
@@ -81,24 +82,25 @@ class LSDDDriftTF(BaseLSDDDrift):
         )
         self.meta.update({'backend': Framework.TENSORFLOW.value})
 
+        self.kernel = kernel
         if self.preprocess_at_init or self.preprocess_fn is None or self.x_ref_preprocessed:
             x_ref = tf.convert_to_tensor(self.x_ref)
             self._configure_normalization(x_ref)
             x_ref = self._normalize(x_ref)
-            self._initialize_kernel(x_ref)
+            # self._initialize_kernel(x_ref)
             self._configure_kernel_centers(x_ref)
             self.x_ref = x_ref.numpy()  # type: ignore[union-attr]
             # For stability in high dimensions we don't divide H by (pi*sigma^2)^(d/2)
             # Results in an alternative test-stat of LSDD*(pi*sigma^2)^(d/2). Same p-vals etc.
             self.H = GaussianRBF(np.sqrt(2.) * self.kernel.sigma)(self.kernel_centers, self.kernel_centers)
 
-    def _initialize_kernel(self, x_ref: tf.Tensor):
-        if self.sigma is None:
-            self.kernel = GaussianRBF()
-            _ = self.kernel(x_ref, x_ref, infer_sigma=True)
-        else:
-            sigma = tf.convert_to_tensor(self.sigma)
-            self.kernel = GaussianRBF(sigma)
+    # def _initialize_kernel(self, x_ref: tf.Tensor):
+    #     if self.sigma is None:
+    #         self.kernel = GaussianRBF()
+    #         _ = self.kernel(x_ref, x_ref, infer_sigma=True)
+    #     else:
+    #         sigma = tf.convert_to_tensor(self.sigma)
+    #         self.kernel = GaussianRBF(sigma)
 
     def _configure_normalization(self, x_ref: tf.Tensor, eps: float = 1e-12):
         x_ref_means = tf.reduce_mean(x_ref, axis=0)
@@ -137,7 +139,7 @@ class LSDDDriftTF(BaseLSDDDrift):
         if self.preprocess_fn is not None and not self.preprocess_at_init and not self.x_ref_preprocessed:
             self._configure_normalization(x_ref)
             x_ref = self._normalize(x_ref)
-            self._initialize_kernel(x_ref)
+            # self._initialize_kernel(x_ref)
             self._configure_kernel_centers(x_ref)
             self.H = GaussianRBF(np.sqrt(2.) * self.kernel.sigma)(self.kernel_centers, self.kernel_centers)
 

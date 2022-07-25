@@ -30,12 +30,66 @@ def sigma_median(x: tf.Tensor, y: tf.Tensor, dist: tf.Tensor) -> tf.Tensor:
     return sigma
 
 
-class GaussianRBF(tf.keras.Model):
+class BaseKernel(tf.keras.Model):
+    """_summary_
+    The base class for all kernels.
+    Args:
+        nn (_type_): _description_
+    """
+    def __init__(self) -> None:
+        super().__init__()
+        self.parameter_dict: dict = {}
+        self.active_dims: Optional[list] = None
+
+    def call(self, x: tf.Tensor, y: tf.Tensor, infer_parameter: bool = False) -> tf.Tensor:
+        return NotImplementedError
+
+
+class SumKernel(tf.keras.Model):
+    """
+    Construct a kernel by summing two kernels.
+    Args:
+        nn (_type_): _description_
+    """
+    def __init__(
+        self,
+        kernel_a: BaseKernel,
+        kernel_b: BaseKernel
+    ) -> None:
+        super().__init__()
+        self.kernel_a = kernel_a
+        self.kernel_b = kernel_b
+
+    def call(self, x: tf.Tensor, y: tf.Tensor, infer_parameter: bool = False) -> tf.Tensor:
+        return self.kernel_a(x, y, infer_parameter) + self.kernel_b(x, y, infer_parameter)
+
+
+class ProductKernel(tf.keras.Model):
+    """
+    Construct a kernel by multiplying two kernels.
+    Args:
+        nn (_type_): _description_
+    """
+    def __init__(
+        self,
+        kernel_a: BaseKernel,
+        kernel_b: BaseKernel
+    ) -> None:
+        super().__init__()
+        self.kernel_a = kernel_a
+        self.kernel_b = kernel_b
+
+    def call(self, x: tf.Tensor, y: tf.Tensor, infer_parameter: bool = False) -> tf.Tensor:
+        return self.kernel_a(x, y, infer_parameter) * self.kernel_b(x, y, infer_parameter)
+
+
+class GaussianRBF(BaseKernel):
     def __init__(
             self,
             sigma: Optional[tf.Tensor] = None,
-            init_sigma_fn: Optional[Callable] = None,
-            trainable: bool = False
+            init_fn_sigma: Optional[Callable] = None,
+            trainable: bool = False,
+            active_dims: Optional[list] = None
     ) -> None:
         """
         Gaussian RBF kernel: k(x,y) = exp(-(1/(2*sigma^2)||x-y||^2). A forward pass takes
@@ -56,8 +110,9 @@ class GaussianRBF(tf.keras.Model):
             Whether or not to track gradients w.r.t. sigma to allow it to be trained.
         """
         super().__init__()
-        init_sigma_fn = sigma_median if init_sigma_fn is None else init_sigma_fn
-        self.config = {'sigma': sigma, 'trainable': trainable, 'init_sigma_fn': init_sigma_fn}
+        init_fn_sigma = sigma_median if init_fn_sigma is None else init_fn_sigma
+        self.config = {'sigma': sigma, 'trainable': trainable, 'init_sigma_fn': init_fn_sigma}
+        self.parameter_dict['sigma'] = 'bandwidth'
         if sigma is None:
             self.log_sigma = tf.Variable(np.empty(1), dtype=tf.keras.backend.floatx(), trainable=trainable)
             self.init_required = True
@@ -65,22 +120,23 @@ class GaussianRBF(tf.keras.Model):
             sigma = tf.cast(tf.reshape(sigma, (-1,)), dtype=tf.keras.backend.floatx())  # [Ns,]
             self.log_sigma = tf.Variable(tf.math.log(sigma), trainable=trainable)
             self.init_required = False
-        self.init_sigma_fn = init_sigma_fn
+        self.init_fn_sigma = init_fn_sigma
+        self.active_dims = active_dims
         self.trainable = trainable
 
     @property
     def sigma(self) -> tf.Tensor:
         return tf.math.exp(self.log_sigma)
 
-    def call(self, x: tf.Tensor, y: tf.Tensor, infer_sigma: bool = False) -> tf.Tensor:
+    def call(self, x: tf.Tensor, y: tf.Tensor, infer_parameter: bool = False) -> tf.Tensor:
         y = tf.cast(y, x.dtype)
         x, y = tf.reshape(x, (x.shape[0], -1)), tf.reshape(y, (y.shape[0], -1))  # flatten
         dist = distance.squared_pairwise_distance(x, y)  # [Nx, Ny]
 
-        if infer_sigma or self.init_required:
-            if self.trainable and infer_sigma:
+        if infer_parameter or self.init_required:
+            if self.trainable and infer_parameter:
                 raise ValueError("Gradients cannot be computed w.r.t. an inferred sigma value")
-            sigma = self.init_sigma_fn(x, y, dist)
+            sigma = self.init_fn_sigma(x, y, dist)
             self.log_sigma.assign(tf.math.log(sigma))
             self.init_required = False
 
@@ -111,6 +167,217 @@ class GaussianRBF(tf.keras.Model):
         """
         config.pop('flavour')
         return cls(**config)
+
+
+class RationalQuadratic(BaseKernel):
+    def __init__(
+        self,
+        alpha: tf.Tensor = None,
+        init_fn_alpha: Callable = None,
+        sigma: tf.Tensor = None,
+        init_fn_sigma: Callable = None,
+        trainable: bool = False,
+        active_dims: Optional[list] = None
+    ) -> None:
+        """
+        Rational Quadratic kernel: k(x,y) = (1 + ||x-y||^2 / (2*sigma^2))^(-alpha).
+        A forward pass takesa batch of instances x [Nx, features] and y [Ny, features]
+        and returns the kernel matrix [Nx, Ny].
+
+        Parameters
+        ----------
+        alpha
+            Exponent parameter of the kernel.
+        sigma
+            Bandwidth used for the kernel.
+        """
+        super().__init__()
+        self.parameter_dict['alpha'] = 'exponent'
+        self.parameter_dict['sigma'] = 'bandwidth'
+        if alpha is None:
+            self.raw_alpha = tf.Variable(np.ones(1), dtype=tf.keras.backend.floatx(), trainable=trainable)
+            self.init_required = True
+        else:
+            self.raw_alpha = tf.cast(tf.reshape(alpha, (-1,)), dtype=tf.keras.backend.floatx())
+            self.init_required = False
+        if sigma is None:
+            self.log_sigma = tf.Variable(np.empty(1), dtype=tf.keras.backend.floatx(), trainable=trainable)
+            self.init_required = True
+        else:
+            sigma = tf.cast(tf.reshape(sigma, (-1,)), dtype=tf.keras.backend.floatx())  # [Ns,]
+            self.log_sigma = tf.Variable(tf.math.log(sigma), trainable=trainable)
+            self.init_required = False
+        self.init_fn_alpha = init_fn_alpha
+        self.init_fn_sigma = init_fn_sigma
+        self.active_dims = active_dims
+        self.trainable = trainable
+
+    @property
+    def sigma(self) -> tf.Tensor:
+        return tf.math.exp(self.log_sigma)
+
+    @property
+    def alpha(self) -> tf.Tensor:
+        return self.raw_alpha
+
+    def call(self, x: tf.Tensor, y: tf.Tensor, infer_parameter: bool = False) -> tf.Tensor:
+        y = tf.cast(y, x.dtype)
+        x, y = tf.reshape(x, (x.shape[0], -1)), tf.reshape(y, (y.shape[0], -1))
+        dist = distance.squared_pairwise_distance(x, y)
+
+        if infer_parameter or self.init_required:
+            if self.trainable and infer_parameter:
+                raise ValueError("Gradients cannot be computed w.r.t. an inferred sigma value")
+            sigma = self.init_fn_sigma(x, y, dist)
+            self.log_sigma.assign(tf.math.log(sigma))
+            alpha = self.init_fn_alpha(x, y, dist)
+            self.raw_alpha.assign(alpha)
+
+        kernel_mat = (1 + tf.square(dist) / (2 * self.alpha * (self.sigma ** 2))) ** (-self.alpha)
+        return kernel_mat
+
+
+class Periodic(BaseKernel):
+    def __init__(
+        self,
+        tau: tf.Tensor = None,
+        init_fn_tau: Callable = None,
+        sigma: tf.Tensor = None,
+        init_fn_sigma: Callable = None,
+        trainable: bool = False,
+        active_dims: Optional[list] = None
+    ) -> None:
+        """
+        Periodic kernel: k(x,y) = .
+        A forward pass takesa batch of instances x [Nx, features] and y [Ny, features]
+        and returns the kernel matrix [Nx, Ny].
+
+        Parameters
+        ----------
+        tau
+            Period of the periodic kernel.
+        sigma
+            Bandwidth used for the kernel.
+        """
+        super().__init__()
+        self.parameter_dict['tau'] = 'period'
+        self.parameter_dict['sigma'] = 'bandwidth'
+        if tau is None:
+            self.log_tau = tf.Variable(np.empty(1), requires_grad=trainable)
+            self.init_required = True
+        else:
+            tau = tf.cast(tf.reshape(tau, (-1,)), dtype=tf.keras.backend.floatx())
+            self.log_tau = tf.Variable(tf.log(tau), requires_grad=trainable)
+            self.init_required = False
+        if sigma is None:
+            self.log_sigma = tf.Variable(np.empty(1), dtype=tf.keras.backend.floatx(), trainable=trainable)
+            self.init_required = True
+        else:
+            sigma = tf.cast(tf.reshape(sigma, (-1,)), dtype=tf.keras.backend.floatx())  # [Ns,]
+            self.log_sigma = tf.Variable(tf.math.log(sigma), trainable=trainable)
+            self.init_required = False
+        self.init_fn_tau = init_fn_tau
+        self.init_fn_sigma = init_fn_sigma
+        self.active_dims = active_dims
+        self.trainable = trainable
+
+    @property
+    def tau(self) -> tf.Tensor:
+        return tf.math.exp(self.log_tau)
+
+    @property
+    def sigma(self) -> tf.Tensor:
+        return tf.math.exp(self.log_sigma)
+
+    def call(self, x: tf.Tensor, y: tf.Tensor, infer_parameter: bool = False) -> tf.Tensor:
+        y = tf.cast(y, x.dtype)
+        x, y = tf.reshape(x, (x.shape[0], -1)), tf.reshape(y, (y.shape[0], -1))
+        dist = distance.squared_pairwise_distance(x, y)
+
+        if infer_parameter or self.init_required:
+            if self.trainable and infer_parameter:
+                raise ValueError("Gradients cannot be computed w.r.t. an inferred sigma value")
+            sigma = self.init_fn_sigma(x, y, dist)
+            self.log_sigma.assign(tf.math.log(sigma))
+            tau = self.init_fn_tau(x, y, dist)
+            self.log_tau.assign(tf.math.log(tau))
+
+        kernel_mat = tf.math.exp(-2 * tf.square(
+            tf.math.sin(tf.cast(np.pi, x.dtype) * dist / self.tau)) / (self.sigma ** 2))
+
+        return kernel_mat
+
+
+class LocalPeriodic(BaseKernel):
+    def __init__(
+        self,
+        tau: tf.Tensor = None,
+        init_fn_tau: Callable = None,
+        sigma: tf.Tensor = None,
+        init_fn_sigma: Callable = None,
+        trainable: bool = False,
+        active_dims: Optional[list] = None
+    ) -> None:
+        """
+        Local periodic kernel: k(x,y) = .
+        A forward pass takesa batch of instances x [Nx, features] and y [Ny, features]
+        and returns the kernel matrix [Nx, Ny].
+
+        Parameters
+        ----------
+        tau
+            Period of the periodic kernel.
+        sigma
+            Bandwidth used for the kernel.
+        """
+        super().__init__()
+        self.parameter_dict['tau'] = 'period'
+        self.parameter_dict['sigma'] = 'bandwidth'
+        if tau is None:
+            self.log_tau = tf.Variable(np.empty(1), requires_grad=trainable)
+            self.init_required = True
+        else:
+            tau = tf.cast(tf.reshape(tau, (-1,)), dtype=tf.keras.backend.floatx())
+            self.log_tau = tf.Variable(tf.log(tau), requires_grad=trainable)
+            self.init_required = False
+        if sigma is None:
+            self.log_sigma = tf.Variable(np.empty(1), dtype=tf.keras.backend.floatx(), trainable=trainable)
+            self.init_required = True
+        else:
+            sigma = tf.cast(tf.reshape(sigma, (-1,)), dtype=tf.keras.backend.floatx())  # [Ns,]
+            self.log_sigma = tf.Variable(tf.math.log(sigma), trainable=trainable)
+            self.init_required = False
+        self.init_fn_tau = init_fn_tau
+        self.init_fn_sigma = init_fn_sigma
+        self.active_dims = active_dims
+        self.trainable = trainable
+
+    @property
+    def tau(self) -> tf.Tensor:
+        return tf.math.exp(self.log_tau)
+
+    @property
+    def sigma(self) -> tf.Tensor:
+        return tf.math.exp(self.log_sigma)
+
+    def call(self, x: tf.Tensor, y: tf.Tensor, infer_parameter: bool = False) -> tf.Tensor:
+        y = tf.cast(y, x.dtype)
+        x, y = tf.reshape(x, (x.shape[0], -1)), tf.reshape(y, (y.shape[0], -1))
+        dist = distance.squared_pairwise_distance(x, y)
+
+        if infer_parameter or self.init_required:
+            if self.trainable and infer_parameter:
+                raise ValueError("Gradients cannot be computed w.r.t. an inferred sigma value")
+            sigma = self.init_fn_sigma(x, y, dist)
+            self.log_sigma.assign(tf.math.log(sigma))
+            tau = self.init_fn_tau(x, y, dist)
+            self.log_tau.assign(tf.math.log(tau))
+
+        kernel_mat = tf.math.exp(-2 * tf.square(
+            tf.math.sin(tf.cast(np.pi, x.dtype) * dist / self.tau)) / (self.sigma ** 2)) * \
+            tf.math.exp(-0.5 * tf.square(dist / self.tau))
+
+        return kernel_mat
 
 
 class DeepKernel(tf.keras.Model):

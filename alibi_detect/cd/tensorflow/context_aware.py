@@ -4,13 +4,36 @@ import tensorflow as tf
 import tensorflow_probability as tfp
 from typing import Callable, Dict, Optional, Tuple, Union, List
 from alibi_detect.cd.base import BaseContextMMDDrift
-from alibi_detect.utils.tensorflow.kernels import GaussianRBF
+from alibi_detect.utils.tensorflow.kernels import GaussianRBF, BaseKernel
 from alibi_detect.utils.warnings import deprecated_alias
 from alibi_detect.utils.frameworks import Framework
 from alibi_detect.cd._domain_clf import _SVCDomainClf
 from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
+
+
+def _sigma_median_diag(x: tf.Tensor, y: tf.Tensor, dist: tf.Tensor) -> tf.Tensor:
+    """
+    Private version of the bandwidth estimation function :py:func:`~alibi_detect.utils.tensorflow.kernels.sigma_median`,
+    with the +n (and -1) term excluded to account for the diagonal of the kernel matrix.
+
+    Parameters
+    ----------
+    x
+        Tensor of instances with dimension [Nx, features].
+    y
+        Tensor of instances with dimension [Ny, features].
+    dist
+        Tensor with dimensions [Nx, Ny], containing the pairwise distances between `x` and `y`.
+
+    Returns
+    -------
+    The computed bandwidth, `sigma`.
+    """
+    n_median = tf.math.reduce_prod(dist.shape) // 2
+    sigma = tf.expand_dims((.5 * tf.sort(tf.reshape(dist, (-1,)))[n_median]) ** .5, axis=0)
+    return sigma
 
 
 class ContextMMDDriftTF(BaseContextMMDDrift):
@@ -26,8 +49,10 @@ class ContextMMDDriftTF(BaseContextMMDDrift):
             preprocess_at_init: bool = True,
             update_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
-            x_kernel: Callable = GaussianRBF,
-            c_kernel: Callable = GaussianRBF,
+            # x_kernel: Callable = GaussianRBF,
+            x_kernel: BaseKernel = GaussianRBF(init_fn_sigma=_sigma_median_diag),
+            # c_kernel: Callable = GaussianRBF,
+            c_kernel: BaseKernel = GaussianRBF(init_fn_sigma=_sigma_median_diag),
             n_permutations: int = 1000,
             prop_c_held: float = 0.25,
             n_folds: int = 5,
@@ -101,8 +126,10 @@ class ContextMMDDriftTF(BaseContextMMDDrift):
         self.meta.update({'backend': Framework.TENSORFLOW.value})
 
         # initialize kernel
-        self.x_kernel = x_kernel(init_sigma_fn=_sigma_median_diag) if x_kernel == GaussianRBF else x_kernel
-        self.c_kernel = c_kernel(init_sigma_fn=_sigma_median_diag) if c_kernel == GaussianRBF else c_kernel
+        # self.x_kernel = x_kernel(init_sigma_fn=_sigma_median_diag) if x_kernel == GaussianRBF else x_kernel
+        # self.c_kernel = c_kernel(init_sigma_fn=_sigma_median_diag) if c_kernel == GaussianRBF else c_kernel
+        self.x_kernel = x_kernel
+        self.c_kernel = c_kernel
 
         # Initialize classifier (hardcoded for now)
         self.clf = _SVCDomainClf(self.c_kernel)
@@ -271,26 +298,3 @@ def _split_chunks(n: int, p: int) -> List[int]:
     else:
         chunks = [n // p + 1] * (n % p) + [n // p] * (p - n % p)
     return chunks
-
-
-def _sigma_median_diag(x: tf.Tensor, y: tf.Tensor, dist: tf.Tensor) -> tf.Tensor:
-    """
-    Private version of the bandwidth estimation function :py:func:`~alibi_detect.utils.tensorflow.kernels.sigma_median`,
-    with the +n (and -1) term excluded to account for the diagonal of the kernel matrix.
-
-    Parameters
-    ----------
-    x
-        Tensor of instances with dimension [Nx, features].
-    y
-        Tensor of instances with dimension [Ny, features].
-    dist
-        Tensor with dimensions [Nx, Ny], containing the pairwise distances between `x` and `y`.
-
-    Returns
-    -------
-    The computed bandwidth, `sigma`.
-    """
-    n_median = tf.math.reduce_prod(dist.shape) // 2
-    sigma = tf.expand_dims((.5 * tf.sort(tf.reshape(dist, (-1,)))[n_median]) ** .5, axis=0)
-    return sigma

@@ -29,7 +29,7 @@ class MMDDrift(DriftConfigMixin):
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
             kernel: Callable = None,
-            sigma: Optional[np.ndarray] = None,
+            # sigma: Optional[np.ndarray] = None,
             configure_kernel_from_x_ref: bool = True,
             n_permutations: int = 100,
             batch_size_permutations: int = 1000000,
@@ -114,7 +114,7 @@ class MMDDrift(DriftConfigMixin):
                 from alibi_detect.utils.pytorch.kernels import GaussianRBF  # type: ignore
             else:
                 from alibi_detect.utils.keops.kernels import GaussianRBF  # type: ignore
-            kwargs.update({'kernel': GaussianRBF})
+            kwargs.update({'kernel': GaussianRBF()})
 
         self._detector = detector(*args, **kwargs)  # type: ignore
         self.meta = self._detector.meta
