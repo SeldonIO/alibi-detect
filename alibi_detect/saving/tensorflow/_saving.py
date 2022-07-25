@@ -21,6 +21,7 @@ from alibi_detect.od import (LLR, IForest, Mahalanobis, OutlierAE,
                              OutlierVAE, OutlierVAEGMM, SpectralResidual)
 from alibi_detect.utils._types import Literal
 from alibi_detect.utils.tensorflow.kernels import GaussianRBF
+from alibi_detect.utils.missing_optional_dependency import MissingDependency
 
 logger = logging.getLogger(__name__)
 
@@ -215,7 +216,7 @@ def save_detector_legacy(detector, filepath):
         state_dict = state_adv_ae(detector)
     elif isinstance(detector, ModelDistillation):
         state_dict = state_adv_md(detector)
-    elif isinstance(detector, OutlierProphet):
+    elif not isinstance(OutlierProphet, MissingDependency) and isinstance(detector, OutlierProphet):
         state_dict = state_prophet(detector)
     elif isinstance(detector, SpectralResidual):
         state_dict = state_sr(detector)

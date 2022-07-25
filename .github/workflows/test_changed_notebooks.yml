@@ -59,7 +59,7 @@ jobs:
           if [ "$RUNNER_OS" != "Windows" ] && [ ${{ matrix.python }} < '3.10' ]; then  # Skip Prophet tests on Windows as installation complex. Skip on Python 3.10 as not supported.
             python -m pip install --upgrade --upgrade-strategy eager -e .[prophet]
           fi
-          python -m pip install --upgrade --upgrade-strategy eager -e .[torch]
+          python -m pip install --upgrade --upgrade-strategy eager -e .[torch,tensorflow]
           python -m pip freeze
 
       - name: Run notebooks

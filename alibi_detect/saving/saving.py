@@ -5,18 +5,17 @@ import warnings
 from functools import partial
 from pathlib import Path
 from typing import Callable, Optional, Tuple, Union
-
 import dill
 import numpy as np
 import toml
 from transformers import PreTrainedTokenizerBase
 
-from alibi_detect.saving.loading import Detector, _replace, validate_config
+from alibi_detect.saving._typing import VALID_DETECTORS
+from alibi_detect.saving.loading import _replace, validate_config
 from alibi_detect.saving.registry import registry
 from alibi_detect.saving.schemas import SupportedModels
-from alibi_detect.saving.tensorflow._saving import save_detector_legacy
-from alibi_detect.saving.tensorflow._saving import \
-    save_model_config as save_model_config_tf
+from alibi_detect.saving.tensorflow import save_detector_legacy, save_model_config_tf
+from alibi_detect.base import Detector, ConfigurableDetector
 
 # do not extend pickle dispatch table so as not to change pickle behaviour
 dill.extend(use_dill=False)
@@ -27,7 +26,10 @@ X_REF_FILENAME = 'x_ref.npy'
 C_REF_FILENAME = 'c_ref.npy'
 
 
-def save_detector(detector: Detector, filepath: Union[str, os.PathLike], legacy: bool = False) -> None:
+def save_detector(
+        detector: Union[Detector, ConfigurableDetector],
+        filepath: Union[str, os.PathLike], legacy: bool = False
+        ) -> None:
     """
     Save outlier, drift or adversarial detector.
 
@@ -49,7 +51,7 @@ def save_detector(detector: Detector, filepath: Union[str, os.PathLike], legacy:
 
     # TODO: Replace .__args__ w/ typing.get_args() once Python 3.7 dropped (and remove type ignore below)
     detector_name = detector.__class__.__name__
-    if detector_name not in [detector.__name__ for detector in Detector.__args__]:  # type: ignore[attr-defined]
+    if detector_name not in [detector for detector in VALID_DETECTORS]:
         raise NotImplementedError(f'{detector_name} is not supported by `save_detector`.')
 
     # Saving is wrapped in a try, with cleanup in except. To prevent a half-saved detector remaining upon error.
@@ -61,7 +63,7 @@ def save_detector(detector: Detector, filepath: Union[str, os.PathLike], legacy:
             filepath.mkdir(parents=True, exist_ok=True)
 
         # If a drift detector, wrap drift detector save method
-        if hasattr(detector, 'get_config') and not legacy:
+        if isinstance(detector, ConfigurableDetector) and not legacy:
             _save_detector_config(detector, filepath)
 
         # Otherwise, save via the previous meta and state_dict approach
@@ -105,7 +107,7 @@ def _cleanup_filepath(orig_files: set, filepath: Path):
 
 
 # TODO - eventually this will become save_detector (once outlier and adversarial updated to save via config.toml)
-def _save_detector_config(detector: Detector, filepath: Union[str, os.PathLike]):
+def _save_detector_config(detector: ConfigurableDetector, filepath: Union[str, os.PathLike]):
     """
     Save a drift detector. The detector is saved as a yaml config file. Artefacts such as
     `preprocess_fn`, models, embeddings, tokenizers etc are serialized, and their filepaths are

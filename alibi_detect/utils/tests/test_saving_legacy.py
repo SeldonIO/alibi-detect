@@ -2,6 +2,7 @@
 Tests for saving/loading of detectors with legacy .dill state_dict. As legacy save/load functionality becomes
 deprecated, these tests will be removed, and more tests will be added to test_savin.py.
 """
+from alibi_detect.utils.missing_optional_dependency import MissingDependency
 from functools import partial
 import numpy as np
 import pytest
@@ -16,7 +17,6 @@ from alibi_detect.cd.tensorflow import UAE, preprocess_drift
 from alibi_detect.models.tensorflow.autoencoder import DecoderLSTM, EncoderLSTM
 from alibi_detect.od import (IForest, LLR, Mahalanobis, OutlierAEGMM, OutlierVAE, OutlierVAEGMM,
                              OutlierProphet, SpectralResidual, OutlierSeq2Seq, OutlierAE)
-from alibi_detect.od.prophet import PROPHET_INSTALLED
 from alibi_detect.saving import save_detector, load_detector
 
 input_dim = 4
@@ -133,7 +133,8 @@ detector = [
                     n_folds=n_folds_drift,
                     train_size=None)
 ]
-if PROPHET_INSTALLED:
+
+if not isinstance(OutlierProphet, MissingDependency):
     detector.append(
             OutlierProphet(threshold=.7,
                            growth='logistic')
