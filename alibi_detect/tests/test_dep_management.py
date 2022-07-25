@@ -249,7 +249,7 @@ def test_tensorflow_utils_dependencies(opt_dep):
     check_correct_dependencies(tensorflow_utils, dependency_map, opt_dep)
 
 
-def test_pytorch_utils_dependencies(opt_dep):
+def test_torch_utils_dependencies(opt_dep):
     """Tests that the pytorch utils module correctly protects against uninstalled optional dependencies.
     """
 
