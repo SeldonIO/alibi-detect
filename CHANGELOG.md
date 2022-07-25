@@ -4,7 +4,6 @@
 [Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.10.0...v0.9.1)
 
 ### Added
-- **New feature** TensorFlow is now an optional dependency. Error messages for incorrect use of detectors that are dependent on missing optional dependencies have been improved to include installation instructions and be more informative.
 - **New feature** Drift detectors save/load functionality has been significantly reworked. All offline and online drift detectors (`tensorflow` backend only) can now be saved and loaded via `config.toml` files, allowing for more flexibility. Config files are also validated with `pydantic`. See [the documentation](https://docs.seldon.io/projects/alibi-detect/en/stable/overview/config_files.html) for more info. ([#516](https://github.com/SeldonIO/alibi-detect/pull/516)).
 - **New feature** Option to use out-of-bag predictions when using a `RandomForestClassifier` with `ClassifierDrift` ([#426](https://github.com/SeldonIO/alibi-detect/pull/426)).
 - Python 3.10 support. Note that PyTorch at the time of writing doesn't support Python 3.10 on Windows. ([#485](https://github.com/SeldonIO/alibi-detect/pull/485)).
@@ -13,6 +12,7 @@
 - Fixed a bug in the TensorFlow trainer which occured when the data was a minibatch of size 2 ([#492](https://github.com/SeldonIO/alibi-detect/pull/492)).
 
 ### Changed
+- TensorFlow is now an optional dependency. Error messages for incorrect use of detectors that are dependent on missing optional dependencies have been improved to include installation instructions and be more informative. ([#537](https://github.com/SeldonIO/alibi-detect/pull/537))
 - The optional dependency work has resulted in some imports being reorganised. The original imports will still work as long as the relevant optional dependencies are installed. ([#538](https://github.com/SeldonIO/alibi-detect/pull/538)).
   - `from alibi_detect.utils.tensorflow.kernels import DeepKernel` -> `from alibi_detect.utils.tensorflow import DeepKernel`
   - `from alibi_detect.utils.tensorflow.prediction import predict_batch` -> `from alibi_detect.utils.tensorflow import predict_batch`
