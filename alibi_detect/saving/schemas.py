@@ -72,15 +72,10 @@ class CustomBaseModelWithKwargs(BaseModel):
         extra = 'allow'  # Allow extra fields
 
 
-class MetaData(CustomBaseModelWithKwargs):
-    name: str
-    online: bool
-    data_type: Optional[str]
-    detector_type: str
+class MetaData(CustomBaseModel):
     version: str
     config_spec: str
-    version_warning: Optional[bool]
-    backend: Optional[Literal['tensorflow', 'pytorch', 'sklearn']] = None
+    version_warning: Optional[bool] = None  # None instead of False as same effect in logicals but hides from config
 
 
 class DetectorConfig(CustomBaseModel):

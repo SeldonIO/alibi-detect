@@ -11,11 +11,6 @@ mmd_cfg = {
     'meta': {
         'version': __version__,
         'config_spec': __config_spec__,
-        'name': 'MMDDrift',
-        'online': False,
-        'detector_type': 'drift',
-        'data_type': None,
-        'backend': 'tensorflow'
     },
     'name': 'MMDDrift',
     'x_ref': np.array([[-0.30074928], [1.50240758], [0.43135768], [2.11295779], [0.79684913]]),
