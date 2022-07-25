@@ -1,7 +1,7 @@
 # Change Log
 
-## [v0.10.0rc1](https://github.com/SeldonIO/alibi-detect/tree/v0.10.0rc1) (2022-06-01)
-[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.9.1...v0.10.0rc1)
+## [v0.10.0](https://github.com/SeldonIO/alibi-detect/tree/v0.10.0) (2022-06-01)
+[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.10.0...v0.9.1)
 
 ### Added
 - **New feature** Drift detectors save/load functionality has been significantly reworked. All offline and online drift detectors (`tensorflow` backend only) can now be saved and loaded via `config.toml` files, allowing for more flexibility. Config files are also validated with `pydantic`. See [the documentation](https://docs.seldon.io/projects/alibi-detect/en/stable/overview/config_files.html) for more info. ([#516](https://github.com/SeldonIO/alibi-detect/pull/516)).
@@ -12,9 +12,26 @@
 - Fixed a bug in the TensorFlow trainer which occured when the data was a minibatch of size 2 ([#492](https://github.com/SeldonIO/alibi-detect/pull/492)).
 
 ### Changed
+- TensorFlow is now an optional dependency. Error messages for incorrect use of detectors that are dependent on missing optional dependencies have been improved to include installation instructions and be more informative. ([#537](https://github.com/SeldonIO/alibi-detect/pull/537))
+- The optional dependency work has resulted in some imports being reorganised. The original imports will still work as long as the relevant optional dependencies are installed. ([#538](https://github.com/SeldonIO/alibi-detect/pull/538)).
+  - `from alibi_detect.utils.tensorflow.kernels import DeepKernel` -> `from alibi_detect.utils.tensorflow import DeepKernel`
+  - `from alibi_detect.utils.tensorflow.prediction import predict_batch` -> `from alibi_detect.utils.tensorflow import predict_batch`
+  - `from alibi_detect.utils.pytorch.data import TorchDataset` -> `from alibi_detect.utils.pytorch import TorchDataset`
+  - `from alibi_detect.models.pytorch.trainer import trainer` -> `from alibi_detect.models.pytorch import trainer`
+  - `from alibi_detect.models.tensorflow.resnet import scale_by_instance` -> `from alibi_detect.models.tensorflow import scale_by_instance`
+  - `from alibi_detect.models.tensorflow.resnet import scale_by_instance` -> `from alibi_detect.models.tensorflow import scale_by_instance`
+  - `from alibi_detect.utils.pytorch.kernels import DeepKernel` -> `from alibi_detect.utils.pytorch import DeepKernel`
+  - `from alibi_detect.models.tensorflow.autoencoder import eucl_cosim_features` -> `from alibi_detect.models.tensorflow import eucl_cosim_features`
+  - `from alibi_detect.utils.tensorflow.prediction import predict_batch` -> `from alibi_detect.utils.tensorflow import predict_batch`
+  - `from alibi_detect.models.tensorflow.losses import elbo` -> `from alibi_detect.models.tensorflow import elbo`
+  - `from alibi_detect.models import PixelCNN` -> `from alibi_detect.models.tensorflow import PixelCNN`
+  - `from alibi_detect.utils.tensorflow.data import TFDataset` -> `from alibi_detect.utils.tensorflow import TFDataset`
+  - `from alibi_detect.utils.pytorch.data import TorchDataset` -> `from alibi_detect.utils.pytorch import TorchDataset`
 - The maximum `tensorflow` version has been bumped from 2.8 to 2.9 ([#508](https://github.com/SeldonIO/alibi-detect/pull/508)).
 
 ### Development
+- Added `MissingDependency` class and `import_optional` for protecting objects that are dependent on optional dependencies ([#537](https://github.com/SeldonIO/alibi-detect/pull/537)).
+- Added `BackendValidator` to factor out similar logic across detectors with backends ([#538](https://github.com/SeldonIO/alibi-detect/pull/538)).
 - Added missing CI test for `ClassifierDrift` with `sklearn` backend ([#523](https://github.com/SeldonIO/alibi-detect/pull/523)).
 - Fixed typing for `ContextMMDDrift` `pytorch` backend with `numpy`>=1.22 ([#520](https://github.com/SeldonIO/alibi-detect/pull/520)).
 - Drift detectors with backends refactored to perform distance threshold computation in `score` instead of `predict` ([#489](https://github.com/SeldonIO/alibi-detect/pull/489)).
