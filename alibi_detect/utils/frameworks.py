@@ -14,6 +14,7 @@ except ImportError:
     has_pytorch = False
 
 
+# Map from backend name to boolean value indicating its presence
 HAS_BACKEND = {
     'tensorflow': has_tensorflow,
     'pytorch': has_pytorch,
@@ -37,11 +38,13 @@ class BackendValidator:
         Parameters
         ----------
         backend_options
-            Dictionary from backend to list of dependencies that must be satisfied. An example of `backend_options`
-            would be `{'tensorflow': ['tensorflow', 'tensorflow_probability'], 'pytorch': ['pytorch'], None: []}`. This
-            would mean `'tensorflow'`, `'pytorch'` or `None` are available backend options. If the user passes a
+            Dictionary from backend to list of dependencies that must be satisfied. The keys are the available options
+            for the user and the values should be a list of dependencies that are checked via the `HAS_BACKEND` map
+            defined in this module. An example of `backend_options` would be
+            `{'tensorflow': ['tensorflow', 'tensorflow_probability'], 'pytorch': ['pytorch'], None: []}`.
+            This would mean `'tensorflow'`, `'pytorch'` or `None` are available backend options. If the user passes a
             different backend they will receive and error listing the correct backends. In addition, the tensorflow
-            backend requires both `tensorflow` and `tensorflow_probability` dependencies to be met. If one of these are
+            backend requires both `tensorflow` and `tensorflow_probability` dependencies to be met. If one of these is
             missing the validator will issue an error message telling the user what dependencies to install.
         construct_name
             Name of the object that has a set of backends we need to verify.
