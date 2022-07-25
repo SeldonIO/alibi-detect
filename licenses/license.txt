@@ -83,7 +83,7 @@ files names COPYING in subdirectories where applicable.
 
 Copyright © 2010,2011,2012,2013,2014,2015,2016,2017,2018,2019,2020  Google, Inc.
 Copyright © 2018,2019,2020  Ebrahim Byagowi
-Copyright © 2019,2020  Facebook, Inc.
+Copyright © 2019,2020  Facebook, Inc. 
 Copyright © 2012  Mozilla Foundation
 Copyright © 2011  Codethink Limited
 Copyright © 2008,2010  Nokia Corporation and/or its subsidiary(-ies)
@@ -253,7 +253,7 @@ LIBTIFF
 Copyright (c) 1988-1997 Sam Leffler
 Copyright (c) 1991-1997 Silicon Graphics, Inc.
 
-Permission to use, copy, modify, distribute, and sell this software and
+Permission to use, copy, modify, distribute, and sell this software and 
 its documentation for any purpose is hereby granted without fee, provided
 that (i) the above copyright notices and this permission notice appear in
 all copies of the software and related documentation, and (ii) the names of
@@ -261,15 +261,15 @@ Sam Leffler and Silicon Graphics may not be used in any advertising or
 publicity relating to the software without the specific, prior written
 permission of Sam Leffler and Silicon Graphics.
 
-THE SOFTWARE IS PROVIDED "AS-IS" AND WITHOUT WARRANTY OF ANY KIND,
-EXPRESS, IMPLIED OR OTHERWISE, INCLUDING WITHOUT LIMITATION, ANY
-WARRANTY OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
+THE SOFTWARE IS PROVIDED "AS-IS" AND WITHOUT WARRANTY OF ANY KIND, 
+EXPRESS, IMPLIED OR OTHERWISE, INCLUDING WITHOUT LIMITATION, ANY 
+WARRANTY OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.  
 
 IN NO EVENT SHALL SAM LEFFLER OR SILICON GRAPHICS BE LIABLE FOR
 ANY SPECIAL, INCIDENTAL, INDIRECT OR CONSEQUENTIAL DAMAGES OF ANY KIND,
 OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS,
-WHETHER OR NOT ADVISED OF THE POSSIBILITY OF DAMAGE, AND ON ANY THEORY OF
-LIABILITY, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE
+WHETHER OR NOT ADVISED OF THE POSSIBILITY OF DAMAGE, AND ON ANY THEORY OF 
+LIABILITY, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE 
 OF THIS SOFTWARE.
 
 ----
@@ -311,8 +311,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 OPENJPEG
 
 *
- * The copyright in this software is being made available under the 2-clauses
- * BSD License, included below. This software may be subject to other third
+ * The copyright in this software is being made available under the 2-clauses 
+ * BSD License, included below. This software may be subject to other third 
  * party and contributor rights, including patent rights, and no such rights
  * are granted under this license.
  *
@@ -323,7 +323,7 @@ OPENJPEG
  * Copyright (c) 2005, Herve Drolon, FreeImage Team
  * Copyright (c) 2002-2003, Yannick Verschueren
  * Copyright (c) 2001-2003, David Janssens
- * Copyright (c) 2011-2012, Centre National d'Etudes Spatiales (CNES), France
+ * Copyright (c) 2011-2012, Centre National d'Etudes Spatiales (CNES), France 
  * Copyright (c) 2012, CS Systemes d'Information, France
  *
  * All rights reserved.
@@ -3792,16 +3792,16 @@ are met:
 1. Redistributions of source code must retain the above copyright
    notice, this list of conditions and the following disclaimer.
 
-2. The origin of this software must not be misrepresented; you must
-   not claim that you wrote the original software.  If you use this
-   software in a product, an acknowledgment in the product
+2. The origin of this software must not be misrepresented; you must 
+   not claim that you wrote the original software.  If you use this 
+   software in a product, an acknowledgment in the product 
    documentation would be appreciated but is not required.
 
 3. Altered source versions must be plainly marked as such, and must
    not be misrepresented as being the original software.
 
-4. The name of the author may not be used to endorse or promote
-   products derived from this software without specific prior written
+4. The name of the author may not be used to endorse or promote 
+   products derived from this software without specific prior written 
    permission.
 
 THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS
@@ -4401,8 +4401,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 libopenjp2 is redistributed within opencv-python macOS packages.
 This license applies to libopenjp2 binary in the directory cv2/.
 
-The copyright in this software is being made available under the 2-clauses
-BSD License, included below. This software may be subject to other third
+The copyright in this software is being made available under the 2-clauses 
+BSD License, included below. This software may be subject to other third 
 party and contributor rights, including patent rights, and no such rights
 are granted under this license.
 
@@ -4413,7 +4413,7 @@ Copyright (c) 2003-2009, Francois-Olivier Devaux
 Copyright (c) 2005, Herve Drolon, FreeImage Team
 Copyright (c) 2002-2003, Yannick Verschueren
 Copyright (c) 2001-2003, David Janssens
-Copyright (c) 2011-2012, Centre National d'Etudes Spatiales (CNES), France
+Copyright (c) 2011-2012, Centre National d'Etudes Spatiales (CNES), France 
 Copyright (c) 2012, CS Systemes d'Information, France
 
 All rights reserved.
@@ -4558,7 +4558,7 @@ This license applies to libspeex binary in the directory cv2/.
 Copyright 2002-2008   Xiph.org Foundation
 Copyright 2002-2008   Jean-Marc Valin
 Copyright 2005-2007 Analog Devices Inc.
-Copyright 2005-2008 Commonwealth Scientific and Industrial Research
+Copyright 2005-2008 Commonwealth Scientific and Industrial Research 
                         Organisation (CSIRO)
 Copyright 1993, 2002, 2006 David Rowe
 Copyright 2003    EpicGames
@@ -4596,26 +4596,26 @@ libsrt is redistributed within opencv-python macOS packages.
 This license applies to libsrt binary in the directory cv2/.
 
 /*
- *
+ *  
  * Copyright (c) 2001-2017 Cisco Systems, Inc.
  * All rights reserved.
- *
+ * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- *
+ * 
  *   Redistributions of source code must retain the above copyright
  *   notice, this list of conditions and the following disclaimer.
- *
+ * 
  *   Redistributions in binary form must reproduce the above
  *   copyright notice, this list of conditions and the following
  *   disclaimer in the documentation and/or other materials provided
  *   with the distribution.
- *
+ * 
  *   Neither the name of the Cisco Systems, Inc. nor the names of its
  *   contributors may be used to endorse or promote products derived
  *   from this software without specific prior written permission.
- *
+ * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
@@ -4669,7 +4669,7 @@ This license applies to libsrt binary in the directory cv2/.
     means any form of the work other than Source Code Form.
 
 1.7. "Larger Work"
-    means a work that combines Covered Software with other material, in
+    means a work that combines Covered Software with other material, in 
     a separate file or files, that is not Covered Software.
 
 1.8. "License"
@@ -5545,7 +5545,7 @@ DEALINGS IN THE SOFTWARE.
 
 
 regex
-2022.7.9
+2022.7.25
 Apache Software License
 This work was derived from the 're' module of CPython 2.6 and CPython 3.1,
 copyright (c) 1998-2001 by Secret Labs AB and licensed under CNRI's Python 1.6
@@ -6103,23 +6103,23 @@ Availability: https://github.com/xianyi/OpenBLAS/
 License: 3-clause BSD
   Copyright (c) 2011-2014, The OpenBLAS Project
   All rights reserved.
-
+  
   Redistribution and use in source and binary forms, with or without
   modification, are permitted provided that the following conditions are
   met:
-
+  
      1. Redistributions of source code must retain the above copyright
         notice, this list of conditions and the following disclaimer.
-
+  
      2. Redistributions in binary form must reproduce the above copyright
         notice, this list of conditions and the following disclaimer in
         the documentation and/or other materials provided with the
         distribution.
-     3. Neither the name of the OpenBLAS project nor the names of
-        its contributors may be used to endorse or promote products
-        derived from this software without specific prior written
+     3. Neither the name of the OpenBLAS project nor the names of 
+        its contributors may be used to endorse or promote products 
+        derived from this software without specific prior written 
         permission.
-
+  
   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
   AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
   IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -6144,36 +6144,36 @@ License 3-clause BSD
                           rights reserved.
   Copyright (c) 2006-2013 The University of Colorado Denver.  All rights
                           reserved.
-
+  
   $COPYRIGHT$
-
+  
   Additional copyrights may follow
-
+  
   $HEADER$
-
+  
   Redistribution and use in source and binary forms, with or without
   modification, are permitted provided that the following conditions are
   met:
-
+  
   - Redistributions of source code must retain the above copyright
     notice, this list of conditions and the following disclaimer.
-
+  
   - Redistributions in binary form must reproduce the above copyright
     notice, this list of conditions and the following disclaimer listed
     in this license in the documentation and/or other materials
     provided with the distribution.
-
+  
   - Neither the name of the copyright holders nor the names of its
     contributors may be used to endorse or promote products derived from
     this software without specific prior written permission.
-
+  
   The copyright holders provide no reassurances that the source code
   provided does not infringe any patent, copyright, or any other
   intellectual property rights of third parties.  The copyright holders
   disclaim any liability to any recipient for claims brought against
   recipient by any third party for infringement of that parties
   intellectual property rights.
-
+  
   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -6193,21 +6193,21 @@ Description: dynamically linked to files compiled with gcc
 Availability: https://gcc.gnu.org/viewcvs/gcc/
 License: GPLv3 + runtime exception
   Copyright (C) 2002-2017 Free Software Foundation, Inc.
-
+  
   Libgfortran is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation; either version 3, or (at your option)
   any later version.
-
+  
   Libgfortran is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
   GNU General Public License for more details.
-
+  
   Under Section 7 of GPL version 3, you are granted additional
   permissions described in the GCC Runtime Library Exception, version
   3.1, as published by the Free Software Foundation.
-
+  
   You should have received a copy of the GNU General Public License and
   a copy of the GCC Runtime Library Exception along with this program;
   see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
@@ -7649,7 +7649,7 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 
 urllib3
-1.26.10
+1.26.11
 MIT License
 MIT License
 
@@ -7696,3 +7696,5 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 IN THE SOFTWARE.
+
+
