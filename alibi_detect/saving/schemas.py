@@ -75,7 +75,7 @@ class CustomBaseModelWithKwargs(BaseModel):
 class MetaData(CustomBaseModel):
     version: str
     config_spec: str
-    version_warning: Optional[bool] = None  # None instead of False as same effect in logicals but hides from config
+    version_warning: bool = False
 
 
 class DetectorConfig(CustomBaseModel):
