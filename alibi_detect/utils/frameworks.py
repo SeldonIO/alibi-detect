@@ -40,12 +40,11 @@ class BackendValidator:
         backend_options
             Dictionary from backend to list of dependencies that must be satisfied. The keys are the available options
             for the user and the values should be a list of dependencies that are checked via the `HAS_BACKEND` map
-            defined in this module. An example of `backend_options` would be
-            `{'tensorflow': ['tensorflow', 'tensorflow_probability'], 'pytorch': ['pytorch'], None: []}`.
-            This would mean `'tensorflow'`, `'pytorch'` or `None` are available backend options. If the user passes a
-            different backend they will receive and error listing the correct backends. In addition, the tensorflow
-            backend requires both `tensorflow` and `tensorflow_probability` dependencies to be met. If one of these is
-            missing the validator will issue an error message telling the user what dependencies to install.
+            defined in this module. An example of `backend_options` would be `{'tensorflow': ['tensorflow'], 'pytorch':
+            ['pytorch'], None: []}`.This would mean `'tensorflow'`, `'pytorch'` or `None` are available backend options.
+            If the user passes a different backend they will receive and error listing the correct backends. In
+            addition, if one of the dependencies in the `backend_option` values is missing for the specified backend
+            the validator will issue an error message telling the user what dependency bucket to install.
         construct_name
             Name of the object that has a set of backends we need to verify.
         """
