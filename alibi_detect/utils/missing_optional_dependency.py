@@ -1,7 +1,7 @@
 """Functionality for optional importing
 This module provides a way to import optional dependencies. In the case that the user imports some functionality from
-alibi that is not usable due to missing optional dependencies this code is used to allow the import but replace it
-with an object that throws an error on use. This way we avoid errors at import time that prevent the user using
+alibi-detect that is not usable due to missing optional dependencies this code is used to allow the import but replace
+it with an object that throws an error on use. This way we avoid errors at import time that prevent the user using
 functionality independent of the missing dependency.
 """
 
