@@ -3,7 +3,8 @@ import numpy as np
 import tensorflow as tf
 from typing import Any, Callable, Optional, Union
 from alibi_detect.cd.base_online import BaseMultiDriftOnline
-from alibi_detect.utils.tensorflow import GaussianRBF, quantile, permed_lsdds
+from alibi_detect.utils.tensorflow import quantile, permed_lsdds
+from alibi_detect.utils.tensorflow.kernels import GaussianRBF, BaseKernel
 
 
 class LSDDDriftOnlineTF(BaseMultiDriftOnline):
@@ -13,7 +14,8 @@ class LSDDDriftOnlineTF(BaseMultiDriftOnline):
             ert: float,
             window_size: int,
             preprocess_fn: Optional[Callable] = None,
-            sigma: Optional[np.ndarray] = None,
+            # sigma: Optional[np.ndarray] = None,
+            kernel: BaseKernel = GaussianRBF(),
             n_bootstraps: int = 1000,
             n_kernel_centers: Optional[int] = None,
             lambda_rd_max: float = 0.2,
@@ -78,12 +80,13 @@ class LSDDDriftOnlineTF(BaseMultiDriftOnline):
         self._configure_normalization()
 
         # initialize kernel
-        if sigma is None:
-            self.kernel = GaussianRBF()
-            _ = self.kernel(self.x_ref, self.x_ref, infer_sigma=True)
-        else:
-            sigma = tf.convert_to_tensor(sigma)
-            self.kernel = GaussianRBF(sigma)
+        # if sigma is None:
+        #     self.kernel = GaussianRBF()
+        #     _ = self.kernel(self.x_ref, self.x_ref, infer_sigma=True)
+        # else:
+        #     sigma = tf.convert_to_tensor(sigma)
+        #     self.kernel = GaussianRBF(sigma)
+        self.kernel = kernel
 
         if self.n_kernel_centers is None:
             self.n_kernel_centers = 2*window_size

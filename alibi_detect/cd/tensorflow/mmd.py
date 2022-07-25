@@ -4,7 +4,7 @@ import tensorflow as tf
 from typing import Callable, Dict, Optional, Tuple, Union
 from alibi_detect.cd.base import BaseMMDDrift
 from alibi_detect.utils.tensorflow.distance import mmd2_from_kernel_matrix
-from alibi_detect.utils.tensorflow.kernels import GaussianRBF
+from alibi_detect.utils.tensorflow.kernels import GaussianRBF, BaseKernel
 
 logger = logging.getLogger(__name__)
 
@@ -17,8 +17,9 @@ class MMDDriftTF(BaseMMDDrift):
             preprocess_x_ref: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
-            kernel: Callable = GaussianRBF,
-            sigma: Optional[np.ndarray] = None,
+            # kernel: Callable = GaussianRBF,
+            kernel: BaseKernel = GaussianRBF(),
+            # sigma: Optional[np.ndarray] = None,
             configure_kernel_from_x_ref: bool = True,
             n_permutations: int = 100,
             input_shape: Optional[tuple] = None,
@@ -61,7 +62,7 @@ class MMDDriftTF(BaseMMDDrift):
             preprocess_x_ref=preprocess_x_ref,
             update_x_ref=update_x_ref,
             preprocess_fn=preprocess_fn,
-            sigma=sigma,
+            # sigma=sigma,
             configure_kernel_from_x_ref=configure_kernel_from_x_ref,
             n_permutations=n_permutations,
             input_shape=input_shape,
@@ -70,20 +71,21 @@ class MMDDriftTF(BaseMMDDrift):
         self.meta.update({'backend': 'tensorflow'})
 
         # initialize kernel
-        if isinstance(sigma, np.ndarray):
-            sigma = tf.convert_to_tensor(sigma)
-        self.kernel = kernel(sigma) if kernel == GaussianRBF else kernel
-
+        # if isinstance(sigma, np.ndarray):
+        #     sigma = tf.convert_to_tensor(sigma)
+        # self.kernel = kernel(sigma) if kernel == GaussianRBF else kernel
+        self.kernel = kernel
         # compute kernel matrix for the reference data
-        if self.infer_sigma or isinstance(sigma, tf.Tensor):
-            self.k_xx = self.kernel(self.x_ref, self.x_ref, infer_sigma=self.infer_sigma)
+        # if self.infer_sigma or isinstance(sigma, tf.Tensor):
+        if self.infer_parameter:
+            self.k_xx = self.kernel(self.x_ref, self.x_ref, infer_parameter=self.infer_parameter)
             self.infer_sigma = False
         else:
             self.k_xx, self.infer_sigma = None, True
 
     def kernel_matrix(self, x: Union[np.ndarray, tf.Tensor], y: Union[np.ndarray, tf.Tensor]) -> tf.Tensor:
         """ Compute and return full kernel matrix between arrays x and y. """
-        k_xy = self.kernel(x, y, self.infer_sigma)
+        k_xy = self.kernel(x, y, self.infer_parameter)
         k_xx = self.k_xx if self.k_xx is not None and self.update_x_ref is None else self.kernel(x, x)
         k_yy = self.kernel(y, y)
         kernel_mat = tf.concat([tf.concat([k_xx, k_xy], 1), tf.concat([tf.transpose(k_xy, (1, 0)), k_yy], 1)], 0)

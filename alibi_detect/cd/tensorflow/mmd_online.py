@@ -3,7 +3,7 @@ import numpy as np
 import tensorflow as tf
 from typing import Any, Callable, Optional, Union
 from alibi_detect.cd.base_online import BaseMultiDriftOnline
-from alibi_detect.utils.tensorflow.kernels import GaussianRBF
+from alibi_detect.utils.tensorflow.kernels import BaseKernel, GaussianRBF
 from alibi_detect.utils.tensorflow import zero_diag, quantile, subset_matrix
 
 
@@ -14,8 +14,9 @@ class MMDDriftOnlineTF(BaseMultiDriftOnline):
             ert: float,
             window_size: int,
             preprocess_fn: Optional[Callable] = None,
-            kernel: Callable = GaussianRBF,
-            sigma: Optional[np.ndarray] = None,
+            kernel: BaseKernel = GaussianRBF(),
+            # kernel: Callable = GaussianRBF,
+            # sigma: Optional[np.ndarray] = None,
             n_bootstraps: int = 1000,
             verbose: bool = True,
             input_shape: Optional[tuple] = None,
@@ -67,12 +68,14 @@ class MMDDriftOnlineTF(BaseMultiDriftOnline):
         self.meta.update({'backend': 'tensorflow'})
 
         # initialize kernel
-        if isinstance(sigma, np.ndarray):
-            sigma = tf.convert_to_tensor(sigma)
-        self.kernel = kernel(sigma) if kernel == GaussianRBF else kernel
+        # if isinstance(sigma, np.ndarray):
+        #     sigma = tf.convert_to_tensor(sigma)
+        # self.kernel = kernel(sigma) if kernel == GaussianRBF else kernel
+        self.kernel = kernel
 
         # compute kernel matrix for the reference data
-        self.k_xx = self.kernel(self.x_ref, self.x_ref, infer_sigma=(sigma is None))
+        # self.k_xx = self.kernel(self.x_ref, self.x_ref, infer_sigma=(sigma is None))
+        self.k_xx = self.kernel(self.x_ref, self.x_ref, infer_parameter=self.kernel.init_required)
 
         self._configure_thresholds()
         self._initialise()
