@@ -34,11 +34,11 @@ preprocess = [
     (preprocess_drift, {'model': HiddenOutput, 'layer': -1}),
     (preprocess_list, None)
 ]
-preprocess_x_ref = [True, False]
+preprocess_at_init = [True, False]
 n_permutations = [10]
 batch_size_permutations = [10, 1000000]
 configure_kernel_from_x_ref = [True, False]
-tests_mmddrift = list(product(n_features, n_enc, preprocess, n_permutations, preprocess_x_ref,
+tests_mmddrift = list(product(n_features, n_enc, preprocess, n_permutations, preprocess_at_init,
                               batch_size_permutations, configure_kernel_from_x_ref))
 n_tests = len(tests_mmddrift)
 
@@ -50,7 +50,7 @@ def mmd_params(request):
 
 @pytest.mark.parametrize('mmd_params', list(range(n_tests)), indirect=True)
 def test_mmd(mmd_params):
-    n_features, n_enc, preprocess, n_permutations, preprocess_x_ref, \
+    n_features, n_enc, preprocess, n_permutations, preprocess_at_init, \
         batch_size_permutations, configure_kernel_from_x_ref = mmd_params
 
     np.random.seed(0)
@@ -60,7 +60,7 @@ def test_mmd(mmd_params):
     preprocess_fn, preprocess_kwargs = preprocess
     to_list = False
     if hasattr(preprocess_fn, '__name__') and preprocess_fn.__name__ == 'preprocess_list':
-        if not preprocess_x_ref:
+        if not preprocess_at_init:
             return
         to_list = True
         x_ref = [_[None, :] for _ in x_ref]
@@ -75,7 +75,7 @@ def test_mmd(mmd_params):
     cd = MMDDriftKeops(
         x_ref=x_ref,
         p_val=.05,
-        preprocess_x_ref=preprocess_x_ref if isinstance(preprocess_fn, Callable) else False,
+        preprocess_at_init=preprocess_at_init if isinstance(preprocess_fn, Callable) else False,
         preprocess_fn=preprocess_fn,
         configure_kernel_from_x_ref=configure_kernel_from_x_ref,
         n_permutations=n_permutations,

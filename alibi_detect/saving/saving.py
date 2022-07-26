@@ -46,8 +46,8 @@ def save_detector(
     if legacy:
         warnings.warn('The `legacy` option will be removed in a future version.', DeprecationWarning)
 
-    if 'backend' in list(detector.meta.keys()) and detector.meta['backend'] in ['pytorch', 'sklearn']:
-        raise NotImplementedError('Saving detectors with PyTorch or sklearn backend is not yet supported.')
+    if 'backend' in list(detector.meta.keys()) and detector.meta['backend'] in ['pytorch', 'sklearn', 'keops']:
+        raise NotImplementedError('Saving detectors with PyTorch, sklearn or keops backend is not yet supported.')
 
     # TODO: Replace .__args__ w/ typing.get_args() once Python 3.7 dropped (and remove type ignore below)
     detector_name = detector.__class__.__name__

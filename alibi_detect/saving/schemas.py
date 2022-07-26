@@ -98,7 +98,7 @@ class DetectorConfig(CustomBaseModel):
     """
     name: str
     "Name of the detector e.g. `MMDDrift`."
-    backend: Literal['tensorflow', 'pytorch', 'sklearn'] = 'tensorflow'
+    backend: Literal['tensorflow', 'pytorch', 'sklearn', 'keops'] = 'tensorflow'
     "The detector backend."
     meta: Optional[MetaData]
     "Config metadata. Should not be edited."
