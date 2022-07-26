@@ -4,6 +4,7 @@ from typing import Callable, Dict, Optional, Union, Tuple
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, BackendValidator
 from alibi_detect.utils.warnings import deprecated_alias
 from alibi_detect.base import DriftConfigMixin
+from alibi_detect.utils._types import Literal
 
 if has_pytorch:
     from alibi_detect.cd.pytorch.mmd import MMDDriftTorch, LinearTimeMMDDriftTorch
@@ -21,7 +22,7 @@ class MMDDrift(DriftConfigMixin):
             x_ref: Union[np.ndarray, list],
             backend: str = 'tensorflow',
             p_val: float = .05,
-            estimator: str = 'quad',
+            estimator: Literal['quad', 'linear'] = 'quad',
             x_ref_preprocessed: bool = False,
             preprocess_at_init: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
@@ -46,8 +47,8 @@ class MMDDrift(DriftConfigMixin):
         p_val
             p-value used for the significance of the permutation test.
         estimator
-            Estimator used for the MMD^2 computation {'quad', 'linear'}. 'Quad' is the default and
-            uses the quadratic u-statistics on each square kernel matrix. 'Linear' uses the linear
+            Estimator used for the MMD^2 computation. 'quad' is the default and
+            uses the quadratic u-statistics on each square kernel matrix. 'linear' uses the linear
             time estimator as in Gretton et al. (JMLR 2014, sec 6), and the threshold is computed
             using the Gaussian asympotic distribution under null.
         x_ref_preprocessed
