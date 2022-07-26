@@ -23,7 +23,10 @@ extras_require = {
         "tensorflow_probability>=0.8.0, <0.18.0",
         "tensorflow>=2.2.0, !=2.6.0, !=2.6.1, <2.10.0",  # https://github.com/SeldonIO/alibi-detect/issues/375 and 387
     ],
-    'all': [
+    "keops": [
+        "pykeops>=2.0.0, <2.2.0",
+    ],
+    "all": [
         "fbprophet>=0.5, <0.7",
         "holidays==0.9.11",
         "pystan<3.0",

@@ -78,7 +78,7 @@ The package, `alibi-detect` can be installed from:
    pip install git+https://github.com/SeldonIO/alibi-detect.git
    ```
 
-- To install with the tensorflow backend:
+- To install with the TensorFlow backend:
   ```bash
   pip install alibi-detect[tensorflow]
   ```
@@ -86,6 +86,11 @@ The package, `alibi-detect` can be installed from:
 - To install with the PyTorch backend:
   ```bash
   pip install alibi-detect[torch]
+  ```
+
+- To install with the KeOps backend:
+  ```bash
+  pip install alibi-detect[keops]
   ```
 
 - To use the `Prophet` time series outlier detector:
