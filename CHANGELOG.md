@@ -1,19 +1,19 @@
 # Change Log
 
-## [v0.10.0](https://github.com/SeldonIO/alibi-detect/tree/v0.10.0) (2022-06-01)
+## [v0.10.0](https://github.com/SeldonIO/alibi-detect/tree/v0.10.0) (2022-07-26)
 [Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.10.0...v0.9.1)
 
 ### Added
-- **New feature** Drift detectors save/load functionality has been significantly reworked. All offline and online drift detectors (`tensorflow` backend only) can now be saved and loaded via `config.toml` files, allowing for more flexibility. Config files are also validated with `pydantic`. See [the documentation](https://docs.seldon.io/projects/alibi-detect/en/stable/overview/config_files.html) for more info. ([#516](https://github.com/SeldonIO/alibi-detect/pull/516)).
+- **New feature** Drift detectors save/load functionality has been significantly reworked. All offline and online drift detectors (`tensorflow` backend only) can now be saved and loaded via `config.toml` files, allowing for more flexibility. Config files are also validated with `pydantic`. See [the documentation](https://docs.seldon.io/projects/alibi-detect/en/stable/overview/config_files.html) for more info ([#516](https://github.com/SeldonIO/alibi-detect/pull/516)).
 - **New feature** Option to use out-of-bag predictions when using a `RandomForestClassifier` with `ClassifierDrift` ([#426](https://github.com/SeldonIO/alibi-detect/pull/426)).
-- Python 3.10 support. Note that PyTorch at the time of writing doesn't support Python 3.10 on Windows. ([#485](https://github.com/SeldonIO/alibi-detect/pull/485)).
+- Python 3.10 support. Note that PyTorch at the time of writing doesn't support Python 3.10 on Windows ([#485](https://github.com/SeldonIO/alibi-detect/pull/485)).
 
 ### Fixed
 - Fixed a bug in the TensorFlow trainer which occured when the data was a minibatch of size 2 ([#492](https://github.com/SeldonIO/alibi-detect/pull/492)).
 
 ### Changed
-- TensorFlow is now an optional dependency. Error messages for incorrect use of detectors that are dependent on missing optional dependencies have been improved to include installation instructions and be more informative. ([#537](https://github.com/SeldonIO/alibi-detect/pull/537))
-- The optional dependency work has resulted in some imports being reorganised. The original imports will still work as long as the relevant optional dependencies are installed. ([#538](https://github.com/SeldonIO/alibi-detect/pull/538)).
+- TensorFlow is now an optional dependency. Error messages for incorrect use of detectors that are dependent on missing optional dependencies have been improved to include installation instructions and be more informative ([#537](https://github.com/SeldonIO/alibi-detect/pull/537)).
+- The optional dependency work has resulted in some imports being reorganised. The original imports will still work as long as the relevant optional dependencies are installed ([#538](https://github.com/SeldonIO/alibi-detect/pull/538)).
   - `from alibi_detect.utils.tensorflow.kernels import DeepKernel` -> `from alibi_detect.utils.tensorflow import DeepKernel`
   - `from alibi_detect.utils.tensorflow.prediction import predict_batch` -> `from alibi_detect.utils.tensorflow import predict_batch`
   - `from alibi_detect.utils.pytorch.data import TorchDataset` -> `from alibi_detect.utils.pytorch import TorchDataset`
@@ -36,7 +36,7 @@
 - Added missing CI test for `ClassifierDrift` with `sklearn` backend ([#523](https://github.com/SeldonIO/alibi-detect/pull/523)).
 - Fixed typing for `ContextMMDDrift` `pytorch` backend with `numpy`>=1.22 ([#520](https://github.com/SeldonIO/alibi-detect/pull/520)).
 - Drift detectors with backends refactored to perform distance threshold computation in `score` instead of `predict` ([#489](https://github.com/SeldonIO/alibi-detect/pull/489)).
-- Factored out PyTorch device setting to `utils.pytorch.misc.get_device()` ([#503](https://github.com/SeldonIO/alibi-detect/pull/503)).
+- Factored out PyTorch device setting to `utils.pytorch.misc.get_device()` ([#503](https://github.com/SeldonIO/alibi-detect/pull/503)). Thanks to @kuutsav!
 - Added `utils._random` submodule and `pytest-randomly` to manage determinism in CI build tests ([#496](https://github.com/SeldonIO/alibi-detect/pull/496)).
 - From this release onwards we exclude the directories `doc/` and `examples/` from the source distribution (by adding `prune` directives in `MANIFEST.in`). This results in considerably smaller file sizes for the source distribution.
 - `mypy` has been updated to `~=0.900` which requires additional development dependencies for type stubs, currently only `types-requests` and `types-toml` have been necessary to add to `requirements/dev.txt`.
