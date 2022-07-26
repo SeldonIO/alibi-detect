@@ -15,10 +15,10 @@ categories_per_feature = [
 preprocess = [None]
 correction = ['bonferroni', 'fdr']
 update_x_ref = [{'last': 1000}, {'reservoir_sampling': 1000}]
-preprocess_x_ref = [True, False]
+preprocess_at_init = [True, False]
 new_categories = [True, False]
 tests_chisquaredrift = list(product(categories_per_feature, preprocess, correction,
-                                    update_x_ref, preprocess_x_ref, new_categories))
+                                    update_x_ref, preprocess_at_init, new_categories))
 n_tests = len(tests_chisquaredrift)
 
 
@@ -30,13 +30,13 @@ def chisquaredrift_params(request):
 @pytest.mark.parametrize('chisquaredrift_params', list(range(n_tests)), indirect=True)
 def test_chisquaredrift(chisquaredrift_params):
     categories_per_feature, preprocess_fn, correction, \
-        update_x_ref, preprocess_x_ref, new_categories = chisquaredrift_params
+        update_x_ref, preprocess_at_init, new_categories = chisquaredrift_params
 
     cd = ChiSquareDrift(
         x_ref=x_ref,
         p_val=.05,
         categories_per_feature=categories_per_feature,
-        preprocess_x_ref=preprocess_x_ref,
+        preprocess_at_init=preprocess_at_init,
         update_x_ref=update_x_ref,
         preprocess_fn=preprocess_fn,
         correction=correction,

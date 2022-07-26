@@ -72,8 +72,9 @@ class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
         self.n = 0
 
         # set metadata
-        self.meta['detector_type'] = 'online'
+        self.meta['detector_type'] = 'outlier'
         self.meta['data_type'] = data_type
+        self.meta['online'] = True
 
     def fit(self,
             X: np.ndarray,

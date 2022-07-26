@@ -31,8 +31,9 @@ def test_detector(signal, window_amp, window_local, n_est_points, return_instanc
 
     assert od.threshold == threshold
     assert od.meta == {'name': 'SpectralResidual',
-                       'detector_type': 'online',
+                       'detector_type': 'outlier',
                        'data_type': 'time-series',
+                       'online': True,
                        'version': __version__}
     preds_in = od.predict(X, t, return_instance_score=return_instance_score)
     assert preds_in['data']['is_outlier'].sum() <= 2.

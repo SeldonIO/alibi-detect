@@ -60,8 +60,9 @@ class ModelDistillation(BaseDetector, FitMixin, ThresholdMixin):
         self.temperature = temperature
 
         # set metadata
-        self.meta['detector_type'] = 'offline'
+        self.meta['detector_type'] = 'adversarial'
         self.meta['data_type'] = data_type
+        self.meta['online'] = False
 
     def fit(self,
             X: np.ndarray,

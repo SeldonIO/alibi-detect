@@ -46,8 +46,8 @@ def test_seq2seq(seq2seq_params):
         assert od.threshold == 0.
     else:
         assert od.threshold == threshold
-    assert od.meta == {'name': 'OutlierSeq2Seq', 'detector_type': 'offline', 'data_type': 'time-series',
-                       'version': __version__}
+    assert od.meta == {'name': 'OutlierSeq2Seq', 'detector_type': 'outlier', 'data_type': 'time-series',
+                       'online': False, 'version': __version__}
 
     # fit OutlierSeq2Seq
     od.fit(X, epochs=2, verbose=False)

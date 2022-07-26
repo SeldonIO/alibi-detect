@@ -105,8 +105,9 @@ class SpectralResidual(BaseDetector, ThresholdMixin):
         self.padding_amp_side = padding_amp_side
 
         # set metadata
-        self.meta['detector_type'] = 'online'
+        self.meta['detector_type'] = 'outlier'
         self.meta['data_type'] = 'time-series'
+        self.meta['online'] = True
 
     def infer_threshold(self,
                         X: np.ndarray,

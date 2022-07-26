@@ -9,15 +9,18 @@ from alibi_detect.models.tensorflow.trainer import trainer
 from alibi_detect.utils.tensorflow.data import TFDataset
 from alibi_detect.utils.tensorflow.misc import clone_model
 from alibi_detect.utils.tensorflow.prediction import predict_batch
+from alibi_detect.utils.warnings import deprecated_alias
 
 
 class ClassifierDriftTF(BaseClassifierDrift):
+    @deprecated_alias(preprocess_x_ref='preprocess_at_init')
     def __init__(
             self,
             x_ref: np.ndarray,
             model: tf.keras.Model,
             p_val: float = .05,
-            preprocess_x_ref: bool = True,
+            x_ref_preprocessed: bool = False,
+            preprocess_at_init: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
             preds_type: str = 'probs',
@@ -27,7 +30,7 @@ class ClassifierDriftTF(BaseClassifierDrift):
             n_folds: Optional[int] = None,
             retrain_from_scratch: bool = True,
             seed: int = 0,
-            optimizer: tf.keras.optimizers = tf.keras.optimizers.Adam,
+            optimizer: tf.keras.optimizers.Optimizer = tf.keras.optimizers.Adam,
             learning_rate: float = 1e-3,
             batch_size: int = 32,
             preprocess_batch_fn: Optional[Callable] = None,
@@ -35,6 +38,7 @@ class ClassifierDriftTF(BaseClassifierDrift):
             verbose: int = 0,
             train_kwargs: Optional[dict] = None,
             dataset: Callable = TFDataset,
+            input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None
     ) -> None:
         """
@@ -50,8 +54,13 @@ class ClassifierDriftTF(BaseClassifierDrift):
             TensorFlow classification model used for drift detection.
         p_val
             p-value used for the significance of the test.
-        preprocess_x_ref
-            Whether to already preprocess and store the reference data.
+        x_ref_preprocessed
+            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
+            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
+            data will also be preprocessed.
+        preprocess_at_init
+            Whether to preprocess the reference data when the detector is instantiated. Otherwise, the reference
+            data will be preprocessed at prediction time. Only applies if `x_ref_preprocessed=False`.
         update_x_ref
             Reference data can optionally be updated to the last n instances seen by the detector
             or via reservoir sampling with size n. For the former, the parameter equals {'last': n} while
@@ -84,6 +93,9 @@ class ClassifierDriftTF(BaseClassifierDrift):
             Learning rate used by optimizer.
         batch_size
             Batch size used during training of the classifier.
+        preprocess_batch_fn
+            Optional batch preprocessing function. For example to convert a list of objects to a batch which can be
+            processed by the model.
         epochs
             Number of training epochs for the classifier for each (optional) fold.
         verbose
@@ -93,13 +105,16 @@ class ClassifierDriftTF(BaseClassifierDrift):
             Optional additional kwargs when fitting the classifier.
         dataset
             Dataset object used during training.
+        input_shape
+            Shape of input data.
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
         super().__init__(
             x_ref=x_ref,
             p_val=p_val,
-            preprocess_x_ref=preprocess_x_ref,
+            x_ref_preprocessed=x_ref_preprocessed,
+            preprocess_at_init=preprocess_at_init,
             update_x_ref=update_x_ref,
             preprocess_fn=preprocess_fn,
             preds_type=preds_type,
@@ -108,9 +123,9 @@ class ClassifierDriftTF(BaseClassifierDrift):
             n_folds=n_folds,
             retrain_from_scratch=retrain_from_scratch,
             seed=seed,
+            input_shape=input_shape,
             data_type=data_type
         )
-
         if preds_type not in ['probs', 'logits']:
             raise ValueError("'preds_type' should be 'probs' or 'logits'")
 
@@ -122,7 +137,8 @@ class ClassifierDriftTF(BaseClassifierDrift):
         self.loss_fn = BinaryCrossentropy(from_logits=(self.preds_type == 'logits'))
         self.dataset = partial(dataset, batch_size=batch_size, shuffle=True)
         self.predict_fn = partial(predict_batch, preprocess_fn=preprocess_batch_fn, batch_size=batch_size)
-        self.train_kwargs = {'optimizer': optimizer(learning_rate=learning_rate), 'epochs': epochs,
+        optimizer = optimizer(learning_rate=learning_rate) if isinstance(optimizer, type) else optimizer
+        self.train_kwargs = {'optimizer': optimizer, 'epochs': epochs,
                              'reg_loss_fn': reg_loss_fn, 'preprocess_fn': preprocess_batch_fn, 'verbose': verbose}
         if isinstance(train_kwargs, dict):
             self.train_kwargs.update(train_kwargs)
