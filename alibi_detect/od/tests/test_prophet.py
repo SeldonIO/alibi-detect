@@ -4,7 +4,6 @@ import numpy as np
 import pandas as pd
 import pytest
 from alibi_detect.od import OutlierProphet
-from alibi_detect.od.prophet import PROPHET_INSTALLED
 from alibi_detect.version import __version__
 
 growth = ['linear', 'logistic']
@@ -32,16 +31,14 @@ def prophet_params(request):
     return tests[request.param]
 
 
-@pytest.mark.skipif(not PROPHET_INSTALLED,
-                    reason="Prophet tests skipped as Prophet not installed")
 @pytest.mark.parametrize('prophet_params', list(range(n_tests)), indirect=True)
 def test_prophet(prophet_params):
-    import fbprophet
+    fbprophet = pytest.importorskip('fbprophet', reason="Prophet tests skipped as Prophet not installed")
     growth, return_instance_score, return_forecast = prophet_params
     od = OutlierProphet(growth=growth)
     assert isinstance(od.model, fbprophet.forecaster.Prophet)
-    assert od.meta == {'name': 'OutlierProphet', 'detector_type': 'offline', 'data_type': 'time-series',
-                       'version': __version__}
+    assert od.meta == {'name': 'OutlierProphet', 'detector_type': 'outlier', 'data_type': 'time-series',
+                       'online': False, 'version': __version__}
     if growth == 'logistic':
         df_fit['cap'] = 10.
         df_test['cap'] = 10.

@@ -74,8 +74,8 @@ def test_vaegmm(vaegmm_params):
     )
 
     assert vaegmm.threshold == threshold
-    assert vaegmm.meta == {'name': 'OutlierVAEGMM', 'detector_type': 'offline', 'data_type': None,
-                           'version': __version__}
+    assert vaegmm.meta == {'name': 'OutlierVAEGMM', 'detector_type': 'outlier', 'data_type': None,
+                           'online': False, 'version': __version__}
 
     # fit OutlierAEGMM, infer threshold and compute scores
     vaegmm.fit(X, w_recon=w_recon, w_energy=w_energy, epochs=5, batch_size=1000, verbose=False)

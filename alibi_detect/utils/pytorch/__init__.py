@@ -1,8 +1,31 @@
-from .distance import mmd2, mmd2_from_kernel_matrix, squared_pairwise_distance
-from .distance import permed_lsdds, batch_compute_kernel_matrix
-from .kernels import GaussianRBF, DeepKernel
-from .prediction import predict_batch, predict_batch_transformer
-from .misc import get_device, quantile, zero_diag
+from alibi_detect.utils.missing_optional_dependency import import_optional
+
+
+TorchDataset = import_optional(
+    'alibi_detect.utils.pytorch.data',
+    names=['TorchDataset']
+)
+
+mmd2, mmd2_from_kernel_matrix, squared_pairwise_distance, permed_lsdds, batch_compute_kernel_matrix = import_optional(
+    'alibi_detect.utils.pytorch.distance',
+    names=['mmd2', 'mmd2_from_kernel_matrix', 'squared_pairwise_distance',
+           'permed_lsdds', 'batch_compute_kernel_matrix']
+)
+
+GaussianRBF, DeepKernel = import_optional(
+    'alibi_detect.utils.pytorch.kernels',
+    names=['GaussianRBF', 'DeepKernel']
+)
+
+predict_batch, predict_batch_transformer = import_optional(
+    'alibi_detect.utils.pytorch.prediction',
+    names=['predict_batch', 'predict_batch_transformer']
+)
+
+get_device, quantile, zero_diag = import_optional(
+    'alibi_detect.utils.pytorch.misc',
+    names=['get_device', 'quantile', 'zero_diag']
+)
 
 __all__ = [
     "batch_compute_kernel_matrix",
@@ -16,5 +39,6 @@ __all__ = [
     "predict_batch_transformer",
     "get_device",
     "quantile",
-    "zero_diag"
+    "zero_diag",
+    "TorchDataset"
 ]

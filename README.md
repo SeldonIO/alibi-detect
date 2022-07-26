@@ -69,18 +69,21 @@ The package, `alibi-detect` can be installed from:
 ### With pip
 
 - alibi-detect can be installed from [PyPI](https://pypi.org/project/alibi-detect):
-
    ```bash
    pip install alibi-detect
    ```
    
 - Alternatively, the development version can be installed:
-
    ```bash
    pip install git+https://github.com/SeldonIO/alibi-detect.git
    ```
 
-- To install with the PyTorch backend (in addition to the default TensorFlow backend):
+- To install with the tensorflow backend:
+  ```bash
+  pip install alibi-detect[tensorflow]
+  ```
+
+- To install with the PyTorch backend:
   ```bash
   pip install alibi-detect[torch]
   ```
@@ -91,6 +94,7 @@ The package, `alibi-detect` can be installed from:
    pip install alibi-detect[prophet]
    ```
 
+
 ### With conda
 
 To install from [conda-forge](https://conda-forge.org/) it is recommended to use [mamba](https://mamba.readthedocs.io/en/stable/), 
@@ -100,24 +104,19 @@ which can be installed to the *base* conda enviroment with:
 conda install mamba -n base -c conda-forge
 ```
 
-- To install alibi-detect with the default TensorFlow backend:
+To install alibi-detect:
 
-  ```bash
-  mamba install -c conda-forge alibi-detect
-  ```
+```bash
+mamba install -c conda-forge alibi-detect
+```
 
-- To install with the PyTorch backend:
-
-  ```bash
-  mamba install -c conda-forge alibi-detect pytorch
-  ```
 
 ### Usage
 We will use the [VAE outlier detector](https://docs.seldon.io/projects/alibi-detect/en/stable/od/methods/vae.html) to illustrate the API.
 
 ```python
 from alibi_detect.od import OutlierVAE
-from alibi_detect.utils import save_detector, load_detector
+from alibi_detect.saving import save_detector, load_detector
 
 # initialize and fit detector
 od = OutlierVAE(threshold=0.1, encoder_net=encoder_net, decoder_net=decoder_net, latent_dim=1024)
@@ -182,8 +181,7 @@ The following tables show the advised use cases for each algorithm. The column *
 #### TensorFlow and PyTorch support
 
 The drift detectors support TensorFlow, PyTorch and (where applicable) [KeOps](https://www.kernel-operations.io/keops/index.html) backends. 
-Alibi Detect does however not install PyTorch or KeOps for you. 
-Check the [PyTorch docs](https://pytorch.org/) how to do this. KeOps can be installed via pip: ```pip install pykeops```. Example:
+However, Alibi Detect does not install these by default. See the [installation options](#installation-and-usage) for more details.
 
 ```python
 from alibi_detect.cd import MMDDrift
@@ -401,10 +399,10 @@ BibTeX entry:
 ```
 @software{alibi-detect,
   title = {Alibi Detect: Algorithms for outlier, adversarial and drift detection},
-  author = {Van Looveren, Arnaud and Klaise, Janis and Vacanti, Giovanni and Cobb, Oliver and Scillitoe, Ashley and Samoilescu, Robert},
+  author = {Van Looveren, Arnaud and Klaise, Janis and Vacanti, Giovanni and Cobb, Oliver and Scillitoe, Ashley and Samoilescu, Robert and Athorne, Alex},
   url = {https://github.com/SeldonIO/alibi-detect},
-  version = {0.9.1},
-  date = {2022-04-01},
+  version = {0.10.0},
+  date = {2022-07-26},
   year = {2019}
 }
 ```

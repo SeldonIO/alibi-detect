@@ -54,7 +54,7 @@ jobs:
           if [ "$RUNNER_OS" != "Windows" ] && [ ${{ matrix.python }} < '3.10' ]; then  # Skip Prophet tests on Windows as installation complex. Skip on Python 3.10 as not supported.
             python -m pip install --upgrade --upgrade-strategy eager -e .[prophet]
           fi
-          python -m pip install --upgrade --upgrade-strategy eager -e .[torch]
+          python -m pip install --upgrade --upgrade-strategy eager -e .[tensorflow,torch]
           python -m pip freeze
 
       - name: Lint with flake8
@@ -80,14 +80,14 @@ jobs:
     runs-on: ubuntu-18.04
 
     container:
-      image: readthedocs/build:latest
+      image: readthedocs/build:7.0  # 7.0 to get Python 3.9
       options: --user root
 
     steps:
       - uses: actions/checkout@v2
       - name: Create a virtualenv to use for docs build
         run: |
-          python3.8 -m virtualenv $HOME/docs
+          python3.9 -m virtualenv $HOME/docs
       - name: Install dependencies
         run: |
           . $HOME/docs/bin/activate
@@ -118,3 +118,17 @@ jobs:
           pip install "tox>=3.21.0,<4.0.0"
           make licenses
           make check_licenses
+
+  optional_dependencies:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.x
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'
+      - name: Check optional dependency imports are protected
+        run: |
+          pip install "tox>=3.21.0,<4.0.0"
+          tox

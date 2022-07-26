@@ -56,7 +56,8 @@ def test_llr(llr_params):
     od = LLR(threshold=threshold, sequential=True, model=model, log_prob=likelihood_fn)
 
     assert od.threshold == threshold
-    assert od.meta == {'name': 'LLR', 'detector_type': 'offline', 'data_type': None, 'version': __version__}
+    assert od.meta == {'name': 'LLR', 'detector_type': 'outlier', 'data_type': None,
+                       'online': False, 'version': __version__}
 
     od.fit(
         X_train,

@@ -61,7 +61,8 @@ def test_ae(ae_params):
     )
 
     assert ae.threshold == threshold
-    assert ae.meta == {'name': 'OutlierAE', 'detector_type': 'offline', 'data_type': None, 'version': __version__}
+    assert ae.meta == {'name': 'OutlierAE', 'detector_type': 'outlier', 'data_type': None,
+                       'online': False, 'version': __version__}
 
     # fit OutlierAE, infer threshold and compute scores
     ae.fit(X, epochs=5, verbose=False)

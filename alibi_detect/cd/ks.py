@@ -2,14 +2,17 @@ import numpy as np
 from scipy.stats import ks_2samp
 from typing import Callable, Dict, Optional, Tuple, Union
 from alibi_detect.cd.base import BaseUnivariateDrift
+from alibi_detect.utils.warnings import deprecated_alias
 
 
 class KSDrift(BaseUnivariateDrift):
+    @deprecated_alias(preprocess_x_ref='preprocess_at_init')
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
             p_val: float = .05,
-            preprocess_x_ref: bool = True,
+            x_ref_preprocessed: bool = False,
+            preprocess_at_init: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
             correction: str = 'bonferroni',
@@ -29,8 +32,13 @@ class KSDrift(BaseUnivariateDrift):
         p_val
             p-value used for significance of the K-S test for each feature. If the FDR correction method
             is used, this corresponds to the acceptable q-value.
-        preprocess_x_ref
-            Whether to already preprocess and store the reference data.
+        x_ref_preprocessed
+            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
+            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
+            data will also be preprocessed.
+        preprocess_at_init
+            Whether to preprocess the reference data when the detector is instantiated. Otherwise, the reference
+            data will be preprocessed at prediction time. Only applies if `x_ref_preprocessed=False`.
         update_x_ref
             Reference data can optionally be updated to the last n instances seen by the detector
             or via reservoir sampling with size n. For the former, the parameter equals {'last': n} while
@@ -54,7 +62,8 @@ class KSDrift(BaseUnivariateDrift):
         super().__init__(
             x_ref=x_ref,
             p_val=p_val,
-            preprocess_x_ref=preprocess_x_ref,
+            x_ref_preprocessed=x_ref_preprocessed,
+            preprocess_at_init=preprocess_at_init,
             update_x_ref=update_x_ref,
             preprocess_fn=preprocess_fn,
             correction=correction,
@@ -62,6 +71,10 @@ class KSDrift(BaseUnivariateDrift):
             input_shape=input_shape,
             data_type=data_type
         )
+        # Set config
+        self._set_config(locals())
+
+        # Other attributes
         self.alternative = alternative
 
     def feature_score(self, x_ref: np.ndarray, x: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:

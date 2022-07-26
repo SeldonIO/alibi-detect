@@ -69,8 +69,8 @@ def test_adv_vae(adv_ae_params):
     )
 
     assert advae.threshold == threshold
-    assert advae.meta == {'name': 'AdversarialAE', 'detector_type': 'offline', 'data_type': None,
-                          'version': __version__}
+    assert advae.meta == {'name': 'AdversarialAE', 'detector_type': 'adversarial', 'data_type': None,
+                          'online': False, 'version': __version__}
     for layer in advae.model.layers:
         assert not layer.trainable
 
