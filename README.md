@@ -392,10 +392,10 @@ BibTeX entry:
 ```
 @software{alibi-detect,
   title = {Alibi Detect: Algorithms for outlier, adversarial and drift detection},
-  author = {Van Looveren, Arnaud and Klaise, Janis and Vacanti, Giovanni and Cobb, Oliver and Scillitoe, Ashley and Samoilescu, Robert},
+  author = {Van Looveren, Arnaud and Klaise, Janis and Vacanti, Giovanni and Cobb, Oliver and Scillitoe, Ashley and Samoilescu, Robert and Athorne, Alex},
   url = {https://github.com/SeldonIO/alibi-detect},
-  version = {0.10.0rc1},
-  date = {2022-06-01},
+  version = {0.10.0},
+  date = {2022-07-26},
   year = {2019}
 }
 ```

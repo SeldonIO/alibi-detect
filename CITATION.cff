@@ -16,7 +16,9 @@ authors:
   orcid: "https://orcid.org/0000-0001-8971-7224"
 - family-names: "Samoilescu"
   given-names: "Robert"
+- family-names: "Athorne"
+  given-names: "Alex"
 title: "Alibi Detect: Algorithms for outlier, adversarial and drift detection"
-version: 0.10.0rc1
-date-released: 2022-06-01
+version: 0.10.0
+date-released: 2022-07-26
 url: "https://github.com/SeldonIO/alibi-detect"

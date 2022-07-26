@@ -1,7 +1,7 @@
 # Change Log
 
 ## [v0.10.0](https://github.com/SeldonIO/alibi-detect/tree/v0.10.0) (2022-07-26)
-[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.10.0...v0.9.1)
+[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.9.1...v0.10.0)
 
 ### Added
 - **New feature** Drift detectors save/load functionality has been significantly reworked. All offline and online drift detectors (`tensorflow` backend only) can now be saved and loaded via `config.toml` files, allowing for more flexibility. Config files are also validated with `pydantic`. See [the documentation](https://docs.seldon.io/projects/alibi-detect/en/stable/overview/config_files.html) for more info ([#516](https://github.com/SeldonIO/alibi-detect/pull/516)).
