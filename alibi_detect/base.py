@@ -9,9 +9,10 @@ from alibi_detect.version import __version__, __config_spec__
 
 DEFAULT_META = {
     "name": None,
-    "detector_type": None,  # online or offline
+    "online": None,  # true or false
     "data_type": None,  # tabular, image or time-series
-    "version": None
+    "version": None,
+    "detector_type": None  # drift, outlier or adversarial
 }  # type: Dict
 
 
@@ -153,6 +154,17 @@ class DriftConfigMixin:
         return detector
 
     def _set_config(self, inputs):  # TODO - move to BaseDetector once config save/load implemented for non-drift
+        """
+        Set a detectors `config` attribute upon detector instantiation.
+
+        Large artefacts are overwritten with `None` in order to avoid memory duplication. They're added back into
+        the config later on by `get_config()`.
+
+        Parameters
+        ----------
+        inputs
+            The inputs (args/kwargs) given to the detector at instantiation.
+        """
         # Set config metadata
         name = self.__class__.__name__
 

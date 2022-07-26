@@ -127,8 +127,9 @@ class BaseClassifierDrift(BaseDetector):
         self.input_shape = get_input_shape(input_shape, x_ref)
 
         # set metadata
-        self.meta['detector_type'] = 'offline'
+        self.meta['online'] = False
         self.meta['data_type'] = data_type
+        self.meta['detector_type'] = 'drift'
         self.meta['params'] = {'binarize_preds ': binarize_preds, 'preds_type': preds_type}
 
     def preprocess(self, x: Union[np.ndarray, list]) -> Tuple[Union[np.ndarray, list], Union[np.ndarray, list]]:
@@ -382,8 +383,9 @@ class BaseLearnedKernelDrift(BaseDetector):
         self.input_shape = get_input_shape(input_shape, x_ref)
 
         # set metadata
-        self.meta['detector_type'] = 'offline'
+        self.meta['detector_type'] = 'drift'
         self.meta['data_type'] = data_type
+        self.meta['online'] = False
 
     def preprocess(self, x: Union[np.ndarray, list]) -> Tuple[Union[np.ndarray, list], Union[np.ndarray, list]]:
         """
@@ -575,7 +577,7 @@ class BaseMMDDrift(BaseDetector):
         self.input_shape = get_input_shape(input_shape, x_ref)
 
         # set metadata
-        self.meta.update({'detector_type': 'offline', 'data_type': data_type})
+        self.meta.update({'detector_type': 'drift', 'online': False, 'data_type': data_type})
 
     def preprocess(self, x: Union[np.ndarray, list]) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -742,7 +744,7 @@ class BaseLSDDDrift(BaseDetector):
         self.input_shape = get_input_shape(input_shape, x_ref)
 
         # set metadata
-        self.meta.update({'detector_type': 'offline', 'data_type': data_type})
+        self.meta.update({'detector_type': 'drift', 'online': False, 'data_type': data_type})
 
     def preprocess(self, x: Union[np.ndarray, list]) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -909,8 +911,9 @@ class BaseUnivariateDrift(BaseDetector, DriftConfigMixin):
             raise ValueError('Only `bonferroni` and `fdr` are acceptable for multivariate correction.')
 
         # set metadata
-        self.meta['detector_type'] = 'offline'  # offline refers to fitting the CDF for K-S
+        self.meta['online'] = False  # offline refers to fitting the CDF for K-S
         self.meta['data_type'] = data_type
+        self.meta['detector_type'] = 'drift'
 
     def preprocess(self, x: Union[np.ndarray, list]) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -1129,7 +1132,7 @@ class BaseContextMMDDrift(BaseDetector):
         self.verbose = verbose
 
         # set metadata
-        self.meta.update({'detector_type': 'offline', 'data_type': data_type})
+        self.meta.update({'detector_type': 'drift', 'online': False, 'data_type': data_type})
 
     def preprocess(self, x: Union[np.ndarray, list]) -> Tuple[np.ndarray, np.ndarray]:
         """

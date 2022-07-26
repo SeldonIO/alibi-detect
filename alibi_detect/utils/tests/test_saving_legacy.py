@@ -199,7 +199,8 @@ def test_save_load(select_detector):
         elif type(det_load) == Mahalanobis:
             assert det_load.clip is None
             assert det_load.mean == det_load.C == det_load.n == 0
-            assert det_load.meta['detector_type'] == 'online'
+            assert det_load.meta['detector_type'] == 'outlier'
+            assert det_load.meta['online']
         elif type(det_load) == OutlierProphet:
             assert det_load.model.interval_width == .7
             assert det_load.model.growth == 'logistic'

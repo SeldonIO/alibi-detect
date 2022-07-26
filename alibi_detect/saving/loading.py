@@ -529,7 +529,7 @@ def _replace(cfg: dict, orig: Optional[str], new: Optional[str]) -> dict:
     The updated dictionary.
     """
     for k, v in cfg.items():
-        if v == orig:
+        if isinstance(v == orig, bool) and v == orig:
             cfg[k] = new
         elif isinstance(v, dict):
             _replace(v, orig, new)

@@ -25,7 +25,6 @@ from alibi_detect.cd.tensorflow import UAE as UAE_tf
 from alibi_detect.cd.tensorflow import HiddenOutput as HiddenOutput_tf
 from alibi_detect.utils._types import Literal, NDArray
 from alibi_detect.utils.frameworks import has_tensorflow, has_pytorch
-from alibi_detect.version import __config_spec__, __version__
 
 # Define supported models for each optional dependency
 SupportedModels_tf, SupportedModels_torch, SupportedModels_sklearn = (), (), ()  # type: ignore
@@ -88,9 +87,9 @@ class CustomBaseModelWithKwargs(BaseModel):
 
 
 class MetaData(CustomBaseModel):
-    version: str = __version__
-    config_spec: str = __config_spec__
-    version_warning: Optional[bool] = None  # None instead of False as same effect in logicals but hides from config
+    version: str
+    config_spec: str
+    version_warning: bool = False
 
 
 class DetectorConfig(CustomBaseModel):
@@ -101,7 +100,7 @@ class DetectorConfig(CustomBaseModel):
     "Name of the detector e.g. `MMDDrift`."
     backend: Literal['tensorflow', 'pytorch', 'sklearn'] = 'tensorflow'
     "The detector backend."
-    meta: Optional[MetaData] = MetaData()
+    meta: Optional[MetaData]
     "Config metadata. Should not be edited."
     # Note: Although not all detectors have a backend, we define in base class as `backend` also determines
     #  whether tf or torch models used for preprocess_fn.

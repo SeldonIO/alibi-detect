@@ -28,6 +28,7 @@
   - `from alibi_detect.utils.tensorflow.data import TFDataset` -> `from alibi_detect.utils.tensorflow import TFDataset`
   - `from alibi_detect.utils.pytorch.data import TorchDataset` -> `from alibi_detect.utils.pytorch import TorchDataset`
 - The maximum `tensorflow` version has been bumped from 2.8 to 2.9 ([#508](https://github.com/SeldonIO/alibi-detect/pull/508)).
+- **breaking change** The `detector_type` field in the `detector.meta` dictionary now indicates whether a detector is a 'drift', 'outlier' or 'adversarial' detector. Its previous meaning, whether a detector is online or offline, is now covered by the `online` field ([#564](https://github.com/SeldonIO/alibi-detect/pull/564)).
 
 ### Development
 - Added `MissingDependency` class and `import_optional` for protecting objects that are dependent on optional dependencies ([#537](https://github.com/SeldonIO/alibi-detect/pull/537)).
