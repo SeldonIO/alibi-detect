@@ -442,7 +442,7 @@ def state_mmddrift(cd: MMDDrift) -> Tuple[
         preprocess_step_drift(cd._detector)
     if not isinstance(cd._detector.kernel, GaussianRBF):
         logger.warning('Currently only the default GaussianRBF kernel is supported.')
-    sigma = cd._detector.kernel.sigma.numpy() if not cd._detector.infer_sigma else None
+    # sigma = cd._detector.kernel.sigma.numpy() if not cd._detector.infer_sigma else None
     state_dict = {
         'args':
             {
@@ -453,7 +453,7 @@ def state_mmddrift(cd: MMDDrift) -> Tuple[
                 'p_val': cd._detector.p_val,
                 'preprocess_x_ref': False,
                 'update_x_ref': cd._detector.update_x_ref,
-                'sigma': sigma,
+                # 'sigma': sigma,
                 'configure_kernel_from_x_ref': not cd._detector.infer_sigma,
                 'n_permutations': cd._detector.n_permutations,
                 'input_shape': cd._detector.input_shape,

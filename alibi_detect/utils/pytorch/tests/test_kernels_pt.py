@@ -27,13 +27,13 @@ def test_gaussian_kernel(gaussian_kernel_params):
     y = torch.from_numpy(np.random.random(yshape)).float()
 
     kernel = GaussianRBF(sigma=sigma, trainable=trainable)
-    infer_sigma = True if sigma is None else False
-    if trainable and infer_sigma:
+    infer_parameter = True if sigma is None else False
+    if trainable and infer_parameter:
         with pytest.raises(Exception):
-            kernel(x, y, infer_sigma=infer_sigma)
+            kernel(x, y, infer_parameter=infer_parameter)
     else:
-        k_xy = kernel(x, y, infer_sigma=infer_sigma).detach().numpy()
-        k_xx = kernel(x, x, infer_sigma=infer_sigma).detach().numpy()
+        k_xy = kernel(x, y, infer_parameter=infer_parameter).detach().numpy()
+        k_xx = kernel(x, x, infer_parameter=infer_parameter).detach().numpy()
         assert k_xy.shape == n_instances and k_xx.shape == (xshape[0], xshape[0])
         np.testing.assert_almost_equal(k_xx.trace(), xshape[0], decimal=4)
         assert (k_xx > 0.).all() and (k_xy > 0.).all()

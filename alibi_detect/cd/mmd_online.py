@@ -4,9 +4,11 @@ from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
 
 if has_pytorch:
     from alibi_detect.cd.pytorch.mmd_online import MMDDriftOnlineTorch
+    from alibi_detect.utils.pytorch.kernels import BaseKernel as BaseKernelTorch
 
 if has_tensorflow:
     from alibi_detect.cd.tensorflow.mmd_online import MMDDriftOnlineTF
+    from alibi_detect.utils.tensorflow.kernels import BaseKernel as BaseKernelTF
 
 
 class MMDDriftOnline:
@@ -17,8 +19,8 @@ class MMDDriftOnline:
             window_size: int,
             backend: str = 'tensorflow',
             preprocess_fn: Optional[Callable] = None,
-            kernel: Callable = None,
-            sigma: Optional[np.ndarray] = None,
+            kernel: Union[BaseKernelTorch, BaseKernelTF] = None,
+            # sigma: Optional[np.ndarray] = None,
             n_bootstraps: int = 1000,
             device: Optional[str] = None,
             verbose: bool = True,
@@ -82,7 +84,7 @@ class MMDDriftOnline:
                 from alibi_detect.utils.tensorflow.kernels import GaussianRBF
             else:
                 from alibi_detect.utils.pytorch.kernels import GaussianRBF  # type: ignore
-            kwargs.update({'kernel': GaussianRBF})
+            kwargs.update({'kernel': GaussianRBF()})
 
         if backend == 'tensorflow' and has_tensorflow:
             kwargs.pop('device', None)

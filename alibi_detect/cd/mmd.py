@@ -5,9 +5,11 @@ from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
 
 if has_pytorch:
     from alibi_detect.cd.pytorch.mmd import MMDDriftTorch
+    from alibi_detect.utils.pytorch.kernels import BaseKernel as BaseKernelTorch
 
 if has_tensorflow:
     from alibi_detect.cd.tensorflow.mmd import MMDDriftTF
+    from alibi_detect.utils.tensorflow.kernels import BaseKernel as BaseKernelTF
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +23,7 @@ class MMDDrift:
             preprocess_x_ref: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
-            kernel: Callable = None,
+            kernel: Union[BaseKernelTorch, BaseKernelTF] = None,
             # sigma: Optional[np.ndarray] = None,
             configure_kernel_from_x_ref: bool = True,
             n_permutations: int = 100,

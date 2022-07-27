@@ -113,6 +113,7 @@ class GaussianRBF(BaseKernel):
             self.log_sigma = nn.Parameter(torch.empty(1), requires_grad=trainable)
             self.init_required = True
         else:
+            sigma = sigma.reshape(-1)
             self.log_sigma = nn.Parameter(sigma.log(), requires_grad=trainable)
             self.init_required = False
         self.init_fn_sigma = init_fn_sigma
