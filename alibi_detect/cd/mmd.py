@@ -11,7 +11,7 @@ if has_pytorch:
 if has_tensorflow:
     from alibi_detect.cd.tensorflow.mmd import MMDDriftTF
 
-if has_keops:
+if has_keops and has_pytorch:
     from alibi_detect.cd.keops.mmd import MMDDriftKeops
 
 logger = logging.getLogger(__name__)
@@ -90,7 +90,7 @@ class MMDDrift(DriftConfigMixin):
         BackendValidator(
             backend_options={'tensorflow': ['tensorflow'],
                              'pytorch': ['pytorch'],
-                             'keops': ['keops']},
+                             'keops': ['keops', 'pytorch']},
             construct_name=self.__class__.__name__
         ).verify_backend(backend)
 

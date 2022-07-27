@@ -66,8 +66,8 @@ def test_cd_torch_dependencies(opt_dep):
 
     dependency_map = defaultdict(lambda: ['default'])
     for dependency, relations in [
-        ("HiddenOutput", ['torch']),
-        ("preprocess_drift", ['torch'])
+        ("HiddenOutput", ['torch', 'keops']),
+        ("preprocess_drift", ['torch', 'keops'])
     ]:
         dependency_map[dependency] = relations
     from alibi_detect.cd import pytorch as cd_pytorch
@@ -156,8 +156,8 @@ def test_torch_model_dependencies(opt_dep):
 
     dependency_map = defaultdict(lambda: ['default'])
     for dependency, relations in [
-            ("TransformerEmbedding", ['torch']),
-            ("trainer", ['torch']),
+            ("TransformerEmbedding", ['torch', 'keops']),
+            ("trainer", ['torch', 'keops']),
             ]:
         dependency_map[dependency] = relations
     from alibi_detect.models import pytorch as torch_models
@@ -255,19 +255,19 @@ def test_torch_utils_dependencies(opt_dep):
 
     dependency_map = defaultdict(lambda: ['default'])
     for dependency, relations in [
-        ("batch_compute_kernel_matrix", ['torch']),
-        ("mmd2", ['torch']),
-        ("mmd2_from_kernel_matrix", ['torch']),
-        ("squared_pairwise_distance", ['torch']),
-        ("GaussianRBF", ['torch']),
-        ("DeepKernel", ['torch']),
-        ("permed_lsdds", ['torch']),
-        ("predict_batch", ['torch']),
-        ("predict_batch_transformer", ['torch']),
-        ("quantile", ['torch']),
-        ("zero_diag", ['torch']),
-        ("TorchDataset", ['torch']),
-        ("get_device", ['torch']),
+        ("batch_compute_kernel_matrix", ['torch', 'keops']),
+        ("mmd2", ['torch', 'keops']),
+        ("mmd2_from_kernel_matrix", ['torch', 'keops']),
+        ("squared_pairwise_distance", ['torch', 'keops']),
+        ("GaussianRBF", ['torch', 'keops']),
+        ("DeepKernel", ['torch', 'keops']),
+        ("permed_lsdds", ['torch', 'keops']),
+        ("predict_batch", ['torch', 'keops']),
+        ("predict_batch_transformer", ['torch', 'keops']),
+        ("quantile", ['torch', 'keops']),
+        ("zero_diag", ['torch', 'keops']),
+        ("TorchDataset", ['torch', 'keops']),
+        ("get_device", ['torch', 'keops']),
     ]:
         dependency_map[dependency] = relations
     from alibi_detect.utils import pytorch as pytorch_utils

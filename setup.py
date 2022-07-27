@@ -25,6 +25,7 @@ extras_require = {
     ],
     "keops": [
         "pykeops>=2.0.0, <2.2.0",
+        "torch>=1.7.0"
     ],
     "all": [
         "fbprophet>=0.5, <0.7",
