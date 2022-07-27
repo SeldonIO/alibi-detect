@@ -167,7 +167,8 @@ class MMDDriftKeops(BaseMMDDrift):
         # compute kernel matrix, MMD^2 and apply permutation test
         m, n = x_ref.shape[0], x.shape[0]
         perms = [torch.randperm(m + n) for _ in range(self.n_permutations)]
-        x_all = torch.cat([x_ref, x], 0)
+        # TODO - Rethink typings (related to https://github.com/SeldonIO/alibi-detect/issues/540)
+        x_all = torch.cat([x_ref, x], 0)  # type: ignore[list-item]
         mmd2, mmd2_permuted = self._mmd2(x_all, perms, m, n)
         if self.device.type == 'cuda':
             mmd2, mmd2_permuted = mmd2.cpu(), mmd2_permuted.cpu()
