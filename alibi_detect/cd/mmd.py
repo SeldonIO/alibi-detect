@@ -88,6 +88,7 @@ class MMDDrift(DriftConfigMixin):
         self._set_config(locals())
 
         backend = backend.lower()
+        estimator = estimator.lower()  # type: ignore
         BackendValidator(
             backend_options={'tensorflow': ['tensorflow'],
                              'pytorch': ['pytorch']},

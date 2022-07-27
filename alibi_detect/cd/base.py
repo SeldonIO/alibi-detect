@@ -506,7 +506,7 @@ class BaseMMDDrift(BaseDetector):
             preprocess_fn: Optional[Callable] = None,
             sigma: Optional[np.ndarray] = None,
             configure_kernel_from_x_ref: bool = True,
-            n_permutations: int = 100,
+            n_permutations: int = None,
             input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None
     ) -> None:
