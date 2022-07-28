@@ -272,3 +272,16 @@ def test_torch_utils_dependencies(opt_dep):
         dependency_map[dependency] = relations
     from alibi_detect.utils import pytorch as pytorch_utils
     check_correct_dependencies(pytorch_utils, dependency_map, opt_dep)
+
+
+def test_keops_utils_dependencies(opt_dep):
+    """Tests that the keops utils module correctly protects against uninstalled optional dependencies.
+    """
+
+    dependency_map = defaultdict(lambda: ['default'])
+    for dependency, relations in [
+        ("GaussianRBF", ['keops']),
+    ]:
+        dependency_map[dependency] = relations
+    from alibi_detect.utils import keops as keops_utils
+    check_correct_dependencies(keops_utils, dependency_map, opt_dep)
