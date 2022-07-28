@@ -1,9 +1,11 @@
 from itertools import product
 import numpy as np
-from pykeops.torch import LazyTensor
+from alibi_detect.utils.frameworks import has_keops
 import pytest
 import torch
-from alibi_detect.utils.keops import GaussianRBF
+if has_keops:
+    from pykeops.torch import LazyTensor
+    from alibi_detect.utils.keops import GaussianRBF
 
 sigma = [None, np.array([1.]), np.array([1., 2.])]
 n_features = [5, 10]
@@ -18,6 +20,7 @@ def gaussian_kernel_params(request):
     return tests_gk[request.param]
 
 
+@pytest.mark.skipif(not has_keops, reason='Skipping since pykeops is not installed.')
 @pytest.mark.parametrize('gaussian_kernel_params', list(range(n_tests_gk)), indirect=True)
 def test_gaussian_kernel(gaussian_kernel_params):
     sigma, n_features, n_instances, trainable = gaussian_kernel_params
