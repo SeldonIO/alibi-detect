@@ -5,8 +5,10 @@ import pytest
 import torch
 import torch.nn as nn
 from typing import Callable, List
-from alibi_detect.cd.keops.mmd import MMDDriftKeops
+from alibi_detect.utils.frameworks import has_keops
 from alibi_detect.cd.pytorch.preprocess import HiddenOutput, preprocess_drift
+if has_keops:
+    from alibi_detect.cd.keops.mmd import MMDDriftKeops
 
 n, n_hidden, n_classes = 500, 10, 5
 
@@ -48,6 +50,7 @@ def mmd_params(request):
     return tests_mmddrift[request.param]
 
 
+@pytest.mark.skipif(not has_keops, reason='Skipping since pykeops is not installed.')
 @pytest.mark.parametrize('mmd_params', list(range(n_tests)), indirect=True)
 def test_mmd(mmd_params):
     n_features, n_enc, preprocess, n_permutations, preprocess_at_init, \

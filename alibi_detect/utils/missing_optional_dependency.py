@@ -26,7 +26,7 @@ ERROR_TYPES = {
     "tensorflow": 'tensorflow',
     "torch": 'torch',
     "pytorch": 'torch',
-    "pykeops": 'keops'
+    "keops": 'keops',
 }
 
 

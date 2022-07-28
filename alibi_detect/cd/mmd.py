@@ -90,7 +90,7 @@ class MMDDrift(DriftConfigMixin):
         BackendValidator(
             backend_options={'tensorflow': ['tensorflow'],
                              'pytorch': ['pytorch'],
-                             'keops': ['keops', 'pytorch']},
+                             'keops': ['keops']},
             construct_name=self.__class__.__name__
         ).verify_backend(backend)
 
