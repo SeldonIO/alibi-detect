@@ -176,7 +176,8 @@ The KeOps installation is required to use the KeOps backend for the following de
 KeOps requires a C++ compiler compatible with `std=c++11`, for example `g++ >=7` or `clang++ >=8`, and a
 [Cuda toolkit](https://developer.nvidia.com/cuda-toolkit) installation. For more detailed version requirements
 and testing instructions for KeOps, see the 
-[KeOps docs](https://www.kernel-operations.io/keops/python/installation.html).
+[KeOps docs](https://www.kernel-operations.io/keops/python/installation.html). **Currently, the KeOps backend is
+only officially supported on Linux.**
 ```
 ````
 
