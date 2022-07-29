@@ -634,6 +634,7 @@ class MMDDriftConfig(DriftDetectorConfig):
     sigma: Optional[NDArray[np.float32]] = None
     configure_kernel_from_x_ref: bool = True
     n_permutations: int = 100
+    batch_size_permutations: int = 1000000
     device: Optional[Literal['cpu', 'cuda']] = None
 
 
@@ -652,6 +653,7 @@ class MMDDriftConfigResolved(DriftDetectorConfigResolved):
     sigma: Optional[NDArray[np.float32]] = None
     configure_kernel_from_x_ref: bool = True
     n_permutations: int = 100
+    batch_size_permutations: int = 1000000
     device: Optional[Literal['cpu', 'cuda']] = None
 
 
