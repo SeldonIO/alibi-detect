@@ -27,6 +27,7 @@ ERROR_TYPES = {
     "torch": 'torch',
     "pytorch": 'torch',
     "keops": 'keops',
+    "pykeops": 'keops',
 }
 
 
