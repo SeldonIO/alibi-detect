@@ -5,6 +5,10 @@ from . import distance
 from typing import Optional, Union, Callable
 
 
+def pseudo_init_fn(x: torch.Tensor, y: torch.Tensor, dist: torch.Tensor) -> torch.Tensor:
+    return torch.ones(1, dtype=x.dtype, device=x.device)
+
+
 def sigma_median(x: torch.Tensor, y: torch.Tensor, dist: torch.Tensor) -> torch.Tensor:
     """
     Bandwidth estimation using the median heuristic :cite:t:`Gretton2012`.
@@ -39,8 +43,9 @@ class BaseKernel(nn.Module):
         super().__init__()
         self.parameter_dict: dict = {}
         self.active_dims: Optional[list] = None
+        self.feature_axis: int = -1
 
-    def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, y: torch.Tensor, infer_parameter: bool = False) -> torch.Tensor:
         raise NotImplementedError
 
 
@@ -59,8 +64,8 @@ class SumKernel(nn.Module):
         self.kernel_a = kernel_a
         self.kernel_b = kernel_b
 
-    def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-        return self.kernel_a(x, y) + self.kernel_b(x, y)
+    def forward(self, x: torch.Tensor, y: torch.Tensor,  infer_parameter: bool = False) -> torch.Tensor:
+        return self.kernel_a(x, y, infer_parameter) + self.kernel_b(x, y, infer_parameter)
 
 
 class ProductKernel(nn.Module):
@@ -78,8 +83,8 @@ class ProductKernel(nn.Module):
         self.kernel_a = kernel_a
         self.kernel_b = kernel_b
 
-    def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-        return self.kernel_a(x, y) * self.kernel_b(x, y)
+    def forward(self, x: torch.Tensor, y: torch.Tensor,  infer_parameter: bool = False) -> torch.Tensor:
+        return self.kernel_a(x, y, infer_parameter) * self.kernel_b(x, y, infer_parameter)
 
 
 class GaussianRBF(BaseKernel):
@@ -88,7 +93,8 @@ class GaussianRBF(BaseKernel):
        sigma: Optional[torch.Tensor] = None,
        init_fn_sigma: Callable = sigma_median,
        trainable: bool = False,
-       active_dims: Optional[list] = None
+       active_dims: Optional[list] = None,
+       feature_axis: int = -1
     ) -> None:
         """
         Gaussian RBF kernel: k(x,y) = exp(-(1/(2*sigma^2)||x-y||^2). A forward pass takes
@@ -117,7 +123,11 @@ class GaussianRBF(BaseKernel):
             self.log_sigma = nn.Parameter(sigma.log(), requires_grad=trainable)
             self.init_required = False
         self.init_fn_sigma = init_fn_sigma
-        self.active_dims = active_dims
+        if active_dims is not None:
+            self.active_dims = torch.tensor(active_dims)
+        else:
+            self.active_dims = None
+        self.feature_axis = feature_axis
         self.trainable = trainable
 
     @property
@@ -128,6 +138,9 @@ class GaussianRBF(BaseKernel):
                 infer_parameter: bool = False) -> torch.Tensor:
 
         x, y = torch.as_tensor(x), torch.as_tensor(y)
+        if self.active_dims is not None:
+            x = torch.index_select(x, self.feature_axis, self.active_dims)
+            y = torch.index_select(y, self.feature_axis, self.active_dims)
         dist = distance.squared_pairwise_distance(x.flatten(1), y.flatten(1))  # [Nx, Ny]
 
         if infer_parameter or self.init_required:
@@ -148,11 +161,12 @@ class RationalQuadratic(BaseKernel):
     def __init__(
         self,
         alpha: torch.Tensor = None,
-        init_fn_alpha: Callable = None,
+        init_fn_alpha: Callable = pseudo_init_fn,
         sigma: torch.Tensor = None,
-        init_fn_sigma: Callable = None,
+        init_fn_sigma: Callable = sigma_median,
         trainable: bool = False,
-        active_dims: Optional[list] = None
+        active_dims: Optional[list] = None,
+        feature_axis: int = -1
     ) -> None:
         """
         Rational Quadratic kernel: k(x,y) = (1 + ||x-y||^2 / (2*sigma^2))^(-alpha).
@@ -183,7 +197,11 @@ class RationalQuadratic(BaseKernel):
             self.init_required = False
         self.init_fn_alpha = init_fn_alpha
         self.init_fn_sigma = init_fn_sigma
-        self.active_dims = active_dims
+        if active_dims is not None:
+            self.active_dims = torch.tensor(active_dims)
+        else:
+            self.active_dims = None
+        self.feature_axis = feature_axis
         self.trainable = trainable
 
     @property
@@ -194,9 +212,24 @@ class RationalQuadratic(BaseKernel):
     def sigma(self) -> torch.Tensor:
         return self.log_sigma.exp()
 
-    def forward(self, x: Union[np.ndarray, torch.Tensor], y: Union[np.ndarray, torch.Tensor]) -> torch.Tensor:
+    def forward(self, x: Union[np.ndarray, torch.Tensor], y: Union[np.ndarray, torch.Tensor], 
+                infer_parameter: bool = False) -> torch.Tensor:
         x, y = torch.as_tensor(x), torch.as_tensor(y)
+        if self.active_dims is not None:
+            x = torch.index_select(x, self.feature_axis, self.active_dims)
+            y = torch.index_select(y, self.feature_axis, self.active_dims)
         dist = distance.squared_pairwise_distance(x.flatten(1), y.flatten(1))
+        
+        if infer_parameter or self.init_required:
+            if self.trainable and infer_parameter:
+                raise ValueError("Gradients cannot be computed w.r.t. an inferred sigma value")
+            sigma = self.init_fn_sigma(x, y, dist)
+            alpha = self.init_fn_alpha(x, y, dist)
+            with torch.no_grad():
+                self.log_sigma.copy_(sigma.log().clone())
+                self.raw_alpha.copy_(alpha.clone())
+            self.init_required = False
+        
         kernel_mat = (1 + torch.square(dist) / (2 * self.alpha * (self.sigma ** 2))) ** (-self.alpha)
         return kernel_mat
 
@@ -205,11 +238,12 @@ class Periodic(BaseKernel):
     def __init__(
         self,
         tau: torch.Tensor = None,
-        init_fn_tau: Callable = None,
+        init_fn_tau: Callable = pseudo_init_fn,
         sigma: torch.Tensor = None,
-        init_fn_sigma: Callable = None,
+        init_fn_sigma: Callable = sigma_median,
         trainable: bool = False,
-        active_dims: Optional[list] = None
+        active_dims: Optional[list] = None,
+        feature_axis: int = -1
     ) -> None:
         """
         Periodic kernel: k(x,y) = .
@@ -240,7 +274,11 @@ class Periodic(BaseKernel):
             self.init_required = False
         self.init_fn_tau = init_fn_tau
         self.init_fn_sigma = init_fn_sigma
-        self.active_dims = active_dims
+        if active_dims is not None:
+            self.active_dims = torch.tensor(active_dims)
+        else:
+            self.active_dims = None
+        self.feature_axis = feature_axis
         self.trainable = trainable
 
     @property
@@ -251,9 +289,24 @@ class Periodic(BaseKernel):
     def sigma(self) -> torch.Tensor:
         return self.log_sigma.exp()
 
-    def forward(self, x: Union[np.ndarray, torch.Tensor], y: Union[np.ndarray, torch.Tensor]) -> torch.Tensor:
+    def forward(self, x: Union[np.ndarray, torch.Tensor], y: Union[np.ndarray, torch.Tensor],
+                infer_parameter: bool = False) -> torch.Tensor:
         x, y = torch.as_tensor(x), torch.as_tensor(y)
+        if self.active_dims is not None:
+            x = torch.index_select(x, self.feature_axis, self.active_dims)
+            y = torch.index_select(y, self.feature_axis, self.active_dims)
         dist = torch.sqrt(distance.squared_pairwise_distance(x.flatten(1), y.flatten(1)))
+        
+        if infer_parameter or self.init_required:
+            if self.trainable and infer_parameter:
+                raise ValueError("Gradients cannot be computed w.r.t. an inferred sigma value")
+            sigma = self.init_fn_sigma(x, y, dist)
+            tau = self.init_fn_tau(x, y, dist)
+            with torch.no_grad():
+                self.log_sigma.copy_(sigma.log().clone())
+                self.log_tau.copy_(tau.log().clone())
+            self.init_required = False
+        
         kernel_mat = torch.exp(-2 * torch.square(
             torch.sin(torch.as_tensor(np.pi) * dist / self.tau)) / (self.sigma ** 2))
         return kernel_mat
@@ -263,11 +316,12 @@ class LocalPeriodic(BaseKernel):
     def __init__(
         self,
         tau: torch.Tensor = None,
-        init_fn_tau: Callable = None,
+        init_fn_tau: Callable = pseudo_init_fn,
         sigma: torch.Tensor = None,
-        init_fn_sigma: Callable = None,
+        init_fn_sigma: Callable = sigma_median,
         trainable: bool = False,
-        active_dims: Optional[list] = None
+        active_dims: Optional[list] = None,
+        feature_axis: int = -1
     ) -> None:
         """
         Local periodic kernel: k(x,y) = .
@@ -298,7 +352,11 @@ class LocalPeriodic(BaseKernel):
             self.init_required = False
         self.init_fn_tau = init_fn_tau
         self.init_fn_sigma = init_fn_sigma
-        self.active_dims = active_dims
+        if active_dims is not None:
+            self.active_dims = torch.tensor(active_dims)
+        else:
+            self.active_dims = None
+        self.feature_axis = feature_axis
         self.trainable = trainable
 
     @property
@@ -309,9 +367,24 @@ class LocalPeriodic(BaseKernel):
     def sigma(self) -> torch.Tensor:
         return self.log_sigma.exp()
 
-    def forward(self, x: Union[np.ndarray, torch.Tensor], y: Union[np.ndarray, torch.Tensor]) -> torch.Tensor:
+    def forward(self, x: Union[np.ndarray, torch.Tensor], y: Union[np.ndarray, torch.Tensor],
+                infer_parameter: bool = False) -> torch.Tensor:
         x, y = torch.as_tensor(x), torch.as_tensor(y)
+        if self.active_dims is not None:
+            x = torch.index_select(x, self.feature_axis, self.active_dims)
+            y = torch.index_select(y, self.feature_axis, self.active_dims)
         dist = distance.squared_pairwise_distance(x.flatten(1), y.flatten(1))
+        
+        if infer_parameter or self.init_required:
+            if self.trainable and infer_parameter:
+                raise ValueError("Gradients cannot be computed w.r.t. an inferred sigma value")
+            sigma = self.init_fn_sigma(x, y, dist)
+            tau = self.init_fn_tau(x, y, dist)
+            with torch.no_grad():
+                self.log_sigma.copy_(sigma.log().clone())
+                self.log_tau.copy_(tau.log().clone())
+            self.init_required = False
+        
         kernel_mat = torch.exp(-2 * torch.square(
             torch.sin(torch.as_tensor(np.pi) * dist / self.tau)) / (self.sigma ** 2)) * \
             torch.exp(-0.5 * torch.square(dist / self.tau))
