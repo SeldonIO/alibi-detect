@@ -7,11 +7,9 @@ from alibi_detect.base import DriftConfigMixin
 
 if has_pytorch:
     from alibi_detect.cd.pytorch.mmd import MMDDriftTorch
-    from alibi_detect.utils.pytorch.kernels import BaseKernel as BaseKernelTorch
 
 if has_tensorflow:
     from alibi_detect.cd.tensorflow.mmd import MMDDriftTF
-    from alibi_detect.utils.tensorflow.kernels import BaseKernel as BaseKernelTF
 
 if has_keops and has_pytorch:
     from alibi_detect.cd.keops.mmd import MMDDriftKeops

@@ -6,6 +6,10 @@ from scipy.special import logit
 from alibi_detect.utils.frameworks import Framework
 
 
+def pseudo_init_fn(x: tf.Tensor, y: tf.Tensor, dist: tf.Tensor) -> tf.Tensor:
+    return tf.ones(1, dtype=x.dtype)
+
+
 def sigma_median(x: tf.Tensor, y: tf.Tensor, dist: tf.Tensor) -> tf.Tensor:
     """
     Bandwidth estimation using the median heuristic :cite:t:`Gretton2012`.
@@ -40,6 +44,7 @@ class BaseKernel(tf.keras.Model):
         super().__init__()
         self.parameter_dict: dict = {}
         self.active_dims: Optional[list] = None
+        self.feature_axis: int = -1
 
     def call(self, x: tf.Tensor, y: tf.Tensor, infer_parameter: bool = False) -> tf.Tensor:
         return NotImplementedError
@@ -89,7 +94,8 @@ class GaussianRBF(BaseKernel):
             sigma: Optional[tf.Tensor] = None,
             init_fn_sigma: Optional[Callable] = None,
             trainable: bool = False,
-            active_dims: Optional[list] = None
+            active_dims: Optional[list] = None,
+            feature_axis: int = -1
     ) -> None:
         """
         Gaussian RBF kernel: k(x,y) = exp(-(1/(2*sigma^2)||x-y||^2). A forward pass takes
@@ -122,6 +128,7 @@ class GaussianRBF(BaseKernel):
             self.init_required = False
         self.init_fn_sigma = init_fn_sigma
         self.active_dims = active_dims
+        self.feature_axis = feature_axis
         self.trainable = trainable
 
     @property
@@ -130,6 +137,9 @@ class GaussianRBF(BaseKernel):
 
     def call(self, x: tf.Tensor, y: tf.Tensor, infer_parameter: bool = False) -> tf.Tensor:
         y = tf.cast(y, x.dtype)
+        if self.active_dims is not None:
+            x = tf.gather(x, self.active_dims, axis=self.feature_axis)
+            y = tf.gather(y, self.active_dims, axis=self.feature_axis)
         x, y = tf.reshape(x, (x.shape[0], -1)), tf.reshape(y, (y.shape[0], -1))  # flatten
         dist = distance.squared_pairwise_distance(x, y)  # [Nx, Ny]
 
@@ -173,11 +183,12 @@ class RationalQuadratic(BaseKernel):
     def __init__(
         self,
         alpha: tf.Tensor = None,
-        init_fn_alpha: Callable = None,
+        init_fn_alpha: Callable = pseudo_init_fn,
         sigma: tf.Tensor = None,
-        init_fn_sigma: Callable = None,
+        init_fn_sigma: Callable = sigma_median,
         trainable: bool = False,
-        active_dims: Optional[list] = None
+        active_dims: Optional[list] = None,
+        feature_axis: int = -1
     ) -> None:
         """
         Rational Quadratic kernel: k(x,y) = (1 + ||x-y||^2 / (2*sigma^2))^(-alpha).
@@ -210,6 +221,7 @@ class RationalQuadratic(BaseKernel):
         self.init_fn_alpha = init_fn_alpha
         self.init_fn_sigma = init_fn_sigma
         self.active_dims = active_dims
+        self.feature_axis = feature_axis
         self.trainable = trainable
 
     @property
@@ -222,6 +234,9 @@ class RationalQuadratic(BaseKernel):
 
     def call(self, x: tf.Tensor, y: tf.Tensor, infer_parameter: bool = False) -> tf.Tensor:
         y = tf.cast(y, x.dtype)
+        if self.active_dims is not None:
+            x = tf.gather(x, self.active_dims, axis=self.feature_axis)
+            y = tf.gather(y, self.active_dims, axis=self.feature_axis)
         x, y = tf.reshape(x, (x.shape[0], -1)), tf.reshape(y, (y.shape[0], -1))
         dist = distance.squared_pairwise_distance(x, y)
 
@@ -241,11 +256,12 @@ class Periodic(BaseKernel):
     def __init__(
         self,
         tau: tf.Tensor = None,
-        init_fn_tau: Callable = None,
+        init_fn_tau: Callable = pseudo_init_fn,
         sigma: tf.Tensor = None,
-        init_fn_sigma: Callable = None,
+        init_fn_sigma: Callable = sigma_median,
         trainable: bool = False,
-        active_dims: Optional[list] = None
+        active_dims: Optional[list] = None,
+        feature_axis: int = -1
     ) -> None:
         """
         Periodic kernel: k(x,y) = .
@@ -263,11 +279,11 @@ class Periodic(BaseKernel):
         self.parameter_dict['tau'] = 'period'
         self.parameter_dict['sigma'] = 'bandwidth'
         if tau is None:
-            self.log_tau = tf.Variable(np.empty(1), requires_grad=trainable)
+            self.log_tau = tf.Variable(np.empty(1), trainable=trainable)
             self.init_required = True
         else:
             tau = tf.cast(tf.reshape(tau, (-1,)), dtype=tf.keras.backend.floatx())
-            self.log_tau = tf.Variable(tf.log(tau), requires_grad=trainable)
+            self.log_tau = tf.Variable(tf.math.log(tau), trainable=trainable)
             self.init_required = False
         if sigma is None:
             self.log_sigma = tf.Variable(np.empty(1), dtype=tf.keras.backend.floatx(), trainable=trainable)
@@ -279,6 +295,7 @@ class Periodic(BaseKernel):
         self.init_fn_tau = init_fn_tau
         self.init_fn_sigma = init_fn_sigma
         self.active_dims = active_dims
+        self.feature_axis = feature_axis
         self.trainable = trainable
 
     @property
@@ -291,6 +308,9 @@ class Periodic(BaseKernel):
 
     def call(self, x: tf.Tensor, y: tf.Tensor, infer_parameter: bool = False) -> tf.Tensor:
         y = tf.cast(y, x.dtype)
+        if self.active_dims is not None:
+            x = tf.gather(x, self.active_dims, axis=self.feature_axis)
+            y = tf.gather(y, self.active_dims, axis=self.feature_axis)
         x, y = tf.reshape(x, (x.shape[0], -1)), tf.reshape(y, (y.shape[0], -1))
         dist = distance.squared_pairwise_distance(x, y)
 
@@ -312,9 +332,9 @@ class LocalPeriodic(BaseKernel):
     def __init__(
         self,
         tau: tf.Tensor = None,
-        init_fn_tau: Callable = None,
+        init_fn_tau: Callable = pseudo_init_fn,
         sigma: tf.Tensor = None,
-        init_fn_sigma: Callable = None,
+        init_fn_sigma: Callable = sigma_median,
         trainable: bool = False,
         active_dims: Optional[list] = None
     ) -> None:
@@ -334,11 +354,11 @@ class LocalPeriodic(BaseKernel):
         self.parameter_dict['tau'] = 'period'
         self.parameter_dict['sigma'] = 'bandwidth'
         if tau is None:
-            self.log_tau = tf.Variable(np.empty(1), requires_grad=trainable)
+            self.log_tau = tf.Variable(np.empty(1), trainable=trainable)
             self.init_required = True
         else:
             tau = tf.cast(tf.reshape(tau, (-1,)), dtype=tf.keras.backend.floatx())
-            self.log_tau = tf.Variable(tf.log(tau), requires_grad=trainable)
+            self.log_tau = tf.Variable(tf.math.log(tau), trainable=trainable)
             self.init_required = False
         if sigma is None:
             self.log_sigma = tf.Variable(np.empty(1), dtype=tf.keras.backend.floatx(), trainable=trainable)
@@ -362,6 +382,9 @@ class LocalPeriodic(BaseKernel):
 
     def call(self, x: tf.Tensor, y: tf.Tensor, infer_parameter: bool = False) -> tf.Tensor:
         y = tf.cast(y, x.dtype)
+        if self.active_dims is not None:
+            x = tf.gather(x, self.active_dims, axis=self.feature_axis)
+            y = tf.gather(y, self.active_dims, axis=self.feature_axis)
         x, y = tf.reshape(x, (x.shape[0], -1)), tf.reshape(y, (y.shape[0], -1))
         dist = distance.squared_pairwise_distance(x, y)
 
