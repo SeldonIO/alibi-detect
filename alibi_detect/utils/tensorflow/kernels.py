@@ -6,6 +6,9 @@ from scipy.special import logit
 
 
 def pseudo_init_fn(x: tf.Tensor, y: tf.Tensor, dist: tf.Tensor) -> tf.Tensor:
+    """
+    A pseudo-initialization function for the kernel parameter.
+    """
     return tf.ones(1, dtype=x.dtype)
 
 
@@ -34,10 +37,8 @@ def sigma_median(x: tf.Tensor, y: tf.Tensor, dist: tf.Tensor) -> tf.Tensor:
 
 
 class BaseKernel(tf.keras.Model):
-    """_summary_
+    """
     The base class for all kernels.
-    Args:
-        nn (_type_): _description_
     """
     def __init__(self) -> None:
         super().__init__()
@@ -51,9 +52,14 @@ class BaseKernel(tf.keras.Model):
 
 class SumKernel(tf.keras.Model):
     """
-    Construct a kernel by summing two kernels.
-    Args:
-        nn (_type_): _description_
+    Construct a kernel by averaging two kernels.
+
+    Parameters:
+    ----------
+        kernel_a
+            the first kernel to be summed.
+        kernel_b
+            the second kernel to be summed.
     """
     def __init__(
         self,
@@ -65,14 +71,19 @@ class SumKernel(tf.keras.Model):
         self.kernel_b = kernel_b
 
     def call(self, x: tf.Tensor, y: tf.Tensor, infer_parameter: bool = False) -> tf.Tensor:
-        return self.kernel_a(x, y, infer_parameter) + self.kernel_b(x, y, infer_parameter)
+        return (self.kernel_a(x, y, infer_parameter) + self.kernel_b(x, y, infer_parameter)) / 2
 
 
 class ProductKernel(tf.keras.Model):
     """
     Construct a kernel by multiplying two kernels.
-    Args:
-        nn (_type_): _description_
+
+    Parameters:
+    ----------
+        kernel_a
+            the first kernel to be summed.
+        kernel_b
+            the second kernel to be summed.
     """
     def __init__(
         self,
@@ -229,7 +240,17 @@ class RationalQuadratic(BaseKernel):
             alpha = self.init_fn_alpha(x, y, dist)
             self.raw_alpha.assign(alpha)
 
-        kernel_mat = (1 + tf.square(dist) / (2 * self.alpha * (self.sigma ** 2))) ** (-self.alpha)
+        if len(self.sigma) > 1:
+            if len(self.sigma) == len(self.alpha):
+                kernel_mat = []
+                for i in range(len(self.sigma)):
+                    kernel_mat.append((1 + tf.square(dist) /
+                                       (2 * self.alpha[i] * (self.sigma[i] ** 2))) ** (-self.alpha[i]))
+                kernel_mat = tf.reduce_mean(tf.stack(kernel_mat, axis=0), axis=0)
+            else:
+                raise ValueError("Length of sigma and alpha must be equal")
+        else:
+            kernel_mat = (1 + tf.square(dist) / (2 * self.alpha * (self.sigma ** 2))) ** (-self.alpha)
         return kernel_mat
 
 
@@ -303,9 +324,18 @@ class Periodic(BaseKernel):
             tau = self.init_fn_tau(x, y, dist)
             self.log_tau.assign(tf.math.log(tau))
 
-        kernel_mat = tf.math.exp(-2 * tf.square(
-            tf.math.sin(tf.cast(np.pi, x.dtype) * dist / self.tau)) / (self.sigma ** 2))
-
+        if len(self.sigma) > 1:
+            if len(self.sigma) == len(self.tau):
+                kernel_mat = []
+                for i in range(len(self.sigma)):
+                    kernel_mat.append(tf.math.exp(-2 * tf.square(
+                        tf.math.sin(tf.cast(np.pi, x.dtype) * dist / self.tau[i])) / (self.sigma[i] ** 2)))
+                kernel_mat = tf.reduce_mean(tf.stack(kernel_mat, axis=0), axis=0)
+            else:
+                raise ValueError("Length of sigma and alpha must be equal")
+        else:
+            kernel_mat = tf.math.exp(-2 * tf.square(
+                tf.math.sin(tf.cast(np.pi, x.dtype) * dist / self.tau)) / (self.sigma ** 2))
         return kernel_mat
 
 
@@ -377,10 +407,20 @@ class LocalPeriodic(BaseKernel):
             tau = self.init_fn_tau(x, y, dist)
             self.log_tau.assign(tf.math.log(tau))
 
-        kernel_mat = tf.math.exp(-2 * tf.square(
-            tf.math.sin(tf.cast(np.pi, x.dtype) * dist / self.tau)) / (self.sigma ** 2)) * \
-            tf.math.exp(-0.5 * tf.square(dist / self.tau))
-
+        if len(self.sigma) > 1:
+            if len(self.sigma) == len(self.tau):
+                kernel_mat = []
+                for i in range(len(self.sigma)):
+                    kernel_mat.append(tf.math.exp(-2 * tf.square(
+                        tf.math.sin(tf.cast(np.pi, x.dtype) * dist / self.tau[i])) / (self.sigma[i] ** 2)) *
+                                      tf.math.exp(-0.5 * tf.square(dist / self.tau[i])))
+                kernel_mat = tf.reduce_mean(tf.stack(kernel_mat, axis=0), axis=0)
+            else:
+                raise ValueError("Length of sigma and alpha must be equal")
+        else:
+            kernel_mat = tf.math.exp(-2 * tf.square(
+                tf.math.sin(tf.cast(np.pi, x.dtype) * dist / self.tau)) / (self.sigma ** 2)) * \
+                    tf.math.exp(-0.5 * tf.square(dist / self.tau))
         return kernel_mat
 
 

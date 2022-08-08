@@ -12,7 +12,6 @@ if has_tensorflow:
 class LSDDDriftOnline:
     def __init__(
             self,
-            
             x_ref: Union[np.ndarray, list],
             ert: float,
             window_size: int,

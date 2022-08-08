@@ -5,11 +5,9 @@ from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
 
 if has_pytorch:
     from alibi_detect.cd.pytorch.mmd import MMDDriftTorch
-    from alibi_detect.utils.pytorch.kernels import BaseKernel as BaseKernelTorch
 
 if has_tensorflow:
     from alibi_detect.cd.tensorflow.mmd import MMDDriftTF
-    from alibi_detect.utils.tensorflow.kernels import BaseKernel as BaseKernelTF
 
 logger = logging.getLogger(__name__)
 
