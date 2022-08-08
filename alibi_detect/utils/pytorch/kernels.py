@@ -7,6 +7,9 @@ from alibi_detect.utils.frameworks import Framework
 
 
 def pseudo_init_fn(x: torch.Tensor, y: torch.Tensor, dist: torch.Tensor) -> torch.Tensor:
+    """
+    A pseudo-initialization function for the kernel parameter.
+    """
     return torch.ones(1, dtype=x.dtype, device=x.device)
 
 
@@ -37,8 +40,6 @@ def sigma_median(x: torch.Tensor, y: torch.Tensor, dist: torch.Tensor) -> torch.
 class BaseKernel(nn.Module):
     """
     The base class for all kernels.
-    Args:
-        nn (_type_): _description_
     """
     def __init__(self) -> None:
         super().__init__()
@@ -52,9 +53,14 @@ class BaseKernel(nn.Module):
 
 class SumKernel(nn.Module):
     """
-    Construct a kernel by summing two kernels.
-    Args:
-        nn (_type_): _description_
+    Construct a kernel by averaging two kernels.
+
+    Parameters:
+    ----------
+        kernel_a
+            the first kernel to be summed.
+        kernel_b
+            the second kernel to be summed.
     """
     def __init__(
         self,
@@ -66,14 +72,19 @@ class SumKernel(nn.Module):
         self.kernel_b = kernel_b
 
     def forward(self, x: torch.Tensor, y: torch.Tensor,  infer_parameter: bool = False) -> torch.Tensor:
-        return self.kernel_a(x, y, infer_parameter) + self.kernel_b(x, y, infer_parameter)
+        return (self.kernel_a(x, y, infer_parameter) + self.kernel_b(x, y, infer_parameter)) / 2
 
 
 class ProductKernel(nn.Module):
     """
     Construct a kernel by multiplying two kernels.
-    Args:
-        nn (_type_): _description_
+
+    Parameters:
+    ----------
+        kernel_a
+            the first kernel to be summed.
+        kernel_b
+            the second kernel to be summed.
     """
     def __init__(
         self,
@@ -257,7 +268,17 @@ class RationalQuadratic(BaseKernel):
                 self.raw_alpha.copy_(alpha.clone())
             self.init_required = False
 
-        kernel_mat = (1 + torch.square(dist) / (2 * self.alpha * (self.sigma ** 2))) ** (-self.alpha)
+        if len(self.sigma) > 1:
+            if len(self.sigma) == len(self.alpha):
+                kernel_mat = []
+                for i in range(len(self.sigma)):
+                    kernel_mat.append((1 + torch.square(dist)
+                                       / (2 * self.alpha[i] * (self.sigma[i] ** 2))) ** (-self.alpha[i]))
+                kernel_mat = torch.stack(kernel_mat, dim=0).mean(dim=0)
+            else:
+                raise ValueError("Length of sigma and alpha must be equal")
+        else:
+            kernel_mat = (1 + torch.square(dist) / (2 * self.alpha * (self.sigma ** 2))) ** (-self.alpha)
         return kernel_mat
 
 
@@ -334,8 +355,18 @@ class Periodic(BaseKernel):
                 self.log_tau.copy_(tau.log().clone())
             self.init_required = False
 
-        kernel_mat = torch.exp(-2 * torch.square(
-            torch.sin(torch.as_tensor(np.pi) * dist / self.tau)) / (self.sigma ** 2))
+        if len(self.sigma) > 1:
+            if len(self.sigma) == len(self.tau):
+                kernel_mat = []
+                for i in range(len(self.sigma)):
+                    kernel_mat.append(torch.exp(-2 * torch.square(
+                        torch.sin(torch.as_tensor(np.pi) * dist / self.tau[i])) / (self.sigma[i] ** 2)))
+                kernel_mat = torch.stack(kernel_mat, dim=0).mean(dim=0)
+            else:
+                raise ValueError("Length of sigma and alpha must be equal")
+        else:
+            kernel_mat = torch.exp(-2 * torch.square(
+                torch.sin(torch.as_tensor(np.pi) * dist / self.tau)) / (self.sigma ** 2))
         return kernel_mat
 
 
@@ -412,9 +443,20 @@ class LocalPeriodic(BaseKernel):
                 self.log_tau.copy_(tau.log().clone())
             self.init_required = False
 
-        kernel_mat = torch.exp(-2 * torch.square(
-            torch.sin(torch.as_tensor(np.pi) * dist / self.tau)) / (self.sigma ** 2)) * \
-            torch.exp(-0.5 * torch.square(dist / self.tau))
+        if len(self.sigma) > 1:
+            if len(self.sigma) == len(self.tau):
+                kernel_mat = []
+                for i in range(len(self.sigma)):
+                    kernel_mat.append(torch.exp(-2 * torch.square(
+                        torch.sin(torch.as_tensor(np.pi) * dist / self.tau[i])) / (self.sigma[i] ** 2)) *
+                                      torch.exp(-0.5 * torch.square(dist / self.tau[i])))
+                kernel_mat = torch.stack(kernel_mat, dim=0).mean(dim=0)
+            else:
+                raise ValueError("Length of sigma and alpha must be equal")
+        else:
+            kernel_mat = torch.exp(-2 * torch.square(
+                torch.sin(torch.as_tensor(np.pi) * dist / self.tau)) / (self.sigma ** 2)) * \
+                    torch.exp(-0.5 * torch.square(dist / self.tau))
         return kernel_mat
 
 
