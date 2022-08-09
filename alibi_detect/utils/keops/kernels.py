@@ -78,7 +78,7 @@ class GaussianRBF(nn.Module):
         if infer_sigma or self.init_required:
             if self.trainable and infer_sigma:
                 raise ValueError("Gradients cannot be computed w.r.t. an inferred sigma value")
-            sigma = self.init_sigma_fn(x, y, dist)  # .to(x.device)
+            sigma = self.init_sigma_fn(x, y, dist)
             with torch.no_grad():
                 self.log_sigma.copy_(sigma.log().clone())
             self.init_required = False
