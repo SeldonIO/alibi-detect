@@ -138,12 +138,12 @@ class MMDDriftKeops(BaseMMDDrift):
             x, y = x.to(self.device), y.to(self.device)
 
             # batch-wise kernel matrix computation over the permutations
+            k_xy.append(self.kernel(
+                LazyTensor(x[:, :, None, :]), LazyTensor(y[:, None, :, :]), self.infer_sigma).sum(1).sum(1).squeeze(-1))
             k_xx.append(self.kernel(
                 LazyTensor(x[:, :, None, :]), LazyTensor(x[:, None, :, :])).sum(1).sum(1).squeeze(-1))
             k_yy.append(self.kernel(
                 LazyTensor(y[:, :, None, :]), LazyTensor(y[:, None, :, :])).sum(1).sum(1).squeeze(-1))
-            k_xy.append(self.kernel(
-                LazyTensor(x[:, :, None, :]), LazyTensor(y[:, None, :, :])).sum(1).sum(1).squeeze(-1))
         c_xx, c_yy, c_xy = 1 / (m * (m - 1)), 1 / (n * (n - 1)), 2. / (m * n)
         stats = c_xx * (torch.cat(k_xx) - m) + c_yy * (torch.cat(k_yy) - n) - c_xy * torch.cat(k_xy)
         return stats[0], stats[1:]

@@ -32,7 +32,7 @@ def test_gaussian_kernel(gaussian_kernel_params):
     kernel = GaussianRBF(sigma=sigma, trainable=trainable)
     infer_sigma = True if sigma is None else False
     if trainable and infer_sigma:
-        with pytest.raises(Exception):
+        with pytest.raises(ValueError):
             kernel(LazyTensor(x[:, None, :]), LazyTensor(y[None, :, :]), infer_sigma=infer_sigma)
     else:
         k_xy = kernel(LazyTensor(x[:, None, :]), LazyTensor(y[None, :, :]), infer_sigma=infer_sigma)
