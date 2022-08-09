@@ -12,9 +12,9 @@ def sigma_mean(x: LazyTensor, y: LazyTensor, dist: LazyTensor, n_min: int = None
     Parameters
     ----------
     x
-        LazyTensor of instances with dimension [Nx, 1, features].
+        LazyTensor of instances with dimension [Nx, 1, features]. The singleton dimension is necessary for broadcasting.
     y
-        LazyTensor of instances with dimension [1, Ny, features].
+        LazyTensor of instances with dimension [1, Ny, features]. The singleton dimension is necessary for broadcasting.
     dist
         LazyTensor with dimensions [Nx, Ny] containing the pairwise distances between `x` and `y`.
     n_min
