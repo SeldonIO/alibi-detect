@@ -97,7 +97,9 @@ class MMDDriftKeops(BaseMMDDrift):
         self.n_batches = 1 + (n_permutations - 1) // batch_size_permutations
 
         # infer the kernel bandwidth from the reference data
-        if self.infer_sigma or isinstance(sigma, torch.Tensor):
+        if isinstance(sigma, torch.Tensor):
+            self.infer_sigma = False
+        elif self.infer_sigma:
             x = torch.from_numpy(self.x_ref).to(self.device)
             _ = self.kernel(LazyTensor(x[:, None, :]), LazyTensor(x[None, :, :]), infer_sigma=self.infer_sigma)
             self.infer_sigma = False
