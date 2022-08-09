@@ -36,7 +36,7 @@ class GaussianRBF(nn.Module):
     def __init__(
         self,
         sigma: Optional[torch.Tensor] = None,
-        init_sigma_fn: Callable = sigma_mean,
+        init_sigma_fn: Callable = None,
         trainable: bool = False
     ) -> None:
         """
