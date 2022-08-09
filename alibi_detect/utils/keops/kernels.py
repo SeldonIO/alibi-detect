@@ -36,7 +36,7 @@ def sigma_mean(x: LazyTensor, y: LazyTensor, dist: LazyTensor, n_min: int = None
         d_min, id_min = dist.Kmin_argKmin(n_min, axis=1)
         rows, cols = torch.where(id_min.cpu() == torch.arange(nx)[:, None])
         if (d_min[rows, cols] == 0.).all():
-            n_mean = n * (n - 1)
+            n_mean = nx * (nx - 1)
         else:
             n_mean = np.prod(dist.shape)
     else:
