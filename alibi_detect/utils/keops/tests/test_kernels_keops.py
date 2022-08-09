@@ -25,9 +25,6 @@ def gaussian_kernel_params(request):
 def test_gaussian_kernel(gaussian_kernel_params):
     sigma, n_features, n_instances, trainable = gaussian_kernel_params
     xshape, yshape = (n_instances[0], n_features), (n_instances[1], n_features)
-
-    print(sigma, xshape, yshape, trainable)
-
     sigma = sigma if sigma is None else torch.from_numpy(sigma).float()
     x = torch.from_numpy(np.random.random(xshape)).float()
     y = torch.from_numpy(np.random.random(yshape)).float()
