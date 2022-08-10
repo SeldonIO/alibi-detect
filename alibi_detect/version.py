@@ -2,7 +2,7 @@
 # 1) we don't load dependencies by storing it in __init__.py
 # 2) we can import it in setup.py for the same reason
 # 3) we can import it into your module module
-__version__ = "0.10.1"
+__version__ = "0.10.2dev"
 
 # Define the config specification version. This is distinct to the library version above. It is only updated when
 # any detector config schema is updated, such that loading a previous config spec cannot be guaranteed to work.
