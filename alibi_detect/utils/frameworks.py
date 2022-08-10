@@ -3,6 +3,7 @@ from typing import Optional, List, Dict, Iterable
 
 try:
     import tensorflow as tf  # noqa
+    import tensorflow_probability as tfp  # noqa
     has_tensorflow = True
 except ImportError:
     has_tensorflow = False
