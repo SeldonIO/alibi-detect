@@ -104,7 +104,6 @@ class MMDDrift(DriftConfigMixin):
             pop_kwargs += ['batch_size_permutations']
             detector = MMDDriftTorch
         else:
-            pop_kwargs += ['configure_kernel_from_x_ref']
             detector = MMDDriftKeops
         [kwargs.pop(k, None) for k in pop_kwargs]
 
