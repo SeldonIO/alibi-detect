@@ -1,5 +1,14 @@
 # Change Log
 
+## [v0.10.1](https://github.com/SeldonIO/alibi-detect/tree/v0.10.1) (2022-08-10)
+[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.10.0...v0.10.1)
+
+### Fixed
+- Corrected a missing optional dependency error when `tensorflow` was installed without `tensorflow-probability` ([#580](https://github.com/SeldonIO/alibi-detect/pull/580)).
+
+### Development
+- An upper version bound has been added for `torch` (<1.13.0) ([#575](https://github.com/SeldonIO/alibi-detect/pull/575)).
+
 ## [v0.10.0](https://github.com/SeldonIO/alibi-detect/tree/v0.10.0) (2022-07-26)
 [Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.9.1...v0.10.0)
 
