@@ -36,11 +36,12 @@ preprocess = [
     (preprocess_drift, {'model': HiddenOutput, 'layer': -1}),
     (preprocess_list, None)
 ]
+update_x_ref = [{'last': 750}, {'reservoir_sampling': 750}, None]
 preprocess_at_init = [True, False]
 n_permutations = [10]
 batch_size_permutations = [10, 1000000]
-configure_kernel_from_x_ref = [True, False]
-tests_mmddrift = list(product(n_features, n_enc, preprocess, n_permutations, preprocess_at_init,
+configure_kernel_from_x_ref = [True]
+tests_mmddrift = list(product(n_features, n_enc, preprocess, n_permutations, preprocess_at_init, update_x_ref,
                               batch_size_permutations, configure_kernel_from_x_ref))
 n_tests = len(tests_mmddrift)
 
@@ -53,7 +54,7 @@ def mmd_params(request):
 @pytest.mark.skipif(not has_keops, reason='Skipping since pykeops is not installed.')
 @pytest.mark.parametrize('mmd_params', list(range(n_tests)), indirect=True)
 def test_mmd(mmd_params):
-    n_features, n_enc, preprocess, n_permutations, preprocess_at_init, \
+    n_features, n_enc, preprocess, n_permutations, preprocess_at_init, update_x_ref, \
         batch_size_permutations, configure_kernel_from_x_ref = mmd_params
 
     np.random.seed(0)
@@ -79,6 +80,7 @@ def test_mmd(mmd_params):
         x_ref=x_ref,
         p_val=.05,
         preprocess_at_init=preprocess_at_init if isinstance(preprocess_fn, Callable) else False,
+        update_x_ref=update_x_ref,
         preprocess_fn=preprocess_fn,
         configure_kernel_from_x_ref=configure_kernel_from_x_ref,
         n_permutations=n_permutations,
@@ -87,6 +89,10 @@ def test_mmd(mmd_params):
     x = x_ref.copy()
     preds = cd.predict(x, return_p_val=True)
     assert preds['data']['is_drift'] == 0 and preds['data']['p_val'] >= cd.p_val
+    if isinstance(update_x_ref, dict):
+        k = list(update_x_ref.keys())[0]
+        assert cd.n == len(x) + len(x_ref)
+        assert cd.x_ref.shape[0] == min(update_x_ref[k], len(x) + len(x_ref))
 
     x_h1 = np.random.randn(n * n_features).reshape(n, n_features).astype(np.float32)
     if to_list:
