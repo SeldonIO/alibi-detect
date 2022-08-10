@@ -18,8 +18,8 @@ err_msg_template = Template((
 ))
 
 
-"""Map used to ensure correct pip install message is generated if a missing optional dependency is detected. This dict
-is used to control two behaviours:
+"""Mapping used to ensure correct pip install message is generated if a missing optional dependency is detected. This
+dict is used to control two behaviours:
     1. When we import objects from missing dependencies we check that any `ModuleNotFoundError` or `ImportError`
     corresponds to a missing optional dependency by checking the name of the missing dependency is in `ERROR_TYPES`. We
     then map this name to the corresponding optional dependency bucket that will resolve the issue.
