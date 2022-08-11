@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 from typing import Callable, List
 from alibi_detect.utils.frameworks import has_keops
-from alibi_detect.utils.pytorch import GaussianRBF, batch_compute_kernel_matrix, mmd2_from_kernel_matrix
+from alibi_detect.utils.pytorch import GaussianRBF, mmd2_from_kernel_matrix
 from alibi_detect.cd.pytorch.preprocess import HiddenOutput, preprocess_drift
 if has_keops:
     from alibi_detect.cd.keops.mmd import MMDDriftKeops
