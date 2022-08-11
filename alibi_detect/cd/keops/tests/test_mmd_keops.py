@@ -6,6 +6,7 @@ import torch
 import torch.nn as nn
 from typing import Callable, List
 from alibi_detect.utils.frameworks import has_keops
+from alibi_detect.utils.pytorch import GaussianRBF, batch_compute_kernel_matrix, mmd2_from_kernel_matrix
 from alibi_detect.cd.pytorch.preprocess import HiddenOutput, preprocess_drift
 if has_keops:
     from alibi_detect.cd.keops.mmd import MMDDriftKeops
@@ -104,3 +105,17 @@ def test_mmd(mmd_params):
     else:
         assert preds['data']['p_val'] >= preds['data']['threshold'] == cd.p_val
         assert preds['data']['distance'] <= preds['data']['distance_threshold']
+
+    # ensure the keops MMD^2 estimate matches the pytorch implementation for the same kernel
+    if not isinstance(x_ref, list) and update_x_ref is None:
+        print(x_ref.shape, x_h1.shape)
+        p_val, mmd2, distance_threshold = cd.score(x_h1)
+        kernel = GaussianRBF(sigma=cd.kernel.sigma)
+        if isinstance(preprocess_fn, Callable):
+            x_ref, x_h1 = cd.preprocess(x_h1)
+        x_ref = torch.from_numpy(x_ref).float()
+        x_h1 = torch.from_numpy(x_h1).float()
+        x_all = torch.cat([x_ref, x_h1], 0)
+        kernel_mat = kernel(x_all, x_all)
+        mmd2_torch = mmd2_from_kernel_matrix(kernel_mat, x_h1.shape[0])
+        np.testing.assert_almost_equal(mmd2, mmd2_torch, decimal=6)
