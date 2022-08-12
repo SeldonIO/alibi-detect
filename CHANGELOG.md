@@ -117,7 +117,10 @@
 ## [v0.7.3](https://github.com/SeldonIO/alibi-detect/tree/v0.7.3) (2021-10-29)
 [Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.7.2...v0.7.3)
 
-### Addedhttps://github.com/SeldonIO/alibi-detect/pull/584
+### Added
+- `DeepKernel` is allowed without the `kernel_b` component, giving a kernel consisting of only a deep kernel component (`kernel_a`). 
+- Documentation layout refreshed, and a new "Background to drift detection" added.
+
 ### Fixed
 - Model fetching methods now correctly handle nested filepaths.
 - For backward compatibility, fetch and load methods now attept to fetch/load `dill` files, but fall back to `pickle` files. 
