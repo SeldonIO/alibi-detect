@@ -1,5 +1,11 @@
 # Change Log
 
+## v0.10.2dev
+[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.10.1...master)
+
+### Development
+- Code Coverage added ([#584](https://github.com/SeldonIO/alibi-detect/pull/584)).
+
 ## [v0.10.1](https://github.com/SeldonIO/alibi-detect/tree/v0.10.1) (2022-08-10)
 [Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.10.0...v0.10.1)
 

@@ -69,6 +69,11 @@ jobs:
         run: |
           pytest alibi_detect
 
+      - name: Upload coverage to Codecov
+        if: ${{ success() }}
+        run: |
+          codecov
+
       - name: Build Python package
         run: |
           make build_pypi
