@@ -6,7 +6,7 @@
 
 [![Build Status](https://github.com/SeldonIO/alibi-detect/workflows/CI/badge.svg?branch=master)][#build-status]
 [![Documentation Status](https://readthedocs.org/projects/alibi-detect/badge/?version=latest)][#docs-package]
-[![codecov](https://codecov.io/gh/SeldonIO/alibi-detect/branch/master/graph/badge.svg)](https://codecov.io/gh/SeldonIO/alibi)
+[![codecov](https://codecov.io/gh/SeldonIO/alibi-detect/branch/master/graph/badge.svg)](https://codecov.io/gh/SeldonIO/alibi-detect)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/alibi-detect?logo=pypi&style=flat&color=blue)][#pypi-package]
 [![PyPI - Package Version](https://img.shields.io/pypi/v/alibi-detect?logo=pypi&style=flat&color=orange)][#pypi-package]
 [![Conda (channel only)](https://img.shields.io/conda/vn/conda-forge/alibi-detect?logo=anaconda&style=flat&color=orange)][#conda-forge-package]
