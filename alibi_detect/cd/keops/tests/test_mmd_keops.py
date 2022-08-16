@@ -108,7 +108,6 @@ def test_mmd(mmd_params):
 
     # ensure the keops MMD^2 estimate matches the pytorch implementation for the same kernel
     if not isinstance(x_ref, list) and update_x_ref is None:
-        print(x_ref.shape, x_h1.shape)
         p_val, mmd2, distance_threshold = cd.score(x_h1)
         kernel = GaussianRBF(sigma=cd.kernel.sigma)
         if isinstance(preprocess_fn, Callable):
