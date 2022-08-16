@@ -1,4 +1,3 @@
-import numpy as np
 from pykeops.torch import LazyTensor
 import torch
 import torch.nn as nn
