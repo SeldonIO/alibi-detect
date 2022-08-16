@@ -97,10 +97,10 @@ class MMDDrift(DriftConfigMixin):
         kwargs = locals()
         args = [kwargs['x_ref']]
         pop_kwargs = ['self', 'x_ref', 'backend', '__class__']
-        if backend == 'tensorflow' and has_tensorflow:
+        if backend == 'tensorflow':
             pop_kwargs += ['device', 'batch_size_permutations']
             detector = MMDDriftTF
-        elif backend == 'pytorch' and has_pytorch:
+        elif backend == 'pytorch':
             pop_kwargs += ['batch_size_permutations']
             detector = MMDDriftTorch
         else:

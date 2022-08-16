@@ -15,6 +15,7 @@ except ImportError:
 
 try:
     import pykeops  # noqa
+    import torch  # noqa
     has_keops = True
 except ImportError:
     has_keops = False
