@@ -38,6 +38,7 @@ def validate_config(cfg: dict, resolved: bool = False) -> dict:
 
     # Get meta data
     meta = cfg.get('meta')
+    meta = {} if meta is None else meta
     version_warning = meta.get('version_warning', False)
     version = meta.get('version', None)
     config_spec = meta.get('config_spec', None)
