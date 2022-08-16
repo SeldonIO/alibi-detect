@@ -52,9 +52,15 @@ def test_gaussian_kernel(gaussian_kernel_params):
         k_xx = kernel(x_lazy, x_lazy2, infer_sigma=infer_sigma)
         k_xy_shape = n_instances
         k_xx_shape = (n_instances[0], n_instances[0])
+        axis = 1
         if batch_size:
             k_xy_shape = (batch_size, ) + k_xy_shape
             k_xx_shape = (batch_size, ) + k_xx_shape
+            axis = 2
         assert k_xy.shape == k_xy_shape and k_xx.shape == k_xx_shape
-        #assert (torch.arange(xshape[0]) == k_xx.argmax(axis=1).cpu().view(-1)).all()
-        #assert (k_xx.min(axis=1) >= 0.).all() and (k_xy.min(axis=1) >= 0.).all()
+        k_xx_argmax = k_xx.argmax(axis=axis)
+        k_xx_min, k_xy_min = k_xx.min(axis=axis), k_xy.min(axis=axis)
+        if batch_size:
+            k_xx_argmax, k_xx_min, k_xy_min = k_xx_argmax[0], k_xx_min[0], k_xy_min[0]
+        assert (torch.arange(n_instances[0]) == k_xx_argmax.cpu().view(-1)).all()
+        assert (k_xx_min >= 0.).all() and (k_xy_min >= 0.).all()
