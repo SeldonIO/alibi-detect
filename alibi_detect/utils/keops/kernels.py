@@ -12,11 +12,14 @@ def sigma_mean(x: LazyTensor, y: LazyTensor, dist: LazyTensor, n_min: int = None
     Parameters
     ----------
     x
-        LazyTensor of instances with dimension [Nx, 1, features]. The singleton dimension is necessary for broadcasting.
+        LazyTensor of instances with dimension [Nx, 1, features] or [batch_size, Nx, 1, features].
+        The singleton dimension is necessary for broadcasting.
     y
-        LazyTensor of instances with dimension [1, Ny, features]. The singleton dimension is necessary for broadcasting.
+        LazyTensor of instances with dimension [1, Ny, features] or [batch_size, 1, Ny, features].
+        The singleton dimension is necessary for broadcasting.
     dist
-        LazyTensor with dimensions [Nx, Ny] containing the pairwise distances between `x` and `y`.
+        LazyTensor with dimensions [Nx, Ny] or [batch_size, Nx, Ny] containing the
+        pairwise distances between `x` and `y`.
     n_min
         In order to check whether x equals y after squeezing the singleton dimensions, we check if the
         diagonal of the distance matrix (which is a lazy tensor from which the diagonal cannot be directly extracted)
@@ -30,18 +33,24 @@ def sigma_mean(x: LazyTensor, y: LazyTensor, dist: LazyTensor, n_min: int = None
     -------
     The computed bandwidth, `sigma`.
     """
-    nx, ny = dist.shape
+    batched = len(dist.shape) == 3
+    if not batched:
+        nx, ny = dist.shape
+        axis = 1
+    else:
+        batch_size, nx, ny = dist.shape
+        axis = 2
+    n_mean = nx * ny
     if nx == ny:
         n_min = n_min if isinstance(n_min, int) else nx
-        d_min, id_min = dist.Kmin_argKmin(n_min, axis=1)
+        d_min, id_min = dist.Kmin_argKmin(n_min, axis=axis)
+        if batched:
+            d_min, id_min = d_min[0], id_min[0]  # first instance in permutation test contains the original data
         rows, cols = torch.where(id_min.cpu() == torch.arange(nx)[:, None])
         if (d_min[rows, cols] == 0.).all():
             n_mean = nx * (nx - 1)
-        else:
-            n_mean = np.prod(dist.shape)
-    else:
-        n_mean = np.prod(dist.shape)
-    sigma = (.5 * dist.sum(1).sum().unsqueeze(-1) / n_mean) ** .5
+    dist_sum = dist.sum(1).sum(1)[0] if batched else dist.sum(1).sum().unsqueeze(-1)
+    sigma = (.5 * dist_sum / n_mean) ** .5
     return sigma
 
 

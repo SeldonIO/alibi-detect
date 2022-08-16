@@ -41,7 +41,7 @@ update_x_ref = [{'last': 750}, {'reservoir_sampling': 750}, None]
 preprocess_at_init = [True, False]
 n_permutations = [10]
 batch_size_permutations = [10, 1000000]
-configure_kernel_from_x_ref = [True]
+configure_kernel_from_x_ref = [True, False]
 tests_mmddrift = list(product(n_features, n_enc, preprocess, n_permutations, preprocess_at_init, update_x_ref,
                               batch_size_permutations, configure_kernel_from_x_ref))
 n_tests = len(tests_mmddrift)
