@@ -145,6 +145,7 @@ class MMDDriftKeops(BaseMMDDrift):
             k_yy.append(self.kernel(
                 LazyTensor(y[:, :, None, :]), LazyTensor(y[:, None, :, :])).sum(1).sum(1).squeeze(-1))
         c_xx, c_yy, c_xy = 1 / (m * (m - 1)), 1 / (n * (n - 1)), 2. / (m * n)
+        # Note that the MMD^2 estimates assume that the diagonal of the kernel matrix consists of 1's
         stats = c_xx * (torch.cat(k_xx) - m) + c_yy * (torch.cat(k_yy) - n) - c_xy * torch.cat(k_xy)
         return stats[0], stats[1:]
 
