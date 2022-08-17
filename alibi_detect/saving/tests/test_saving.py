@@ -270,12 +270,13 @@ def preprocess_hiddenoutput(classifier, backend):
 
 @parametrize('cfg', CFGS)
 def test_load_simple_config(cfg, tmp_path):
-    x_ref_path = tmp_path.joinpath('x_ref.npy')
-    cfg_path = tmp_path.joinpath('config.toml')
+    save_dir = tmp_path
+    x_ref_path = str(save_dir.joinpath('x_ref.npy'))
+    cfg_path = save_dir.joinpath('config.toml')
     # Save x_ref in config.toml
     x_ref = cfg['x_ref']
     np.save(x_ref_path, x_ref)
-    cfg['x_ref'] = str(x_ref_path)
+    cfg['x_ref'] = 'x_ref.npy'
     # Save config.toml then load it
     with open(cfg_path, 'w') as f:
         toml.dump(cfg, f)
