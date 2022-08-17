@@ -1,7 +1,11 @@
 # Change Log
 
-## v0.10.3dev
-[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.10.2...master)
+## v0.10.3
+## [v0.10.3](https://github.com/SeldonIO/alibi-detect/tree/v0.10.3) (2022-08-17)
+[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.10.2...v0.10.3)
+
+### Fixed
+- Fix to allow `config.toml` files to be loaded when the [meta] field is not present ([#591](https://github.com/SeldonIO/alibi-detect/pull/591)).
 
 ## v0.10.2
 ## [v0.10.2](https://github.com/SeldonIO/alibi-detect/tree/v0.10.2) (2022-08-16)

@@ -19,6 +19,6 @@ authors:
 - family-names: "Athorne"
   given-names: "Alex"
 title: "Alibi Detect: Algorithms for outlier, adversarial and drift detection"
-version: 0.10.2
-date-released: 2022-08-16
+version: 0.10.3
+date-released: 2022-08-17
 url: "https://github.com/SeldonIO/alibi-detect"
