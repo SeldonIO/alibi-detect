@@ -5,6 +5,7 @@ from pydantic import ValidationError
 from alibi_detect.saving import validate_config
 from alibi_detect.saving.saving import X_REF_FILENAME
 from alibi_detect.version import __config_spec__, __version__
+from copy import deepcopy
 
 # Define a detector config dict
 mmd_cfg = {
@@ -16,19 +17,14 @@ mmd_cfg = {
     'x_ref': np.array([[-0.30074928], [1.50240758], [0.43135768], [2.11295779], [0.79684913]]),
     'p_val': 0.05
 }
-cfgs = [mmd_cfg]
-n_tests = len(cfgs)
+
+# Define a detector config dict without meta (as simple as it gets!)
+mmd_cfg_nometa = deepcopy(mmd_cfg)
+mmd_cfg_nometa.pop('meta')
 
 
-@pytest.fixture
-def select_cfg(request):
-    return cfgs[request.param]
-
-
-@pytest.mark.parametrize('select_cfg', list(range(n_tests)), indirect=True)
-def test_validate_config(select_cfg):
-    cfg = select_cfg
-
+@pytest.mark.parametrize('cfg', [mmd_cfg])
+def test_validate_config(cfg):
     # Original cfg
     # Check original cfg doesn't raise errors
     cfg_full = validate_config(cfg, resolved=True)
@@ -81,3 +77,14 @@ def test_validate_config(select_cfg):
     with pytest.raises(ValidationError):
         cfg_err = validate_config(cfg_err, resolved=True)
     assert not cfg_err.get('meta').get('version_warning')
+
+
+@pytest.mark.parametrize('cfg', [mmd_cfg_nometa])
+def test_validate_config_wo_meta(cfg):
+    # Check a config w/o a meta dict can be validated
+    _ = validate_config(cfg, resolved=True)
+
+    # Check the unresolved case
+    cfg_unres = cfg.copy()
+    cfg_unres['x_ref'] = X_REF_FILENAME
+    _ = validate_config(cfg_unres)

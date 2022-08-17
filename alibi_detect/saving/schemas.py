@@ -100,7 +100,7 @@ class DetectorConfig(CustomBaseModel):
     "Name of the detector e.g. `MMDDrift`."
     backend: Literal['tensorflow', 'pytorch', 'sklearn'] = 'tensorflow'
     "The detector backend."
-    meta: Optional[MetaData]
+    meta: Optional[MetaData] = None
     "Config metadata. Should not be edited."
     # Note: Although not all detectors have a backend, we define in base class as `backend` also determines
     #  whether tf or torch models used for preprocess_fn.

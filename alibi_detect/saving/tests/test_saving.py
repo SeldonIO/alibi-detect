@@ -10,6 +10,7 @@ from functools import partial
 from pathlib import Path
 from typing import Callable
 
+import toml
 import dill
 import numpy as np
 import pytest
@@ -60,6 +61,16 @@ WINDOW_SIZE = 5
 LATENT_DIM = 2  # Must be less than input_dim set in ./datasets.py
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 REGISTERED_OBJECTS = registry.get_all()
+
+# Define a detector config dict
+MMD_CFG = {
+    'name': 'MMDDrift',
+    'x_ref': np.array([[-0.30074928], [1.50240758], [0.43135768], [2.11295779], [0.79684913]]),
+    'p_val': 0.05,
+    'n_permutations': 150,
+    'data_type': 'tabular'
+}
+CFGS = [MMD_CFG]
 
 # TODO - future: Some of the fixtures can/should be moved elsewhere (i.e. if they can be recycled for use elsewhere)
 
@@ -257,6 +268,32 @@ def preprocess_hiddenoutput(classifier, backend):
         model = HiddenOutput_pt(classifier, layer=-1)
         preprocess_fn = partial(preprocess_drift_pt, model=model)
     return preprocess_fn
+
+
+@parametrize('cfg', CFGS)
+def test_load_simple_config(cfg, tmp_path):
+    """
+    Test that a bare-bones `config.toml` without a [meta] field can be loaded by `load_detector`.
+    """
+    save_dir = tmp_path
+    x_ref_path = str(save_dir.joinpath('x_ref.npy'))
+    cfg_path = save_dir.joinpath('config.toml')
+    # Save x_ref in config.toml
+    x_ref = cfg['x_ref']
+    np.save(x_ref_path, x_ref)
+    cfg['x_ref'] = 'x_ref.npy'
+    # Save config.toml then load it
+    with open(cfg_path, 'w') as f:
+        toml.dump(cfg, f)
+    cd = load_detector(cfg_path)
+    assert cd.__class__.__name__ == cfg['name']
+    # Get config and compare to original (orginal cfg not fully spec'd so only compare items that are present)
+    cfg_new = cd.get_config()
+    for k, v in cfg.items():
+        if k == 'x_ref':
+            assert v == 'x_ref.npy'
+        else:
+            assert v == cfg_new[k]
 
 
 @parametrize('preprocess_fn', [preprocess_custom, preprocess_hiddenoutput])
