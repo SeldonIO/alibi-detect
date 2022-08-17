@@ -146,7 +146,7 @@ class DriftConfigMixin:
         """
         # Check for existing version_warning. meta is pop'd as don't want to pass as arg/kwarg
         meta = config.pop('meta', None)
-        meta = {} if meta is None else meta
+        meta = {} if meta is None else meta  # Needed because pydantic sets meta=None if it is missing from the config
         version_warning = meta.pop('version_warning', False)
         # Init detector
         detector = cls(**config)

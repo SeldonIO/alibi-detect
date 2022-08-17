@@ -66,7 +66,9 @@ REGISTERED_OBJECTS = registry.get_all()
 MMD_CFG = {
     'name': 'MMDDrift',
     'x_ref': np.array([[-0.30074928], [1.50240758], [0.43135768], [2.11295779], [0.79684913]]),
-    'p_val': 0.05
+    'p_val': 0.05,
+    'n_permutations': 150,
+    'data_type': 'tabular'
 }
 CFGS = [MMD_CFG]
 
@@ -270,6 +272,9 @@ def preprocess_hiddenoutput(classifier, backend):
 
 @parametrize('cfg', CFGS)
 def test_load_simple_config(cfg, tmp_path):
+    """
+    Test that a bare-bones `config.toml` without a [meta] field can be loaded by `load_detector`.
+    """
     save_dir = tmp_path
     x_ref_path = str(save_dir.joinpath('x_ref.npy'))
     cfg_path = save_dir.joinpath('config.toml')
@@ -282,6 +287,13 @@ def test_load_simple_config(cfg, tmp_path):
         toml.dump(cfg, f)
     cd = load_detector(cfg_path)
     assert cd.__class__.__name__ == cfg['name']
+    # Get config and compare to original (orginal cfg not fully spec'd so only compare items that are present)
+    cfg_new = cd.get_config()
+    for k, v in cfg.items():
+        if k == 'x_ref':
+            assert v == 'x_ref.npy'
+        else:
+            assert v == cfg_new[k]
 
 
 @parametrize('preprocess_fn', [preprocess_custom, preprocess_hiddenoutput])
