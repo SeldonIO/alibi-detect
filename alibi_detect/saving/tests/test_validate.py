@@ -5,6 +5,7 @@ from pydantic import ValidationError
 from alibi_detect.saving import validate_config
 from alibi_detect.saving.saving import X_REF_FILENAME
 from alibi_detect.version import __config_spec__, __version__
+from copy import deepcopy
 
 # Define a detector config dict
 mmd_cfg = {
@@ -18,7 +19,7 @@ mmd_cfg = {
 }
 
 # Define a detector config dict without meta (as simple as it gets!)
-mmd_cfg_nometa = mmd_cfg.copy()
+mmd_cfg_nometa = deepcopy(mmd_cfg)
 mmd_cfg_nometa.pop('meta')
 
 
