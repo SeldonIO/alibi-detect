@@ -355,8 +355,9 @@ def test_save_cvmdrift(data, preprocess_custom, tmp_path):
         {'sigma': 0.5, 'trainable': False},  # pass kernel as object
     ], indirect=True
 )
+@parametrize('estimator', ['quad', 'linear'])
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
-def test_save_mmddrift(data, kernel, preprocess_custom, backend, tmp_path, seed):
+def test_save_mmddrift(data, kernel, estimator, preprocess_custom, backend, tmp_path, seed):
     """
     Test MMDDrift on continuous datasets, with UAE as preprocess_fn.
 
@@ -368,6 +369,7 @@ def test_save_mmddrift(data, kernel, preprocess_custom, backend, tmp_path, seed)
         cd = MMDDrift(X_ref,
                       p_val=P_VAL,
                       backend=backend,
+                      estimator=estimator,
                       preprocess_fn=preprocess_custom,
                       n_permutations=N_PERMUTATIONS,
                       preprocess_at_init=True,
@@ -386,7 +388,8 @@ def test_save_mmddrift(data, kernel, preprocess_custom, backend, tmp_path, seed)
     # assertions
     np.testing.assert_array_equal(preprocess_custom(X_ref), cd_load._detector.x_ref)
     assert not cd_load._detector.infer_sigma
-    assert cd_load._detector.n_permutations == N_PERMUTATIONS
+    if estimator == 'quad':
+        assert cd_load._detector.n_permutations == N_PERMUTATIONS
     assert cd_load._detector.p_val == P_VAL
     assert isinstance(cd_load._detector.preprocess_fn, Callable)
     assert cd_load._detector.preprocess_fn.func.__name__ == 'preprocess_drift'

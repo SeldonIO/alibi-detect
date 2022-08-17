@@ -8,7 +8,12 @@ logger = logging.getLogger(__name__)
 
 
 @torch.jit.script
-def squared_pairwise_distance(x: torch.Tensor, y: torch.Tensor, a_min: float = 1e-30) -> torch.Tensor:
+def squared_pairwise_distance(
+    x: torch.Tensor,
+    y: torch.Tensor,
+    a_min: float = 1e-30,
+    pairwise: bool = True
+) -> torch.Tensor:
     """
     PyTorch pairwise squared Euclidean distance between samples x and y.
 
@@ -20,13 +25,40 @@ def squared_pairwise_distance(x: torch.Tensor, y: torch.Tensor, a_min: float = 1
         Batch of instances of shape [Ny, features].
     a_min
         Lower bound to clip distance values.
+    pairwise
+        Whether to compute pairwise distances or not.
     Returns
     -------
     Pairwise squared Euclidean distance [Nx, Ny].
     """
     x2 = x.pow(2).sum(dim=-1, keepdim=True)
     y2 = y.pow(2).sum(dim=-1, keepdim=True)
-    dist = torch.addmm(y2.transpose(-2, -1), x, y.transpose(-2, -1), alpha=-2).add_(x2)
+    if pairwise:
+        dist = torch.addmm(y2.transpose(-2, -1), x, y.transpose(-2, -1), alpha=-2).add_(x2)
+    else:
+        dist = x2 + y2 - (2 * x * y).sum(dim=-1, keepdim=True)
+    return dist.clamp_min_(a_min)
+
+
+def squared_distance(x: torch.Tensor, y: torch.Tensor, a_min: float = 1e-30) -> torch.Tensor:
+    """
+    PyTorch squared Euclidean distance between samples x and y.
+
+    Parameters
+    ----------
+    x
+        Batch of instances of shape [N, features].
+    y
+        Batch of instances of shape [N, features].
+    a_min
+        Lower bound to clip distance values.
+    Returns
+    -------
+    Squared Euclidean distance [N, 1].
+    """
+    x2 = x.pow(2).sum(dim=-1, keepdim=True)
+    y2 = y.pow(2).sum(dim=-1, keepdim=True)
+    dist = x2 + y2 - (2 * x * y).sum(dim=-1, keepdim=True)
     return dist.clamp_min_(a_min)
 
 
@@ -93,8 +125,43 @@ def batch_compute_kernel_matrix(
     return k_mat
 
 
-def mmd2_from_kernel_matrix(kernel_mat: torch.Tensor, m: int, permute: bool = False,
-                            zero_diag: bool = True) -> torch.Tensor:
+def linear_mmd2(
+    k_xx: torch.Tensor,
+    x: torch.Tensor,
+    y: torch.Tensor,
+    kernel: Callable
+) -> Tuple[torch.Tensor, torch.Tensor]:
+    """
+    Compute maximum mean discrepancy (MMD^2) between 2 samples x and y with the
+    linear-time estimator.
+
+    Parameters
+    ----------
+    x
+        Batch of instances of shape [Nx, features].
+    y
+        Batch of instances of shape [Ny, features].
+    kernel
+        Kernel function.
+    Returns
+    -------
+    MMD^2 between the samples.
+    """
+    k_yy = kernel(x=y[0::2, :], y=y[1::2, :], pairwise=False)
+    k_xy = kernel(x=x[0::2, :], y=y[1::2, :], pairwise=False)
+    k_yx = kernel(x=y[0::2, :], y=x[1::2, :], pairwise=False)
+    h = k_xx + k_yy - k_xy - k_yx
+    mmd2 = h.mean()
+    var_mmd2 = torch.var(h, unbiased=True)
+    return mmd2, var_mmd2
+
+
+def mmd2_from_kernel_matrix(
+    kernel_mat: torch.Tensor,
+    m: int,
+    permute: bool = False,
+    zero_diag: bool = True
+) -> torch.Tensor:
     """
     Compute maximum mean discrepancy (MMD^2) between 2 samples x and y from the
     full kernel matrix between the samples.

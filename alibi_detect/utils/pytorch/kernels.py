@@ -5,7 +5,11 @@ from . import distance
 from typing import Optional, Union, Callable
 
 
-def sigma_median(x: torch.Tensor, y: torch.Tensor, dist: torch.Tensor) -> torch.Tensor:
+def sigma_median(
+    x: torch.Tensor,
+    y: torch.Tensor,
+    dist: torch.Tensor,
+) -> torch.Tensor:
     """
     Bandwidth estimation using the median heuristic :cite:t:`Gretton2012`.
 
@@ -16,8 +20,8 @@ def sigma_median(x: torch.Tensor, y: torch.Tensor, dist: torch.Tensor) -> torch.
     y
         Tensor of instances with dimension [Ny, features].
     dist
-        Tensor with dimensions [Nx, Ny], containing the pairwise distances between `x` and `y`.
-
+        Tensor with dimensions [Nx, Ny] when pairwise=True, containing the pairwise distances between `x` and `y`.
+        Dimensions are [Nx, 1] when pairwise=False.
     Returns
     -------
     The computed bandwidth, `sigma`.
@@ -70,16 +74,25 @@ class GaussianRBF(nn.Module):
     def sigma(self) -> torch.Tensor:
         return self.log_sigma.exp()
 
-    def forward(self, x: Union[np.ndarray, torch.Tensor], y: Union[np.ndarray, torch.Tensor],
-                infer_sigma: bool = False) -> torch.Tensor:
+    def forward(
+        self, x: Union[np.ndarray, torch.Tensor],
+        y: Union[np.ndarray, torch.Tensor],
+        infer_sigma: bool = False,
+        pairwise: bool = True
+    ) -> torch.Tensor:
 
         x, y = torch.as_tensor(x), torch.as_tensor(y)
-        dist = distance.squared_pairwise_distance(x.flatten(1), y.flatten(1))  # [Nx, Ny]
+        dist = distance.squared_pairwise_distance(x=x.flatten(1),
+                                                  y=y.flatten(1),
+                                                  pairwise=pairwise)  # [Nx, Ny] or [Nx, 1]
 
         if infer_sigma or self.init_required:
             if self.trainable and infer_sigma:
                 raise ValueError("Gradients cannot be computed w.r.t. an inferred sigma value")
-            sigma = self.init_sigma_fn(x, y, dist)
+            if pairwise:
+                sigma = self.init_sigma_fn(x, y, dist)
+            else:
+                sigma = (.5 * dist.flatten().sort().values[dist.shape[0] // 2 - 1].unsqueeze(dim=-1)) ** .5
             with torch.no_grad():
                 self.log_sigma.copy_(sigma.log().clone())
             self.init_required = False

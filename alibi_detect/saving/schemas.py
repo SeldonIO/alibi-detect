@@ -628,6 +628,7 @@ class MMDDriftConfig(DriftDetectorConfig):
     :class:`~alibi_detect.cd.MMDDrift` documentation for a description of each field.
     """
     p_val: float = .05
+    estimator: Literal['quad', 'linear'] = 'quad'
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
     kernel: Optional[Union[str, KernelConfig]] = None
@@ -646,6 +647,7 @@ class MMDDriftConfigResolved(DriftDetectorConfigResolved):
     :class:`~alibi_detect.cd.MMDDrift` documentation for a description of each field.
     """
     p_val: float = .05
+    estimator: Literal['quad', 'linear'] = 'quad'
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
     kernel: Optional[Callable] = None

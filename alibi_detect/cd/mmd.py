@@ -4,12 +4,13 @@ from typing import Callable, Dict, Optional, Union, Tuple
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, BackendValidator
 from alibi_detect.utils.warnings import deprecated_alias
 from alibi_detect.base import DriftConfigMixin
+from alibi_detect.utils._types import Literal
 
 if has_pytorch:
-    from alibi_detect.cd.pytorch.mmd import MMDDriftTorch
+    from alibi_detect.cd.pytorch.mmd import MMDDriftTorch, LinearTimeMMDDriftTorch
 
 if has_tensorflow:
-    from alibi_detect.cd.tensorflow.mmd import MMDDriftTF
+    from alibi_detect.cd.tensorflow.mmd import MMDDriftTF, LinearTimeMMDDriftTF
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +22,7 @@ class MMDDrift(DriftConfigMixin):
             x_ref: Union[np.ndarray, list],
             backend: str = 'tensorflow',
             p_val: float = .05,
+            estimator: Literal['quad', 'linear'] = 'quad',
             x_ref_preprocessed: bool = False,
             preprocess_at_init: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
@@ -44,6 +46,11 @@ class MMDDrift(DriftConfigMixin):
             Backend used for the MMD implementation.
         p_val
             p-value used for the significance of the permutation test.
+        estimator
+            Estimator used for the MMD^2 computation. 'quad' is the default and
+            uses the quadratic u-statistics on each square kernel matrix. 'linear' uses the linear
+            time estimator as in Gretton et al. (JMLR 2014, sec 6), and the threshold is computed
+            using the Gaussian asympotic distribution under null.
         x_ref_preprocessed
             Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
             the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
@@ -65,7 +72,8 @@ class MMDDrift(DriftConfigMixin):
         configure_kernel_from_x_ref
             Whether to already configure the kernel bandwidth from the reference data.
         n_permutations
-            Number of permutations used in the permutation test.
+            Number of permutations used in the permutation test, only used for the quadratic estimator
+            (estimator='quad').
         device
             Device type used. The default None tries to use the GPU and falls back on CPU if needed.
             Can be specified by passing either 'cuda', 'gpu' or 'cpu'. Only relevant for 'pytorch' backend.
@@ -80,6 +88,7 @@ class MMDDrift(DriftConfigMixin):
         self._set_config(locals())
 
         backend = backend.lower()
+        estimator = estimator.lower()  # type: ignore
         BackendValidator(
             backend_options={'tensorflow': ['tensorflow'],
                              'pytorch': ['pytorch']},
@@ -88,7 +97,7 @@ class MMDDrift(DriftConfigMixin):
 
         kwargs = locals()
         args = [kwargs['x_ref']]
-        pop_kwargs = ['self', 'x_ref', 'backend', '__class__']
+        pop_kwargs = ['self', 'x_ref', 'backend', '__class__', 'estimator']
         [kwargs.pop(k, None) for k in pop_kwargs]
 
         if kernel is None:
@@ -100,9 +109,21 @@ class MMDDrift(DriftConfigMixin):
 
         if backend == 'tensorflow' and has_tensorflow:
             kwargs.pop('device', None)
-            self._detector = MMDDriftTF(*args, **kwargs)  # type: ignore
+            if estimator == 'quad':
+                self._detector = MMDDriftTF(*args, **kwargs)  # type: ignore
+            elif estimator == 'linear':
+                kwargs.pop('n_permutations', None)
+                self._detector = LinearTimeMMDDriftTF(*args, **kwargs)  # type: ignore
+            else:
+                raise NotImplementedError(f'{estimator} not implemented. Use quad or linear instead.')
         else:
-            self._detector = MMDDriftTorch(*args, **kwargs)  # type: ignore
+            if estimator == 'quad':
+                self._detector = MMDDriftTorch(*args, **kwargs)  # type: ignore
+            elif estimator == 'linear':
+                kwargs.pop('n_permutations', None)
+                self._detector = LinearTimeMMDDriftTorch(*args, **kwargs)  # type: ignore
+            else:
+                raise NotImplementedError(f'{estimator} not implemented. Use quad or linear instead.')
         self.meta = self._detector.meta
 
     def predict(self, x: Union[np.ndarray, list], return_p_val: bool = True, return_distance: bool = True) \
@@ -139,7 +160,7 @@ class MMDDrift(DriftConfigMixin):
 
         Returns
         -------
-        p-value obtained from the permutation test, the MMD^2 between the reference and test set,
+        p-value obtained from the test, the MMD^2 between the reference and test set,
         and the MMD^2 threshold above which drift is flagged.
         """
         return self._detector.score(x)
