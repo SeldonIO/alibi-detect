@@ -48,8 +48,6 @@ def predict_batch(x: Union[list, np.ndarray, torch.Tensor], model: Union[Callabl
             x_batch = x[istart:istop]
             if isinstance(preprocess_fn, Callable):  # type: ignore
                 x_batch = preprocess_fn(x_batch)
-            if hasattr(model, 'to'):
-                model.to(device)
             preds_tmp = model(x_batch.to(device))  # type: ignore
             if isinstance(preds_tmp, (list, tuple)):
                 if len(preds) == 0:  # init tuple with lists to store predictions

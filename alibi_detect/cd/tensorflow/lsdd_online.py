@@ -4,7 +4,7 @@ import tensorflow as tf
 from typing import Any, Callable, Optional, Union
 from alibi_detect.cd.base_online import BaseMultiDriftOnline
 from alibi_detect.utils.tensorflow import quantile, permed_lsdds
-from alibi_detect.utils.tensorflow.kernels import GaussianRBF, BaseKernel
+from alibi_detect.utils.tensorflow.kernels import GaussianRBF
 
 
 class LSDDDriftOnlineTF(BaseMultiDriftOnline):
@@ -15,7 +15,7 @@ class LSDDDriftOnlineTF(BaseMultiDriftOnline):
             window_size: int,
             preprocess_fn: Optional[Callable] = None,
             # sigma: Optional[np.ndarray] = None,
-            kernel: BaseKernel = GaussianRBF(),
+            # kernel: BaseKernel = GaussianRBF(),
             n_bootstraps: int = 1000,
             n_kernel_centers: Optional[int] = None,
             lambda_rd_max: float = 0.2,
@@ -86,7 +86,7 @@ class LSDDDriftOnlineTF(BaseMultiDriftOnline):
         # else:
         #     sigma = tf.convert_to_tensor(sigma)
         #     self.kernel = GaussianRBF(sigma)
-        self.kernel = kernel
+        self.kernel = GaussianRBF()
 
         if self.n_kernel_centers is None:
             self.n_kernel_centers = 2*window_size

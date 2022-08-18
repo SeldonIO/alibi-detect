@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf
 from typing import Callable, Dict, Optional, Tuple, Union
 from alibi_detect.cd.base import BaseLSDDDrift
-from alibi_detect.utils.tensorflow.kernels import BaseKernel, GaussianRBF
+from alibi_detect.utils.tensorflow.kernels import GaussianRBF
 from alibi_detect.utils.tensorflow.distance import permed_lsdds
 
 
@@ -15,7 +15,7 @@ class LSDDDriftTF(BaseLSDDDrift):
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
             # sigma: Optional[np.ndarray] = None,
-            kernel: BaseKernel = GaussianRBF(),
+            # kernel: BaseKernel = GaussianRBF(),
             n_permutations: int = 100,
             n_kernel_centers: Optional[int] = None,
             lambda_rd_max: float = 0.2,
@@ -72,7 +72,7 @@ class LSDDDriftTF(BaseLSDDDrift):
         )
         self.meta.update({'backend': 'tensorflow'})
 
-        self.kernel = kernel
+        self.kernel = GaussianRBF()
         if self.preprocess_x_ref or self.preprocess_fn is None:
             x_ref = tf.convert_to_tensor(self.x_ref)
             self._configure_normalization(x_ref)
