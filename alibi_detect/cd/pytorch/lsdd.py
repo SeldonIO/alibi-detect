@@ -3,7 +3,7 @@ import torch
 from typing import Callable, Dict, Optional, Tuple, Union
 from alibi_detect.cd.base import BaseLSDDDrift
 from alibi_detect.utils.pytorch import get_device
-from alibi_detect.utils.pytorch.kernels import BaseKernel, GaussianRBF
+from alibi_detect.utils.pytorch.kernels import GaussianRBF
 from alibi_detect.utils.pytorch.distance import permed_lsdds
 from alibi_detect.utils.warnings import deprecated_alias
 from alibi_detect.utils.frameworks import Framework
@@ -20,7 +20,7 @@ class LSDDDriftTorch(BaseLSDDDrift):
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
             # sigma: Optional[np.ndarray] = None,
-            kernel: BaseKernel = GaussianRBF(),
+            # kernel: BaseKernel = GaussianRBF(),
             n_permutations: int = 100,
             n_kernel_centers: Optional[int] = None,
             lambda_rd_max: float = 0.2,
@@ -95,7 +95,7 @@ class LSDDDriftTorch(BaseLSDDDrift):
         #  in the method signature, so we can't cast it to torch.Tensor unless we change the signature
         #  to also accept torch.Tensor. We also can't redefine it's type as that would involve enabling
         #  --allow-redefinitions in mypy settings (which we might do eventually).
-        self.kernel = kernel
+        self.kernel = GaussianRBF()
         if self.preprocess_at_init or self.preprocess_fn is None or self.x_ref_preprocessed:
             x_ref = torch.as_tensor(self.x_ref).to(self.device)  # type: ignore[assignment]
             self._configure_normalization(x_ref)  # type: ignore[arg-type]
