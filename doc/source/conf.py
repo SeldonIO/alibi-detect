@@ -110,7 +110,8 @@ autodoc_mock_imports = [
     "numba",
     "pydantic",
     "toml",
-    "catalogue"
+    "catalogue",
+    "pykeops"
 ]
 
 # Napoleon settings
