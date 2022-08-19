@@ -13,7 +13,7 @@ extras_require = {
     "prophet": [
         "fbprophet>=0.5, <0.7",
         "holidays==0.9.11",
-        "pystan<3.0"
+        "pystan<4.0"
     ],
     "torch": [
         "torch>=1.7.0, <1.13.0"
@@ -30,7 +30,7 @@ extras_require = {
     "all": [
         "fbprophet>=0.5, <0.7",
         "holidays==0.9.11",
-        "pystan<3.0",
+        "pystan<4.0",
         "tensorflow_probability>=0.8.0, <0.18.0",
         "tensorflow>=2.2.0, !=2.6.0, !=2.6.1, <2.10.0",  # https://github.com/SeldonIO/alibi-detect/issues/375 and 387
         "pykeops>=2.0.0, <2.2.0",
