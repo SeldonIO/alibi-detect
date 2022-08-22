@@ -37,7 +37,8 @@ options are defined in `setup.cfg`.
 We adhere to the `numpy` style docstrings (https://numpydoc.readthedocs.io/en/stable/format.html)
 with the exception of ommiting argument types in docstrings in favour of type hints in function
 and class signatures. If you're using a `PyCharm`, you can configure this under
-`File -> Settings -> Tools -> Python Integrated Tools -> Docstrings`.
+`File -> Settings -> Tools -> Python Integrated Tools -> Docstrings`. For classes, we adhere to the convention
+of including docstrings in their `__init__` method, rather than as a class level docstring.
 
 ## Building documentation
 We use `sphinx` for building documentation. You can call `make build_docs` from the project root,
