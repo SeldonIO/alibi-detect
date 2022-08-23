@@ -3,17 +3,20 @@ import torch
 from pykeops.torch import LazyTensor
 
 
+def cdist(X, Y):
+    return ((X - Y)**2).sum(-1).sqrt()
+
 
 class KnnKeops:
     def score(X, x_ref, k, kernel=None):
-        ensemble = len(k) > 1
+        ensemble = isinstance(k, (np.ndarray, list, tuple))
         X = torch.as_tensor(X)
-        X = LazyTensor(X[:, :, None, :])
-        x_ref = LazyTensor(x_ref[:, None, :, :])
-        K = -kernel(X, x_ref) if kernel else torch.cdist(X, x_ref)
-        ks = k if ensemble else np.array([k])
-        bot_k_dists = torch.topk(K, np.max(ks), dim=1, largest=False)
-        all_knn_dists = bot_k_dists.values[:,ks-1]
+        X_keops = LazyTensor(X[:, None, :])
+        x_ref_keops = LazyTensor(x_ref[None, :, :])
+        K = -kernel(X_keops, x_ref_keops) if kernel else cdist(X_keops, x_ref_keops)
+        ks = np.array(k) if ensemble else np.array([k])
+        bot_k_inds = K.argKmin(np.max(ks), dim=1)
+        all_knn_dists = (X[:, None, :] - x_ref[bot_k_inds][:, ks-1, :]).norm(dim=2)
         all_knn_dists = all_knn_dists if ensemble else all_knn_dists[:,0]
         return all_knn_dists.cpu().numpy()
 

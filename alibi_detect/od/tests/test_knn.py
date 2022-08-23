@@ -63,26 +63,36 @@ def test_knn_ensemble():
     assert np.all(pred['preds'] == [True, False])
 
 
-# def test_knn_keops():
-#     knn_detector = KNN(k=10, backend='keops')
-#     x_ref = np.random.randn(100, 2)
-#     knn_detector.fit(x_ref)
-#     x = np.array([[0, 10]])
-#     assert knn_detector.predict(x)['raw_scores'] > 5
+def test_knn_keops():
+    knn_detector = KNN(
+        k=[8, 9, 10], 
+        aggregator=AverageAggregator(), 
+        normaliser=ShiftAndScaleNormaliser(),
+        backend='keops'
+    )
 
-#     x = np.array([[0, 0.1]])
-#     assert knn_detector.predict(x)['raw_scores'] < 1
+    x_ref = np.random.randn(100, 2)
+    knn_detector.fit(x_ref)
+    x = np.array([[0, 10], [0, 0.1]])
+    knn_detector.infer_threshold(x_ref, 0.1)
+    pred = knn_detector.predict(x)
 
-#     knn_detector.infer_threshold(x_ref, 0.1)
+    assert np.all(pred['normalised_scores'][0] > 1)
+    assert np.all(pred['normalised_scores'][1] < 0) # Is this correct?
+    assert np.all(pred['preds'] == [True, False])
 
-#     x = np.array([[0, 10]])
-#     pred = knn_detector.predict(x)
-#     assert pred['raw_scores'] > 5
-#     assert pred['preds'] == True
-#     assert pred['p_vals'] < 0.05
+    knn_detector = KNN(
+        k=[8, 9, 10], 
+        aggregator=AverageAggregator(), 
+        normaliser=PValNormaliser()
+    )
 
-#     x = np.array([[0, 0.1]])
-#     pred = knn_detector.predict(x)
-#     assert pred['raw_scores'] < 1
-#     assert pred['preds'] == False
-#     assert pred['p_vals'] > 0.7
+    x_ref = np.random.randn(100, 2)
+    knn_detector.fit(x_ref)
+    x = np.array([[0, 10], [0, 0.1]])
+    knn_detector.infer_threshold(x_ref, 0.1)
+    pred = knn_detector.predict(x)
+    
+    assert np.all(pred['normalised_scores'][0] > 0.8)
+    assert np.all(pred['normalised_scores'][1] < 0.3)
+    assert np.all(pred['preds'] == [True, False])
