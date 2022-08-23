@@ -42,8 +42,9 @@ class KNN(OutlierDetector):
 
 
     def fit(self, X: np.ndarray) -> None:
-        if getattr(self, 'normaliser'): self.normaliser.fit(X)
         self.x_ref = self.backend.fit(X)
+        val_scores = self.score(X)
+        if getattr(self, 'normaliser'): self.normaliser.fit(val_scores)
     
     def score(self, X: np.ndarray) -> np.ndarray:
         return self.backend.score(X, self.x_ref, self.k, kernel=self.kernel)

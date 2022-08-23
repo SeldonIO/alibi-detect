@@ -24,7 +24,7 @@ class BaseTransform(ABC):
     def transform(self, scores):
         if not self.fitted:
             raise Exception('Transform not fitted, call fit before calling transform!')
-        self._transform(scores)
+        return self._transform(scores)
 
     @abstractmethod
     def _transform(self, scores):
@@ -44,8 +44,16 @@ class PValNormaliser(BaseTransform):
 
 class ShiftAndScaleNormaliser(BaseTransform):
     def _fit(self, val_scores: np.ndarray) -> BaseTransform:
-        self.val_means = val_scores.mean(-1)[None,:]
-        self.val_scales = val_scores.std(-1)[None,:]
+        """
+        Note:
+            This was taking the mean and std over the final value which was
+            the score for each detector? I've changed to be over the val_scores 
+            samples.
+        """
+        # self.val_means = val_scores.mean(-1)[None,:]
+        # self.val_scales = val_scores.std(-1)[None,:]
+        self.val_means = val_scores.mean(0)[None,:]
+        self.val_scales = val_scores.std(0)[None,:]
 
     def _transform(self, scores: np.ndarray) -> np.ndarray:
         return (scores - self.val_means)/self.val_scales
