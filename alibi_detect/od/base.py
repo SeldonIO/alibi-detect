@@ -38,9 +38,9 @@ class OutlierDetector(BaseDetector, ABC):
         """
         self.val_scores = self.score(X)
         self.val_scores = self.normaliser.fit(self.val_scores).transform(self.val_scores) \
-            if hasattr(self, 'normaliser') else self.val_scores
+            if getattr(self, 'normaliser') else self.val_scores
         self.val_scores = self.aggregator.fit(self.val_scores).transform(self.val_scores) \
-            if hasattr(self, 'aggregator') else self.val_scores
+            if getattr(self, 'aggregator') else self.val_scores
         self.threshold = np.quantile(self.val_scores, 1-fpr)
         self.threshold_inferred = True
 
@@ -55,11 +55,11 @@ class OutlierDetector(BaseDetector, ABC):
         scores = self.score(X)
         output['raw_scores'] = scores
 
-        if hasattr(self, 'normaliser') and self.normaliser.fitted:
+        if getattr(self, 'normaliser') and self.normaliser.fitted:
             scores = self.normaliser.transform(scores)
             output['normalised_scores'] = scores
 
-        if hasattr(self, 'aggregator') and self.aggregator.fitted:
+        if getattr(self, 'aggregator') and self.aggregator.fitted:
             scores = self.aggregator.transform(scores)
             output['aggregate_scores'] = scores
 
