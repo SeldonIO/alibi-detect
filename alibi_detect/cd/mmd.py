@@ -1,7 +1,7 @@
 import logging
 import numpy as np
 from typing import Callable, Dict, Optional, Union, Tuple
-from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, BackendValidator
+from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, has_keops, BackendValidator
 from alibi_detect.utils.warnings import deprecated_alias
 from alibi_detect.base import DriftConfigMixin
 
@@ -10,6 +10,9 @@ if has_pytorch:
 
 if has_tensorflow:
     from alibi_detect.cd.tensorflow.mmd import MMDDriftTF
+
+if has_keops and has_pytorch:
+    from alibi_detect.cd.keops.mmd import MMDDriftKeops
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +32,7 @@ class MMDDrift(DriftConfigMixin):
             sigma: Optional[np.ndarray] = None,
             configure_kernel_from_x_ref: bool = True,
             n_permutations: int = 100,
+            batch_size_permutations: int = 1000000,
             device: Optional[str] = None,
             input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None
@@ -66,6 +70,9 @@ class MMDDrift(DriftConfigMixin):
             Whether to already configure the kernel bandwidth from the reference data.
         n_permutations
             Number of permutations used in the permutation test.
+        batch_size_permutations
+            KeOps computes the n_permutations of the MMD^2 statistics in chunks of batch_size_permutations.
+            Only relevant for 'keops' backend.
         device
             Device type used. The default None tries to use the GPU and falls back on CPU if needed.
             Can be specified by passing either 'cuda', 'gpu' or 'cpu'. Only relevant for 'pytorch' backend.
@@ -82,27 +89,34 @@ class MMDDrift(DriftConfigMixin):
         backend = backend.lower()
         BackendValidator(
             backend_options={'tensorflow': ['tensorflow'],
-                             'pytorch': ['pytorch']},
+                             'pytorch': ['pytorch'],
+                             'keops': ['keops']},
             construct_name=self.__class__.__name__
         ).verify_backend(backend)
 
         kwargs = locals()
         args = [kwargs['x_ref']]
         pop_kwargs = ['self', 'x_ref', 'backend', '__class__']
+        if backend == 'tensorflow':
+            pop_kwargs += ['device', 'batch_size_permutations']
+            detector = MMDDriftTF
+        elif backend == 'pytorch':
+            pop_kwargs += ['batch_size_permutations']
+            detector = MMDDriftTorch
+        else:
+            detector = MMDDriftKeops
         [kwargs.pop(k, None) for k in pop_kwargs]
 
         if kernel is None:
             if backend == 'tensorflow':
                 from alibi_detect.utils.tensorflow.kernels import GaussianRBF
-            else:
+            elif backend == 'pytorch':
                 from alibi_detect.utils.pytorch.kernels import GaussianRBF  # type: ignore
+            else:
+                from alibi_detect.utils.keops.kernels import GaussianRBF  # type: ignore
             kwargs.update({'kernel': GaussianRBF})
 
-        if backend == 'tensorflow' and has_tensorflow:
-            kwargs.pop('device', None)
-            self._detector = MMDDriftTF(*args, **kwargs)  # type: ignore
-        else:
-            self._detector = MMDDriftTorch(*args, **kwargs)  # type: ignore
+        self._detector = detector(*args, **kwargs)  # type: ignore
         self.meta = self._detector.meta
 
     def predict(self, x: Union[np.ndarray, list], return_p_val: bool = True, return_distance: bool = True) \
