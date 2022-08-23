@@ -1,4 +1,3 @@
-import imp
 import numpy as np
 from alibi_detect.od.knn import KNN
 from alibi_detect.od.aggregation import AverageAggregator, ShiftAndScaleNormaliser, PValNormaliser

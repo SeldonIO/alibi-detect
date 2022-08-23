@@ -7,7 +7,7 @@ def cdist(X, Y):
     return ((X - Y)**2).sum(-1).sqrt()
 
 
-class KnnKeops:
+class KNNKeops:
     def score(X, x_ref, k, kernel=None):
         ensemble = isinstance(k, (np.ndarray, list, tuple))
         X = torch.as_tensor(X)

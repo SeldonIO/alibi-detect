@@ -27,6 +27,9 @@ extras_require = {
         "pykeops>=2.0.0, <2.2.0",
         "torch>=1.7.0, <1.13.0"
     ],
+    "ray": [
+        'ray>=0.8.7, <2.0.0',
+    ],
     "all": [
         "fbprophet>=0.5, <0.7",
         "holidays==0.9.11",

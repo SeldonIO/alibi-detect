@@ -2,7 +2,7 @@ import numpy as np
 import torch
 
 
-class KnnTorch:
+class KNNTorch:
     def score(X, x_ref, k, kernel=None):
         ensemble = isinstance(k, (np.ndarray, list, tuple))
         X = torch.as_tensor(X, dtype=torch.float32)

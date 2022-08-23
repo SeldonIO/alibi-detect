@@ -37,6 +37,7 @@ ERROR_TYPES = {
     "pytorch": 'torch',
     "keops": 'keops',
     "pykeops": 'keops',
+    "ray": 'ray'
 }
 
 

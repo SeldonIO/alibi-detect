@@ -1,17 +1,15 @@
 from typing import Callable, Literal, Union, Optional
 import numpy as np
-# import torch
 
 from alibi_detect.od.base import OutlierDetector
-from alibi_detect.od.aggregation import AverageAggregator, MaxAggregator, MinAggregator, TopKAggregator
-from alibi_detect.od.aggregation import ShiftAndScaleNormaliser, PValNormaliser
+from alibi_detect.od.aggregation import BaseTransform
 
-from alibi_detect.od.backends import KnnTorch, KnnKeops
+from alibi_detect.od.backends import KNNTorch, KNNKeops
 from alibi_detect.utils.frameworks import BackendValidator
 
 backends = {
-    'pytorch': KnnTorch,
-    'keops': KnnKeops
+    'pytorch': KNNTorch,
+    'keops': KNNKeops
 }
 
 
@@ -20,8 +18,8 @@ class KNN(OutlierDetector):
         self,
         k: Union[int, np.ndarray],
         kernel: Optional[Callable] = None,
-        aggregator: Union[AverageAggregator, MaxAggregator, MinAggregator, TopKAggregator, None] = None,
-        normaliser: Union[ShiftAndScaleNormaliser, PValNormaliser, None] = None,
+        aggregator: Union[BaseTransform, None] = None,
+        normaliser: Union[BaseTransform, None] = None,
         backend: Literal['pytorch', 'keops'] = 'pytorch'
     ) -> None:
 
@@ -45,6 +43,6 @@ class KNN(OutlierDetector):
         self.x_ref = self.backend.fit(X)
         val_scores = self.score(X)
         if getattr(self, 'normaliser'): self.normaliser.fit(val_scores)
-    
+
     def score(self, X: np.ndarray) -> np.ndarray:
         return self.backend.score(X, self.x_ref, self.k, kernel=self.kernel)
