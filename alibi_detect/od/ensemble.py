@@ -16,7 +16,7 @@ class Ensemble(OutlierDetector):
         self.detectors = detectors
         self.normaliser = normaliser
         self.aggregator = aggregator
-        self.processor = processor(functions=[detector.score for detector in detectors])
+        self.processor = processor(detectors=detectors)
 
     def fit(self, X):
         for detector in self.detectors:

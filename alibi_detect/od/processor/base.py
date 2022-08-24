@@ -2,8 +2,12 @@ import numpy as np
 
 
 class BaseProcessor():
-    def __init__(self, functions):
-        self.functions = functions
+    def __init__(self, detectors):
+        self.detectors = detectors
 
     def __call__(self, X):
-        return np.array([function(X) for function in self.functions])
+        B, _ = X.shape
+        results = np.empty((B, len(self.detectors)))
+        for ind, detector in enumerate(self.detectors):
+            results[:, ind] = detector.score(X)
+        return results

@@ -16,18 +16,19 @@ def test_ensemble():
     ensemble_detector.fit(x_ref)
     x = np.array([[0, 0.1]])
     ensemble_detector.infer_threshold(x_ref, 0.1)
-    print(ensemble_detector.predict(x)['p_vals'])
-    assert 1 == 0
+    assert ensemble_detector.predict(x)['p_vals'].item() > 0.5
 
 
-# def test_ensemble_parrallel():
-#     knn_detectors = [KNN(k=k) for k in range(10)]
-#     knn_detector = Ensemble(
-#         detectors=knn_detectors, 
-#         aggregator=AverageAggregator(), 
-#         normaliser=PValNormaliser(),
-#         processor=ParallelProcessor()
-#     )
-#     x_ref = np.random.randn(100, 2)
-#     knn_detector.fit(x_ref)
-#     x = np.array([[0, 10]])
+def test_ensemble_parrallel():
+    knn_detectors = [KNN(k=k+1) for k in range(10)]
+    ensemble_detector = Ensemble(
+        detectors=knn_detectors, 
+        aggregator=AverageAggregator(), 
+        normaliser=PValNormaliser(),
+        processor=ParallelProcessor
+    )
+    x_ref = np.random.randn(100, 2)
+    ensemble_detector.fit(x_ref)
+    x = np.array([[0, 0.1]])
+    ensemble_detector.infer_threshold(x_ref, 0.1)
+    assert ensemble_detector.predict(x)['p_vals'].item() > 0.5

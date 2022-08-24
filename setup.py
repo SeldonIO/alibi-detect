@@ -28,7 +28,7 @@ extras_require = {
         "torch>=1.7.0, <1.13.0"
     ],
     "ray": [
-        'ray>=0.8.7, <2.0.0',
+        "ray>=0.8.7, <2.0.0",
     ],
     "all": [
         "fbprophet>=0.5, <0.7",
@@ -37,7 +37,8 @@ extras_require = {
         "tensorflow_probability>=0.8.0, <0.18.0",
         "tensorflow>=2.2.0, !=2.6.0, !=2.6.1, <2.10.0",  # https://github.com/SeldonIO/alibi-detect/issues/375 and 387
         "pykeops>=2.0.0, <2.2.0",
-        "torch>=1.7.0, <1.13.0"
+        "torch>=1.7.0, <1.13.0",
+        "ray>=0.8.7, <2.0.0",
     ],
 }
 
