@@ -1,10 +1,11 @@
 
 from __future__ import annotations
 from abc import ABC, abstractmethod
+import enum
 import numpy as np
 from alibi_detect.version import __version__, __config_spec__
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from alibi_detect.base import BaseDetector
 from alibi_detect.saving.registry import registry
 
@@ -25,15 +26,25 @@ class ConfigMixin:
             }
         }
 
+        config = {}
+
         # args and kwargs
         pop_inputs = ['self', '__class__', '__len__', 'name', 'meta']
         [inputs.pop(k, None) for k in pop_inputs]
 
         for key, value in inputs.items():
             if hasattr(value, 'get_config'):
-                inputs[key] = value.get_config()
+                config[key] = value.get_config()
+            elif isinstance(value, list):
+                config[key] = []
+                for ind, item in enumerate(value):
+                    if hasattr(item, 'get_config'):
+                        item = item.get_config()
+                    config[key].append(item)
+            else:
+                config[key] = value
 
-        self.config.update(inputs)
+        self.config.update(config)
 
     def get_config(self) -> dict:
         if self.config is not None:
@@ -66,6 +77,17 @@ class ConfigMixin:
                 ObjCls = registry.get_all()[sub_obj_name]
                 obj = ObjCls(**val)
                 config[key] = obj
+
+            if isinstance(val, list):
+                # Note this assumes at most ensembles of depth at most 1. If we want deeper then we'll need a proper 
+                # recursive stratigy here. 
+                for ind, item in enumerate(val):
+                    if isinstance(item, dict) and item.get('meta'):
+                        sub_obj_name = item.pop('name', False)
+                        sub_obj_meta = item.pop('meta', None)
+                        ObjCls = registry.get_all()[sub_obj_name]
+                        obj = ObjCls(**item)
+                        config[key][ind] = obj
 
         detector = cls(**config)
         # Add version_warning

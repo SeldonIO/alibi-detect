@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 from alibi_detect.od.base import ConfigMixin
 from alibi_detect.saving.registry import registry
 
+
 class BaseTransform(ConfigMixin, ABC):
     fitted = False
     config = {}

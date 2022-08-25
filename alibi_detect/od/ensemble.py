@@ -11,16 +11,17 @@ class Ensemble(OutlierDetector):
             detectors: List[OutlierDetector], 
             aggregator: Optional[BaseTransform] = AverageAggregator(), 
             normaliser: Optional[BaseTransform] = PValNormaliser(),
-            processor=BaseProcessor):
+            processor=BaseProcessor()):
+        self._set_config(locals())
 
         self.detectors = detectors
         self.normaliser = normaliser
         self.aggregator = aggregator
-        self.processor = processor(detectors=detectors)
+        self.processor = processor
 
     def fit(self, X):
         for detector in self.detectors:
             detector.fit(X)
 
     def score(self, X):
-        return self.processor(X)
+        return self.processor(X, self.detectors)
