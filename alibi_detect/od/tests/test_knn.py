@@ -1,7 +1,7 @@
 import numpy as np
 from alibi_detect.od.knn import KNN
-from alibi_detect.od.aggregation import AverageAggregator, ShiftAndScaleNormaliser, PValNormaliser
-
+from alibi_detect.od.aggregation import AverageAggregator, ShiftAndScaleNormaliser, PValNormaliser, TopKAggregator
+from alibi_detect.od.backends import KNNKeops
 
 def test_knn_single():
     knn_detector = KNN(k=10)
@@ -95,3 +95,18 @@ def test_knn_keops():
     assert np.all(pred['normalised_scores'][0] > 0.8)
     assert np.all(pred['normalised_scores'][1] < 0.3)
     assert np.all(pred['preds'] == [True, False])
+
+def test_knn_config(tmp_path):
+    knn_detector = KNN(
+        k=[8, 9, 10], 
+        aggregator=TopKAggregator(k=5), 
+        normaliser=ShiftAndScaleNormaliser(),
+        backend='keops'
+    )
+    config = knn_detector.get_config()
+    loaded_knn_detector = KNN.from_config(config)
+    assert isinstance(loaded_knn_detector, KNN)
+    assert isinstance(loaded_knn_detector.aggregator, TopKAggregator)
+    assert isinstance(loaded_knn_detector.normaliser, ShiftAndScaleNormaliser)
+    assert loaded_knn_detector.aggregator.k == 5
+    assert loaded_knn_detector.backend.__name__ == KNNKeops.__name__

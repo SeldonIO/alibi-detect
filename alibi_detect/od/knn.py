@@ -22,7 +22,7 @@ class KNN(OutlierDetector):
         normaliser: Union[BaseTransform, None] = None,
         backend: Literal['pytorch', 'keops'] = 'pytorch'
     ) -> None:
-
+        self._set_config(locals())
         backend = backend.lower()
         BackendValidator(
             backend_options={'pytorch': ['pytorch'],
@@ -37,7 +37,6 @@ class KNN(OutlierDetector):
         self.aggregator = aggregator
         self.fitted = False
         self.backend = backends[backend]
-
 
     def fit(self, X: np.ndarray) -> None:
         self.x_ref = self.backend.fit(X)
