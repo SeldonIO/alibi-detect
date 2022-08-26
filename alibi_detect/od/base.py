@@ -80,7 +80,7 @@ class ConfigMixin:
 
             if isinstance(val, list):
                 # Note this assumes at most ensembles of depth at most 1. If we want deeper then we'll need a proper 
-                # recursive stratigy here. 
+                # recursive stratigy here.
                 for ind, item in enumerate(val):
                     if isinstance(item, dict) and item.get('meta'):
                         sub_obj_name = item.pop('name', False)
