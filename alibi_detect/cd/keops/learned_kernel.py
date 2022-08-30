@@ -174,7 +174,7 @@ class LearnedKernelDriftKeops(BaseLearnedKernelDrift):
         def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
             n = len(x)
             if self.has_proj:
-                x_proj, y_proj = self.kernel.proj(x), self.kernel.proj(y)
+                x_proj, y_proj = self.kernel.proj(x), self.kernel.proj(y)  # type: ignore[operator]
             else:
                 x_proj, y_proj = x, y
             x2_proj, x_proj = LazyTensor(x_proj[None, :, :]), LazyTensor(x_proj[:, None, :])
@@ -227,7 +227,7 @@ class LearnedKernelDriftKeops(BaseLearnedKernelDrift):
         if isinstance(x_ref_te, np.ndarray) and isinstance(x_cur_te, np.ndarray):
             x_all = torch.from_numpy(np.concatenate([x_ref_te, x_cur_te], axis=0)).float()
         else:
-            x_all = x_ref_te + x_cur_te
+            x_all = x_ref_te + x_cur_te  # type: ignore[assignment]
 
         perms = [torch.randperm(m + n) for _ in range(self.n_permutations)]
         mmd2, mmd2_permuted = self._mmd2(x_all, perms, m, n)
@@ -259,9 +259,11 @@ class LearnedKernelDriftKeops(BaseLearnedKernelDrift):
         -------
         MMD^2 statistic for the original and permuted reference and test sets.
         """
+        preprocess_batch_fn = self.train_kwargs['preprocess_fn']
+        if isinstance(preprocess_batch_fn, Callable):  # type: ignore[arg-type]
+            x_all = preprocess_batch_fn(x_all)  # type: ignore[operator]
         if self.has_proj:
             x_all_proj = predict_batch(x_all, self.kernel.proj, device=self.device, batch_size=self.batch_size_predict,
-                                       preprocess_fn=self.train_kwargs['preprocess_fn'],
                                        dtype=x_all.dtype if isinstance(x_all, torch.Tensor) else torch.float32)
         else:
             x_all_proj = x_all
@@ -280,8 +282,8 @@ class LearnedKernelDriftKeops(BaseLearnedKernelDrift):
                 x_proj = torch.cat([x_all_proj[None, :m, :], x_proj], 0)
                 y_proj = torch.cat([x_all_proj[None, m:, :], y_proj], 0)
                 if self.has_kernel_b:
-                    x = torch.cat([x_all[None, :m, :], x], 0)
-                    y = torch.cat([x_all[None, m:, :], y], 0)
+                    x = torch.cat([x_all[None, :m, :], x], 0)  # type: ignore[call-overload]
+                    y = torch.cat([x_all[None, m:, :], y], 0)  # type: ignore[call-overload]
             x_proj, y_proj = x_proj.to(self.device), y_proj.to(self.device)
             if self.has_kernel_b:
                 x, y = x.to(self.device), y.to(self.device)
