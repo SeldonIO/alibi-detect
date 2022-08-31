@@ -171,7 +171,7 @@ class DeepKernel(nn.Module):
         return self.logit_eps.sigmoid() if self.kernel_b is not None else torch.tensor(0.)
 
     def forward(self, x_proj: LazyTensor, y_proj: LazyTensor, x: Optional[LazyTensor] = None,
-                y: Optional[LazyTensor] = None) -> torch.Tensor:
+                y: Optional[LazyTensor] = None) -> LazyTensor:
         similarity = self.kernel_a(x_proj, y_proj)
         if self.kernel_b is not None:
             similarity = (1-self.eps)*similarity + self.eps*self.kernel_b(x, y)
