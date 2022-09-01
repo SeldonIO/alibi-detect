@@ -15,22 +15,23 @@ if has_keops:
 n = 50
 
 
-class MyKernel(nn.Module):
-    def __init__(self, n_features: int, proj: bool):
-        super().__init__()
-        sigma = .1
-        self.kernel = GaussianRBF(trainable=True, sigma=torch.Tensor([sigma]))
-        self.has_proj = proj
-        if proj:
-            self.proj = nn.Linear(n_features, 2)
-            self.kernel_b = GaussianRBF(trainable=True, sigma=torch.Tensor([sigma]))
+if has_keops:
+    class MyKernel(nn.Module):
+        def __init__(self, n_features: int, proj: bool):
+            super().__init__()
+            sigma = .1
+            self.kernel = GaussianRBF(trainable=True, sigma=torch.Tensor([sigma]))
+            self.has_proj = proj
+            if proj:
+                self.proj = nn.Linear(n_features, 2)
+                self.kernel_b = GaussianRBF(trainable=True, sigma=torch.Tensor([sigma]))
 
-    def forward(self, x_proj: LazyTensor, y_proj: LazyTensor, x: Optional[LazyTensor] = None,
-                y: Optional[LazyTensor] = None) -> LazyTensor:
-        similarity = self.kernel(x_proj, y_proj)
-        if self.has_proj:
-            similarity = similarity + self.kernel_b(x, y)
-        return similarity
+        def forward(self, x_proj: LazyTensor, y_proj: LazyTensor, x: Optional[LazyTensor] = None,
+                    y: Optional[LazyTensor] = None) -> LazyTensor:
+            similarity = self.kernel(x_proj, y_proj)
+            if self.has_proj:
+                similarity = similarity + self.kernel_b(x, y)
+            return similarity
 
 
 # test List[Any] inputs to the detector
