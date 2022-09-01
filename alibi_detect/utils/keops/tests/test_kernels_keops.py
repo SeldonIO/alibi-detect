@@ -68,6 +68,7 @@ def test_gaussian_kernel(gaussian_kernel_params):
 class MyKernel(nn.Module):
     def __init__(self):
         super().__init__()
+
     def forward(self, x: LazyTensor, y: LazyTensor) -> LazyTensor:
         return (- ((x - y) ** 2).sum(-1)).exp()
 
@@ -84,6 +85,7 @@ n_tests_dk = len(tests_dk)
 @pytest.fixture
 def deep_kernel_params(request):
     return tests_dk[request.param]
+
 
 @pytest.mark.skipif(not has_keops, reason='Skipping since pykeops is not installed.')
 @pytest.mark.parametrize('deep_kernel_params', list(range(n_tests_dk)), indirect=True)
