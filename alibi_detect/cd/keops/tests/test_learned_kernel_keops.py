@@ -64,6 +64,7 @@ def lkdrift_params(request):
     return tests_lkdrift[request.param]
 
 
+@pytest.mark.skipif(not has_keops, reason='Skipping since pykeops is not installed.')
 @pytest.mark.parametrize('lkdrift_params', list(range(n_tests)), indirect=True)
 def test_lkdrift(lkdrift_params):
     p_val, n_features, preprocess_at_init, update_x_ref, preprocess_fn, \
