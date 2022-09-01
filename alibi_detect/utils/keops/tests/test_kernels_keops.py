@@ -65,18 +65,19 @@ def test_gaussian_kernel(gaussian_kernel_params):
         assert (k_xx_min >= 0.).all() and (k_xy_min >= 0.).all()
 
 
-class MyKernel(nn.Module):
-    def __init__(self):
-        super().__init__()
+if has_keops:
+    class MyKernel(nn.Module):
+        def __init__(self):
+            super().__init__()
 
-    def forward(self, x: LazyTensor, y: LazyTensor) -> LazyTensor:
-        return (- ((x - y) ** 2).sum(-1)).exp()
+        def forward(self, x: LazyTensor, y: LazyTensor) -> LazyTensor:
+            return (- ((x - y) ** 2).sum(-1)).exp()
 
 
 n_features = [5]
 n_instances = [(100, 100), (100, 75)]
-kernel_a = [GaussianRBF(trainable=True), MyKernel()]
-kernel_b = [GaussianRBF(trainable=True), MyKernel(), None]
+kernel_a = ['GaussianRBF', 'MyKernel']
+kernel_b = ['GaussianRBF', 'MyKernel', None]
 eps = [0.5, 'trainable']
 tests_dk = list(product(n_features, n_instances, kernel_a, kernel_b, eps))
 n_tests_dk = len(tests_dk)
@@ -93,6 +94,11 @@ def test_deep_kernel(deep_kernel_params):
     n_features, n_instances, kernel_a, kernel_b, eps = deep_kernel_params
 
     proj = nn.Linear(n_features, n_features)
+    kernel_a = MyKernel() if kernel_a == 'MyKernel' else GaussianRBF(trainable=True)
+    if kernel_b == 'MyKernel':
+        kernel_b = MyKernel()
+    elif kernel_b == 'GaussianRBF':
+        kernel_b = GaussianRBF(trainable=True)
     kernel = DeepKernel(proj, kernel_a=kernel_a, kernel_b=kernel_b, eps=eps)
 
     xshape, yshape = (n_instances[0], n_features), (n_instances[1], n_features)
