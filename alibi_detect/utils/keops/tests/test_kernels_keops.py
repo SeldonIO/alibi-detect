@@ -90,8 +90,6 @@ def deep_kernel_params(request):
 def test_deep_kernel(deep_kernel_params):
     n_features, n_instances, kernel_a, kernel_b, eps = deep_kernel_params
 
-    print(n_instances, kernel_a, kernel_b, eps)
-
     proj = nn.Linear(n_features, n_features)
     kernel = DeepKernel(proj, kernel_a=kernel_a, kernel_b=kernel_b, eps=eps)
 
