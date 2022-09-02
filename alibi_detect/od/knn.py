@@ -6,7 +6,7 @@ from alibi_detect.od.aggregation import BaseTransform
 
 from alibi_detect.od.backends import KNNTorch, KNNKeops
 from alibi_detect.utils.frameworks import BackendValidator
-
+from alibi_detect.od.config import ConfigMixin
 from alibi_detect.saving.registry import registry
 
 backends = {
@@ -15,7 +15,11 @@ backends = {
 }
 
 @registry.register('KNN')
-class KNN(OutlierDetector):
+class KNN(OutlierDetector, ConfigMixin):
+    CONFIG_PARAMS = ('k', 'kernel', 'aggregator', 'normaliser', 'backend')
+    LARGE_PARAMS = ()
+    BASE_OBJ = True
+
     def __init__(
         self,
         k: Union[int, np.ndarray],

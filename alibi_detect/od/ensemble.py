@@ -3,9 +3,16 @@ from typing import Optional, List
 from alibi_detect.od.base import OutlierDetector
 from alibi_detect.od.aggregation import BaseTransform, AverageAggregator, PValNormaliser
 from alibi_detect.od.processor import BaseProcessor
+from alibi_detect.od.config import ConfigMixin
+from alibi_detect.saving.registry import registry
 
 
-class Ensemble(OutlierDetector):
+@registry.register('Ensemble')
+class Ensemble(OutlierDetector, ConfigMixin):
+    CONFIG_PARAMS = ('detectors', 'aggregator', 'normaliser', 'processor')
+    LARGE_PARAMS = ('detectors', )
+    BASE_OBJ = True
+
     def __init__(
             self,
             detectors: List[OutlierDetector], 

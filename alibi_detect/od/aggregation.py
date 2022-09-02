@@ -7,11 +7,11 @@ from typing import Optional
 from abc import ABC, abstractmethod
 
 logger = logging.getLogger(__name__)
-from alibi_detect.od.base import ConfigMixin
+from alibi_detect.od.config import ConfigMixin
 from alibi_detect.saving.registry import registry
 
 
-class BaseTransform(ConfigMixin, ABC):
+class BaseTransform(ABC):
     fitted = False
     config = {}
 
@@ -35,7 +35,7 @@ class BaseTransform(ConfigMixin, ABC):
 
 
 @registry.register('PValNormaliser')
-class PValNormaliser(BaseTransform):
+class PValNormaliser(BaseTransform, ConfigMixin):
     def __init__(self):
         self._set_config(locals())
 
@@ -50,19 +50,11 @@ class PValNormaliser(BaseTransform):
 
 
 @registry.register('ShiftAndScaleNormaliser')
-class ShiftAndScaleNormaliser(BaseTransform):
+class ShiftAndScaleNormaliser(BaseTransform, ConfigMixin):
     def __init__(self):
         self._set_config(locals())
 
     def _fit(self, val_scores: np.ndarray) -> BaseTransform:
-        """
-        Note:
-            This was taking the mean and std over the final value which was
-            the score for each detector? I've changed to be over the val_scores 
-            samples.
-        """
-        # self.val_means = val_scores.mean(-1)[None,:]
-        # self.val_scales = val_scores.std(-1)[None,:]
         self.val_means = val_scores.mean(0)[None,:]
         self.val_scales = val_scores.std(0)[None,:]
 
@@ -71,7 +63,9 @@ class ShiftAndScaleNormaliser(BaseTransform):
 
 
 @registry.register('TopKAggregator')
-class TopKAggregator(BaseTransform):
+class TopKAggregator(BaseTransform, ConfigMixin):
+    CONFIG_PARAMS = ('k', )
+
     def __init__(self, k: Optional[int]):
         self._set_config(locals())
         self.k = k
@@ -84,7 +78,9 @@ class TopKAggregator(BaseTransform):
 
 
 @registry.register('AverageAggregator')
-class AverageAggregator(BaseTransform):
+class AverageAggregator(BaseTransform, ConfigMixin):
+    CONFIG_PARAMS = ('weights', )
+
     def __init__(self, weights: Optional[np.ndarray] = None):
         self._set_config(locals())
         self.weights = weights
@@ -98,8 +94,10 @@ class AverageAggregator(BaseTransform):
 
 
 @registry.register('MaxAggregator')
-class MaxAggregator:
-    def __init__(self):
+class MaxAggregator(BaseTransform, ConfigMixin):
+    CONFIG_PARAMS = ()
+
+    def __init__(self, ConfigMixin):
         self._set_config(locals())
         self.fitted = True
 
@@ -108,7 +106,9 @@ class MaxAggregator:
 
 
 @registry.register('MinAggregator')
-class MinAggregator:
+class MinAggregator(BaseTransform, ConfigMixin):
+    CONFIG_PARAMS = ()
+
     def __init__(self):
         self._set_config(locals())
         self.fitted = True

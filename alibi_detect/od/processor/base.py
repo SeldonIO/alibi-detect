@@ -1,5 +1,5 @@
 import numpy as np
-from alibi_detect.od.base import ConfigMixin
+from alibi_detect.od.config import ConfigMixin
 from alibi_detect.saving.registry import registry
 
 

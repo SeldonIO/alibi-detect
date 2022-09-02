@@ -3,9 +3,11 @@ import numpy as np
 
 from alibi_detect.od.processor.base import BaseProcessor
 from alibi_detect.saving.registry import registry
+from alibi_detect.od.config import ConfigMixin
+
 
 @registry.register('ParallelProcessor')
-class ParallelProcessor(BaseProcessor):
+class ParallelProcessor(BaseProcessor, ConfigMixin):
     def __init__(self):
         self._set_config(locals())
 

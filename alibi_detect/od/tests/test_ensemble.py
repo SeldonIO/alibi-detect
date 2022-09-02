@@ -3,6 +3,7 @@ from alibi_detect.od.ensemble import Ensemble
 from alibi_detect.od.knn import KNN
 from alibi_detect.od.aggregation import AverageAggregator, PValNormaliser
 from alibi_detect.od.processor import ParallelProcessor
+from alibi_detect.od.saving import save_detector, load_detector
 
 
 def test_ensemble():
@@ -42,9 +43,12 @@ def test_ensemble_config():
         normaliser=PValNormaliser(),
         processor=ParallelProcessor()
     )
-    config = ensemble_detector.get_config()
-    loaded_ensemble_detector = Ensemble.from_config(config)
 
+    cfg_path = save_detector(ensemble_detector, './example-ensemble')
+    loaded_ensemble_detector = load_detector(cfg_path)
+
+    print(loaded_ensemble_detector.processor)
+    
     assert isinstance(loaded_ensemble_detector, Ensemble)
     assert isinstance(loaded_ensemble_detector.aggregator, AverageAggregator)
     assert isinstance(loaded_ensemble_detector.normaliser, PValNormaliser)
