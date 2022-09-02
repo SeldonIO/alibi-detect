@@ -44,11 +44,8 @@ def test_ensemble_config():
         processor=ParallelProcessor()
     )
 
-    cfg_path = save_detector(ensemble_detector, './example-ensemble')
+    cfg_path = save_detector(ensemble_detector, './example-ensemble-config')
     loaded_ensemble_detector = load_detector(cfg_path)
-
-    print(loaded_ensemble_detector.processor)
-    
     assert isinstance(loaded_ensemble_detector, Ensemble)
     assert isinstance(loaded_ensemble_detector.aggregator, AverageAggregator)
     assert isinstance(loaded_ensemble_detector.normaliser, PValNormaliser)

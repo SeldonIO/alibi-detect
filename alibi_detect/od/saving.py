@@ -23,7 +23,7 @@ def write_config(cfg: dict, filepath: Union[str, os.PathLike]):
 def serialize(item, path):
     if hasattr(item, 'BASE_OBJ'):
         if item.BASE_OBJ:
-            cfg_path = save_detector(item, path + '')
+            cfg_path = save_detector(item, path)
             return cfg_path
         if not item.BASE_OBJ:
             return item.get_config()
@@ -56,8 +56,7 @@ def deserialize(item, path):
     if isinstance(item, dict) and item.get('name'):
         obj_name = item.pop('name')
         obj = registry.get_all()[obj_name]
-        print(item, obj_name)
-        obj_instance = obj(**item) # from config
+        obj_instance = obj.from_config(item)
         return obj_instance
     else:
         return item
@@ -77,7 +76,10 @@ def load_detector(path):
 
     obj_name = cfg.pop('name')
     meta = cfg.pop('meta')
+    version_warning = meta.pop('version_warning', False)
     obj = registry.get_all()[obj_name]
-    obj = obj(**cfg)
+    obj = obj.from_config(cfg)
     obj.meta = meta
+    obj.meta['version_warning'] = version_warning
+    obj.config['meta']['version_warning'] = version_warning
     return obj

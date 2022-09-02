@@ -1,13 +1,9 @@
-
 from __future__ import annotations
 from abc import ABC, abstractmethod
-import enum
 import numpy as np
 from alibi_detect.version import __version__, __config_spec__
 import logging
-from typing import Dict, Any
 from alibi_detect.base import BaseDetector
-from alibi_detect.saving.registry import registry
 
 logger = logging.getLogger(__name__)
 

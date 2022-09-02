@@ -1,4 +1,3 @@
-import imp
 from typing import Optional, List
 from alibi_detect.od.base import OutlierDetector
 from alibi_detect.od.aggregation import BaseTransform, AverageAggregator, PValNormaliser

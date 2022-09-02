@@ -2,7 +2,7 @@ import numpy as np
 from alibi_detect.od.knn import KNN
 from alibi_detect.od.aggregation import AverageAggregator, ShiftAndScaleNormaliser, PValNormaliser, TopKAggregator
 from alibi_detect.od.backends import KNNKeops
-from alibi_detect.od.config import get_full_detector_cfg
+from alibi_detect.od.saving import save_detector, load_detector
 
 def test_knn_single():
     knn_detector = KNN(k=10)
@@ -104,11 +104,9 @@ def test_knn_config(tmp_path):
         normaliser=ShiftAndScaleNormaliser(),
         backend='keops'
     )
-    config = knn_detector.get_config()
-    print(config)
-    config = get_full_detector_cfg(knn_detector, '.')
-    print(config)
-    loaded_knn_detector = KNN.from_config(config)
+    # save_detector, load_detector
+    cfg_path = save_detector(knn_detector, './example-knn-config')
+    loaded_knn_detector = load_detector(cfg_path)
     assert isinstance(loaded_knn_detector, KNN)
     assert isinstance(loaded_knn_detector.aggregator, TopKAggregator)
     assert isinstance(loaded_knn_detector.normaliser, ShiftAndScaleNormaliser)
