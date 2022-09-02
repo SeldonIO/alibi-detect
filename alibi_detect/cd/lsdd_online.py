@@ -1,3 +1,4 @@
+import os
 import numpy as np
 from typing import Any, Callable, Dict, Optional, Union
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, BackendValidator
@@ -163,3 +164,33 @@ class LSDDDriftOnline(DriftConfigMixin):
         # Unnormalize x_ref
         cfg['x_ref'] = self._detector._unnormalize(cfg['x_ref'])
         return cfg
+
+    def save_state(self, filepath: Union[str, os.PathLike]):
+        """
+        Save a detector's state to disk in order to generate a checkpoint. This can be loaded later on with
+        :meth:`~load_state`.
+
+        Parameters
+        ----------
+        filepath
+            The directory to save state to.
+        """
+        self._detector.save_state(filepath)
+
+    def load_state(self, filepath: Union[str, os.PathLike]):
+        """
+        Load the detector's state from disk, in order to restart from a checkpoint previously generated with
+        :meth:`~save_state`.
+
+        Parameters
+        ----------
+        filepath
+            The directory to load state from.
+        """
+        self._detector.load_state(filepath)
+
+    def reset_state(self):
+        """
+        Reset the detector's state.
+        """
+        self._detector.reset_state()

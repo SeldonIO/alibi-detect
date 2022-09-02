@@ -1,3 +1,5 @@
+import os
+from pathlib import Path
 import logging
 from abc import abstractmethod
 from typing import Any, Callable, Dict, List, Optional, Union
@@ -18,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 class BaseMultiDriftOnline(BaseDetector):
     thresholds: np.ndarray
+    state_path: Path
 
     def __init__(
             self,
@@ -105,6 +108,22 @@ class BaseMultiDriftOnline(BaseDetector):
     @abstractmethod
     def _update_state(self, x_t: Union[np.ndarray, 'tf.Tensor', 'torch.Tensor']):
         pass
+
+    @abstractmethod
+    def save_state(self, filepath: Union[str, os.PathLike]):
+        pass
+
+    @abstractmethod
+    def load_state(self, filepath: Union[str, os.PathLike]):
+        pass
+
+    @abstractmethod
+    def reset_state(self):
+        pass
+
+    def _set_state_path(self, filepath: Union[str, os.PathLike]):
+        self.state_path = Path(filepath)
+        self.state_path.mkdir(parents=True, exist_ok=True)
 
     def _preprocess_xt(self, x_t: Union[np.ndarray, Any]) -> np.ndarray:
         """
