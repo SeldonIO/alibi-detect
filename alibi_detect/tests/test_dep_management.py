@@ -281,6 +281,7 @@ def test_keops_utils_dependencies(opt_dep):
     dependency_map = defaultdict(lambda: ['default'])
     for dependency, relations in [
         ("GaussianRBF", ['keops']),
+        ("DeepKernel", ['keops']),
     ]:
         dependency_map[dependency] = relations
     from alibi_detect.utils import keops as keops_utils
