@@ -3,6 +3,7 @@ import torch
 from torch import nn
 from . import distance
 from typing import Optional, Union, Callable
+from copy import deepcopy
 
 
 def infer_kernel_parameter(kernel, x, y, dist, infer_parameter):
@@ -57,7 +58,7 @@ def sigma_median(x: torch.Tensor, y: torch.Tensor, dist: torch.Tensor) -> torch.
     return sigma.log()
 
 
-class KernelParameter(object):
+class KernelParameter:
     """
     Parameter class for kernels.
     """
@@ -70,7 +71,7 @@ class KernelParameter(object):
         requires_init: bool = False
     ) -> None:
         super().__init__()
-        self.value = nn.Parameter(value if value is not None else torch.ones(1),
+        self.value = nn.Parameter(value if value is not None else torch.ones(1), 
                                   requires_grad=requires_grad)
         self.init_fn = init_fn
         self.requires_init = requires_init
@@ -80,24 +81,19 @@ class BaseKernel(nn.Module):
     """
     The base class for all kernels.
     """
-    def __init__(self) -> None:
+    def __init__(self, active_dims: list = None, feature_axis: int = -1) -> None:
         super().__init__()
         self.parameter_dict: dict = {}
-
-    def forward(self, x: Union[np.ndarray, torch.Tensor], y: Union[np.ndarray, torch.Tensor],
-                infer_parameter: bool = False) -> torch.Tensor:
-        raise NotImplementedError
-
-
-class DimensionSelectKernel(nn.Module):
-    """
-    Select a subset of the feature diomensions before apply a given kernel.
-    """
-    def __init__(self, kernel: BaseKernel, active_dims: list, feature_axis: int = -1) -> None:
-        super().__init__()
-        self.kernel = kernel
-        self.active_dims = torch.as_tensor(active_dims)
+        if active_dims is not None:
+            self.active_dims = torch.as_tensor(active_dims)
+        else:
+            self.active_dims = None
         self.feature_axis = feature_axis
+        self.init_required = False
+
+    def kernel_function(self, x: Union[np.ndarray, torch.Tensor], y: Union[np.ndarray, torch.Tensor],
+                        infer_parameter: bool = False) -> torch.Tensor:
+        raise NotImplementedError
 
     def forward(self, x: Union[np.ndarray, torch.Tensor], y: Union[np.ndarray, torch.Tensor],
                 infer_parameter: bool = False) -> torch.Tensor:
@@ -105,57 +101,137 @@ class DimensionSelectKernel(nn.Module):
         if self.active_dims is not None:
             x = torch.index_select(x, self.feature_axis, self.active_dims)
             y = torch.index_select(y, self.feature_axis, self.active_dims)
-        return self.kernel(x, y, infer_parameter)
+        return self.kernel_function(x, y, infer_parameter)
+    
+    def __add__(self, other: nn.Module) -> nn.Module:
+        if hasattr(other, 'kernel_list'):
+            other.kernel_list.append(self)
+            return other
+        else:
+            sum_kernel = SumKernel()
+            sum_kernel.kernel_list.append(self)
+            sum_kernel.kernel_list.append(other)
+            return sum_kernel
+
+    def __radd__(self, other:nn.Module) -> nn.Module:
+        return self.__add__(other)
+
+    def __mul__(self, other: nn.Module) -> nn.Module:
+        if hasattr(other, 'kernel_factors'):
+            other.kernel_factors.append(self)
+            return other
+        elif hasattr(other, 'kernel_list'):
+            sum_kernel = SumKernel()
+            for k in other.kernel_list:
+                sum_kernel.kernel_list.append(self * k)
+            return sum_kernel
+        else:
+            prod_kernel = ProductKernel()
+            prod_kernel.kernel_factors.append(self)
+            prod_kernel.kernel_factors.append(other)
+            return prod_kernel
+
+    def __rmul__(self, other:nn.Module) -> nn.Module:
+        return self.__mul__(other)
 
 
-class AveragedKernel(nn.Module):
+class SumKernel(nn.Module):
     """
-    Construct a kernel by averaging two kernels.
+    Construct a kernel by summing different kernels.
 
     Parameters:
-    ----------
-        kernel_a
-            the first kernel to be averaged.
-        kernel_b
-            the second kernel to be averaged.
+    ----------------
     """
-    def __init__(
-        self,
-        kernel_a: BaseKernel,
-        kernel_b: BaseKernel
-    ) -> None:
+    def __init__(self) -> None:
         super().__init__()
-        self.kernel_a = kernel_a
-        self.kernel_b = kernel_b
+        self.kernel_list = []
 
     def forward(self, x: Union[np.ndarray, torch.Tensor], y: Union[np.ndarray, torch.Tensor],
                 infer_parameter: bool = False) -> torch.Tensor:
-        return (self.kernel_a(x, y, infer_parameter) + self.kernel_b(x, y, infer_parameter)) / 2
+        value_list = []
+        for k in self.kernel_list:
+            if callable(k):
+                value_list.append(k(x, y, infer_parameter))
+            else:
+                value_list.append(k * torch.ones((x.shape[0], y.shape[0])))
+        return torch.sum(torch.stack(value_list), dim=0)
+    
+    def __add__(self, other: nn.Module) -> nn.Module:
+        if hasattr(other, 'kernel_list'):
+            for k in other.kernel_list:
+                self.kernel_list.append(k)
+        else:
+            self.kernel_list.append(other)
+            return self
+    
+    def __radd__(self, other:nn.Module) -> nn.Module:
+        return self.__add__(other)
+
+    def __mul__(self, other: nn.Module) -> nn.Module:
+        if hasattr(other, 'kernel_list'):
+            sum_kernel = SumKernel()
+            for ki in self.kernel_list:
+                for kj in other.kernel_list:
+                    sum_kernel.kernel_list.append(ki * kj)
+            return sum_kernel
+        elif hasattr(other, 'kernel_factors'):
+            return other * self
+        else:
+            sum_kernel = SumKernel()
+            for ki in self.kernel_list:
+                sum_kernel.kernel_list.append(other * ki)
+            return sum_kernel
+
+    def __rmul__(self, other:nn.Module) -> nn.Module:
+        return self.__mul__(other)
 
 
 class ProductKernel(nn.Module):
-    """
-    Construct a kernel by multiplying two kernels.
-
-    Parameters:
-    ----------
-        kernel_a
-            the first kernel to be multiplied.
-        kernel_b
-            the second kernel to be multiplied.
-    """
-    def __init__(
-        self,
-        kernel_a: BaseKernel,
-        kernel_b: BaseKernel
-    ) -> None:
+    def __init__(self) -> None:
         super().__init__()
-        self.kernel_a = kernel_a
-        self.kernel_b = kernel_b
+        self.kernel_factors = []
 
     def forward(self, x: Union[np.ndarray, torch.Tensor], y: Union[np.ndarray, torch.Tensor],
                 infer_parameter: bool = False) -> torch.Tensor:
-        return self.kernel_a(x, y, infer_parameter) * self.kernel_b(x, y, infer_parameter)
+        value_list = []
+        for k in self.kernel_factors:
+            if callable(k):
+                value_list.append(k(x, y, infer_parameter))
+            else:
+                value_list.append(k * torch.ones((x.shape[0], y.shape[0])))
+        return torch.prod(torch.stack(value_list), dim=0)
+    
+    def __add__(self, other: nn.Module) -> nn.Module:
+        if hasattr(other, 'kernel_list'):
+            other.kernel_list.append(self)
+            return other
+        else:
+            sum_kernel = SumKernel()
+            sum_kernel.kernel_list.append(self)
+            sum_kernel.kernel_list.append(other)
+            return sum_kernel
+
+    def __radd__(self, other:nn.Module) -> nn.Module:
+        return self.__add__(other)
+
+    def __mul__(self, other: nn.Module) -> nn.Module:
+        if hasattr(other, 'kernel_list'):
+            sum_kernel = SumKernel()
+            for k in other.kernel_list:
+                tmp_prod_kernel = deepcopy(self)
+                tmp_prod_kernel.kernel_factors.append(k)
+                sum_kernel.kernel_list.append(tmp_prod_kernel)
+            return sum_kernel
+        elif hasattr(other, 'kernel_factors'):
+            for k in other.kernel_factors:
+                self.kernel_factors.append(k)
+                return self
+        else:
+            self.kernel_factors.append(other)
+            return self
+
+    def __rmul__(self, other:nn.Module) -> nn.Module:
+        return self.__mul__(other)
 
 
 class GaussianRBF(BaseKernel):
@@ -163,7 +239,9 @@ class GaussianRBF(BaseKernel):
        self,
        sigma: Optional[torch.Tensor] = None,
        init_fn_sigma: Callable = sigma_median,
-       trainable: bool = False
+       trainable: bool = False,
+       active_dims: list = None,
+       feature_axis: int = -1
     ) -> None:
         """
         Gaussian RBF kernel: k(x,y) = exp(-(1/(2*sigma^2)||x-y||^2). A forward pass takes
@@ -182,7 +260,7 @@ class GaussianRBF(BaseKernel):
         trainable
             Whether or not to track gradients w.r.t. `sigma` to allow it to be trained.
         """
-        super().__init__()
+        super().__init__(active_dims, feature_axis)
         self.parameter_dict['log-sigma'] = KernelParameter(
                 value=sigma.log().reshape(-1) if sigma is not None else None,
                 init_fn=init_fn_sigma,
@@ -196,8 +274,8 @@ class GaussianRBF(BaseKernel):
     def sigma(self) -> torch.Tensor:
         return self.parameter_dict['log-sigma'].value.exp()
 
-    def forward(self, x: Union[np.ndarray, torch.Tensor], y: Union[np.ndarray, torch.Tensor],
-                infer_parameter: bool = False) -> torch.Tensor:
+    def kernel_function(self, x: Union[np.ndarray, torch.Tensor], y: Union[np.ndarray, torch.Tensor],
+                        infer_parameter: bool = False) -> torch.Tensor:
 
         x, y = torch.as_tensor(x), torch.as_tensor(y)
         dist = distance.squared_pairwise_distance(x.flatten(1), y.flatten(1))  # [Nx, Ny]
@@ -218,7 +296,9 @@ class RationalQuadratic(BaseKernel):
         init_fn_alpha: Callable = None,
         sigma: torch.Tensor = None,
         init_fn_sigma: Callable = sigma_median,
-        trainable: bool = False
+        trainable: bool = False,
+        active_dims: list = None, 
+        feature_axis: int = -1 
     ) -> None:
         """
         Rational Quadratic kernel: k(x,y) = (1 + ||x-y||^2 / (2*sigma^2))^(-alpha).
@@ -232,7 +312,7 @@ class RationalQuadratic(BaseKernel):
         sigma
             Bandwidth used for the kernel.
         """
-        super().__init__()
+        super().__init__(active_dims, feature_axis)
         self.parameter_dict['alpha'] = KernelParameter(
             value=alpha.reshape(-1) if alpha is not None else None,
             init_fn=init_fn_alpha,
@@ -256,14 +336,14 @@ class RationalQuadratic(BaseKernel):
     def sigma(self) -> torch.Tensor:
         return self.parameter_dict['log-sigma'].value.exp()
 
-    def forward(self, x: Union[np.ndarray, torch.Tensor], y: Union[np.ndarray, torch.Tensor],
-                infer_parameter: bool = False) -> torch.Tensor:
+    def kernel_function(self, x: Union[np.ndarray, torch.Tensor], y: Union[np.ndarray, torch.Tensor],
+                        infer_parameter: bool = False) -> torch.Tensor:
+
         x, y = torch.as_tensor(x), torch.as_tensor(y)
         dist = distance.squared_pairwise_distance(x.flatten(1), y.flatten(1))
 
         if infer_parameter or self.init_required:
-            if infer_parameter or self.init_required:
-                infer_kernel_parameter(self, x, y, dist, infer_parameter)
+            infer_kernel_parameter(self, x, y, dist, infer_parameter)
 
         kernel_mat = torch.stack([(1 + torch.square(dist) /
                                    (2 * self.alpha[i] * (self.sigma[i] ** 2)))
@@ -280,6 +360,8 @@ class Periodic(BaseKernel):
         sigma: torch.Tensor = None,
         init_fn_sigma: Callable = sigma_median,
         trainable: bool = False,
+        active_dims: list = None, 
+        feature_axis: int = -1 
     ) -> None:
         """
         Periodic kernel: k(x,y) = exp(-2 * sin(pi * |x - y| / tau)^2 / (sigma^2)).
@@ -293,7 +375,7 @@ class Periodic(BaseKernel):
         sigma
             Bandwidth used for the kernel.
         """
-        super().__init__()
+        super().__init__(active_dims, feature_axis)
         self.parameter_dict['log-tau'] = KernelParameter(
             value=tau.log().reshape(-1) if tau is not None else None,
             init_fn=init_fn_tau,
@@ -317,8 +399,8 @@ class Periodic(BaseKernel):
     def sigma(self) -> torch.Tensor:
         return self.parameter_dict['log-sigma'].value.exp()
 
-    def forward(self, x: Union[np.ndarray, torch.Tensor], y: Union[np.ndarray, torch.Tensor],
-                infer_parameter: bool = False) -> torch.Tensor:
+    def kernel_function(self, x: Union[np.ndarray, torch.Tensor], y: Union[np.ndarray, torch.Tensor],
+                        infer_parameter: bool = False) -> torch.Tensor:
         x, y = torch.as_tensor(x), torch.as_tensor(y)
         dist = torch.sqrt(distance.squared_pairwise_distance(x.flatten(1), y.flatten(1)))
 
@@ -331,67 +413,34 @@ class Periodic(BaseKernel):
         return kernel_mat.mean(dim=0)
 
 
-class LocalPeriodic(BaseKernel):
+class ProjKernel(BaseKernel):
+    """
+    A kernel that combines a raw kernel (e.g. RBF) with a projection function (e.g. deep net) as
+    k(x, y) = k(proj(x), proj(y)). A forward pass takes a batch of instances x [Nx, features] and
+    y [Ny, features] and returns the kernel matrix [Nx, Ny].
+    
+    Parameters:
+    ----------
+    proj
+        The projection to be applied to the inputs before applying raw_kernel
+    raw_kernel
+        The kernel to apply to the projected inputs. Defaults to a Gaussian RBF with trainable bandwidth.
+    """
     def __init__(
         self,
-        tau: torch.Tensor = None,
-        init_fn_tau: Callable = None,
-        sigma: torch.Tensor = None,
-        init_fn_sigma: Callable = sigma_median,
-        trainable: bool = False
+        proj: nn.Module,
+        raw_kernel: BaseKernel = GaussianRBF(trainable=True),
     ) -> None:
-        """
-        Local periodic kernel: k(x,y) = k_rbf(x, y) * k_period(x, y).
-        A forward pass takesa batch of instances x [Nx, features] and y [Ny, features]
-        and returns the kernel matrix [Nx, Ny].
-
-        Parameters
-        ----------
-        tau
-            Period of the periodic kernel.
-        sigma
-            Bandwidth used for the kernel.
-        """
         super().__init__()
-        self.parameter_dict['log-tau'] = KernelParameter(
-            value=tau.log().reshape(-1) if tau is not None else None,
-            init_fn=init_fn_tau,
-            requires_grad=trainable,
-            requires_init=True if tau is None else False
-        )
-        self.parameter_dict['log-sigma'] = KernelParameter(
-            value=sigma.log().reshape(-1) if sigma is not None else None,
-            init_fn=init_fn_sigma,
-            requires_grad=trainable,
-            requires_init=True if sigma is None else False
-        )
-        self.trainable = trainable
-        self.init_required = any([param.requires_init for param in self.parameter_dict.values()])
+        self.proj = proj
+        self.raw_kernel = raw_kernel
+        self.init_required = False
 
-    @property
-    def tau(self) -> torch.Tensor:
-        return self.parameter_dict['log-tau'].value.exp()
-
-    @property
-    def sigma(self) -> torch.Tensor:
-        return self.parameter_dict['log-sigma'].value.exp()
-
-    def forward(self, x: Union[np.ndarray, torch.Tensor], y: Union[np.ndarray, torch.Tensor],
-                infer_parameter: bool = False) -> torch.Tensor:
-        x, y = torch.as_tensor(x), torch.as_tensor(y)
-        dist = distance.squared_pairwise_distance(x.flatten(1), y.flatten(1))
-
-        if infer_parameter or self.init_required:
-            infer_kernel_parameter(self, x, y, dist, infer_parameter)
-
-        kernel_mat = torch.stack([torch.exp(-2 * torch.square(
-            torch.sin(torch.as_tensor(np.pi) * dist / self.tau[i])) / (self.sigma[i] ** 2)) *
-                                  torch.exp(-0.5 * torch.square(dist / self.tau[i]))
-                                  for i in range(len(self.sigma))], dim=0)
-        return kernel_mat.mean(dim=0)
+    def kernel_function(self, x: torch.Tensor, y: torch.Tensor, infer_parameter: bool = False) -> torch.Tensor:
+        return self.raw_kernel(self.proj(x), self.proj(y), infer_parameter)
 
 
-class DeepKernel(nn.Module):
+class DeepKernel(BaseKernel):
     """
     Computes similarities as k(x,y) = (1-eps)*k_a(proj(x), proj(y)) + eps*k_b(x,y).
     A forward pass takes a batch of instances x [Nx, features] and y [Ny, features] and returns
@@ -414,17 +463,17 @@ class DeepKernel(nn.Module):
     def __init__(
         self,
         proj: nn.Module,
-        kernel_a: nn.Module = GaussianRBF(trainable=True),
-        kernel_b: Optional[nn.Module] = GaussianRBF(trainable=True),
+        kernel_a: BaseKernel = GaussianRBF(trainable=True),
+        kernel_b: BaseKernel = GaussianRBF(trainable=True),
         eps: Union[float, str] = 'trainable'
     ) -> None:
         super().__init__()
-
-        self.kernel_a = kernel_a
-        self.kernel_b = kernel_b
-        self.proj = proj
+        proj_kernel = ProjKernel(proj=proj, raw_kernel=kernel_a)
         if kernel_b is not None:
             self._init_eps(eps)
+            self.comp_kernel = (1-self.logit_eps.sigmoid() )*proj_kernel + self.logit_eps.sigmoid()*kernel_b
+        else:
+            self.comp_kernel = proj_kernel
 
     def _init_eps(self, eps: Union[float, str]) -> None:
         if isinstance(eps, float):
@@ -436,12 +485,5 @@ class DeepKernel(nn.Module):
         else:
             raise NotImplementedError("eps should be 'trainable' or a float in (0,1)")
 
-    @property
-    def eps(self) -> torch.Tensor:
-        return self.logit_eps.sigmoid() if self.kernel_b is not None else torch.tensor(0.)
-
-    def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-        similarity = self.kernel_a(self.proj(x), self.proj(y))
-        if self.kernel_b is not None:
-            similarity = (1-self.eps)*similarity + self.eps*self.kernel_b(x, y)
-        return similarity
+    def kernel_function(self, x: torch.Tensor, y: torch.Tensor, infer_parmeter=False) -> torch.Tensor:
+        return self.comp_kernel(x, y, infer_parmeter)

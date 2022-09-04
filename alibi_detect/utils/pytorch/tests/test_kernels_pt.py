@@ -3,7 +3,7 @@ import numpy as np
 import pytest
 import torch
 from torch import nn
-from alibi_detect.utils.pytorch import GaussianRBF, DeepKernel
+from alibi_detect.utils.pytorch import GaussianRBF, DeepKernel, BaseKernel
 
 sigma = [None, np.array([1.]), np.array([1., 2.])]
 n_features = [5, 10]
@@ -39,12 +39,12 @@ def test_gaussian_kernel(gaussian_kernel_params):
         assert (k_xx > 0.).all() and (k_xy > 0.).all()
 
 
-class MyKernel(nn.Module):  # TODO: Support then test models using keras functional API
+class MyKernel(BaseKernel):  # TODO: Support then test models using keras functional API
     def __init__(self, n_features: int):
         super().__init__()
         self.linear = nn.Linear(n_features, 20)
 
-    def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, y: torch.Tensor, infer_parameter) -> torch.Tensor:
         return torch.einsum('ji,ki->jk', self.linear(x), self.linear(y))
 
 

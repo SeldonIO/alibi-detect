@@ -3,7 +3,7 @@ import numpy as np
 import pytest
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, Input
-from alibi_detect.utils.tensorflow import GaussianRBF, DeepKernel
+from alibi_detect.utils.tensorflow import GaussianRBF, DeepKernel, BaseKernel
 
 sigma = [None, np.array([1.]), np.array([1., 2.])]
 n_features = [5, 10]
@@ -38,12 +38,12 @@ def test_gaussian_kernel(gaussian_kernel_params):
         assert (k_xx > 0.).all() and (k_xy > 0.).all()
 
 
-class MyKernel(tf.keras.Model):  # TODO: Support then test models using keras functional API
+class MyKernel(BaseKernel):  # TODO: Support then test models using keras functional API
     def __init__(self, n_features: int):
         super().__init__()
         self.dense = Dense(20)
 
-    def call(self, x: tf.Tensor, y: tf.Tensor) -> tf.Tensor:
+    def call(self, x: tf.Tensor, y: tf.Tensor, infer_parameter) -> tf.Tensor:
         return tf.einsum('ji,ki->jk', self.dense(x), self.dense(y))
 
 
