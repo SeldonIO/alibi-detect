@@ -14,7 +14,7 @@ mmd2, mmd2_from_kernel_matrix, squared_pairwise_distance, permed_lsdds, batch_co
 
 GaussianRBF, DeepKernel = import_optional(
     'alibi_detect.utils.pytorch.kernels',
-    names=['GaussianRBF', 'DeepKernel']
+    names=['GaussianRBF', 'DeepKernel, BaseKernel']
 )
 
 predict_batch, predict_batch_transformer = import_optional(
@@ -32,6 +32,7 @@ __all__ = [
     "mmd2",
     "mmd2_from_kernel_matrix",
     "squared_pairwise_distance",
+    "BaseKernel",
     "GaussianRBF",
     "DeepKernel",
     "permed_lsdds",

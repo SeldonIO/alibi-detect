@@ -3,6 +3,7 @@ import numpy as np
 from . import distance
 from typing import Optional, Union, Callable
 from scipy.special import logit
+from copy import deepcopy
 from alibi_detect.utils.frameworks import Framework
 
 
@@ -61,11 +62,13 @@ class KernelParameter(object):
     """
     Parameter class for kernels.
     """
-    def __init__(self,
-                 value: tf.Tensor = None,
-                 init_fn: Optional[Callable] = None,
-                 requires_grad: bool = False,
-                 requires_init: bool = False):
+    def __init__(
+        self,
+        value: tf.Tensor = None,
+        init_fn: Optional[Callable] = None,
+        requires_grad: bool = False,
+        requires_init: bool = False
+    ) -> None:
         self.value = tf.Variable(value if value is not None
                                  else tf.ones(1, dtype=tf.keras.backend.floatx()),
                                  trainable=requires_grad)
@@ -80,77 +83,152 @@ class BaseKernel(tf.keras.Model):
     """
     The base class for all kernels.
     """
-    def __init__(self) -> None:
+    def __init__(self, active_dims: list = None, feature_axis: int = -1) -> None:
         super().__init__()
         self.parameter_dict: dict = {}
-
-    def call(self, x: tf.Tensor, y: tf.Tensor, infer_parameter: bool = False) -> tf.Tensor:
-        return NotImplementedError
-
-
-class DimensionSelectKernel(tf.keras.Model):
-    """
-    Select a subset of the feature diomensions before apply a given kernel.
-    """
-    def __init__(self, kernel: BaseKernel, active_dims: list, feature_axis: int = -1) -> None:
-        super().__init__()
-        self.kernel = kernel
         self.active_dims = active_dims
         self.feature_axis = feature_axis
+        self.init_required = False
+
+    def kernel_function(self, x: tf.Tensor, y: tf.Tensor, infer_parameter: bool = False) -> tf.Tensor:
+        return NotImplementedError
 
     def call(self, x: tf.Tensor, y: tf.Tensor, infer_parameter: bool = False) -> tf.Tensor:
         y = tf.cast(y, x.dtype)
-        x = tf.gather(x, self.active_dims, axis=self.feature_axis)
-        y = tf.gather(y, self.active_dims, axis=self.feature_axis)
-        return self.kernel(x, y, infer_parameter)
+        if self.active_dims is not None:
+            x = tf.gather(x, self.active_dims, axis=self.feature_axis)
+            y = tf.gather(y, self.active_dims, axis=self.feature_axis)
+        return self.kernel_function(x, y, infer_parameter)
+
+    def __add__(self, other: tf.keras.Model) -> tf.keras.Model:
+        if hasattr(other, 'kernel_list'):
+            other.kernel_list.append(self)
+            return other
+        else:
+            sum_kernel = SumKernel()
+            sum_kernel.kernel_list.append(self)
+            sum_kernel.kernel_list.append(other)
+            return sum_kernel
+
+    def __radd__(self, other: tf.keras.Model) -> tf.keras.Model:
+        return self.__add__(other)
+
+    def __mul__(self, other: tf.keras.Model) -> tf.keras.Model:
+        if hasattr(other, 'kernel_factors'):
+            other.kernel_factors.append(self)
+            return other
+        elif hasattr(other, 'kernel_list'):
+            sum_kernel = SumKernel()
+            for k in other.kernel_list:
+                sum_kernel.kernel_list.append(self * k)
+            return sum_kernel
+        else:
+            prod_kernel = ProductKernel()
+            prod_kernel.kernel_factors.append(self)
+            prod_kernel.kernel_factors.append(other)
+            return prod_kernel
+
+    def __rmul__(self, other: tf.keras.Model) -> tf.keras.Model:
+        return self.__mul__(other)
 
 
-class AveragedKernel(tf.keras.Model):
+class SumKernel(tf.keras.Model):
     """
-    Construct a kernel by averaging two kernels.
+    Construct a kernel by summing different kernels.
 
     Parameters:
-    ----------
-        kernel_a
-            the first kernel to be averaged.
-        kernel_b
-            the second kernel to be averaged.
+    ----------------
     """
-    def __init__(
-        self,
-        kernel_a: BaseKernel,
-        kernel_b: BaseKernel
-    ) -> None:
+    def __init__(self) -> None:
         super().__init__()
-        self.kernel_a = kernel_a
-        self.kernel_b = kernel_b
+        self.kernel_list = []
 
-    def call(self, x: tf.Tensor, y: tf.Tensor, infer_parameter: bool = False) -> tf.Tensor:
-        return (self.kernel_a(x, y, infer_parameter) + self.kernel_b(x, y, infer_parameter)) / 2
+    def call(self, x: Union[np.ndarray, tf.Tensor], y: Union[np.ndarray, tf.Tensor],
+             infer_parameter: bool = False) -> tf.Tensor:
+        value_list = []
+        for k in self.kernel_list:
+            if callable(k):
+                value_list.append(k(x, y, infer_parameter))
+            else:
+                value_list.append(k * tf.ones((x.shape[0], y.shape[0])))
+        return tf.reduce_sum(tf.stack(value_list), axis=0)
+
+    def __add__(self, other: tf.keras.Model) -> tf.keras.Model:
+        if hasattr(other, 'kernel_list'):
+            for k in other.kernel_list:
+                self.kernel_list.append(k)
+        else:
+            self.kernel_list.append(other)
+            return self
+
+    def __radd__(self, other: tf.keras.Model) -> tf.keras.Model:
+        return self.__add__(other)
+
+    def __mul__(self, other: tf.keras.Model) -> tf.keras.Model:
+        if hasattr(other, 'kernel_list'):
+            sum_kernel = SumKernel()
+            for ki in self.kernel_list:
+                for kj in other.kernel_list:
+                    sum_kernel.kernel_list.append(ki * kj)
+            return sum_kernel
+        elif hasattr(other, 'kernel_factors'):
+            return other * self
+        else:
+            sum_kernel = SumKernel()
+            for ki in self.kernel_list:
+                sum_kernel.kernel_list.append(other * ki)
+            return sum_kernel
+
+    def __rmul__(self, other: tf.keras.Model) -> tf.keras.Model:
+        return self.__mul__(other)
 
 
 class ProductKernel(tf.keras.Model):
-    """
-    Construct a kernel by multiplying two kernels.
-
-    Parameters:
-    ----------
-        kernel_a
-            the first kernel to be multiplied.
-        kernel_b
-            the second kernel to be multiplied.
-    """
-    def __init__(
-        self,
-        kernel_a: BaseKernel,
-        kernel_b: BaseKernel
-    ) -> None:
+    def __init__(self) -> None:
         super().__init__()
-        self.kernel_a = kernel_a
-        self.kernel_b = kernel_b
+        self.kernel_factors = []
 
-    def call(self, x: tf.Tensor, y: tf.Tensor, infer_parameter: bool = False) -> tf.Tensor:
-        return self.kernel_a(x, y, infer_parameter) * self.kernel_b(x, y, infer_parameter)
+    def call(self, x: Union[np.ndarray, tf.Tensor], y: Union[np.ndarray, tf.Tensor],
+             infer_parameter: bool = False) -> tf.Tensor:
+        value_list = []
+        for k in self.kernel_factors:
+            if callable(k):
+                value_list.append(k(x, y, infer_parameter))
+            else:
+                value_list.append(k * tf.ones((x.shape[0], y.shape[0])))
+        return tf.reduce_prod(tf.stack(value_list), axis=0)
+
+    def __add__(self, other: tf.keras.Model) -> tf.keras.Model:
+        if hasattr(other, 'kernel_list'):
+            other.kernel_list.append(self)
+            return other
+        else:
+            sum_kernel = SumKernel()
+            sum_kernel.kernel_list.append(self)
+            sum_kernel.kernel_list.append(other)
+            return sum_kernel
+
+    def __radd__(self, other: tf.keras.Model) -> tf.keras.Model:
+        return self.__add__(other)
+
+    def __mul__(self, other: tf.keras.Model) -> tf.keras.Model:
+        if hasattr(other, 'kernel_list'):
+            sum_kernel = SumKernel()
+            for k in other.kernel_list:
+                tmp_prod_kernel = deepcopy(self)
+                tmp_prod_kernel.kernel_factors.append(k)
+                sum_kernel.kernel_list.append(tmp_prod_kernel)
+            return sum_kernel
+        elif hasattr(other, 'kernel_factors'):
+            for k in other.kernel_factors:
+                self.kernel_factors.append(k)
+                return self
+        else:
+            self.kernel_factors.append(other)
+            return self
+
+    def __rmul__(self, other: tf.keras.Model) -> tf.keras.Model:
+        return self.__mul__(other)
 
 
 class GaussianRBF(BaseKernel):
@@ -158,7 +236,9 @@ class GaussianRBF(BaseKernel):
             self,
             sigma: Optional[tf.Tensor] = None,
             init_fn_sigma: Optional[Callable] = None,
-            trainable: bool = False
+            trainable: bool = False,
+            active_dims: list = None,
+            feature_axis: int = -1
     ) -> None:
         """
         Gaussian RBF kernel: k(x,y) = exp(-(1/(2*sigma^2)||x-y||^2). A forward pass takes
@@ -178,7 +258,7 @@ class GaussianRBF(BaseKernel):
         trainable
             Whether or not to track gradients w.r.t. sigma to allow it to be trained.
         """
-        super().__init__()
+        super().__init__(active_dims, feature_axis)
         init_fn_sigma = sigma_median if init_fn_sigma is None else init_fn_sigma
         self.config = {'sigma': sigma, 'trainable': trainable, 'init_sigma_fn': init_fn_sigma}
         self.parameter_dict['log-sigma'] = KernelParameter(
@@ -195,7 +275,7 @@ class GaussianRBF(BaseKernel):
     def sigma(self) -> tf.Tensor:
         return tf.math.exp(self.parameter_dict['log-sigma'].value)
 
-    def call(self, x: tf.Tensor, y: tf.Tensor, infer_parameter: bool = False) -> tf.Tensor:
+    def kernel_function(self, x: tf.Tensor, y: tf.Tensor, infer_parameter: bool = False) -> tf.Tensor:
         y = tf.cast(y, x.dtype)
         x, y = tf.reshape(x, (x.shape[0], -1)), tf.reshape(y, (y.shape[0], -1))  # flatten
         dist = distance.squared_pairwise_distance(x, y)  # [Nx, Ny]
@@ -239,7 +319,9 @@ class RationalQuadratic(BaseKernel):
         init_fn_alpha: Callable = None,
         sigma: tf.Tensor = None,
         init_fn_sigma: Callable = sigma_median,
-        trainable: bool = False
+        trainable: bool = False,
+        active_dims: list = None,
+        feature_axis: int = -1
     ) -> None:
         """
         Rational Quadratic kernel: k(x,y) = (1 + ||x-y||^2 / (2*sigma^2))^(-alpha).
@@ -253,7 +335,7 @@ class RationalQuadratic(BaseKernel):
         sigma
             Bandwidth used for the kernel.
         """
-        super().__init__()
+        super().__init__(active_dims, feature_axis)
         self.parameter_dict['alpha'] = KernelParameter(
             value=tf.reshape(
                 tf.cast(alpha, tf.keras.backend.floatx()), -1) if alpha is not None else None,
@@ -279,7 +361,7 @@ class RationalQuadratic(BaseKernel):
     def alpha(self) -> tf.Tensor:
         return self.parameter_dict['alpha'].value
 
-    def call(self, x: tf.Tensor, y: tf.Tensor, infer_parameter: bool = False) -> tf.Tensor:
+    def kernel_function(self, x: tf.Tensor, y: tf.Tensor, infer_parameter: bool = False) -> tf.Tensor:
         y = tf.cast(y, x.dtype)
         x, y = tf.reshape(x, (x.shape[0], -1)), tf.reshape(y, (y.shape[0], -1))
         dist = distance.squared_pairwise_distance(x, y)
@@ -300,7 +382,9 @@ class Periodic(BaseKernel):
         init_fn_tau: Callable = None,
         sigma: tf.Tensor = None,
         init_fn_sigma: Callable = sigma_median,
-        trainable: bool = False
+        trainable: bool = False,
+        active_dims: list = None,
+        feature_axis: int = -1
     ) -> None:
         """
         Periodic kernel: k(x,y) = exp(-2 * sin(pi * |x - y| / tau)^2 / (sigma^2)).
@@ -314,7 +398,7 @@ class Periodic(BaseKernel):
         sigma
             Bandwidth used for the kernel.
         """
-        super().__init__()
+        super().__init__(active_dims, feature_axis)
         self.parameter_dict['log-tau'] = KernelParameter(
             value=tf.reshape(tf.math.log(
                 tf.cast(tau, tf.keras.backend.floatx())), -1) if tau is not None else None,
@@ -340,7 +424,7 @@ class Periodic(BaseKernel):
     def sigma(self) -> tf.Tensor:
         return tf.math.exp(self.parameter_dict['log-sigma'].value)
 
-    def call(self, x: tf.Tensor, y: tf.Tensor, infer_parameter: bool = False) -> tf.Tensor:
+    def kernel_function(self, x: tf.Tensor, y: tf.Tensor, infer_parameter: bool = False) -> tf.Tensor:
         y = tf.cast(y, x.dtype)
         x, y = tf.reshape(x, (x.shape[0], -1)), tf.reshape(y, (y.shape[0], -1))
         dist = distance.squared_pairwise_distance(x, y)
@@ -354,69 +438,22 @@ class Periodic(BaseKernel):
         return tf.reduce_mean(kernel_mat, axis=0)
 
 
-class LocalPeriodic(BaseKernel):
+class ProjKernel(BaseKernel):
     def __init__(
         self,
-        tau: tf.Tensor = None,
-        init_fn_tau: Callable = None,
-        sigma: tf.Tensor = None,
-        init_fn_sigma: Callable = sigma_median,
-        trainable: bool = False,
+        proj: tf.keras.Model,
+        raw_kernel: BaseKernel = GaussianRBF(trainable=True),
     ) -> None:
-        """
-        Local periodic kernel: k(x,y) = k(x,y) = k_rbf(x, y) * k_period(x, y).
-        A forward pass takesa batch of instances x [Nx, features] and y [Ny, features]
-        and returns the kernel matrix [Nx, Ny].
-
-        Parameters
-        ----------
-        tau
-            Period of the periodic kernel.
-        sigma
-            Bandwidth used for the kernel.
-        """
         super().__init__()
-        self.parameter_dict['log-tau'] = KernelParameter(
-            value=tf.reshape(tf.math.log(
-                tf.cast(tau, tf.keras.backend.floatx())), -1) if tau is not None else None,
-            init_fn=init_fn_tau,
-            requires_grad=trainable,
-            requires_init=True if tau is None else False
-        )
-        self.parameter_dict['log-sigma'] = KernelParameter(
-            value=tf.reshape(tf.math.log(
-                tf.cast(sigma, tf.keras.backend.floatx())), -1) if sigma is not None else None,
-            init_fn=init_fn_sigma,
-            requires_grad=trainable,
-            requires_init=True if sigma is None else False
-        )
-        self.trainable = trainable
-        self.init_required = any([param.requires_init for param in self.parameter_dict.values()])
+        self.proj = proj
+        self.raw_kernel = raw_kernel
+        self.init_required = False
 
-    @property
-    def tau(self) -> tf.Tensor:
-        return tf.math.exp(self.parameter_dict['log-tau'].value)
-
-    @property
-    def sigma(self) -> tf.Tensor:
-        return tf.math.exp(self.parameter_dict['log-sigma'].value)
-
-    def call(self, x: tf.Tensor, y: tf.Tensor, infer_parameter: bool = False) -> tf.Tensor:
-        y = tf.cast(y, x.dtype)
-        x, y = tf.reshape(x, (x.shape[0], -1)), tf.reshape(y, (y.shape[0], -1))
-        dist = distance.squared_pairwise_distance(x, y)
-
-        if infer_parameter or self.init_required:
-            infer_kernel_parameter(self, x, y, dist, infer_parameter)
-
-        kernel_mat = tf.stack([tf.math.exp(-2 * tf.square(
-            tf.math.sin(tf.cast(np.pi, x.dtype) * dist / self.tau[i])) / (self.sigma[i] ** 2)) *
-                               tf.math.exp(-0.5 * tf.square(dist / self.tau[i]))
-                               for i in range(len(self.sigma))], axis=0)
-        return tf.reduce_mean(kernel_mat, axis=0)
+    def kernel_function(self, x: tf.Tensor, y: tf.Tensor, infer_parameter: bool = False) -> tf.Tensor:
+        return self.raw_kernel(self.proj(x), self.proj(y), infer_parameter)
 
 
-class DeepKernel(tf.keras.Model):
+class DeepKernel(BaseKernel):
     """
     Computes similarities as k(x,y) = (1-eps)*k_a(proj(x), proj(y)) + eps*k_b(x,y).
     A forward pass takes a batch of instances x [Nx, features] and y [Ny, features] and returns
@@ -439,21 +476,18 @@ class DeepKernel(tf.keras.Model):
     def __init__(
         self,
         proj: tf.keras.Model,
-        kernel_a: Union[tf.keras.Model, str] = 'rbf',
-        kernel_b: Optional[Union[tf.keras.Model, str]] = 'rbf',
+        kernel_a: BaseKernel = GaussianRBF(trainable=True),
+        kernel_b: BaseKernel = GaussianRBF(trainable=True),
         eps: Union[float, str] = 'trainable'
     ) -> None:
         super().__init__()
-        self.config = {'proj': proj, 'kernel_a': kernel_a, 'kernel_b': kernel_b, 'eps': eps}
-        if kernel_a == 'rbf':
-            kernel_a = GaussianRBF(trainable=True)
-        if kernel_b == 'rbf':
-            kernel_b = GaussianRBF(trainable=True)
-        self.kernel_a = kernel_a
-        self.kernel_b = kernel_b
-        self.proj = proj
+        proj_kernel = ProjKernel(proj=proj, raw_kernel=kernel_a)
         if kernel_b is not None:
             self._init_eps(eps)
+            self.comp_kernel = (1-tf.sigmoid(self.logit_eps))*proj_kernel + tf.sigmoid(self.logit_eps)*kernel_b
+        else:
+            self.comp_kernel = proj_kernel
+        self.config = {'proj': proj, 'kernel_a': kernel_a, 'kernel_b': kernel_b, 'eps': eps}
 
     def _init_eps(self, eps: Union[float, str]) -> None:
         if isinstance(eps, float):
@@ -470,11 +504,8 @@ class DeepKernel(tf.keras.Model):
     def eps(self) -> tf.Tensor:
         return tf.math.sigmoid(self.logit_eps) if self.kernel_b is not None else tf.constant(0.)
 
-    def call(self, x: tf.Tensor, y: tf.Tensor) -> tf.Tensor:
-        similarity = self.kernel_a(self.proj(x), self.proj(y))  # type: ignore[operator]
-        if self.kernel_b is not None:
-            similarity = (1-self.eps)*similarity + self.eps*self.kernel_b(x, y)  # type: ignore[operator]
-        return similarity
+    def kernel_function(self, x: tf.Tensor, y: tf.Tensor, infer_parameter: bool = False) -> tf.Tensor:
+        return self.comp_kernel(x, y, infer_parameter)
 
     def get_config(self) -> dict:
         return self.config.copy()

@@ -10,7 +10,7 @@ mmd2, mmd2_from_kernel_matrix, batch_compute_kernel_matrix, relative_euclidean_d
 
 GaussianRBF, DeepKernel = import_optional(
     'alibi_detect.utils.tensorflow.kernels',
-    names=['GaussianRBF', 'DeepKernel']
+    names=['GaussianRBF', 'DeepKernel, BaseKernel']
 )
 
 
@@ -45,6 +45,7 @@ __all__ = [
     "relative_euclidean_distance",
     "squared_pairwise_distance",
     "GaussianRBF",
+    "BaseKernel",
     "DeepKernel",
     "permed_lsdds",
     "predict_batch",
