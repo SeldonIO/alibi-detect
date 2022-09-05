@@ -76,6 +76,9 @@ def test_lkdrift(lkdrift_params):
         cd = LearnedKernelDrift(x_ref=x_ref, kernel=kernel, backend=backend)
     except NotImplementedError:
         cd = None
+    except ImportError:
+        assert not has_keops
+        cd = None
 
     if backend.lower() == 'pytorch':
         assert isinstance(cd._detector, LearnedKernelDriftTorch)
