@@ -202,7 +202,10 @@ def nlp_embedding_and_tokenizer(model_name, max_len, uae, backend):
     backend = 'tf' if backend == 'tensorflow' else 'pt'
 
     # Load tokenizer
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    try:
+        tokenizer = AutoTokenizer.from_pretrained(model_name)
+    except OSError:
+        pytest.skip(f"Problem downloading {model_name} from huggingface.co")
     X = 'A dummy string'  # this will be padded to max_len
     tokens = tokenizer(list(X[:5]), pad_to_max_length=True,
                        max_length=max_len, return_tensors=backend)
@@ -214,13 +217,19 @@ def nlp_embedding_and_tokenizer(model_name, max_len, uae, backend):
     enc_dim = 32
 
     if backend == 'tf':
-        embedding = TransformerEmbedding_tf(model_name, emb_type, layers)
+        try:
+            embedding = TransformerEmbedding_tf(model_name, emb_type, layers)
+        except OSError:
+            pytest.skip(f"Problem downloading {model_name} from huggingface.co")
         if uae:
             x_emb = embedding(tokens)
             shape = (x_emb.shape[1],)
             embedding = UAE_tf(input_layer=embedding, shape=shape, enc_dim=enc_dim)
     else:
-        embedding = TransformerEmbedding_pt(model_name, emb_type, layers)
+        try:
+            embedding = TransformerEmbedding_pt(model_name, emb_type, layers)
+        except OSError:
+            pytest.skip(f"Problem downloading {model_name} from huggingface.co")
         if uae:
             x_emb = embedding(tokens)
             emb_dim = x_emb.shape[1]

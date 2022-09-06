@@ -290,7 +290,11 @@ def corruption_types_cifar10c() -> List[str]:
     url = 'https://storage.googleapis.com/seldon-datasets/'
     folder = 'cifar10c'
     filetype = 'npy'
-    corruption_types = google_bucket_list(url, folder, filetype)
+    try:
+        corruption_types = google_bucket_list(url, folder, filetype)
+    except RequestException:
+        logger.exception("Could not connect, URL may be out of service")
+        raise
     corruption_types.remove('labels')
     return corruption_types
 
