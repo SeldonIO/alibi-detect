@@ -7,6 +7,9 @@
 - **New feature** MMD drift detector has been extended with a [KeOps](https://www.kernel-operations.io/keops/index.html) backend to scale and speed up the detector. 
 See the [documentation](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/mmddrift.html) and [example notebook](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_mmd_keops.html) for more info ([#548](https://github.com/SeldonIO/alibi-detect/pull/548)).
 
+### Development
+- Skip specific save/load tests that require downloading remote artefacts if the relevant URI(s) is/are down ([#607](https://github.com/SeldonIO/alibi-detect/pull/607)).
+
 ## v0.10.3
 ## [v0.10.3](https://github.com/SeldonIO/alibi-detect/tree/v0.10.3) (2022-08-17)
 [Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.10.2...v0.10.3)
