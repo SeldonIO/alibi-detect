@@ -110,7 +110,7 @@ class TabularDrift(BaseUnivariateDrift):
         # No categories_per_feature dict so assume no categorical features present
         else:
             self.x_ref_categories, self.cat_vars = {}, []
-            warnings.warn('No `categories_per_feature` dict provided so all features are assumed to be categorical. '
+            warnings.warn('No `categories_per_feature` dict provided so all features are assumed to be numerical. '
                           '`KSDrift` will be applied to all features.')
 
     def feature_score(self, x_ref: np.ndarray, x: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
