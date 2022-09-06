@@ -3,6 +3,7 @@ from scipy.stats import chi2_contingency, ks_2samp
 from typing import Callable, Dict, List, Optional, Tuple, Union
 from alibi_detect.cd.base import BaseUnivariateDrift
 from alibi_detect.utils.warnings import deprecated_alias
+import warnings
 
 
 class TabularDrift(BaseUnivariateDrift):
@@ -88,7 +89,7 @@ class TabularDrift(BaseUnivariateDrift):
         self._set_config(locals())
 
         self.alternative = alternative
-        self.x_ref_categories, self.cat_vars = {}, []  # no categorical features assumed present
+        # Parse categories_per_feature dict
         if isinstance(categories_per_feature, dict):
             vals = list(categories_per_feature.values())
             int_types = (int, np.int16, np.int32, np.int64)
@@ -106,6 +107,11 @@ class TabularDrift(BaseUnivariateDrift):
                                  'Dict[int, NoneType], Dict[int, int], Dict[int, List[int]]')
             self.x_ref_categories = categories_per_feature
             self.cat_vars = list(self.x_ref_categories.keys())
+        # No categories_per_feature dict so assume no categorical features present
+        else:
+            self.x_ref_categories, self.cat_vars = {}, []
+            warnings.warn('No `categories_per_feature` dict provided so all features are assumed to be categorical. '
+                          '`KSDrift` will be applied to all features.')
 
     def feature_score(self, x_ref: np.ndarray, x: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
