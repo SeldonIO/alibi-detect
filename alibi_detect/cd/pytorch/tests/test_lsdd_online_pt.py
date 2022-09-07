@@ -8,6 +8,7 @@ from typing import Callable, List
 from alibi_detect.cd.pytorch.lsdd_online import LSDDDriftOnlineTorch
 from alibi_detect.cd.pytorch.preprocess import HiddenOutput, preprocess_drift
 
+STATE_DICT = ('t', 'test_window', 'k_xtc')
 n, n_hidden, n_classes = 400, 10, 5
 
 
@@ -109,3 +110,55 @@ def test_lsdd_online(lsdd_online_params):
     assert np.abs(average_delay_h1) < ert/2
 
     assert np.mean(test_stats_h1) > np.mean(test_stats_h0)
+
+
+def test_lsdd_online_state_functional(tmp_path):
+    """
+    A functional test of save/load/reset_state methods or LSDDDriftOnlineTorch. State is saved, reset, and loaded, with
+    prediction results checked.
+    """
+    x_ref = np.random.normal(0, 1, (n, n_classes))
+    x = np.random.normal(0.1, 1, (n, n_classes))
+
+    dd = LSDDDriftOnlineTorch(x_ref, window_size=10, ert=20)
+
+    # Run for 50 time steps
+    test_stats_1 = []
+    for t, x_t in enumerate(x):
+        preds = dd.predict(x_t)
+        test_stats_1.append(preds['data']['test_stat'])
+        if t == 20:
+            dd.save_state(tmp_path)
+
+    # Clear state and repeat, check that same test_stats both times
+    dd.reset_state()
+    test_stats_2 = []
+    for t, x_t in enumerate(x):
+        preds = dd.predict(x_t)
+        test_stats_2.append(preds['data']['test_stat'])
+    np.testing.assert_array_equal(test_stats_1, test_stats_2)
+
+    # Load state from t=20 timestep and check results of t=21 the same
+    dd.load_state(tmp_path)
+    new_pred = dd.predict(x[21])
+    assert new_pred['data']['test_stat'] == test_stats_1[21]
+
+
+def test_lsdd_online_state_unit(tmp_path):
+    """
+    A unit-type test of save/load/reset_state methods or LSDDDriftOnlineTorch. Stateful attributes in STATE_DICT are
+    compared pre and post save/load.
+    """
+    x_ref = np.random.normal(0, 1, (n, n_classes))
+    dd = LSDDDriftOnlineTorch(x_ref, window_size=10, ert=20)
+    # Get original state
+    orig_state_dict = {}
+    for key in STATE_DICT:
+        orig_state_dict[key] = getattr(dd, key)
+    # Save, reset and load
+    dd.save_state(tmp_path)
+    dd.reset_state()
+    dd.load_state(tmp_path)
+    # Compare state to original
+    for key, orig_val in orig_state_dict.items():
+        np.testing.assert_array_equal(orig_val, getattr(dd, key))  # use np.testing here as it handles torch.Tensor etc
