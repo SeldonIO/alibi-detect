@@ -1,8 +1,9 @@
 import numpy as np
 from alibi_detect.od.knn import KNN
 from alibi_detect.od.aggregation import AverageAggregator, ShiftAndScaleNormaliser, PValNormaliser, TopKAggregator
-from alibi_detect.od.backends import KNNKeops
+from alibi_detect.od.backends import KNNTorch
 from alibi_detect.od.saving import save_detector, load_detector
+from alibi_detect.od.backends import GaussianRBF
 
 def test_knn_single():
     knn_detector = KNN(k=10)
@@ -102,7 +103,10 @@ def test_knn_config(tmp_path):
         k=[8, 9, 10], 
         aggregator=TopKAggregator(k=5), 
         normaliser=ShiftAndScaleNormaliser(),
-        backend='keops'
+        backend='pytorch',
+        kernel=GaussianRBF(
+            np.array([1.]),
+            init_sigma_fn=lambda: 'test')
     )
     # save_detector, load_detector
     cfg_path = save_detector(knn_detector, './example-knn-config')
@@ -110,5 +114,9 @@ def test_knn_config(tmp_path):
     assert isinstance(loaded_knn_detector, KNN)
     assert isinstance(loaded_knn_detector.aggregator, TopKAggregator)
     assert isinstance(loaded_knn_detector.normaliser, ShiftAndScaleNormaliser)
+    assert isinstance(loaded_knn_detector.kernel, GaussianRBF)
+    assert loaded_knn_detector.k == [8, 9, 10]
+    assert loaded_knn_detector.kernel.config['sigma'] == [1.0]
     assert loaded_knn_detector.aggregator.k == 5
-    assert loaded_knn_detector.backend.__name__ == KNNKeops.__name__
+    assert loaded_knn_detector.backend.__name__ == KNNTorch.__name__
+    assert loaded_knn_detector.kernel.init_sigma_fn() == 'test'

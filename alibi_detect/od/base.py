@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 from abc import ABC, abstractmethod
 import numpy as np
@@ -10,11 +11,7 @@ logger = logging.getLogger(__name__)
 
 class OutlierDetector(BaseDetector, ABC):
     """ Base class for outlier detection algorithms. """
-
-    ensemble = False
-    named_ensemble = False
     threshold_inferred = False
-
 
     @abstractmethod
     def fit(self, X: np.ndarray) -> None:

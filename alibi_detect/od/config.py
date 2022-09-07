@@ -1,5 +1,8 @@
-
 from __future__ import annotations
+
+from pathlib import Path
+from alibi_detect.saving.saving import _serialize_object
+
 from alibi_detect.version import __version__, __config_spec__
 import logging
 from typing import Dict, Any
@@ -18,6 +21,7 @@ class ConfigMixin:
     LARGE_PARAMS: tuple = ()    # set of args passed to init that are big and are added to config when it's getted
     BASE_OBJ: bool = False      # Base objects are things like detectors and Ensembles that should have there own 
                                 # self contained config and be referenced from other configs.
+    TO_STR: tuple = ()          # ...
 
     def _set_config(self, inputs):
         name = self.__class__.__name__
@@ -40,11 +44,11 @@ class ConfigMixin:
             cfg = self.config
             for key in self.LARGE_PARAMS:
                 cfg[key] = getattr(self, key)
-            return cfg
         else:
             raise NotImplementedError('Getting a config (or saving via a config file) is not yet implemented for this'
                                       'detector')
 
+        return cfg
 
     @classmethod
     def from_config(cls, config: dict):
