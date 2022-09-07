@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-from pathlib import Path
-from alibi_detect.saving.saving import _serialize_object
-
 from alibi_detect.version import __version__, __config_spec__
 import logging
 from typing import Dict, Any
@@ -21,7 +18,9 @@ class ConfigMixin:
     LARGE_PARAMS: tuple = ()    # set of args passed to init that are big and are added to config when it's getted
     BASE_OBJ: bool = False      # Base objects are things like detectors and Ensembles that should have there own 
                                 # self contained config and be referenced from other configs.
-    TO_STR: tuple = ()          # ...
+    TO_STR: tuple = ()          # Function objects that need to be saved as `.dill` files or are contained in the 
+                                # registry. If an attribute is added here then the save_detector function will
+                                # save the attribute in config as a path.
 
     def _set_config(self, inputs):
         name = self.__class__.__name__

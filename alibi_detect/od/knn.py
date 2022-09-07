@@ -31,7 +31,6 @@ class KNN(OutlierDetector, ConfigMixin):
         normaliser: Union[BaseTransform, None] = None,
         backend: Literal['pytorch', 'keops'] = 'pytorch'
     ) -> None:
-        print(locals())
         self._set_config(locals())
         backend = backend.lower()
         BackendValidator(
@@ -55,12 +54,3 @@ class KNN(OutlierDetector, ConfigMixin):
 
     def score(self, X: np.ndarray) -> np.ndarray:
         return self.backend.score(X, self.x_ref, self.k, kernel=self.kernel)
-
-    # def _get_state(self):
-    #     if self.kernel:
-    #         kernel_state = self.kernel._get_state()
-
-    #     return {
-    #         'x_ref': X_REF_FILENAME,
-    #         'kernel': kernel_state
-    #     }
