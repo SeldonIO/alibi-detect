@@ -173,8 +173,8 @@ class LearnedKernelDriftKeops(BaseLearnedKernelDrift):
 
         def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
             n = len(x)
-            if self.has_proj:
-                x_proj, y_proj = self.kernel.proj(x), self.kernel.proj(y)  # type: ignore[operator]
+            if self.has_proj and isinstance(self.kernel.proj, nn.Module):
+                x_proj, y_proj = self.kernel.proj(x), self.kernel.proj(y)
             else:
                 x_proj, y_proj = x, y
             x2_proj, x_proj = LazyTensor(x_proj[None, :, :]), LazyTensor(x_proj[:, None, :])

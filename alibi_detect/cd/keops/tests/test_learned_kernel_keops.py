@@ -12,7 +12,7 @@ if has_keops:
     from alibi_detect.utils.keops import GaussianRBF
     from pykeops.torch import LazyTensor
 
-n = 50
+n = 50  # number of instances used for the reference and test data samples in the tests
 
 
 if has_keops:
