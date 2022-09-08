@@ -1,4 +1,3 @@
-from lib2to3.pytree import Base
 import tensorflow as tf
 import numpy as np
 from . import distance
@@ -110,7 +109,7 @@ class BaseKernel(tf.keras.Model):
             sum_kernel.kernel_list.append(other)
             return sum_kernel
 
-    def __radd__(self, other:tf.keras.Model) -> tf.keras.Model:
+    def __radd__(self, other: tf.keras.Model) -> tf.keras.Model:
         return self.__add__(other)
 
     def __mul__(self, other: tf.keras.Model) -> tf.keras.Model:
@@ -128,8 +127,23 @@ class BaseKernel(tf.keras.Model):
             prod_kernel.kernel_factors.append(other)
             return prod_kernel
 
-    def __rmul__(self, other:tf.keras.Model) -> tf.keras.Model:
+    def __rmul__(self, other: tf.keras.Model) -> tf.keras.Model:
         return self.__mul__(other)
+
+    def __truediv__(self, other: Union[int, float, tf.Tensor]) -> tf.keras.Model:
+        if isinstance(other, int) or isinstance(other, float) or isinstance(other, tf.Tensor):
+            return self.__mul__(1 / other)
+        else:
+            raise ValueError('Kernels can only be divided by a constant.')
+
+    def __rtruediv__(self, other):
+        raise ValueError('Kernels can not be used as divisor.')
+
+    def __sub__(self, other):
+        raise ValueError('Kernels do not support substraction.')
+
+    def __rsub__(self, other):
+        raise ValueError('Kernels do not support substraction.')
 
 
 class SumKernel(tf.keras.Model):
@@ -152,7 +166,7 @@ class SumKernel(tf.keras.Model):
             else:
                 value_list.append(k * tf.ones((x.shape[0], y.shape[0])))
         return tf.reduce_sum(tf.stack(value_list), axis=0)
-    
+
     def __add__(self, other: tf.keras.Model) -> tf.keras.Model:
         if hasattr(other, 'kernel_list'):
             for k in other.kernel_list:
@@ -160,8 +174,8 @@ class SumKernel(tf.keras.Model):
         else:
             self.kernel_list.append(other)
             return self
-    
-    def __radd__(self, other:tf.keras.Model) -> tf.keras.Model:
+
+    def __radd__(self, other: tf.keras.Model) -> tf.keras.Model:
         return self.__add__(other)
 
     def __mul__(self, other: tf.keras.Model) -> tf.keras.Model:
@@ -179,8 +193,23 @@ class SumKernel(tf.keras.Model):
                 sum_kernel.kernel_list.append(other * ki)
             return sum_kernel
 
-    def __rmul__(self, other:tf.keras.Model) -> tf.keras.Model:
+    def __rmul__(self, other: tf.keras.Model) -> tf.keras.Model:
         return self.__mul__(other)
+
+    def __truediv__(self, other: Union[int, float, tf.Tensor]) -> tf.keras.Model:
+        if isinstance(other, int) or isinstance(other, float) or isinstance(other, tf.Tensor):
+            return self.__mul__(1 / other)
+        else:
+            raise ValueError('Kernels can only be divided by a constant.')
+
+    def __rtruediv__(self, other):
+        raise ValueError('Kernels can not be used as divisor.')
+
+    def __sub__(self, other):
+        raise ValueError('Kernels do not support substraction.')
+
+    def __rsub__(self, other):
+        raise ValueError('Kernels do not support substraction.')
 
 
 class ProductKernel(tf.keras.Model):
@@ -197,7 +226,7 @@ class ProductKernel(tf.keras.Model):
             else:
                 value_list.append(k * tf.ones((x.shape[0], y.shape[0])))
         return tf.reduce_prod(tf.stack(value_list), axis=0)
-    
+
     def __add__(self, other: tf.keras.Model) -> tf.keras.Model:
         if hasattr(other, 'kernel_list'):
             other.kernel_list.append(self)
@@ -208,7 +237,7 @@ class ProductKernel(tf.keras.Model):
             sum_kernel.kernel_list.append(other)
             return sum_kernel
 
-    def __radd__(self, other:tf.keras.Model) -> tf.keras.Model:
+    def __radd__(self, other: tf.keras.Model) -> tf.keras.Model:
         return self.__add__(other)
 
     def __mul__(self, other: tf.keras.Model) -> tf.keras.Model:
@@ -227,8 +256,23 @@ class ProductKernel(tf.keras.Model):
             self.kernel_factors.append(other)
             return self
 
-    def __rmul__(self, other:tf.keras.Model) -> tf.keras.Model:
+    def __rmul__(self, other: tf.keras.Model) -> tf.keras.Model:
         return self.__mul__(other)
+
+    def __truediv__(self, other: Union[int, float, tf.Tensor]) -> tf.keras.Model:
+        if isinstance(other, int) or isinstance(other, float) or isinstance(other, tf.Tensor):
+            return self.__mul__(1 / other)
+        else:
+            raise ValueError('Kernels can only be divided by a constant.')
+
+    def __rtruediv__(self, other):
+        raise ValueError('Kernels can not be used as divisor.')
+
+    def __sub__(self, other):
+        raise ValueError('Kernels do not support substraction.')
+
+    def __rsub__(self, other):
+        raise ValueError('Kernels do not support substraction.')
 
 
 class GaussianRBF(BaseKernel):

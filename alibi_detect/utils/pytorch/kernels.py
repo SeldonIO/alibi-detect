@@ -71,7 +71,7 @@ class KernelParameter:
         requires_init: bool = False
     ) -> None:
         super().__init__()
-        self.value = nn.Parameter(value if value is not None else torch.ones(1), 
+        self.value = nn.Parameter(value if value is not None else torch.ones(1),
                                   requires_grad=requires_grad)
         self.init_fn = init_fn
         self.requires_init = requires_init
@@ -101,8 +101,11 @@ class BaseKernel(nn.Module):
         if self.active_dims is not None:
             x = torch.index_select(x, self.feature_axis, self.active_dims)
             y = torch.index_select(y, self.feature_axis, self.active_dims)
-        return self.kernel_function(x, y, infer_parameter)
-    
+        if len(self.parameter_dict) > 0:
+            return self.kernel_function(x, y, infer_parameter)
+        else:
+            return self.kernel_function(x, y)
+
     def __add__(self, other: nn.Module) -> nn.Module:
         if hasattr(other, 'kernel_list'):
             other.kernel_list.append(self)
@@ -113,7 +116,7 @@ class BaseKernel(nn.Module):
             sum_kernel.kernel_list.append(other)
             return sum_kernel
 
-    def __radd__(self, other:nn.Module) -> nn.Module:
+    def __radd__(self, other: nn.Module) -> nn.Module:
         return self.__add__(other)
 
     def __mul__(self, other: nn.Module) -> nn.Module:
@@ -131,8 +134,23 @@ class BaseKernel(nn.Module):
             prod_kernel.kernel_factors.append(other)
             return prod_kernel
 
-    def __rmul__(self, other:nn.Module) -> nn.Module:
+    def __rmul__(self, other: nn.Module) -> nn.Module:
         return self.__mul__(other)
+
+    def __truediv__(self, other: Union[int, float, torch.Tensor]) -> nn.Module:
+        if isinstance(other, int) or isinstance(other, float) or isinstance(other, torch.Tensor):
+            return self.__mul__(1 / other)
+        else:
+            raise ValueError('Kernels can only be divided by a constant.')
+
+    def __rtruediv__(self, other):
+        raise ValueError('Kernels can not be used as divisor.')
+
+    def __sub__(self, other):
+        raise ValueError('Kernels do not support substraction.')
+
+    def __rsub__(self, other):
+        raise ValueError('Kernels do not support substraction.')
 
 
 class SumKernel(nn.Module):
@@ -155,7 +173,7 @@ class SumKernel(nn.Module):
             else:
                 value_list.append(k * torch.ones((x.shape[0], y.shape[0])))
         return torch.sum(torch.stack(value_list), dim=0)
-    
+
     def __add__(self, other: nn.Module) -> nn.Module:
         if hasattr(other, 'kernel_list'):
             for k in other.kernel_list:
@@ -163,8 +181,8 @@ class SumKernel(nn.Module):
         else:
             self.kernel_list.append(other)
             return self
-    
-    def __radd__(self, other:nn.Module) -> nn.Module:
+
+    def __radd__(self, other: nn.Module) -> nn.Module:
         return self.__add__(other)
 
     def __mul__(self, other: nn.Module) -> nn.Module:
@@ -182,8 +200,23 @@ class SumKernel(nn.Module):
                 sum_kernel.kernel_list.append(other * ki)
             return sum_kernel
 
-    def __rmul__(self, other:nn.Module) -> nn.Module:
+    def __rmul__(self, other: nn.Module) -> nn.Module:
         return self.__mul__(other)
+
+    def __truediv__(self, other: Union[int, float, torch.Tensor]) -> nn.Module:
+        if isinstance(other, int) or isinstance(other, float) or isinstance(other, torch.Tensor):
+            return self.__mul__(1 / other)
+        else:
+            raise ValueError('Kernels can only be divided by a constant.')
+
+    def __rtruediv__(self, other):
+        raise ValueError('Kernels can not be used as divisor.')
+
+    def __sub__(self, other):
+        raise ValueError('Kernels do not support substraction.')
+
+    def __rsub__(self, other):
+        raise ValueError('Kernels do not support substraction.')
 
 
 class ProductKernel(nn.Module):
@@ -200,7 +233,7 @@ class ProductKernel(nn.Module):
             else:
                 value_list.append(k * torch.ones((x.shape[0], y.shape[0])))
         return torch.prod(torch.stack(value_list), dim=0)
-    
+
     def __add__(self, other: nn.Module) -> nn.Module:
         if hasattr(other, 'kernel_list'):
             other.kernel_list.append(self)
@@ -211,7 +244,7 @@ class ProductKernel(nn.Module):
             sum_kernel.kernel_list.append(other)
             return sum_kernel
 
-    def __radd__(self, other:nn.Module) -> nn.Module:
+    def __radd__(self, other: nn.Module) -> nn.Module:
         return self.__add__(other)
 
     def __mul__(self, other: nn.Module) -> nn.Module:
@@ -230,8 +263,23 @@ class ProductKernel(nn.Module):
             self.kernel_factors.append(other)
             return self
 
-    def __rmul__(self, other:nn.Module) -> nn.Module:
+    def __rmul__(self, other: nn.Module) -> nn.Module:
         return self.__mul__(other)
+
+    def __truediv__(self, other: Union[int, float, torch.Tensor]) -> nn.Module:
+        if isinstance(other, int) or isinstance(other, float) or isinstance(other, torch.Tensor):
+            return self.__mul__(1 / other)
+        else:
+            raise ValueError('Kernels can only be divided by a constant.')
+
+    def __rtruediv__(self, other):
+        raise ValueError('Kernels can not be used as divisor.')
+
+    def __sub__(self, other):
+        raise ValueError('Kernels do not support substraction.')
+
+    def __rsub__(self, other):
+        raise ValueError('Kernels do not support substraction.')
 
 
 class GaussianRBF(BaseKernel):
@@ -297,8 +345,8 @@ class RationalQuadratic(BaseKernel):
         sigma: torch.Tensor = None,
         init_fn_sigma: Callable = sigma_median,
         trainable: bool = False,
-        active_dims: list = None, 
-        feature_axis: int = -1 
+        active_dims: list = None,
+        feature_axis: int = -1
     ) -> None:
         """
         Rational Quadratic kernel: k(x,y) = (1 + ||x-y||^2 / (2*sigma^2))^(-alpha).
@@ -360,8 +408,8 @@ class Periodic(BaseKernel):
         sigma: torch.Tensor = None,
         init_fn_sigma: Callable = sigma_median,
         trainable: bool = False,
-        active_dims: list = None, 
-        feature_axis: int = -1 
+        active_dims: list = None,
+        feature_axis: int = -1
     ) -> None:
         """
         Periodic kernel: k(x,y) = exp(-2 * sin(pi * |x - y| / tau)^2 / (sigma^2)).
@@ -418,7 +466,7 @@ class ProjKernel(BaseKernel):
     A kernel that combines a raw kernel (e.g. RBF) with a projection function (e.g. deep net) as
     k(x, y) = k(proj(x), proj(y)). A forward pass takes a batch of instances x [Nx, features] and
     y [Ny, features] and returns the kernel matrix [Nx, Ny].
-    
+
     Parameters:
     ----------
     proj
@@ -471,7 +519,7 @@ class DeepKernel(BaseKernel):
         proj_kernel = ProjKernel(proj=proj, raw_kernel=kernel_a)
         if kernel_b is not None:
             self._init_eps(eps)
-            self.comp_kernel = (1-self.logit_eps.sigmoid() )*proj_kernel + self.logit_eps.sigmoid()*kernel_b
+            self.comp_kernel = (1-self.logit_eps.sigmoid())*proj_kernel + self.logit_eps.sigmoid()*kernel_b
         else:
             self.comp_kernel = proj_kernel
 
