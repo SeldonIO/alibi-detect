@@ -131,6 +131,21 @@ class BaseKernel(tf.keras.Model):
     def __rmul__(self, other: tf.keras.Model) -> tf.keras.Model:
         return self.__mul__(other)
 
+    def __truediv__(self, other: Union[int, float, tf.Tensor]) -> tf.keras.Model:
+        if isinstance(other, int) or isinstance(other, float) or isinstance(other, tf.Tensor):
+            return self.__mul__(1 / other)
+        else:
+            raise ValueError('Kernels can only be divided by a constant.')
+
+    def __rtruediv__(self, other):
+        raise ValueError('Kernels can not be used as divisor.')
+
+    def __sub__(self, other):
+        raise ValueError('Kernels do not support substraction.')
+
+    def __rsub__(self, other):
+        raise ValueError('Kernels do not support substraction.')
+
 
 class SumKernel(tf.keras.Model):
     """
@@ -182,6 +197,21 @@ class SumKernel(tf.keras.Model):
     def __rmul__(self, other: tf.keras.Model) -> tf.keras.Model:
         return self.__mul__(other)
 
+    def __truediv__(self, other: Union[int, float, tf.Tensor]) -> tf.keras.Model:
+        if isinstance(other, int) or isinstance(other, float) or isinstance(other, tf.Tensor):
+            return self.__mul__(1 / other)
+        else:
+            raise ValueError('Kernels can only be divided by a constant.')
+
+    def __rtruediv__(self, other):
+        raise ValueError('Kernels can not be used as divisor.')
+
+    def __sub__(self, other):
+        raise ValueError('Kernels do not support substraction.')
+
+    def __rsub__(self, other):
+        raise ValueError('Kernels do not support substraction.')
+
 
 class ProductKernel(tf.keras.Model):
     def __init__(self) -> None:
@@ -229,6 +259,21 @@ class ProductKernel(tf.keras.Model):
 
     def __rmul__(self, other: tf.keras.Model) -> tf.keras.Model:
         return self.__mul__(other)
+
+    def __truediv__(self, other: Union[int, float, tf.Tensor]) -> tf.keras.Model:
+        if isinstance(other, int) or isinstance(other, float) or isinstance(other, tf.Tensor):
+            return self.__mul__(1 / other)
+        else:
+            raise ValueError('Kernels can only be divided by a constant.')
+
+    def __rtruediv__(self, other):
+        raise ValueError('Kernels can not be used as divisor.')
+
+    def __sub__(self, other):
+        raise ValueError('Kernels do not support substraction.')
+
+    def __rsub__(self, other):
+        raise ValueError('Kernels do not support substraction.')
 
 
 class GaussianRBF(BaseKernel):

@@ -102,7 +102,10 @@ class BaseKernel(nn.Module):
         if self.active_dims is not None:
             x = torch.index_select(x, self.feature_axis, self.active_dims)
             y = torch.index_select(y, self.feature_axis, self.active_dims)
-        return self.kernel_function(x, y, infer_parameter)
+        if len(self.parameter_dict) > 0:
+            return self.kernel_function(x, y, infer_parameter)
+        else:
+            return self.kernel_function(x, y)
 
     def __add__(self, other: nn.Module) -> nn.Module:
         if hasattr(other, 'kernel_list'):
@@ -134,6 +137,21 @@ class BaseKernel(nn.Module):
 
     def __rmul__(self, other: nn.Module) -> nn.Module:
         return self.__mul__(other)
+
+    def __truediv__(self, other: Union[int, float, torch.Tensor]) -> nn.Module:
+        if isinstance(other, int) or isinstance(other, float) or isinstance(other, torch.Tensor):
+            return self.__mul__(1 / other)
+        else:
+            raise ValueError('Kernels can only be divided by a constant.')
+
+    def __rtruediv__(self, other):
+        raise ValueError('Kernels can not be used as divisor.')
+
+    def __sub__(self, other):
+        raise ValueError('Kernels do not support substraction.')
+
+    def __rsub__(self, other):
+        raise ValueError('Kernels do not support substraction.')
 
 
 class SumKernel(nn.Module):
@@ -186,6 +204,21 @@ class SumKernel(nn.Module):
     def __rmul__(self, other: nn.Module) -> nn.Module:
         return self.__mul__(other)
 
+    def __truediv__(self, other: Union[int, float, torch.Tensor]) -> nn.Module:
+        if isinstance(other, int) or isinstance(other, float) or isinstance(other, torch.Tensor):
+            return self.__mul__(1 / other)
+        else:
+            raise ValueError('Kernels can only be divided by a constant.')
+
+    def __rtruediv__(self, other):
+        raise ValueError('Kernels can not be used as divisor.')
+
+    def __sub__(self, other):
+        raise ValueError('Kernels do not support substraction.')
+
+    def __rsub__(self, other):
+        raise ValueError('Kernels do not support substraction.')
+
 
 class ProductKernel(nn.Module):
     def __init__(self) -> None:
@@ -233,6 +266,21 @@ class ProductKernel(nn.Module):
 
     def __rmul__(self, other: nn.Module) -> nn.Module:
         return self.__mul__(other)
+
+    def __truediv__(self, other: Union[int, float, torch.Tensor]) -> nn.Module:
+        if isinstance(other, int) or isinstance(other, float) or isinstance(other, torch.Tensor):
+            return self.__mul__(1 / other)
+        else:
+            raise ValueError('Kernels can only be divided by a constant.')
+
+    def __rtruediv__(self, other):
+        raise ValueError('Kernels can not be used as divisor.')
+
+    def __sub__(self, other):
+        raise ValueError('Kernels do not support substraction.')
+
+    def __rsub__(self, other):
+        raise ValueError('Kernels do not support substraction.')
 
 
 class GaussianRBF(BaseKernel):
