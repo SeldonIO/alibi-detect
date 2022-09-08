@@ -842,6 +842,7 @@ class LearnedKernelDriftConfig(DriftDetectorConfig):
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
     n_permutations: int = 100
+    batch_size_permutations: int = 1000000
     var_reg: float = 1e-5
     reg_loss_fn: Optional[str] = None
     train_size: Optional[float] = .75
@@ -849,6 +850,7 @@ class LearnedKernelDriftConfig(DriftDetectorConfig):
     optimizer: Optional[Union[str, OptimizerConfig]] = None
     learning_rate: float = 1e-3
     batch_size: int = 32
+    batch_size_predict: int = 1000000
     preprocess_batch_fn: Optional[str] = None
     epochs: int = 3
     verbose: int = 0
@@ -872,6 +874,7 @@ class LearnedKernelDriftConfigResolved(DriftDetectorConfigResolved):
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
     n_permutations: int = 100
+    batch_size_permutations: int = 1000000
     var_reg: float = 1e-5
     reg_loss_fn: Optional[Callable] = None
     train_size: Optional[float] = .75
@@ -879,6 +882,7 @@ class LearnedKernelDriftConfigResolved(DriftDetectorConfigResolved):
     optimizer: Optional['tf.keras.optimizers.Optimizer'] = None
     learning_rate: float = 1e-3
     batch_size: int = 32
+    batch_size_predict: int = 1000000
     preprocess_batch_fn: Optional[Callable] = None
     epochs: int = 3
     verbose: int = 0
