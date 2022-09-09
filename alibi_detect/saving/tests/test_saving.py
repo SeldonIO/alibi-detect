@@ -9,6 +9,7 @@ Internal functions such as save_kernel/load_kernel_config etc are also tested.
 from functools import partial
 from pathlib import Path
 from typing import Callable
+from requests.exceptions import HTTPError
 
 import toml
 import dill
@@ -203,8 +204,8 @@ def nlp_embedding_and_tokenizer(model_name, max_len, uae, backend):
 
     # Load tokenizer
     try:
-        tokenizer = AutoTokenizer.from_pretrained(model_name)
-    except OSError:
+        tokenizer = AutoTokenizer.from_pretrained(model_name + 'TODO')
+    except (OSError, HTTPError):
         pytest.skip(f"Problem downloading {model_name} from huggingface.co")
     X = 'A dummy string'  # this will be padded to max_len
     tokens = tokenizer(list(X[:5]), pad_to_max_length=True,
@@ -219,7 +220,7 @@ def nlp_embedding_and_tokenizer(model_name, max_len, uae, backend):
     if backend == 'tf':
         try:
             embedding = TransformerEmbedding_tf(model_name, emb_type, layers)
-        except OSError:
+        except (OSError, HTTPError):
             pytest.skip(f"Problem downloading {model_name} from huggingface.co")
         if uae:
             x_emb = embedding(tokens)
@@ -228,7 +229,7 @@ def nlp_embedding_and_tokenizer(model_name, max_len, uae, backend):
     else:
         try:
             embedding = TransformerEmbedding_pt(model_name, emb_type, layers)
-        except OSError:
+        except (OSError, HTTPError):
             pytest.skip(f"Problem downloading {model_name} from huggingface.co")
         if uae:
             x_emb = embedding(tokens)
