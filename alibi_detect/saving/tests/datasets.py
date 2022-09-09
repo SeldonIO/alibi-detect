@@ -1,6 +1,8 @@
 import numpy as np
+import pytest
 from alibi_testing.data import get_movie_sentiment_data
 from pytest_cases import parametrize
+from requests import RequestException
 
 # Note: If any of below cases become large, see https://smarie.github.io/python-pytest-cases/#c-caching-cases
 FLOAT = np.float32
@@ -63,4 +65,7 @@ class BinData:
 class TextData:
     @staticmethod
     def movie_sentiment_data():
-        return get_movie_sentiment_data()
+        try:
+            return get_movie_sentiment_data()
+        except RequestException:
+            pytest.skip('Movie sentiment dataset URL down')

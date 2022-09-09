@@ -10,6 +10,7 @@ See the [documentation](https://docs.seldon.io/projects/alibi-detect/en/latest/c
 
 ### Development
 - UTF-8 decoding is enforced when `README.md` is opened by `setup.py`. This is to prevent pip install errors on systems with `PYTHONIOENCODING` set to use other encoders ([#605](https://github.com/SeldonIO/alibi-detect/pull/605)).
+- Skip specific save/load tests that require downloading remote artefacts if the relevant URI(s) is/are down ([#607](https://github.com/SeldonIO/alibi-detect/pull/607)).
 
 ## v0.10.3
 ## [v0.10.3](https://github.com/SeldonIO/alibi-detect/tree/v0.10.3) (2022-08-17)
