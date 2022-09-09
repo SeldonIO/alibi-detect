@@ -53,13 +53,19 @@ def test_fetch_ecg(return_X_y):
 
 
 # CIFAR-10-C dataset
-corruption_list = corruption_types_cifar10c()
+try:
+    corruption_list = corruption_types_cifar10c()
+except RequestException:
+    corruption_list = None
 
 
+@pytest.mark.skipif(corruption_list is None, reason="CIFAR-10-C dataset URL is down")
 def test_types_cifar10c():
+    print(corruption_list)
     assert len(corruption_list) == 19
 
 
+@pytest.mark.skipif(corruption_list is None, reason="CIFAR-10-C dataset URL is down")
 @pytest.mark.parametrize('return_X_y', [True, False])
 def test_fetch_cifar10c(return_X_y):
     corruption = list(np.random.choice(corruption_list, 5, replace=False))
