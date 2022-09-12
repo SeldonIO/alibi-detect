@@ -70,7 +70,7 @@ jobs:
 
       - name: Test with pytest
         run: |
-          python -m pytest alibi_detect
+          pytest alibi_detect
 
       - name: Upload coverage to Codecov
         if: ${{ success() }}
