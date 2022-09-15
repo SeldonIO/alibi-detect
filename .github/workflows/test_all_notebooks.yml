@@ -20,12 +20,12 @@ jobs:
       fail-fast: false  # Continue to run other builds despite a failure
       matrix:
         os: [ ubuntu-latest ]
-        python-version: [ '3.7', '3.8', '3.9', '3.10.6' ]
+        python-version: [ '3.7', '3.8', '3.9', '3.10' ]
         include: # Run macos and windows tests on only one python version
           - os: windows-latest
             python-version: '3.9'  # PyTorch doesn't yet have 3.10 support on Windows (https://pytorch.org/get-started/locally/#windows-python)
           - os: macos-latest
-            python-version: '3.10.6'
+            python-version: '3.10'
 
     steps:
       - name: Checkout code
@@ -41,7 +41,7 @@ jobs:
           python -m pip install --upgrade pip setuptools wheel
           python -m pip install --upgrade --upgrade-strategy eager -r requirements/dev.txt -r testing/requirements.txt
           python -m pip install --upgrade --upgrade-strategy eager -e .
-          if [ "$RUNNER_OS" != "Windows" ] && ${{ matrix.python-version != '3.10.6' }}; then  # Skip Prophet tests on Windows as installation complex. Skip on Python 3.10 as not supported.
+          if [ "$RUNNER_OS" != "Windows" ] && ${{ matrix.python-version != '3.10' }}; then  # Skip Prophet tests on Windows as installation complex. Skip on Python 3.10 as not supported.
             python -m pip install --upgrade --upgrade-strategy eager -e .[prophet]
           fi
           python -m pip install --upgrade --upgrade-strategy eager -e .[torch,tensorflow]
