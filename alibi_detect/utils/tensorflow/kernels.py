@@ -1,7 +1,7 @@
 import tensorflow as tf
 import numpy as np
 from . import distance
-from typing import Optional, Union, Callable
+from typing import Optional, Union, Callable, List
 from scipy.special import logit
 from copy import deepcopy
 
@@ -89,7 +89,8 @@ class BaseKernel(tf.keras.Model):
         self.feature_axis = feature_axis
         self.init_required = False
 
-    def kernel_function(self, x: tf.Tensor, y: tf.Tensor, infer_parameter: bool = False) -> tf.Tensor:
+    def kernel_function(self, x: tf.Tensor, y: tf.Tensor,
+                        infer_parameter: Optional[bool] = False) -> tf.Tensor:
         return NotImplementedError
 
     def call(self, x: tf.Tensor, y: tf.Tensor, infer_parameter: bool = False) -> tf.Tensor:
@@ -99,24 +100,34 @@ class BaseKernel(tf.keras.Model):
             y = tf.gather(y, self.active_dims, axis=self.feature_axis)
         return self.kernel_function(x, y, infer_parameter)
 
-    def __add__(self, other: tf.keras.Model) -> tf.keras.Model:
-        if hasattr(other, 'kernel_list'):
+    def __add__(
+        self,
+        other: Union['BaseKernel', 'SumKernel', 'ProductKernel', tf.Tensor]
+    ) -> 'SumKernel':
+        if isinstance(other, SumKernel):
             other.kernel_list.append(self)
             return other
-        else:
+        elif (isinstance(other, BaseKernel) or
+              isinstance(other, ProductKernel) or
+              isinstance(other, tf.Tensor)):
             sum_kernel = SumKernel()
             sum_kernel.kernel_list.append(self)
             sum_kernel.kernel_list.append(other)
             return sum_kernel
+        else:
+            raise ValueError('Kernels can only added to another kernel or a constant.')
 
-    def __radd__(self, other: tf.keras.Model) -> tf.keras.Model:
+    def __radd__(self, other: Union['BaseKernel', 'SumKernel', 'ProductKernel']) -> 'SumKernel':
         return self.__add__(other)
 
-    def __mul__(self, other: tf.keras.Model) -> tf.keras.Model:
-        if hasattr(other, 'kernel_factors'):
+    def __mul__(
+        self,
+        other: Union['BaseKernel', 'SumKernel', 'ProductKernel', tf.Tensor]
+    ) -> Union['SumKernel', 'ProductKernel']:
+        if isinstance(other, ProductKernel):
             other.kernel_factors.append(self)
             return other
-        elif hasattr(other, 'kernel_list'):
+        elif isinstance(other, SumKernel):
             sum_kernel = SumKernel()
             for k in other.kernel_list:
                 sum_kernel.kernel_list.append(self * k)
@@ -127,12 +138,15 @@ class BaseKernel(tf.keras.Model):
             prod_kernel.kernel_factors.append(other)
             return prod_kernel
 
-    def __rmul__(self, other: tf.keras.Model) -> tf.keras.Model:
+    def __rmul__(
+        self,
+        other: Union['BaseKernel', 'SumKernel', 'ProductKernel']
+    ) -> Union['SumKernel', 'ProductKernel']:
         return self.__mul__(other)
 
-    def __truediv__(self, other: Union[int, float, tf.Tensor]) -> tf.keras.Model:
-        if isinstance(other, int) or isinstance(other, float) or isinstance(other, tf.Tensor):
-            return self.__mul__(1 / other)
+    def __truediv__(self, other: tf.Tensor) -> 'ProductKernel':
+        if isinstance(other, tf.Tensor):
+            return self.__mul__(1. / other)
         else:
             raise ValueError('Kernels can only be divided by a constant.')
 
@@ -155,49 +169,62 @@ class SumKernel(tf.keras.Model):
     """
     def __init__(self) -> None:
         super().__init__()
-        self.kernel_list = []
+        self.kernel_list: List[Union[BaseKernel, SumKernel, ProductKernel, tf.Tensor]] = []
 
     def call(self, x: Union[np.ndarray, tf.Tensor], y: Union[np.ndarray, tf.Tensor],
              infer_parameter: bool = False) -> tf.Tensor:
-        value_list = []
+        value_list: List[tf.Tensor] = []
         for k in self.kernel_list:
-            if callable(k):
+            if isinstance(k, BaseKernel) or isinstance(k, SumKernel) or isinstance(k, ProductKernel):
                 value_list.append(k(x, y, infer_parameter))
-            else:
+            elif isinstance(k, tf.Tensor):
                 value_list.append(k * tf.ones((x.shape[0], y.shape[0])))
+            else:
+                raise ValueError(type(k) + 'is not supported by SumKernel.')
         return tf.reduce_sum(tf.stack(value_list), axis=0)
 
-    def __add__(self, other: tf.keras.Model) -> tf.keras.Model:
-        if hasattr(other, 'kernel_list'):
+    def __add__(
+        self,
+        other: Union[BaseKernel, 'SumKernel', 'ProductKernel', tf.Tensor]
+    ) -> 'SumKernel':
+        if isinstance(other, SumKernel):
             for k in other.kernel_list:
                 self.kernel_list.append(k)
         else:
             self.kernel_list.append(other)
-            return self
+        return self
 
-    def __radd__(self, other: tf.keras.Model) -> tf.keras.Model:
+    def __radd__(self, other: Union[BaseKernel, 'SumKernel', 'ProductKernel']) -> 'SumKernel':
         return self.__add__(other)
 
-    def __mul__(self, other: tf.keras.Model) -> tf.keras.Model:
-        if hasattr(other, 'kernel_list'):
+    def __mul__(
+        self,
+        other: Union[BaseKernel, 'SumKernel', 'ProductKernel', tf.Tensor]
+    ) -> Union['SumKernel', 'ProductKernel']:
+        if isinstance(other, SumKernel):
             sum_kernel = SumKernel()
             for ki in self.kernel_list:
                 for kj in other.kernel_list:
-                    sum_kernel.kernel_list.append(ki * kj)
+                    sum_kernel.kernel_list.append((ki * kj))
             return sum_kernel
-        elif hasattr(other, 'kernel_factors'):
+        elif isinstance(other, ProductKernel):
             return other * self
-        else:
+        elif isinstance(other, BaseKernel) or isinstance(other, tf.Tensor):
             sum_kernel = SumKernel()
             for ki in self.kernel_list:
                 sum_kernel.kernel_list.append(other * ki)
             return sum_kernel
+        else:
+            raise ValueError(type(other) + 'is not supported by SumKernel.')
 
-    def __rmul__(self, other: tf.keras.Model) -> tf.keras.Model:
+    def __rmul__(
+        self,
+        other: Union[BaseKernel, 'SumKernel', 'ProductKernel']
+    ) -> Union['SumKernel', 'ProductKernel']:
         return self.__mul__(other)
 
-    def __truediv__(self, other: Union[int, float, tf.Tensor]) -> tf.keras.Model:
-        if isinstance(other, int) or isinstance(other, float) or isinstance(other, tf.Tensor):
+    def __truediv__(self, other: tf.Tensor) -> Union['SumKernel', 'ProductKernel']:
+        if isinstance(other, tf.Tensor):
             return self.__mul__(1 / other)
         else:
             raise ValueError('Kernels can only be divided by a constant.')
@@ -215,20 +242,25 @@ class SumKernel(tf.keras.Model):
 class ProductKernel(tf.keras.Model):
     def __init__(self) -> None:
         super().__init__()
-        self.kernel_factors = []
+        self.kernel_factors: List[Union[BaseKernel, SumKernel, ProductKernel, tf.Tensor]] = []
 
     def call(self, x: Union[np.ndarray, tf.Tensor], y: Union[np.ndarray, tf.Tensor],
              infer_parameter: bool = False) -> tf.Tensor:
-        value_list = []
+        value_list: List[tf.Tensor] = []
         for k in self.kernel_factors:
-            if callable(k):
+            if isinstance(k, BaseKernel) or isinstance(k, SumKernel) or isinstance(k, ProductKernel):
                 value_list.append(k(x, y, infer_parameter))
-            else:
+            elif isinstance(k, tf.Tensor):
                 value_list.append(k * tf.ones((x.shape[0], y.shape[0])))
+            else:
+                raise ValueError(type(k) + 'is not supported by ProductKernel.')
         return tf.reduce_prod(tf.stack(value_list), axis=0)
 
-    def __add__(self, other: tf.keras.Model) -> tf.keras.Model:
-        if hasattr(other, 'kernel_list'):
+    def __add__(
+        self,
+        other: Union[BaseKernel, 'SumKernel', 'ProductKernel', tf.Tensor]
+    ) -> 'SumKernel':
+        if isinstance(other, SumKernel):
             other.kernel_list.append(self)
             return other
         else:
@@ -237,30 +269,41 @@ class ProductKernel(tf.keras.Model):
             sum_kernel.kernel_list.append(other)
             return sum_kernel
 
-    def __radd__(self, other: tf.keras.Model) -> tf.keras.Model:
+    def __radd__(
+        self,
+        other: Union[BaseKernel, 'SumKernel', 'ProductKernel']
+    ) -> 'SumKernel':
         return self.__add__(other)
 
-    def __mul__(self, other: tf.keras.Model) -> tf.keras.Model:
-        if hasattr(other, 'kernel_list'):
+    def __mul__(
+        self,
+        other: Union[BaseKernel, 'SumKernel', 'ProductKernel', tf.Tensor]
+    ) -> Union['SumKernel', 'ProductKernel']:
+        if isinstance(other, SumKernel):
             sum_kernel = SumKernel()
             for k in other.kernel_list:
                 tmp_prod_kernel = deepcopy(self)
                 tmp_prod_kernel.kernel_factors.append(k)
                 sum_kernel.kernel_list.append(tmp_prod_kernel)
             return sum_kernel
-        elif hasattr(other, 'kernel_factors'):
+        elif isinstance(other, ProductKernel):
             for k in other.kernel_factors:
                 self.kernel_factors.append(k)
-                return self
-        else:
+            return self
+        elif isinstance(other, BaseKernel) or isinstance(other, tf.Tensor):
             self.kernel_factors.append(other)
             return self
+        else:
+            raise ValueError(type(other) + 'is not supported by ProductKernel.')
 
-    def __rmul__(self, other: tf.keras.Model) -> tf.keras.Model:
+    def __rmul__(
+        self,
+        other: Union[BaseKernel, 'SumKernel', 'ProductKernel']
+    ) -> Union['SumKernel', 'ProductKernel']:
         return self.__mul__(other)
 
-    def __truediv__(self, other: Union[int, float, tf.Tensor]) -> tf.keras.Model:
-        if isinstance(other, int) or isinstance(other, float) or isinstance(other, tf.Tensor):
+    def __truediv__(self, other: tf.Tensor) -> Union['SumKernel', 'ProductKernel']:
+        if isinstance(other, tf.Tensor):
             return self.__mul__(1 / other)
         else:
             raise ValueError('Kernels can only be divided by a constant.')
