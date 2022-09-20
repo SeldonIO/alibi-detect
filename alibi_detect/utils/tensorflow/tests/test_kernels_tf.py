@@ -43,7 +43,7 @@ class MyKernel(BaseKernel):  # TODO: Support then test models using keras functi
         super().__init__()
         self.dense = Dense(20)
 
-    def call(self, x: tf.Tensor, y: tf.Tensor, infer_parameter) -> tf.Tensor:
+    def call(self, x: tf.Tensor, y: tf.Tensor, infer_parameter: bool = False) -> tf.Tensor:
         return tf.einsum('ji,ki->jk', self.dense(x), self.dense(y))
 
 

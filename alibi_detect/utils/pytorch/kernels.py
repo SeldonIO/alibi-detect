@@ -2,7 +2,7 @@ import numpy as np
 import torch
 from torch import nn
 from . import distance
-from typing import Optional, Union, Callable
+from typing import Optional, Union, Callable, List
 from copy import deepcopy
 from alibi_detect.utils.frameworks import Framework
 
@@ -93,7 +93,7 @@ class BaseKernel(nn.Module):
         self.init_required = False
 
     def kernel_function(self, x: Union[np.ndarray, torch.Tensor], y: Union[np.ndarray, torch.Tensor],
-                        infer_parameter: bool = False) -> torch.Tensor:
+                        infer_parameter: Optional[bool] = False) -> torch.Tensor:
         raise NotImplementedError
 
     def forward(self, x: Union[np.ndarray, torch.Tensor], y: Union[np.ndarray, torch.Tensor],
@@ -107,24 +107,34 @@ class BaseKernel(nn.Module):
         else:
             return self.kernel_function(x, y)
 
-    def __add__(self, other: nn.Module) -> nn.Module:
-        if hasattr(other, 'kernel_list'):
+    def __add__(
+        self,
+        other: Union['BaseKernel', 'SumKernel', 'ProductKernel', torch.Tensor]
+    ) -> 'SumKernel':
+        if isinstance(other, SumKernel):
             other.kernel_list.append(self)
             return other
-        else:
+        elif (isinstance(other, BaseKernel) or
+              isinstance(other, ProductKernel) or
+              isinstance(other, torch.Tensor)):
             sum_kernel = SumKernel()
             sum_kernel.kernel_list.append(self)
             sum_kernel.kernel_list.append(other)
             return sum_kernel
+        else:
+            raise ValueError('Kernels can only added to another kernel or a constant.')
 
-    def __radd__(self, other: nn.Module) -> nn.Module:
+    def __radd__(self, other: Union['BaseKernel', 'SumKernel', 'ProductKernel']) -> 'SumKernel':
         return self.__add__(other)
 
-    def __mul__(self, other: nn.Module) -> nn.Module:
-        if hasattr(other, 'kernel_factors'):
+    def __mul__(
+        self,
+        other: Union['BaseKernel', 'SumKernel', 'ProductKernel', torch.Tensor]
+    ) -> Union['SumKernel', 'ProductKernel']:
+        if isinstance(other, ProductKernel):
             other.kernel_factors.append(self)
             return other
-        elif hasattr(other, 'kernel_list'):
+        elif isinstance(other, SumKernel):
             sum_kernel = SumKernel()
             for k in other.kernel_list:
                 sum_kernel.kernel_list.append(self * k)
@@ -135,12 +145,15 @@ class BaseKernel(nn.Module):
             prod_kernel.kernel_factors.append(other)
             return prod_kernel
 
-    def __rmul__(self, other: nn.Module) -> nn.Module:
+    def __rmul__(
+        self,
+        other: Union['BaseKernel', 'SumKernel', 'ProductKernel']
+    ) -> Union['SumKernel', 'ProductKernel']:
         return self.__mul__(other)
 
-    def __truediv__(self, other: Union[int, float, torch.Tensor]) -> nn.Module:
-        if isinstance(other, int) or isinstance(other, float) or isinstance(other, torch.Tensor):
-            return self.__mul__(1 / other)
+    def __truediv__(self, other: torch.Tensor) -> Union['SumKernel', 'ProductKernel']:
+        if isinstance(other, torch.Tensor):
+            return self.__mul__(1. / other)
         else:
             raise ValueError('Kernels can only be divided by a constant.')
 
@@ -163,49 +176,62 @@ class SumKernel(nn.Module):
     """
     def __init__(self) -> None:
         super().__init__()
-        self.kernel_list = []
+        self.kernel_list: List[Union[BaseKernel, SumKernel, ProductKernel, torch.Tensor]] = []
 
     def forward(self, x: Union[np.ndarray, torch.Tensor], y: Union[np.ndarray, torch.Tensor],
                 infer_parameter: bool = False) -> torch.Tensor:
-        value_list = []
+        value_list: List[torch.Tensor] = []
         for k in self.kernel_list:
-            if callable(k):
+            if isinstance(k, BaseKernel) or isinstance(k, SumKernel) or isinstance(k, ProductKernel):
                 value_list.append(k(x, y, infer_parameter))
-            else:
+            elif isinstance(k, torch.Tensor):
                 value_list.append(k * torch.ones((x.shape[0], y.shape[0])))
+            else:
+                raise ValueError(type(k) + 'is not supported by SumKernel.')
         return torch.sum(torch.stack(value_list), dim=0)
 
-    def __add__(self, other: nn.Module) -> nn.Module:
-        if hasattr(other, 'kernel_list'):
+    def __add__(
+        self,
+        other: Union[BaseKernel, 'SumKernel', 'ProductKernel', torch.Tensor]
+    ) -> 'SumKernel':
+        if isinstance(other, SumKernel):
             for k in other.kernel_list:
                 self.kernel_list.append(k)
         else:
             self.kernel_list.append(other)
-            return self
+        return self
 
-    def __radd__(self, other: nn.Module) -> nn.Module:
+    def __radd__(self, other: Union[BaseKernel, 'SumKernel', 'ProductKernel']) -> 'SumKernel':
         return self.__add__(other)
 
-    def __mul__(self, other: nn.Module) -> nn.Module:
-        if hasattr(other, 'kernel_list'):
+    def __mul__(
+        self,
+        other: Union[BaseKernel, 'SumKernel', 'ProductKernel', torch.Tensor]
+    ) -> Union['SumKernel', 'ProductKernel']:
+        if isinstance(other, SumKernel):
             sum_kernel = SumKernel()
             for ki in self.kernel_list:
                 for kj in other.kernel_list:
-                    sum_kernel.kernel_list.append(ki * kj)
+                    sum_kernel.kernel_list.append((ki * kj))
             return sum_kernel
-        elif hasattr(other, 'kernel_factors'):
+        elif isinstance(other, ProductKernel):
             return other * self
-        else:
+        elif isinstance(other, BaseKernel) or isinstance(other, torch.Tensor):
             sum_kernel = SumKernel()
             for ki in self.kernel_list:
                 sum_kernel.kernel_list.append(other * ki)
             return sum_kernel
+        else:
+            raise ValueError(type(other) + 'is not supported by SumKernel.')
 
-    def __rmul__(self, other: nn.Module) -> nn.Module:
+    def __rmul__(
+        self,
+        other: Union[BaseKernel, 'SumKernel', 'ProductKernel']
+    ) -> Union['SumKernel', 'ProductKernel']:
         return self.__mul__(other)
 
-    def __truediv__(self, other: Union[int, float, torch.Tensor]) -> nn.Module:
-        if isinstance(other, int) or isinstance(other, float) or isinstance(other, torch.Tensor):
+    def __truediv__(self, other: torch.Tensor) -> Union['SumKernel', 'ProductKernel']:
+        if isinstance(other, torch.Tensor):
             return self.__mul__(1 / other)
         else:
             raise ValueError('Kernels can only be divided by a constant.')
@@ -223,20 +249,25 @@ class SumKernel(nn.Module):
 class ProductKernel(nn.Module):
     def __init__(self) -> None:
         super().__init__()
-        self.kernel_factors = []
+        self.kernel_factors: List[Union[BaseKernel, SumKernel, ProductKernel, torch.Tensor]] = []
 
     def forward(self, x: Union[np.ndarray, torch.Tensor], y: Union[np.ndarray, torch.Tensor],
                 infer_parameter: bool = False) -> torch.Tensor:
-        value_list = []
+        value_list: List[torch.Tensor] = []
         for k in self.kernel_factors:
-            if callable(k):
+            if isinstance(k, BaseKernel) or isinstance(k, SumKernel) or isinstance(k, ProductKernel):
                 value_list.append(k(x, y, infer_parameter))
-            else:
+            elif isinstance(k, torch.Tensor):
                 value_list.append(k * torch.ones((x.shape[0], y.shape[0])))
+            else:
+                raise ValueError(type(k) + 'is not supported by ProductKernel.')
         return torch.prod(torch.stack(value_list), dim=0)
 
-    def __add__(self, other: nn.Module) -> nn.Module:
-        if hasattr(other, 'kernel_list'):
+    def __add__(
+        self,
+        other: Union[BaseKernel, 'SumKernel', 'ProductKernel', torch.Tensor]
+    ) -> 'SumKernel':
+        if isinstance(other, SumKernel):
             other.kernel_list.append(self)
             return other
         else:
@@ -245,30 +276,41 @@ class ProductKernel(nn.Module):
             sum_kernel.kernel_list.append(other)
             return sum_kernel
 
-    def __radd__(self, other: nn.Module) -> nn.Module:
+    def __radd__(
+        self,
+        other: Union[BaseKernel, 'SumKernel', 'ProductKernel']
+    ) -> 'SumKernel':
         return self.__add__(other)
 
-    def __mul__(self, other: nn.Module) -> nn.Module:
-        if hasattr(other, 'kernel_list'):
+    def __mul__(
+        self,
+        other: Union[BaseKernel, 'SumKernel', 'ProductKernel', torch.Tensor]
+    ) -> Union['SumKernel', 'ProductKernel']:
+        if isinstance(other, SumKernel):
             sum_kernel = SumKernel()
             for k in other.kernel_list:
                 tmp_prod_kernel = deepcopy(self)
                 tmp_prod_kernel.kernel_factors.append(k)
                 sum_kernel.kernel_list.append(tmp_prod_kernel)
             return sum_kernel
-        elif hasattr(other, 'kernel_factors'):
+        elif isinstance(other, ProductKernel):
             for k in other.kernel_factors:
                 self.kernel_factors.append(k)
-                return self
-        else:
+            return self
+        elif isinstance(other, BaseKernel) or isinstance(other, torch.Tensor):
             self.kernel_factors.append(other)
             return self
+        else:
+            raise ValueError(type(other) + 'is not supported by ProductKernel.')
 
-    def __rmul__(self, other: nn.Module) -> nn.Module:
+    def __rmul__(
+        self,
+        other: Union[BaseKernel, 'SumKernel', 'ProductKernel']
+    ) -> Union['SumKernel', 'ProductKernel']:
         return self.__mul__(other)
 
-    def __truediv__(self, other: Union[int, float, torch.Tensor]) -> nn.Module:
-        if isinstance(other, int) or isinstance(other, float) or isinstance(other, torch.Tensor):
+    def __truediv__(self, other: torch.Tensor) -> Union['SumKernel', 'ProductKernel']:
+        if isinstance(other, torch.Tensor):
             return self.__mul__(1 / other)
         else:
             raise ValueError('Kernels can only be divided by a constant.')
@@ -511,7 +553,12 @@ class ProjKernel(BaseKernel):
         self.raw_kernel = raw_kernel
         self.init_required = False
 
-    def kernel_function(self, x: torch.Tensor, y: torch.Tensor, infer_parameter: bool = False) -> torch.Tensor:
+    def kernel_function(
+        self,
+        x: Union[np.ndarray, torch.Tensor],
+        y: Union[np.ndarray, torch.Tensor],
+        infer_parameter: Optional[bool] = False
+    ) -> torch.Tensor:
         return self.raw_kernel(self.proj(x), self.proj(y), infer_parameter)
 
 
@@ -561,8 +608,13 @@ class DeepKernel(BaseKernel):
         else:
             raise NotImplementedError("eps should be 'trainable' or a float in (0,1)")
 
-    def kernel_function(self, x: torch.Tensor, y: torch.Tensor, infer_parmeter=False) -> torch.Tensor:
-        return self.comp_kernel(x, y, infer_parmeter)
+    def kernel_function(
+        self,
+        x: Union[np.ndarray, torch.Tensor],
+        y: Union[np.ndarray, torch.Tensor],
+        infer_parameter: Optional[bool] = False
+    ) -> torch.Tensor:
+        return self.comp_kernel(x, y, infer_parameter)
 
     def get_config(self) -> dict:
         return self.config.copy()

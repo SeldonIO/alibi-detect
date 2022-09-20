@@ -3,6 +3,7 @@ import numpy as np
 import pytest
 import torch
 from torch import nn
+from typing import Union
 from alibi_detect.utils.pytorch import GaussianRBF, DeepKernel, BaseKernel
 
 sigma = [None, np.array([1.]), np.array([1., 2.])]
@@ -44,7 +45,8 @@ class MyKernel(BaseKernel):  # TODO: Support then test models using keras functi
         super().__init__()
         self.linear = nn.Linear(n_features, 20)
 
-    def forward(self, x: torch.Tensor, y: torch.Tensor, infer_parameter) -> torch.Tensor:
+    def forward(self, x: Union[np.ndarray, torch.Tensor], y: Union[np.ndarray, torch.Tensor],
+                infer_parameter: bool = False) -> torch.Tensor:
         return torch.einsum('ji,ki->jk', self.linear(x), self.linear(y))
 
 
