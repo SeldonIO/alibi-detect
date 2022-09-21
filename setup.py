@@ -11,9 +11,7 @@ exec(open("alibi_detect/version.py").read())
 
 extras_require = {
     "prophet": [
-        "fbprophet>=0.5, <0.7",
-        "holidays==0.9.11",
-        "pystan<3.0"
+        "prophet>=1.1",
     ],
     "torch": [
         "torch>=1.7.0, <1.13.0"

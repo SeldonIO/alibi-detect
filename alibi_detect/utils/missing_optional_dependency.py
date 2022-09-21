@@ -28,9 +28,7 @@ dict is used to control two behaviours:
     before the pip install message is issued as this is the most robust place to capture these differences.
 """
 ERROR_TYPES = {
-    "fbprophet": 'prophet',
-    "holidays": 'prophet',
-    "pystan": 'prophet',
+    "prophet": 'prophet',
     "tensorflow_probability": 'tensorflow',
     "tensorflow": 'tensorflow',
     "torch": 'torch',
