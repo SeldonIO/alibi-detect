@@ -129,7 +129,7 @@ def _load_detector_config(filepath: Union[str, os.PathLike]) -> ConfigurableDete
     # Backend
     backend = cfg.pop('backend')  # popping so that cfg left as kwargs + `name` when passed to _init_detector
     if backend.lower() != 'tensorflow':
-        raise NotImplementedError('Loading detectors with PyTorch or sklearn backend is not yet supported.')
+        raise NotImplementedError('Loading detectors with PyTorch, sklearn or keops backend is not yet supported.')
 
     # Init detector from config
     logger.info('Instantiating detector.')
@@ -255,7 +255,6 @@ def _load_model_config(cfg: dict,
 
     # Load model
     src = cfg['src']
-    custom_obj = cfg['custom_objects']
     layer = cfg['layer']
     src = Path(src)
     if not src.is_dir():
@@ -263,7 +262,7 @@ def _load_model_config(cfg: dict,
                                 "a compatible model.")
 
     if backend == 'tensorflow':
-        model = load_model_tf(src, load_dir='.', custom_objects=custom_obj, layer=layer)
+        model = load_model_tf(src, load_dir='.', layer=layer)
     else:
         raise NotImplementedError('Loading of non-tensorflow models not currently supported')
 

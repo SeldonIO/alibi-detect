@@ -127,12 +127,6 @@ class ModelConfig(CustomBaseModel):
     TensorFlow models must be stored in
     `H5 format <https://www.tensorflow.org/guide/keras/save_and_serialize#keras_h5_format>`_.
     """
-    custom_objects: Optional[dict] = None
-    """
-    Dictionary of custom objects. Passed to the tensorflow
-    `load_model <https://www.tensorflow.org/api_docs/python/tf/keras/models/load_model>`_ function. This can be
-    used to pass custom registered functions and classes to a model.
-    """
     layer: Optional[int] = None
     """
     Optional index of hidden layer to extract. If not `None`, a

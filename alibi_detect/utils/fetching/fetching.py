@@ -505,6 +505,7 @@ def fetch_detector(filepath: Union[str, os.PathLike],
     meta, state_dict = fetch_state_dict(url, filepath, save_state_dict=True)
 
     # load detector
+    # TODO - remove custom_objects below once tf model artefacts updated to SavedModel format
     name = meta['name']
     kwargs = {}  # type: dict
     if name == 'OutlierAE':

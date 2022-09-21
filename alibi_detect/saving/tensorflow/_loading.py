@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 
 def load_model(filepath: Union[str, os.PathLike],
                load_dir: str = 'model',
-               custom_objects: dict = None,
+               custom_objects: dict = None,  # TODO - remove when legacy save/load removed
                layer: Optional[int] = None,
                ) -> tf.keras.Model:
     """
@@ -57,12 +57,8 @@ def load_model(filepath: Union[str, os.PathLike],
     -------
     Loaded model.
     """
-    # TODO - update this to accept tf format - later PR.
     model_dir = Path(filepath).joinpath(load_dir)
-    # Check if model exists
-    if 'model.h5' not in [f.name for f in model_dir.glob('[!.]*.h5')]:
-        raise FileNotFoundError(f'No .h5 file found in {model_dir}.')
-    model = tf.keras.models.load_model(model_dir.joinpath('model.h5'), custom_objects=custom_objects)
+    model = tf.keras.models.load_model(model_dir, custom_objects=custom_objects)
     # Optionally extract hidden layer
     if isinstance(layer, int):
         model = HiddenOutput(model, layer=layer)

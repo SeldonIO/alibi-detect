@@ -85,7 +85,7 @@ def save_model_config(model: Callable,
 def save_model(model: tf.keras.Model,
                filepath: Union[str, os.PathLike],
                save_dir: Union[str, os.PathLike] = 'model',
-               save_format: Literal['tf', 'h5'] = 'h5') -> None:  # TODO - change to tf, later PR
+               save_format: Literal['tf', 'h5'] = 'tf') -> None:
     """
     Save TensorFlow model.
 
