@@ -34,7 +34,9 @@ ERROR_TYPES = {
     "tensorflow_probability": 'tensorflow',
     "tensorflow": 'tensorflow',
     "torch": 'torch',
-    "pytorch": 'torch'
+    "pytorch": 'torch',
+    "keops": 'keops',
+    "pykeops": 'keops',
 }
 
 

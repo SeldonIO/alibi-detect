@@ -7,6 +7,10 @@ import torch.nn as nn
 from alibi_detect.cd import LearnedKernelDrift
 from alibi_detect.cd.pytorch.learned_kernel import LearnedKernelDriftTorch
 from alibi_detect.cd.tensorflow.learned_kernel import LearnedKernelDriftTF
+from alibi_detect.utils.frameworks import has_keops
+if has_keops:
+    from alibi_detect.cd.keops.learned_kernel import LearnedKernelDriftKeops
+    from pykeops.torch import LazyTensor
 
 n, n_features = 100, 5
 
@@ -37,7 +41,16 @@ class MyKernelTorch(nn.Module):
         return torch.einsum('ji,ki->jk', self.dense(x), self.dense(y))
 
 
-tests_lkdrift = ['tensorflow', 'pytorch', 'PyToRcH', 'mxnet']
+if has_keops:
+    class MyKernelKeops(nn.Module):
+        def __init__(self):
+            super().__init__()
+
+        def forward(self, x: LazyTensor, y: LazyTensor) -> LazyTensor:
+            return (- ((x - y) ** 2).sum(-1)).exp()
+
+
+tests_lkdrift = ['tensorflow', 'pytorch', 'keops', 'PyToRcH', 'mxnet']
 n_tests = len(tests_lkdrift)
 
 
@@ -53,6 +66,8 @@ def test_lkdrift(lkdrift_params):
         kernel = MyKernelTorch(n_features)
     elif backend.lower() == 'tensorflow':
         kernel = MyKernelTF(n_features)
+    elif has_keops and backend.lower() == 'keops':
+        kernel = MyKernelKeops()
     else:
         kernel = None
     x_ref = np.random.randn(*(n, n_features))
@@ -61,10 +76,15 @@ def test_lkdrift(lkdrift_params):
         cd = LearnedKernelDrift(x_ref=x_ref, kernel=kernel, backend=backend)
     except NotImplementedError:
         cd = None
+    except ImportError:
+        assert not has_keops
+        cd = None
 
     if backend.lower() == 'pytorch':
         assert isinstance(cd._detector, LearnedKernelDriftTorch)
     elif backend.lower() == 'tensorflow':
         assert isinstance(cd._detector, LearnedKernelDriftTF)
+    elif has_keops and backend.lower() == 'keops':
+        assert isinstance(cd._detector, LearnedKernelDriftKeops)
     else:
         assert cd is None

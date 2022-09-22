@@ -155,6 +155,32 @@ The TensorFlow installation is required to use the following detectors:
 ```
 ````
 
+````{tab-item} KeOps
+:sync: label-keops
+:class-label: sd-pt-0
+
+```{div} sd-mb-1
+Installation with [KeOps](https://www.kernel-operations.io) backend.
+```
+
+```bash
+pip install alibi-detect[keops]
+```
+
+```{div} sd-mb-1
+The KeOps installation is required to use the KeOps backend for the following detectors:
+- [MMDDrift](../cd/methods/mmddrift.ipynb)
+```
+
+```{note}
+KeOps requires a C++ compiler compatible with `std=c++11`, for example `g++ >=7` or `clang++ >=8`, and a
+[Cuda toolkit](https://developer.nvidia.com/cuda-toolkit) installation. For more detailed version requirements
+and testing instructions for KeOps, see the 
+[KeOps docs](https://www.kernel-operations.io/keops/python/installation.html). **Currently, the KeOps backend is
+only officially supported on Linux.**
+```
+````
+
 ````{tab-item} Prophet
 :class-label: sd-pt-0
 
@@ -199,9 +225,10 @@ mamba install -c conda-forge alibi-detect
 
 [Alibi Detect](https://github.com/SeldonIO/alibi-detect) is an open source Python library focused on 
 **outlier**, **adversarial** and **drift** detection. The package aims to cover both 
-online and offline detectors for tabular data, text, images and time series. 
-Both **TensorFlow** and **PyTorch** backends are supported for drift detection. Alibi-Detect does not install these as 
-default. See [installation options](#installation) for more details.
+online and offline detectors for tabular data, text, images and time series. **TensorFlow**, **PyTorch** 
+and (where applicable) [KeOps](https://www.kernel-operations.io/keops/index.html) backends are supported
+for drift detection. Alibi-Detect does not install these as default. See [installation options](#installation)
+for more details.
 
 To get a list of respectively the latest outlier, adversarial and drift detection algorithms, you can type:
 
