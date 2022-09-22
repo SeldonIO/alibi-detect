@@ -237,24 +237,24 @@ def save_detector_legacy(detector, filepath):
         save_tf_vae(detector, filepath)
     elif isinstance(detector, (ChiSquareDrift, ClassifierDrift, KSDrift, MMDDrift, TabularDrift)):
         if model is not None:
-            save_model(model, filepath, save_dir='encoder')
+            save_model(model, filepath, save_dir='encoder', save_format='h5')
         if embed is not None:
             save_embedding_legacy(embed, embed_args, filepath)
         if tokenizer is not None:
             tokenizer.save_pretrained(filepath.joinpath('model'))
         if detector_name == 'ClassifierDriftTF':
-            save_model(clf_drift, filepath, save_dir='clf_drift')
+            save_model(clf_drift, filepath, save_dir='clf_drift', save_format='h5')
     elif isinstance(detector, OutlierAEGMM):
         save_tf_aegmm(detector, filepath)
     elif isinstance(detector, OutlierVAEGMM):
         save_tf_vaegmm(detector, filepath)
     elif isinstance(detector, AdversarialAE):
         save_tf_ae(detector, filepath)
-        save_model(detector.model, filepath)
+        save_model(detector.model, filepath, save_format='h5')
         save_tf_hl(detector.model_hl, filepath)
     elif isinstance(detector, ModelDistillation):
-        save_model(detector.distilled_model, filepath, save_dir='distilled_model')
-        save_model(detector.model, filepath, save_dir='model')
+        save_model(detector.distilled_model, filepath, save_dir='distilled_model', save_format='h5')
+        save_model(detector.model, filepath, save_dir='model', save_format='h5')
     elif isinstance(detector, OutlierSeq2Seq):
         save_tf_s2s(detector, filepath)
     elif isinstance(detector, LLR):

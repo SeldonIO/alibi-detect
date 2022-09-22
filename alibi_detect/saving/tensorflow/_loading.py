@@ -57,8 +57,12 @@ def load_model(filepath: Union[str, os.PathLike],
     -------
     Loaded model.
     """
-    model_dir = Path(filepath).joinpath(load_dir)
-    model = tf.keras.models.load_model(model_dir, custom_objects=custom_objects)
+    model_path = Path(filepath).joinpath(load_dir)
+    # Check for legacy h5 file in directory, otherwise assume SavedModel format
+    if 'model.h5' in [f.name for f in model_path.glob('[!.]*.h5')]:
+        model_path = model_path.joinpath('model.h5')
+    # Load model
+    model = tf.keras.models.load_model(model_path, custom_objects=custom_objects)
     # Optionally extract hidden layer
     if isinstance(layer, int):
         model = HiddenOutput(model, layer=layer)
@@ -270,7 +274,7 @@ def load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwarg
             emb, tokenizer = load_text_embed(filepath)
         try:  # legacy load_model behaviour was to return None if not found. Now it raises error, hence need try-except.
             model = load_model(filepath, load_dir='encoder')
-        except FileNotFoundError:
+        except OSError:
             model = None
         if detector_name == 'KSDrift':
             load_fn = init_cd_ksdrift  # type: ignore[assignment]
