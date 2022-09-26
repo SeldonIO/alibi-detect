@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 def save_model_config(model: Callable,
                       base_path: Path,
-                      input_shape: tuple,
+                      input_shape: Optional[tuple] = None,
                       local_path: Path = Path('.')) -> Tuple[dict, Optional[dict]]:
     """
     Save a model to a config dictionary. When a model has a text embedding model contained within it,
@@ -77,7 +77,7 @@ def save_model_config(model: Callable,
 
     if model is not None:
         filepath = base_path.joinpath(local_path)
-        save_model(model, filepath=filepath, save_dir='model')
+        save_model(model, filepath=filepath, save_dir='model', input_shape=input_shape)
         cfg_model = {'src': local_path.joinpath('model')}
     return cfg_model, cfg_embed
 
@@ -85,7 +85,9 @@ def save_model_config(model: Callable,
 def save_model(model: tf.keras.Model,
                filepath: Union[str, os.PathLike],
                save_dir: Union[str, os.PathLike] = 'model',
-               save_format: Literal['tf', 'h5'] = 'tf') -> None:
+               save_format: Literal['tf', 'h5'] = 'tf',
+               input_shape: Optional[tuple] = None,
+               ) -> None:
     """
     Save TensorFlow model.
 
@@ -100,16 +102,22 @@ def save_model(model: tf.keras.Model,
     save_format
         The format to save to. 'tf' to save to the newer SavedModel format, 'h5' to save to the lighter-weight
         legacy hdf5 format.
+    input_shape
+        The input dimensions of the model (after the optional embedding has been applied).
     """
-    # create folder to save model in
+    # create folder to save model in and set save path
     model_path = Path(filepath).joinpath(save_dir)
     if not model_path.is_dir():
         logger.warning('Directory {} does not exist and is now created.'.format(model_path))
         model_path.mkdir(parents=True, exist_ok=True)
-
-    # save model
     model_path = model_path.joinpath('model.h5') if save_format == 'h5' else model_path
 
+    # Build model to set `input_shape` (Necessary for subclassed tf.keras.Model's)
+    # Note: .build() doesn't currently work as intended here, so pass synthetic data to .call() to build.
+    if input_shape is not None:
+        model(tf.zeros((1, *input_shape[1:]), dtype=tf.dtypes.float32))
+
+    # Save the model
     if isinstance(model, tf.keras.Model):
         model.save(model_path, save_format=save_format)
     else:

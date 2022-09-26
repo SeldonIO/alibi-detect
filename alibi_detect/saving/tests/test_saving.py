@@ -121,6 +121,24 @@ def encoder_dropout_model(backend, current_cases):
     return model
 
 
+@tf.keras.utils.register_keras_serializable()
+class ClassifierTF(tf.keras.Model):
+    """
+    Subclassed TensorFlow classifier model.
+    """
+    def __init__(self, input_dim: int) -> None:
+        super().__init__()
+        self.input_dim = input_dim
+        self.linear_in = tf.keras.layers.Dense(self.input_dim)
+        self.linear_out = tf.keras.layers.Dense(2, activation=tf.nn.softmax)
+
+    def call(self, inputs: tf.Tensor) -> tf.Tensor:
+        return self.linear_out(self.linear_in(inputs))
+
+    def get_config(self):
+        return {"input_dim": self.input_dim}
+
+
 @fixture
 def preprocess_custom(encoder_model, backend):
     """
@@ -176,16 +194,14 @@ def deep_kernel(request, backend, encoder_model):
 
 
 @fixture
-def classifier(backend, current_cases):
+def classifier_model(backend, current_cases):
     """
     Classification model with given input dimension and backend.
     """
     _, _, data_params = current_cases["data"]
     _, input_dim = data_params['data_shape']
     if backend == 'tensorflow':
-        inputs = tf.keras.Input(shape=(input_dim,))
-        outputs = tf.keras.layers.Dense(2, activation=tf.nn.softmax)(inputs)
-        model = tf.keras.Model(inputs=inputs, outputs=outputs)
+        model = ClassifierTF(input_dim)
     elif backend == 'pytorch':
         raise NotImplementedError('`pytorch` tests not implemented.')
     else:
@@ -267,15 +283,18 @@ def preprocess_nlp(embedding, tokenizer, max_len, backend):
 
 
 @fixture
-def preprocess_hiddenoutput(classifier, backend):
+def preprocess_hiddenoutput(classifier_model, current_cases, backend):
     """
     Preprocess function to extract the softmax layer of a classifier (with the HiddenOutput utility function).
     """
+    _, _, data_params = current_cases["data"]
+    _, input_dim = data_params['data_shape']
+
     if backend == 'tensorflow':
-        model = HiddenOutput_tf(classifier, layer=-1)
+        model = HiddenOutput_tf(classifier_model, layer=-1, input_shape=(None, input_dim))
         preprocess_fn = partial(preprocess_drift_tf, model=model)
     else:
-        model = HiddenOutput_pt(classifier, layer=-1)
+        model = HiddenOutput_pt(classifier_model, layer=-1)
         preprocess_fn = partial(preprocess_drift_pt, model=model)
     return preprocess_fn
 
@@ -310,7 +329,7 @@ def test_load_simple_config(cfg, tmp_path):
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
 def test_save_ksdrift(data, preprocess_fn, tmp_path):
     """
-    Test KSDrift on continuous datasets, with UAE and classifier softmax output as preprocess_fn's. Only this
+    Test KSDrift on continuous datasets, with UAE and classifier_model softmax output as preprocess_fn's. Only this
     detector is tested with preprocessing strategies, as other detectors should see the same preprocess_fn output.
 
     Detector is saved and then loaded, with assertions checking that the reinstantiated detector is equivalent.
@@ -339,7 +358,7 @@ def test_save_ksdrift(data, preprocess_fn, tmp_path):
 @parametrize_with_cases("data", cases=TextData.movie_sentiment_data, prefix='data_')
 def test_save_ksdrift_nlp(data, preprocess_fn, max_len, enc_dim, tmp_path):
     """
-    Test KSDrift on continuous datasets, with UAE and classifier softmax output as preprocess_fn's. Only this
+    Test KSDrift on continuous datasets, with UAE and classifier_model softmax output as preprocess_fn's. Only this
     detector is tested with embedding and embedding+uae, as other detectors should see the same preprocessed data.
 
     Detector is saved and then loaded, with assertions checking that the reinstantiated detector is equivalent.
@@ -572,13 +591,13 @@ def test_save_tabulardrift(data, tmp_path):
 
 
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
-def test_save_classifierdrift(data, classifier, backend, tmp_path, seed):
+def test_save_classifierdrift(data, classifier_model, backend, tmp_path, seed):
     """ Test ClassifierDrift on continuous datasets."""
     # Init detector and predict
     X_ref, X_h0 = data
     with fixed_seed(seed):
         cd = ClassifierDrift(X_ref,
-                             model=classifier,
+                             model=classifier_model,
                              p_val=P_VAL,
                              n_folds=5,
                              backend=backend,
@@ -606,7 +625,7 @@ def test_save_classifierdrift(data, classifier, backend, tmp_path, seed):
 
 
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
-def test_save_spotthediff(data, classifier, backend, tmp_path, seed):
+def test_save_spotthediff(data, classifier_model, backend, tmp_path, seed):
     """
     Test SpotTheDiffDrift on continuous datasets.
 
@@ -731,13 +750,13 @@ def test_save_contextmmddrift(data, kernel, backend, tmp_path, seed):
 
 
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
-def test_save_classifieruncertaintydrift(data, classifier, backend, tmp_path, seed):
+def test_save_classifieruncertaintydrift(data, classifier_model, backend, tmp_path, seed):
     """ Test ClassifierDrift on continuous datasets."""
     # Init detector and predict
     X_ref, X_h0 = data
     with fixed_seed(seed):
         cd = ClassifierUncertaintyDrift(X_ref,
-                                        model=classifier,
+                                        model=classifier_model,
                                         p_val=P_VAL,
                                         backend=backend,
                                         preds_type='probs',
@@ -1185,7 +1204,7 @@ def test_save_model(data, model, layer, backend, tmp_path):
     """
     # Save model
     filepath = tmp_path
-    input_dim = data[0].shape[1]
+    input_dim = data[0].shape
     cfg_model, _ = _save_model_config(model, base_path=filepath, input_shape=input_dim, backend=backend)
     cfg_model = _path2str(cfg_model)
     cfg_model = ModelConfig(**cfg_model).dict()
@@ -1203,6 +1222,31 @@ def test_save_model(data, model, layer, backend, tmp_path):
         assert isinstance(model_load, type(model))
     else:
         assert isinstance(model_load, (HiddenOutput_tf, HiddenOutput_pt))
+
+
+# TODO - below test should be moved to tensorflow/tests/test_saving_tf.py
+@parametrize_with_cases("data", cases=ContinuousData.data_synthetic_nd, prefix='data_')
+@parametrize('model', [classifier_model])
+def test_save_model_subclassed(data, model, backend, tmp_path):
+    """
+    Unit test for _save_model_config and _load_model_config, with a subclassed tensorflow model. This is a special
+    case, whereby saving will fail if the model's input_dim is not correctly set.
+    """
+    # Save model
+    filepath = tmp_path
+    input_dim = data[0].shape
+    cfg_model, _ = _save_model_config(model, base_path=filepath, input_shape=input_dim, backend=backend)
+    cfg_model = _path2str(cfg_model)
+    cfg_model = ModelConfig(**cfg_model).dict()
+    assert tmp_path.joinpath('model').is_dir()
+    assert tf.saved_model.contains_saved_model(tmp_path.joinpath('model'))
+
+    # Adjust config
+    cfg_model['src'] = tmp_path.joinpath('model')  # Need to manually set to absolute path here
+
+    # Load model
+    model_load = _load_model_config(cfg_model, backend=backend)
+    assert isinstance(model_load, type(model))
 
 
 def test_save_optimizer(backend):

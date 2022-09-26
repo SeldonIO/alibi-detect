@@ -105,7 +105,15 @@ For detectors with backends, or using preprocessing, save/load support is curren
 ## Supported ML models
 
 Alibi Detect drift detectors offer the option to perform [preprocessing](../cd/background.md#input-preprocessing)
-with user-defined machine learning models. Additionally, some detectors are built upon models directly, 
+with user-defined machine learning models:
+
+```python
+model = ... # TensorFlow model; tf.keras.Model or tf.keras.Sequential
+preprocess_fn = partial(preprocess_drift, model=model, batch_size=128)
+cd = MMDDrift(x_ref, backend='tensorflow', p_val=.05, preprocess_fn=preprocess_fn)
+```
+
+Additionally, some detectors are built upon models directly, 
 for example the [Classifier](../cd/methods/classifierdrift.ipynb) drift detector requires a `model` to be passed
 as an argument:
 

@@ -99,7 +99,9 @@ class ThresholdMixin(ABC):
 # "Large artefacts" - to save memory these are skipped in _set_config(), but added back in get_config()
 # Note: The current implementation assumes the artefact is stored as a class attribute, and as a config field under
 # the same name. Refactoring will be required if this assumption is to be broken.
-LARGE_ARTEFACTS = ['x_ref', 'c_ref', 'preprocess_fn']
+# Note: The above procedure is not followed for `model` in the `UncertaintyDrift` detectors, since these do not store
+# the attribute `self.model`.
+LARGE_ARTEFACTS = ['x_ref', 'c_ref', 'preprocess_fn', 'model']
 
 
 class DriftConfigMixin:
@@ -119,16 +121,14 @@ class DriftConfigMixin:
         if self.config is not None:
             # Get config (stored in top-level self)
             cfg = self.config
-            # Get low-level nested detector (if needed)
-            detector = self._detector if hasattr(self, '_detector') else self  # type: ignore[attr-defined]
-            detector = detector._detector if hasattr(detector, '_detector') else detector  # type: ignore[attr-defined]
             # Add large artefacts back to config
             for key in LARGE_ARTEFACTS:
                 if key in cfg:  # self.config is validated, therefore if a key is not in cfg, it isn't valid to insert
-                    cfg[key] = getattr(detector, key)
+                    cfg[key] = getattr(self._nested_detector, key)
             # Set x_ref_preprocessed flag
-            preprocess_at_init = getattr(detector, 'preprocess_at_init', True)  # If no preprocess_at_init, always true!
-            cfg['x_ref_preprocessed'] = preprocess_at_init and detector.preprocess_fn is not None
+            # If no preprocess_at_init, always true!
+            preprocess_at_init = getattr(self._nested_detector, 'preprocess_at_init', True)
+            cfg['x_ref_preprocessed'] = preprocess_at_init and self._nested_detector.preprocess_fn is not None
             return cfg
         else:
             raise NotImplementedError('Getting a config (or saving via a config file) is not yet implemented for this'
@@ -185,10 +185,19 @@ class DriftConfigMixin:
 
         # Overwrite any large artefacts with None to save memory. They'll be added back by get_config()
         for key in LARGE_ARTEFACTS:
-            if key in inputs:
+            if key in inputs and hasattr(self._nested_detector, key):
                 inputs[key] = None
 
         self.config.update(inputs)
+
+    @property
+    def _nested_detector(self):
+        """
+        The low-level nested detector.
+        """
+        detector = self._detector if hasattr(self, '_detector') else self  # type: ignore[attr-defined]
+        detector = detector._detector if hasattr(detector, '_detector') else detector  # type: ignore[attr-defined]
+        return detector
 
 
 @runtime_checkable
