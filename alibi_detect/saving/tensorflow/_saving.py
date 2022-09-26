@@ -115,7 +115,7 @@ def save_model(model: tf.keras.Model,
     # Build model to set `input_shape` (Necessary for subclassed tf.keras.Model's)
     # Note: .build() doesn't currently work as intended here, so pass synthetic data to .call() to build.
     if input_shape is not None:
-        model(tf.zeros((1, *input_shape[1:]), dtype=tf.dtypes.float32))
+        model(tf.zeros((1, *input_shape), dtype=tf.dtypes.float32))
 
     # Save the model
     if isinstance(model, tf.keras.Model):

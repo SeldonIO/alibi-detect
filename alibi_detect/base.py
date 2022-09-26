@@ -123,7 +123,7 @@ class DriftConfigMixin:
             cfg = self.config
             # Add large artefacts back to config
             for key in LARGE_ARTEFACTS:
-                if key in cfg:  # self.config is validated, therefore if a key is not in cfg, it isn't valid to insert
+                if key in cfg and hasattr(self._nested_detector, key):
                     cfg[key] = getattr(self._nested_detector, key)
             # Set x_ref_preprocessed flag
             # If no preprocess_at_init, always true!

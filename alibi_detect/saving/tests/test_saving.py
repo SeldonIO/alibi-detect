@@ -356,7 +356,7 @@ def test_save_ksdrift(data, preprocess_fn, tmp_path):
 
 @parametrize('preprocess_fn', [preprocess_nlp])
 @parametrize_with_cases("data", cases=TextData.movie_sentiment_data, prefix='data_')
-def test_save_ksdrift_nlp(data, preprocess_fn, max_len, enc_dim, tmp_path):
+def test_save_ksdrift_nlp(data, preprocess_fn, enc_dim, tmp_path):
     """
     Test KSDrift on continuous datasets, with UAE and classifier_model softmax output as preprocess_fn's. Only this
     detector is tested with embedding and embedding+uae, as other detectors should see the same preprocessed data.
@@ -369,7 +369,7 @@ def test_save_ksdrift_nlp(data, preprocess_fn, max_len, enc_dim, tmp_path):
                  p_val=P_VAL,
                  preprocess_fn=preprocess_fn,
                  preprocess_at_init=True,
-                 input_shape=(max_len,),
+                 input_shape=(768,),  # hardcoded to bert-base-cased for now
                  )
     save_detector(cd, tmp_path, legacy=False)
     cd_load = load_detector(tmp_path)
@@ -1090,13 +1090,13 @@ def test_save_deepkernel(data, deep_kernel, backend, tmp_path):
     """
     # Get data dim
     X, _ = data
-    input_dim = X.shape[1]
+    input_shape = (X.shape[1],)
 
     # Save kernel to config
     filepath = tmp_path
     filename = 'mykernel'
     cfg_kernel = _save_kernel_config(deep_kernel, filepath, filename)
-    cfg_kernel['proj'], _ = _save_model_config(cfg_kernel['proj'], base_path=filepath, input_shape=input_dim,
+    cfg_kernel['proj'], _ = _save_model_config(cfg_kernel['proj'], base_path=filepath, input_shape=input_shape,
                                                backend=backend)
     cfg_kernel = _path2str(cfg_kernel)
     cfg_kernel['proj'] = ModelConfig(**cfg_kernel['proj']).dict()  # Pass thru ModelConfig to set `layers` etc
@@ -1134,10 +1134,10 @@ def test_save_preprocess(data, preprocess_fn, tmp_path, backend):
     # Save preprocess_fn to config
     filepath = tmp_path
     X_ref, X_h0 = data
-    input_dim = X_ref.shape[1]
+    input_shape = (X_ref.shape[1],)
     cfg_preprocess = _save_preprocess_config(preprocess_fn,
                                              backend=backend,
-                                             input_shape=input_dim,
+                                             input_shape=input_shape,
                                              filepath=filepath)
     cfg_preprocess = _path2str(cfg_preprocess)
     cfg_preprocess = PreprocessConfig(**cfg_preprocess).dict()  # pydantic validation
@@ -1155,7 +1155,7 @@ def test_save_preprocess(data, preprocess_fn, tmp_path, backend):
 
 @parametrize('preprocess_fn', [preprocess_nlp])
 @parametrize_with_cases("data", cases=TextData.movie_sentiment_data, prefix='data_')
-def test_save_preprocess_nlp(data, preprocess_fn, max_len, tmp_path, backend):
+def test_save_preprocess_nlp(data, preprocess_fn, tmp_path, backend):
     """
     Unit test for _save_preprocess_config and _load_preprocess_config, with text data.
 
@@ -1166,7 +1166,7 @@ def test_save_preprocess_nlp(data, preprocess_fn, max_len, tmp_path, backend):
     filepath = tmp_path
     cfg_preprocess = _save_preprocess_config(preprocess_fn,
                                              backend=backend,
-                                             input_shape=max_len,
+                                             input_shape=(768,),  # hardcoded to bert-base-cased for now
                                              filepath=filepath)
     cfg_preprocess = _path2str(cfg_preprocess)
     cfg_preprocess = PreprocessConfig(**cfg_preprocess).dict()  # pydantic validation
@@ -1204,8 +1204,8 @@ def test_save_model(data, model, layer, backend, tmp_path):
     """
     # Save model
     filepath = tmp_path
-    input_dim = data[0].shape
-    cfg_model, _ = _save_model_config(model, base_path=filepath, input_shape=input_dim, backend=backend)
+    input_shape = (data[0].shape[1],)
+    cfg_model, _ = _save_model_config(model, base_path=filepath, input_shape=input_shape, backend=backend)
     cfg_model = _path2str(cfg_model)
     cfg_model = ModelConfig(**cfg_model).dict()
     assert tmp_path.joinpath('model').is_dir()
@@ -1230,12 +1230,12 @@ def test_save_model(data, model, layer, backend, tmp_path):
 def test_save_model_subclassed(data, model, backend, tmp_path):
     """
     Unit test for _save_model_config and _load_model_config, with a subclassed tensorflow model. This is a special
-    case, whereby saving will fail if the model's input_dim is not correctly set.
+    case, whereby saving will fail if the model's input_shape is not correctly set.
     """
     # Save model
     filepath = tmp_path
-    input_dim = data[0].shape
-    cfg_model, _ = _save_model_config(model, base_path=filepath, input_shape=input_dim, backend=backend)
+    input_shape = (data[0].shape[1],)
+    cfg_model, _ = _save_model_config(model, base_path=filepath, input_shape=input_shape, backend=backend)
     cfg_model = _path2str(cfg_model)
     cfg_model = ModelConfig(**cfg_model).dict()
     assert tmp_path.joinpath('model').is_dir()

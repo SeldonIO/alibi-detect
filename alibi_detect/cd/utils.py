@@ -115,7 +115,8 @@ def get_input_shape(shape: Optional[Tuple], x_ref: Union[np.ndarray, list]) -> O
     elif hasattr(x_ref, 'shape'):
         return x_ref.shape[1:]
     else:
-        logger.warning('Input shape could not be inferred. '
-                       'If alibi_detect.models.tensorflow.embedding.TransformerEmbedding '
+        logger.warning('Input shape could not be inferred. If the detector is a subclassed `tf.keras.Model`'
+                       'it is unlikely to be serializable. Additionally, if'
+                       '`alibi_detect.models.tensorflow.embedding.TransformerEmbedding` '
                        'is used as preprocessing step, a saved detector cannot be reinitialized.')
         return None
