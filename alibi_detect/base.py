@@ -119,16 +119,14 @@ class DriftConfigMixin:
         if self.config is not None:
             # Get config (stored in top-level self)
             cfg = self.config
-            # Get low-level nested detector (if needed)
-            detector = self._detector if hasattr(self, '_detector') else self  # type: ignore[attr-defined]
-            detector = detector._detector if hasattr(detector, '_detector') else detector  # type: ignore[attr-defined]
             # Add large artefacts back to config
             for key in LARGE_ARTEFACTS:
-                if key in cfg:  # self.config is validated, therefore if a key is not in cfg, it isn't valid to insert
-                    cfg[key] = getattr(detector, key)
+                if key in cfg and hasattr(self._nested_detector, key):
+                    cfg[key] = getattr(self._nested_detector, key)
             # Set x_ref_preprocessed flag
-            preprocess_at_init = getattr(detector, 'preprocess_at_init', True)  # If no preprocess_at_init, always true!
-            cfg['x_ref_preprocessed'] = preprocess_at_init and detector.preprocess_fn is not None
+            # If no preprocess_at_init, always true!
+            preprocess_at_init = getattr(self._nested_detector, 'preprocess_at_init', True)
+            cfg['x_ref_preprocessed'] = preprocess_at_init and self._nested_detector.preprocess_fn is not None
             return cfg
         else:
             raise NotImplementedError('Getting a config (or saving via a config file) is not yet implemented for this'
@@ -185,17 +183,26 @@ class DriftConfigMixin:
 
         # Overwrite any large artefacts with None to save memory. They'll be added back by get_config()
         for key in LARGE_ARTEFACTS:
-            if key in inputs:
+            if key in inputs and hasattr(self._nested_detector, key):
                 inputs[key] = None
 
         self.config.update(inputs)
+
+    @property
+    def _nested_detector(self):
+        """
+        The low-level nested detector.
+        """
+        detector = self._detector if hasattr(self, '_detector') else self  # type: ignore[attr-defined]
+        detector = detector._detector if hasattr(detector, '_detector') else detector  # type: ignore[attr-defined]
+        return detector
 
 
 @runtime_checkable
 class Detector(Protocol):
     """Type Protocol for all detectors.
 
-    Used for typing legacy save and load functionality in `alibi_detect.saving.tensorflow._saving.py`.
+    Used for typing legacy save and load functionality in `alibi_detect.saving._tensorflow.saving.py`.
 
     Note:
         This exists to distinguish between detectors with and without support for config saving and loading. Once all
