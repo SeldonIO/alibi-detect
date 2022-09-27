@@ -1,4 +1,4 @@
-from fbprophet import Prophet
+from prophet import Prophet
 import logging
 import pandas as pd
 from typing import Dict, List, Union
