@@ -202,7 +202,7 @@ class DriftConfigMixin:
 class Detector(Protocol):
     """Type Protocol for all detectors.
 
-    Used for typing legacy save and load functionality in `alibi_detect.saving.tensorflow._saving.py`.
+    Used for typing legacy save and load functionality in `alibi_detect.saving._tensorflow.saving.py`.
 
     Note:
         This exists to distinguish between detectors with and without support for config saving and loading. Once all

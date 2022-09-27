@@ -12,7 +12,7 @@ import toml
 from transformers import AutoTokenizer
 
 from alibi_detect.saving.registry import registry
-from alibi_detect.saving.tensorflow import load_detector_legacy, load_embedding_tf, load_kernel_config_tf, \
+from alibi_detect.saving._tensorflow import load_detector_legacy, load_embedding_tf, load_kernel_config_tf, \
     load_model_tf, load_optimizer_tf, prep_model_and_emb_tf, get_tf_dtype
 from alibi_detect.saving.validate import validate_config
 from alibi_detect.base import Detector, ConfigurableDetector
