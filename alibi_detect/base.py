@@ -101,7 +101,7 @@ class ThresholdMixin(ABC):
 # the same name. Refactoring will be required if this assumption is to be broken.
 # Note: The above procedure is not followed for `model` in the `UncertaintyDrift` detectors, since these do not store
 # the attribute `self.model`.
-LARGE_ARTEFACTS = ['x_ref', 'c_ref', 'preprocess_fn', 'model']
+LARGE_ARTEFACTS = ['x_ref', 'c_ref', 'preprocess_fn']
 
 
 class DriftConfigMixin:
