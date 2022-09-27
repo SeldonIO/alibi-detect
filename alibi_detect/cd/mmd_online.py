@@ -93,7 +93,7 @@ class MMDDriftOnline(DriftConfigMixin):
                 from alibi_detect.utils.pytorch.kernels import GaussianRBF  # type: ignore
             kwargs.update({'kernel': GaussianRBF})
 
-        if backend == 'tensorflow' and has_tensorflow:
+        if backend == 'tensorflow':
             kwargs.pop('device', None)
             self._detector = MMDDriftOnlineTF(*args, **kwargs)  # type: ignore
         else:
