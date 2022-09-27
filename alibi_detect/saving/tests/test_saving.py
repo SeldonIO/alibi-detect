@@ -121,24 +121,6 @@ def encoder_dropout_model(backend, current_cases):
     return model
 
 
-@tf.keras.utils.register_keras_serializable()
-class ClassifierTF(tf.keras.Model):
-    """
-    Subclassed TensorFlow classifier model.
-    """
-    def __init__(self, input_dim: int) -> None:
-        super().__init__()
-        self.input_dim = input_dim
-        self.linear_in = tf.keras.layers.Dense(self.input_dim)
-        self.linear_out = tf.keras.layers.Dense(2, activation=tf.nn.softmax)
-
-    def call(self, inputs: tf.Tensor) -> tf.Tensor:
-        return self.linear_out(self.linear_in(inputs))
-
-    def get_config(self):
-        return {"input_dim": self.input_dim}
-
-
 @fixture
 def preprocess_custom(encoder_model, backend):
     """
@@ -201,7 +183,9 @@ def classifier_model(backend, current_cases):
     _, _, data_params = current_cases["data"]
     _, input_dim = data_params['data_shape']
     if backend == 'tensorflow':
-        model = ClassifierTF(input_dim)
+        inputs = tf.keras.Input(shape=(input_dim,))
+        outputs = tf.keras.layers.Dense(2, activation=tf.nn.softmax)(inputs)
+        model = tf.keras.Model(inputs=inputs, outputs=outputs)
     elif backend == 'pytorch':
         raise NotImplementedError('`pytorch` tests not implemented.')
     else:
