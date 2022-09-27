@@ -99,8 +99,6 @@ class ThresholdMixin(ABC):
 # "Large artefacts" - to save memory these are skipped in _set_config(), but added back in get_config()
 # Note: The current implementation assumes the artefact is stored as a class attribute, and as a config field under
 # the same name. Refactoring will be required if this assumption is to be broken.
-# Note: The above procedure is not followed for `model` in the `UncertaintyDrift` detectors, since these do not store
-# the attribute `self.model`.
 LARGE_ARTEFACTS = ['x_ref', 'c_ref', 'preprocess_fn']
 
 
