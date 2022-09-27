@@ -129,7 +129,7 @@ def _load_detector_config(filepath: Union[str, os.PathLike]) -> ConfigurableDete
     # Backend
     backend = cfg.pop('backend')  # popping so that cfg left as kwargs + `name` when passed to _init_detector
     if backend.lower() != 'tensorflow':
-        raise NotImplementedError('Loading detectors with PyTorch or sklearn backend is not yet supported.')
+        raise NotImplementedError('Loading detectors with PyTorch, sklearn or keops backend is not yet supported.')
 
     # Init detector from config
     logger.info('Instantiating detector.')
