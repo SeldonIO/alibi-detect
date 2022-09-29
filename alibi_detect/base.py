@@ -4,7 +4,7 @@ import json
 import numpy as np
 from typing import Dict, Any, Optional
 from typing_extensions import Protocol, runtime_checkable
-from alibi_detect.version import __version__, __config_spec__
+from alibi_detect.version import __version__
 
 
 DEFAULT_META = {
@@ -173,7 +173,6 @@ class DriftConfigMixin:
             'name': name,
             'meta': {
                 'version': __version__,
-                'config_spec': __config_spec__,
             }
         }
 

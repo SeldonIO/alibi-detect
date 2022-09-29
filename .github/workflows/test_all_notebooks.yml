@@ -41,10 +41,7 @@ jobs:
           python -m pip install --upgrade pip setuptools wheel
           python -m pip install --upgrade --upgrade-strategy eager -r requirements/dev.txt -r testing/requirements.txt
           python -m pip install --upgrade --upgrade-strategy eager -e .
-          if [ "$RUNNER_OS" != "Windows" ] && ${{ matrix.python-version != '3.10' }}; then  # Skip Prophet tests on Windows as installation complex. Skip on Python 3.10 as not supported.
-            python -m pip install --upgrade --upgrade-strategy eager -e .[prophet]
-          fi
-          python -m pip install --upgrade --upgrade-strategy eager -e .[torch,tensorflow]
+          python -m pip install --upgrade --upgrade-strategy eager -e .[prophet,torch,tensorflow]
           python -m pip freeze
 
       - name: Run notebooks
