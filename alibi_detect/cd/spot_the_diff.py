@@ -138,7 +138,7 @@ class SpotTheDiffDrift(DriftConfigMixin):
             pop_kwargs += ['optimizer']
         [kwargs.pop(k, None) for k in pop_kwargs]
 
-        if backend == 'tensorflow' and has_tensorflow:
+        if backend == 'tensorflow':
             pop_kwargs = ['device', 'dataloader']
             [kwargs.pop(k, None) for k in pop_kwargs]
             if dataset is None:
