@@ -150,6 +150,9 @@ def save_embedding_config(embed: TransformerEmbedding,
     return cfg_embed
 
 
+#######################################################################################################
+# TODO: Everything below here is legacy saving code, and will be removed in the future
+#######################################################################################################
 def save_embedding_legacy(embed: TransformerEmbedding,
                           embed_args: dict,
                           filepath: Path) -> None:
@@ -177,9 +180,6 @@ def save_embedding_legacy(embed: TransformerEmbedding,
         dill.dump(embed_args, f)
 
 
-#######################################################################################################
-# TODO: Everything below here is legacy saving code, and will be removed in the future
-#######################################################################################################
 def save_detector_legacy(detector, filepath):
     detector_name = detector.meta['name']
 

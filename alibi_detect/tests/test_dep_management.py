@@ -190,7 +190,7 @@ def test_fetching_utils_dependencies(opt_dep):
 
 
 def test_saving_tf_dependencies(opt_dep):
-    """Tests that the alibi_detect.saving.tensorflow module correctly protects against uninstalled optional
+    """Tests that the alibi_detect.saving._tensorflow module correctly protects against uninstalled optional
     dependencies.
     """
 
@@ -208,7 +208,7 @@ def test_saving_tf_dependencies(opt_dep):
         ('get_tf_dtype', ['tensorflow'])
     ]:
         dependency_map[dependency] = relations
-    from alibi_detect.saving import tensorflow as tf_saving
+    from alibi_detect.saving import _tensorflow as tf_saving
     check_correct_dependencies(tf_saving, dependency_map, opt_dep)
 
 
