@@ -238,8 +238,7 @@ def _load_preprocess_config(cfg: dict,
 
 def _load_model_config(cfg: dict) -> Callable:
     """
-    Loads TensorFlow, PyTorch and scikit-learn models (currently only TensorFlow and scikit-learn supported),
-    from a model config dict.
+    Loads supported models from a model config dict.
 
     Parameters
     ----------

@@ -16,11 +16,9 @@ The `resolved` kwarg of :func:`~alibi_detect.utils.validate.validate_config` det
 
 from typing import Callable, Dict, List, Optional, Type, Union, Any
 
-# TODO - conditional checks depending on backend etc
-# TODO - consider validating output of get_config calls
 import numpy as np
-import sklearn.base
 from pydantic import BaseModel, validator
+from sklearn.base import BaseEstimator  # import here since sklearn currently a core dep
 
 from alibi_detect.cd.tensorflow import UAE as UAE_tf
 from alibi_detect.cd.tensorflow import HiddenOutput as HiddenOutput_tf
@@ -35,9 +33,8 @@ if has_tensorflow:
 if has_pytorch:
     # import torch
     SupportedModels_torch = ()  # type: ignore # TODO - fill
-
 # import sklearn
-SupportedModels_sklearn = (sklearn.base.BaseEstimator, )  # type: ignore
+SupportedModels_sklearn = (BaseEstimator, )  # type: ignore
 
 # Build SupportedModels - a tuple of all possible models for use in isinstance() etc.
 SupportedModels = SupportedModels_tf + SupportedModels_torch + SupportedModels_sklearn
@@ -53,23 +50,20 @@ def coerce_int2list(value: int) -> List[int]:
 
 
 class SupportedModelsType:
+    """
+    Pydantic custom type to check the model is one of the supported types (conditional on what optional deps
+    are installed).
+    """
     @classmethod
     def __get_validators__(cls):
         yield cls.validate_model
 
     @classmethod
-    def validate_model(cls, model: Callable, values: dict) -> Callable:
-        """Validator to check the model is compatible with the given backend"""
-        backend = values['backend']
-        if backend == 'tensorflow' and not isinstance(model, SupportedModels_tf):
-            raise ValueError('A TensorFlow backend is not available for this model')
-        elif backend == 'pytorch' and not isinstance(model, SupportedModels_torch):
-            raise ValueError('A PyTorch backend is not available for this model')
-        elif backend == 'sklearn' and not isinstance(model, SupportedModels_sklearn):
-            raise ValueError('A sklearn backend is not available for this model')
-        return model
-
-# TODO - we could add another validator to check given "backend" against what optional deps are installed?
+    def validate_model(cls, model: Any) -> Callable:
+        if isinstance(model, SupportedModels):
+            return model
+        else:
+            raise TypeError('The model is not recognised as a supported type.')
 
 
 # Custom BaseModel so that we can set default config
