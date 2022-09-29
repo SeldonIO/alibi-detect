@@ -14,8 +14,9 @@ from alibi_detect.saving._typing import VALID_DETECTORS
 from alibi_detect.saving.loading import _replace, validate_config
 from alibi_detect.saving.registry import registry
 from alibi_detect.saving.schemas import SupportedModels
-from alibi_detect.saving._tensorflow import save_detector_legacy, save_model_config_tf
 from alibi_detect.base import Detector, ConfigurableDetector
+from alibi_detect.saving._tensorflow import save_detector_legacy, save_model_config_tf
+from alibi_detect.saving._sklearn import save_model_config_sk
 
 # do not extend pickle dispatch table so as not to change pickle behaviour
 dill.extend(use_dill=False)
@@ -46,8 +47,8 @@ def save_detector(
     if legacy:
         warnings.warn('The `legacy` option will be removed in a future version.', DeprecationWarning)
 
-    if 'backend' in list(detector.meta.keys()) and detector.meta['backend'] in ['pytorch', 'sklearn', 'keops']:
-        raise NotImplementedError('Saving detectors with PyTorch, sklearn or keops backend is not yet supported.')
+    if 'backend' in list(detector.meta.keys()) and detector.meta['backend'] in ['pytorch', 'keops']:
+        raise NotImplementedError('Saving detectors with pytorch or keops backend is not yet supported.')
 
     # TODO: Replace .__args__ w/ typing.get_args() once Python 3.7 dropped (and remove type ignore below)
     detector_name = detector.__class__.__name__
@@ -124,8 +125,8 @@ def _save_detector_config(detector: ConfigurableDetector, filepath: Union[str, o
     """
     # Get backend, input_shape and detector_name
     backend = detector.meta.get('backend', 'tensorflow')
-    if backend != 'tensorflow':
-        raise NotImplementedError("Currently, saving is only supported with backend='tensorflow'.")
+    if backend not in ('tensorflow', 'sklearn'):
+        raise NotImplementedError("Currently, saving is only supported with backend='tensorflow' and 'sklearn'.")
     detector_name = detector.__class__.__name__
 
     # Process file paths
@@ -418,6 +419,8 @@ def _save_model_config(model: Callable,
     """
     if backend == 'tensorflow':
         return save_model_config_tf(model, base_path, input_shape, path)
+    elif backend == 'sklearn':
+        return save_model_config_sk(model, base_path, path), None
     else:
         raise NotImplementedError("Saving of pytorch models is not yet implemented.")
 

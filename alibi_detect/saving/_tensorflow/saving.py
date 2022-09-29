@@ -31,7 +31,7 @@ def save_model_config(model: Callable,
                       input_shape: tuple,
                       local_path: Path = Path('.')) -> Tuple[dict, Optional[dict]]:
     """
-    Save a model to a config dictionary. When a model has a text embedding model contained within it,
+    Save a TensorFlow model to a config dictionary. When a model has a text embedding model contained within it,
     this is extracted and saved separately.
 
     Parameters

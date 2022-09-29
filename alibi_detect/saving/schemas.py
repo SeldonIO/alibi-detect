@@ -19,6 +19,7 @@ from typing import Callable, Dict, List, Optional, Type, Union, Any
 # TODO - conditional checks depending on backend etc
 # TODO - consider validating output of get_config calls
 import numpy as np
+import sklearn.base
 from pydantic import BaseModel, validator
 
 from alibi_detect.cd.tensorflow import UAE as UAE_tf
@@ -36,11 +37,10 @@ if has_pytorch:
     SupportedModels_torch = ()  # type: ignore # TODO - fill
 
 # import sklearn
-# SupportedModels_sklearn = ()  # type: ignore # TODO - fill
+SupportedModels_sklearn = (sklearn.base.BaseEstimator, )  # type: ignore
 
 # Build SupportedModels - a tuple of all possible models for use in isinstance() etc.
 SupportedModels = SupportedModels_tf + SupportedModels_torch + SupportedModels_sklearn
-# TODO - could define a Union with fwdrefs here, for use in mypy type annotations in saving.py etc
 
 
 # Custom validators (defined here for reuse in multiple pydantic models)
@@ -52,19 +52,25 @@ def coerce_int2list(value: int) -> List[int]:
         return value
 
 
-def validate_model(model: Callable, values: dict) -> Callable:
-    """Validator to check the model is compatible with the given backend"""
-    backend = values['backend']
-    if backend == 'tensorflow' and not isinstance(model, SupportedModels_tf):
-        raise ValueError('A TensorFlow backend is not available for this model')
-    elif backend == 'pytorch' and not isinstance(model, SupportedModels_torch):
-        raise ValueError('A PyTorch backend is not available for this model')
-    elif backend == 'sklearn' and not isinstance(model, SupportedModels_sklearn):
-        raise ValueError('A sklearn backend is not available for this model')
-    return model
+class SupportedModelsType:
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate_model
 
+    @classmethod
+    def validate_model(cls, model: Callable, values: dict) -> Callable:
+        """Validator to check the model is compatible with the given backend"""
+        backend = values['backend']
+        if backend == 'tensorflow' and not isinstance(model, SupportedModels_tf):
+            raise ValueError('A TensorFlow backend is not available for this model')
+        elif backend == 'pytorch' and not isinstance(model, SupportedModels_torch):
+            raise ValueError('A PyTorch backend is not available for this model')
+        elif backend == 'sklearn' and not isinstance(model, SupportedModels_sklearn):
+            raise ValueError('A sklearn backend is not available for this model')
+        return model
 
 # TODO - we could add another validator to check given "backend" against what optional deps are installed?
+
 
 # Custom BaseModel so that we can set default config
 class CustomBaseModel(BaseModel):
@@ -740,7 +746,7 @@ class ClassifierDriftConfigResolved(DriftDetectorConfigResolved):
     p_val: float = .05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
-    model: Optional[Callable] = None
+    model: Optional[SupportedModelsType] = None
     preds_type: Literal['probs', 'logits'] = 'probs'
     binarize_preds: bool = False
     reg_loss_fn: Optional[Callable] = None
@@ -761,9 +767,6 @@ class ClassifierDriftConfigResolved(DriftDetectorConfigResolved):
     use_calibration: bool = False
     calibration_kwargs: Optional[dict] = None
     use_oob: bool = False
-
-    # validators
-    _validate_model = validator('model', allow_reuse=True, pre=True)(validate_model)
 
 
 class SpotTheDiffDriftConfig(DriftDetectorConfig):
@@ -1133,7 +1136,7 @@ class ClassifierUncertaintyDriftConfigResolved(DetectorConfig):
     :class:`~alibi_detect.cd.ClassifierUncertaintyDrift` documentation for a description of each field.
     """
     x_ref: Union[np.ndarray, list]
-    model: Optional[Callable] = None
+    model: Optional[SupportedModelsType] = None
     p_val: float = .05
     x_ref_preprocessed: bool = False
     update_x_ref: Optional[Dict[str, int]] = None
@@ -1147,9 +1150,6 @@ class ClassifierUncertaintyDriftConfigResolved(DetectorConfig):
     max_len: Optional[int] = None
     input_shape: Optional[tuple] = None
     data_type: Optional[str] = None
-
-    # validators
-    _validate_model = validator('model', allow_reuse=True, pre=True)(validate_model)
 
 
 class RegressorUncertaintyDriftConfig(DetectorConfig):
@@ -1187,7 +1187,7 @@ class RegressorUncertaintyDriftConfigResolved(DetectorConfig):
     :class:`~alibi_detect.cd.RegressorUncertaintyDrift` documentation for a description of each field.
     """
     x_ref: Union[np.ndarray, list]
-    model: Optional[Callable] = None
+    model: Optional[SupportedModelsType] = None
     p_val: float = .05
     x_ref_preprocessed: bool = False
     update_x_ref: Optional[Dict[str, int]] = None
@@ -1200,9 +1200,6 @@ class RegressorUncertaintyDriftConfigResolved(DetectorConfig):
     max_len: Optional[int] = None
     input_shape: Optional[tuple] = None
     data_type: Optional[str] = None
-
-    # validators
-    _validate_model = validator('model', allow_reuse=True, pre=True)(validate_model)
 
 
 # Unresolved schema dictionary (used in alibi_detect.utils.loading)

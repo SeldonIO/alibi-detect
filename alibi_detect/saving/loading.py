@@ -14,6 +14,7 @@ from transformers import AutoTokenizer
 from alibi_detect.saving.registry import registry
 from alibi_detect.saving._tensorflow import load_detector_legacy, load_embedding_tf, load_kernel_config_tf, \
     load_model_tf, load_optimizer_tf, prep_model_and_emb_tf, get_tf_dtype
+from alibi_detect.saving._sklearn import load_model_sk
 from alibi_detect.saving.validate import validate_config
 from alibi_detect.base import Detector, ConfigurableDetector
 
@@ -127,9 +128,8 @@ def _load_detector_config(filepath: Union[str, os.PathLike]) -> ConfigurableDete
     logger.info('Validated resolved config.')
 
     # Backend
-    backend = cfg.pop('backend')  # popping so that cfg left as kwargs + `name` when passed to _init_detector
-    if backend.lower() != 'tensorflow':
-        raise NotImplementedError('Loading detectors with PyTorch, sklearn or keops backend is not yet supported.')
+    if cfg['backend'].lower() not in ('tensorflow', 'sklearn'):
+        raise NotImplementedError('Loading detectors with pytorch or keops backend is not yet supported.')
 
     # Init detector from config
     logger.info('Instantiating detector.')
@@ -264,8 +264,10 @@ def _load_model_config(cfg: dict,
 
     if backend == 'tensorflow':
         model = load_model_tf(src, load_dir='.', custom_objects=custom_obj, layer=layer)
+    elif backend == 'sklearn':
+        model = load_model_sk(src, load_dir='.')
     else:
-        raise NotImplementedError('Loading of non-tensorflow models not currently supported')
+        raise NotImplementedError('Loading of PyTorch models not currently supported')
 
     return model
 
