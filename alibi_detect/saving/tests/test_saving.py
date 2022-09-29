@@ -1080,8 +1080,7 @@ def test_save_deepkernel(data, deep_kernel, backend, tmp_path):
     filepath = tmp_path
     filename = 'mykernel'
     cfg_kernel = _save_kernel_config(deep_kernel, filepath, filename)
-    cfg_kernel['proj'], _ = _save_model_config(cfg_kernel['proj'], base_path=filepath, input_shape=input_shape,
-                                               backend=backend)
+    cfg_kernel['proj'], _ = _save_model_config(cfg_kernel['proj'], base_path=filepath, input_shape=input_shape)
     cfg_kernel = _path2str(cfg_kernel)
     cfg_kernel['proj'] = ModelConfig(**cfg_kernel['proj']).dict()  # Pass thru ModelConfig to set `layers` etc
     cfg_kernel = DeepKernelConfig(**cfg_kernel).dict()  # pydantic validation
@@ -1120,10 +1119,7 @@ def test_save_preprocess(data, preprocess_fn, tmp_path, backend):
     filepath = tmp_path
     X_ref, X_h0 = data
     input_shape = (X_ref.shape[1],)
-    cfg_preprocess = _save_preprocess_config(preprocess_fn,
-                                             backend=backend,
-                                             input_shape=input_shape,
-                                             filepath=filepath)
+    cfg_preprocess = _save_preprocess_config(preprocess_fn, input_shape=input_shape, filepath=filepath)
     cfg_preprocess = _path2str(cfg_preprocess)
     cfg_preprocess = PreprocessConfig(**cfg_preprocess).dict()  # pydantic validation
     assert cfg_preprocess['src'] == '@cd.' + backend + '.preprocess.preprocess_drift'
@@ -1150,7 +1146,6 @@ def test_save_preprocess_nlp(data, preprocess_fn, tmp_path, backend):
     # Save preprocess_fn to config
     filepath = tmp_path
     cfg_preprocess = _save_preprocess_config(preprocess_fn,
-                                             backend=backend,
                                              input_shape=(768,),  # hardcoded to bert-base-cased for now
                                              filepath=filepath)
     cfg_preprocess = _path2str(cfg_preprocess)
@@ -1190,7 +1185,7 @@ def test_save_model(data, model, layer, backend, tmp_path):
     # Save model
     filepath = tmp_path
     input_shape = (data[0].shape[1],)
-    cfg_model, _ = _save_model_config(model, base_path=filepath, input_shape=input_shape, backend=backend)
+    cfg_model, _ = _save_model_config(model, base_path=filepath, input_shape=input_shape)
     cfg_model = _path2str(cfg_model)
     cfg_model = ModelConfig(**cfg_model).dict()
     assert tmp_path.joinpath('model').is_dir()
@@ -1202,7 +1197,7 @@ def test_save_model(data, model, layer, backend, tmp_path):
         cfg_model['layer'] = layer
 
     # Load model
-    model_load = _load_model_config(cfg_model, backend=backend)
+    model_load = _load_model_config(cfg_model)
     if layer is None:
         assert isinstance(model_load, type(model))
     else:

@@ -128,7 +128,8 @@ def _load_detector_config(filepath: Union[str, os.PathLike]) -> ConfigurableDete
     logger.info('Validated resolved config.')
 
     # Backend
-    if cfg['backend'].lower() not in ('tensorflow', 'sklearn'):
+    backend = cfg.get('backend', None)
+    if backend is not None and backend.lower() not in ('tensorflow', 'sklearn'):
         raise NotImplementedError('Loading detectors with pytorch or keops backend is not yet supported.')
 
     # Init detector from config
@@ -235,18 +236,15 @@ def _load_preprocess_config(cfg: dict,
     return partial(preprocess_fn, **kwargs)
 
 
-def _load_model_config(cfg: dict,
-                       backend: str) -> Callable:
+def _load_model_config(cfg: dict) -> Callable:
     """
-    Loads TensorFlow, PyTorch and scikit-learn models (currently only TensorFlow supported), from a model config
-    dict.
+    Loads TensorFlow, PyTorch and scikit-learn models (currently only TensorFlow and scikit-learn supported),
+    from a model config dict.
 
     Parameters
     ----------
     cfg
         Model config dict. (see pydantic model schemas).
-    backend
-        The backend.
 
     Returns
     -------
@@ -254,6 +252,7 @@ def _load_model_config(cfg: dict,
     """
 
     # Load model
+    model_type = cfg['model_type']
     src = cfg['src']
     custom_obj = cfg['custom_objects']
     layer = cfg['layer']
@@ -262,9 +261,9 @@ def _load_model_config(cfg: dict,
         raise FileNotFoundError("The `src` field is not a recognised directory. It should be a directory containing "
                                 "a compatible model.")
 
-    if backend == 'tensorflow':
+    if model_type == 'tensorflow':
         model = load_model_tf(src, load_dir='.', custom_objects=custom_obj, layer=layer)
-    elif backend == 'sklearn':
+    elif model_type == 'sklearn':
         model = load_model_sk(src, load_dir='.')
     else:
         raise NotImplementedError('Loading of PyTorch models not currently supported')
@@ -494,7 +493,7 @@ def resolve_config(cfg: dict, config_dir: Optional[Path]) -> dict:
         elif isinstance(src, dict):
             backend = cfg.get('backend', 'tensorflow')
             if key[-1] in ('model', 'proj'):
-                obj = _load_model_config(src, backend)
+                obj = _load_model_config(src)
             elif key[-1] == 'embedding':
                 obj = _load_embedding_config(src, backend)
             elif key[-1] == 'tokenizer':

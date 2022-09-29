@@ -78,7 +78,10 @@ def save_model_config(model: Callable,
     if model is not None:
         filepath = base_path.joinpath(local_path)
         save_model(model, filepath=filepath, save_dir='model')
-        cfg_model = {'src': local_path.joinpath('model')}
+        cfg_model = {
+            'model_type': 'tensorflow',
+            'src': local_path.joinpath('model')
+        }
     return cfg_model, cfg_embed
 
 
