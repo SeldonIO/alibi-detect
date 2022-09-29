@@ -56,8 +56,8 @@ for the remaining detectors is in the [Roadmap](roadmap.md).
 | Detector                                                                       | Legacy save/load | Config save/load |
 |:-------------------------------------------------------------------------------|:----------------:|:----------------:|
 | [Kolmogorov-Smirnov](../cd/methods/ksdrift.ipynb)                              |        ✅         |        ✅         |
-| [Cramér-von Mises](../cd/methods/cvmdrift.ipynb)                               |        ✅         |        ✅         |
-| [Fisher's Exact Test](../cd/methods/fetdrift.ipynb)                            |        ✅         |        ✅         |
+| [Cramér-von Mises](../cd/methods/cvmdrift.ipynb)                               |        ❌         |        ✅         |
+| [Fisher's Exact Test](../cd/methods/fetdrift.ipynb)                            |        ❌         |        ✅         |
 | [Least-Squares Density Difference](../cd/methods/lsdddrift.ipynb)              |        ❌         |        ✅         |
 | [Maximum Mean Discrepancy](../cd/methods/mmddrift.ipynb)                       |        ✅         |        ✅         |
 | [Learned Kernel MMD](../cd/methods/learnedkerneldrift.ipynb)                   |        ❌         |        ✅         |
