@@ -88,7 +88,6 @@ class CustomBaseModelWithKwargs(BaseModel):
 
 class MetaData(CustomBaseModel):
     version: str
-    config_spec: str
     version_warning: bool = False
 
 
