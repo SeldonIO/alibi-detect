@@ -115,11 +115,11 @@ class ModelConfig(CustomBaseModel):
     .. code-block :: toml
 
         [model]
-        model_type: "tensorflow"
+        flavour "tensorflow"
         src = "model/"
         layer = -1
     """
-    model_type: Literal['tensorflow', 'pytorch', 'sklearn']
+    flavour: Literal['tensorflow', 'pytorch', 'sklearn']
     """
     Whether the model is a `tensorflow`, `pytorch` or `sklearn` model. XGBoost models following the scikit-learn API
     are also included under `sklearn`.
@@ -151,15 +151,20 @@ class EmbeddingConfig(CustomBaseModel):
 
     Examples
     --------
-    Using the hidden states at the output of each layer of the
+    Using the hidden states at the output of each layer of a TensorFlow
     `BERT base <https://huggingface.co/bert-base-cased>`_ model as text embeddings:
 
     .. code-block :: toml
 
         [embedding]
+        flavour = "tensorflow"
         src = "bert-base-cased"
         type = "hidden_state"
         layers = [-1, -2, -3, -4, -5, -6, -7, -8]
+    """
+    flavour: Literal['tensorflow', 'pytorch'] = 'tensorflow'
+    """
+    Whether the embedding model is a `tensorflow` or `pytorch` model.
     """
     type: Literal['pooler_output', 'last_hidden_state', 'hidden_state', 'hidden_state_cls']
     """

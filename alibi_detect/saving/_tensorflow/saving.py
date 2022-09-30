@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 def save_model_config(model: Callable,
                       base_path: Path,
-                      input_shape: tuple,
+                      input_shape: Optional[tuple],
                       local_path: Path = Path('.')) -> Tuple[dict, Optional[dict]]:
     """
     Save a TensorFlow model to a config dictionary. When a model has a text embedding model contained within it,
@@ -53,6 +53,9 @@ def save_model_config(model: Callable,
     cfg_embed = None  # type: Optional[Dict[str, Any]]
     if isinstance(model, UAE):
         if isinstance(model.encoder.layers[0], TransformerEmbedding):  # if UAE contains embedding and encoder
+            if input_shape is None:
+                raise ValueError('Cannot save combined embedding and model when `input_shape` is None.')
+
             # embedding
             embed = model.encoder.layers[0]
             cfg_embed = save_embedding_config(embed, base_path, local_path.joinpath('embedding'))
@@ -79,7 +82,7 @@ def save_model_config(model: Callable,
         filepath = base_path.joinpath(local_path)
         save_model(model, filepath=filepath, save_dir='model')
         cfg_model = {
-            'model_type': 'tensorflow',
+            'flavour': 'tensorflow',
             'src': local_path.joinpath('model')
         }
     return cfg_model, cfg_embed
@@ -145,6 +148,7 @@ def save_embedding_config(embed: TransformerEmbedding,
     cfg_embed.update({'type': embed.emb_type})
     cfg_embed.update({'layers': embed.hs_emb.keywords['layers']})
     cfg_embed.update({'src': local_path})
+    cfg_embed.update({'flavour': 'tensorflow'})
 
     # Save embedding model
     logger.info('Saving embedding model to {}.'.format(filepath))

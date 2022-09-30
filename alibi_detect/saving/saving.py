@@ -390,7 +390,7 @@ def _int2str_keys(dikt: dict) -> dict:
 
 def _save_model_config(model: Any,
                        base_path: Path,
-                       input_shape: tuple,
+                       input_shape: Optional[tuple] = None,
                        path: Path = Path('.')) -> Tuple[dict, Optional[dict]]:
     """
     Save a model to a config dictionary. When a model has a text embedding model contained within it,
