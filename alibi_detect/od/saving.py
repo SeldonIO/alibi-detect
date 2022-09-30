@@ -28,14 +28,12 @@ def serialize(item, path):
             return cfg_path
         if not item.BASE_OBJ:
             cfg = item.get_config()
-
             for key in item.TO_STR:
                 path, _ = _serialize_object(
                     cfg[key], base_path=Path(path), 
                     local_path=Path(key)
                 )
                 cfg[key] = path
-
             return cfg
     else:
         return item
@@ -49,17 +47,14 @@ def save_detector(detector, path):
                 cfg[key].append(serialize(item, f'{path}/{key}/{ind}'))
         else:
             cfg[key] = serialize(val, path)
-    # cfg = dictmap(cfg, curry_serialize_objs(path))
     write_config(cfg, path)
     return path + '/config.toml'
-
 
 def read_config(filepath: Union[os.PathLike, str]) -> dict:
     filepath = Path(filepath)
     cfg = dict(toml.load(filepath))  # toml.load types return as MutableMapping, force to dict
     logger.info('Loaded config file from {}'.format(str(filepath)))
     return cfg
-
 
 def resolve_config(obj, cfg, path):
     path = path.replace('/config.toml', '')
@@ -84,7 +79,6 @@ def deserialize(item, path):
         return obj_instance
     else:
         return item
-
 
 def load_detector(path):
     config_file = Path(path)

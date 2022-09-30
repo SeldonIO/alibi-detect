@@ -3,8 +3,22 @@ from __future__ import annotations
 from alibi_detect.version import __version__, __config_spec__
 import logging
 from typing import Dict, Any
+from pathlib import Path
+from typing import Union
+import toml
+import os
 
 logger = logging.getLogger(__name__)
+
+def write_config(cfg: dict, filepath: Union[str, os.PathLike]):
+    filepath = Path(filepath)
+    if not filepath.is_dir():
+        logger.warning('Directory {} does not exist and is now created.'.format(filepath))
+        filepath.mkdir(parents=True, exist_ok=True)
+
+    logger.info('Writing config to {}'.format(filepath.joinpath('config.toml')))
+    with open(filepath.joinpath('config.toml'), 'w') as f:
+        toml.dump(cfg, f, encoder=toml.TomlNumpyEncoder())  # type: ignore[misc]
 
 
 class ConfigMixin:
@@ -55,3 +69,46 @@ class ConfigMixin:
         Note: For custom or complicated behavour this should be overidden
         """
         return cls(**config)
+
+    def serialize_value(self, key, val, path):
+        path = f'{path}/{key}'
+
+        if hasattr(self, f'_{key}_serializer'):
+            # if _key_serializer is defined on the class we use that to serialze the key.
+            key_serialiser = getattr(self, f'_{key}_serializer')
+            return key_serialiser(self, val, path)
+        
+        elif hasattr(self, f'_{type(val).__name__}_serializer'):
+            # if _type_serializer is defined on the class we use that to serialze the value.
+            type_serialiser = getattr(self, f'_{type(val).__name__}_serializer')
+            return type_serialiser(self, val, path)
+
+        elif hasattr(val, 'BASE_OBJ') and not getattr(val, 'BASE_OBJ'):
+            # if val extends ConfigMixin but isn't a BASE_OBJ we serialize it using the 
+            # serialize method defined on the object
+            return val.serialize(path)
+
+        elif hasattr(val, 'BASE_OBJ') and getattr(val, 'BASE_OBJ'):
+            # if val extends ConfigMixin and is a BASE_OBJ we save and serialize it as 
+            # the path
+            return val.save(path)
+
+        else:
+            return val
+
+    def _list_serializer(self, key, val, path):
+        return [self.serialize_value(ind, item, path) for ind, item in enumerate(val)]
+
+    def _dict_serializer(self, key, val, path):
+        return {k: self.serialize_value(k, v, path) for k, v in val.items()}
+
+    def serialize(self, path):
+        cfg = self.get_config()
+        for key, val in cfg.items():
+            cfg[key] = self.serialize_value(key, val, path)
+        return cfg
+
+    def save(self, path):
+        cfg = self.serialize(path)
+        write_config(cfg, path)
+        return path

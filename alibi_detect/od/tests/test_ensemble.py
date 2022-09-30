@@ -35,6 +35,25 @@ def test_ensemble_parrallel():
     assert ensemble_detector.predict(x)['p_vals'].item() > 0.5
 
 
+# def test_ensemble_config():
+#     knn_detectors = [KNN(k=k+1) for k in range(10)]
+#     ensemble_detector = Ensemble(
+#         detectors=knn_detectors,
+#         aggregator=AverageAggregator(),
+#         normaliser=PValNormaliser(),
+#         processor=ParallelProcessor()
+#     )
+
+#     cfg_path = save_detector(ensemble_detector, './example-ensemble-config')
+#     loaded_ensemble_detector = load_detector(cfg_path)
+#     assert isinstance(loaded_ensemble_detector, Ensemble)
+#     assert isinstance(loaded_ensemble_detector.aggregator, AverageAggregator)
+#     assert isinstance(loaded_ensemble_detector.normaliser, PValNormaliser)
+#     assert isinstance(loaded_ensemble_detector.processor, ParallelProcessor)
+#     for ind, detector in enumerate(loaded_ensemble_detector.detectors):
+#         assert isinstance(detector, KNN)
+#         detector.k = ind + 1
+
 def test_ensemble_config():
     knn_detectors = [KNN(k=k+1) for k in range(10)]
     ensemble_detector = Ensemble(
@@ -44,12 +63,5 @@ def test_ensemble_config():
         processor=ParallelProcessor()
     )
 
-    cfg_path = save_detector(ensemble_detector, './example-ensemble-config')
-    loaded_ensemble_detector = load_detector(cfg_path)
-    assert isinstance(loaded_ensemble_detector, Ensemble)
-    assert isinstance(loaded_ensemble_detector.aggregator, AverageAggregator)
-    assert isinstance(loaded_ensemble_detector.normaliser, PValNormaliser)
-    assert isinstance(loaded_ensemble_detector.processor, ParallelProcessor)
-    for ind, detector in enumerate(loaded_ensemble_detector.detectors):
-        assert isinstance(detector, KNN)
-        detector.k = ind + 1
+    print(ensemble_detector.save('./example-ensemble-config'))
+    assert 1 == 0
