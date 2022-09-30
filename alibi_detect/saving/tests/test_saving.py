@@ -1000,8 +1000,8 @@ def test_save_preprocess_nlp(data, preprocess_fn, tmp_path, backend):
         emb = preprocess_fn.keywords['model'].encoder.layers[0]
         emb_load = preprocess_fn_load.keywords['model'].encoder.layers[0]
     assert isinstance(emb_load.model, type(emb.model))
-    assert emb.emb_type == embedding.emb_type
-    assert emb.hs_emb.keywords['layers'] == emb.hs_emb.keywords['layers']
+    assert emb_load.emb_type == emb.emb_type
+    assert emb_load.hs_emb.keywords['layers'] == emb.hs_emb.keywords['layers']
 
 
 def test_nested_value():
