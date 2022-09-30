@@ -1,7 +1,7 @@
 from pytest_cases import param_fixture, parametrize, parametrize_with_cases
 
 from alibi_detect.saving.tests.datasets import ContinuousData
-from alibi_detect.saving.tests.models import classifier_model
+from alibi_detect.saving.tests.models import classifier_model, xgb_classifier_model
 
 from alibi_detect.saving.loading import _load_model_config
 from alibi_detect.saving.saving import _path2str, _save_model_config
@@ -11,7 +11,7 @@ backend = param_fixture("backend", ['sklearn'])
 
 
 @parametrize_with_cases("data", cases=ContinuousData.data_synthetic_nd, prefix='data_')
-@parametrize('model', [classifier_model])
+@parametrize('model', [classifier_model, xgb_classifier_model])
 def test_save_model_sk(data, model, tmp_path):
     """
     Unit test for _save_model_config and _load_model_config with scikit-learn and xgboost model.

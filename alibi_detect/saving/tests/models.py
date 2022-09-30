@@ -4,6 +4,7 @@ import numpy as np
 import tensorflow as tf
 import torch
 from sklearn.ensemble import RandomForestClassifier
+from xgboost import XGBClassifier
 
 from requests.exceptions import HTTPError
 
@@ -147,6 +148,12 @@ def classifier_model(backend, current_cases):
         model = RandomForestClassifier()
     else:
         pytest.skip('`classifier_model` only implemented for tensorflow, pytorch, and sklearn.')
+    return model
+
+
+@fixture
+def xgb_classifier_model():
+    model = XGBClassifier()
     return model
 
 
