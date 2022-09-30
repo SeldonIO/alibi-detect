@@ -135,7 +135,7 @@ Custom objects should be pre-registered with
 ### Scikit-learn
 
 Scikit-learn models are serialized using [joblib](https://joblib.readthedocs.io/en/latest/persistence.html).
-Any Scikit-learn model which is a subclass of {py:class}`sklearn.base.BaseEstimator` is supported, including 
+Any scikit-learn model which is a subclass of {py:class}`sklearn.base.BaseEstimator` is supported, including 
 [xgboost](https://xgboost.readthedocs.io/en/latest/python/python_api.html#module-xgboost.sklearn) models following 
 the scikit-learn API.
 
