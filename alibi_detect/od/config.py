@@ -1,5 +1,6 @@
 from __future__ import annotations
-
+from alibi_detect.saving.saving import _serialize_object
+from pathlib import Path
 from alibi_detect.version import __version__, __config_spec__
 import logging
 from typing import Dict, Any
@@ -76,12 +77,12 @@ class ConfigMixin:
         if hasattr(self, f'_{key}_serializer'):
             # if _key_serializer is defined on the class we use that to serialze the key.
             key_serialiser = getattr(self, f'_{key}_serializer')
-            return key_serialiser(self, val, path)
+            return key_serialiser(key, val, path)
         
         elif hasattr(self, f'_{type(val).__name__}_serializer'):
             # if _type_serializer is defined on the class we use that to serialze the value.
             type_serialiser = getattr(self, f'_{type(val).__name__}_serializer')
-            return type_serialiser(self, val, path)
+            return type_serialiser(key, val, path)
 
         elif hasattr(val, 'BASE_OBJ') and not getattr(val, 'BASE_OBJ'):
             # if val extends ConfigMixin but isn't a BASE_OBJ we serialize it using the 
@@ -101,6 +102,13 @@ class ConfigMixin:
 
     def _dict_serializer(self, key, val, path):
         return {k: self.serialize_value(k, v, path) for k, v in val.items()}
+
+    def _function_serializer(self, key, val, path):
+        path, _ = _serialize_object(
+            key, base_path=Path(path), 
+            local_path=Path(key)
+        )
+        return path
 
     def serialize(self, path):
         cfg = self.get_config()

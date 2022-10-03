@@ -122,11 +122,5 @@ class GaussianRBF(nn.Module, ConfigMixin):
         kernel_mat = torch.exp(- torch.cat([(g * dist)[None, :, :] for g in gamma], dim=0))  # [Ns, Nx, Ny]
         return kernel_mat.mean(dim=0)  # [Nx, Ny]
 
-    def get_config(self) -> dict:
-        """
-        Returns a serializable config dict (excluding the input_sigma_fn, which is serialized in alibi_detect.saving).
-        """
-        cfg = self.config.copy()        
-        if isinstance(cfg['sigma'], torch.Tensor):
-            cfg['sigma'] = cfg['sigma'].detach().numpy()
-        return cfg
+    def _sigma_serilizer(self, key, val, path):
+        return val.detach().numpy()

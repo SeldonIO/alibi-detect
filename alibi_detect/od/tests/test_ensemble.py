@@ -3,7 +3,6 @@ from alibi_detect.od.ensemble import Ensemble
 from alibi_detect.od.knn import KNN
 from alibi_detect.od.aggregation import AverageAggregator, PValNormaliser
 from alibi_detect.od.processor import ParallelProcessor
-from alibi_detect.od.saving import save_detector, load_detector
 
 
 def test_ensemble():
@@ -54,7 +53,7 @@ def test_ensemble_parrallel():
 #         assert isinstance(detector, KNN)
 #         detector.k = ind + 1
 
-def test_ensemble_config():
+def test_ensemble_config(tmp_path):
     knn_detectors = [KNN(k=k+1) for k in range(10)]
     ensemble_detector = Ensemble(
         detectors=knn_detectors,
@@ -63,5 +62,5 @@ def test_ensemble_config():
         processor=ParallelProcessor()
     )
 
-    print(ensemble_detector.save('./example-ensemble-config'))
+    print(ensemble_detector.save(tmp_path))
     assert 1 == 0

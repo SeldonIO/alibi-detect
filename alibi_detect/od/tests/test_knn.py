@@ -1,8 +1,8 @@
 import numpy as np
 from alibi_detect.od.knn import KNN
+from alibi_detect.od.config import write_config
 from alibi_detect.od.aggregation import AverageAggregator, ShiftAndScaleNormaliser, PValNormaliser, TopKAggregator
 from alibi_detect.od.backends import KNNTorch
-from alibi_detect.od.saving import save_detector, load_detector
 from alibi_detect.od.backends import GaussianRBF
 
 def test_knn_single():
@@ -132,5 +132,6 @@ def test_knn_config(tmp_path):
             init_sigma_fn=lambda: 'test')
     )
 
-    print(knn_detector.serialize('.'))
+    # write_config(knn_detector.serialize(tmp_path), tmp_path)
+    print(knn_detector.save(tmp_path))
     assert 1 == 0
