@@ -1,5 +1,8 @@
 import numpy as np
+import os
+
 from alibi_detect.od.knn import KNN
+from alibi_detect.od.loading import load_detector
 from alibi_detect.od.config import write_config
 from alibi_detect.od.aggregation import AverageAggregator, ShiftAndScaleNormaliser, PValNormaliser, TopKAggregator
 from alibi_detect.od.backends import KNNTorch
@@ -131,7 +134,19 @@ def test_knn_config(tmp_path):
             np.array([1.]),
             init_sigma_fn=lambda: 'test')
     )
-
+    config = knn_detector.serialize(tmp_path)
+    print(config)
     # write_config(knn_detector.serialize(tmp_path), tmp_path)
-    print(knn_detector.save(tmp_path))
+    # loaded_knn_detector = load_detector(os.path.join(tmp_path, 'config.toml'))
+
+    # assert isinstance(loaded_knn_detector, KNN)
+    # assert isinstance(loaded_knn_detector.aggregator, TopKAggregator)
+    # assert isinstance(loaded_knn_detector.normaliser, ShiftAndScaleNormaliser)
+    # assert isinstance(loaded_knn_detector.kernel, GaussianRBF)
+    # assert loaded_knn_detector.k == [8, 9, 10]
+    # assert loaded_knn_detector.kernel.config['sigma'] == [1.0]
+    # assert loaded_knn_detector.aggregator.k == 5
+    # assert loaded_knn_detector.backend.__name__ == KNNTorch.__name__
+    # assert loaded_knn_detector.kernel.init_sigma_fn() == 'test'
+
     assert 1 == 0

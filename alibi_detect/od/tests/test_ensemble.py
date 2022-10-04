@@ -1,4 +1,6 @@
 import numpy as np
+from alibi_detect.od.config import write_config
+from alibi_detect.od.loading import load_detector
 from alibi_detect.od.ensemble import Ensemble
 from alibi_detect.od.knn import KNN
 from alibi_detect.od.aggregation import AverageAggregator, PValNormaliser
@@ -62,5 +64,8 @@ def test_ensemble_config(tmp_path):
         processor=ParallelProcessor()
     )
 
-    print(ensemble_detector.save(tmp_path))
+    config = ensemble_detector.serialize(tmp_path)
+    print(config)
+    # write_config(ensemble_detector.save(tmp_path), tmp_path)
+    # load_detector(tmp_path)
     assert 1 == 0

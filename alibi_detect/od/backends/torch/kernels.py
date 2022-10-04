@@ -56,7 +56,7 @@ def squared_pairwise_distance(x: torch.Tensor, y: torch.Tensor, a_min: float = 1
 @registry.register('GaussianRBF')
 class GaussianRBF(nn.Module, ConfigMixin):
     CONFIG_PARAMS = ('sigma', 'init_sigma_fn', 'trainable')
-    TO_STR = ('init_sigma_fn', )
+    FROM_PATH = ('init_sigma_fn', )
 
     def __init__(
         self,
