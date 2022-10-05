@@ -59,11 +59,22 @@ class SupportedModelsType:
         yield cls.validate_model
 
     @classmethod
-    def validate_model(cls, model: Any) -> Callable:
-        if isinstance(model, SupportedModels):
+    def validate_model(cls, model: Any, values: dict) -> Any:
+        backend = values['backend']
+        if backend == 'tensorflow' and not isinstance(model, SupportedModels_tf):
+            raise TypeError("`backend='tensorflow'` but the `model` doesn't appear to be a TensorFlow supported model.")
+        elif backend == 'pytorch' and not isinstance(model, SupportedModels_torch):
+            raise TypeError("`backend='pytorch'` but the `model` doesn't appear to be a TensorFlow supported model.")
+        elif backend == 'sklearn' and not isinstance(model, SupportedModels_sklearn):
+            raise TypeError("`backend='sklearn'` but the `model` doesn't appear to be a scikit-learn supported model.")
+        elif isinstance(model, SupportedModels):  # If model supported and no `backend` incompatibility
             return model
-        else:
+        else:  # Catch any other unexpected issues
             raise TypeError('The model is not recognised as a supported type.')
+
+
+# TODO - We could add validator to check `model` and `embedding` type when chained together. Leave this until refactor
+#  of preprocess_drift.
 
 
 # Custom BaseModel so that we can set default config
