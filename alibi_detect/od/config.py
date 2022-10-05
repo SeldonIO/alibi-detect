@@ -1,4 +1,7 @@
 from __future__ import annotations
+import imp
+from copy import deepcopy
+
 from alibi_detect.saving.saving import _serialize_object
 from pathlib import Path
 from alibi_detect.version import __version__, __config_spec__
@@ -55,8 +58,13 @@ class ConfigMixin:
     def get_config(self) -> dict:
         if self.config is not None:
             cfg = self.config
+
             for key in self.LARGE_PARAMS:
                 cfg[key] = getattr(self, key)
+            
+            for key, val in cfg.items():
+                if isinstance(val, ModelWrapper):
+                    cfg[key] = val.unpack()
         else:
             raise NotImplementedError('Getting a config (or saving via a config file) is not yet implemented for this'
                                       'detector')
@@ -112,11 +120,35 @@ class ConfigMixin:
 
     def serialize(self, path):
         cfg = self.get_config()
+        n_cfg = {}
         for key, val in cfg.items():
-            cfg[key] = self.serialize_value(key, val, path)
-        return cfg
+            n_cfg[key] = self.serialize_value(key, val, path)
+        return n_cfg
 
     def save(self, path):
         cfg = self.serialize(path)
         write_config(cfg, path)
         return path
+
+
+class ModelWrapper(ConfigMixin):
+    BASE_OBJ = False
+
+    def __init__(self, model, input_shape=None):
+        self.model = model
+        self.input_shape = input_shape
+
+    def __getattr__(self, key: str):
+        """Expose the wrapped model's methods and attributes."""
+        if hasattr(self.model, key):
+            return getattr(self.model, key)    
+        raise AttributeError(...)
+
+    def serialize(self, path):
+        return path
+
+    def copy(self):
+        return deepcopy(self.model)
+
+    def unpack(self):
+        return self.model
