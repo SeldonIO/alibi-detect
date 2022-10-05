@@ -5,8 +5,9 @@ import numpy as np
 import torch
 from torch import nn
 from torch.utils.data import DataLoader
-from alibi_detect.saving.registry import registry
+from torch.optim import Adam
 
+from alibi_detect.saving.registry import registry
 from alibi_detect.od.backends import DeepSVDDTorch
 from alibi_detect.utils.pytorch.data import TorchDataset
 from alibi_detect.utils.pytorch.prediction import predict_batch
@@ -20,7 +21,7 @@ backends = {
 }
 
 
-@registry.register('KNN')
+@registry.register('DeepSVDD')
 class DeepSVDD(OutlierDetector, ConfigMixin):
     CONFIG_PARAMS = ('model', 'weight_decay', 'optimizer', 'learning_rate', 'batch_size', 
                     'preprocess_batch_fn', 'epochs', 'verbose', 'train_kwargs', 'device', 
@@ -34,7 +35,7 @@ class DeepSVDD(OutlierDetector, ConfigMixin):
         model: nn.Module,  # Should have no bias terms. Very important.
         input_shape: tuple = (1, 28, 28),
         weight_decay: float = 1e-3,
-        optimizer: Callable = torch.optim.Adam,
+        optimizer: Callable = Adam,
         learning_rate: float = 1e-3,
         batch_size: int = 32,
         preprocess_batch_fn: Optional[Callable] = None,
@@ -99,10 +100,21 @@ class DeepSVDD(OutlierDetector, ConfigMixin):
         return self.backend.score(X)
 
     def _optimizer_serializer(self, key, val, path):
-        return f'@{val.__module__}'
+        module_pth = val.__module__.split('.')[:2]
+        path = f'@{".".join(module_pth)}.Adam'
+        return path
 
     def _dataset_serializer(self, key, val, path):
-        return f'@{val.__module__}'
+        return f'@{val.__module__}.TorchDataset'
 
     def _dataloader_serializer(self, key, val, path):
-        return f'@{val.__module__}'
+        module_pth = val.__module__.split('.')[:2]
+        path = f'@{".".join(module_pth)}.DataLoader'
+        return path
+
+    @classmethod
+    def _model_deserializer(cls, key, val):
+        print(key, val)
+        import torch 
+        model = torch.load(val)
+        return model

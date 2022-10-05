@@ -51,6 +51,9 @@ if has_pytorch:
     from alibi_detect.utils.pytorch.kernels import \
         GaussianRBF as GaussianRBF_torch, sigma_median as sigma_median_torch
     from alibi_detect.cd.pytorch.context_aware import _sigma_median_diag as _sigma_median_diag_torch
+    from torch.utils.data import DataLoader
+    from torch.optim import Adam
+    from alibi_detect.utils.pytorch.data import TorchDataset
 
 # Create registry
 registry = catalogue.create("alibi_detect", "registry")
@@ -68,3 +71,6 @@ if has_pytorch:
     registry.register('utils.pytorch.kernels.sigma_median', func=sigma_median_torch)
     registry.register('cd.pytorch.context_aware._sigma_median_diag', func=_sigma_median_diag_torch)
     registry.register('utils.pytorch.preprocess.preprocess_drift', func=preprocess_drift_torch)
+    registry.register('torch.utils.DataLoader', func=DataLoader)
+    registry.register('torch.optim.Adam', func=Adam)
+    registry.register('alibi_detect.utils.pytorch.data.TorchDataset', func=TorchDataset)

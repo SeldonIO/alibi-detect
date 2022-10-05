@@ -2,11 +2,8 @@ import numpy as np
 import os
 
 from alibi_detect.od.deepsvdd import DeepSVDD
-# from alibi_detect.od.loading import load_detector
-# from alibi_detect.od.config import write_config
-# from alibi_detect.od.aggregation import AverageAggregator, ShiftAndScaleNormaliser, PValNormaliser, TopKAggregator
-# from alibi_detect.od.backends import KNNTorch
-# from alibi_detect.od.backends import GaussianRBF
+from alibi_detect.od.loading import load_detector
+from alibi_detect.od.config import write_config
 
 import torch.nn as nn
 
@@ -21,17 +18,13 @@ class Model(nn.Module):
 
 
 def test_deepsvdd_config(tmp_path):
+    tmp_path = './example-test'
     model = Model()
     deepsvdd_detector = DeepSVDD(model)
-    # print(deepsvdd_detector.config['model'])
-    config = deepsvdd_detector.serialize(tmp_path)
-    # print(deepsvdd_detector.model)
-    # print(deepsvdd_detector.original_model)
-    # print(deepsvdd_detector.config['model'])
-    print(deepsvdd_detector.get_config())
 
-    # write_config(knn_detector.serialize(tmp_path), tmp_path)
-    # loaded_knn_detector = load_detector(os.path.join(tmp_path, 'config.toml'))
+    write_config(deepsvdd_detector.serialize(tmp_path), tmp_path)
+    loaded_knn_detector = load_detector(os.path.join(tmp_path, 'config.toml'))
+    print(loaded_knn_detector.model)
 
     # assert isinstance(loaded_knn_detector, KNN)
     # assert isinstance(loaded_knn_detector.aggregator, TopKAggregator)

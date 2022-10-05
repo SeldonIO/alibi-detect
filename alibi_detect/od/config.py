@@ -1,6 +1,7 @@
 from __future__ import annotations
 import imp
 from copy import deepcopy
+import dill
 
 from alibi_detect.saving.saving import _serialize_object
 from pathlib import Path
@@ -62,9 +63,9 @@ class ConfigMixin:
             for key in self.LARGE_PARAMS:
                 cfg[key] = getattr(self, key)
             
-            for key, val in cfg.items():
-                if isinstance(val, ModelWrapper):
-                    cfg[key] = val.unpack()
+            # for key, val in cfg.items():
+            #     if isinstance(val, ModelWrapper):
+            #         cfg[key] = val.unpack()
         else:
             raise NotImplementedError('Getting a config (or saving via a config file) is not yet implemented for this'
                                       'detector')
@@ -82,23 +83,17 @@ class ConfigMixin:
         path = f'{path}/{key}'
 
         if hasattr(self, f'_{key}_serializer'):
-            # if _key_serializer is defined on the class we use that to serialze the key.
             key_serialiser = getattr(self, f'_{key}_serializer')
             return key_serialiser(key, val, path)
         
         elif hasattr(self, f'_{type(val).__name__}_serializer'):
-            # if _type_serializer is defined on the class we use that to serialze the value.
             type_serialiser = getattr(self, f'_{type(val).__name__}_serializer')
             return type_serialiser(key, val, path)
 
         elif hasattr(val, 'BASE_OBJ') and not getattr(val, 'BASE_OBJ'):
-            # if val extends ConfigMixin but isn't a BASE_OBJ we serialize it using the 
-            # serialize method defined on the object
             return val.serialize(path)
 
         elif hasattr(val, 'BASE_OBJ') and getattr(val, 'BASE_OBJ'):
-            # if val extends ConfigMixin and is a BASE_OBJ we save and serialize it as 
-            # the path
             return val.save(path)
 
         else:
@@ -130,6 +125,34 @@ class ConfigMixin:
         write_config(cfg, path)
         return path
 
+    @classmethod
+    def deserialize_value(cls, key, val):
+        if hasattr(cls, f'_{key}_deserializer'):
+            key_deserialiser = getattr(cls, f'_{key}_deserializer')
+            return key_deserialiser(key, val)
+
+        if isinstance(val, str) and val.startswith('@'):
+            res_path = val[1:]
+            target = registry.get_all().get(res_path, None)
+            return target
+
+        # if '.dill' in val:
+        #     return dill.load(open(f'{val}', 'rb')) 
+                
+        elif isinstance(val, dict) and val.get('name', None):
+            object_name = val.pop('name')
+            obj = registry.get_all()[object_name]
+            return obj.deserialize(val)
+
+        else:
+            return val
+
+    @classmethod
+    def deserialize(cls, cfg):
+        for key, val in cfg.items():
+            cfg[key] = cls.deserialize_value(key, val)
+        return cls(**cfg)
+
 
 class ModelWrapper(ConfigMixin):
     BASE_OBJ = False
@@ -145,10 +168,9 @@ class ModelWrapper(ConfigMixin):
         raise AttributeError(...)
 
     def serialize(self, path):
+        import torch
+        torch.save(self.model, path)
         return path
 
     def copy(self):
         return deepcopy(self.model)
-
-    def unpack(self):
-        return self.model
