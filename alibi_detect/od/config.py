@@ -38,7 +38,7 @@ class ConfigMixin:
     LARGE_PARAMS: tuple = ()    # set of args passed to init that are big and are added to config when it's getted
     BASE_OBJ: bool = False      # Base objects are things like detectors and Ensembles that should have there own 
                                 # self contained config and be referenced from other configs.
-    FROM_PATH: tuple = ()       # Set of values that are are resolved from paths in the config
+    # FROM_PATH: tuple = ()       # Set of values that are are resolved from paths in the config
 
     def _set_config(self, inputs):
         name = self.__class__.__name__
@@ -106,12 +106,13 @@ class ConfigMixin:
         return {k: self.serialize_value(k, v, path) for k, v in val.items()}
 
     def _function_serializer(self, key, val, path):
-        base_path = Path(path)
-        path, _ = _serialize_object(
-            key, base_path=base_path, 
-            local_path=Path('asset')
-        )
-        return os.path.join(base_path, path)
+        path = Path(path)
+        if not path.parent.is_dir():
+            path.parent.mkdir(parents=True, exist_ok=True)
+        path = path.with_suffix('.dill')
+        with open(path, 'wb') as f:
+            dill.dump(val, f)
+        return str(path)
 
     def serialize(self, path):
         cfg = self.get_config()
@@ -136,9 +137,9 @@ class ConfigMixin:
             target = registry.get_all().get(res_path, None)
             return target
 
-        # if '.dill' in val:
-        #     return dill.load(open(f'{val}', 'rb')) 
-                
+        if isinstance(val, str) and '.dill' in val:
+            return dill.load(open(f'{val}', 'rb')) 
+
         elif isinstance(val, dict) and val.get('name', None):
             object_name = val.pop('name')
             obj = registry.get_all()[object_name]
@@ -168,9 +169,33 @@ class ModelWrapper(ConfigMixin):
         raise AttributeError(...)
 
     def serialize(self, path):
+        path = Path(path)
+        if not path.parent.is_dir():
+            path.parent.mkdir(parents=True, exist_ok=True)        
+        path = path.with_suffix('.pt')
         import torch
         torch.save(self.model, path)
-        return path
+        return str(path)
 
     def copy(self):
         return deepcopy(self.model)
+
+
+# class CustomModel(ConfigMixin):
+#     BASE_OBJ = False
+
+#     def __init__(self, model):
+#         self.model = model
+
+#     def __getattr__(self, key: str):
+#         """Expose the wrapped model's methods and attributes."""
+#         if hasattr(self.model, key):
+#             return getattr(self.model, key)    
+#         raise AttributeError(...)
+
+#     def serialize(self, path):
+#         raise NotImplementedError()
+
+#     @classmethod
+#     def deserialize(cls, cfg):
+#         raise NotImplementedError()

@@ -101,30 +101,8 @@ def test_knn_keops():
     assert np.all(pred['normalised_scores'][1] < 0.3)
     assert np.all(pred['preds'] == [True, False])
 
-# def test_knn_config(tmp_path):
-#     knn_detector = KNN(
-#         k=[8, 9, 10], 
-#         aggregator=TopKAggregator(k=5), 
-#         normaliser=ShiftAndScaleNormaliser(),
-#         backend='pytorch',
-#         kernel=GaussianRBF(
-#             np.array([1.]),
-#             init_sigma_fn=lambda: 'test')
-#     )
-#     # save_detector, load_detector
-#     cfg_path = save_detector(knn_detector, './example-knn-config')
-#     loaded_knn_detector = load_detector(cfg_path)
-#     assert isinstance(loaded_knn_detector, KNN)
-#     assert isinstance(loaded_knn_detector.aggregator, TopKAggregator)
-#     assert isinstance(loaded_knn_detector.normaliser, ShiftAndScaleNormaliser)
-#     assert isinstance(loaded_knn_detector.kernel, GaussianRBF)
-#     assert loaded_knn_detector.k == [8, 9, 10]
-#     assert loaded_knn_detector.kernel.config['sigma'] == [1.0]
-#     assert loaded_knn_detector.aggregator.k == 5
-#     assert loaded_knn_detector.backend.__name__ == KNNTorch.__name__
-#     assert loaded_knn_detector.kernel.init_sigma_fn() == 'test'
-
 def test_knn_config(tmp_path):
+    tmp_path = './example-test'
     knn_detector = KNN(
         k=[8, 9, 10], 
         aggregator=TopKAggregator(k=5), 
@@ -134,19 +112,15 @@ def test_knn_config(tmp_path):
             np.array([1.]),
             init_sigma_fn=lambda: 'test')
     )
-    config = knn_detector.serialize(tmp_path)
-    print(config)
-    # write_config(knn_detector.serialize(tmp_path), tmp_path)
-    # loaded_knn_detector = load_detector(os.path.join(tmp_path, 'config.toml'))
+    path = knn_detector.save(tmp_path)
+    loaded_detector = load_detector(path)
 
-    # assert isinstance(loaded_knn_detector, KNN)
-    # assert isinstance(loaded_knn_detector.aggregator, TopKAggregator)
-    # assert isinstance(loaded_knn_detector.normaliser, ShiftAndScaleNormaliser)
-    # assert isinstance(loaded_knn_detector.kernel, GaussianRBF)
-    # assert loaded_knn_detector.k == [8, 9, 10]
-    # assert loaded_knn_detector.kernel.config['sigma'] == [1.0]
-    # assert loaded_knn_detector.aggregator.k == 5
-    # assert loaded_knn_detector.backend.__name__ == KNNTorch.__name__
-    # assert loaded_knn_detector.kernel.init_sigma_fn() == 'test'
-
-    assert 1 == 0
+    assert isinstance(loaded_detector, KNN)
+    assert isinstance(loaded_detector.aggregator, TopKAggregator)
+    assert isinstance(loaded_detector.normaliser, ShiftAndScaleNormaliser)
+    assert isinstance(loaded_detector.kernel, GaussianRBF)
+    assert loaded_detector.k == [8, 9, 10]
+    assert loaded_detector.kernel.config['sigma'] == [1.0]
+    assert loaded_detector.aggregator.k == 5
+    assert loaded_detector.backend.__name__ == KNNTorch.__name__
+    assert loaded_detector.kernel.init_sigma_fn() == 'test'

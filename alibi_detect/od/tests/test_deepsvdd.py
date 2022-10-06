@@ -1,9 +1,13 @@
+import imp
 import numpy as np
 import os
 
 from alibi_detect.od.deepsvdd import DeepSVDD
+from alibi_detect.od.backends import DeepSVDDTorch
 from alibi_detect.od.loading import load_detector
-from alibi_detect.od.config import write_config
+from alibi_detect.od.config import write_config, ModelWrapper
+from torch.utils.data import DataLoader
+from alibi_detect.utils.pytorch.data import TorchDataset
 
 import torch.nn as nn
 
@@ -22,18 +26,13 @@ def test_deepsvdd_config(tmp_path):
     model = Model()
     deepsvdd_detector = DeepSVDD(model)
 
-    write_config(deepsvdd_detector.serialize(tmp_path), tmp_path)
-    loaded_knn_detector = load_detector(os.path.join(tmp_path, 'config.toml'))
-    print(loaded_knn_detector.model)
+    path = deepsvdd_detector.save(tmp_path)
+    loaded_deepsvdd_detector = load_detector(path)
 
-    # assert isinstance(loaded_knn_detector, KNN)
-    # assert isinstance(loaded_knn_detector.aggregator, TopKAggregator)
-    # assert isinstance(loaded_knn_detector.normaliser, ShiftAndScaleNormaliser)
-    # assert isinstance(loaded_knn_detector.kernel, GaussianRBF)
-    # assert loaded_knn_detector.k == [8, 9, 10]
-    # assert loaded_knn_detector.kernel.config['sigma'] == [1.0]
-    # assert loaded_knn_detector.aggregator.k == 5
-    # assert loaded_knn_detector.backend.__name__ == KNNTorch.__name__
-    # assert loaded_knn_detector.kernel.init_sigma_fn() == 'test'
-
-    assert 1 == 0
+    assert isinstance(loaded_deepsvdd_detector, DeepSVDD)
+    assert loaded_deepsvdd_detector.backend.__class__.__name__ == DeepSVDDTorch.__name__
+    assert loaded_deepsvdd_detector.backend.dataloader.func == DataLoader
+    assert loaded_deepsvdd_detector.backend.dataset == TorchDataset
+    assert isinstance(loaded_deepsvdd_detector.model, Model)
+    assert isinstance(loaded_deepsvdd_detector.original_model, ModelWrapper)
+    

@@ -114,7 +114,6 @@ class DeepSVDD(OutlierDetector, ConfigMixin):
 
     @classmethod
     def _model_deserializer(cls, key, val):
-        print(key, val)
         import torch 
         model = torch.load(val)
         return model

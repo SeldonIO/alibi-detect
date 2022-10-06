@@ -9,7 +9,6 @@ from typing import Callable, Optional
 from alibi_detect.models.pytorch.trainer import trainer
 
 class DeepSVDDTorch:
-
     def __init__(self, 
                  device, 
                  weight_decay, 
