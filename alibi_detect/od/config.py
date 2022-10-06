@@ -180,6 +180,9 @@ class ModelWrapper(ConfigMixin):
     def copy(self):
         return deepcopy(self.model)
 
+    def __call__(self, *args, **kwargs):
+        return self.model(*args, **kwargs)
+
 
 # class CustomModel(ConfigMixin):
 #     BASE_OBJ = False
@@ -199,3 +202,6 @@ class ModelWrapper(ConfigMixin):
 #     @classmethod
 #     def deserialize(cls, cfg):
 #         raise NotImplementedError()
+
+#   def __call__(self, *args, **kwargs):
+#     return self.model(*args, **kwargs)
