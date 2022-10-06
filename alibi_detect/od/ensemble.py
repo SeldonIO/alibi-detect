@@ -4,7 +4,7 @@ from alibi_detect.od.aggregation import BaseTransform, AverageAggregator, PValNo
 from alibi_detect.od.processor import BaseProcessor
 from alibi_detect.od.config import ConfigMixin
 from alibi_detect.saving.registry import registry
-
+from alibi_detect.od.loading import load_detector
 
 @registry.register('Ensemble')
 class Ensemble(OutlierDetector, ConfigMixin):
@@ -31,3 +31,7 @@ class Ensemble(OutlierDetector, ConfigMixin):
 
     def score(self, X):
         return self.processor(X, self.detectors)
+
+    @classmethod
+    def _detectors_deserializer(self, key, val):
+        return [load_detector(d) for d in val]

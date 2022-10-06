@@ -22,13 +22,10 @@ class Model(nn.Module):
 
 
 def test_deepsvdd_config(tmp_path):
-    tmp_path = './example-test'
     model = Model()
     deepsvdd_detector = DeepSVDD(model)
-
     path = deepsvdd_detector.save(tmp_path)
     loaded_deepsvdd_detector = load_detector(path)
-
     assert isinstance(loaded_deepsvdd_detector, DeepSVDD)
     assert loaded_deepsvdd_detector.backend.__class__.__name__ == DeepSVDDTorch.__name__
     assert loaded_deepsvdd_detector.backend.dataloader.func == DataLoader

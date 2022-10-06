@@ -18,8 +18,8 @@ def read_config(filepath: Union[os.PathLike, str]) -> dict:
 
 
 def load_detector(path):
-    if 'config.toml' not in path:
-        path += '/config.toml'
+    if 'config.toml' not in str(path):
+        path = str(path) + '/config.toml'
     config_file = Path(path)
     cfg = read_config(config_file)
     object_name = cfg.pop('name')

@@ -102,7 +102,6 @@ def test_knn_keops():
     assert np.all(pred['preds'] == [True, False])
 
 def test_knn_config(tmp_path):
-    tmp_path = './example-test'
     knn_detector = KNN(
         k=[8, 9, 10], 
         aggregator=TopKAggregator(k=5), 

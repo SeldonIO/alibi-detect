@@ -37,7 +37,6 @@ def test_ensemble_parrallel():
 
 
 def test_ensemble_config(tmp_path):
-    tmp_path = './example-test'
     knn_detectors = [KNN(k=k+1) for k in range(10)]
     ensemble_detector = Ensemble(
         detectors=knn_detectors,
