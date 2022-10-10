@@ -77,6 +77,12 @@ jobs:
         run: |
           mypy alibi_detect
 
+      - name: Set enviroment variables
+        run: |
+          if [ "$RUNNER_OS" == "macOS" ]; then  # Avoid numba/OpenMP segfault in CVMDrift (https://github.com/SeldonIO/alibi-detect/issues/648)
+            export NUMBA_THREADING_LAYER="workqueue"
+          fi
+
       - name: Test with pytest
         run: |
           pytest alibi_detect
