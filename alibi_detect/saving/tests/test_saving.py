@@ -9,7 +9,9 @@ Internal functions such as save_kernel/load_kernel_config etc are also tested.
 from functools import partial
 from pathlib import Path
 from typing import Callable
+from requests.exceptions import HTTPError
 
+import toml
 import dill
 import numpy as np
 import pytest
@@ -60,6 +62,16 @@ WINDOW_SIZE = 5
 LATENT_DIM = 2  # Must be less than input_dim set in ./datasets.py
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 REGISTERED_OBJECTS = registry.get_all()
+
+# Define a detector config dict
+MMD_CFG = {
+    'name': 'MMDDrift',
+    'x_ref': np.array([[-0.30074928], [1.50240758], [0.43135768], [2.11295779], [0.79684913]]),
+    'p_val': 0.05,
+    'n_permutations': 150,
+    'data_type': 'tabular'
+}
+CFGS = [MMD_CFG]
 
 # TODO - future: Some of the fixtures can/should be moved elsewhere (i.e. if they can be recycled for use elsewhere)
 
@@ -164,7 +176,7 @@ def deep_kernel(request, backend, encoder_model):
 
 
 @fixture
-def classifier(backend, current_cases):
+def classifier_model(backend, current_cases):
     """
     Classification model with given input dimension and backend.
     """
@@ -191,7 +203,10 @@ def nlp_embedding_and_tokenizer(model_name, max_len, uae, backend):
     backend = 'tf' if backend == 'tensorflow' else 'pt'
 
     # Load tokenizer
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    try:
+        tokenizer = AutoTokenizer.from_pretrained(model_name)
+    except (OSError, HTTPError):
+        pytest.skip(f"Problem downloading {model_name} from huggingface.co")
     X = 'A dummy string'  # this will be padded to max_len
     tokens = tokenizer(list(X[:5]), pad_to_max_length=True,
                        max_length=max_len, return_tensors=backend)
@@ -203,13 +218,19 @@ def nlp_embedding_and_tokenizer(model_name, max_len, uae, backend):
     enc_dim = 32
 
     if backend == 'tf':
-        embedding = TransformerEmbedding_tf(model_name, emb_type, layers)
+        try:
+            embedding = TransformerEmbedding_tf(model_name, emb_type, layers)
+        except (OSError, HTTPError):
+            pytest.skip(f"Problem downloading {model_name} from huggingface.co")
         if uae:
             x_emb = embedding(tokens)
             shape = (x_emb.shape[1],)
             embedding = UAE_tf(input_layer=embedding, shape=shape, enc_dim=enc_dim)
     else:
-        embedding = TransformerEmbedding_pt(model_name, emb_type, layers)
+        try:
+            embedding = TransformerEmbedding_pt(model_name, emb_type, layers)
+        except (OSError, HTTPError):
+            pytest.skip(f"Problem downloading {model_name} from huggingface.co")
         if uae:
             x_emb = embedding(tokens)
             emb_dim = x_emb.shape[1]
@@ -246,24 +267,53 @@ def preprocess_nlp(embedding, tokenizer, max_len, backend):
 
 
 @fixture
-def preprocess_hiddenoutput(classifier, backend):
+def preprocess_hiddenoutput(classifier_model, current_cases, backend):
     """
     Preprocess function to extract the softmax layer of a classifier (with the HiddenOutput utility function).
     """
+    _, _, data_params = current_cases["data"]
+    _, input_dim = data_params['data_shape']
+
     if backend == 'tensorflow':
-        model = HiddenOutput_tf(classifier, layer=-1)
+        model = HiddenOutput_tf(classifier_model, layer=-1, input_shape=(None, input_dim))
         preprocess_fn = partial(preprocess_drift_tf, model=model)
     else:
-        model = HiddenOutput_pt(classifier, layer=-1)
+        model = HiddenOutput_pt(classifier_model, layer=-1)
         preprocess_fn = partial(preprocess_drift_pt, model=model)
     return preprocess_fn
+
+
+@parametrize('cfg', CFGS)
+def test_load_simple_config(cfg, tmp_path):
+    """
+    Test that a bare-bones `config.toml` without a [meta] field can be loaded by `load_detector`.
+    """
+    save_dir = tmp_path
+    x_ref_path = str(save_dir.joinpath('x_ref.npy'))
+    cfg_path = save_dir.joinpath('config.toml')
+    # Save x_ref in config.toml
+    x_ref = cfg['x_ref']
+    np.save(x_ref_path, x_ref)
+    cfg['x_ref'] = 'x_ref.npy'
+    # Save config.toml then load it
+    with open(cfg_path, 'w') as f:
+        toml.dump(cfg, f)
+    cd = load_detector(cfg_path)
+    assert cd.__class__.__name__ == cfg['name']
+    # Get config and compare to original (orginal cfg not fully spec'd so only compare items that are present)
+    cfg_new = cd.get_config()
+    for k, v in cfg.items():
+        if k == 'x_ref':
+            assert v == 'x_ref.npy'
+        else:
+            assert v == cfg_new[k]
 
 
 @parametrize('preprocess_fn', [preprocess_custom, preprocess_hiddenoutput])
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
 def test_save_ksdrift(data, preprocess_fn, tmp_path):
     """
-    Test KSDrift on continuous datasets, with UAE and classifier softmax output as preprocess_fn's. Only this
+    Test KSDrift on continuous datasets, with UAE and classifier_model softmax output as preprocess_fn's. Only this
     detector is tested with preprocessing strategies, as other detectors should see the same preprocess_fn output.
 
     Detector is saved and then loaded, with assertions checking that the reinstantiated detector is equivalent.
@@ -290,9 +340,9 @@ def test_save_ksdrift(data, preprocess_fn, tmp_path):
 
 @parametrize('preprocess_fn', [preprocess_nlp])
 @parametrize_with_cases("data", cases=TextData.movie_sentiment_data, prefix='data_')
-def test_save_ksdrift_nlp(data, preprocess_fn, max_len, enc_dim, tmp_path):
+def test_save_ksdrift_nlp(data, preprocess_fn, enc_dim, tmp_path):
     """
-    Test KSDrift on continuous datasets, with UAE and classifier softmax output as preprocess_fn's. Only this
+    Test KSDrift on continuous datasets, with UAE and classifier_model softmax output as preprocess_fn's. Only this
     detector is tested with embedding and embedding+uae, as other detectors should see the same preprocessed data.
 
     Detector is saved and then loaded, with assertions checking that the reinstantiated detector is equivalent.
@@ -303,7 +353,7 @@ def test_save_ksdrift_nlp(data, preprocess_fn, max_len, enc_dim, tmp_path):
                  p_val=P_VAL,
                  preprocess_fn=preprocess_fn,
                  preprocess_at_init=True,
-                 input_shape=(max_len,),
+                 input_shape=(768,),  # hardcoded to bert-base-cased for now
                  )
     save_detector(cd, tmp_path, legacy=False)
     cd_load = load_detector(tmp_path)
@@ -525,13 +575,13 @@ def test_save_tabulardrift(data, tmp_path):
 
 
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
-def test_save_classifierdrift(data, classifier, backend, tmp_path, seed):
+def test_save_classifierdrift(data, classifier_model, backend, tmp_path, seed):
     """ Test ClassifierDrift on continuous datasets."""
     # Init detector and predict
     X_ref, X_h0 = data
     with fixed_seed(seed):
         cd = ClassifierDrift(X_ref,
-                             model=classifier,
+                             model=classifier_model,
                              p_val=P_VAL,
                              n_folds=5,
                              backend=backend,
@@ -559,7 +609,7 @@ def test_save_classifierdrift(data, classifier, backend, tmp_path, seed):
 
 
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
-def test_save_spotthediff(data, classifier, backend, tmp_path, seed):
+def test_save_spotthediff(data, classifier_model, backend, tmp_path, seed):
     """
     Test SpotTheDiffDrift on continuous datasets.
 
@@ -684,13 +734,13 @@ def test_save_contextmmddrift(data, kernel, backend, tmp_path, seed):
 
 
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
-def test_save_classifieruncertaintydrift(data, classifier, backend, tmp_path, seed):
+def test_save_classifieruncertaintydrift(data, classifier_model, backend, tmp_path, seed):
     """ Test ClassifierDrift on continuous datasets."""
     # Init detector and predict
     X_ref, X_h0 = data
     with fixed_seed(seed):
         cd = ClassifierUncertaintyDrift(X_ref,
-                                        model=classifier,
+                                        model=classifier_model,
                                         p_val=P_VAL,
                                         backend=backend,
                                         preds_type='probs',
@@ -1024,19 +1074,20 @@ def test_save_deepkernel(data, deep_kernel, backend, tmp_path):
     """
     # Get data dim
     X, _ = data
-    input_dim = X.shape[1]
+    input_shape = (X.shape[1],)
 
     # Save kernel to config
     filepath = tmp_path
     filename = 'mykernel'
     cfg_kernel = _save_kernel_config(deep_kernel, filepath, filename)
-    cfg_kernel['proj'], _ = _save_model_config(cfg_kernel['proj'], base_path=filepath, input_shape=input_dim,
+    cfg_kernel['proj'], _ = _save_model_config(cfg_kernel['proj'], base_path=filepath, input_shape=input_shape,
                                                backend=backend)
     cfg_kernel = _path2str(cfg_kernel)
-    cfg_kernel['proj'] = ModelConfig(**cfg_kernel['proj']).dict()  # Pass thru ModelConfig to set `custom_objects` etc
+    cfg_kernel['proj'] = ModelConfig(**cfg_kernel['proj']).dict()  # Pass thru ModelConfig to set `layers` etc
     cfg_kernel = DeepKernelConfig(**cfg_kernel).dict()  # pydantic validation
     assert cfg_kernel['proj']['src'] == 'model'
     assert cfg_kernel['proj']['custom_objects'] is None
+    assert cfg_kernel['proj']['layer'] is None
 
     # Resolve and load config
     cfg = {'kernel': cfg_kernel, 'backend': backend}
@@ -1068,10 +1119,10 @@ def test_save_preprocess(data, preprocess_fn, tmp_path, backend):
     # Save preprocess_fn to config
     filepath = tmp_path
     X_ref, X_h0 = data
-    input_dim = X_ref.shape[1]
+    input_shape = (X_ref.shape[1],)
     cfg_preprocess = _save_preprocess_config(preprocess_fn,
                                              backend=backend,
-                                             input_shape=input_dim,
+                                             input_shape=input_shape,
                                              filepath=filepath)
     cfg_preprocess = _path2str(cfg_preprocess)
     cfg_preprocess = PreprocessConfig(**cfg_preprocess).dict()  # pydantic validation
@@ -1089,7 +1140,7 @@ def test_save_preprocess(data, preprocess_fn, tmp_path, backend):
 
 @parametrize('preprocess_fn', [preprocess_nlp])
 @parametrize_with_cases("data", cases=TextData.movie_sentiment_data, prefix='data_')
-def test_save_preprocess_nlp(data, preprocess_fn, max_len, tmp_path, backend):
+def test_save_preprocess_nlp(data, preprocess_fn, tmp_path, backend):
     """
     Unit test for _save_preprocess_config and _load_preprocess_config, with text data.
 
@@ -1100,7 +1151,7 @@ def test_save_preprocess_nlp(data, preprocess_fn, max_len, tmp_path, backend):
     filepath = tmp_path
     cfg_preprocess = _save_preprocess_config(preprocess_fn,
                                              backend=backend,
-                                             input_shape=max_len,
+                                             input_shape=(768,),  # hardcoded to bert-base-cased for now
                                              filepath=filepath)
     cfg_preprocess = _path2str(cfg_preprocess)
     cfg_preprocess = PreprocessConfig(**cfg_preprocess).dict()  # pydantic validation
@@ -1138,8 +1189,8 @@ def test_save_model(data, model, layer, backend, tmp_path):
     """
     # Save model
     filepath = tmp_path
-    input_dim = data[0].shape[1]
-    cfg_model, _ = _save_model_config(model, base_path=filepath, input_shape=input_dim, backend=backend)
+    input_shape = (data[0].shape[1],)
+    cfg_model, _ = _save_model_config(model, base_path=filepath, input_shape=input_shape, backend=backend)
     cfg_model = _path2str(cfg_model)
     cfg_model = ModelConfig(**cfg_model).dict()
     assert tmp_path.joinpath('model').is_dir()

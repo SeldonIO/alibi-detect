@@ -113,7 +113,7 @@ class ContextMMDDrift(DriftConfigMixin):
             if c_kernel is None:
                 kwargs.update({'c_kernel': GaussianRBF})
 
-        if backend == 'tensorflow' and has_tensorflow:
+        if backend == 'tensorflow':
             kwargs.pop('device', None)
             self._detector = ContextMMDDriftTF(*args, **kwargs)  # type: ignore
         else:

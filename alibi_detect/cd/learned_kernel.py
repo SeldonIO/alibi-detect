@@ -1,6 +1,6 @@
 import numpy as np
 from typing import Callable, Dict, Optional, Union
-from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, BackendValidator
+from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, has_keops, BackendValidator
 from alibi_detect.utils.warnings import deprecated_alias
 from alibi_detect.base import DriftConfigMixin
 
@@ -12,6 +12,9 @@ if has_pytorch:
 if has_tensorflow:
     from alibi_detect.cd.tensorflow.learned_kernel import LearnedKernelDriftTF
     from alibi_detect.utils.tensorflow.data import TFDataset
+
+if has_keops:
+    from alibi_detect.cd.keops.learned_kernel import LearnedKernelDriftKeops
 
 
 class LearnedKernelDrift(DriftConfigMixin):
@@ -27,6 +30,7 @@ class LearnedKernelDrift(DriftConfigMixin):
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
             n_permutations: int = 100,
+            batch_size_permutations: int = 1000000,
             var_reg: float = 1e-5,
             reg_loss_fn: Callable = (lambda kernel: 0),
             train_size: Optional[float] = .75,
@@ -34,6 +38,7 @@ class LearnedKernelDrift(DriftConfigMixin):
             optimizer: Optional[Callable] = None,
             learning_rate: float = 1e-3,
             batch_size: int = 32,
+            batch_size_predict: int = 1000000,
             preprocess_batch_fn: Optional[Callable] = None,
             epochs: int = 3,
             verbose: int = 0,
@@ -51,7 +56,6 @@ class LearnedKernelDrift(DriftConfigMixin):
 
         For details see Liu et al (2020): Learning Deep Kernels for Non-Parametric Two-Sample Tests
         (https://arxiv.org/abs/2002.09116)
-
 
         Parameters
         ----------
@@ -78,6 +82,9 @@ class LearnedKernelDrift(DriftConfigMixin):
             Function to preprocess the data before applying the kernel.
         n_permutations
             The number of permutations to use in the permutation test once the MMD has been computed.
+        batch_size_permutations
+            KeOps computes the n_permutations of the MMD^2 statistics in chunks of batch_size_permutations.
+            Only relevant for 'keops' backend.
         var_reg
             Constant added to the estimated variance of the MMD for stability.
         reg_loss_fn
@@ -94,6 +101,8 @@ class LearnedKernelDrift(DriftConfigMixin):
             Learning rate used by optimizer.
         batch_size
             Batch size used during training of the kernel.
+        batch_size_predict
+            Batch size used for the trained drift detector predictions. Only relevant for 'keops' backend.
         preprocess_batch_fn
             Optional batch preprocessing function. For example to convert a list of objects to a batch which can be
             processed by the kernel.
@@ -105,11 +114,11 @@ class LearnedKernelDrift(DriftConfigMixin):
             Optional additional kwargs when training the kernel.
         device
             Device type used. The default None tries to use the GPU and falls back on CPU if needed.
-            Can be specified by passing either 'cuda', 'gpu' or 'cpu'. Only relevant for 'pytorch' backend.
+            Can be specified by passing either 'cuda', 'gpu' or 'cpu'. Relevant for 'pytorch' and 'keops' backends.
         dataset
             Dataset object used during training.
         dataloader
-            Dataloader object used during training. Only relevant for 'pytorch' backend.
+            Dataloader object used during training. Relevant for 'pytorch' and 'keops' backends.
         input_shape
             Shape of input data.
         data_type
@@ -123,7 +132,8 @@ class LearnedKernelDrift(DriftConfigMixin):
         backend = backend.lower()
         BackendValidator(
             backend_options={'tensorflow': ['tensorflow'],
-                             'pytorch': ['pytorch']},
+                             'pytorch': ['pytorch'],
+                             'keops': ['keops']},
             construct_name=self.__class__.__name__
         ).verify_backend(backend)
 
@@ -134,18 +144,25 @@ class LearnedKernelDrift(DriftConfigMixin):
             pop_kwargs += ['optimizer']
         [kwargs.pop(k, None) for k in pop_kwargs]
 
-        if backend == 'tensorflow' and has_tensorflow:
-            pop_kwargs = ['device', 'dataloader']
+        if backend == 'tensorflow':
+            pop_kwargs = ['device', 'dataloader', 'batch_size_permutations', 'batch_size_predict']
             [kwargs.pop(k, None) for k in pop_kwargs]
             if dataset is None:
                 kwargs.update({'dataset': TFDataset})
-            self._detector = LearnedKernelDriftTF(*args, **kwargs)  # type: ignore
+            detector = LearnedKernelDriftTF
         else:
             if dataset is None:
                 kwargs.update({'dataset': TorchDataset})
             if dataloader is None:
                 kwargs.update({'dataloader': DataLoader})
-            self._detector = LearnedKernelDriftTorch(*args, **kwargs)  # type: ignore
+            if backend == 'pytorch':
+                pop_kwargs = ['batch_size_permutations', 'batch_size_predict']
+                [kwargs.pop(k, None) for k in pop_kwargs]
+                detector = LearnedKernelDriftTorch
+            else:
+                detector = LearnedKernelDriftKeops
+
+        self._detector = detector(*args, **kwargs)  # type: ignore
         self.meta = self._detector.meta
 
     def predict(self, x: Union[np.ndarray, list],  return_p_val: bool = True,

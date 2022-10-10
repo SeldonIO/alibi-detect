@@ -92,7 +92,7 @@ class LSDDDrift(DriftConfigMixin):
         pop_kwargs = ['self', 'x_ref', 'backend', '__class__']
         [kwargs.pop(k, None) for k in pop_kwargs]
 
-        if backend == 'tensorflow' and has_tensorflow:
+        if backend == 'tensorflow':
             kwargs.pop('device', None)
             self._detector = LSDDDriftTF(*args, **kwargs)  # type: ignore
         else:

@@ -18,14 +18,24 @@ err_msg_template = Template((
 ))
 
 
+"""Mapping used to ensure correct pip install message is generated if a missing optional dependency is detected. This
+dict is used to control two behaviours:
+
+1. When we import objects from missing dependencies we check that any `ModuleNotFoundError` or `ImportError`
+    corresponds to a missing optional dependency by checking the name of the missing dependency is in `ERROR_TYPES`. We
+    then map this name to the corresponding optional dependency bucket that will resolve the issue.
+2. Some optional dependencies have multiple names such as `torch` and `pytorch`, instead of enforcing a single
+    naming convention across the whole code base we instead use `ERROR_TYPES` to capture both cases. This is done right
+    before the pip install message is issued as this is the most robust place to capture these differences.
+"""
 ERROR_TYPES = {
-    "fbprophet": 'prophet',
-    "holidays": 'prophet',
-    "pystan": 'prophet',
+    "prophet": 'prophet',
     "tensorflow_probability": 'tensorflow',
     "tensorflow": 'tensorflow',
     "torch": 'torch',
-    "pytorch": 'torch'
+    "pytorch": 'torch',
+    "keops": 'keops',
+    "pykeops": 'keops',
 }
 
 
@@ -96,7 +106,7 @@ def import_optional(module_name: str, names: Optional[List[str]] = None) -> Any:
         return module
     except (ImportError, ModuleNotFoundError) as err:
         if err.name is None:
-            raise TypeError()
+            raise err
         dep_name, *_ = err.name.split('.')
         if str(dep_name) not in ERROR_TYPES:
             raise err

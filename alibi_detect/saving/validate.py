@@ -2,7 +2,7 @@ import warnings
 
 from alibi_detect.saving.schemas import (  # type: ignore[attr-defined]
     DETECTOR_CONFIGS, DETECTOR_CONFIGS_RESOLVED)
-from alibi_detect.version import __config_spec__, __version__
+from alibi_detect.version import __version__
 
 
 def validate_config(cfg: dict, resolved: bool = False) -> dict:
@@ -38,9 +38,9 @@ def validate_config(cfg: dict, resolved: bool = False) -> dict:
 
     # Get meta data
     meta = cfg.get('meta')
+    meta = {} if meta is None else meta  # Needed because pydantic sets meta=None if it is missing from the config
     version_warning = meta.get('version_warning', False)
     version = meta.get('version', None)
-    config_spec = meta.get('config_spec', None)
 
     # Raise warning if config file already contains a version_warning
     if version_warning:
@@ -51,13 +51,6 @@ def validate_config(cfg: dict, resolved: bool = False) -> dict:
     if version is not None and version != __version__:
         warnings.warn(f'Config is from version {version} but current version is '
                       f'{__version__}. This may lead to breaking code or invalid results.')
-        cfg['meta'].update({'version_warning': True})
-
-    # Check config specification version
-    if config_spec is not None and config_spec != __config_spec__:
-        warnings.warn(f'Config has specification {version} when the installed '
-                      f'alibi-detect version expects specification {__config_spec__}.'
-                      'This may lead to breaking code or invalid results.')
         cfg['meta'].update({'version_warning': True})
 
     return cfg

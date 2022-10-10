@@ -88,7 +88,6 @@ class CustomBaseModelWithKwargs(BaseModel):
 
 class MetaData(CustomBaseModel):
     version: str
-    config_spec: str
     version_warning: bool = False
 
 
@@ -98,9 +97,9 @@ class DetectorConfig(CustomBaseModel):
     """
     name: str
     "Name of the detector e.g. `MMDDrift`."
-    backend: Literal['tensorflow', 'pytorch', 'sklearn'] = 'tensorflow'
+    backend: Literal['tensorflow', 'pytorch', 'sklearn', 'keops'] = 'tensorflow'
     "The detector backend."
-    meta: Optional[MetaData]
+    meta: Optional[MetaData] = None
     "Config metadata. Should not be edited."
     # Note: Although not all detectors have a backend, we define in base class as `backend` also determines
     #  whether tf or torch models used for preprocess_fn.
@@ -634,6 +633,7 @@ class MMDDriftConfig(DriftDetectorConfig):
     sigma: Optional[NDArray[np.float32]] = None
     configure_kernel_from_x_ref: bool = True
     n_permutations: int = 100
+    batch_size_permutations: int = 1000000
     device: Optional[Literal['cpu', 'cuda']] = None
 
 
@@ -652,6 +652,7 @@ class MMDDriftConfigResolved(DriftDetectorConfigResolved):
     sigma: Optional[NDArray[np.float32]] = None
     configure_kernel_from_x_ref: bool = True
     n_permutations: int = 100
+    batch_size_permutations: int = 1000000
     device: Optional[Literal['cpu', 'cuda']] = None
 
 
@@ -840,6 +841,7 @@ class LearnedKernelDriftConfig(DriftDetectorConfig):
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
     n_permutations: int = 100
+    batch_size_permutations: int = 1000000
     var_reg: float = 1e-5
     reg_loss_fn: Optional[str] = None
     train_size: Optional[float] = .75
@@ -847,6 +849,7 @@ class LearnedKernelDriftConfig(DriftDetectorConfig):
     optimizer: Optional[Union[str, OptimizerConfig]] = None
     learning_rate: float = 1e-3
     batch_size: int = 32
+    batch_size_predict: int = 1000000
     preprocess_batch_fn: Optional[str] = None
     epochs: int = 3
     verbose: int = 0
@@ -870,6 +873,7 @@ class LearnedKernelDriftConfigResolved(DriftDetectorConfigResolved):
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
     n_permutations: int = 100
+    batch_size_permutations: int = 1000000
     var_reg: float = 1e-5
     reg_loss_fn: Optional[Callable] = None
     train_size: Optional[float] = .75
@@ -877,6 +881,7 @@ class LearnedKernelDriftConfigResolved(DriftDetectorConfigResolved):
     optimizer: Optional['tf.keras.optimizers.Optimizer'] = None
     learning_rate: float = 1e-3
     batch_size: int = 32
+    batch_size_predict: int = 1000000
     preprocess_batch_fn: Optional[Callable] = None
     epochs: int = 3
     verbose: int = 0

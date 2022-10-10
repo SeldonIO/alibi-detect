@@ -11,6 +11,7 @@ import requests
 from alibi_detect.utils.data import Bunch
 from alibi_detect.utils.url import _join_url
 from requests import RequestException
+from urllib.error import URLError
 from scipy.io import arff
 from sklearn.datasets import fetch_kddcup99
 
@@ -59,7 +60,11 @@ def fetch_kdd(target: list = ['dos', 'r2l', 'u2r', 'probe'],
     """
 
     # fetch raw data
-    data_raw = fetch_kddcup99(subset=None, data_home=None, percent10=percent10)
+    try:
+        data_raw = fetch_kddcup99(subset=None, data_home=None, percent10=percent10)
+    except URLError:
+        logger.exception("Could not connect, URL may be out of service")
+        raise
 
     # specify columns
     cols = ['duration', 'protocol_type', 'service', 'flag', 'src_bytes', 'dst_bytes',

@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from requests import RequestException
+from urllib.error import URLError
 from alibi_detect.datasets import fetch_kdd, fetch_ecg, corruption_types_cifar10c, fetch_cifar10c, \
     fetch_attack, fetch_nab, get_list_nab
 from alibi_detect.utils.data import Bunch
@@ -24,7 +25,7 @@ def test_fetch_kdd(return_X_y):
     keep_cols = np.random.choice(keep_cols_list, 5, replace=False)
     try:
         data = fetch_kdd(target=target, keep_cols=keep_cols, percent10=True, return_X_y=return_X_y)
-    except RequestException:
+    except URLError:
         pytest.skip('KDD dataset URL down')
     if return_X_y:
         assert isinstance(data, tuple)
@@ -53,13 +54,19 @@ def test_fetch_ecg(return_X_y):
 
 
 # CIFAR-10-C dataset
-corruption_list = corruption_types_cifar10c()
+try:
+    corruption_list = corruption_types_cifar10c()
+except RequestException:
+    corruption_list = None
 
 
+@pytest.mark.skipif(corruption_list is None, reason="CIFAR-10-C dataset URL is down")
 def test_types_cifar10c():
+    print(corruption_list)
     assert len(corruption_list) == 19
 
 
+@pytest.mark.skipif(corruption_list is None, reason="CIFAR-10-C dataset URL is down")
 @pytest.mark.parametrize('return_X_y', [True, False])
 def test_fetch_cifar10c(return_X_y):
     corruption = list(np.random.choice(corruption_list, 5, replace=False))

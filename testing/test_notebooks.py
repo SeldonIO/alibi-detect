@@ -38,6 +38,7 @@ EXCLUDE_NOTEBOOKS = {
     'cd_context_20newsgroup.ipynb',
     'cd_context_ecg.ipynb',
     'cd_text_imdb.ipynb',
+    'cd_mmd_keops.ipynb',
     # the following requires a k8s cluster
     'alibi_detect_deploy.ipynb',
     # the following require downloading large datasets

@@ -1,18 +1,16 @@
 import logging
 import numpy as np
+from pykeops.torch import LazyTensor
 import torch
-from typing import Callable, Dict, Optional, Tuple, Union
+from typing import Callable, Dict, List, Optional, Tuple, Union
 from alibi_detect.cd.base import BaseMMDDrift
+from alibi_detect.utils.keops.kernels import GaussianRBF
 from alibi_detect.utils.pytorch import get_device
-from alibi_detect.utils.pytorch.distance import mmd2_from_kernel_matrix
-from alibi_detect.utils.pytorch.kernels import GaussianRBF
-from alibi_detect.utils.warnings import deprecated_alias
 
 logger = logging.getLogger(__name__)
 
 
-class MMDDriftTorch(BaseMMDDrift):
-    @deprecated_alias(preprocess_x_ref='preprocess_at_init')
+class MMDDriftKeops(BaseMMDDrift):
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
@@ -25,6 +23,7 @@ class MMDDriftTorch(BaseMMDDrift):
             sigma: Optional[np.ndarray] = None,
             configure_kernel_from_x_ref: bool = True,
             n_permutations: int = 100,
+            batch_size_permutations: int = 1000000,
             device: Optional[str] = None,
             input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None
@@ -60,6 +59,8 @@ class MMDDriftTorch(BaseMMDDrift):
             Whether to already configure the kernel bandwidth from the reference data.
         n_permutations
             Number of permutations used in the permutation test.
+        batch_size_permutations
+            KeOps computes the n_permutations of the MMD^2 statistics in chunks of batch_size_permutations.
         device
             Device type used. The default None tries to use the GPU and falls back on CPU if needed.
             Can be specified by passing either 'cuda', 'gpu' or 'cpu'.
@@ -81,7 +82,7 @@ class MMDDriftTorch(BaseMMDDrift):
             input_shape=input_shape,
             data_type=data_type
         )
-        self.meta.update({'backend': 'pytorch'})
+        self.meta.update({'backend': 'keops'})
 
         # set device
         self.device = get_device(device)
@@ -91,21 +92,62 @@ class MMDDriftTorch(BaseMMDDrift):
                                                                       np.ndarray) else None
         self.kernel = kernel(sigma).to(self.device) if kernel == GaussianRBF else kernel
 
-        # compute kernel matrix for the reference data
-        if self.infer_sigma or isinstance(sigma, torch.Tensor):
+        # set the correct MMD^2 function based on the batch size for the permutations
+        self.batch_size = batch_size_permutations
+        self.n_batches = 1 + (n_permutations - 1) // batch_size_permutations
+
+        # infer the kernel bandwidth from the reference data
+        if isinstance(sigma, torch.Tensor):
+            self.infer_sigma = False
+        elif self.infer_sigma:
             x = torch.from_numpy(self.x_ref).to(self.device)
-            self.k_xx = self.kernel(x, x, infer_sigma=self.infer_sigma)
+            _ = self.kernel(LazyTensor(x[:, None, :]), LazyTensor(x[None, :, :]), infer_sigma=self.infer_sigma)
             self.infer_sigma = False
         else:
-            self.k_xx, self.infer_sigma = None, True
+            self.infer_sigma = True
 
-    def kernel_matrix(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-        """ Compute and return full kernel matrix between arrays x and y. """
-        k_xy = self.kernel(x, y, self.infer_sigma)
-        k_xx = self.k_xx if self.k_xx is not None and self.update_x_ref is None else self.kernel(x, x)
-        k_yy = self.kernel(y, y)
-        kernel_mat = torch.cat([torch.cat([k_xx, k_xy], 1), torch.cat([k_xy.T, k_yy], 1)], 0)
-        return kernel_mat
+    def _mmd2(self, x_all: torch.Tensor, perms: List[torch.Tensor], m: int, n: int) \
+            -> Tuple[torch.Tensor, torch.Tensor]:
+        """
+        Batched (across the permutations) MMD^2 computation for the original test statistic and the permutations.
+
+        Parameters
+        ----------
+        x_all
+            Concatenated reference and test instances.
+        perms
+            List with permutation vectors.
+        m
+            Number of reference instances.
+        n
+            Number of test instances.
+
+        Returns
+        -------
+        MMD^2 statistic for the original and permuted reference and test sets.
+        """
+        k_xx, k_yy, k_xy = [], [], []
+        for batch in range(self.n_batches):
+            i, j = batch * self.batch_size, (batch + 1) * self.batch_size
+            # construct stacked tensors with a batch of permutations for the reference set x and test set y
+            x = torch.cat([x_all[perm[:m]][None, :, :] for perm in perms[i:j]], 0)
+            y = torch.cat([x_all[perm[m:]][None, :, :] for perm in perms[i:j]], 0)
+            if batch == 0:
+                x = torch.cat([x_all[None, :m, :], x], 0)
+                y = torch.cat([x_all[None, m:, :], y], 0)
+            x, y = x.to(self.device), y.to(self.device)
+
+            # batch-wise kernel matrix computation over the permutations
+            k_xy.append(self.kernel(
+                LazyTensor(x[:, :, None, :]), LazyTensor(y[:, None, :, :]), self.infer_sigma).sum(1).sum(1).squeeze(-1))
+            k_xx.append(self.kernel(
+                LazyTensor(x[:, :, None, :]), LazyTensor(x[:, None, :, :])).sum(1).sum(1).squeeze(-1))
+            k_yy.append(self.kernel(
+                LazyTensor(y[:, :, None, :]), LazyTensor(y[:, None, :, :])).sum(1).sum(1).squeeze(-1))
+        c_xx, c_yy, c_xy = 1 / (m * (m - 1)), 1 / (n * (n - 1)), 2. / (m * n)
+        # Note that the MMD^2 estimates assume that the diagonal of the kernel matrix consists of 1's
+        stats = c_xx * (torch.cat(k_xx) - m) + c_yy * (torch.cat(k_yy) - n) - c_xy * torch.cat(k_xy)
+        return stats[0], stats[1:]
 
     def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, float]:
         """
@@ -123,17 +165,14 @@ class MMDDriftTorch(BaseMMDDrift):
         and the MMD^2 threshold above which drift is flagged.
         """
         x_ref, x = self.preprocess(x)
-        x_ref = torch.from_numpy(x_ref).to(self.device)  # type: ignore[assignment]
-        x = torch.from_numpy(x).to(self.device)  # type: ignore[assignment]
-        # compute kernel matrix, MMD^2 and apply permutation test using the kernel matrix
-        # TODO: (See https://github.com/SeldonIO/alibi-detect/issues/540)
-        n = x.shape[0]  # type: ignore
-        kernel_mat = self.kernel_matrix(x_ref, x)  # type: ignore[arg-type]
-        kernel_mat = kernel_mat - torch.diag(kernel_mat.diag())  # zero diagonal
-        mmd2 = mmd2_from_kernel_matrix(kernel_mat, n, permute=False, zero_diag=False)
-        mmd2_permuted = torch.Tensor(
-            [mmd2_from_kernel_matrix(kernel_mat, n, permute=True, zero_diag=False) for _ in range(self.n_permutations)]
-        )
+        x_ref = torch.from_numpy(x_ref).float()  # type: ignore[assignment]
+        x = torch.from_numpy(x).float()  # type: ignore[assignment]
+        # compute kernel matrix, MMD^2 and apply permutation test
+        m, n = x_ref.shape[0], x.shape[0]
+        perms = [torch.randperm(m + n) for _ in range(self.n_permutations)]
+        # TODO - Rethink typings (related to https://github.com/SeldonIO/alibi-detect/issues/540)
+        x_all = torch.cat([x_ref, x], 0)  # type: ignore[list-item]
+        mmd2, mmd2_permuted = self._mmd2(x_all, perms, m, n)
         if self.device.type == 'cuda':
             mmd2, mmd2_permuted = mmd2.cpu(), mmd2_permuted.cpu()
         p_val = (mmd2 <= mmd2_permuted).float().mean()

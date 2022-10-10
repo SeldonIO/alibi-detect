@@ -66,8 +66,8 @@ def test_cd_torch_dependencies(opt_dep):
 
     dependency_map = defaultdict(lambda: ['default'])
     for dependency, relations in [
-        ("HiddenOutput", ['torch']),
-        ("preprocess_drift", ['torch'])
+        ("HiddenOutput", ['torch', 'keops']),
+        ("preprocess_drift", ['torch', 'keops'])
     ]:
         dependency_map[dependency] = relations
     from alibi_detect.cd import pytorch as cd_pytorch
@@ -156,8 +156,8 @@ def test_torch_model_dependencies(opt_dep):
 
     dependency_map = defaultdict(lambda: ['default'])
     for dependency, relations in [
-            ("TransformerEmbedding", ['torch']),
-            ("trainer", ['torch']),
+            ("TransformerEmbedding", ['torch', 'keops']),
+            ("trainer", ['torch', 'keops']),
             ]:
         dependency_map[dependency] = relations
     from alibi_detect.models import pytorch as torch_models
@@ -190,7 +190,7 @@ def test_fetching_utils_dependencies(opt_dep):
 
 
 def test_saving_tf_dependencies(opt_dep):
-    """Tests that the alibi_detect.saving.tensorflow module correctly protects against uninstalled optional
+    """Tests that the alibi_detect.saving._tensorflow module correctly protects against uninstalled optional
     dependencies.
     """
 
@@ -208,7 +208,7 @@ def test_saving_tf_dependencies(opt_dep):
         ('get_tf_dtype', ['tensorflow'])
     ]:
         dependency_map[dependency] = relations
-    from alibi_detect.saving import tensorflow as tf_saving
+    from alibi_detect.saving import _tensorflow as tf_saving
     check_correct_dependencies(tf_saving, dependency_map, opt_dep)
 
 
@@ -255,20 +255,34 @@ def test_torch_utils_dependencies(opt_dep):
 
     dependency_map = defaultdict(lambda: ['default'])
     for dependency, relations in [
-        ("batch_compute_kernel_matrix", ['torch']),
-        ("mmd2", ['torch']),
-        ("mmd2_from_kernel_matrix", ['torch']),
-        ("squared_pairwise_distance", ['torch']),
-        ("GaussianRBF", ['torch']),
-        ("DeepKernel", ['torch']),
-        ("permed_lsdds", ['torch']),
-        ("predict_batch", ['torch']),
-        ("predict_batch_transformer", ['torch']),
-        ("quantile", ['torch']),
-        ("zero_diag", ['torch']),
-        ("TorchDataset", ['torch']),
-        ("get_device", ['torch']),
+        ("batch_compute_kernel_matrix", ['torch', 'keops']),
+        ("mmd2", ['torch', 'keops']),
+        ("mmd2_from_kernel_matrix", ['torch', 'keops']),
+        ("squared_pairwise_distance", ['torch', 'keops']),
+        ("GaussianRBF", ['torch', 'keops']),
+        ("DeepKernel", ['torch', 'keops']),
+        ("permed_lsdds", ['torch', 'keops']),
+        ("predict_batch", ['torch', 'keops']),
+        ("predict_batch_transformer", ['torch', 'keops']),
+        ("quantile", ['torch', 'keops']),
+        ("zero_diag", ['torch', 'keops']),
+        ("TorchDataset", ['torch', 'keops']),
+        ("get_device", ['torch', 'keops']),
     ]:
         dependency_map[dependency] = relations
     from alibi_detect.utils import pytorch as pytorch_utils
     check_correct_dependencies(pytorch_utils, dependency_map, opt_dep)
+
+
+def test_keops_utils_dependencies(opt_dep):
+    """Tests that the keops utils module correctly protects against uninstalled optional dependencies.
+    """
+
+    dependency_map = defaultdict(lambda: ['default'])
+    for dependency, relations in [
+        ("GaussianRBF", ['keops']),
+        ("DeepKernel", ['keops']),
+    ]:
+        dependency_map[dependency] = relations
+    from alibi_detect.utils import keops as keops_utils
+    check_correct_dependencies(keops_utils, dependency_map, opt_dep)

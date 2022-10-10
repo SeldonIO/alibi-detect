@@ -6,6 +6,7 @@
 
 [![Build Status](https://github.com/SeldonIO/alibi-detect/workflows/CI/badge.svg?branch=master)][#build-status]
 [![Documentation Status](https://readthedocs.org/projects/alibi-detect/badge/?version=latest)][#docs-package]
+[![codecov](https://codecov.io/gh/SeldonIO/alibi-detect/branch/master/graph/badge.svg)](https://codecov.io/gh/SeldonIO/alibi-detect)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/alibi-detect?logo=pypi&style=flat&color=blue)][#pypi-package]
 [![PyPI - Package Version](https://img.shields.io/pypi/v/alibi-detect?logo=pypi&style=flat&color=orange)][#pypi-package]
 [![Conda (channel only)](https://img.shields.io/conda/vn/conda-forge/alibi-detect?logo=anaconda&style=flat&color=orange)][#conda-forge-package]
@@ -78,7 +79,7 @@ The package, `alibi-detect` can be installed from:
    pip install git+https://github.com/SeldonIO/alibi-detect.git
    ```
 
-- To install with the tensorflow backend:
+- To install with the TensorFlow backend:
   ```bash
   pip install alibi-detect[tensorflow]
   ```
@@ -86,6 +87,11 @@ The package, `alibi-detect` can be installed from:
 - To install with the PyTorch backend:
   ```bash
   pip install alibi-detect[torch]
+  ```
+
+- To install with the KeOps backend:
+  ```bash
+  pip install alibi-detect[keops]
   ```
 
 - To use the `Prophet` time series outlier detector:
@@ -180,8 +186,8 @@ The following tables show the advised use cases for each algorithm. The column *
 
 #### TensorFlow and PyTorch support
 
-The drift detectors support TensorFlow and PyTorch backends. Alibi Detect does not install these as default. See the 
-[installation options](#installation-and-usage) for more details.
+The drift detectors support TensorFlow, PyTorch and (where applicable) [KeOps](https://www.kernel-operations.io/keops/index.html) backends. 
+However, Alibi Detect does not install these by default. See the [installation options](#installation-and-usage) for more details.
 
 ```python
 from alibi_detect.cd import MMDDrift
@@ -194,6 +200,13 @@ The same detector in PyTorch:
 
 ```python
 cd = MMDDrift(x_ref, backend='pytorch', p_val=.05)
+preds = cd.predict(x)
+```
+
+Or in KeOps:
+
+```python
+cd = MMDDrift(x_ref, backend='keops', p_val=.05)
 preds = cd.predict(x)
 ```
 
@@ -394,8 +407,8 @@ BibTeX entry:
   title = {Alibi Detect: Algorithms for outlier, adversarial and drift detection},
   author = {Van Looveren, Arnaud and Klaise, Janis and Vacanti, Giovanni and Cobb, Oliver and Scillitoe, Ashley and Samoilescu, Robert and Athorne, Alex},
   url = {https://github.com/SeldonIO/alibi-detect},
-  version = {0.10.0},
-  date = {2022-07-26},
+  version = {0.10.3},
+  date = {2022-08-17},
   year = {2019}
 }
 ```
