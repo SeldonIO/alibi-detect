@@ -1,3 +1,4 @@
+import sys
 import numpy as np
 from typing import Any, Callable, List, Optional, Union
 from alibi_detect.base import DriftConfigMixin
@@ -6,6 +7,11 @@ from alibi_detect.utils.misc import quantile
 import numba as nb
 from tqdm import tqdm
 import warnings
+
+# Revert to basic 'workqueue' threading on MacOS due to OpenMP related seg faults with numba 0.56 on MacOS.
+# TODO - revisit this when new numba versions are released.
+if sys.platform == 'darwin':
+    nb.config.THREADING_LAYER = 'workqueue'
 
 
 class CVMDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
