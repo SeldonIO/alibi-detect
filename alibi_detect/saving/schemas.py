@@ -126,7 +126,7 @@ class ModelConfig(CustomBaseModel):
     .. code-block :: toml
 
         [model]
-        flavour "tensorflow"
+        flavour = "tensorflow"
         src = "model/"
         layer = -1
     """
@@ -150,8 +150,9 @@ class ModelConfig(CustomBaseModel):
     layer: Optional[int] = None
     """
     Optional index of hidden layer to extract. If not `None`, a
-    :class:`~alibi_detect.cd.tensorflow.preprocess.HiddenOutput` model is returned. Only applies to 'tensorflow' and
-    'pytorch' models.
+    :class:`~alibi_detect.cd.tensorflow.preprocess.HiddenOutput` or
+    :class:`~alibi_detect.cd.pytorch.preprocess.HiddenOutput` model is returned (dependent on `flavour`).
+    Only applies to 'tensorflow' and 'pytorch' models.
     """
 
 
