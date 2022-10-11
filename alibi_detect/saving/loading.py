@@ -267,7 +267,7 @@ def _load_model_config(cfg: dict) -> Callable:
     if flavour == 'tensorflow':
         model = load_model_tf(src, load_dir='.', custom_objects=custom_obj, layer=layer)
     elif flavour == 'sklearn':
-        model = load_model_sk(src, load_dir='.')
+        model = load_model_sk(src)
     else:
         raise NotImplementedError('Loading of PyTorch models not currently supported')
 
