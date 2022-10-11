@@ -79,6 +79,9 @@ jobs:
 
       - name: Test with pytest
         run: |
+          if [ "$RUNNER_OS" == "macOS" ]; then  # Avoid numba/OpenMP segfault in CVMDrift (https://github.com/SeldonIO/alibi-detect/issues/648)
+            export NUMBA_THREADING_LAYER="workqueue"
+          fi
           pytest alibi_detect
 
       - name: Upload coverage to Codecov
