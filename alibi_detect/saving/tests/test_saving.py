@@ -5,12 +5,11 @@ Tests for saving/loading of detectors via config.toml files.
 Internal functions such as save_kernel/load_kernel_config etc are also tested.
 """
 # TODO future - test pytorch save/load functionality
-# TODO (could/should also add tests to backend-specific submodules)
 from functools import partial
 from pathlib import Path
 from typing import Callable
-from requests.exceptions import HTTPError
 
+import sklearn.base
 import toml
 import dill
 import numpy as np
@@ -20,47 +19,44 @@ import tensorflow as tf
 import torch
 
 from .datasets import BinData, CategoricalData, ContinuousData, MixedData, TextData
+from .models import (encoder_model, preprocess_custom, preprocess_hiddenoutput, preprocess_simple,  # noqa: F401
+                     preprocess_nlp, LATENT_DIM, classifier_model, kernel, deep_kernel, nlp_embedding_and_tokenizer,
+                     embedding, tokenizer, max_len, enc_dim)
+
 from alibi_detect.utils._random import fixed_seed
 from packaging import version
-from pytest_cases import fixture, param_fixture, parametrize, parametrize_with_cases
+from pytest_cases import param_fixture, parametrize, parametrize_with_cases
 from sklearn.model_selection import StratifiedKFold
-from transformers import AutoTokenizer
+
 
 from alibi_detect.cd import (ChiSquareDrift, ClassifierUncertaintyDrift, RegressorUncertaintyDrift,
                              ClassifierDrift, FETDrift, KSDrift, LearnedKernelDrift, LSDDDrift, MMDDrift,
                              SpotTheDiffDrift, TabularDrift, ContextMMDDrift, MMDDriftOnline, LSDDDriftOnline,
                              CVMDriftOnline, FETDriftOnline)
-from alibi_detect.cd.pytorch import HiddenOutput as HiddenOutput_pt
-from alibi_detect.cd.pytorch import preprocess_drift as preprocess_drift_pt
-from alibi_detect.cd.tensorflow import UAE as UAE_tf
-from alibi_detect.cd.tensorflow import HiddenOutput as HiddenOutput_tf
-from alibi_detect.cd.tensorflow import preprocess_drift as preprocess_drift_tf
 from alibi_detect.models.pytorch import TransformerEmbedding as TransformerEmbedding_pt
 from alibi_detect.models.tensorflow import TransformerEmbedding as TransformerEmbedding_tf
 from alibi_detect.saving import (load_detector, read_config, registry,
                                  resolve_config, save_detector, write_config)
-from alibi_detect.saving.loading import (_get_nested_value, _load_model_config, _load_optimizer_config, _replace,
+from alibi_detect.saving.loading import (_get_nested_value, _replace,
                                          _set_dtypes, _set_nested_value, _prepend_cfg_filepaths)
 from alibi_detect.saving.saving import _serialize_object
 from alibi_detect.saving.saving import (_path2str, _int2str_keys, _save_kernel_config, _save_model_config,
                                         _save_preprocess_config)
 from alibi_detect.saving.schemas import DeepKernelConfig, KernelConfig, ModelConfig, PreprocessConfig
 from alibi_detect.utils.pytorch.kernels import DeepKernel as DeepKernel_pt
-from alibi_detect.utils.pytorch.kernels import GaussianRBF as GaussianRBF_pt
 from alibi_detect.utils.tensorflow.kernels import DeepKernel as DeepKernel_tf
-from alibi_detect.utils.tensorflow.kernels import GaussianRBF as GaussianRBF_tf
 
 if version.parse(scipy.__version__) >= version.parse('1.7.0'):
     from alibi_detect.cd import CVMDrift
 
-backend = param_fixture("backend", ['tensorflow'])
+# TODO: We currently parametrize encoder_model etc (in models.py) with backend, so the same flavour of
+# preprocessing is used as the detector backend. In the future we could decouple this in tests.
+backend = param_fixture("backend", ['tensorflow', 'sklearn'])
 P_VAL = 0.05
 ERT = 10
 N_PERMUTATIONS = 10
 N_BOOTSTRAPS = 100
 WINDOW_SIZE = 5
-LATENT_DIM = 2  # Must be less than input_dim set in ./datasets.py
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 REGISTERED_OBJECTS = registry.get_all()
 
 # Define a detector config dict
@@ -74,213 +70,6 @@ MMD_CFG = {
 CFGS = [MMD_CFG]
 
 # TODO - future: Some of the fixtures can/should be moved elsewhere (i.e. if they can be recycled for use elsewhere)
-
-
-@fixture
-def encoder_model(backend, current_cases):
-    """
-    An untrained encoder of given input dimension and backend (this is a "custom" model, NOT an Alibi Detect UAE).
-    """
-    _, _, data_params = current_cases["data"]
-    _, input_dim = data_params['data_shape']
-
-    if backend == 'tensorflow':
-        model = tf.keras.Sequential(
-               [
-                   tf.keras.layers.InputLayer(input_shape=(input_dim,)),
-                   tf.keras.layers.Dense(5, activation=tf.nn.relu),
-                   tf.keras.layers.Dense(LATENT_DIM, activation=None)
-               ]
-           )
-    else:
-        raise NotImplementedError('`pytorch` tests not implemented.')
-    return model
-
-
-@fixture
-def encoder_dropout_model(backend, current_cases):
-    """
-    An untrained encoder with dropout, of given input dimension and backend.
-
-    TODO: consolidate this model (and encoder_model above) with models like that in test_model_uncertainty.py
-    """
-    _, _, data_params = current_cases["data"]
-    _, input_dim = data_params['data_shape']
-
-    if backend == 'tensorflow':
-        model = tf.keras.Sequential(
-               [
-                   tf.keras.layers.InputLayer(input_shape=(input_dim,)),
-                   tf.keras.layers.Dense(5, activation=tf.nn.relu),
-                   tf.keras.layers.Dropout(0.5),
-                   tf.keras.layers.Dense(LATENT_DIM, activation=None)
-               ]
-           )
-    else:
-        raise NotImplementedError('`pytorch` tests not implemented.')
-    return model
-
-
-@fixture
-def preprocess_custom(encoder_model, backend):
-    """
-    Preprocess function with Untrained Autoencoder.
-    """
-    if backend == 'tensorflow':
-        preprocess_fn = partial(preprocess_drift_tf, model=encoder_model)
-    else:
-        preprocess_fn = partial(preprocess_drift_pt, model=encoder_model)
-    return preprocess_fn
-
-
-@fixture
-def kernel(request, backend):
-    """
-    Gaussian RBF kernel for given backend. Settings are parametrised in the test function.
-    """
-    kernel = request.param
-    if kernel is None:
-        pass
-    elif isinstance(kernel, dict):  # dict of kwargs
-        if backend == 'tensorflow':
-            kernel = GaussianRBF_tf(**kernel)
-        elif backend == 'pytorch':
-            kernel = GaussianRBF_pt(**kernel)
-    return kernel
-
-
-@fixture
-def deep_kernel(request, backend, encoder_model):
-    """
-    Deep kernel, built using the `encoder_model` fixture for the projection, and using the kernel_a and eps
-    parametrised in the test function.
-    """
-    # Get DeepKernel options
-    kernel_a = request.param.get('kernel_a', 'rbf')
-    kernel_b = request.param.get('kernel_b', 'rbf')
-    eps = request.param.get('eps', 'trainable')
-
-    # Proj model (backend managed in encoder_model fixture)
-    proj = encoder_model
-
-    # Build DeepKernel
-    if backend == 'tensorflow':
-        kernel_a = GaussianRBF_tf(**kernel_a) if isinstance(kernel_a, dict) else kernel_a
-        kernel_a = GaussianRBF_tf(**kernel_b) if isinstance(kernel_b, dict) else kernel_b
-        deep_kernel = DeepKernel_tf(proj, kernel_a=kernel_a, kernel_b=kernel_b, eps=eps)
-    elif backend == 'pytorch':
-        raise NotImplementedError('`pytorch` tests not implemented.')
-    else:
-        raise ValueError('`backend` not valid.')
-    return deep_kernel
-
-
-@fixture
-def classifier_model(backend, current_cases):
-    """
-    Classification model with given input dimension and backend.
-    """
-    _, _, data_params = current_cases["data"]
-    _, input_dim = data_params['data_shape']
-    if backend == 'tensorflow':
-        inputs = tf.keras.Input(shape=(input_dim,))
-        outputs = tf.keras.layers.Dense(2, activation=tf.nn.softmax)(inputs)
-        model = tf.keras.Model(inputs=inputs, outputs=outputs)
-    elif backend == 'pytorch':
-        raise NotImplementedError('`pytorch` tests not implemented.')
-    else:
-        raise ValueError('`backend` not valid.')
-    return model
-
-
-@fixture(unpack_into=('tokenizer, embedding, max_len, enc_dim'))
-@parametrize('model_name, max_len', [('bert-base-cased', 100)])
-@parametrize('uae', [True, False])
-def nlp_embedding_and_tokenizer(model_name, max_len, uae, backend):
-    """
-    A fixture to build nlp embedding and tokenizer models based on the HuggingFace pre-trained models.
-    """
-    backend = 'tf' if backend == 'tensorflow' else 'pt'
-
-    # Load tokenizer
-    try:
-        tokenizer = AutoTokenizer.from_pretrained(model_name)
-    except (OSError, HTTPError):
-        pytest.skip(f"Problem downloading {model_name} from huggingface.co")
-    X = 'A dummy string'  # this will be padded to max_len
-    tokens = tokenizer(list(X[:5]), pad_to_max_length=True,
-                       max_length=max_len, return_tensors=backend)
-
-    # Load embedding model
-    emb_type = 'hidden_state'
-    n_layers = 8
-    layers = [-_ for _ in range(1, n_layers + 1)]
-    enc_dim = 32
-
-    if backend == 'tf':
-        try:
-            embedding = TransformerEmbedding_tf(model_name, emb_type, layers)
-        except (OSError, HTTPError):
-            pytest.skip(f"Problem downloading {model_name} from huggingface.co")
-        if uae:
-            x_emb = embedding(tokens)
-            shape = (x_emb.shape[1],)
-            embedding = UAE_tf(input_layer=embedding, shape=shape, enc_dim=enc_dim)
-    else:
-        try:
-            embedding = TransformerEmbedding_pt(model_name, emb_type, layers)
-        except (OSError, HTTPError):
-            pytest.skip(f"Problem downloading {model_name} from huggingface.co")
-        if uae:
-            x_emb = embedding(tokens)
-            emb_dim = x_emb.shape[1]
-            device = torch.device(DEVICE)
-            embedding = torch.nn.Sequential(
-                embedding,
-                torch.nn.Linear(emb_dim, 256),
-                torch.nn.ReLU(),
-                torch.nn.Linear(256, enc_dim)
-            ).to(device).eval()
-
-    return tokenizer, embedding, max_len, enc_dim
-
-
-def preprocess_simple(x: np.ndarray):
-    """
-    Simple function to test serialization of generic Python function within preprocess_fn.
-    """
-    return x*2.0
-
-
-@fixture
-def preprocess_nlp(embedding, tokenizer, max_len, backend):
-    """
-    Preprocess function with Untrained Autoencoder.
-    """
-    if backend == 'tensorflow':
-        preprocess_fn = partial(preprocess_drift_tf, model=embedding, tokenizer=tokenizer,
-                                max_len=max_len, preprocess_batch_fn=preprocess_simple)
-    else:
-        preprocess_fn = partial(preprocess_drift_pt, model=embedding, tokenizer=tokenizer, max_len=max_len,
-                                preprocess_batch_fn=preprocess_simple)
-    return preprocess_fn
-
-
-@fixture
-def preprocess_hiddenoutput(classifier_model, current_cases, backend):
-    """
-    Preprocess function to extract the softmax layer of a classifier (with the HiddenOutput utility function).
-    """
-    _, _, data_params = current_cases["data"]
-    _, input_dim = data_params['data_shape']
-
-    if backend == 'tensorflow':
-        model = HiddenOutput_tf(classifier_model, layer=-1, input_shape=(None, input_dim))
-        preprocess_fn = partial(preprocess_drift_tf, model=model)
-    else:
-        model = HiddenOutput_pt(classifier_model, layer=-1)
-        preprocess_fn = partial(preprocess_drift_pt, model=model)
-    return preprocess_fn
 
 
 @parametrize('cfg', CFGS)
@@ -338,9 +127,10 @@ def test_save_ksdrift(data, preprocess_fn, tmp_path):
                                   cd_load.predict(X_h0)['data']['p_val'])
 
 
+@pytest.mark.skipif(backend == 'sklearn', reason="Don't test with sklearn preprocessing.")
 @parametrize('preprocess_fn', [preprocess_nlp])
 @parametrize_with_cases("data", cases=TextData.movie_sentiment_data, prefix='data_')
-def test_save_ksdrift_nlp(data, preprocess_fn, enc_dim, tmp_path):
+def test_save_ksdrift_nlp(data, preprocess_fn, enc_dim, tmp_path):  # noqa: F811
     """
     Test KSDrift on continuous datasets, with UAE and classifier_model softmax output as preprocess_fn's. Only this
     detector is tested with embedding and embedding+uae, as other detectors should see the same preprocessed data.
@@ -406,12 +196,15 @@ def test_save_cvmdrift(data, preprocess_custom, tmp_path):
     ], indirect=True
 )
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
-def test_save_mmddrift(data, kernel, preprocess_custom, backend, tmp_path, seed):
+def test_save_mmddrift(data, kernel, preprocess_custom, backend, tmp_path, seed):  # noqa: F811
     """
     Test MMDDrift on continuous datasets, with UAE as preprocess_fn.
 
     Detector is saved and then loaded, with assertions checking that the reinstantiated detector is equivalent.
     """
+    if backend not in ('tensorflow', 'pytorch', 'keops'):
+        pytest.skip("Detector doesn't have this backend")
+
     # Init detector and make predictions
     X_ref, X_h0 = data
     with fixed_seed(seed):
@@ -454,6 +247,9 @@ def test_save_lsdddrift(data, preprocess_at_init, backend, tmp_path, seed):
 
     Detector is saved and then loaded, with assertions checking that the reinstantiated detector is equivalent.
     """
+    if backend not in ('tensorflow', 'pytorch'):
+        pytest.skip("Detector doesn't have this backend")
+
     preprocess_fn = preprocess_simple
     # TODO - TensorFlow based preprocessors currently cause in-deterministic behaviour with LSDD permutations. Replace
     # preprocess_simple with parametrized preprocess_fn's once above issue resolved.
@@ -575,8 +371,11 @@ def test_save_tabulardrift(data, tmp_path):
 
 
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
-def test_save_classifierdrift(data, classifier_model, backend, tmp_path, seed):
+def test_save_classifierdrift(data, classifier_model, backend, tmp_path, seed):  # noqa: F811
     """ Test ClassifierDrift on continuous datasets."""
+    if backend not in ('tensorflow', 'pytorch', 'sklearn'):
+        pytest.skip("Detector doesn't have this backend")
+
     # Init detector and predict
     X_ref, X_h0 = data
     with fixed_seed(seed):
@@ -598,9 +397,12 @@ def test_save_classifierdrift(data, classifier_model, backend, tmp_path, seed):
     np.testing.assert_array_equal(X_ref, cd_load._detector.x_ref)
     assert isinstance(cd_load._detector.skf, StratifiedKFold)
     assert cd_load._detector.p_val == P_VAL
-    assert isinstance(cd_load._detector.train_kwargs, dict)
+    if backend != 'sklearn':
+        assert isinstance(cd_load._detector.train_kwargs, dict)
     if backend == 'tensorflow':
         assert isinstance(cd_load._detector.model, tf.keras.Model)
+    elif backend == 'sklearn':
+        assert isinstance(cd_load._detector.model, sklearn.base.BaseEstimator)
     else:
         pass  # TODO
     # TODO - detector still not deterministic, investigate in future
@@ -609,12 +411,15 @@ def test_save_classifierdrift(data, classifier_model, backend, tmp_path, seed):
 
 
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
-def test_save_spotthediff(data, classifier_model, backend, tmp_path, seed):
+def test_save_spotthediff(data, classifier_model, backend, tmp_path, seed):  # noqa: F811
     """
     Test SpotTheDiffDrift on continuous datasets.
 
     Detector is saved and then loaded, with assertions checking that the reinstantiated detector is equivalent.
     """
+    if backend not in ('tensorflow', 'pytorch'):
+        pytest.skip("Detector doesn't have this backend")
+
     # Init detector and predict
     X_ref, X_h0 = data
     with fixed_seed(seed):
@@ -650,12 +455,15 @@ def test_save_spotthediff(data, classifier_model, backend, tmp_path, seed):
     ], indirect=True
 )
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
-def test_save_learnedkernel(data, deep_kernel, backend, tmp_path, seed):
+def test_save_learnedkernel(data, deep_kernel, backend, tmp_path, seed):  # noqa: F811
     """
     Test LearnedKernelDrift on continuous datasets.
 
     Detector is saved and then loaded, with assertions checking that the reinstantiated detector is equivalent.
     """
+    if backend not in ('tensorflow', 'pytorch', 'keops'):
+        pytest.skip("Detector doesn't have this backend")
+
     # Init detector and predict
     X_ref, X_h0 = data
     with fixed_seed(seed):
@@ -690,12 +498,15 @@ def test_save_learnedkernel(data, deep_kernel, backend, tmp_path, seed):
     ], indirect=True
 )
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
-def test_save_contextmmddrift(data, kernel, backend, tmp_path, seed):
+def test_save_contextmmddrift(data, kernel, backend, tmp_path, seed):  # noqa: F811
     """
     Test ContextMMDDrift on continuous datasets, with UAE as preprocess_fn.
 
     Detector is saved and then loaded, with assertions checking that the reinstantiated detector is equivalent.
     """
+    if backend not in ('tensorflow', 'pytorch'):
+        pytest.skip("Detector doesn't have this backend")
+
     # Init detector and make predictions
     X_ref, X_h0 = data
     C_ref, C_h0 = (X_ref[:, 0] + 1).reshape(-1, 1), (X_h0[:, 0] + 1).reshape(-1, 1)
@@ -734,8 +545,11 @@ def test_save_contextmmddrift(data, kernel, backend, tmp_path, seed):
 
 
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
-def test_save_classifieruncertaintydrift(data, classifier_model, backend, tmp_path, seed):
+def test_save_classifieruncertaintydrift(data, classifier_model, backend, tmp_path, seed):  # noqa: F811
     """ Test ClassifierDrift on continuous datasets."""
+    if backend not in ('tensorflow', 'pytorch'):
+        pytest.skip("Detector doesn't have this backend")
+
     # Init detector and predict
     X_ref, X_h0 = data
     with fixed_seed(seed):
@@ -764,6 +578,9 @@ def test_save_classifieruncertaintydrift(data, classifier_model, backend, tmp_pa
 @parametrize('regressor', [encoder_model])
 def test_save_regressoruncertaintydrift(data, regressor, backend, tmp_path, seed):
     """ Test RegressorDrift on continuous datasets."""
+    if backend not in ('tensorflow', 'pytorch'):
+        pytest.skip("Detector doesn't have this backend")
+
     # Init detector and predict
     X_ref, X_h0 = data
     with fixed_seed(seed):
@@ -794,12 +611,15 @@ def test_save_regressoruncertaintydrift(data, regressor, backend, tmp_path, seed
     ], indirect=True
 )
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
-def test_save_onlinemmddrift(data, kernel, preprocess_custom, backend, tmp_path, seed):
+def test_save_onlinemmddrift(data, kernel, preprocess_custom, backend, tmp_path, seed):  # noqa: F811
     """
     Test MMDDriftOnline on continuous datasets, with UAE as preprocess_fn.
 
     Detector is saved and then loaded, with assertions checking that the reinstantiated detector is equivalent.
     """
+    if backend not in ('tensorflow', 'pytorch'):
+        pytest.skip("Detector doesn't have this backend")
+
     # Init detector and make predictions
     X_ref, X_h0 = data
 
@@ -846,6 +666,9 @@ def test_save_onlinelsdddrift(data, preprocess_custom, backend, tmp_path, seed):
 
     Detector is saved and then loaded, with assertions checking that the reinstantiated detector is equivalent.
     """
+    if backend not in ('tensorflow', 'pytorch'):
+        pytest.skip("Detector doesn't have this backend")
+
     # Init detector and make predictions
     X_ref, X_h0 = data
 
@@ -891,6 +714,9 @@ def test_save_onlinecvmdrift(data, preprocess_custom, tmp_path, seed):
 
     Detector is saved and then loaded, with assertions checking that the reinstantiated detector is equivalent.
     """
+    if backend not in ('tensorflow', 'pytorch'):
+        pytest.skip("Detector doesn't have this backend")
+
     # Init detector and make predictions
     X_ref, X_h0 = data
 
@@ -933,6 +759,9 @@ def test_save_onlinefetdrift(data, tmp_path, seed):
 
     Detector is saved and then loaded, with assertions checking that the reinstantiated detector is equivalent.
     """
+    if backend not in ('tensorflow', 'pytorch'):
+        pytest.skip("Detector doesn't have this backend")
+
     # Init detector and make predictions
     X_ref, X_h0 = data
 
@@ -1023,7 +852,7 @@ def test_version_warning(data, tmp_path):
         {'sigma': None, 'trainable': True, 'init_sigma_fn': None},
     ], indirect=True
 )
-def test_save_kernel(kernel, backend, tmp_path):
+def test_save_kernel(kernel, backend, tmp_path):  # noqa: F811
     """
     Unit test for _save/_load_kernel_config, when kernel is a GaussianRBF kernel.
 
@@ -1066,7 +895,7 @@ def test_save_kernel(kernel, backend, tmp_path):
         {'kernel_a': {'trainable': True}, 'kernel_b': 'rbf', 'eps': 0.01},  # Explicit kernel_a, fixed eps
     ], indirect=True
 )
-def test_save_deepkernel(data, deep_kernel, backend, tmp_path):
+def test_save_deepkernel(data, deep_kernel, backend, tmp_path):  # noqa: F811
     """
     Unit test for _save/_load_kernel_config, when kernel is a DeepKernel kernel.
 
@@ -1080,8 +909,7 @@ def test_save_deepkernel(data, deep_kernel, backend, tmp_path):
     filepath = tmp_path
     filename = 'mykernel'
     cfg_kernel = _save_kernel_config(deep_kernel, filepath, filename)
-    cfg_kernel['proj'], _ = _save_model_config(cfg_kernel['proj'], base_path=filepath, input_shape=input_shape,
-                                               backend=backend)
+    cfg_kernel['proj'], _ = _save_model_config(cfg_kernel['proj'], base_path=filepath, input_shape=input_shape)
     cfg_kernel = _path2str(cfg_kernel)
     cfg_kernel['proj'] = ModelConfig(**cfg_kernel['proj']).dict()  # Pass thru ModelConfig to set `layers` etc
     cfg_kernel = DeepKernelConfig(**cfg_kernel).dict()  # pydantic validation
@@ -1120,10 +948,7 @@ def test_save_preprocess(data, preprocess_fn, tmp_path, backend):
     filepath = tmp_path
     X_ref, X_h0 = data
     input_shape = (X_ref.shape[1],)
-    cfg_preprocess = _save_preprocess_config(preprocess_fn,
-                                             backend=backend,
-                                             input_shape=input_shape,
-                                             filepath=filepath)
+    cfg_preprocess = _save_preprocess_config(preprocess_fn, input_shape=input_shape, filepath=filepath)
     cfg_preprocess = _path2str(cfg_preprocess)
     cfg_preprocess = PreprocessConfig(**cfg_preprocess).dict()  # pydantic validation
     assert cfg_preprocess['src'] == '@cd.' + backend + '.preprocess.preprocess_drift'
@@ -1150,7 +975,6 @@ def test_save_preprocess_nlp(data, preprocess_fn, tmp_path, backend):
     # Save preprocess_fn to config
     filepath = tmp_path
     cfg_preprocess = _save_preprocess_config(preprocess_fn,
-                                             backend=backend,
                                              input_shape=(768,),  # hardcoded to bert-base-cased for now
                                              filepath=filepath)
     cfg_preprocess = _path2str(cfg_preprocess)
@@ -1170,69 +994,14 @@ def test_save_preprocess_nlp(data, preprocess_fn, tmp_path, backend):
     assert isinstance(preprocess_fn_load.keywords['tokenizer'], type(preprocess_fn.keywords['tokenizer']))
     assert isinstance(preprocess_fn_load.keywords['model'], type(preprocess_fn.keywords['model']))
     if isinstance(preprocess_fn.keywords['model'], (TransformerEmbedding_tf, TransformerEmbedding_pt)):
-        embedding = preprocess_fn.keywords['model']
-        embedding_load = preprocess_fn_load.keywords['model']
+        emb = preprocess_fn.keywords['model']
+        emb_load = preprocess_fn_load.keywords['model']
     else:
-        embedding = preprocess_fn.keywords['model'].encoder.layers[0]
-        embedding_load = preprocess_fn_load.keywords['model'].encoder.layers[0]
-    assert isinstance(embedding_load.model, type(embedding.model))
-    assert embedding_load.emb_type == embedding.emb_type
-    assert embedding_load.hs_emb.keywords['layers'] == embedding.hs_emb.keywords['layers']
-
-
-@parametrize_with_cases("data", cases=ContinuousData.data_synthetic_nd, prefix='data_')
-@parametrize('model', [encoder_model])
-@parametrize('layer', [None, -1])
-def test_save_model(data, model, layer, backend, tmp_path):
-    """
-    Unit test for _save_model_config and _load_model_config.
-    """
-    # Save model
-    filepath = tmp_path
-    input_shape = (data[0].shape[1],)
-    cfg_model, _ = _save_model_config(model, base_path=filepath, input_shape=input_shape, backend=backend)
-    cfg_model = _path2str(cfg_model)
-    cfg_model = ModelConfig(**cfg_model).dict()
-    assert tmp_path.joinpath('model').is_dir()
-    assert tmp_path.joinpath('model/model.h5').is_file()
-
-    # Adjust config
-    cfg_model['src'] = tmp_path.joinpath('model')  # Need to manually set to absolute path here
-    if layer is not None:
-        cfg_model['layer'] = layer
-
-    # Load model
-    model_load = _load_model_config(cfg_model, backend=backend)
-    if layer is None:
-        assert isinstance(model_load, type(model))
-    else:
-        assert isinstance(model_load, (HiddenOutput_tf, HiddenOutput_pt))
-
-
-def test_save_optimizer(backend):
-    class_name = 'Adam'
-    learning_rate = 0.01
-    epsilon = 1e-7
-    amsgrad = False
-
-    if backend == 'tensorflow':
-        # Load
-        cfg_opt = {
-            'class_name': class_name,
-            'config': {
-                'name': class_name,
-                'learning_rate': learning_rate,
-                'epsilon': epsilon,
-                'amsgrad': amsgrad
-            }
-        }
-        optimizer = _load_optimizer_config(cfg_opt, backend=backend)
-        assert type(optimizer).__name__ == class_name
-        assert optimizer.learning_rate == learning_rate
-        assert optimizer.epsilon == epsilon
-        assert optimizer.amsgrad == amsgrad
-
-    # TODO - pytorch
+        emb = preprocess_fn.keywords['model'].encoder.layers[0]
+        emb_load = preprocess_fn_load.keywords['model'].encoder.layers[0]
+    assert isinstance(emb_load.model, type(emb.model))
+    assert emb_load.emb_type == emb.emb_type
+    assert emb_load.hs_emb.keywords['layers'] == emb.hs_emb.keywords['layers']
 
 
 def test_nested_value():
@@ -1361,6 +1130,9 @@ def test_set_dtypes(backend):
         dtype = 'tf.float32'
     elif backend == 'pytorch':
         dtype = 'torch.float32'
+    else:
+        pytest.skip('Only test set_dtypes for tensorflow and pytorch.')
+
     cfg = {
         'preprocess_fn': {
             'dtype': dtype

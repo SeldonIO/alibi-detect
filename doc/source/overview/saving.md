@@ -127,13 +127,17 @@ documented below.
 
 ### TensorFlow models
 
-Alibi Detect supports any TensorFlow model that can be serialized to the 
+Alibi Detect supports serialization of any TensorFlow model that can be serialized to the 
 [HDF5](https://www.tensorflow.org/guide/keras/save_and_serialize#keras_h5_format) format. 
 Custom objects should be pre-registered with 
 [register_keras_serializable](https://www.tensorflow.org/api_docs/python/tf/keras/utils/register_keras_serializable).
-```
+
+### Scikit-learn
+
+Scikit-learn models are serialized using [joblib](https://joblib.readthedocs.io/en/latest/persistence.html).
+Any scikit-learn model that is a subclass of {py:class}`sklearn.base.BaseEstimator` is supported, including 
+[xgboost](https://xgboost.readthedocs.io/en/latest/python/python_api.html#module-xgboost.sklearn) models following 
+the scikit-learn API.
+
 
 %### PyTorch
-
-%### scikit-learn
-

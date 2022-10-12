@@ -69,7 +69,7 @@ def load_model(filepath: Union[str, os.PathLike],
     return model
 
 
-def prep_model_and_emb(model: Optional[Callable], emb: Optional[TransformerEmbedding]) -> Callable:
+def prep_model_and_emb(model: Callable, emb: Optional[TransformerEmbedding]) -> Callable:
     """
     Function to perform final preprocessing of model (and/or embedding) before it is passed to preprocess_drift.
 
@@ -78,25 +78,17 @@ def prep_model_and_emb(model: Optional[Callable], emb: Optional[TransformerEmbed
     model
         A compatible model.
     emb
-        A text embedding model.
+        An optional text embedding model.
 
     Returns
     -------
     The final model ready to passed to preprocess_drift.
     """
-    # If a model exists, process it (and embedding)
-    if model is not None:
-        model = model.encoder if isinstance(model, UAE) else model  # This is to avoid nesting UAE's already a UAE
-        if emb is not None:
-            model = _Encoder(emb, mlp=model)
-            model = UAE(encoder_net=model)
-    # If no model exists, store embedding as model
-    else:
-        model = emb
-    if model is None:
-        raise ValueError("A 'model'  and/or `embedding` must be specified when "
-                         "preprocess_fn='preprocess_drift'")
-
+    # Process model (and embedding)
+    model = model.encoder if isinstance(model, UAE) else model  # This is to avoid nesting UAE's already a UAE
+    if emb is not None:
+        model = _Encoder(emb, mlp=model)
+        model = UAE(encoder_net=model)
     return model
 
 
