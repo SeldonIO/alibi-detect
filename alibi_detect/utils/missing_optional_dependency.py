@@ -9,8 +9,6 @@ functionality independent of the missing dependency.
 from typing import Union, List, Optional, Any
 from string import Template
 from importlib import import_module
-from alibi_detect.utils.frameworks import Framework
-
 
 err_msg_template = Template((
     "Attempted to use $object_name without the correct optional dependencies installed. To install "
@@ -32,12 +30,12 @@ dict is used to control two behaviours:
 """
 ERROR_TYPES = {
     "prophet": 'prophet',
-    "tensorflow_probability": Framework.TENSORFLOW,
-    "tensorflow": Framework.TENSORFLOW,
-    "torch": Framework.PYTORCH,
-    "pytorch": Framework.PYTORCH,
-    "keops": Framework.KEOPS,
-    "pykeops": Framework.KEOPS,
+    "tensorflow_probability": 'tensorflow',
+    "tensorflow": 'tensorflow',
+    "torch": 'torch',
+    "pytorch": 'torch',
+    "keops": 'keops',
+    "pykeops": 'keops',
 }
 
 
