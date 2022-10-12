@@ -2,10 +2,12 @@
 Defining types compatible with different Python versions and defining custom types.
 """
 import sys
-from typing import Any, Generic, Optional, Type, TypeVar
+from typing import Any, Generic, Optional, Type, TypeVar, Union
 import numpy as np
 from numpy.lib import NumpyVersion
 from pydantic.fields import ModelField
+from sklearn.base import BaseEstimator  # import here (instead of later) since sklearn currently a core dep
+from alibi_detect.utils.frameworks import has_tensorflow, has_pytorch
 
 # Literal for typing
 if sys.version_info >= (3, 8):
@@ -51,3 +53,33 @@ def _validate(cls: Type, val: Any, field: ModelField) -> np.ndarray:
         return np.asarray(val, dtype=dtype_field.type_)
     else:
         return np.asarray(val)
+
+
+# Optional dep dependent type definitions. Two sets of items are defined here:
+# 1. Tuples of actual objects, conditional on installed ops deps, for use in isinstance()'s, including in pydantic.
+# 2. Type unions for type hints. Note: Not currently used properly by mypy since there are no stubs for tf, sklearn etc
+
+# 1. Tuples
+supported_models_tf, supported_models_torch, supported_models_sklearn = (), (), ()  # type: ignore
+supported_optimizers_tf, supported_optimizers_torch = (), ()  # type: ignore
+if has_tensorflow:
+    import tensorflow as tf
+    supported_models_tf = (tf.keras.Model, )  # type: ignore
+    supported_optimizers_tf = (tf.keras.optimizers.Optimizer, )  # type: ignore
+if has_pytorch:
+    import torch
+    supported_models_torch = (torch.nn.Module, torch.nn.Sequential)  # type: ignore
+    supported_optimizers_torch = (torch.optim.Optimizer, )  # type: ignore
+supported_models_sklearn = (BaseEstimator, )  # type: ignore
+supported_models_all = supported_models_tf + supported_models_torch + supported_models_sklearn
+supported_optimizers_all = supported_optimizers_tf + supported_optimizers_torch
+
+# 2. Type unions
+model_types_tf = Type['tf.keras.Model']
+model_types_torch = Union['torch.nn.Module', 'torch.nn.Sequential']
+model_types_sklearn = Type[BaseEstimator]  # no ForwardRef since sklearn a core dep
+optimizer_types_tf = Type['tf.keras.optimizers.Optimizer']
+optimizer_types_torch = Union['torch.optim.Optimizer']
+optimizer_types_sklearn = Type[BaseEstimator]  # no ForwardRef since sklearn a core dep
+model_types_all = Union[model_types_tf, model_types_torch, model_types_sklearn]
+optimizer_types_all = Union[optimizer_types_tf, optimizer_types_torch]

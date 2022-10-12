@@ -17,7 +17,7 @@ from alibi_detect.saving._sklearn import load_model_sk
 from alibi_detect.saving.validate import validate_config
 from alibi_detect.base import Detector, ConfigurableDetector
 from alibi_detect.utils.frameworks import has_tensorflow, has_pytorch
-from alibi_detect.saving.schemas import SupportedModels_tf, SupportedModels_torch
+from alibi_detect.saving.schemas import supported_models_tf, supported_models_torch
 
 if TYPE_CHECKING:
     import tensorflow as tf
@@ -215,10 +215,10 @@ def _load_preprocess_config(cfg: dict) -> Optional[Callable]:
             emb = kwargs.pop('embedding')  # embedding passed to preprocess_drift as `model` therefore remove
 
             # Backend specifics
-            if has_tensorflow and isinstance(model, SupportedModels_tf):
+            if has_tensorflow and isinstance(model, supported_models_tf):
                 model = prep_model_and_emb_tf(model, emb)
                 kwargs.pop('device')
-            elif has_pytorch and isinstance(model, SupportedModels_torch):
+            elif has_pytorch and isinstance(model, supported_models_torch):
                 raise NotImplementedError('Loading preprocess_fn for PyTorch not yet supported.')
 #               device = cfg['device'] # TODO - device should be set already - check
 #               kwargs.update({'model': kwargs['model'].to(device)})  # TODO - need .to(device) here?

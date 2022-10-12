@@ -13,7 +13,7 @@ from transformers import PreTrainedTokenizerBase
 from alibi_detect.saving._typing import VALID_DETECTORS
 from alibi_detect.saving.loading import _replace, validate_config
 from alibi_detect.saving.registry import registry
-from alibi_detect.saving.schemas import SupportedModels, SupportedModels_tf, SupportedModels_sklearn
+from alibi_detect.utils._types import supported_models_all, supported_models_tf, supported_models_sklearn
 from alibi_detect.base import Detector, ConfigurableDetector
 from alibi_detect.saving._tensorflow import save_detector_legacy, save_model_config_tf
 from alibi_detect.saving._sklearn import save_model_config_sk
@@ -264,7 +264,7 @@ def _save_preprocess_config(preprocess_fn: Callable,
     kwargs = {}
     for k, v in func_kwargs.items():
         # Model/embedding
-        if isinstance(v, SupportedModels):
+        if isinstance(v, supported_models_all):
             cfg_model, cfg_embed = _save_model_config(v, filepath, input_shape, local_path)
             kwargs.update({k: cfg_model})
             if cfg_embed is not None:
@@ -411,9 +411,9 @@ def _save_model_config(model: Any,
     -------
     A tuple containing the model and embedding config dicts.
     """
-    if isinstance(model, SupportedModels_tf):
+    if isinstance(model, supported_models_tf):
         return save_model_config_tf(model, base_path, input_shape, path)
-    elif isinstance(model, SupportedModels_sklearn):
+    elif isinstance(model, supported_models_sklearn):
         return save_model_config_sk(model, base_path, path), None
     else:
         raise NotImplementedError("Support for saving the given model is not yet implemented")

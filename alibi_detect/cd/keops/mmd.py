@@ -168,7 +168,7 @@ class MMDDriftKeops(BaseMMDDrift):
         x_ref = torch.from_numpy(x_ref).float()  # type: ignore[assignment]
         x = torch.from_numpy(x).float()  # type: ignore[assignment]
         # compute kernel matrix, MMD^2 and apply permutation test
-        m, n = x_ref.shape[0], x.shape[0]
+        m, n = x_ref.shape[0], x.shape[0]  # type: ignore[union-attr]
         perms = [torch.randperm(m + n) for _ in range(self.n_permutations)]
         # TODO - Rethink typings (related to https://github.com/SeldonIO/alibi-detect/issues/540)
         x_all = torch.cat([x_ref, x], 0)  # type: ignore[list-item]

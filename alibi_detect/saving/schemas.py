@@ -13,31 +13,15 @@ The `resolved` kwarg of :func:`~alibi_detect.utils.validate.validate_config` det
     For detector pydantic models, the fields match the corresponding detector's args/kwargs. Refer to the
     detector's api docs for a full description of each arg/kwarg.
 """
-
+from __future__ import annotations
 from typing import Callable, Dict, List, Optional, Type, Union, Any
 
 import numpy as np
 from pydantic import BaseModel, validator
-from sklearn.base import BaseEstimator  # import here since sklearn currently a core dep
 
-from alibi_detect.cd.tensorflow import UAE as UAE_tf
-from alibi_detect.cd.tensorflow import HiddenOutput as HiddenOutput_tf
-from alibi_detect.utils._types import Literal, NDArray
-from alibi_detect.utils.frameworks import has_tensorflow, has_pytorch
-
-# Define supported models for each optional dependency
-SupportedModels_tf, SupportedModels_torch, SupportedModels_sklearn = (), (), ()  # type: ignore
-if has_tensorflow:
-    import tensorflow as tf
-    SupportedModels_tf = (tf.keras.Model, UAE_tf, HiddenOutput_tf)  # type: ignore
-if has_pytorch:
-    # import torch
-    SupportedModels_torch = ()  # type: ignore # TODO - fill
-# import sklearn
-SupportedModels_sklearn = (BaseEstimator, )  # type: ignore
-
-# Build SupportedModels - a tuple of all possible models for use in isinstance() etc.
-SupportedModels = SupportedModels_tf + SupportedModels_torch + SupportedModels_sklearn
+from alibi_detect.utils._types import (Literal, NDArray, supported_models_all, supported_models_tf,
+                                       supported_models_sklearn, supported_models_torch, supported_optimizers_tf,
+                                       supported_optimizers_torch, supported_optimizers_all)
 
 
 # Custom validators (defined here for reuse in multiple pydantic models)
@@ -49,7 +33,7 @@ def coerce_int2list(value: int) -> List[int]:
         return value
 
 
-class SupportedModelsType:
+class SupportedModels:
     """
     Pydantic custom type to check the model is one of the supported types (conditional on what optional deps
     are installed).
@@ -61,14 +45,40 @@ class SupportedModelsType:
     @classmethod
     def validate_model(cls, model: Any, values: dict) -> Any:
         backend = values['backend']
-        if backend == 'tensorflow' and not isinstance(model, SupportedModels_tf):
-            raise TypeError("`backend='tensorflow'` but the `model` doesn't appear to be a TensorFlow supported model.")
-        elif backend == 'pytorch' and not isinstance(model, SupportedModels_torch):
-            raise TypeError("`backend='pytorch'` but the `model` doesn't appear to be a TensorFlow supported model.")
-        elif backend == 'sklearn' and not isinstance(model, SupportedModels_sklearn):
+        if backend == 'tensorflow' and not isinstance(model, supported_models_tf):
+            raise TypeError("`backend='tensorflow'` but the `model` doesn't appear to be a TensorFlow supported model, "
+                            "or TensorFlow is not installed.")
+        elif backend == 'pytorch' and not isinstance(model, supported_models_torch):
+            raise TypeError("`backend='pytorch'` but the `model` doesn't appear to be a TensorFlow supported model, "
+                            "or PyTorch is not installed.")
+        elif backend == 'sklearn' and not isinstance(model, supported_models_sklearn):
             raise TypeError("`backend='sklearn'` but the `model` doesn't appear to be a scikit-learn supported model.")
-        elif isinstance(model, SupportedModels):  # If model supported and no `backend` incompatibility
+        elif isinstance(model, supported_models_all):  # If model supported and no `backend` incompatibility
             return model
+        else:  # Catch any other unexpected issues
+            raise TypeError('The model is not recognised as a supported type.')
+
+
+class SupportedOptimizers:
+    """
+    Pydantic custom type to check the optimizer is one of the supported types (conditional on what optional deps
+    are installed).
+    """
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate_optimizer
+
+    @classmethod
+    def validate_optimizer(cls, optimizer: Any, values: dict) -> Any:
+        backend = values['backend']
+        if backend == 'tensorflow' and not isinstance(optimizer, supported_optimizers_tf):
+            raise TypeError("`backend='tensorflow'` but the `optimizer` doesn't appear to be a TensorFlow supported "
+                            "optimizer, or TensorFlow is not installed.")
+        elif backend == 'pytorch' and not isinstance(optimizer, supported_optimizers_torch):
+            raise TypeError("`backend='pytorch'` but the `optimizer` doesn't appear to be a TensorFlow supported"
+                            "optimizer, or PyTorch is not installed.")
+        elif isinstance(optimizer, supported_optimizers_all):  # If optimizer supported and no `backend` incompatibility
+            return optimizer
         else:  # Catch any other unexpected issues
             raise TypeError('The model is not recognised as a supported type.')
 
@@ -767,7 +777,7 @@ class ClassifierDriftConfigResolved(DriftDetectorConfigResolved):
     p_val: float = .05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
-    model: Optional[SupportedModelsType] = None
+    model: Optional[SupportedModels] = None
     preds_type: Literal['probs', 'logits'] = 'probs'
     binarize_preds: bool = False
     reg_loss_fn: Optional[Callable] = None
@@ -775,7 +785,7 @@ class ClassifierDriftConfigResolved(DriftDetectorConfigResolved):
     n_folds: Optional[int] = None
     retrain_from_scratch: bool = True
     seed: int = 0
-    optimizer: Optional['tf.keras.optimizers.Optimizer'] = None
+    optimizer: Optional[SupportedOptimizers] = None
     learning_rate: float = 1e-3
     batch_size: int = 32
     preprocess_batch_fn: Optional[Callable] = None
@@ -838,7 +848,7 @@ class SpotTheDiffDriftConfigResolved(DriftDetectorConfigResolved):
     n_folds: Optional[int] = None
     retrain_from_scratch: bool = True
     seed: int = 0
-    optimizer: Optional['tf.keras.optimizers.Optimizer'] = None
+    optimizer: Optional[OptimizerConfig] = None
     learning_rate: float = 1e-3
     batch_size: int = 32
     preprocess_batch_fn: Optional[Callable] = None
@@ -907,7 +917,7 @@ class LearnedKernelDriftConfigResolved(DriftDetectorConfigResolved):
     reg_loss_fn: Optional[Callable] = None
     train_size: Optional[float] = .75
     retrain_from_scratch: bool = True
-    optimizer: Optional['tf.keras.optimizers.Optimizer'] = None
+    optimizer: Optional[OptimizerConfig] = None
     learning_rate: float = 1e-3
     batch_size: int = 32
     batch_size_predict: int = 1000000
@@ -1169,7 +1179,7 @@ class ClassifierUncertaintyDriftConfigResolved(DetectorConfig):
     """
     backend: Literal['tensorflow', 'pytorch'] = 'tensorflow'
     x_ref: Union[np.ndarray, list]
-    model: Optional[SupportedModelsType] = None
+    model: Optional[SupportedModels] = None
     p_val: float = .05
     x_ref_preprocessed: bool = False
     update_x_ref: Optional[Dict[str, int]] = None
@@ -1222,7 +1232,7 @@ class RegressorUncertaintyDriftConfigResolved(DetectorConfig):
     """
     backend: Literal['tensorflow', 'pytorch'] = 'tensorflow'
     x_ref: Union[np.ndarray, list]
-    model: Optional[SupportedModelsType] = None
+    model: Optional[SupportedModels] = None
     p_val: float = .05
     x_ref_preprocessed: bool = False
     update_x_ref: Optional[Dict[str, int]] = None

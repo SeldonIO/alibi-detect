@@ -14,7 +14,7 @@ mmd_cfg = {
     },
     'name': 'MMDDrift',
     'x_ref': np.array([[-0.30074928], [1.50240758], [0.43135768], [2.11295779], [0.79684913]]),
-    'p_val': 0.05
+    'p_val': 0.05,
 }
 
 # Define a detector config dict without meta (as simple as it gets!)
