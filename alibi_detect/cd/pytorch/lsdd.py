@@ -6,6 +6,7 @@ from alibi_detect.utils.pytorch import get_device
 from alibi_detect.utils.pytorch.kernels import GaussianRBF
 from alibi_detect.utils.pytorch.distance import permed_lsdds
 from alibi_detect.utils.warnings import deprecated_alias
+from alibi_detect.utils.frameworks import Framework
 
 
 class LSDDDriftTorch(BaseLSDDDrift):
@@ -83,7 +84,7 @@ class LSDDDriftTorch(BaseLSDDDrift):
             input_shape=input_shape,
             data_type=data_type
         )
-        self.meta.update({'backend': 'pytorch'})
+        self.meta.update({'backend': Framework.PYTORCH})
 
         # set device
         self.device = get_device(device)

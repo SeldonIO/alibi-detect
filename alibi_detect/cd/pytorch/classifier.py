@@ -12,6 +12,7 @@ from alibi_detect.utils.pytorch import get_device
 from alibi_detect.utils.pytorch.data import TorchDataset
 from alibi_detect.utils.pytorch.prediction import predict_batch
 from alibi_detect.utils.warnings import deprecated_alias
+from alibi_detect.utils.frameworks import Framework
 
 
 class ClassifierDriftTorch(BaseClassifierDrift):
@@ -138,7 +139,7 @@ class ClassifierDriftTorch(BaseClassifierDrift):
         if preds_type not in ['probs', 'logits']:
             raise ValueError("'preds_type' should be 'probs' or 'logits'")
 
-        self.meta.update({'backend': 'pytorch'})
+        self.meta.update({'backend': Framework.PYTORCH})
 
         # set device, define model and training kwargs
         self.device = get_device(device)

@@ -14,6 +14,7 @@ from alibi_detect.saving._typing import VALID_DETECTORS
 from alibi_detect.saving.loading import _replace, validate_config
 from alibi_detect.saving.registry import registry
 from alibi_detect.utils._types import supported_models_all, supported_models_tf, supported_models_sklearn
+from alibi_detect.utils.frameworks import Framework
 from alibi_detect.base import Detector, ConfigurableDetector
 from alibi_detect.saving._tensorflow import save_detector_legacy, save_model_config_tf
 from alibi_detect.saving._sklearn import save_model_config_sk
@@ -47,7 +48,7 @@ def save_detector(
     if legacy:
         warnings.warn('The `legacy` option will be removed in a future version.', DeprecationWarning)
 
-    if 'backend' in list(detector.meta.keys()) and detector.meta['backend'] in ['pytorch', 'keops']:
+    if 'backend' in list(detector.meta.keys()) and detector.meta['backend'] in [Framework.PYTORCH, Framework.KEOPS]:
         raise NotImplementedError('Saving detectors with pytorch or keops backend is not yet supported.')
 
     # TODO: Replace .__args__ w/ typing.get_args() once Python 3.7 dropped (and remove type ignore below)
@@ -125,7 +126,7 @@ def _save_detector_config(detector: ConfigurableDetector, filepath: Union[str, o
     """
     # Get backend, input_shape and detector_name
     backend = detector.meta.get('backend', None)
-    if backend not in (None, 'tensorflow', 'sklearn'):
+    if backend not in (None, Framework.TENSORFLOW, Framework.SKLEARN):
         raise NotImplementedError("Currently, saving is only supported with backend='tensorflow' and 'sklearn'.")
     detector_name = detector.__class__.__name__
 

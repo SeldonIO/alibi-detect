@@ -1,6 +1,6 @@
 import numpy as np
 from typing import Callable, Dict, Optional, Union
-from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, has_keops, BackendValidator
+from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, has_keops, BackendValidator, Framework
 from alibi_detect.utils.warnings import deprecated_alias
 from alibi_detect.base import DriftConfigMixin
 
@@ -23,7 +23,7 @@ class LearnedKernelDrift(DriftConfigMixin):
             self,
             x_ref: Union[np.ndarray, list],
             kernel: Callable,
-            backend: str = 'tensorflow',
+            backend: str = Framework.TENSORFLOW,
             p_val: float = .05,
             x_ref_preprocessed: bool = False,
             preprocess_at_init: bool = True,
@@ -131,9 +131,9 @@ class LearnedKernelDrift(DriftConfigMixin):
 
         backend = backend.lower()
         BackendValidator(
-            backend_options={'tensorflow': ['tensorflow'],
-                             'pytorch': ['pytorch'],
-                             'keops': ['keops']},
+            backend_options={Framework.TENSORFLOW: [Framework.TENSORFLOW],
+                             Framework.PYTORCH: [Framework.PYTORCH],
+                             Framework.KEOPS: [Framework.KEOPS]},
             construct_name=self.__class__.__name__
         ).verify_backend(backend)
 
@@ -144,7 +144,7 @@ class LearnedKernelDrift(DriftConfigMixin):
             pop_kwargs += ['optimizer']
         [kwargs.pop(k, None) for k in pop_kwargs]
 
-        if backend == 'tensorflow':
+        if backend == Framework.TENSORFLOW:
             pop_kwargs = ['device', 'dataloader', 'batch_size_permutations', 'batch_size_predict']
             [kwargs.pop(k, None) for k in pop_kwargs]
             if dataset is None:
@@ -155,7 +155,7 @@ class LearnedKernelDrift(DriftConfigMixin):
                 kwargs.update({'dataset': TorchDataset})
             if dataloader is None:
                 kwargs.update({'dataloader': DataLoader})
-            if backend == 'pytorch':
+            if backend == Framework.PYTORCH:
                 pop_kwargs = ['batch_size_permutations', 'batch_size_predict']
                 [kwargs.pop(k, None) for k in pop_kwargs]
                 detector = LearnedKernelDriftTorch

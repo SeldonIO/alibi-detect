@@ -22,6 +22,7 @@ from alibi_detect.od import (LLR, IForest, Mahalanobis, OutlierAE,
 from alibi_detect.utils._types import Literal
 from alibi_detect.utils.tensorflow.kernels import GaussianRBF
 from alibi_detect.utils.missing_optional_dependency import MissingDependency
+from alibi_detect.utils.frameworks import Framework
 
 logger = logging.getLogger(__name__)
 
@@ -82,7 +83,7 @@ def save_model_config(model: Callable,
         filepath = base_path.joinpath(local_path)
         save_model(model, filepath=filepath, save_dir='model')
         cfg_model = {
-            'flavour': 'tensorflow',
+            'flavour': Framework.TENSORFLOW,
             'src': local_path.joinpath('model')
         }
     return cfg_model, cfg_embed
@@ -148,7 +149,7 @@ def save_embedding_config(embed: TransformerEmbedding,
     cfg_embed.update({'type': embed.emb_type})
     cfg_embed.update({'layers': embed.hs_emb.keywords['layers']})
     cfg_embed.update({'src': local_path})
-    cfg_embed.update({'flavour': 'tensorflow'})
+    cfg_embed.update({'flavour': Framework.TENSORFLOW})
 
     # Save embedding model
     logger.info('Saving embedding model to {}.'.format(filepath))

@@ -1,7 +1,7 @@
 import logging
 import numpy as np
 from typing import Callable, Dict, Optional, Union, Tuple
-from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, has_keops, BackendValidator
+from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, has_keops, BackendValidator, Framework
 from alibi_detect.utils.warnings import deprecated_alias
 from alibi_detect.base import DriftConfigMixin
 
@@ -22,7 +22,7 @@ class MMDDrift(DriftConfigMixin):
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
-            backend: str = 'tensorflow',
+            backend: str = Framework.TENSORFLOW,
             p_val: float = .05,
             x_ref_preprocessed: bool = False,
             preprocess_at_init: bool = True,
@@ -88,19 +88,19 @@ class MMDDrift(DriftConfigMixin):
 
         backend = backend.lower()
         BackendValidator(
-            backend_options={'tensorflow': ['tensorflow'],
-                             'pytorch': ['pytorch'],
-                             'keops': ['keops']},
+            backend_options={Framework.TENSORFLOW: [Framework.TENSORFLOW],
+                             Framework.PYTORCH: [Framework.PYTORCH],
+                             Framework.KEOPS: [Framework.KEOPS]},
             construct_name=self.__class__.__name__
         ).verify_backend(backend)
 
         kwargs = locals()
         args = [kwargs['x_ref']]
         pop_kwargs = ['self', 'x_ref', 'backend', '__class__']
-        if backend == 'tensorflow':
+        if backend == Framework.TENSORFLOW:
             pop_kwargs += ['device', 'batch_size_permutations']
             detector = MMDDriftTF
-        elif backend == 'pytorch':
+        elif backend == Framework.PYTORCH:
             pop_kwargs += ['batch_size_permutations']
             detector = MMDDriftTorch
         else:
@@ -108,9 +108,9 @@ class MMDDrift(DriftConfigMixin):
         [kwargs.pop(k, None) for k in pop_kwargs]
 
         if kernel is None:
-            if backend == 'tensorflow':
+            if backend == Framework.TENSORFLOW:
                 from alibi_detect.utils.tensorflow.kernels import GaussianRBF
-            elif backend == 'pytorch':
+            elif backend == Framework.PYTORCH:
                 from alibi_detect.utils.pytorch.kernels import GaussianRBF  # type: ignore
             else:
                 from alibi_detect.utils.keops.kernels import GaussianRBF  # type: ignore

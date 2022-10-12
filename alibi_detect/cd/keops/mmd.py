@@ -6,6 +6,7 @@ from typing import Callable, Dict, List, Optional, Tuple, Union
 from alibi_detect.cd.base import BaseMMDDrift
 from alibi_detect.utils.keops.kernels import GaussianRBF
 from alibi_detect.utils.pytorch import get_device
+from alibi_detect.utils.frameworks import Framework
 
 logger = logging.getLogger(__name__)
 
@@ -82,7 +83,7 @@ class MMDDriftKeops(BaseMMDDrift):
             input_shape=input_shape,
             data_type=data_type
         )
-        self.meta.update({'backend': 'keops'})
+        self.meta.update({'backend': Framework.KEOPS})
 
         # set device
         self.device = get_device(device)

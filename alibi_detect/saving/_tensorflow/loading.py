@@ -25,6 +25,7 @@ from alibi_detect.od import (LLR, IForest, Mahalanobis, OutlierAE,
                              OutlierVAE, OutlierVAEGMM, SpectralResidual)
 from alibi_detect.od.llr import build_model
 from alibi_detect.utils.tensorflow.kernels import DeepKernel
+from alibi_detect.utils.frameworks import Framework
 # Below imports are used for legacy loading, and will be removed (or moved to utils/loading.py) in the future
 from alibi_detect.version import __version__
 from alibi_detect.base import Detector
@@ -214,7 +215,7 @@ def load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwarg
         warnings.warn('Trying to load detector from an older version.'
                       'This may lead to breaking code or invalid results.')
 
-    if 'backend' in list(meta_dict.keys()) and meta_dict['backend'] == 'pytorch':
+    if 'backend' in list(meta_dict.keys()) and meta_dict['backend'] == Framework.PYTORCH:
         raise NotImplementedError('Detectors with PyTorch backend are not yet supported.')
 
     detector_name = meta_dict['name']

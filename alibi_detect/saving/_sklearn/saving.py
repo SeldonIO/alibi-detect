@@ -2,9 +2,10 @@ import logging
 import os
 from pathlib import Path
 from typing import Union
-
 import joblib
 from sklearn.base import BaseEstimator
+
+from alibi_detect.utils.frameworks import Framework
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +35,7 @@ def save_model_config(model: BaseEstimator,
     filepath = base_path.joinpath(local_path)
     save_model(model, filepath=filepath, save_dir='model')
     cfg_model = {
-        'flavour': 'sklearn',
+        'flavour': Framework.SKLEARN,
         'src': local_path.joinpath('model')
     }
     return cfg_model

@@ -1,6 +1,6 @@
 import numpy as np
 from typing import Callable, Dict, Optional, Union, Tuple
-from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, BackendValidator
+from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, BackendValidator, Framework
 from alibi_detect.utils.warnings import deprecated_alias
 from alibi_detect.base import DriftConfigMixin
 
@@ -16,7 +16,7 @@ class LSDDDrift(DriftConfigMixin):
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
-            backend: str = 'tensorflow',
+            backend: str = Framework.TENSORFLOW,
             p_val: float = .05,
             x_ref_preprocessed: bool = False,
             preprocess_at_init: bool = True,
@@ -82,8 +82,8 @@ class LSDDDrift(DriftConfigMixin):
 
         backend = backend.lower()
         BackendValidator(
-            backend_options={'tensorflow': ['tensorflow'],
-                             'pytorch': ['pytorch']},
+            backend_options={Framework.TENSORFLOW: [Framework.TENSORFLOW],
+                             Framework.PYTORCH: [Framework.PYTORCH]},
             construct_name=self.__class__.__name__
         ).verify_backend(backend)
 
@@ -92,7 +92,7 @@ class LSDDDrift(DriftConfigMixin):
         pop_kwargs = ['self', 'x_ref', 'backend', '__class__']
         [kwargs.pop(k, None) for k in pop_kwargs]
 
-        if backend == 'tensorflow':
+        if backend == Framework.TENSORFLOW:
             kwargs.pop('device', None)
             self._detector = LSDDDriftTF(*args, **kwargs)  # type: ignore
         else:

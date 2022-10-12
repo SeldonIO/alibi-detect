@@ -7,6 +7,7 @@ from alibi_detect.utils.tensorflow.data import TFDataset
 from alibi_detect.utils.tensorflow.misc import clone_model
 from alibi_detect.utils.tensorflow.distance import mmd2_from_kernel_matrix, batch_compute_kernel_matrix
 from alibi_detect.utils.warnings import deprecated_alias
+from alibi_detect.utils.frameworks import Framework
 
 
 class LearnedKernelDriftTF(BaseLearnedKernelDrift):
@@ -113,7 +114,7 @@ class LearnedKernelDriftTF(BaseLearnedKernelDrift):
             input_shape=input_shape,
             data_type=data_type
         )
-        self.meta.update({'backend': 'tensorflow'})
+        self.meta.update({'backend': Framework.TENSORFLOW})
 
         # define and compile kernel
         self.original_kernel = kernel

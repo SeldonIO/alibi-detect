@@ -1,5 +1,14 @@
 from .missing_optional_dependency import ERROR_TYPES
 from typing import Optional, List, Dict, Iterable
+from enum import Enum
+
+
+class Framework(str, Enum):
+    PYTORCH = 'pytorch'
+    TENSORFLOW = 'tensorflow'
+    KEOPS = 'keops'
+    SKLEARN = 'sklearn'
+
 
 try:
     import tensorflow as tf  # noqa

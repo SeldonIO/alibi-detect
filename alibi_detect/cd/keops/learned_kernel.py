@@ -10,6 +10,7 @@ from typing import Callable, Dict, List, Optional, Union, Tuple
 from alibi_detect.cd.base import BaseLearnedKernelDrift
 from alibi_detect.utils.pytorch import get_device, predict_batch
 from alibi_detect.utils.pytorch.data import TorchDataset
+from alibi_detect.utils.frameworks import Framework
 
 
 class LearnedKernelDriftKeops(BaseLearnedKernelDrift):
@@ -130,7 +131,7 @@ class LearnedKernelDriftKeops(BaseLearnedKernelDrift):
             input_shape=input_shape,
             data_type=data_type
         )
-        self.meta.update({'backend': 'keops'})
+        self.meta.update({'backend': Framework.KEOPS})
 
         # Set device, define model and training kwargs
         self.device = get_device(device)
