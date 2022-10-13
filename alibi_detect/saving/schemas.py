@@ -13,7 +13,6 @@ The `resolved` kwarg of :func:`~alibi_detect.utils.validate.validate_config` det
     For detector pydantic models, the fields match the corresponding detector's args/kwargs. Refer to the
     detector's api docs for a full description of each arg/kwarg.
 """
-from __future__ import annotations
 from typing import Callable, Dict, List, Optional, Type, Union, Any
 
 import numpy as np
@@ -34,7 +33,7 @@ def coerce_int2list(value: int) -> List[int]:
         return value
 
 
-class SupportedModels:
+class SupportedModel:
     """
     Pydantic custom type to check the model is one of the supported types (conditional on what optional deps
     are installed).
@@ -60,7 +59,7 @@ class SupportedModels:
             raise TypeError('The model is not recognised as a supported type.')
 
 
-class SupportedOptimizers:
+class SupportedOptimizer:
     """
     Pydantic custom type to check the optimizer is one of the supported types (conditional on what optional deps
     are installed).
@@ -778,7 +777,7 @@ class ClassifierDriftConfigResolved(DriftDetectorConfigResolved):
     p_val: float = .05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
-    model: Optional[SupportedModels] = None
+    model: Optional[SupportedModel] = None
     preds_type: Literal['probs', 'logits'] = 'probs'
     binarize_preds: bool = False
     reg_loss_fn: Optional[Callable] = None
@@ -786,7 +785,7 @@ class ClassifierDriftConfigResolved(DriftDetectorConfigResolved):
     n_folds: Optional[int] = None
     retrain_from_scratch: bool = True
     seed: int = 0
-    optimizer: Optional[SupportedOptimizers] = None
+    optimizer: Optional[SupportedOptimizer] = None
     learning_rate: float = 1e-3
     batch_size: int = 32
     preprocess_batch_fn: Optional[Callable] = None
@@ -849,7 +848,7 @@ class SpotTheDiffDriftConfigResolved(DriftDetectorConfigResolved):
     n_folds: Optional[int] = None
     retrain_from_scratch: bool = True
     seed: int = 0
-    optimizer: Optional[OptimizerConfig] = None
+    optimizer: Optional[SupportedOptimizer] = None
     learning_rate: float = 1e-3
     batch_size: int = 32
     preprocess_batch_fn: Optional[Callable] = None
@@ -918,7 +917,7 @@ class LearnedKernelDriftConfigResolved(DriftDetectorConfigResolved):
     reg_loss_fn: Optional[Callable] = None
     train_size: Optional[float] = .75
     retrain_from_scratch: bool = True
-    optimizer: Optional[OptimizerConfig] = None
+    optimizer: Optional[SupportedOptimizer] = None
     learning_rate: float = 1e-3
     batch_size: int = 32
     batch_size_predict: int = 1000000
@@ -1180,7 +1179,7 @@ class ClassifierUncertaintyDriftConfigResolved(DetectorConfig):
     """
     backend: Literal['tensorflow', 'pytorch'] = 'tensorflow'
     x_ref: Union[np.ndarray, list]
-    model: Optional[SupportedModels] = None
+    model: Optional[SupportedModel] = None
     p_val: float = .05
     x_ref_preprocessed: bool = False
     update_x_ref: Optional[Dict[str, int]] = None
@@ -1233,7 +1232,7 @@ class RegressorUncertaintyDriftConfigResolved(DetectorConfig):
     """
     backend: Literal['tensorflow', 'pytorch'] = 'tensorflow'
     x_ref: Union[np.ndarray, list]
-    model: Optional[SupportedModels] = None
+    model: Optional[SupportedModel] = None
     p_val: float = .05
     x_ref_preprocessed: bool = False
     update_x_ref: Optional[Dict[str, int]] = None

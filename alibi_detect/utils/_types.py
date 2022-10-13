@@ -55,11 +55,7 @@ def _validate(cls: Type, val: Any, field: ModelField) -> np.ndarray:
         return np.asarray(val)
 
 
-# Optional dep dependent type definitions. Two sets of items are defined here:
-# 1. Tuples of actual objects, conditional on installed ops deps, for use in isinstance()'s, including in pydantic.
-# 2. Type unions for type hints. Note: Not currently used properly by mypy since there are no stubs for tf, sklearn etc
-
-# 1. Tuples
+# Optional dep dependent tuples of types
 supported_models_tf, supported_models_torch, supported_models_sklearn = (), (), ()  # type: ignore
 supported_optimizers_tf, supported_optimizers_torch = (), ()  # type: ignore
 if has_tensorflow:
