@@ -20,7 +20,7 @@ class ContextMMDDrift(DriftConfigMixin):
             self,
             x_ref: Union[np.ndarray, list],
             c_ref: np.ndarray,
-            backend: str = Framework.TENSORFLOW,
+            backend: str = 'tensorflow',
             p_val: float = .05,
             x_ref_preprocessed: bool = False,
             preprocess_at_init: bool = True,

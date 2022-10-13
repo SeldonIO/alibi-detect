@@ -83,7 +83,7 @@ def save_model_config(model: Callable,
         filepath = base_path.joinpath(local_path)
         save_model(model, filepath=filepath, save_dir='model')
         cfg_model = {
-            'flavour': Framework.TENSORFLOW,
+            'flavour': Framework.TENSORFLOW.value,
             'src': local_path.joinpath('model')
         }
     return cfg_model, cfg_embed
@@ -149,7 +149,7 @@ def save_embedding_config(embed: TransformerEmbedding,
     cfg_embed.update({'type': embed.emb_type})
     cfg_embed.update({'layers': embed.hs_emb.keywords['layers']})
     cfg_embed.update({'src': local_path})
-    cfg_embed.update({'flavour': Framework.TENSORFLOW})
+    cfg_embed.update({'flavour': Framework.TENSORFLOW.value})
 
     # Save embedding model
     logger.info('Saving embedding model to {}.'.format(filepath))

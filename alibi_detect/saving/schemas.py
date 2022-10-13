@@ -141,7 +141,7 @@ class ModelConfig(CustomBaseModel):
         src = "model/"
         layer = -1
     """
-    flavour: Literal[Framework.TENSORFLOW, Framework.PYTORCH, Framework.SKLEARN]
+    flavour: Literal['tensorflow', 'pytorch', 'sklearn']
     """
     Whether the model is a `tensorflow`, `pytorch` or `sklearn` model. XGBoost models following the scikit-learn API
     are also included under `sklearn`.
@@ -185,7 +185,7 @@ class EmbeddingConfig(CustomBaseModel):
         type = "hidden_state"
         layers = [-1, -2, -3, -4, -5, -6, -7, -8]
     """
-    flavour: Literal[Framework.TENSORFLOW, Framework.PYTORCH] = Framework.TENSORFLOW
+    flavour: Literal['tensorflow', 'pytorch'] = 'tensorflow'
     """
     Whether the embedding model is a `tensorflow` or `pytorch` model.
     """
@@ -659,7 +659,7 @@ class MMDDriftConfig(DriftDetectorConfig):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.MMDDrift` documentation for a description of each field.
     """
-    backend: Literal[Framework.TENSORFLOW, Framework.PYTORCH, Framework.SKLEARN]
+    backend: Literal['tensorflow', 'pytorch', 'keops'] = 'tensorflow'
     p_val: float = .05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
@@ -679,7 +679,7 @@ class MMDDriftConfigResolved(DriftDetectorConfigResolved):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.MMDDrift` documentation for a description of each field.
     """
-    backend: Literal[Framework.TENSORFLOW, Framework.PYTORCH, Framework.KEOPS] = Framework.TENSORFLOW
+    backend: Literal['tensorflow', 'pytorch', 'keops'] = 'tensorflow'
     p_val: float = .05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
@@ -699,7 +699,7 @@ class LSDDDriftConfig(DriftDetectorConfig):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.LSDDDrift` documentation for a description of each field.
     """
-    backend: Literal[Framework.TENSORFLOW, Framework.PYTORCH] = Framework.TENSORFLOW
+    backend: Literal['tensorflow', 'pytorch'] = 'tensorflow'
     p_val: float = .05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
@@ -718,7 +718,7 @@ class LSDDDriftConfigResolved(DriftDetectorConfigResolved):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.LSDDDrift` documentation for a description of each field.
     """
-    backend: Literal[Framework.TENSORFLOW, Framework.PYTORCH] = Framework.TENSORFLOW
+    backend: Literal['tensorflow', 'pytorch'] = 'tensorflow'
     p_val: float = .05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
@@ -738,7 +738,7 @@ class ClassifierDriftConfig(DriftDetectorConfig):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.ClassifierDrift` documentation for a description of each field.
     """
-    backend: Literal[Framework.TENSORFLOW, Framework.PYTORCH, Framework.SKLEARN] = Framework.TENSORFLOW
+    backend: Literal['tensorflow', 'pytorch', 'sklearn'] = 'tensorflow'
     p_val: float = .05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
@@ -774,7 +774,7 @@ class ClassifierDriftConfigResolved(DriftDetectorConfigResolved):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.ClassifierDrift` documentation for a description of each field.
     """
-    backend: Literal[Framework.TENSORFLOW, Framework.PYTORCH, Framework.SKLEARN] = Framework.TENSORFLOW
+    backend: Literal['tensorflow', 'pytorch', 'sklearn'] = 'tensorflow'
     p_val: float = .05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
@@ -810,7 +810,7 @@ class SpotTheDiffDriftConfig(DriftDetectorConfig):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.SpotTheDiffDrift` documentation for a description of each field.
     """
-    backend: Literal[Framework.TENSORFLOW, Framework.PYTORCH] = Framework.TENSORFLOW
+    backend: Literal['tensorflow', 'pytorch'] = 'tensorflow'
     p_val: float = .05
     binarize_preds: bool = False
     train_size: Optional[float] = .75
@@ -842,7 +842,7 @@ class SpotTheDiffDriftConfigResolved(DriftDetectorConfigResolved):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.SpotTheDiffDrift` documentation for a description of each field.
     """
-    backend: Literal[Framework.TENSORFLOW, Framework.PYTORCH] = Framework.TENSORFLOW
+    backend: Literal['tensorflow', 'pytorch'] = 'tensorflow'
     p_val: float = .05
     binarize_preds: bool = False
     train_size: Optional[float] = .75
@@ -874,7 +874,7 @@ class LearnedKernelDriftConfig(DriftDetectorConfig):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.LearnedKernelDrift` documentation for a description of each field.
     """
-    backend: Literal[Framework.TENSORFLOW, Framework.PYTORCH, Framework.KEOPS] = Framework.TENSORFLOW
+    backend: Literal['tensorflow', 'pytorch', 'keops'] = 'tensorflow'
     p_val: float = .05
     kernel: Union[str, DeepKernelConfig]
     preprocess_at_init: bool = True
@@ -907,7 +907,7 @@ class LearnedKernelDriftConfigResolved(DriftDetectorConfigResolved):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.LearnedKernelDrift` documentation for a description of each field.
     """
-    backend: Literal[Framework.TENSORFLOW, Framework.PYTORCH, Framework.KEOPS] = Framework.TENSORFLOW
+    backend: Literal['tensorflow', 'pytorch', 'keops'] = 'tensorflow'
     p_val: float = .05
     kernel: Optional[Callable] = None
     preprocess_at_init: bool = True
@@ -940,7 +940,7 @@ class ContextMMDDriftConfig(DriftDetectorConfig):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.ContextMMDDrift` documentation for a description of each field.
     """
-    backend: Literal[Framework.TENSORFLOW, Framework.PYTORCH] = Framework.TENSORFLOW
+    backend: Literal['tensorflow', 'pytorch'] = 'tensorflow'
     p_val: float = .05
     c_ref: str
     preprocess_at_init: bool = True
@@ -963,7 +963,7 @@ class ContextMMDDriftConfigResolved(DriftDetectorConfigResolved):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.MMDDrift` documentation for a description of each field.
     """
-    backend: Literal[Framework.TENSORFLOW, Framework.PYTORCH] = Framework.TENSORFLOW
+    backend: Literal['tensorflow', 'pytorch'] = 'tensorflow'
     p_val: float = .05
     c_ref: np.ndarray
     preprocess_at_init: bool = True
@@ -987,7 +987,7 @@ class MMDDriftOnlineConfig(DriftDetectorConfig):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.MMDDriftOnline` documentation for a description of each field.
     """
-    backend: Literal[Framework.TENSORFLOW, Framework.PYTORCH] = Framework.TENSORFLOW
+    backend: Literal['tensorflow', 'pytorch'] = 'tensorflow'
     ert: float
     window_size: int
     kernel: Optional[Union[str, KernelConfig]] = None
@@ -1006,7 +1006,7 @@ class MMDDriftOnlineConfigResolved(DriftDetectorConfigResolved):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.MMDDriftOnline` documentation for a description of each field.
     """
-    backend: Literal[Framework.TENSORFLOW, Framework.PYTORCH] = Framework.TENSORFLOW
+    backend: Literal['tensorflow', 'pytorch'] = 'tensorflow'
     ert: float
     window_size: int
     kernel: Optional[Callable] = None
@@ -1025,7 +1025,7 @@ class LSDDDriftOnlineConfig(DriftDetectorConfig):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.LSDDDriftOnline` documentation for a description of each field.
     """
-    backend: Literal[Framework.TENSORFLOW, Framework.PYTORCH] = Framework.TENSORFLOW
+    backend: Literal['tensorflow', 'pytorch'] = 'tensorflow'
     ert: float
     window_size: int
     sigma: Optional[np.ndarray] = None
@@ -1045,7 +1045,7 @@ class LSDDDriftOnlineConfigResolved(DriftDetectorConfigResolved):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.LSDDDriftOnline` documentation for a description of each field.
     """
-    backend: Literal[Framework.TENSORFLOW, Framework.PYTORCH] = Framework.TENSORFLOW
+    backend: Literal['tensorflow', 'pytorch'] = 'tensorflow'
     ert: float
     window_size: int
     sigma: Optional[np.ndarray] = None
@@ -1151,7 +1151,7 @@ class ClassifierUncertaintyDriftConfig(DetectorConfig):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.ClassifierUncertaintyDrift` documentation for a description of each field.
     """
-    backend: Literal[Framework.TENSORFLOW, Framework.PYTORCH] = Framework.TENSORFLOW
+    backend: Literal['tensorflow', 'pytorch'] = 'tensorflow'
     x_ref: str
     model: Union[str, ModelConfig]
     p_val: float = .05
@@ -1178,7 +1178,7 @@ class ClassifierUncertaintyDriftConfigResolved(DetectorConfig):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.ClassifierUncertaintyDrift` documentation for a description of each field.
     """
-    backend: Literal[Framework.TENSORFLOW, Framework.PYTORCH] = Framework.TENSORFLOW
+    backend: Literal['tensorflow', 'pytorch'] = 'tensorflow'
     x_ref: Union[np.ndarray, list]
     model: Optional[SupportedModels] = None
     p_val: float = .05
@@ -1205,7 +1205,7 @@ class RegressorUncertaintyDriftConfig(DetectorConfig):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.RegressorUncertaintyDrift` documentation for a description of each field.
     """
-    backend: Literal[Framework.TENSORFLOW, Framework.PYTORCH] = Framework.TENSORFLOW
+    backend: Literal['tensorflow', 'pytorch'] = 'tensorflow'
     x_ref: str
     model: Union[str, ModelConfig]
     p_val: float = .05
@@ -1231,7 +1231,7 @@ class RegressorUncertaintyDriftConfigResolved(DetectorConfig):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.RegressorUncertaintyDrift` documentation for a description of each field.
     """
-    backend: Literal[Framework.TENSORFLOW, Framework.PYTORCH] = Framework.TENSORFLOW
+    backend: Literal['tensorflow', 'pytorch'] = 'tensorflow'
     x_ref: Union[np.ndarray, list]
     model: Optional[SupportedModels] = None
     p_val: float = .05

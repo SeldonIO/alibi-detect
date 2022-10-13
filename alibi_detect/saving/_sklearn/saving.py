@@ -35,7 +35,7 @@ def save_model_config(model: BaseEstimator,
     filepath = base_path.joinpath(local_path)
     save_model(model, filepath=filepath, save_dir='model')
     cfg_model = {
-        'flavour': Framework.SKLEARN,
+        'flavour': Framework.SKLEARN.value,
         'src': local_path.joinpath('model')
     }
     return cfg_model

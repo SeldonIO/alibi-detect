@@ -15,7 +15,7 @@ class LSDDDriftOnline(DriftConfigMixin):
             x_ref: Union[np.ndarray, list],
             ert: float,
             window_size: int,
-            backend: str = Framework.TENSORFLOW,
+            backend: str = 'tensorflow',
             preprocess_fn: Optional[Callable] = None,
             x_ref_preprocessed: bool = False,
             sigma: Optional[np.ndarray] = None,

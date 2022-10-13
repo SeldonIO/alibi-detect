@@ -22,7 +22,7 @@ class MMDDrift(DriftConfigMixin):
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
-            backend: str = Framework.TENSORFLOW,
+            backend: str = 'tensorflow',
             p_val: float = .05,
             x_ref_preprocessed: bool = False,
             preprocess_at_init: bool = True,
