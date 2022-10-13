@@ -16,8 +16,8 @@ from alibi_detect.saving._tensorflow import load_detector_legacy, load_embedding
 from alibi_detect.saving._sklearn import load_model_sk
 from alibi_detect.saving.validate import validate_config
 from alibi_detect.base import Detector, ConfigurableDetector
-from alibi_detect.utils.frameworks import has_tensorflow, has_pytorch
-from alibi_detect.saving.schemas import SupportedModels_tf, SupportedModels_torch
+from alibi_detect.utils.frameworks import has_tensorflow, has_pytorch, Framework
+from alibi_detect.saving.schemas import supported_models_tf, supported_models_torch
 
 if TYPE_CHECKING:
     import tensorflow as tf
@@ -130,7 +130,7 @@ def _load_detector_config(filepath: Union[str, os.PathLike]) -> ConfigurableDete
 
     # Backend
     backend = cfg.get('backend', None)
-    if backend is not None and backend.lower() not in ('tensorflow', 'sklearn'):
+    if backend is not None and backend.lower() not in (Framework.TENSORFLOW, Framework.SKLEARN):
         raise NotImplementedError('Loading detectors with pytorch or keops backend is not yet supported.')
 
     # Init detector from config
@@ -162,7 +162,7 @@ def _init_detector(cfg: dict) -> ConfigurableDetector:
     return detector
 
 
-def _load_kernel_config(cfg: dict, backend: str = 'tensorflow') -> Callable:
+def _load_kernel_config(cfg: dict, backend: str = Framework.TENSORFLOW) -> Callable:
     """
     Loads a kernel from a kernel config dict.
 
@@ -179,7 +179,7 @@ def _load_kernel_config(cfg: dict, backend: str = 'tensorflow') -> Callable:
     -------
     The kernel.
     """
-    if backend == 'tensorflow':
+    if backend == Framework.TENSORFLOW:
         kernel = load_kernel_config_tf(cfg)
     else:
         kernel = None
@@ -215,10 +215,10 @@ def _load_preprocess_config(cfg: dict) -> Optional[Callable]:
             emb = kwargs.pop('embedding')  # embedding passed to preprocess_drift as `model` therefore remove
 
             # Backend specifics
-            if has_tensorflow and isinstance(model, SupportedModels_tf):
+            if has_tensorflow and isinstance(model, supported_models_tf):
                 model = prep_model_and_emb_tf(model, emb)
                 kwargs.pop('device')
-            elif has_pytorch and isinstance(model, SupportedModels_torch):
+            elif has_pytorch and isinstance(model, supported_models_torch):
                 raise NotImplementedError('Loading preprocess_fn for PyTorch not yet supported.')
 #               device = cfg['device'] # TODO - device should be set already - check
 #               kwargs.update({'model': kwargs['model'].to(device)})  # TODO - need .to(device) here?
@@ -264,9 +264,9 @@ def _load_model_config(cfg: dict) -> Callable:
         raise FileNotFoundError("The `src` field is not a recognised directory. It should be a directory containing "
                                 "a compatible model.")
 
-    if flavour == 'tensorflow':
+    if flavour == Framework.TENSORFLOW:
         model = load_model_tf(src, load_dir='.', custom_objects=custom_obj, layer=layer)
-    elif flavour == 'sklearn':
+    elif flavour == Framework.SKLEARN:
         model = load_model_sk(src)
     else:
         raise NotImplementedError('Loading of PyTorch models not currently supported')
@@ -291,7 +291,7 @@ def _load_embedding_config(cfg: dict) -> Callable:  # TODO: Could type return mo
     layers = cfg['layers']
     typ = cfg['type']
     flavour = cfg['flavour']
-    if flavour == 'tensorflow':
+    if flavour == Framework.TENSORFLOW:
         emb = load_embedding_tf(src, embedding_type=typ, layers=layers)
     else:
         raise NotImplementedError('Loading of non-tensorflow embedding models not currently supported')
@@ -335,7 +335,7 @@ def _load_optimizer_config(cfg: dict,
     -------
     The loaded optimizer.
     """
-    if backend == 'tensorflow':
+    if backend == Framework.TENSORFLOW:
         optimizer = load_optimizer_tf(cfg)
     else:
         raise NotImplementedError('Loading of non-tensorflow optimizers not currently supported')
@@ -493,7 +493,7 @@ def resolve_config(cfg: dict, config_dir: Optional[Path]) -> dict:
         # are not resolved into objects here, since they are yet to undergo a further validation step). Instead, only
         # their components, such as `src`, are resolved above.
         elif isinstance(src, dict):
-            backend = cfg.get('backend', 'tensorflow')
+            backend = cfg.get('backend', Framework.TENSORFLOW)
             if key[-1] in ('model', 'proj'):
                 obj = _load_model_config(src)
             elif key[-1] == 'embedding':

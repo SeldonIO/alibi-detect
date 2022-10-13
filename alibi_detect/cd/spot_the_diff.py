@@ -1,6 +1,6 @@
 import numpy as np
 from typing import Callable, Dict, Optional, Union
-from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, BackendValidator
+from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, BackendValidator, Framework
 from alibi_detect.base import DriftConfigMixin
 
 if has_pytorch:
@@ -127,8 +127,8 @@ class SpotTheDiffDrift(DriftConfigMixin):
 
         backend = backend.lower()
         BackendValidator(
-            backend_options={'tensorflow': ['tensorflow'],
-                             'pytorch': ['pytorch']},
+            backend_options={Framework.TENSORFLOW: [Framework.TENSORFLOW],
+                             Framework.PYTORCH: [Framework.PYTORCH]},
             construct_name=self.__class__.__name__
         ).verify_backend(backend)
         kwargs = locals()
@@ -138,7 +138,7 @@ class SpotTheDiffDrift(DriftConfigMixin):
             pop_kwargs += ['optimizer']
         [kwargs.pop(k, None) for k in pop_kwargs]
 
-        if backend == 'tensorflow':
+        if backend == Framework.TENSORFLOW:
             pop_kwargs = ['device', 'dataloader']
             [kwargs.pop(k, None) for k in pop_kwargs]
             if dataset is None:

@@ -1,7 +1,7 @@
 import logging
 import numpy as np
 from typing import Callable, Dict, Optional, Union, Tuple
-from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, BackendValidator
+from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, BackendValidator, Framework
 from alibi_detect.utils.warnings import deprecated_alias
 from alibi_detect.base import DriftConfigMixin
 
@@ -93,8 +93,8 @@ class ContextMMDDrift(DriftConfigMixin):
 
         backend = backend.lower()
         BackendValidator(
-            backend_options={'tensorflow': ['tensorflow'],
-                             'pytorch': ['pytorch']},
+            backend_options={Framework.TENSORFLOW: [Framework.TENSORFLOW],
+                             Framework.PYTORCH: [Framework.PYTORCH]},
             construct_name=self.__class__.__name__
         ).verify_backend(backend)
 
@@ -104,7 +104,7 @@ class ContextMMDDrift(DriftConfigMixin):
         [kwargs.pop(k, None) for k in pop_kwargs]
 
         if x_kernel is None or c_kernel is None:
-            if backend == 'tensorflow':
+            if backend == Framework.TENSORFLOW:
                 from alibi_detect.utils.tensorflow.kernels import GaussianRBF
             else:
                 from alibi_detect.utils.pytorch.kernels import GaussianRBF  # type: ignore[no-redef]
@@ -113,7 +113,7 @@ class ContextMMDDrift(DriftConfigMixin):
             if c_kernel is None:
                 kwargs.update({'c_kernel': GaussianRBF})
 
-        if backend == 'tensorflow':
+        if backend == Framework.TENSORFLOW:
             kwargs.pop('device', None)
             self._detector = ContextMMDDriftTF(*args, **kwargs)  # type: ignore
         else:
