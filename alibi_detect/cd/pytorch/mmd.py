@@ -82,7 +82,7 @@ class MMDDriftTorch(BaseMMDDrift):
             input_shape=input_shape,
             data_type=data_type
         )
-        self.meta.update({'backend': Framework.PYTORCH})
+        self.meta.update({'backend': Framework.PYTORCH.value})
 
         # set device
         self.device = get_device(device)

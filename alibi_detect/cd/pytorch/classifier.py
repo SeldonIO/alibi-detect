@@ -139,7 +139,7 @@ class ClassifierDriftTorch(BaseClassifierDrift):
         if preds_type not in ['probs', 'logits']:
             raise ValueError("'preds_type' should be 'probs' or 'logits'")
 
-        self.meta.update({'backend': Framework.PYTORCH})
+        self.meta.update({'backend': Framework.PYTORCH.value})
 
         # set device, define model and training kwargs
         self.device = get_device(device)

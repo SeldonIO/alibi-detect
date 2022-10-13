@@ -131,7 +131,7 @@ class LearnedKernelDriftKeops(BaseLearnedKernelDrift):
             input_shape=input_shape,
             data_type=data_type
         )
-        self.meta.update({'backend': Framework.KEOPS})
+        self.meta.update({'backend': Framework.KEOPS.value})
 
         # Set device, define model and training kwargs
         self.device = get_device(device)

@@ -79,7 +79,7 @@ class LSDDDriftTF(BaseLSDDDrift):
             input_shape=input_shape,
             data_type=data_type
         )
-        self.meta.update({'backend': Framework.TENSORFLOW})
+        self.meta.update({'backend': Framework.TENSORFLOW.value})
 
         if self.preprocess_at_init or self.preprocess_fn is None or self.x_ref_preprocessed:
             x_ref = tf.convert_to_tensor(self.x_ref)

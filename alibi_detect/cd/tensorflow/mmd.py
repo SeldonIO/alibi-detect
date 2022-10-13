@@ -77,7 +77,7 @@ class MMDDriftTF(BaseMMDDrift):
             input_shape=input_shape,
             data_type=data_type
         )
-        self.meta.update({'backend': Framework.TENSORFLOW})
+        self.meta.update({'backend': Framework.TENSORFLOW.value})
 
         # initialize kernel
         if isinstance(sigma, np.ndarray):

@@ -130,7 +130,7 @@ class ClassifierDriftTF(BaseClassifierDrift):
         if preds_type not in ['probs', 'logits']:
             raise ValueError("'preds_type' should be 'probs' or 'logits'")
 
-        self.meta.update({'backend': Framework.TENSORFLOW})
+        self.meta.update({'backend': Framework.TENSORFLOW.value})
 
         # define and compile classifier model
         self.original_model = model

@@ -102,7 +102,7 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
             data_type=data_type,
             verbose=verbose,
         )
-        self.meta.update({'backend': Framework.PYTORCH})
+        self.meta.update({'backend': Framework.PYTORCH.value})
 
         # set device
         self.device = get_device(device)

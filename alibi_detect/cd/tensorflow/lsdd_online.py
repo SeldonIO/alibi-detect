@@ -78,7 +78,7 @@ class LSDDDriftOnlineTF(BaseMultiDriftOnline):
             input_shape=input_shape,
             data_type=data_type
         )
-        self.meta.update({'backend': Framework.TENSORFLOW})
+        self.meta.update({'backend': Framework.TENSORFLOW.value})
         self.n_kernel_centers = n_kernel_centers
         self.lambda_rd_max = lambda_rd_max
 

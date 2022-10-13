@@ -113,7 +113,7 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
         if preds_type not in ['probs', 'scores']:
             raise ValueError("'preds_type' should be 'probs' or 'scores'")
 
-        self.meta.update({'backend': Framework.SKLEARN})
+        self.meta.update({'backend': Framework.SKLEARN.value})
         self.original_model = model
         self.use_calibration = use_calibration
         self.calibration_kwargs = dict() if calibration_kwargs is None else calibration_kwargs

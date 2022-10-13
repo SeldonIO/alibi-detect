@@ -114,7 +114,7 @@ class LearnedKernelDriftTF(BaseLearnedKernelDrift):
             input_shape=input_shape,
             data_type=data_type
         )
-        self.meta.update({'backend': Framework.TENSORFLOW})
+        self.meta.update({'backend': Framework.TENSORFLOW.value})
 
         # define and compile kernel
         self.original_kernel = kernel

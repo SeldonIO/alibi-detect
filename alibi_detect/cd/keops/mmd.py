@@ -83,7 +83,7 @@ class MMDDriftKeops(BaseMMDDrift):
             input_shape=input_shape,
             data_type=data_type
         )
-        self.meta.update({'backend': Framework.KEOPS})
+        self.meta.update({'backend': Framework.KEOPS.value})
 
         # set device
         self.device = get_device(device)
