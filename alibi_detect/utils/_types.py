@@ -2,7 +2,7 @@
 Defining types compatible with different Python versions and defining custom types.
 """
 import sys
-from typing import Any, Generic, Optional, Type, TypeVar, Union
+from typing import Any, Generic, Optional, Type, TypeVar
 import numpy as np
 from numpy.lib import NumpyVersion
 from pydantic.fields import ModelField
@@ -69,13 +69,3 @@ if has_pytorch:
 supported_models_sklearn = (BaseEstimator, )  # type: ignore
 supported_models_all = supported_models_tf + supported_models_torch + supported_models_sklearn
 supported_optimizers_all = supported_optimizers_tf + supported_optimizers_torch
-
-# 2. Type unions
-model_types_tf = Type['tf.keras.Model']
-model_types_torch = Union['torch.nn.Module', 'torch.nn.Sequential']
-model_types_sklearn = Type[BaseEstimator]  # no ForwardRef since sklearn a core dep
-optimizer_types_tf = Type['tf.keras.optimizers.Optimizer']
-optimizer_types_torch = Union['torch.optim.Optimizer']
-optimizer_types_sklearn = Type[BaseEstimator]  # no ForwardRef since sklearn a core dep
-model_types_all = Union[model_types_tf, model_types_torch, model_types_sklearn]
-optimizer_types_all = Union[optimizer_types_tf, optimizer_types_torch]
