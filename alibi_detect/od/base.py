@@ -1,7 +1,6 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
 import numpy as np
-from alibi_detect.version import __version__
 import logging
 from alibi_detect.base import BaseDetector
 
@@ -11,16 +10,20 @@ logger = logging.getLogger(__name__)
 class OutlierDetector(BaseDetector, ABC):
     """ Base class for outlier detection algorithms. """
     threshold_inferred = False
+    ensemble = False
+
+    def __init__(self):
+        super().__init__()
+        self.meta['online'] = False
+        self.meta['detector_type'] = 'outlier'
 
     @abstractmethod
     def fit(self, X: np.ndarray) -> None:
         pass
 
-
     @abstractmethod
     def score(self, X: np.ndarray) -> np.ndarray:
         pass
-
 
     def infer_threshold(self, X: np.ndarray, fpr: float) -> None:
         """
@@ -31,13 +34,13 @@ class OutlierDetector(BaseDetector, ABC):
             saving scores and inferring threshold.
         """
         self.val_scores = self.score(X)
-        self.val_scores = self.normaliser.fit(self.val_scores).transform(self.val_scores) \
-            if getattr(self, 'normaliser') else self.val_scores
-        self.val_scores = self.aggregator.fit(self.val_scores).transform(self.val_scores) \
-            if getattr(self, 'aggregator') else self.val_scores
+        if self.ensemble:
+            self.val_scores = self.normaliser.fit(self.val_scores).transform(self.val_scores) \
+                if getattr(self, 'normaliser') else self.val_scores
+            self.val_scores = self.aggregator.fit(self.val_scores).transform(self.val_scores) \
+                if getattr(self, 'aggregator') else self.val_scores
         self.threshold = np.quantile(self.val_scores, 1-fpr)
         self.threshold_inferred = True
-
 
     def predict(self, X: np.ndarray) -> np.ndarray:
         """
