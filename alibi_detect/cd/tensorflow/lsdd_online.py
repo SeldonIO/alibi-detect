@@ -16,8 +16,6 @@ class LSDDDriftOnlineTF(BaseMultiDriftOnline):
             window_size: int,
             preprocess_fn: Optional[Callable] = None,
             x_ref_preprocessed: bool = False,
-            # sigma: Optional[np.ndarray] = None,
-            # kernel: BaseKernel = GaussianRBF(),
             n_bootstraps: int = 1000,
             n_kernel_centers: Optional[int] = None,
             lambda_rd_max: float = 0.2,
@@ -86,13 +84,6 @@ class LSDDDriftOnlineTF(BaseMultiDriftOnline):
 
         self._configure_normalization()
 
-        # initialize kernel
-        # if sigma is None:
-        #     self.kernel = GaussianRBF()
-        #     _ = self.kernel(self.x_ref, self.x_ref, infer_sigma=True)
-        # else:
-        #     sigma = tf.convert_to_tensor(sigma)
-        #     self.kernel = GaussianRBF(sigma)
         self.kernel = GaussianRBF()
 
         if self.n_kernel_centers is None:

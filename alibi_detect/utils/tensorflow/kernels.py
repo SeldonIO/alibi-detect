@@ -1,3 +1,4 @@
+from abc import abstractmethod
 import tensorflow as tf
 import numpy as np
 from . import distance
@@ -7,7 +8,13 @@ from copy import deepcopy
 from alibi_detect.utils.frameworks import Framework
 
 
-def infer_kernel_parameter(kernel, x, y, dist, infer_parameter):
+def infer_kernel_parameter(
+    kernel: 'BaseKernel',
+    x: tf.Tensor,
+    y: tf.Tensor,
+    dist: tf.Tensor,
+    infer_parameter: bool = True,
+) -> None:
     """
     Infer the kernel parameter from the data.
 
@@ -58,10 +65,7 @@ def sigma_median(x: tf.Tensor, y: tf.Tensor, dist: tf.Tensor) -> tf.Tensor:
     return tf.math.log(sigma)
 
 
-class KernelParameter(object):
-    """
-    Parameter class for kernels.
-    """
+class KernelParameter:
     def __init__(
         self,
         value: tf.Tensor = None,
@@ -69,6 +73,20 @@ class KernelParameter(object):
         requires_grad: bool = False,
         requires_init: bool = False
     ) -> None:
+        """
+        Parameter class for kernels.
+
+        Parameters
+        ----------
+        value
+            The pre-specified value of the parameter. If `None`, the parameter is set to 1 by default.
+        init_fn
+            The function used to initialize the parameter.
+        requires_grad
+            Whether the parameter requires gradient.
+        requires_init
+            Whether the parameter requires initialization.
+        """
         self.value = tf.Variable(value if value is not None
                                  else tf.ones(1, dtype=tf.keras.backend.floatx()),
                                  trainable=requires_grad)
@@ -80,16 +98,24 @@ class KernelParameter(object):
 
 
 class BaseKernel(tf.keras.Model):
-    """
-    The base class for all kernels.
-    """
     def __init__(self, active_dims: list = None, feature_axis: int = -1) -> None:
+        """
+        The base class for all kernels.
+
+        Parameters
+        ----------
+        active_dims
+            Indices of the dimensions of the feature to be used for the kernel. If None, all dimensions are used.
+        feature_axis
+            Axis of the feature dimension.
+        """
         super().__init__()
         self.parameter_dict: dict = {}
         self.active_dims = active_dims
         self.feature_axis = feature_axis
         self.init_required = False
 
+    @abstractmethod
     def kernel_function(self, x: tf.Tensor, y: tf.Tensor,
                         infer_parameter: Optional[bool] = False) -> tf.Tensor:
         return NotImplementedError
@@ -162,13 +188,10 @@ class BaseKernel(tf.keras.Model):
 
 
 class SumKernel(tf.keras.Model):
-    """
-    Construct a kernel by summing different kernels.
-
-    Parameters:
-    ----------------
-    """
     def __init__(self) -> None:
+        """
+        Construct a kernel by summing different kernels.
+        """
         super().__init__()
         self.kernel_list: List[Union[BaseKernel, SumKernel, ProductKernel, tf.Tensor]] = []
 
@@ -242,6 +265,9 @@ class SumKernel(tf.keras.Model):
 
 class ProductKernel(tf.keras.Model):
     def __init__(self) -> None:
+        """
+        Construct a kernel by multiplying different kernels.
+        """
         super().__init__()
         self.kernel_factors: List[Union[BaseKernel, SumKernel, ProductKernel, tf.Tensor]] = []
 
@@ -345,6 +371,10 @@ class GaussianRBF(BaseKernel):
             :func:`~alibi_detect.utils.tensorflow.kernels.sigma_median`.
         trainable
             Whether or not to track gradients w.r.t. sigma to allow it to be trained.
+        active_dims
+            Indices of the dimensions of the feature to be used for the kernel. If None, all dimensions are used.
+        feature_axis
+            Axis of the feature dimension.
         """
         super().__init__(active_dims, feature_axis)
         init_fn_sigma = sigma_median if init_fn_sigma is None else init_fn_sigma
@@ -420,8 +450,18 @@ class RationalQuadratic(BaseKernel):
         ----------
         alpha
             Exponent parameter of the kernel.
+        init_alpha_fn
+            Function used to compute the exponent parameter `alpha`. Used when `alpha` is to be inferred.
         sigma
             Bandwidth used for the kernel.
+        init_sigma_fn
+            Function used to compute the bandwidth `sigma`. Used when `sigma` is to be inferred.
+        trainable
+            Whether or not to track gradients w.r.t. `sigma` to allow it to be trained.
+        active_dims
+            Indices of the dimensions of the feature to be used for the kernel. If None, all dimensions are used.
+        feature_axis
+            Axis of the feature dimension.
         """
         super().__init__(active_dims, feature_axis)
         self.parameter_dict['alpha'] = KernelParameter(
@@ -483,8 +523,18 @@ class Periodic(BaseKernel):
         ----------
         tau
             Period of the periodic kernel.
+        init_tau_fn
+            Function used to compute the period `tau`. Used when `tau` is to be inferred.
         sigma
             Bandwidth used for the kernel.
+        init_sigma_fn
+            Function used to compute the bandwidth `sigma`. Used when `sigma` is to be inferred.
+        trainable
+            Whether or not to track gradients w.r.t. `sigma` to allow it to be trained.
+        active_dims
+            Indices of the dimensions of the feature to be used for the kernel. If None, all dimensions are used.
+        feature_axis
+            Axis of the feature dimension.
         """
         super().__init__(active_dims, feature_axis)
         self.parameter_dict['log-tau'] = KernelParameter(
@@ -532,6 +582,18 @@ class ProjKernel(BaseKernel):
         proj: tf.keras.Model,
         raw_kernel: BaseKernel = GaussianRBF(trainable=True),
     ) -> None:
+        """
+        A kernel that combines a raw kernel (e.g. RBF) with a projection function (e.g. deep net) as
+        k(x, y) = k(proj(x), proj(y)). A forward pass takes a batch of instances x [Nx, features] and
+        y [Ny, features] and returns the kernel matrix [Nx, Ny].
+
+        Parameters:
+        ----------
+        proj
+            The projection to be applied to the inputs before applying raw_kernel
+        raw_kernel
+            The kernel to apply to the projected inputs. Defaults to a Gaussian RBF with trainable bandwidth.
+        """
         super().__init__()
         self.proj = proj
         self.raw_kernel = raw_kernel

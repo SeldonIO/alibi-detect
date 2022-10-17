@@ -49,9 +49,7 @@ class ContextMMDDriftTF(BaseContextMMDDrift):
             preprocess_at_init: bool = True,
             update_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
-            # x_kernel: Callable = GaussianRBF,
             x_kernel: BaseKernel = GaussianRBF(init_fn_sigma=_sigma_median_diag),
-            # c_kernel: Callable = GaussianRBF,
             c_kernel: BaseKernel = GaussianRBF(init_fn_sigma=_sigma_median_diag),
             n_permutations: int = 1000,
             prop_c_held: float = 0.25,
@@ -125,9 +123,6 @@ class ContextMMDDriftTF(BaseContextMMDDrift):
         )
         self.meta.update({'backend': Framework.TENSORFLOW.value})
 
-        # initialize kernel
-        # self.x_kernel = x_kernel(init_sigma_fn=_sigma_median_diag) if x_kernel == GaussianRBF else x_kernel
-        # self.c_kernel = c_kernel(init_sigma_fn=_sigma_median_diag) if c_kernel == GaussianRBF else c_kernel
         self.x_kernel = x_kernel
         self.c_kernel = c_kernel
 

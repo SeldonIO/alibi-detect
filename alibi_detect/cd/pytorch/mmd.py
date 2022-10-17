@@ -22,9 +22,7 @@ class MMDDriftTorch(BaseMMDDrift):
             preprocess_at_init: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
-            # kernel: Callable = GaussianRBF,
             kernel: BaseKernel = GaussianRBF(),
-            # sigma: Optional[np.ndarray] = None,
             configure_kernel_from_x_ref: bool = True,
             n_permutations: int = 100,
             device: Optional[str] = None,
@@ -77,7 +75,6 @@ class MMDDriftTorch(BaseMMDDrift):
             preprocess_at_init=preprocess_at_init,
             update_x_ref=update_x_ref,
             preprocess_fn=preprocess_fn,
-            # sigma=sigma,
             configure_kernel_from_x_ref=configure_kernel_from_x_ref,
             n_permutations=n_permutations,
             input_shape=input_shape,
@@ -88,14 +85,9 @@ class MMDDriftTorch(BaseMMDDrift):
         # set device
         self.device = get_device(device)
 
-        # initialize kernel
-        # sigma = torch.from_numpy(sigma).to(self.device) if isinstance(sigma,  # type: ignore[assignment]
-        #                                                               np.ndarray) else None
-        # self.kernel = kernel(sigma).to(self.device) if kernel == GaussianRBF else kernel
         self.kernel = kernel
 
         # compute kernel matrix for the reference data
-        # if self.infer_sigma or isinstance(sigma, torch.Tensor):
         if self.infer_parameter:
             x = torch.from_numpy(self.x_ref).to(self.device)
             self.k_xx = self.kernel(x, x, infer_parameter=self.infer_parameter)

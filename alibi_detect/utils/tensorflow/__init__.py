@@ -46,6 +46,8 @@ __all__ = [
     "squared_pairwise_distance",
     "GaussianRBF",
     "BaseKernel",
+    "RationalQuadratic",
+    "Periodic",
     "DeepKernel",
     "permed_lsdds",
     "predict_batch",

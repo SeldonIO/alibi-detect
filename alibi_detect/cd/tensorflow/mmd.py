@@ -21,9 +21,7 @@ class MMDDriftTF(BaseMMDDrift):
             preprocess_at_init: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
-            # kernel: Callable = GaussianRBF,
             kernel: BaseKernel = GaussianRBF(),
-            # sigma: Optional[np.ndarray] = None,
             configure_kernel_from_x_ref: bool = True,
             n_permutations: int = 100,
             input_shape: Optional[tuple] = None,
@@ -72,7 +70,6 @@ class MMDDriftTF(BaseMMDDrift):
             preprocess_at_init=preprocess_at_init,
             update_x_ref=update_x_ref,
             preprocess_fn=preprocess_fn,
-            # sigma=sigma,
             configure_kernel_from_x_ref=configure_kernel_from_x_ref,
             n_permutations=n_permutations,
             input_shape=input_shape,
@@ -80,13 +77,8 @@ class MMDDriftTF(BaseMMDDrift):
         )
         self.meta.update({'backend': Framework.TENSORFLOW.value})
 
-        # initialize kernel
-        # if isinstance(sigma, np.ndarray):
-        #     sigma = tf.convert_to_tensor(sigma)
-        # self.kernel = kernel(sigma) if kernel == GaussianRBF else kernel
         self.kernel = kernel
         # compute kernel matrix for the reference data
-        # if self.infer_sigma or isinstance(sigma, tf.Tensor):
         if self.infer_parameter:
             self.k_xx = self.kernel(self.x_ref, self.x_ref, infer_parameter=self.infer_parameter)
             self.infer_sigma = False

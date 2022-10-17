@@ -17,8 +17,6 @@ class MMDDriftOnlineTF(BaseMultiDriftOnline):
             preprocess_fn: Optional[Callable] = None,
             x_ref_preprocessed: bool = False,
             kernel: BaseKernel = GaussianRBF(),
-            # kernel: Callable = GaussianRBF,
-            # sigma: Optional[np.ndarray] = None,
             n_bootstraps: int = 1000,
             verbose: bool = True,
             input_shape: Optional[tuple] = None,
@@ -74,14 +72,9 @@ class MMDDriftOnlineTF(BaseMultiDriftOnline):
         )
         self.meta.update({'backend': Framework.TENSORFLOW.value})
 
-        # initialize kernel
-        # if isinstance(sigma, np.ndarray):
-        #     sigma = tf.convert_to_tensor(sigma)
-        # self.kernel = kernel(sigma) if kernel == GaussianRBF else kernel
         self.kernel = kernel
 
         # compute kernel matrix for the reference data
-        # self.k_xx = self.kernel(self.x_ref, self.x_ref, infer_sigma=(sigma is None))
         self.k_xx = self.kernel(self.x_ref, self.x_ref, infer_parameter=self.kernel.init_required)
 
         self._configure_thresholds()
