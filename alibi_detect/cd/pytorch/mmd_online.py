@@ -16,8 +16,6 @@ class MMDDriftOnlineTorch(BaseMultiDriftOnline):
             window_size: int,
             preprocess_fn: Optional[Callable] = None,
             kernel: BaseKernel = GaussianRBF(),
-            # kernel: Callable = GaussianRBF,
-            # sigma: Optional[np.ndarray] = None,
             n_bootstraps: int = 1000,
             device: Optional[str] = None,
             verbose: bool = True,
@@ -75,15 +73,10 @@ class MMDDriftOnlineTorch(BaseMultiDriftOnline):
         # set device
         self.device = get_device(device)
 
-        # initialize kernel
-        # sigma = torch.from_numpy(sigma).to(self.device) if isinstance(sigma,  # type: ignore[assignment]
-        #                                                               np.ndarray) else None
-        # self.kernel = kernel(sigma) if kernel == GaussianRBF else kernel
         self.kernel = kernel
 
         # compute kernel matrix for the reference data
         self.x_ref = torch.from_numpy(self.x_ref).to(self.device)
-        # self.k_xx = self.kernel(self.x_ref, self.x_ref, infer_sigma=(sigma is None))
         self.k_xx = self.kernel(self.x_ref, self.x_ref, infer_parameter=self.kernel.init_required)
 
         self._configure_thresholds()

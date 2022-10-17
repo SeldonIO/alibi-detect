@@ -45,9 +45,7 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
             preprocess_x_ref: bool = True,
             update_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
-            # x_kernel: Callable = GaussianRBF,
             x_kernel: BaseKernel = GaussianRBF(init_fn_sigma=_sigma_median_diag),
-            # c_kernel: Callable = GaussianRBF,
             c_kernel: BaseKernel = GaussianRBF(init_fn_sigma=_sigma_median_diag),
             n_permutations: int = 1000,
             prop_c_held: float = 0.25,
@@ -122,9 +120,6 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
         # set device
         self.device = get_device(device)
 
-        # initialize kernel
-        # self.x_kernel = x_kernel(init_sigma_fn=_sigma_median_diag) if x_kernel == GaussianRBF else x_kernel
-        # self.c_kernel = c_kernel(init_sigma_fn=_sigma_median_diag) if c_kernel == GaussianRBF else c_kernel
         self.x_kernel = x_kernel
         self.c_kernel = c_kernel
 
