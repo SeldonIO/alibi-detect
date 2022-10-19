@@ -25,6 +25,8 @@ def validate_framework(framework: str, field: ModelField) -> str:
     if (framework == Framework.TENSORFLOW and has_tensorflow) or (framework == Framework.PYTORCH and has_pytorch) or \
             (framework == Framework.KEOPS and has_keops):
         return framework
+    elif framework == Framework.SKLEARN:  # sklearn is a core dep
+        return framework
     else:
         raise ImportError(f"`{field.name} = '{framework}'` not possible since {framework} is not installed.")
 
