@@ -67,6 +67,7 @@ def test_cd_torch_dependencies(opt_dep):
     dependency_map = defaultdict(lambda: ['default'])
     for dependency, relations in [
         ("HiddenOutput", ['torch', 'keops']),
+        ("UAE", ['torch', 'keops']),
         ("preprocess_drift", ['torch', 'keops'])
     ]:
         dependency_map[dependency] = relations
