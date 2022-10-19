@@ -713,9 +713,6 @@ def test_save_onlinecvmdrift(data, preprocess_custom, tmp_path, seed):
 
     Detector is saved and then loaded, with assertions checking that the reinstantiated detector is equivalent.
     """
-    if backend not in ('tensorflow', 'pytorch'):
-        pytest.skip("Detector doesn't have this backend")
-
     # Init detector and make predictions
     X_ref, X_h0 = data
 
