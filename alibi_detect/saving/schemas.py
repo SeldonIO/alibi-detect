@@ -19,18 +19,10 @@ import numpy as np
 from pydantic import BaseModel, validator
 
 from alibi_detect.utils.frameworks import Framework
-from alibi_detect.utils._types import (Literal, NDArray, supported_models_all, supported_models_tf,
+from alibi_detect.utils._types import (Literal, supported_models_all, supported_models_tf,
                                        supported_models_sklearn, supported_models_torch, supported_optimizers_tf,
                                        supported_optimizers_torch, supported_optimizers_all)
-
-
-# Custom validators (defined here for reuse in multiple pydantic models)
-def coerce_int2list(value: int) -> List[int]:
-    """Validator to coerce int to list (pydantic doesn't do this by default)."""
-    if isinstance(value, int):
-        return [value]
-    else:
-        return value
+from alibi_detect.saving.validators import NDArray, validate_framework, coerce_int2list, coerce_2tensor
 
 
 class SupportedModel:
@@ -164,6 +156,8 @@ class ModelConfig(CustomBaseModel):
     :class:`~alibi_detect.cd.pytorch.preprocess.HiddenOutput` model is returned (dependent on `flavour`).
     Only applies to 'tensorflow' and 'pytorch' models.
     """
+    # Validators
+    _validate_flavour = validator('flavour', allow_reuse=True, pre=False)(validate_framework)
 
 
 class EmbeddingConfig(CustomBaseModel):
@@ -201,6 +195,8 @@ class EmbeddingConfig(CustomBaseModel):
     Model name e.g. `"bert-base-cased"`, or a filepath to directory storing the model to extract embeddings from
     (relative to the `config.toml` file, or absolute).
     """
+    # Validators
+    _validate_flavour = validator('flavour', allow_reuse=True, pre=False)(validate_framework)
 
 
 class TokenizerConfig(CustomBaseModel):
@@ -353,7 +349,11 @@ class KernelConfig(CustomBaseModelWithKwargs):
     "A string referencing a filepath to a serialized kernel in `.dill` format, or an object registry reference."
 
     # Below kwargs are only passed if kernel == @GaussianRBF
-    sigma: Optional[NDArray[np.float32]] = None
+    flavour: Literal['tensorflow', 'pytorch']
+    """
+    Whether the kernel is a `tensorflow` or `pytorch` kernel.
+    """
+    sigma: Optional[Union[float, List[float]]] = None
     """
     Bandwidth used for the kernel. Needn’t be specified if being inferred or trained. Can pass multiple values to eval
     kernel with and then average.
@@ -367,6 +367,9 @@ class KernelConfig(CustomBaseModelWithKwargs):
     should match :py:func:`~alibi_detect.utils.tensorflow.kernels.sigma_median`. If `None`, it is set to
     :func:`~alibi_detect.utils.tensorflow.kernels.sigma_median`.
     """
+    # Validators
+    _validate_flavour = validator('flavour', allow_reuse=True, pre=False)(validate_framework)
+    _coerce_sigma2tensor = validator('sigma', allow_reuse=True, pre=False)(coerce_2tensor)
 
 
 class DeepKernelConfig(CustomBaseModel):
@@ -418,10 +421,9 @@ class DeepKernelConfig(CustomBaseModel):
     """
 
 
-class OptimizerConfig(CustomBaseModelWithKwargs):
+class TFOptimizerConfig(CustomBaseModelWithKwargs):
     """
-    Unresolved schema for optimizers. Note that the model "backend" e.g. 'tensorflow', 'pytorch', 'sklearn', is set
-    by `backend` in :class:`DetectorConfig`. If `backend='tensorflow'`, the `optimizer` dictionary is expected to be
+    Unresolved schema for TensorFlow optimizers. The `optimizer` dictionary is expected to be
     a configuration dictionary compatible with
     `tf.keras.optimizers.deserialize <https://www.tensorflow.org/api_docs/python/tf/keras/optimizers/deserialize>`_.
 
@@ -668,6 +670,8 @@ class MMDDriftConfig(DriftDetectorConfig):
     n_permutations: int = 100
     batch_size_permutations: int = 1000000
     device: Optional[Literal['cpu', 'cuda']] = None
+    # Validators
+    _validate_flavour = validator('backend', allow_reuse=True, pre=False)(validate_framework)
 
 
 class MMDDriftConfigResolved(DriftDetectorConfigResolved):
@@ -688,6 +692,8 @@ class MMDDriftConfigResolved(DriftDetectorConfigResolved):
     n_permutations: int = 100
     batch_size_permutations: int = 1000000
     device: Optional[Literal['cpu', 'cuda']] = None
+    # Validators
+    _validate_flavour = validator('backend', allow_reuse=True, pre=False)(validate_framework)
 
 
 class LSDDDriftConfig(DriftDetectorConfig):
@@ -707,6 +713,8 @@ class LSDDDriftConfig(DriftDetectorConfig):
     n_kernel_centers: Optional[int] = None
     lambda_rd_max: float = 0.2
     device: Optional[Literal['cpu', 'cuda']] = None
+    # Validators
+    _validate_flavour = validator('backend', allow_reuse=True, pre=False)(validate_framework)
 
 
 class LSDDDriftConfigResolved(DriftDetectorConfigResolved):
@@ -726,6 +734,8 @@ class LSDDDriftConfigResolved(DriftDetectorConfigResolved):
     n_kernel_centers: Optional[int] = None
     lambda_rd_max: float = 0.2
     device: Optional[Literal['cpu', 'cuda']] = None
+    # Validators
+    _validate_flavour = validator('backend', allow_reuse=True, pre=False)(validate_framework)
 
 
 class ClassifierDriftConfig(DriftDetectorConfig):
@@ -749,7 +759,7 @@ class ClassifierDriftConfig(DriftDetectorConfig):
     n_folds: Optional[int] = None
     retrain_from_scratch: bool = True
     seed: int = 0
-    optimizer: Optional[Union[str, OptimizerConfig]] = None
+    optimizer: Optional[Union[str, TFOptimizerConfig]] = None
     learning_rate: float = 1e-3
     batch_size: int = 32
     preprocess_batch_fn: Optional[str] = None
@@ -762,6 +772,8 @@ class ClassifierDriftConfig(DriftDetectorConfig):
     use_calibration: bool = False
     calibration_kwargs: Optional[dict] = None
     use_oob: bool = False
+    # Validators
+    _validate_flavour = validator('backend', allow_reuse=True, pre=False)(validate_framework)
 
 
 class ClassifierDriftConfigResolved(DriftDetectorConfigResolved):
@@ -798,6 +810,8 @@ class ClassifierDriftConfigResolved(DriftDetectorConfigResolved):
     use_calibration: bool = False
     calibration_kwargs: Optional[dict] = None
     use_oob: bool = False
+    # Validators
+    _validate_flavour = validator('backend', allow_reuse=True, pre=False)(validate_framework)
 
 
 class SpotTheDiffDriftConfig(DriftDetectorConfig):
@@ -816,7 +830,7 @@ class SpotTheDiffDriftConfig(DriftDetectorConfig):
     n_folds: Optional[int] = None
     retrain_from_scratch: bool = True
     seed: int = 0
-    optimizer: Optional[Union[str, OptimizerConfig]] = None
+    optimizer: Optional[Union[str, TFOptimizerConfig]] = None
     learning_rate: float = 1e-3
     batch_size: int = 32
     preprocess_batch_fn: Optional[str] = None
@@ -830,6 +844,8 @@ class SpotTheDiffDriftConfig(DriftDetectorConfig):
     l1_reg: float = 0.01
     device: Optional[Literal['cpu', 'cuda']] = None
     dataloader: Optional[str] = None  # TODO: placeholder, will need to be updated for pytorch implementation
+    # Validators
+    _validate_flavour = validator('backend', allow_reuse=True, pre=False)(validate_framework)
 
 
 class SpotTheDiffDriftConfigResolved(DriftDetectorConfigResolved):
@@ -862,6 +878,8 @@ class SpotTheDiffDriftConfigResolved(DriftDetectorConfigResolved):
     l1_reg: float = 0.01
     device: Optional[Literal['cpu', 'cuda']] = None
     dataloader: Optional[Callable] = None  # TODO: placeholder, will need to be updated for pytorch implementation
+    # Validators
+    _validate_flavour = validator('backend', allow_reuse=True, pre=False)(validate_framework)
 
 
 class LearnedKernelDriftConfig(DriftDetectorConfig):
@@ -884,7 +902,7 @@ class LearnedKernelDriftConfig(DriftDetectorConfig):
     reg_loss_fn: Optional[str] = None
     train_size: Optional[float] = .75
     retrain_from_scratch: bool = True
-    optimizer: Optional[Union[str, OptimizerConfig]] = None
+    optimizer: Optional[Union[str, TFOptimizerConfig]] = None
     learning_rate: float = 1e-3
     batch_size: int = 32
     batch_size_predict: int = 1000000
@@ -895,6 +913,8 @@ class LearnedKernelDriftConfig(DriftDetectorConfig):
     dataset: Optional[str] = None
     device: Optional[Literal['cpu', 'cuda']] = None
     dataloader: Optional[str] = None  # TODO: placeholder, will need to be updated for pytorch implementation
+    # Validators
+    _validate_flavour = validator('backend', allow_reuse=True, pre=False)(validate_framework)
 
 
 class LearnedKernelDriftConfigResolved(DriftDetectorConfigResolved):
@@ -928,6 +948,8 @@ class LearnedKernelDriftConfigResolved(DriftDetectorConfigResolved):
     dataset: Optional[Callable] = None
     device: Optional[Literal['cpu', 'cuda']] = None
     dataloader: Optional[Callable] = None  # TODO: placeholder, will need to be updated for pytorch implementation
+    # Validators
+    _validate_flavour = validator('backend', allow_reuse=True, pre=False)(validate_framework)
 
 
 class ContextMMDDriftConfig(DriftDetectorConfig):
@@ -952,6 +974,8 @@ class ContextMMDDriftConfig(DriftDetectorConfig):
     batch_size: Optional[int] = 256
     verbose: bool = False
     device: Optional[Literal['cpu', 'cuda']] = None
+    # Validators
+    _validate_flavour = validator('backend', allow_reuse=True, pre=False)(validate_framework)
 
 
 class ContextMMDDriftConfigResolved(DriftDetectorConfigResolved):
@@ -975,6 +999,8 @@ class ContextMMDDriftConfigResolved(DriftDetectorConfigResolved):
     batch_size: Optional[int] = 256
     verbose: bool = False
     device: Optional[Literal['cpu', 'cuda']] = None
+    # Validators
+    _validate_flavour = validator('backend', allow_reuse=True, pre=False)(validate_framework)
 
 
 class MMDDriftOnlineConfig(DriftDetectorConfig):
@@ -994,6 +1020,8 @@ class MMDDriftOnlineConfig(DriftDetectorConfig):
     n_bootstraps: int = 1000
     device: Optional[Literal['cpu', 'cuda']] = None
     verbose: bool = True
+    # Validators
+    _validate_flavour = validator('backend', allow_reuse=True, pre=False)(validate_framework)
 
 
 class MMDDriftOnlineConfigResolved(DriftDetectorConfigResolved):
@@ -1013,6 +1041,8 @@ class MMDDriftOnlineConfigResolved(DriftDetectorConfigResolved):
     n_bootstraps: int = 1000
     device: Optional[Literal['cpu', 'cuda']] = None
     verbose: bool = True
+    # Validators
+    _validate_flavour = validator('backend', allow_reuse=True, pre=False)(validate_framework)
 
 
 class LSDDDriftOnlineConfig(DriftDetectorConfig):
@@ -1033,6 +1063,8 @@ class LSDDDriftOnlineConfig(DriftDetectorConfig):
     lambda_rd_max: float = 0.2
     device: Optional[Literal['cpu', 'cuda']] = None
     verbose: bool = True
+    # Validators
+    _validate_flavour = validator('backend', allow_reuse=True, pre=False)(validate_framework)
 
 
 class LSDDDriftOnlineConfigResolved(DriftDetectorConfigResolved):
@@ -1053,6 +1085,8 @@ class LSDDDriftOnlineConfigResolved(DriftDetectorConfigResolved):
     lambda_rd_max: float = 0.2
     device: Optional[Literal['cpu', 'cuda']] = None
     verbose: bool = True
+    # Validators
+    _validate_flavour = validator('backend', allow_reuse=True, pre=False)(validate_framework)
 
 
 class CVMDriftOnlineConfig(DriftDetectorConfig):
@@ -1166,6 +1200,8 @@ class ClassifierUncertaintyDriftConfig(DetectorConfig):
     max_len: Optional[int] = None
     input_shape: Optional[tuple] = None
     data_type: Optional[str] = None
+    # Validators
+    _validate_flavour = validator('backend', allow_reuse=True, pre=False)(validate_framework)
 
 
 class ClassifierUncertaintyDriftConfigResolved(DetectorConfig):
@@ -1193,6 +1229,8 @@ class ClassifierUncertaintyDriftConfigResolved(DetectorConfig):
     max_len: Optional[int] = None
     input_shape: Optional[tuple] = None
     data_type: Optional[str] = None
+    # Validators
+    _validate_flavour = validator('backend', allow_reuse=True, pre=False)(validate_framework)
 
 
 class RegressorUncertaintyDriftConfig(DetectorConfig):
@@ -1219,6 +1257,8 @@ class RegressorUncertaintyDriftConfig(DetectorConfig):
     max_len: Optional[int] = None
     input_shape: Optional[tuple] = None
     data_type: Optional[str] = None
+    # Validators
+    _validate_flavour = validator('backend', allow_reuse=True, pre=False)(validate_framework)
 
 
 class RegressorUncertaintyDriftConfigResolved(DetectorConfig):
@@ -1245,6 +1285,8 @@ class RegressorUncertaintyDriftConfigResolved(DetectorConfig):
     max_len: Optional[int] = None
     input_shape: Optional[tuple] = None
     data_type: Optional[str] = None
+    # Validators
+    _validate_flavour = validator('backend', allow_reuse=True, pre=False)(validate_framework)
 
 
 # Unresolved schema dictionary (used in alibi_detect.utils.loading)

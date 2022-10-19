@@ -150,3 +150,16 @@ class MMDDriftOnline(DriftConfigMixin):
         Squared MMD estimate between reference window and test window.
         """
         return self._detector.score(x_t)
+
+    def get_config(self) -> dict:  # Needed due to need to self.x_ref being a torch.Tensor when backend='pytorch'
+        """
+        Get the detector's configuration dictionary.
+
+        Returns
+        -------
+        The detector's configuration dictionary.
+        """
+        cfg = super().get_config()
+        if cfg.get('backend') == 'pytorch':
+            cfg['x_ref'] = cfg['x_ref'].detach().cpu().numpy()
+        return cfg

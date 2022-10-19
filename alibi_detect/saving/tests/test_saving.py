@@ -4,7 +4,6 @@ Tests for saving/loading of detectors via config.toml files.
 
 Internal functions such as save_kernel/load_kernel_config etc are also tested.
 """
-# TODO future - test pytorch save/load functionality
 from functools import partial
 from pathlib import Path
 from typing import Callable
@@ -21,7 +20,7 @@ import torch
 from .datasets import BinData, CategoricalData, ContinuousData, MixedData, TextData
 from .models import (encoder_model, preprocess_custom, preprocess_hiddenoutput, preprocess_simple,  # noqa: F401
                      preprocess_nlp, LATENT_DIM, classifier_model, kernel, deep_kernel, nlp_embedding_and_tokenizer,
-                     embedding, tokenizer, max_len, enc_dim)
+                     embedding, tokenizer, max_len, enc_dim, encoder_dropout_model)
 
 from alibi_detect.utils._random import fixed_seed
 from packaging import version
@@ -51,7 +50,8 @@ if version.parse(scipy.__version__) >= version.parse('1.7.0'):
 
 # TODO: We currently parametrize encoder_model etc (in models.py) with backend, so the same flavour of
 # preprocessing is used as the detector backend. In the future we could decouple this in tests.
-backend = param_fixture("backend", ['tensorflow', 'sklearn'])
+#backend = param_fixture("backend", ['tensorflow', 'pytorch', 'sklearn'])
+backend = param_fixture("backend", ['tensorflow', 'pytorch'])
 P_VAL = 0.05
 ERT = 10
 N_PERMUTATIONS = 10
@@ -536,7 +536,7 @@ def test_save_contextmmddrift(data, kernel, backend, tmp_path, seed):  # noqa: F
     assert cd_load._detector.p_val == P_VAL
     assert isinstance(cd_load._detector.preprocess_fn, Callable)
     assert cd_load._detector.preprocess_fn.func.__name__ == 'preprocess_simple'
-#    assert cd._detector.x_kernel.sigma == cd_load._detector.x_kernel.sigma
+    assert cd._detector.x_kernel.sigma == cd_load._detector.x_kernel.sigma
     assert cd._detector.c_kernel.sigma == cd_load._detector.c_kernel.sigma
     assert cd._detector.x_kernel.init_sigma_fn == cd_load._detector.x_kernel.init_sigma_fn
     assert cd._detector.c_kernel.init_sigma_fn == cd_load._detector.c_kernel.init_sigma_fn
@@ -575,7 +575,7 @@ def test_save_classifieruncertaintydrift(data, classifier_model, backend, tmp_pa
 
 
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
-@parametrize('regressor', [encoder_model])
+@parametrize('regressor', [encoder_dropout_model])
 def test_save_regressoruncertaintydrift(data, regressor, backend, tmp_path, seed):
     """ Test RegressorDrift on continuous datasets."""
     if backend not in ('tensorflow', 'pytorch'):
@@ -862,14 +862,14 @@ def test_save_kernel(kernel, backend, tmp_path):  # noqa: F811
     filepath = tmp_path
     filename = Path('mykernel')
     cfg_kernel = _save_kernel_config(kernel, filepath, filename)
-    KernelConfig(**cfg_kernel)  # Passing through the pydantic validator gives a degree of testing
+    cfg_kernel = KernelConfig(**cfg_kernel).dict()  # Pass through validator to test, and coerce sigma to Tensor
     if kernel.__class__.__name__ == 'GaussianRBF':
         assert cfg_kernel['src'] == '@utils.' + backend + '.kernels.GaussianRBF'
     else:
         assert Path(cfg_kernel['src']).suffix == '.dill'
     assert cfg_kernel['trainable'] == kernel.trainable
     if not kernel.trainable and cfg_kernel['sigma'] is not None:
-        np.testing.assert_almost_equal(cfg_kernel['sigma'], kernel.sigma, 6)
+        np.testing.assert_array_almost_equal(cfg_kernel['sigma'], kernel.sigma, 6)
 
     # Resolve and load config (_load_kernel_config is called within resolve_config)
     cfg = {'kernel': cfg_kernel, 'backend': backend}
@@ -883,7 +883,10 @@ def test_save_kernel(kernel, backend, tmp_path):  # noqa: F811
 
     # Final checks
     assert type(kernel_loaded) == type(kernel)
-    np.testing.assert_array_almost_equal(np.array(kernel_loaded.sigma), np.array(kernel.sigma), 5)
+    if backend == 'pytorch':
+        np.testing.assert_array_almost_equal(kernel_loaded.sigma.detach().numpy(), kernel.sigma.detach().numpy(), 5)
+    else:
+        np.testing.assert_array_almost_equal(np.array(kernel_loaded.sigma), np.array(kernel.sigma), 5)
     assert kernel_loaded.trainable == kernel.trainable
     assert kernel_loaded.init_sigma_fn == kernel.init_sigma_fn
 
@@ -929,7 +932,10 @@ def test_save_deepkernel(data, deep_kernel, backend, tmp_path):  # noqa: F811
 
     # Final checks
     assert isinstance(kernel_loaded.proj, (torch.nn.Module, tf.keras.Model))
-    assert pytest.approx(deep_kernel.eps.numpy(), abs=1e-4) == kernel_loaded.eps.numpy()
+    if backend == 'pytorch':
+        assert pytest.approx(deep_kernel.eps.detach().numpy(), abs=1e-4) == kernel_loaded.eps.detach().numpy()
+    else:
+        assert pytest.approx(deep_kernel.eps.numpy(), abs=1e-4) == kernel_loaded.eps.numpy()
     assert kernel_loaded.kernel_a.sigma == deep_kernel.kernel_a.sigma
     assert kernel_loaded.kernel_b.sigma == deep_kernel.kernel_b.sigma
 

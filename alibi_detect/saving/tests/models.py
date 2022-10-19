@@ -3,6 +3,7 @@ from functools import partial
 import numpy as np
 import tensorflow as tf
 import torch
+import torch.nn as nn
 from sklearn.ensemble import RandomForestClassifier
 from xgboost import XGBClassifier
 
@@ -11,10 +12,12 @@ from requests.exceptions import HTTPError
 import pytest
 from pytest_cases import fixture, parametrize
 from transformers import AutoTokenizer
+from alibi_detect.cd.pytorch import UAE as UAE_pt
 from alibi_detect.cd.pytorch import preprocess_drift as preprocess_drift_pt
 from alibi_detect.cd.tensorflow import UAE as UAE_tf
 from alibi_detect.cd.tensorflow import preprocess_drift as preprocess_drift_tf
 from alibi_detect.utils.pytorch.kernels import GaussianRBF as GaussianRBF_pt
+from alibi_detect.utils.pytorch.kernels import DeepKernel as DeepKernel_pt
 from alibi_detect.utils.tensorflow.kernels import GaussianRBF as GaussianRBF_tf
 from alibi_detect.utils.tensorflow.kernels import DeepKernel as DeepKernel_tf
 from alibi_detect.models.pytorch import TransformerEmbedding as TransformerEmbedding_pt
@@ -43,7 +46,9 @@ def encoder_model(backend, current_cases):
                ]
            )
     elif backend == 'pytorch':
-        raise NotImplementedError('`pytorch` tests not implemented.')
+        model = nn.Sequential(nn.Linear(input_dim, 5),
+                              nn.ReLU(),
+                              nn.Linear(5, LATENT_DIM))
     else:
         pytest.skip('`encoder_model` only implemented for tensorflow and pytorch.')
     return model
@@ -69,7 +74,10 @@ def encoder_dropout_model(backend, current_cases):
                ]
            )
     elif backend == 'pytorch':
-        raise NotImplementedError('`pytorch` tests not implemented.')
+        model = nn.Sequential(nn.Linear(input_dim, 5),
+                              nn.ReLU(),
+                              nn.Dropout(0.0),  # To ensure determinism
+                              nn.Linear(5, LATENT_DIM))
     else:
         pytest.skip('`encoder_dropout_model` only implemented for tensorflow and pytorch.')
     return model
@@ -93,13 +101,20 @@ def kernel(request, backend):
     Gaussian RBF kernel for given backend. Settings are parametrised in the test function.
     """
     kernel = request.param
+    
     if kernel is None:
-        pass
+        return None
     elif isinstance(kernel, dict):  # dict of kwargs
+        kernel_cfg = kernel.copy()
+        sigma = kernel_cfg.pop('sigma', None)
         if backend == 'tensorflow':
-            kernel = GaussianRBF_tf(**kernel)
+            if sigma is not None and not isinstance(sigma, tf.Tensor):
+                sigma = tf.convert_to_tensor(sigma)
+            kernel = GaussianRBF_tf(sigma=sigma, **kernel_cfg)
         elif backend == 'pytorch':
-            kernel = GaussianRBF_pt(**kernel)
+            if sigma is not None and not isinstance(sigma, torch.Tensor):
+                sigma = torch.tensor(sigma)
+            kernel = GaussianRBF_pt(sigma=sigma, **kernel_cfg)
         else:
             pytest.skip('`kernel` only implemented for tensorflow and pytorch.')
     return kernel
@@ -125,7 +140,9 @@ def deep_kernel(request, backend, encoder_model):
         kernel_a = GaussianRBF_tf(**kernel_b) if isinstance(kernel_b, dict) else kernel_b
         deep_kernel = DeepKernel_tf(proj, kernel_a=kernel_a, kernel_b=kernel_b, eps=eps)
     elif backend == 'pytorch':
-        raise NotImplementedError('`pytorch` tests not implemented.')
+        kernel_a = GaussianRBF_pt(**kernel_a) if isinstance(kernel_a, dict) else kernel_a
+        kernel_a = GaussianRBF_pt(**kernel_b) if isinstance(kernel_b, dict) else kernel_b
+        deep_kernel = DeepKernel_pt(proj, kernel_a=kernel_a, kernel_b=kernel_b, eps=eps)
     else:
         pytest.skip('`deep_kernel` only implemented for tensorflow and pytorch.')
     return deep_kernel
@@ -139,11 +156,15 @@ def classifier_model(backend, current_cases):
     _, _, data_params = current_cases["data"]
     _, input_dim = data_params['data_shape']
     if backend == 'tensorflow':
-        inputs = tf.keras.Input(shape=(input_dim,))
-        outputs = tf.keras.layers.Dense(2, activation=tf.nn.softmax)(inputs)
-        model = tf.keras.Model(inputs=inputs, outputs=outputs)
+        model = tf.keras.Sequential(
+               [
+                   tf.keras.layers.InputLayer(input_shape=(input_dim,)),
+                   tf.keras.layers.Dense(2, activation=tf.nn.softmax),
+               ]
+           )
     elif backend == 'pytorch':
-        raise NotImplementedError('`pytorch` tests not implemented.')
+        model = nn.Sequential(nn.Linear(input_dim, 2),
+                              nn.Softmax(1))
     elif backend == 'sklearn':
         model = RandomForestClassifier()
     else:
@@ -190,21 +211,15 @@ def nlp_embedding_and_tokenizer(model_name, max_len, uae, backend):
             x_emb = embedding(tokens)
             shape = (x_emb.shape[1],)
             embedding = UAE_tf(input_layer=embedding, shape=shape, enc_dim=enc_dim)
-    else:
+    elif backend == 'pt':
         try:
             embedding = TransformerEmbedding_pt(model_name, emb_type, layers)
         except (OSError, HTTPError):
             pytest.skip(f"Problem downloading {model_name} from huggingface.co")
         if uae:
             x_emb = embedding(tokens)
-            emb_dim = x_emb.shape[1]
-            device = torch.device(DEVICE)
-            embedding = torch.nn.Sequential(
-                embedding,
-                torch.nn.Linear(emb_dim, 256),
-                torch.nn.ReLU(),
-                torch.nn.Linear(256, enc_dim)
-            ).to(device).eval()
+            shape = (x_emb.shape[1],)
+            embedding = UAE_pt(input_layer=embedding, shape=shape, enc_dim=enc_dim)
 
     return tokenizer, embedding, max_len, enc_dim
 

@@ -3,6 +3,7 @@ import numpy as np
 from . import distance
 from typing import Optional, Union, Callable
 from scipy.special import logit
+from alibi_detect.utils.frameworks import Framework
 
 
 def sigma_median(x: tf.Tensor, y: tf.Tensor, dist: tf.Tensor) -> tf.Tensor:
@@ -94,7 +95,8 @@ class GaussianRBF(tf.keras.Model):
         """
         cfg = self.config.copy()
         if isinstance(cfg['sigma'], tf.Tensor):
-            cfg['sigma'] = cfg['sigma'].numpy()
+            cfg['sigma'] = cfg['sigma'].numpy().tolist()
+        cfg.update({'flavour': Framework.TENSORFLOW.value})
         return cfg
 
     @classmethod
@@ -107,6 +109,7 @@ class GaussianRBF(tf.keras.Model):
         config
             A kernel config dictionary.
         """
+        config.pop('flavour')
         return cls(**config)
 
 

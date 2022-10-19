@@ -74,7 +74,7 @@ def save_model_config(model: Callable,
         model = None
     elif isinstance(model, HiddenOutput):
         model = model.model
-    elif isinstance(model, tf.keras.Model):  # This must be last as TransferEmbedding is a tf.keras.Model
+    elif isinstance(model, tf.keras.Model):  # Last as TransferEmbedding and UAE are tf.keras.Model's
         model = model
     else:
         raise ValueError('Model not recognised, cannot save.')
