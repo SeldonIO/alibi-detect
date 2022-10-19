@@ -40,21 +40,21 @@ def save_model_config(model: Callable,
     cfg_model = None  # type: Optional[Dict[str, Any]]
     cfg_embed = None  # type: Optional[Dict[str, Any]]
     if isinstance(model, UAE):
-         if isinstance(model.encoder.layers[0], TransformerEmbedding):  # if UAE contains embedding and encoder
-             # embedding
-             embed = model.encoder.layers[0]
-             cfg_embed = save_embedding_config(embed, base_path, local_path.joinpath('embedding'))
-             # preprocessing encoder
-             layers = model.encoder.layers[1:]
-             model = nn.Sequential(layers)
-         else:  # If UAE is simply an encoder
-             model = model.encoder
+        layers = list(model.encoder.children())
+        if isinstance(layers[0], TransformerEmbedding):  # if UAE contains embedding and encoder
+            # embedding
+            embed = layers[0]
+            cfg_embed = save_embedding_config(embed, base_path, local_path.joinpath('embedding'))
+            # preprocessing encoder
+            model = layers[1]
+        else:  # If UAE is simply an encoder
+            model = model.encoder
     elif isinstance(model, TransformerEmbedding):
         cfg_embed = save_embedding_config(model, base_path, local_path.joinpath('embedding'))
         model = None
     elif isinstance(model, HiddenOutput):
         model = model.model
-    elif isinstance(model, (nn.Module, nn.Sequential)):  # Last as TransferEmbedding and UAE are nn.Module's
+    elif isinstance(model, nn.Module):  # Last as TransferEmbedding and UAE are nn.Module's
         model = model
     else:
         raise ValueError('Model not recognised, cannot save.')

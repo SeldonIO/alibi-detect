@@ -12,8 +12,9 @@ class _Encoder(nn.Module):
             self,
             input_layer: Union[nn.Module, int],
             mlp: Optional[nn.Module] = None,
+            input_dim: Optional[int] = None,
             enc_dim: Optional[int] = None,
-            step_dim: Optional[int] = None
+            step_dim: Optional[int] = None,
     ) -> None:
         super().__init__()
         self.input_layer = input_layer
@@ -22,7 +23,7 @@ class _Encoder(nn.Module):
         elif isinstance(enc_dim, int) and isinstance(step_dim, int):
             self.mlp = nn.Sequential(
                 nn.Flatten(),
-                nn.Linear(input_layer, enc_dim + 2 * step_dim),
+                nn.Linear(input_dim, enc_dim + 2 * step_dim),
                 nn.ReLU(),
                 nn.Linear(enc_dim + 2 * step_dim, enc_dim + step_dim),
                 nn.ReLU(),
@@ -53,9 +54,8 @@ class UAE(nn.Module):
             self.encoder = encoder_net
         elif not is_enc and is_enc_dim:  # set default encoder
             input_dim = np.prod(shape)
-            input_layer = input_dim if input_layer is None else input_layer
             step_dim = int((input_dim - enc_dim) / 3)
-            self.encoder = _Encoder(input_layer, enc_dim=enc_dim, step_dim=step_dim)
+            self.encoder = _Encoder(input_layer, input_dim=input_dim, enc_dim=enc_dim, step_dim=step_dim)
         elif not is_enc and not is_enc_dim:
             raise ValueError('Need to provide either `enc_dim` or a nn.Module'
                              ' `encoder_net`.')

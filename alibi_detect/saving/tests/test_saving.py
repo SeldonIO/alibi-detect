@@ -1003,8 +1003,12 @@ def test_save_preprocess_nlp(data, preprocess_fn, tmp_path, backend):
         emb = preprocess_fn.keywords['model']
         emb_load = preprocess_fn_load.keywords['model']
     else:
-        emb = preprocess_fn.keywords['model'].encoder.layers[0]
-        emb_load = preprocess_fn_load.keywords['model'].encoder.layers[0]
+        if backend == 'tensorflow':
+            emb = preprocess_fn.keywords['model'].encoder.layers[0]
+            emb_load = preprocess_fn_load.keywords['model'].encoder.layers[0]
+        elif backend == 'pytorch':
+            emb = list(preprocess_fn.keywords['model'].encoder.children())[0]
+            emb_load = list(preprocess_fn_load.keywords['model'].encoder.children())[0]
     assert isinstance(emb_load.model, type(emb.model))
     assert emb_load.emb_type == emb.emb_type
     assert emb_load.hs_emb.keywords['layers'] == emb.hs_emb.keywords['layers']
