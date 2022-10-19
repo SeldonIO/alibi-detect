@@ -50,8 +50,7 @@ if version.parse(scipy.__version__) >= version.parse('1.7.0'):
 
 # TODO: We currently parametrize encoder_model etc (in models.py) with backend, so the same flavour of
 # preprocessing is used as the detector backend. In the future we could decouple this in tests.
-#backend = param_fixture("backend", ['tensorflow', 'pytorch', 'sklearn'])
-backend = param_fixture("backend", ['tensorflow', 'pytorch'])
+backend = param_fixture("backend", ['tensorflow', 'pytorch', 'sklearn'])
 P_VAL = 0.05
 ERT = 10
 N_PERMUTATIONS = 10

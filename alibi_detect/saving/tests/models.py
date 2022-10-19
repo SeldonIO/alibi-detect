@@ -101,7 +101,7 @@ def kernel(request, backend):
     Gaussian RBF kernel for given backend. Settings are parametrised in the test function.
     """
     kernel = request.param
-    
+
     if kernel is None:
         return None
     elif isinstance(kernel, dict):  # dict of kwargs

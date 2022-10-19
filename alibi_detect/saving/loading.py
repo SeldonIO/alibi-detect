@@ -19,10 +19,13 @@ from alibi_detect.saving._sklearn import load_model_sk
 from alibi_detect.saving.validate import validate_config
 from alibi_detect.base import Detector, ConfigurableDetector
 from alibi_detect.utils.frameworks import has_tensorflow, has_pytorch, Framework
-from alibi_detect.saving.schemas import supported_models_tf, supported_models_torch, supported_optimizers_tf, \
-    supported_optimizers_torch
+from alibi_detect.saving.schemas import supported_models_tf, supported_models_torch
 from alibi_detect.utils.missing_optional_dependency import import_optional
 get_device = import_optional('alibi_detect.utils.pytorch.misc', names=['get_device'])
+
+if TYPE_CHECKING:
+    import tensorflow as tf
+    import torch
 
 logger = logging.getLogger(__name__)
 
@@ -318,7 +321,7 @@ def _load_tokenizer_config(cfg: dict) -> AutoTokenizer:
 
 
 def _load_optimizer_config(cfg: dict,
-                           backend: str) -> Union[supported_optimizers_tf, supported_optimizers_torch, Callable]:
+                           backend: str) -> Union['tf.keras.optimizers.Optimizer', 'torch.optim.Optimizer']:
     """
     Loads an optimzier from an optimizer config dict. When backend='tensorflow', the config dict should be in
     the format given by tf.keras.optimizers.serialize().

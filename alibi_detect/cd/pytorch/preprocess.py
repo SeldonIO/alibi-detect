@@ -61,7 +61,7 @@ class UAE(nn.Module):
                              ' `encoder_net`.')
 
     def forward(self, x: Union[np.ndarray, torch.Tensor, Dict[str, torch.Tensor]]) -> torch.Tensor:
-        return self.encoder(x) 
+        return self.encoder(x)
 
 
 class HiddenOutput(nn.Module):
