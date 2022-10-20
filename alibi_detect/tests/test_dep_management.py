@@ -17,8 +17,6 @@ Notes:
 from types import ModuleType
 from collections import defaultdict
 
-import pytest
-
 
 def check_correct_dependencies(
         module: ModuleType,
