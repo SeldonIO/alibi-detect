@@ -70,14 +70,14 @@ def encoder_dropout_model(backend, current_cases):
                [
                    tf.keras.layers.InputLayer(input_shape=(input_dim,)),
                    tf.keras.layers.Dense(5, activation=tf.nn.relu),
-                   tf.keras.layers.Dropout(0.5),
+                   tf.keras.layers.Dropout(0.0),  # 0.0 to ensure determinism
                    tf.keras.layers.Dense(LATENT_DIM, activation=None)
                ]
            )
     elif backend == 'pytorch':
         model = nn.Sequential(nn.Linear(input_dim, 5),
                               nn.ReLU(),
-                              nn.Dropout(0.0),  # To ensure determinism
+                              nn.Dropout(0.0),  # 0.0 to ensure determinism
                               nn.Linear(5, LATENT_DIM))
     else:
         pytest.skip('`encoder_dropout_model` only implemented for tensorflow and pytorch.')

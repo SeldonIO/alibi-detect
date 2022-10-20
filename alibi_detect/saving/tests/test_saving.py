@@ -16,6 +16,7 @@ import pytest
 import scipy
 import tensorflow as tf
 import torch
+import torch.nn as nn
 
 from .datasets import BinData, CategoricalData, ContinuousData, MixedData, TextData
 from .models import (encoder_model, preprocess_custom, preprocess_hiddenoutput, preprocess_simple,  # noqa: F401
@@ -250,8 +251,8 @@ def test_save_lsdddrift(data, preprocess_at_init, backend, tmp_path, seed):
         pytest.skip("Detector doesn't have this backend")
 
     preprocess_fn = preprocess_simple
-    # TODO - TensorFlow based preprocessors currently cause in-deterministic behaviour with LSDD permutations. Replace
-    # preprocess_simple with parametrized preprocess_fn's once above issue resolved.
+    # TODO - TensorFlow based preprocessors currently cause un-deterministic behaviour with LSDD permutations. Replace
+    #  preprocess_simple with parametrized preprocess_fn's once above issue resolved.
 
     # Init detector and make predictions
     X_ref, X_h0 = data
@@ -405,10 +406,10 @@ def test_save_classifierdrift(data, optimizer, classifier_model, backend, tmp_pa
         assert isinstance(cd_load._detector.train_kwargs, dict)
     if backend == 'tensorflow':
         assert isinstance(cd_load._detector.model, tf.keras.Model)
+    elif backend == 'pytorch':
+        assert isinstance(cd_load._detector.model, nn.Module)
     elif backend == 'sklearn':
         assert isinstance(cd_load._detector.model, sklearn.base.BaseEstimator)
-    else:
-        pass  # TODO
     # TODO - detector still not deterministic, investigate in future
     # assert preds['data']['distance'] == pytest.approx(preds_load['data']['distance'], abs=1e-6)
     # assert preds['data']['p_val'] == pytest.approx(preds_load['data']['p_val'], abs=1e-6)
@@ -447,8 +448,8 @@ def test_save_spotthediff(data, classifier_model, backend, tmp_path, seed):  # n
     assert isinstance(cd_load._detector._detector.train_kwargs, dict)
     if backend == 'tensorflow':
         assert isinstance(cd_load._detector._detector.model, tf.keras.Model)
-    else:
-        pass  # TODO
+    elif backend == 'pytorch':
+        assert isinstance(cd_load._detector._detector.model, nn.Module)
     # TODO - detector still not deterministic, investigate in future
     # assert preds['data']['distance'] == pytest.approx(preds_load['data']['distance'], abs=1e-6)
     # assert preds['data']['p_val'] == pytest.approx(preds_load['data']['p_val'], abs=1e-6)
@@ -968,6 +969,9 @@ def test_save_preprocess(data, preprocess_fn, tmp_path, backend):
     if backend == 'tensorflow':
         assert preprocess_fn_load.func.__name__ == 'preprocess_drift'
         assert isinstance(preprocess_fn_load.keywords['model'], tf.keras.Model)
+    elif backend == 'pytorch':
+        assert preprocess_fn_load.func.__name__ == 'preprocess_drift'
+        assert isinstance(preprocess_fn_load.keywords['model'], nn.Module)
 
 
 @parametrize('preprocess_fn', [preprocess_nlp])
