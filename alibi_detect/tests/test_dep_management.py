@@ -221,13 +221,13 @@ def test_saving_torch_dependencies(opt_dep):
 
     dependency_map = defaultdict(lambda: ['default'])
     for dependency, relations in [
-        ('load_embedding_pt', ['pytorch']),
-        ('load_kernel_config_pt', ['pytorch']),
-        ('load_model_pt', ['pytorch']),
-        ('load_optimizer_pt', ['pytorch']),
-        ('prep_model_and_emb_pt', ['pytorch']),
-        ('save_model_config_pt', ['pytorch']),
-        ('get_pt_dtype', ['pytorch'])
+        ('load_embedding_pt', ['torch']),
+        ('load_kernel_config_pt', ['torch']),
+        ('load_model_pt', ['torch']),
+        ('load_optimizer_pt', ['torch']),
+        ('prep_model_and_emb_pt', ['torch']),
+        ('save_model_config_pt', ['torch']),
+        ('get_pt_dtype', ['torch'])
     ]:
         dependency_map[dependency] = relations
     from alibi_detect.saving import _pytorch as pt_saving
