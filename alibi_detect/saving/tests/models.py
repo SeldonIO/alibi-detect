@@ -1,4 +1,5 @@
 from functools import partial
+from importlib import import_module
 
 import numpy as np
 import tensorflow as tf
@@ -102,9 +103,7 @@ def kernel(request, backend):
     """
     kernel = request.param
 
-    if kernel is None:
-        return None
-    elif isinstance(kernel, dict):  # dict of kwargs
+    if isinstance(kernel, dict):  # dict of kwargs
         kernel_cfg = kernel.copy()
         sigma = kernel_cfg.pop('sigma', None)
         if backend == 'tensorflow':
@@ -118,6 +117,26 @@ def kernel(request, backend):
         else:
             pytest.skip('`kernel` only implemented for tensorflow and pytorch.')
     return kernel
+
+
+@fixture
+def optimizer(request, backend):
+    """
+    Optimizer for given backend. Optimizer is expected to be passed via `request` as a string, i.e. "Adam".
+
+    For tensorflow, the optimizer is an instantiated `tf.of.keras.optimizers.Optimizer` object. For pytorch,
+    the optimizer is a `torch.optim.Optimizer` class (NOT instantiated).
+    """
+    optimizer = request.param  # Get parametrized setting
+    if backend not in ('tensorflow', 'pytorch'):
+        pytest.skip('`optimizer` only implemented for tensorflow and pytorch.')
+    if isinstance(optimizer, str):
+        module = 'tensorflow.keras.optimizers' if backend == 'tensorflow' else 'torch.optim'
+        try:
+            optimizer = getattr(import_module(module), optimizer)
+        except AttributeError:
+            raise ValueError(f"{optimizer} is not a recognised optimizer in {module}.")
+    return optimizer
 
 
 @fixture

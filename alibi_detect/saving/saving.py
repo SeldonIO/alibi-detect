@@ -4,7 +4,7 @@ import shutil
 import warnings
 from functools import partial
 from pathlib import Path
-from typing import Callable, Optional, Tuple, Union, Any
+from typing import Callable, Optional, Tuple, Union, Any, TYPE_CHECKING
 import dill
 import numpy as np
 import toml
@@ -17,9 +17,12 @@ from alibi_detect.utils._types import supported_models_all, supported_models_tf,
     supported_models_sklearn
 from alibi_detect.utils.frameworks import Framework
 from alibi_detect.base import Detector, ConfigurableDetector
-from alibi_detect.saving._tensorflow import save_detector_legacy, save_model_config_tf
+from alibi_detect.saving._tensorflow import save_detector_legacy, save_model_config_tf, save_optimizer_config_tf
 from alibi_detect.saving._pytorch import save_model_config_pt
 from alibi_detect.saving._sklearn import save_model_config_sk
+
+if TYPE_CHECKING:
+    import tensorflow as tf
 
 # do not extend pickle dispatch table so as not to change pickle behaviour
 dill.extend(use_dill=False)
@@ -180,6 +183,11 @@ def _save_detector_config(detector: ConfigurableDetector, filepath: Union[str, o
     if model is not None:
         model_cfg, _ = _save_model_config(model, base_path=filepath, input_shape=cfg['input_shape'])
         cfg['model'] = model_cfg
+
+    # Serialize optimizer
+    optimizer = cfg.get('optimizer', None)
+    if optimizer is not None:
+        cfg['optimizer'] = _save_optimizer_config(optimizer)
 
     # Serialize dataset
     dataset = cfg.get('dataset', None)
@@ -508,3 +516,22 @@ def _save_kernel_config(kernel: Callable,
         cfg_kernel['src'], _ = _serialize_object(kernel_class, base_path, local_path.joinpath('kernel'))
 
     return cfg_kernel
+
+
+def _save_optimizer_config(optimizer: Union['tf.keras.optimizers.Optimizer', type]) -> dict:
+    """
+    Function to save tensorflow or pytorch optimizers.
+
+    Parameters
+    ----------
+    optimizer
+        The optimizer to save.
+
+    Returns
+    -------
+    Optimizer config dict.
+    """
+    if isinstance(optimizer, type):
+        return {'class_name': optimizer.__name__}
+    else:
+        return save_optimizer_config_tf(optimizer)

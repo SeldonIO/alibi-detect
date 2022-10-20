@@ -20,7 +20,7 @@ import torch
 from .datasets import BinData, CategoricalData, ContinuousData, MixedData, TextData
 from .models import (encoder_model, preprocess_custom, preprocess_hiddenoutput, preprocess_simple,  # noqa: F401
                      preprocess_nlp, LATENT_DIM, classifier_model, kernel, deep_kernel, nlp_embedding_and_tokenizer,
-                     embedding, tokenizer, max_len, enc_dim, encoder_dropout_model)
+                     embedding, tokenizer, max_len, enc_dim, encoder_dropout_model, optimizer)
 
 from alibi_detect.utils._random import fixed_seed
 from packaging import version
@@ -369,18 +369,23 @@ def test_save_tabulardrift(data, tmp_path):
     assert preds['data']['p_val'] == pytest.approx(preds_load['data']['p_val'], abs=1e-6)
 
 
+@parametrize('optimizer', [None, "Adam"], indirect=True)
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
-def test_save_classifierdrift(data, classifier_model, backend, tmp_path, seed):  # noqa: F811
-    """ Test ClassifierDrift on continuous datasets."""
+def test_save_classifierdrift(data, optimizer, classifier_model, backend, tmp_path, seed):  # noqa: F811
+    """
+    Test ClassifierDrift on continuous datasets.
+    """
     if backend not in ('tensorflow', 'pytorch', 'sklearn'):
         pytest.skip("Detector doesn't have this backend")
 
     # Init detector and predict
+
     X_ref, X_h0 = data
     with fixed_seed(seed):
         cd = ClassifierDrift(X_ref,
                              model=classifier_model,
                              p_val=P_VAL,
+                             optimizer=optimizer,
                              n_folds=5,
                              backend=backend,
                              train_size=None)

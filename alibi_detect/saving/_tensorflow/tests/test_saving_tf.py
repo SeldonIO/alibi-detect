@@ -7,12 +7,17 @@ from alibi_detect.cd.tensorflow import HiddenOutput as HiddenOutput_tf
 from alibi_detect.saving.loading import _load_model_config, _load_optimizer_config
 from alibi_detect.saving.saving import _path2str, _save_model_config
 from alibi_detect.saving.schemas import ModelConfig
+import tensorflow as tf
 
 backend = param_fixture("backend", ['tensorflow'])
 
 
-def test_load_optimizer_tf(backend):
-    "Test the tensorflow _load_optimizer_config."
+# Note: The full save/load functionality of optimizers (inc. validation) is tested in test_save_classifierdrift.
+def test_load_optimizer_object(backend):
+    """
+    Test the _load_optimizer_config with a tensorflow optimizer config. In this case, we expect the returned optimizer
+    to be an instantiated `tf.keras.optimizers.Optimizer` object.
+    """
     class_name = 'Adam'
     learning_rate = 0.01
     epsilon = 1e-7
@@ -29,10 +34,23 @@ def test_load_optimizer_tf(backend):
         }
     }
     optimizer = _load_optimizer_config(cfg_opt, backend=backend)
+    assert isinstance(optimizer, tf.keras.optimizers.Optimizer)
     assert type(optimizer).__name__ == class_name
     assert optimizer.learning_rate == learning_rate
     assert optimizer.epsilon == epsilon
     assert optimizer.amsgrad == amsgrad
+
+
+def test_load_optimizer_type(backend):
+    """
+    Test the _load_optimizer_config with just the `class_name` specified. In this case we expect a
+    `tf.keras.optimizers.Optimizer` class to be returned.
+    """
+    class_name = 'Adam'
+    cfg_opt = {'class_name': class_name}
+    optimizer = _load_optimizer_config(cfg_opt, backend=backend)
+    assert isinstance(optimizer, type)
+    assert optimizer.__name__ == class_name
 
 
 @parametrize_with_cases("data", cases=ContinuousData.data_synthetic_nd, prefix='data_')

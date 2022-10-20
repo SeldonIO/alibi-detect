@@ -158,6 +158,21 @@ def save_embedding_config(embed: TransformerEmbedding,
     return cfg_embed
 
 
+def save_optimizer_config(optimizer: tf.keras.optimizers.Optimizer):
+    """
+
+    Parameters
+    ----------
+    optimizer
+        The tensorflow optimizer to serialize.
+
+    Returns
+    -------
+    The tensorflow optimizer's config dictionary.
+    """
+    return tf.keras.optimizers.serialize(optimizer)
+
+
 #######################################################################################################
 # TODO: Everything below here is legacy saving code, and will be removed in the future
 #######################################################################################################

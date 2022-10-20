@@ -1,7 +1,8 @@
 import logging
 import os
+from importlib import import_module
 from pathlib import Path
-from typing import Callable, Optional, Union
+from typing import Callable, Optional, Union, Type
 
 import dill
 import torch
@@ -99,20 +100,24 @@ def load_kernel_config(cfg: dict) -> Callable:
     return kernel
 
 
-def load_optimizer(filepath: Union[str, os.PathLike]) -> torch.optim.Optimizer:
+def load_optimizer(cfg: dict) -> Type[torch.optim.Optimizer]:
     """
-    Loads a PyTorch optimizer from a dill file.
+    Imports a PyTorch torch.optim.Optimizer class from an optimizer config dict.
 
     Parameters
     ----------
-    filepath
-        Filepath to the optimizer dill file.
+    cfg
+        The optimizer config dict.
 
     Returns
     -------
-    The loaded optimizer.
+    The loaded optimizer class.
     """
-    return torch.load(filepath, pickle_module=dill)
+    class_name = cfg.get('class_name', None)
+    try:
+        return getattr(import_module('torch.optim'), class_name)
+    except AttributeError:
+        raise ValueError(f"{class_name} is not a recognised optimizer in `torch.optim`.")
 
 
 def load_embedding(src: str, embedding_type, layers) -> TransformerEmbedding:

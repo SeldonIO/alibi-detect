@@ -38,7 +38,7 @@ class SupportedModel:
     def validate_model(cls, model: Any, values: dict) -> Any:
         backend = values['backend']
         err_msg = f"`backend={backend}` but the `model` doesn't appear to be a {backend} supported model, "\
-                  f"or {backend} is not installed."
+                  f"or {backend} is not installed. Model: {model}"
         if backend == Framework.TENSORFLOW and not isinstance(model, supported_models_tf):
             raise TypeError(err_msg)
         elif backend == Framework.PYTORCH and not isinstance(model, supported_models_torch):
@@ -63,8 +63,8 @@ class SupportedOptimizer:
     @classmethod
     def validate_optimizer(cls, optimizer: Any, values: dict) -> Any:
         backend = values['backend']
-        err_msg = f"`backend={backend}` but the `optimizer` doesn't appear to be a {backend} supported model, "\
-                  f"or {backend} is not installed."
+        err_msg = f"`backend={backend}` but the `optimizer` doesn't appear to be a {backend} supported optimizer, "\
+                  f"or {backend} is not installed. Optimizer: {optimizer}"
         if backend == Framework.TENSORFLOW and not isinstance(optimizer, supported_optimizers_tf):
             raise TypeError(err_msg)
         elif backend == Framework.PYTORCH and not isinstance(optimizer, supported_optimizers_torch):
@@ -421,12 +421,16 @@ class DeepKernelConfig(CustomBaseModel):
     """
 
 
-class TFOptimizerConfig(CustomBaseModelWithKwargs):
+class OptimizerConfig(CustomBaseModelWithKwargs):
     """
-    Unresolved schema for TensorFlow optimizers. The `optimizer` dictionary is expected to be
-    a configuration dictionary compatible with
-    `tf.keras.optimizers.deserialize <https://www.tensorflow.org/api_docs/python/tf/keras/optimizers/deserialize>`_.
+    Unresolved schema for optimizers. The `optimizer` dictionary has two possible formats:
 
+    1. A configuration dictionary compatible with
+    `tf.keras.optimizers.deserialize <https://www.tensorflow.org/api_docs/python/tf/keras/optimizers/deserialize>`_.
+    For `backend='tensorflow'` only.
+    2. A dictionary containing only `class_name`, where this is a string referencing the optimizer name e.g.
+    `optimizer.class_name = 'Adam'`. In this case, the tensorflow or pytorch optimizer class of the same name is
+    loaded. For `backend='tensorflow'` and `backend='pytorch'`.
 
     Examples
     --------
@@ -441,9 +445,16 @@ class TFOptimizerConfig(CustomBaseModelWithKwargs):
         name = "Adam"
         learning_rate = 0.001
         decay = 0.0
+
+    A PyTorch Adam optimizer:
+
+    .. code-block :: toml
+
+        [optimizer]
+        class_name = "Adam"
     """
     class_name: str
-    config: Dict[str, Any]
+    config: Optional[Dict[str, Any]] = None
 
 
 class DriftDetectorConfig(DetectorConfig):
@@ -759,7 +770,7 @@ class ClassifierDriftConfig(DriftDetectorConfig):
     n_folds: Optional[int] = None
     retrain_from_scratch: bool = True
     seed: int = 0
-    optimizer: Optional[Union[str, TFOptimizerConfig]] = None
+    optimizer: Optional[OptimizerConfig] = None
     learning_rate: float = 1e-3
     batch_size: int = 32
     preprocess_batch_fn: Optional[str] = None
@@ -830,7 +841,7 @@ class SpotTheDiffDriftConfig(DriftDetectorConfig):
     n_folds: Optional[int] = None
     retrain_from_scratch: bool = True
     seed: int = 0
-    optimizer: Optional[Union[str, TFOptimizerConfig]] = None
+    optimizer: Optional[OptimizerConfig] = None
     learning_rate: float = 1e-3
     batch_size: int = 32
     preprocess_batch_fn: Optional[str] = None
@@ -902,7 +913,7 @@ class LearnedKernelDriftConfig(DriftDetectorConfig):
     reg_loss_fn: Optional[str] = None
     train_size: Optional[float] = .75
     retrain_from_scratch: bool = True
-    optimizer: Optional[Union[str, TFOptimizerConfig]] = None
+    optimizer: Optional[OptimizerConfig] = None
     learning_rate: float = 1e-3
     batch_size: int = 32
     batch_size_predict: int = 1000000

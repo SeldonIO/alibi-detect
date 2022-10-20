@@ -3,7 +3,7 @@ import os
 from functools import partial
 from importlib import import_module
 from pathlib import Path
-from typing import Any, Callable, Optional, Union, TYPE_CHECKING
+from typing import Any, Callable, Optional, Union, Type, TYPE_CHECKING
 
 import dill
 import numpy as np
@@ -320,11 +320,11 @@ def _load_tokenizer_config(cfg: dict) -> AutoTokenizer:
     return tokenizer
 
 
-def _load_optimizer_config(cfg: dict,
-                           backend: str) -> Union['tf.keras.optimizers.Optimizer', 'torch.optim.Optimizer']:
+def _load_optimizer_config(cfg: dict, backend: str) \
+        -> Union['tf.keras.optimizers.Optimizer', Type['tf.keras.optimizers.Optimizer'],
+                 Type['torch.optim.Optimizer']]:
     """
-    Loads an optimzier from an optimizer config dict. When backend='tensorflow', the config dict should be in
-    the format given by tf.keras.optimizers.serialize().
+    Loads an optimzier from an optimizer config dict.
 
     Parameters
     ----------
@@ -338,10 +338,9 @@ def _load_optimizer_config(cfg: dict,
     The loaded optimizer.
     """
     if backend == Framework.TENSORFLOW:
-        optimizer = load_optimizer_tf(cfg)
+        return load_optimizer_tf(cfg)
     else:
-        optimizer = load_optimizer_pt(cfg)
-    return optimizer
+        return load_optimizer_pt(cfg)
 
 
 def _get_nested_value(dic: dict, keys: list) -> Any:
@@ -492,9 +491,7 @@ def resolve_config(cfg: dict, config_dir: Optional[Path]) -> dict:
                 if Path(src).suffix == '.npy':
                     obj = np.load(src)
 
-        # Resolve artefact dicts (dicts which have a resolved config schema, such as PreprocessConfig and KernelConfig,
-        # are not resolved into objects here, since they are yet to undergo a further validation step). Instead, only
-        # their components, such as `src`, are resolved above.
+        # Resolve artefact dicts
         elif isinstance(src, dict):
             backend = cfg.get('backend', Framework.TENSORFLOW)
             if key[-1] in ('model', 'proj'):

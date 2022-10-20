@@ -151,7 +151,7 @@ class MMDDriftOnline(DriftConfigMixin):
         """
         return self._detector.score(x_t)
 
-    def get_config(self) -> dict:  # Needed due to need to self.x_ref being a torch.Tensor when backend='pytorch'
+    def get_config(self) -> dict:  # Needed due to self.x_ref being a torch.Tensor when backend='pytorch'
         """
         Get the detector's configuration dictionary.
 
