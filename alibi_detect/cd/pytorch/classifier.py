@@ -174,7 +174,6 @@ class ClassifierDriftTorch(BaseClassifierDrift):
         and the out-of-fold classifier model prediction probabilities on the reference and test data
         """
         x_ref, x = self.preprocess(x)
-        n_ref, n_cur = len(x_ref), len(x)
         x, y, splits = self.get_splits(x_ref, x)  # type: ignore
 
         # iterate over folds: train a new model for each fold and make out-of-fold (oof) predictions
@@ -200,6 +199,8 @@ class ClassifierDriftTorch(BaseClassifierDrift):
         probs_oof = softmax(preds_oof, axis=-1) if self.preds_type == 'logits' else preds_oof
         idx_oof = np.concatenate(idx_oof_list, axis=0)
         y_oof = y[idx_oof]
+        n_cur = y_oof.sum()
+        n_ref = len(y_oof) - n_cur
         p_val, dist = self.test_probs(y_oof, probs_oof, n_ref, n_cur)
         probs_sort = probs_oof[np.argsort(idx_oof)]
         return p_val, dist, probs_sort[:n_ref, 1], probs_sort[n_ref:, 1]
