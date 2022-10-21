@@ -6,6 +6,7 @@
 
 ### Fixed
 - Fixed an incorrect default value for the `alternative` kwarg in the `FETDrift` detector ([#661](https://github.com/SeldonIO/alibi-detect/pull/661)).
+- Fixed an issue with `ClassifierDrift` returning incorrect prediction probabilities when `train_size` given ([#662](https://github.com/SeldonIO/alibi-detect/pull/662)).
 
 ## v0.10.3
 ## [v0.10.3](https://github.com/SeldonIO/alibi-detect/tree/v0.10.3) (2022-08-17)
