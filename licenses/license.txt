@@ -639,7 +639,7 @@ the file ChangeLog history information documenting your changes.  Please read
 the FAQ for more information on the distribution of modified source versions.
 
 PyWavelets
-1.4.0
+1.4.1
 MIT License
 Copyright (c) 2006-2012 Filip Wasilewski <http://en.ig.ma/>
 Copyright (c) 2012-2020 The PyWavelets Developers <https://github.com/PyWavelets/pywt>
@@ -689,7 +689,7 @@ SOFTWARE.
 
 
 alibi-detect
-0.10.4.dev0
+0.10.3
 Apache Software License
                                  Apache License
                            Version 2.0, January 2004
@@ -921,7 +921,7 @@ SOFTWARE.
 
 
 certifi
-2022.9.14
+2022.9.24
 Mozilla Public License 2.0 (MPL 2.0)
 This package contains a modified version of ca-bundle.crt:
 
@@ -1111,7 +1111,7 @@ For more information, please refer to <http://unlicense.org>
 
 
 fonttools
-4.37.2
+4.37.4
 MIT License
 MIT License
 
@@ -1137,7 +1137,7 @@ SOFTWARE.
 
 
 fsspec
-2022.8.2
+2022.10.0
 BSD License
 BSD 3-Clause License
 
@@ -1171,7 +1171,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 huggingface-hub
-0.9.1
+0.10.1
 Apache Software License
                                  Apache License
                            Version 2.0, January 2004
@@ -1438,7 +1438,7 @@ THE SOFTWARE.
 
 
 imageio
-2.21.3
+2.22.2
 BSD License
 Copyright (c) 2014-2022, imageio developers
 All rights reserved.
@@ -1467,7 +1467,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 importlib-metadata
-4.12.0
+5.0.0
 Apache Software License
 
                                  Apache License
@@ -1840,7 +1840,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 matplotlib
-3.6.0
+3.6.1
 Python Software Foundation License
 License agreement for matplotlib versions 1.3.0 and later
 =========================================================
@@ -1943,7 +1943,7 @@ Licensee agrees to be bound by the terms and conditions of this License
 Agreement.
 
 networkx
-2.8.6
+2.8.7
 BSD License
 NetworkX is distributed with the 3-clause BSD license.
 
@@ -5379,14 +5379,14 @@ under the terms of *both* these licenses.
 
 
 pandas
-1.4.4
+1.5.1
 BSD License
 BSD 3-Clause License
 
 Copyright (c) 2008-2011, AQR Capital Management, LLC, Lambda Foundry, Inc. and PyData Development Team
 All rights reserved.
 
-Copyright (c) 2011-2021, Open source contributors.
+Copyright (c) 2011-2022, Open source contributors.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -5555,7 +5555,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 The above BSD License Applies to all code, even that also covered by Apache 2.0.
 
 pytz
-2022.2.1
+2022.5
 MIT License
 Copyright (c) 2003-2019 Stuart Bishop <stuart@stuartbishop.net>
 
@@ -6092,7 +6092,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 scipy
-1.9.1
+1.9.3
 BSD License
 Copyright (c) 2001-2002 Enthought, Inc. 2003-2022, SciPy Developers.
 All rights reserved.
@@ -6127,7 +6127,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ----
 
-This binary distribution of Scipy also bundles the following software:
+This binary distribution of SciPy also bundles the following software:
 
 
 Name: OpenBLAS
@@ -7058,7 +7058,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 tifffile
-2022.8.12
+2022.10.10
 BSD License
 BSD 3-Clause License
 
@@ -7093,7 +7093,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 
 tokenizers
-0.12.1
+0.13.1
 Apache Software License
 UNKNOWN
 
@@ -7216,7 +7216,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 transformers
-4.22.0
+4.23.1
 Apache Software License
 Copyright 2018- The Hugging Face team. All rights reserved.
 
@@ -7424,7 +7424,7 @@ Copyright 2018- The Hugging Face team. All rights reserved.
 
 
 typing-extensions
-4.3.0
+4.4.0
 Python Software Foundation License
 A. HISTORY OF THE SOFTWARE
 ==========================
@@ -7441,12 +7441,11 @@ software.
 
 In May 2000, Guido and the Python core development team moved to
 BeOpen.com to form the BeOpen PythonLabs team.  In October of the same
-year, the PythonLabs team moved to Digital Creations (now Zope
-Corporation, see http://www.zope.com).  In 2001, the Python Software
-Foundation (PSF, see http://www.python.org/psf/) was formed, a
-non-profit organization created specifically to own Python-related
-Intellectual Property.  Zope Corporation is a sponsoring member of
-the PSF.
+year, the PythonLabs team moved to Digital Creations, which became
+Zope Corporation.  In 2001, the Python Software Foundation (PSF, see
+https://www.python.org/psf/) was formed, a non-profit organization
+created specifically to own Python-related Intellectual Property.
+Zope Corporation was a sponsoring member of the PSF.
 
 All Python releases are Open Source (see http://www.opensource.org for
 the Open Source Definition).  Historically, most, but not all, Python
@@ -7502,8 +7501,9 @@ analyze, test, perform and/or display publicly, prepare derivative works,
 distribute, and otherwise use Python alone or in any derivative version,
 provided, however, that PSF's License Agreement and PSF's notice of copyright,
 i.e., "Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010,
-2011, 2012, 2013, 2014 Python Software Foundation; All Rights Reserved" are
-retained in Python alone or in any derivative version prepared by Licensee.
+2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022 Python Software Foundation;
+All Rights Reserved" are retained in Python alone or in any derivative version
+prepared by Licensee.
 
 3. In the event Licensee prepares a derivative work that is based on
 or incorporates Python or any part thereof, and wants to make
@@ -7608,9 +7608,9 @@ version prepared by Licensee.  Alternately, in lieu of CNRI's License
 Agreement, Licensee may substitute the following text (omitting the
 quotes): "Python 1.6.1 is made available subject to the terms and
 conditions in CNRI's License Agreement.  This Agreement together with
-Python 1.6.1 may be located on the Internet using the following
+Python 1.6.1 may be located on the internet using the following
 unique, persistent identifier (known as a handle): 1895.22/1013.  This
-Agreement may also be obtained from a proxy server on the Internet
+Agreement may also be obtained from a proxy server on the internet
 using the following URL: http://hdl.handle.net/1895.22/1013".
 
 3. In the event Licensee prepares a derivative work that is based on
@@ -7709,7 +7709,7 @@ SOFTWARE.
 
 
 zipp
-3.8.1
+3.9.0
 MIT License
 Copyright Jason R. Coombs
 

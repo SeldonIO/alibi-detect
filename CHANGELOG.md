@@ -1,6 +1,6 @@
 # Change Log
 
-## v0.10.4dev
+## v0.11.0dev
 [Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.10.3...master)
 
 ### Added
@@ -16,6 +16,14 @@ See the [documentation](https://docs.seldon.io/projects/alibi-detect/en/latest/c
 ### Development
 - UTF-8 decoding is enforced when `README.md` is opened by `setup.py`. This is to prevent pip install errors on systems with `PYTHONIOENCODING` set to use other encoders ([#605](https://github.com/SeldonIO/alibi-detect/pull/605)).
 - Skip specific save/load tests that require downloading remote artefacts if the relevant URI(s) is/are down ([#607](https://github.com/SeldonIO/alibi-detect/pull/607)).
+
+## v0.10.4
+## [v0.10.4](https://github.com/SeldonIO/alibi-detect/tree/v0.10.4) (2022-10-21)
+[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.10.3...v0.10.4)
+
+### Fixed
+- Fixed an incorrect default value for the `alternative` kwarg in the `FETDrift` detector ([#661](https://github.com/SeldonIO/alibi-detect/pull/661)).
+- Fixed an issue with `ClassifierDrift` returning incorrect prediction probabilities when `train_size` given ([#662](https://github.com/SeldonIO/alibi-detect/pull/662)).
 
 ## [v0.10.3](https://github.com/SeldonIO/alibi-detect/tree/v0.10.3) (2022-08-17)
 [Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.10.2...v0.10.3)

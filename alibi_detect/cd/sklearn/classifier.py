@@ -252,29 +252,27 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
 
     def _score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, np.ndarray, np.ndarray]:
         x_ref, x = self.preprocess(x)
-        n_ref, n_cur = len(x_ref), len(x)
         x, y, splits = self.get_splits(x_ref, x, return_splits=True)  # type: ignore
 
         # iterate over folds: train a new model for each fold and make out-of-fold (oof) predictions
         probs_oof_list, idx_oof_list = [], []
         for idx_tr, idx_te in splits:
             y_tr = y[idx_tr]
-
             if isinstance(x, np.ndarray):
                 x_tr, x_te = x[idx_tr], x[idx_te]
             elif isinstance(x, list):
                 x_tr, x_te = [x[_] for _ in idx_tr], [x[_] for _ in idx_te]
             else:
                 raise TypeError(f'x needs to be of type np.ndarray or list and not {type(x)}.')
-
             self.model.fit(x_tr, y_tr)
             probs = self.model.aux_predict_proba(x_te)
             probs_oof_list.append(probs)
             idx_oof_list.append(idx_te)
-
         probs_oof = np.concatenate(probs_oof_list, axis=0)
         idx_oof = np.concatenate(idx_oof_list, axis=0)
         y_oof = y[idx_oof]
+        n_cur = y_oof.sum()
+        n_ref = len(y_oof) - n_cur
         p_val, dist = self.test_probs(y_oof, probs_oof, n_ref, n_cur)
         probs_sort = probs_oof[np.argsort(idx_oof)]
         return p_val, dist, probs_sort[:n_ref, 1], probs_sort[n_ref:, 1]
