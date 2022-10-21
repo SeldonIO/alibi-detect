@@ -14,7 +14,7 @@ class FETDrift(BaseUnivariateDrift):
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
             correction: str = 'bonferroni',
-            alternative: str = 'decrease',
+            alternative: str = 'less',
             n_features: Optional[int] = None,
             input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None

@@ -19,7 +19,7 @@ class FETDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
             x_ref_preprocessed: bool = False,
             n_bootstraps: int = 10000,
             t_max: Optional[int] = None,
-            alternative: str = 'greater',
+            alternative: str = 'less',
             lam: float = 0.99,
             n_features: Optional[int] = None,
             verbose: bool = True,
