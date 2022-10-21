@@ -10,6 +10,7 @@ from alibi_detect.utils.tensorflow.data import TFDataset
 from alibi_detect.utils.tensorflow.misc import clone_model
 from alibi_detect.utils.tensorflow.prediction import predict_batch
 from alibi_detect.utils.warnings import deprecated_alias
+from alibi_detect.utils.frameworks import Framework
 
 
 class ClassifierDriftTF(BaseClassifierDrift):
@@ -129,7 +130,7 @@ class ClassifierDriftTF(BaseClassifierDrift):
         if preds_type not in ['probs', 'logits']:
             raise ValueError("'preds_type' should be 'probs' or 'logits'")
 
-        self.meta.update({'backend': 'tensorflow'})
+        self.meta.update({'backend': Framework.TENSORFLOW.value})
 
         # define and compile classifier model
         self.original_model = model

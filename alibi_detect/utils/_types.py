@@ -6,6 +6,8 @@ from typing import Any, Generic, Optional, Type, TypeVar
 import numpy as np
 from numpy.lib import NumpyVersion
 from pydantic.fields import ModelField
+from sklearn.base import BaseEstimator  # import here (instead of later) since sklearn currently a core dep
+from alibi_detect.utils.frameworks import has_tensorflow, has_pytorch
 
 # Literal for typing
 if sys.version_info >= (3, 8):
@@ -51,3 +53,19 @@ def _validate(cls: Type, val: Any, field: ModelField) -> np.ndarray:
         return np.asarray(val, dtype=dtype_field.type_)
     else:
         return np.asarray(val)
+
+
+# Optional dep dependent tuples of types
+supported_models_tf, supported_models_torch, supported_models_sklearn = (), (), ()  # type: ignore
+supported_optimizers_tf, supported_optimizers_torch = (), ()  # type: ignore
+if has_tensorflow:
+    import tensorflow as tf
+    supported_models_tf = (tf.keras.Model, )  # type: ignore
+    supported_optimizers_tf = (tf.keras.optimizers.Optimizer, )  # type: ignore
+if has_pytorch:
+    import torch
+    supported_models_torch = (torch.nn.Module, torch.nn.Sequential)  # type: ignore
+    supported_optimizers_torch = (torch.optim.Optimizer, )  # type: ignore
+supported_models_sklearn = (BaseEstimator, )  # type: ignore
+supported_models_all = supported_models_tf + supported_models_torch + supported_models_sklearn
+supported_optimizers_all = supported_optimizers_tf + supported_optimizers_torch

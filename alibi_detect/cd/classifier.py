@@ -1,7 +1,7 @@
 import numpy as np
 from typing import Callable, Dict, Optional, Union
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, \
-    BackendValidator
+    BackendValidator, Framework
 from alibi_detect.base import DriftConfigMixin
 
 
@@ -149,9 +149,9 @@ class ClassifierDrift(DriftConfigMixin):
 
         backend = backend.lower()
         BackendValidator(
-            backend_options={'tensorflow': ['tensorflow'],
-                             'pytorch': ['pytorch'],
-                             'sklearn': ['sklearn']},
+            backend_options={Framework.TENSORFLOW: [Framework.TENSORFLOW],
+                             Framework.PYTORCH: [Framework.PYTORCH],
+                             Framework.SKLEARN: [Framework.SKLEARN]},
             construct_name=self.__class__.__name__
         ).verify_backend(backend)
 
@@ -162,13 +162,13 @@ class ClassifierDrift(DriftConfigMixin):
             pop_kwargs += ['optimizer']
         [kwargs.pop(k, None) for k in pop_kwargs]
 
-        if backend == 'tensorflow':
+        if backend == Framework.TENSORFLOW:
             pop_kwargs = ['device', 'dataloader', 'use_calibration', 'calibration_kwargs', 'use_oob']
             [kwargs.pop(k, None) for k in pop_kwargs]
             if dataset is None:
                 kwargs.update({'dataset': TFDataset})
             self._detector = ClassifierDriftTF(*args, **kwargs)  # type: ignore
-        elif backend == 'pytorch':
+        elif backend == Framework.PYTORCH:
             pop_kwargs = ['use_calibration', 'calibration_kwargs', 'use_oob']
             [kwargs.pop(k, None) for k in pop_kwargs]
             if dataset is None:

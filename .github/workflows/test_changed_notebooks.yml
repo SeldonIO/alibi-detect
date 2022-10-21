@@ -7,17 +7,17 @@ defaults:
     shell: bash  # To override PowerShell on Windows
 
 on:
+  # Trigger the workflow on push or PR to any branch
   push:
-    branches:
-      - master
     paths:
       - 'doc/source/examples/**/*.ipynb'
   pull_request:
-    branches:
-      - master
     paths:
       - 'doc/source/examples/**/*.ipynb'
+    # don't trigger for draft PRs
     types: [ opened, synchronize, reopened, ready_for_review ]
+  # Trigger the workflow on manual dispatch
+  workflow_dispatch:
 
 jobs:
   test_changed_notebooks:
@@ -56,10 +56,7 @@ jobs:
           python -m pip install --upgrade pip setuptools wheel
           python -m pip install --upgrade --upgrade-strategy eager -r requirements/dev.txt -r testing/requirements.txt
           python -m pip install --upgrade --upgrade-strategy eager -e .
-          if [ "$RUNNER_OS" != "Windows" ] && [ ${{ matrix.python }} < '3.10' ]; then  # Skip Prophet tests on Windows as installation complex. Skip on Python 3.10 as not supported.
-            python -m pip install --upgrade --upgrade-strategy eager -e .[prophet]
-          fi
-          python -m pip install --upgrade --upgrade-strategy eager -e .[torch,tensorflow]
+          python -m pip install --upgrade --upgrade-strategy eager -e .[prophet,torch,tensorflow]
           python -m pip freeze
 
       - name: Run notebooks

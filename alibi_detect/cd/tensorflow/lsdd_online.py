@@ -4,6 +4,7 @@ import tensorflow as tf
 from typing import Any, Callable, Optional, Union
 from alibi_detect.cd.base_online import BaseMultiDriftOnline
 from alibi_detect.utils.tensorflow import GaussianRBF, quantile, permed_lsdds
+from alibi_detect.utils.frameworks import Framework
 
 
 class LSDDDriftOnlineTF(BaseMultiDriftOnline):
@@ -77,7 +78,7 @@ class LSDDDriftOnlineTF(BaseMultiDriftOnline):
             input_shape=input_shape,
             data_type=data_type
         )
-        self.meta.update({'backend': 'tensorflow'})
+        self.meta.update({'backend': Framework.TENSORFLOW.value})
         self.n_kernel_centers = n_kernel_centers
         self.lambda_rd_max = lambda_rd_max
 

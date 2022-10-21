@@ -461,9 +461,6 @@ artefacts before attempting the sometimes time-consuming operation of instantiat
 %```python
 %{'name': {'title': 'Name', 'type': 'string'},
 % 'version': {'title': 'Version', 'default': '0.8.1dev', 'type': 'string'},
-% 'config_spec': {'title': 'Config Spec',
-%  'default': '0.1.0dev',
-%  'type': 'string'},
 % 'backend': {'title': 'Backend',
 %  'default': 'tensorflow',
 %  'enum': ['tensorflow', 'pytorch'],

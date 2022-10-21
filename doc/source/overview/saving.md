@@ -56,8 +56,8 @@ for the remaining detectors is in the [Roadmap](roadmap.md).
 | Detector                                                                       | Legacy save/load | Config save/load |
 |:-------------------------------------------------------------------------------|:----------------:|:----------------:|
 | [Kolmogorov-Smirnov](../cd/methods/ksdrift.ipynb)                              |        ✅         |        ✅         |
-| [Cramér-von Mises](../cd/methods/cvmdrift.ipynb)                               |        ✅         |        ✅         |
-| [Fisher's Exact Test](../cd/methods/fetdrift.ipynb)                            |        ✅         |        ✅         |
+| [Cramér-von Mises](../cd/methods/cvmdrift.ipynb)                               |        ❌         |        ✅         |
+| [Fisher's Exact Test](../cd/methods/fetdrift.ipynb)                            |        ❌         |        ✅         |
 | [Least-Squares Density Difference](../cd/methods/lsdddrift.ipynb)              |        ❌         |        ✅         |
 | [Maximum Mean Discrepancy](../cd/methods/mmddrift.ipynb)                       |        ✅         |        ✅         |
 | [Learned Kernel MMD](../cd/methods/learnedkerneldrift.ipynb)                   |        ❌         |        ✅         |
@@ -98,5 +98,46 @@ for the remaining detectors is in the [Roadmap](roadmap.md).
 ````
 
 ```{note}
-Saving/loading of detectors using PyTorch models and/or a PyTorch backend is currently not supported. 
+For detectors with backends, or using preprocessing, save/load support is currently limited to TensorFlow models and backends.
 ```
+
+(supported_models)=
+## Supported ML models
+
+Alibi Detect drift detectors offer the option to perform [preprocessing](../cd/background.md#input-preprocessing)
+with user-defined machine learning models:
+
+```python
+model = ... # TensorFlow model; tf.keras.Model or tf.keras.Sequential
+preprocess_fn = partial(preprocess_drift, model=model, batch_size=128)
+cd = MMDDrift(x_ref, backend='tensorflow', p_val=.05, preprocess_fn=preprocess_fn)
+```
+
+Additionally, some detectors are built upon models directly, 
+for example the [Classifier](../cd/methods/classifierdrift.ipynb) drift detector requires a `model` to be passed
+as an argument:
+
+```python
+cd = ClassifierDrift(x_ref, model, p_val=.05, preds_type='probs')
+```
+
+In order for a detector to be saveable and loadable, any models contained within it (or referenced within a 
+[detector configuration file](config_files.md#specifying-artefacts)) must fall within the family of supported models
+documented below.
+
+### TensorFlow models
+
+Alibi Detect supports serialization of any TensorFlow model that can be serialized to the 
+[HDF5](https://www.tensorflow.org/guide/keras/save_and_serialize#keras_h5_format) format. 
+Custom objects should be pre-registered with 
+[register_keras_serializable](https://www.tensorflow.org/api_docs/python/tf/keras/utils/register_keras_serializable).
+
+### Scikit-learn
+
+Scikit-learn models are serialized using [joblib](https://joblib.readthedocs.io/en/latest/persistence.html).
+Any scikit-learn model that is a subclass of {py:class}`sklearn.base.BaseEstimator` is supported, including 
+[xgboost](https://xgboost.readthedocs.io/en/latest/python/python_api.html#module-xgboost.sklearn) models following 
+the scikit-learn API.
+
+
+%### PyTorch

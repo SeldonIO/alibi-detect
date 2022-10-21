@@ -1,6 +1,6 @@
 import numpy as np
 from typing import Any, Callable, Dict, Optional, Union
-from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, BackendValidator
+from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, BackendValidator, Framework
 from alibi_detect.base import DriftConfigMixin
 
 if has_pytorch:
@@ -76,8 +76,8 @@ class MMDDriftOnline(DriftConfigMixin):
 
         backend = backend.lower()
         BackendValidator(
-            backend_options={'tensorflow': ['tensorflow'],
-                             'pytorch': ['pytorch']},
+            backend_options={Framework.TENSORFLOW: [Framework.TENSORFLOW],
+                             Framework.PYTORCH: [Framework.PYTORCH]},
             construct_name=self.__class__.__name__
         ).verify_backend(backend)
 
@@ -87,13 +87,13 @@ class MMDDriftOnline(DriftConfigMixin):
         [kwargs.pop(k, None) for k in pop_kwargs]
 
         if kernel is None:
-            if backend == 'tensorflow':
+            if backend == Framework.TENSORFLOW:
                 from alibi_detect.utils.tensorflow.kernels import GaussianRBF
             else:
                 from alibi_detect.utils.pytorch.kernels import GaussianRBF  # type: ignore
             kwargs.update({'kernel': GaussianRBF})
 
-        if backend == 'tensorflow' and has_tensorflow:
+        if backend == Framework.TENSORFLOW:
             kwargs.pop('device', None)
             self._detector = MMDDriftOnlineTF(*args, **kwargs)  # type: ignore
         else:

@@ -7,6 +7,7 @@ from alibi_detect.utils.pytorch import get_device
 from alibi_detect.utils.pytorch.distance import mmd2_from_kernel_matrix
 from alibi_detect.utils.pytorch.kernels import GaussianRBF
 from alibi_detect.utils.warnings import deprecated_alias
+from alibi_detect.utils.frameworks import Framework
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +82,7 @@ class MMDDriftTorch(BaseMMDDrift):
             input_shape=input_shape,
             data_type=data_type
         )
-        self.meta.update({'backend': 'pytorch'})
+        self.meta.update({'backend': Framework.PYTORCH.value})
 
         # set device
         self.device = get_device(device)

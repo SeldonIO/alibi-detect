@@ -8,6 +8,7 @@ from sklearn.exceptions import NotFittedError
 from sklearn.ensemble import RandomForestClassifier
 from alibi_detect.cd.base import BaseClassifierDrift
 from alibi_detect.utils.warnings import deprecated_alias
+from alibi_detect.utils.frameworks import Framework
 
 logger = logging.getLogger(__name__)
 
@@ -112,7 +113,7 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
         if preds_type not in ['probs', 'scores']:
             raise ValueError("'preds_type' should be 'probs' or 'scores'")
 
-        self.meta.update({'backend': 'sklearn'})
+        self.meta.update({'backend': Framework.SKLEARN.value})
         self.original_model = model
         self.use_calibration = use_calibration
         self.calibration_kwargs = dict() if calibration_kwargs is None else calibration_kwargs

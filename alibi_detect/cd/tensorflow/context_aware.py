@@ -6,6 +6,7 @@ from typing import Callable, Dict, Optional, Tuple, Union, List
 from alibi_detect.cd.base import BaseContextMMDDrift
 from alibi_detect.utils.tensorflow.kernels import GaussianRBF
 from alibi_detect.utils.warnings import deprecated_alias
+from alibi_detect.utils.frameworks import Framework
 from alibi_detect.cd._domain_clf import _SVCDomainClf
 from tqdm import tqdm
 
@@ -97,7 +98,7 @@ class ContextMMDDriftTF(BaseContextMMDDrift):
             data_type=data_type,
             verbose=verbose
         )
-        self.meta.update({'backend': 'tensorflow'})
+        self.meta.update({'backend': Framework.TENSORFLOW.value})
 
         # initialize kernel
         self.x_kernel = x_kernel(init_sigma_fn=_sigma_median_diag) if x_kernel == GaussianRBF else x_kernel
