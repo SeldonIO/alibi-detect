@@ -153,14 +153,13 @@ class BaseClassifierDrift(BaseDetector):
         else:
             return self.x_ref, x  # type: ignore[return-value]
 
-    def get_splits(self,
-                   x_ref: Union[np.ndarray, list],
-                   x: Union[np.ndarray, list],
-                   return_splits: bool = True
-                   ) -> Union[
-                        Tuple[Union[np.ndarray, list], np.ndarray],
-                        Tuple[Union[np.ndarray, list], np.ndarray, Optional[List[Tuple[np.ndarray, np.ndarray]]]]
-                    ]:
+    def get_splits(
+            self,
+            x_ref: Union[np.ndarray, list],
+            x: Union[np.ndarray, list],
+            return_splits: bool = True
+    ) -> Union[Tuple[Union[np.ndarray, list], np.ndarray],
+               Tuple[Union[np.ndarray, list], np.ndarray, Optional[List[Tuple[np.ndarray, np.ndarray]]]]]:
         """
         Split reference and test data in train and test folds used by the classifier.
 
