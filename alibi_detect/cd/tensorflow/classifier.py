@@ -3,7 +3,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.keras.losses import BinaryCrossentropy
 from scipy.special import softmax
-from typing import Callable, Dict, Optional, Tuple
+from typing import Callable, Dict, Optional, Tuple, Union
 from alibi_detect.cd.base import BaseClassifierDrift
 from alibi_detect.models.tensorflow.trainer import trainer
 from alibi_detect.utils.tensorflow.data import TFDataset
