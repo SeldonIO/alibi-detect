@@ -260,7 +260,8 @@ class BaseClassifierDrift(BaseDetector):
             K-S test stat if binarize_preds=False, otherwise relative error reduction.
         return_probs
             Whether to return the instance level classifier probabilities for the reference and test data
-            (0=reference data, 1=test data).
+            (0=reference data, 1=test data). The reference and test instances of the associated
+            probabilities are also returned.
         return_model
             Whether to return the updated model trained to discriminate reference and test instances.
 
@@ -270,10 +271,11 @@ class BaseClassifierDrift(BaseDetector):
         'meta' has the model's metadata.
         'data' contains the drift prediction and optionally the p-value, performance of the classifier
         relative to its expectation under the no-change null, the out-of-fold classifier model
-        prediction probabilities on the reference and test data, and the trained model.
+        prediction probabilities on the reference and test data as well as well as the associated reference
+        and test instances of the out-of-fold predictions, and the trained model.
         """
         # compute drift scores
-        p_val, dist, probs_ref, probs_test = self.score(x)
+        p_val, dist, probs_ref, probs_test, x_ref_oof, x_test_oof = self.score(x)
         drift_pred = int(p_val < self.p_val)
 
         # update reference dataset
@@ -297,6 +299,8 @@ class BaseClassifierDrift(BaseDetector):
         if return_probs:
             cd['data']['probs_ref'] = probs_ref
             cd['data']['probs_test'] = probs_test
+            cd['data']['x_ref_oof'] = x_ref_oof
+            cd['data']['x_test_oof'] = x_test_oof
         if return_model:
             cd['data']['model'] = self.model
         return cd
