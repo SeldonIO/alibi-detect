@@ -271,7 +271,7 @@ class BaseClassifierDrift(BaseDetector):
         'meta' has the model's metadata.
         'data' contains the drift prediction and optionally the p-value, performance of the classifier
         relative to its expectation under the no-change null, the out-of-fold classifier model
-        prediction probabilities on the reference and test data as well as well as the associated reference
+        prediction probabilities on the reference and test data as well as the associated reference
         and test instances of the out-of-fold predictions, and the trained model.
         """
         # compute drift scores

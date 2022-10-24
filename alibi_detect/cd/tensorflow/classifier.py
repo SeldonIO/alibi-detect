@@ -144,8 +144,8 @@ class ClassifierDriftTF(BaseClassifierDrift):
         if isinstance(train_kwargs, dict):
             self.train_kwargs.update(train_kwargs)
 
-    def score(self, x: np.ndarray) \
-            -> Tuple[float, float, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:  # type: ignore[override]
+    def score(self, x: np.ndarray) -> Tuple[float, float, np.ndarray,  # type: ignore[override]
+                                            np.ndarray, np.ndarray, np.ndarray]:
         """
         Compute the out-of-fold drift metric such as the accuracy from a classifier
         trained to distinguish the reference data from the data to be tested.
