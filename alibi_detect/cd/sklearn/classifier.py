@@ -229,7 +229,8 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
 
         return model
 
-    def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    def score(self, x: Union[np.ndarray, list]) \
+            -> Tuple[float, float, np.ndarray, np.ndarray, Union[np.ndarray, list], Union[np.ndarray, list]]:
         """
         Compute the out-of-fold drift metric such as the accuracy from a classifier
         trained to distinguish the reference data from the data to be tested.
