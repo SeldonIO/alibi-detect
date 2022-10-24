@@ -240,7 +240,8 @@ class BaseClassifierDrift(BaseDetector):
         return p_val, dist
 
     @abstractmethod
-    def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    def score(self, x: Union[np.ndarray, list]) \
+            -> Tuple[float, float, np.ndarray, np.ndarray, Union[np.ndarray, list], Union[np.ndarray, list]]:
         pass
 
     def predict(self, x: Union[np.ndarray, list], return_p_val: bool = True,

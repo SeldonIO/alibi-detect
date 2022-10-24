@@ -252,7 +252,7 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
         return self._score(x)
 
     def _score(self, x: Union[np.ndarray, list]) \
-            -> Tuple[float, float, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+            -> Tuple[float, float, np.ndarray, np.ndarray, Union[np.ndarray, list], Union[np.ndarray, list]]:
         x_ref, x = self.preprocess(x)
         x, y, splits = self.get_splits(x_ref, x, return_splits=True)  # type: ignore
 
@@ -272,16 +272,22 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
             idx_oof_list.append(idx_te)
         probs_oof = np.concatenate(probs_oof_list, axis=0)
         idx_oof = np.concatenate(idx_oof_list, axis=0)
-        x_oof, y_oof = x[idx_oof], y[idx_oof]
+        y_oof = y[idx_oof]
         n_cur = y_oof.sum()
         n_ref = len(y_oof) - n_cur
         p_val, dist = self.test_probs(y_oof, probs_oof, n_ref, n_cur)
-        probs_sort = probs_oof[np.argsort(idx_oof)]
-        x_sort = x_oof[np.argsort(idx_oof)]
+        idx_sort = np.argsort(idx_oof)
+        probs_sort = probs_oof[idx_sort]
+        if isinstance(x, np.ndarray):
+            x_oof = x[idx_oof]
+            x_sort = x_oof[idx_sort]
+        else:
+            x_oof = [x[_] for _ in idx_oof]
+            x_sort = [x_oof[_] for _ in idx_sort]
         return p_val, dist, probs_sort[:n_ref, 1], probs_sort[n_ref:, 1], x_sort[:n_ref], x_sort[n_ref:]
 
     def _score_rf(self, x: Union[np.ndarray, list]) \
-            -> Tuple[float, float, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+            -> Tuple[float, float, np.ndarray, np.ndarray, Union[np.ndarray, list], Union[np.ndarray, list]]:
         x_ref, x = self.preprocess(x)
         x, y = self.get_splits(x_ref, x, return_splits=False)  # type: ignore
         self.model.fit(x, y)
@@ -289,7 +295,13 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
         # that too few trees were used to compute any reliable estimates.
         idx_oob = np.where(np.all(~np.isnan(self.model.oob_decision_function_), axis=1))[0]
         probs_oob = self.model.oob_decision_function_[idx_oob]
-        x_oob, y_oob = x[idx_oob], y[idx_oob]
+        y_oob = y[idx_oob]
+        if isinstance(x, np.ndarray):
+            x_oob = x[idx_oob]
+        elif isinstance(x, list):
+            x_oob = [x[_] for _ in idx_oob]
+        else:
+            raise TypeError(f'x needs to be of type np.ndarray or list and not {type(x)}.')
         # comparison due to ordering in get_split (i.e, x = [x_ref, x])
         n_ref = np.sum(idx_oob < len(x_ref)).item()
         n_cur = np.sum(idx_oob >= len(x_ref)).item()
