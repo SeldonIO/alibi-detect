@@ -17,12 +17,12 @@ supported_models_tf, supported_models_torch = None, None
 supported_optimizers_tf, supported_optimizers_torch = None, None
 if has_tensorflow:
     import tensorflow as tf
-    supported_models_tf = tf.keras.Model
+    supported_models_tf = (tf.keras.Model, )
     supported_optimizers_tf = (tf.keras.optimizers.Optimizer, type)
 if has_pytorch:
     import torch
-    supported_models_torch = torch.nn.Module
-    supported_optimizers_torch = type  # Note type not object!
-supported_models_sklearn = BaseEstimator
+    supported_models_torch = (torch.nn.Module, )
+    supported_optimizers_torch = (type, )  # Note type not object!
+supported_models_sklearn = (BaseEstimator, )
 supported_models_all = (supported_models_tf, supported_models_torch, supported_models_sklearn)
 supported_optimizers_all = (supported_optimizers_tf, supported_optimizers_torch)
