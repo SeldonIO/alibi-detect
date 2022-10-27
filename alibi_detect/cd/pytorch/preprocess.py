@@ -10,7 +10,7 @@ from alibi_detect.utils.pytorch.prediction import (predict_batch,
 class _Encoder(nn.Module):
     def __init__(
             self,
-            input_layer: Union[nn.Module, int],
+            input_layer: Optional[nn.Module],
             mlp: Optional[nn.Module] = None,
             input_dim: Optional[int] = None,
             enc_dim: Optional[int] = None,
@@ -34,7 +34,7 @@ class _Encoder(nn.Module):
                              'nn.Module `mlp`')
 
     def forward(self, x: Union[np.ndarray, torch.Tensor, Dict[str, torch.Tensor]]) -> torch.Tensor:
-        if isinstance(self.input_layer, nn.Module):
+        if self.input_layer is not None:
             x = self.input_layer(x)
         return self.mlp(x)
 
