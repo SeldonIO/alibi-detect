@@ -3,9 +3,13 @@ import pytest
 from pydantic import ValidationError
 
 from alibi_detect.saving import validate_config
+from alibi_detect.saving.schemas import KernelConfig
 from alibi_detect.saving.saving import X_REF_FILENAME
 from alibi_detect.version import __version__
 from copy import deepcopy
+
+import tensorflow as tf
+import torch
 
 # Define a detector config dict
 mmd_cfg = {
@@ -80,3 +84,35 @@ def test_validate_config_wo_meta(cfg):
     cfg_unres = cfg.copy()
     cfg_unres['x_ref'] = X_REF_FILENAME
     _ = validate_config(cfg_unres)
+
+
+@pytest.mark.parametrize('sigma', [
+    0.5,
+    [0.5, 1.0],
+    None
+])
+@pytest.mark.parametrize('flavour', ['tensorflow', 'pytorch'])
+def test_validate_kernel_and_coerce_2_tensor(flavour, sigma):
+    """
+    Pass a kernel config through the KernelConfig pydantic model. This implicitly
+    tests the coerce_2_tensor validator.
+    """
+    # Define a kernel config
+    kernel_cfg = {
+        'src': f'@utils.{flavour}.kernels.GaussianRBF',
+        'flavour': flavour,
+        'sigma': sigma
+    }
+
+    # Pass through validation and check results
+    kernel_cfg_val = KernelConfig(**kernel_cfg).dict()
+    print(kernel_cfg_val)
+    assert kernel_cfg_val['src'] == kernel_cfg['src']
+    assert kernel_cfg_val['flavour'] == flavour
+    if sigma is None:
+        assert kernel_cfg_val['sigma'] is None
+    else:
+        if flavour == 'tensorflow':
+            assert isinstance(kernel_cfg_val['sigma'], tf.Tensor)
+        else:
+            assert isinstance(kernel_cfg_val['sigma'], torch.Tensor)

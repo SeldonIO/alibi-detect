@@ -45,7 +45,7 @@ if NumpyVersion(np.__version__) < "1.22.0" or sys.version_info < (3, 9):
 
         @classmethod
         def validate(cls, val: Any, field: ModelField) -> np.ndarray:
-            return _coerce2NDArray(cls, val, field)
+            return _coerce_2_ndarray(cls, val, field)
 
 else:
     class NDArray(Generic[T], np.ndarray[Any, T]):  # type: ignore[no-redef, type-var]
@@ -58,10 +58,10 @@ else:
 
         @classmethod
         def validate(cls, val: Any, field: ModelField) -> Optional[np.ndarray]:
-            return _coerce2NDArray(cls, val, field)
+            return _coerce_2_ndarray(cls, val, field)
 
 
-def _coerce2NDArray(cls: Type, val: Any, field: ModelField) -> np.ndarray:
+def _coerce_2_ndarray(cls: Type, val: Any, field: ModelField) -> np.ndarray:
     if field.sub_fields is not None:
         dtype_field = field.sub_fields[0]
         return np.asarray(val, dtype=dtype_field.type_)
@@ -69,7 +69,7 @@ def _coerce2NDArray(cls: Type, val: Any, field: ModelField) -> np.ndarray:
         return np.asarray(val)
 
 
-def coerce_2tensor(value: Union[float, List[float]], values: dict):
+def coerce_2_tensor(value: Union[float, List[float]], values: dict):
     if value is None:
         return value
     framework = values.get('backend') or values.get('flavour')

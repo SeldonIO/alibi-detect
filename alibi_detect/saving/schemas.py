@@ -22,7 +22,7 @@ from alibi_detect.utils.frameworks import Framework
 from alibi_detect.utils._types import (Literal, supported_models_all, supported_models_tf,
                                        supported_models_sklearn, supported_models_torch, supported_optimizers_tf,
                                        supported_optimizers_torch, supported_optimizers_all)
-from alibi_detect.saving.validators import NDArray, validate_framework, coerce_int2list, coerce_2tensor
+from alibi_detect.saving.validators import NDArray, validate_framework, coerce_int2list, coerce_2_tensor
 
 
 class SupportedModel:
@@ -369,7 +369,7 @@ class KernelConfig(CustomBaseModelWithKwargs):
     """
     # Validators
     _validate_flavour = validator('flavour', allow_reuse=True, pre=False)(validate_framework)
-    _coerce_sigma2tensor = validator('sigma', allow_reuse=True, pre=False)(coerce_2tensor)
+    _coerce_sigma2tensor = validator('sigma', allow_reuse=True, pre=False)(coerce_2_tensor)
 
 
 class DeepKernelConfig(CustomBaseModel):
