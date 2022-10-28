@@ -265,6 +265,9 @@ def _load_model_config(cfg: dict) -> Callable:
     custom_obj = cfg['custom_objects']
     layer = cfg['layer']
     src = Path(src)
+    if not src.is_dir():
+        raise FileNotFoundError("The `src` field is not a recognised directory. It should be a directory containing "
+                                "a compatible model.")
 
     if flavour == Framework.TENSORFLOW:
         model = load_model_tf(src, load_dir='.', custom_objects=custom_obj, layer=layer)
