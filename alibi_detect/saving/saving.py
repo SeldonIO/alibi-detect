@@ -130,7 +130,7 @@ def _save_detector_config(detector: ConfigurableDetector, filepath: Union[str, o
         File path to save serialized artefacts to.
     """
     # Get backend, input_shape and detector_name
-    backend = detector.meta.get('backend', None)
+    backend = detector.meta.get('backend')
     if backend not in (None, Framework.TENSORFLOW, Framework.PYTORCH, Framework.SKLEARN):
         raise NotImplementedError("Currently, saving is only supported with backend='tensorflow', 'pytorch', and "
                                   "'sklearn'.")
@@ -155,14 +155,14 @@ def _save_detector_config(detector: ConfigurableDetector, filepath: Union[str, o
     cfg.update({'x_ref': X_REF_FILENAME})
 
     # Save c_ref
-    c_ref = cfg.get('c_ref', None)
+    c_ref = cfg.get('c_ref')
     if c_ref is not None:
         save_path = filepath.joinpath(C_REF_FILENAME)
         np.save(str(save_path), cfg['c_ref'])
         cfg.update({'c_ref': C_REF_FILENAME})
 
     # Save preprocess_fn
-    preprocess_fn = cfg.get('preprocess_fn', None)
+    preprocess_fn = cfg.get('preprocess_fn')
     if preprocess_fn is not None:
         logger.info('Saving the preprocess_fn function.')
         preprocess_cfg = _save_preprocess_config(preprocess_fn, cfg['input_shape'], filepath)
@@ -170,7 +170,7 @@ def _save_detector_config(detector: ConfigurableDetector, filepath: Union[str, o
 
     # Serialize kernels
     for kernel_str in ('kernel', 'x_kernel', 'c_kernel'):
-        kernel = cfg.get(kernel_str, None)
+        kernel = cfg.get(kernel_str)
         if kernel is not None:
             cfg[kernel_str] = _save_kernel_config(kernel, filepath, Path(kernel_str))
             if 'proj' in cfg[kernel_str]:  # serialise proj from DeepKernel - do here as need input_shape
@@ -179,18 +179,18 @@ def _save_detector_config(detector: ConfigurableDetector, filepath: Union[str, o
 
     # ClassifierDrift and SpotTheDiffDrift specific artefacts.
     # Serialize detector model
-    model = cfg.get('model', None)
+    model = cfg.get('model')
     if model is not None:
         model_cfg, _ = _save_model_config(model, base_path=filepath, input_shape=cfg['input_shape'])
         cfg['model'] = model_cfg
 
     # Serialize optimizer
-    optimizer = cfg.get('optimizer', None)
+    optimizer = cfg.get('optimizer')
     if optimizer is not None:
         cfg['optimizer'] = _save_optimizer_config(optimizer)
 
     # Serialize dataset
-    dataset = cfg.get('dataset', None)
+    dataset = cfg.get('dataset')
     if dataset is not None:
         dataset_cfg, dataset_kwargs = _serialize_object(dataset, filepath, Path('dataset'))
         cfg.update({'dataset': dataset_cfg})
@@ -198,13 +198,13 @@ def _save_detector_config(detector: ConfigurableDetector, filepath: Union[str, o
             cfg['dataset']['kwargs'] = dataset_kwargs
 
     # Serialize reg_loss_fn
-    reg_loss_fn = cfg.get('reg_loss_fn', None)
+    reg_loss_fn = cfg.get('reg_loss_fn')
     if reg_loss_fn is not None:
         reg_loss_fn_cfg, _ = _serialize_object(reg_loss_fn, filepath, Path('reg_loss_fn'))
         cfg['reg_loss_fn'] = reg_loss_fn_cfg
 
     # Save initial_diffs
-    initial_diffs = cfg.get('initial_diffs', None)
+    initial_diffs = cfg.get('initial_diffs')
     if initial_diffs is not None:
         save_path = filepath.joinpath('initial_diffs.npy')
         np.save(str(save_path), initial_diffs)

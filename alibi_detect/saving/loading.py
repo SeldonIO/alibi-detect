@@ -134,7 +134,7 @@ def _load_detector_config(filepath: Union[str, os.PathLike]) -> ConfigurableDete
     logger.info('Validated resolved config.')
 
     # Backend
-    backend = cfg.get('backend', None)
+    backend = cfg.get('backend')
     if backend is not None and backend.lower() not in (Framework.TENSORFLOW, Framework.PYTORCH, Framework.SKLEARN):
         raise NotImplementedError('Loading detectors with keops backend is not yet supported.')
 

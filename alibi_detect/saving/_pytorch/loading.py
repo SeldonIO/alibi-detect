@@ -113,7 +113,7 @@ def load_optimizer(cfg: dict) -> Type[torch.optim.Optimizer]:
     -------
     The loaded optimizer class.
     """
-    class_name = cfg.get('class_name', None)
+    class_name = cfg.get('class_name')
     try:
         return getattr(import_module('torch.optim'), class_name)
     except AttributeError:

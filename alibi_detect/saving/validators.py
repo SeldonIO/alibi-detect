@@ -72,7 +72,7 @@ def _coerce2NDArray(cls: Type, val: Any, field: ModelField) -> np.ndarray:
 def coerce_2tensor(value: Union[float, List[float]], values: dict):
     if value is None:
         return value
-    framework = values.get('backend', None) or values.get('flavour', None)
+    framework = values.get('backend') or values.get('flavour')
     if framework is None:
         raise ValueError('`coerce_2tensor` failed since no framework identified.')
     elif framework == Framework.TENSORFLOW and has_tensorflow:
