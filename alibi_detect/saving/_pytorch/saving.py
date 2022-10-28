@@ -51,7 +51,7 @@ def save_model_config(model: Callable,
         model = None
     elif isinstance(model, HiddenOutput):
         model = model.model
-    elif isinstance(model, nn.Module):  # Last as TransferEmbedding and UAE are nn.Module's
+    elif isinstance(model, nn.Module):  # Last as TransformerEmbedding and UAE are nn.Module's
         model = model
     else:
         raise ValueError('Model not recognised, cannot save.')
