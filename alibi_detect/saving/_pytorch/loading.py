@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 def load_model(filepath: Union[str, os.PathLike],
                layer: Optional[int] = None,
-               ) -> Union[nn.Module, nn.Sequential]:
+               ) -> nn.Module:
     """
     Load PyTorch model.
 

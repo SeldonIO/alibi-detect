@@ -16,7 +16,6 @@ logger = logging.getLogger(__name__)
 
 def save_model_config(model: Callable,
                       base_path: Path,
-                      input_shape: Optional[tuple],
                       local_path: Path = Path('.')) -> Tuple[dict, Optional[dict]]:
     """
     Save a PyTorch model to a config dictionary. When a model has a text embedding model contained within it,
@@ -28,8 +27,6 @@ def save_model_config(model: Callable,
         The model to save.
     base_path
         Base filepath to save to (the location of the `config.toml` file).
-    input_shape
-        The input dimensions of the model (after the optional embedding has been applied).
     local_path
         A local (relative) filepath to append to base_path.
 
@@ -69,7 +66,7 @@ def save_model_config(model: Callable,
     return cfg_model, cfg_embed
 
 
-def save_model(model: Union[nn.Module, nn.Sequential],
+def save_model(model: nn.Module,
                filepath: Union[str, os.PathLike],
                save_dir: Union[str, os.PathLike] = 'model') -> None:
     """
@@ -93,10 +90,10 @@ def save_model(model: Union[nn.Module, nn.Sequential],
     # save model
     model_path = model_path.joinpath('model.pt')
 
-    if isinstance(model, (nn.Module, nn.Sequential)):
+    if isinstance(model, nn.Module):
         torch.save(model, model_path, pickle_module=dill)
     else:
-        raise ValueError('The extracted model to save is not a `nn.Module` or `nn.Sequential`. Cannot save.')
+        raise ValueError('The extracted model to save is not a `nn.Module`. Cannot save.')
 
 
 def save_embedding_config(embed: TransformerEmbedding,

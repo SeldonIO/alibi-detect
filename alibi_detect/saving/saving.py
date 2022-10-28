@@ -426,7 +426,7 @@ def _save_model_config(model: Any,
     if isinstance(model, supported_models_tf):
         return save_model_config_tf(model, base_path, input_shape, path)
     elif isinstance(model, supported_models_torch):
-        return save_model_config_pt(model, base_path, input_shape, path)
+        return save_model_config_pt(model, base_path, path)
     elif isinstance(model, supported_models_sklearn):
         return save_model_config_sk(model, base_path, path), None
     else:
