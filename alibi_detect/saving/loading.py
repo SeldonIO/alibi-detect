@@ -15,7 +15,8 @@ from alibi_detect.saving.registry import registry
 from alibi_detect.saving.tensorflow import load_detector_legacy, load_embedding_tf, load_kernel_config_tf, \
     load_model_tf, load_optimizer_tf, prep_model_and_emb_tf, get_tf_dtype
 from alibi_detect.saving.validate import validate_config
-from alibi_detect.base import Detector, ConfigurableDetector
+from alibi_detect.base import Detector, ConfigurableDetector, StatefulDetector
+from alibi_detect.saving.saving import STATE_PATH
 
 if TYPE_CHECKING:
     import tensorflow as tf
@@ -105,19 +106,16 @@ def _load_detector_config(filepath: Union[str, os.PathLike]) -> ConfigurableDete
     Parameters
     ----------
     filepath
-        Directory containing the `config.toml` file.
+        Filepath to the `config.toml` file.
 
     Returns
     -------
     The instantiated detector.
     """
-    # Load toml if needed
-    if isinstance(filepath, (str, os.PathLike)):
-        config_file = Path(filepath)
-        config_dir = config_file.parent
-        cfg = read_config(config_file)
-    else:
-        raise ValueError("`filepath` should point to a directory containing a 'config.toml' file.")
+    # Load config dict from toml file
+    filepath = Path(filepath)
+    config_dir = filepath.parent
+    cfg = read_config(filepath)
 
     # Resolve and validate config
     cfg = validate_config(cfg)
@@ -135,6 +133,16 @@ def _load_detector_config(filepath: Union[str, os.PathLike]) -> ConfigurableDete
     logger.info('Instantiating detector.')
     detector = _init_detector(cfg)
     logger.info('Finished loading detector.')
+
+    # Load state if it exists (and detector supports it)
+    if isinstance(detector, StatefulDetector):
+        state_dir = filepath.joinpath((STATE_PATH))
+        try:
+            detector.load_state(state_dir)
+        except Exception as error:
+            raise IOError(f'Failed to load state in {state_dir}. This directory should be created by the save_state '
+                          'method of the detector to be loaded.') from error
+
     return detector
 
 

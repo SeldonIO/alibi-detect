@@ -210,17 +210,24 @@ class Detector(Protocol):
 class ConfigurableDetector(Detector, Protocol):
     """Type Protocol for detectors that have support for saving via config.
 
-    Used for typing save and load functionality in `alibi_detect.saving.saving.py`.
-
-    Note:
-        This exists to distinguish between detectors with and without support for config saving and loading. Once all
-        detector support this then this protocol will be removed.
+    Used for typing save and load functionality in `alibi_detect.saving.saving`.
     """
     def get_config(self): ...
 
     def from_config(self): ...
 
     def _set_config(self): ...
+
+
+@runtime_checkable
+class StatefulDetector(Detector, Protocol):
+    """Type Protocol for detectors that have support for save/loading of state.
+
+    Used for typing save and load functionality in `alibi_detect.saving.saving`.
+    """
+    def save_state(self, filepath): ...
+
+    def load_state(self, filepath): ...
 
 
 class NumpyEncoder(json.JSONEncoder):

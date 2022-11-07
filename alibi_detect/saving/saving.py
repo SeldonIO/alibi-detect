@@ -15,7 +15,7 @@ from alibi_detect.saving.loading import _replace, validate_config
 from alibi_detect.saving.registry import registry
 from alibi_detect.saving.schemas import SupportedModels
 from alibi_detect.saving.tensorflow import save_detector_legacy, save_model_config_tf
-from alibi_detect.base import Detector, ConfigurableDetector
+from alibi_detect.base import Detector, ConfigurableDetector, StatefulDetector
 
 # do not extend pickle dispatch table so as not to change pickle behaviour
 dill.extend(use_dill=False)
@@ -24,11 +24,14 @@ logger = logging.getLogger(__name__)
 
 X_REF_FILENAME = 'x_ref.npy'
 C_REF_FILENAME = 'c_ref.npy'
+STATE_PATH = 'state/'  # directory (relative to detector directory) where state is saved
 
 
 def save_detector(
         detector: Union[Detector, ConfigurableDetector],
-        filepath: Union[str, os.PathLike], legacy: bool = False
+        filepath: Union[str, os.PathLike],
+        legacy: bool = False,
+        save_state: bool = False
         ) -> None:
     """
     Save outlier, drift or adversarial detector.
@@ -42,9 +45,14 @@ def save_detector(
     legacy
         Whether to save in the legacy .dill format instead of via a config.toml file. Default is `False`.
         This option will be removed in a future version.
+    save_state
+        Whether to save the detector's state (state is then automatically loaded by `load_detector`). Only supported
+        for detectors with `save_state` methods, such as online detectors.
     """
     if legacy:
         warnings.warn('The `legacy` option will be removed in a future version.', DeprecationWarning)
+        if save_state:
+            warnings.warn("The `save_state` option isn't supported in combination with the `legacy` option.")
 
     if 'backend' in list(detector.meta.keys()) and detector.meta['backend'] in ['pytorch', 'sklearn', 'keops']:
         raise NotImplementedError('Saving detectors with PyTorch, sklearn or keops backend is not yet supported.')
@@ -64,7 +72,7 @@ def save_detector(
 
         # If a drift detector, wrap drift detector save method
         if isinstance(detector, ConfigurableDetector) and not legacy:
-            _save_detector_config(detector, filepath)
+            _save_detector_config(detector, filepath, save_state=save_state)
 
         # Otherwise, save via the previous meta and state_dict approach
         else:
@@ -107,7 +115,9 @@ def _cleanup_filepath(orig_files: set, filepath: Path):
 
 
 # TODO - eventually this will become save_detector (once outlier and adversarial updated to save via config.toml)
-def _save_detector_config(detector: ConfigurableDetector, filepath: Union[str, os.PathLike]):
+def _save_detector_config(detector: ConfigurableDetector,
+                          filepath: Union[str, os.PathLike],
+                          save_state: bool = False):
     """
     Save a drift detector. The detector is saved as a yaml config file. Artefacts such as
     `preprocess_fn`, models, embeddings, tokenizers etc are serialized, and their filepaths are
@@ -121,6 +131,9 @@ def _save_detector_config(detector: ConfigurableDetector, filepath: Union[str, o
         The detector to save.
     filepath
         File path to save serialized artefacts to.
+    save_state
+        Whether to save the detector's state (state is then automatically loaded by `load_detector`). Only supported
+        for detectors with `save_state` methods, such as online detectors.
     """
     # Get backend, input_shape and detector_name
     backend = detector.meta.get('backend', 'tensorflow')
@@ -140,6 +153,12 @@ def _save_detector_config(detector: ConfigurableDetector, filepath: Union[str, o
         cfg = validate_config(cfg, resolved=True)
     else:
         raise NotImplementedError(f'{detector_name} does not yet support config.toml based saving.')
+
+    # Optionally save state
+    if save_state:
+        if not isinstance(detector, StatefulDetector):
+            raise ValueError("`save_state=True` but detector doesn't support saving of state")
+        detector.save_state(filepath.joinpath(STATE_PATH))
 
     # Save x_ref
     save_path = filepath.joinpath(X_REF_FILENAME)
