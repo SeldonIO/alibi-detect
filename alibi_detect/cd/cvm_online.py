@@ -10,7 +10,7 @@ import warnings
 
 
 class CVMDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
-    # State attributes
+    # State attributes (init _initialise)
     ids_ref_wins: Optional[np.ndarray] = None
     ids_wins_ref: Optional[np.ndarray] = None
     ids_wins_wins: Optional[np.ndarray] = None

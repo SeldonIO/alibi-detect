@@ -21,6 +21,8 @@ logger = logging.getLogger(__name__)
 class BaseMultiDriftOnline(BaseDetector):
     state_path: Path
     thresholds: np.ndarray
+    # State attributes (init _initialise)
+    t: int
 
     def __init__(
             self,
@@ -117,10 +119,6 @@ class BaseMultiDriftOnline(BaseDetector):
     def load_state(self, filepath: Union[str, os.PathLike]):
         pass
 
-    @abstractmethod
-    def reset_state(self):
-        pass
-
     def _set_state_path(self, filepath: Union[str, os.PathLike]):
         self.state_path = Path(filepath)
         self.state_path.mkdir(parents=True, exist_ok=True)
@@ -199,7 +197,7 @@ class BaseMultiDriftOnline(BaseDetector):
 class BaseUniDriftOnline(BaseDetector):
     state_path: Path
     thresholds: np.ndarray
-    # State attributes
+    # State attributes (init _initialise)
     t: int
     xs: Optional[np.ndarray] = None
 

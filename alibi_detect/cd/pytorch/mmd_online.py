@@ -10,6 +10,10 @@ from alibi_detect.utils.pytorch import zero_diag, quantile
 
 
 class MMDDriftOnlineTorch(BaseMultiDriftOnline):
+    # State attributes (init in _configure_ref_subset, called in _initialise)
+    test_window: torch.Tensor
+    k_xy: torch.Tensor
+
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
@@ -234,11 +238,3 @@ class MMDDriftOnlineTorch(BaseMultiDriftOnline):
         self.t = state_dict['t']
         self.test_window = state_dict['test_window']
         self.k_xy = state_dict['k_xy']
-
-    def reset_state(self):
-        """
-        Reset the detector's state.
-        """
-        self.t = 0
-        self.test_window = self.x_ref[self.init_test_inds]
-        self.k_xy = self.kernel(self.x_ref[self.ref_inds], self.test_window)

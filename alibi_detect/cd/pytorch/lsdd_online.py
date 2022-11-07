@@ -9,6 +9,10 @@ from alibi_detect.utils.pytorch import GaussianRBF, permed_lsdds, quantile
 
 
 class LSDDDriftOnlineTorch(BaseMultiDriftOnline):
+    # State attributes (init in _configure_ref_subset, called in _initialise)
+    test_window: torch.Tensor
+    k_xtc: torch.Tensor
+
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
@@ -242,11 +246,3 @@ class LSDDDriftOnlineTorch(BaseMultiDriftOnline):
         self.t = state_dict['t']
         self.test_window = state_dict['test_window']
         self.k_xtc = state_dict['k_xtc']
-
-    def reset_state(self):
-        """
-        Reset the detector's state.
-        """
-        self.t = 0
-        self.test_window = self.x_ref_eff[self.init_test_inds]
-        self.k_xtc = self.kernel(self.test_window, self.kernel_centers)

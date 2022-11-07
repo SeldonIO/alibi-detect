@@ -114,9 +114,10 @@ def test_lsdd_online(lsdd_online_params):
 
 def test_lsdd_online_state_functional(tmp_path):
     """
-    A functional test of save/load/reset_state methods or LSDDDriftOnlineTorch. State is saved, reset, and loaded, with
+    A functional test of save/load/reset methods or LSDDDriftOnlineTorch. State is saved, reset, and loaded, with
     prediction results checked.
     """
+    n = 1000  # Use larger n than above as will compare test stats averaged over n
     x_ref = np.random.normal(0, 1, (n, n_classes))
     x = np.random.normal(0.1, 1, (n, n_classes))
 
@@ -131,22 +132,23 @@ def test_lsdd_online_state_functional(tmp_path):
             dd.save_state(tmp_path)
 
     # Clear state and repeat, check that same test_stats both times
-    dd.reset_state()
+    dd.reset()
     test_stats_2 = []
     for t, x_t in enumerate(x):
         preds = dd.predict(x_t)
         test_stats_2.append(preds['data']['test_stat'])
-    np.testing.assert_array_equal(test_stats_1, test_stats_2)
+    # Randomness involved in .reset(), but test stats should still be statistically equivalent
+    assert np.mean(test_stats_2) == pytest.approx(np.mean(test_stats_1), rel=None, abs=1e-2)
 
-    # Load state from t=20 timestep and check results of t=21 the same
+    # Load state from t=20 timestep and check results of t=21 approx. equal
     dd.load_state(tmp_path)
     new_pred = dd.predict(x[21])
-    assert new_pred['data']['test_stat'] == test_stats_1[21]
+    assert new_pred['data']['test_stat'] == pytest.approx(test_stats_1[21], rel=None, abs=1e-2)
 
 
 def test_lsdd_online_state_unit(tmp_path):
     """
-    A unit-type test of save/load/reset_state methods or LSDDDriftOnlineTorch. Stateful attributes in STATE_DICT are
+    A unit-type test of save/load/reset methods or LSDDDriftOnlineTorch. Stateful attributes in STATE_DICT are
     compared pre and post save/load.
     """
     x_ref = np.random.normal(0, 1, (n, n_classes))
@@ -157,7 +159,7 @@ def test_lsdd_online_state_unit(tmp_path):
         orig_state_dict[key] = getattr(dd, key)
     # Save, reset and load
     dd.save_state(tmp_path)
-    dd.reset_state()
+    dd.reset()
     dd.load_state(tmp_path)
     # Compare state to original
     for key, orig_val in orig_state_dict.items():
