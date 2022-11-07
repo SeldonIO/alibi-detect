@@ -1,5 +1,6 @@
+import os
 import numpy as np
-from typing import Any, Callable, List, Optional, Union
+from typing import Any, Callable, List, Optional, Union, Dict
 from alibi_detect.base import DriftConfigMixin
 from alibi_detect.cd.base_online import BaseUniDriftOnline
 from alibi_detect.utils.misc import quantile
@@ -9,6 +10,11 @@ import warnings
 
 
 class CVMDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
+    # State attributes
+    ids_ref_wins: Optional[np.ndarray] = None
+    ids_wins_ref: Optional[np.ndarray] = None
+    ids_wins_wins: Optional[np.ndarray] = None
+
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
@@ -185,6 +191,55 @@ class CVMDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
             self.ids_wins_wins = np.concatenate(
                 [self.ids_wins_wins, (x_t <= self.xs[-self.max_ws:, :])[None, :, :]], 0
             )
+
+    def save_state(self, filepath: Union[str, os.PathLike]):
+        """
+        Save a detector's state to disk in order to generate a checkpoint.
+
+        Parameters
+        ----------
+        filepath
+            The directory to save state to.
+        """
+        super()._set_state_path(filepath)
+        state_dict = {'t': self.t}  # type: Dict[str, Union[int, np.ndarray]]
+        if self.t > 0:
+            state_dict.update({
+                'xs': self.xs,
+                'ids_ref_wins': self.ids_ref_wins,
+                'ids_wins_ref': self.ids_wins_ref,
+                'ids_wins_wins': self.ids_wins_wins
+            })
+        np.savez(self.state_path.joinpath('state.npz'), **state_dict)
+
+    def load_state(self, filepath: Union[str, os.PathLike]):
+        """
+        Load the detector's state from disk, in order to restart from a checkpoint previously generated with
+        `save_state`.
+
+        Parameters
+        ----------
+        filepath
+            The directory to load state from.
+        """
+        super()._set_state_path(filepath)
+        state_dict = np.load(self.state_path.joinpath('state.npz'))
+        self.t = state_dict.get('t')
+        self.xs = state_dict.get('xs')
+        self.ids_ref_wins = state_dict.get('ids_ref_wins')
+        self.ids_wins_ref = state_dict.get('ids_wins_ref')
+        self.ids_wins_wins = state_dict.get('ids_wins_wins')
+
+    def _initialise(self) -> None:
+        """
+        Initialise detector. So that reset() properly resets state, all state attributes must be initialised in this
+        method. For detector-specific attributes, a _initialise() method that calls super()._initialise() should be
+        implemented.
+        """
+        super()._initialise()
+        self.ids_ref_wins = None
+        self.ids_wins_ref = None
+        self.ids_wins_wins = None
 
     def score(self, x_t: Union[np.ndarray, Any]) -> np.ndarray:
         """

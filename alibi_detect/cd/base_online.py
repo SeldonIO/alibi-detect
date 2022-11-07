@@ -19,8 +19,8 @@ logger = logging.getLogger(__name__)
 
 
 class BaseMultiDriftOnline(BaseDetector):
-    thresholds: np.ndarray
     state_path: Path
+    thresholds: np.ndarray
 
     def __init__(
             self,
@@ -197,7 +197,11 @@ class BaseMultiDriftOnline(BaseDetector):
 
 
 class BaseUniDriftOnline(BaseDetector):
+    state_path: Path
     thresholds: np.ndarray
+    # State attributes
+    t: int
+    xs: Optional[np.ndarray] = None
 
     def __init__(
             self,
@@ -309,6 +313,18 @@ class BaseUniDriftOnline(BaseDetector):
     def _update_state(self, x_t: np.ndarray):
         pass
 
+    @abstractmethod
+    def save_state(self, filepath: Union[str, os.PathLike]):
+        pass
+
+    @abstractmethod
+    def load_state(self, filepath: Union[str, os.PathLike]):
+        pass
+
+    def _set_state_path(self, filepath: Union[str, os.PathLike]):
+        self.state_path = Path(filepath)
+        self.state_path.mkdir(parents=True, exist_ok=True)
+
     def _check_x(self, x: Any, x_ref: bool = False) -> np.ndarray:
         # Check the type of x
         if isinstance(x, np.ndarray):
@@ -355,7 +371,13 @@ class BaseUniDriftOnline(BaseDetector):
         return self.thresholds[t] if t < len(self.thresholds) else self.thresholds[-1]
 
     def _initialise(self) -> None:
+        """
+        Initialise detector. So that reset() properly resets state, all state attributes must be initialised in this
+        method. For detector-specific attributes, a _initialise() method that calls super()._initialise() should be
+        implemented (e.g. see CVMDrift._initialise).
+        """
         self.t = 0
+        self.xs = None
         self.test_stats = np.empty([0, len(self.window_sizes), self.n_features])
         self.drift_preds = np.array([])  # type: ignore[var-annotated]
         self._configure_ref()
