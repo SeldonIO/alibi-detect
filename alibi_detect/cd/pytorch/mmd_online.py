@@ -235,6 +235,6 @@ class MMDDriftOnlineTorch(BaseMultiDriftOnline):
         """
         super()._set_state_path(filepath)
         state_dict = torch.load(self.state_path.joinpath('state_dict.pt'))
-        self.t = state_dict['t']
-        self.test_window = state_dict['test_window']
-        self.k_xy = state_dict['k_xy']
+        self.t = state_dict.get('t')
+        self.test_window = state_dict.get('test_window')
+        self.k_xy = state_dict.get('k_xy')
