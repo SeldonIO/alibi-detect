@@ -1,3 +1,4 @@
+import os
 from tqdm import tqdm
 import numpy as np
 import tensorflow as tf
@@ -192,3 +193,44 @@ class MMDDriftOnlineTF(BaseMultiDriftOnline):
                 2 * tf.reduce_mean(self.k_xy)
         )
         return mmd.numpy()
+
+    def save_state(self, filepath: Union[str, os.PathLike]):
+        """
+        Save a detector's state to disk in order to generate a checkpoint.
+
+        Parameters
+        ----------
+        filepath
+            The directory to save state to.
+        """
+        super()._set_state_path(filepath)
+        state_dict = {
+            't': self.t,
+            'test_window': self.test_window,
+            'k_xy': self.k_xy
+        }
+        np.savez(self.state_path.joinpath('state.npz'), **state_dict)
+
+    def load_state(self, filepath: Union[str, os.PathLike]):
+        """
+        Load the detector's state from disk, in order to restart from a checkpoint previously generated with
+        `save_state`.
+
+        Parameters
+        ----------
+        filepath
+            The directory to load state from.
+        """
+        super()._set_state_path(filepath)
+        state_dict = np.load(self.state_path.joinpath('state.npz'))
+        self.t = state_dict['t']
+        self.test_window = state_dict['test_window']
+        self.k_xy = state_dict['k_xy']
+
+    def reset_state(self):
+        """
+        Reset the detector's state.
+        """
+        self.t = 0
+        self.test_window = tf.gather(self.x_ref, self.init_test_inds)
+        self.k_xy = self.kernel(tf.gather(self.x_ref, self.ref_inds), self.test_window)

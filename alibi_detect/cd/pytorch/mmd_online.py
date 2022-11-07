@@ -1,3 +1,4 @@
+import os
 from tqdm import tqdm
 import numpy as np
 import torch
@@ -200,3 +201,44 @@ class MMDDriftOnlineTorch(BaseMultiDriftOnline):
                 2 * self.k_xy.mean()
         )
         return float(mmd.detach().cpu())
+
+    def save_state(self, filepath: Union[str, os.PathLike]):
+        """
+        Save a detector's state to disk in order to generate a checkpoint.
+
+        Parameters
+        ----------
+        filepath
+            The directory to save state to.
+        """
+        super()._set_state_path(filepath)
+        state_dict = {
+            't': self.t,
+            'test_window': self.test_window,
+            'k_xy': self.k_xy
+        }
+        torch.save(state_dict, self.state_path.joinpath('state_dict.pt'))
+
+    def load_state(self, filepath: Union[str, os.PathLike]):
+        """
+        Load the detector's state from disk, in order to restart from a checkpoint previously generated with
+        `save_state`.
+
+        Parameters
+        ----------
+        filepath
+            The directory to load state from.
+        """
+        super()._set_state_path(filepath)
+        state_dict = torch.load(self.state_path.joinpath('state_dict.pt'))
+        self.t = state_dict['t']
+        self.test_window = state_dict['test_window']
+        self.k_xy = state_dict['k_xy']
+
+    def reset_state(self):
+        """
+        Reset the detector's state.
+        """
+        self.t = 0
+        self.test_window = self.x_ref[self.init_test_inds]
+        self.k_xy = self.kernel(self.x_ref[self.ref_inds], self.test_window)

@@ -215,7 +215,7 @@ class LSDDDriftOnlineTF(BaseMultiDriftOnline):
             'test_window': self.test_window,
             'k_xtc': self.k_xtc
         }
-        torch.save(state_dict, self.state_path.joinpath('state.pt'))  # How to save tf.Tensor?
+        np.savez(self.state_path.joinpath('state.npz'), **state_dict)
 
     def load_state(self, filepath: Union[str, os.PathLike]):
         """
@@ -228,7 +228,7 @@ class LSDDDriftOnlineTF(BaseMultiDriftOnline):
             The directory to load state from.
         """
         super()._set_state_path(filepath)
-        state_dict = torch.load(self.state_path.joinpath('state.pt'))
+        state_dict = np.load(self.state_path.joinpath('state.npz'))
         self.t = state_dict['t']
         self.test_window = state_dict['test_window']
         self.k_xtc = state_dict['k_xtc']
@@ -238,5 +238,5 @@ class LSDDDriftOnlineTF(BaseMultiDriftOnline):
         Reset the detector's state.
         """
         self.t = 0
-        self.test_window = self.x_ref_eff[self.init_test_inds]
+        self.test_window = tf.gather(self.x_ref_eff, self.init_test_inds)
         self.k_xtc = self.kernel(self.test_window, self.kernel_centers)
