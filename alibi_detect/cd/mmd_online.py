@@ -1,3 +1,4 @@
+import os
 import numpy as np
 from typing import Any, Callable, Dict, Optional, Union
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, BackendValidator
@@ -150,3 +151,26 @@ class MMDDriftOnline(DriftConfigMixin):
         Squared MMD estimate between reference window and test window.
         """
         return self._detector.score(x_t)
+
+    def save_state(self, filepath: Union[str, os.PathLike]):
+        """
+        Save a detector's state to disk in order to generate a checkpoint.
+
+        Parameters
+        ----------
+        filepath
+            The directory to save state to.
+        """
+        self._detector.save_state(filepath)
+
+    def load_state(self, filepath: Union[str, os.PathLike]):
+        """
+        Load the detector's state from disk, in order to restart from a checkpoint previously generated with
+        `save_state`.
+
+        Parameters
+        ----------
+        filepath
+            The directory to load state from.
+        """
+        self._detector.load_state(filepath)

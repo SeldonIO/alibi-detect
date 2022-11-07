@@ -16,10 +16,11 @@ from alibi_detect.saving.tensorflow import load_detector_legacy, load_embedding_
     load_model_tf, load_optimizer_tf, prep_model_and_emb_tf, get_tf_dtype
 from alibi_detect.saving.validate import validate_config
 from alibi_detect.base import Detector, ConfigurableDetector, StatefulDetector
-from alibi_detect.saving.saving import STATE_PATH
 
 if TYPE_CHECKING:
     import tensorflow as tf
+
+STATE_PATH = 'state/'  # directory (relative to detector directory) where state is saved (and loaded from)
 
 logger = logging.getLogger(__name__)
 
@@ -136,7 +137,7 @@ def _load_detector_config(filepath: Union[str, os.PathLike]) -> ConfigurableDete
 
     # Load state if it exists (and detector supports it)
     if isinstance(detector, StatefulDetector):
-        state_dir = filepath.joinpath((STATE_PATH))
+        state_dir = config_dir.joinpath((STATE_PATH))
         try:
             detector.load_state(state_dir)
         except Exception as error:

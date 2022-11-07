@@ -11,7 +11,7 @@ import toml
 from transformers import PreTrainedTokenizerBase
 
 from alibi_detect.saving._typing import VALID_DETECTORS
-from alibi_detect.saving.loading import _replace, validate_config
+from alibi_detect.saving.loading import _replace, validate_config, STATE_PATH
 from alibi_detect.saving.registry import registry
 from alibi_detect.saving.schemas import SupportedModels
 from alibi_detect.saving.tensorflow import save_detector_legacy, save_model_config_tf
@@ -24,7 +24,6 @@ logger = logging.getLogger(__name__)
 
 X_REF_FILENAME = 'x_ref.npy'
 C_REF_FILENAME = 'c_ref.npy'
-STATE_PATH = 'state/'  # directory (relative to detector directory) where state is saved
 
 
 def save_detector(
@@ -157,7 +156,7 @@ def _save_detector_config(detector: ConfigurableDetector,
     # Optionally save state
     if save_state:
         if not isinstance(detector, StatefulDetector):
-            raise ValueError("`save_state=True` but detector doesn't support saving of state")
+            raise ValueError("`save_state=True` but detector doesn't support saving of state.")
         detector.save_state(filepath.joinpath(STATE_PATH))
 
     # Save x_ref

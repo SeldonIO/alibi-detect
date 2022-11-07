@@ -167,8 +167,7 @@ class LSDDDriftOnline(DriftConfigMixin):
 
     def save_state(self, filepath: Union[str, os.PathLike]):
         """
-        Save a detector's state to disk in order to generate a checkpoint. This can be loaded later on with
-        :meth:`~load_state`.
+        Save a detector's state to disk in order to generate a checkpoint.
 
         Parameters
         ----------
@@ -188,9 +187,3 @@ class LSDDDriftOnline(DriftConfigMixin):
             The directory to load state from.
         """
         self._detector.load_state(filepath)
-
-    def reset_state(self):
-        """
-        Reset the detector's state.
-        """
-        self._detector.reset_state()
