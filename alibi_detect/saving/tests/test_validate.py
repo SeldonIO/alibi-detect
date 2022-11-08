@@ -106,7 +106,6 @@ def test_validate_kernel_and_coerce_2_tensor(flavour, sigma):
 
     # Pass through validation and check results
     kernel_cfg_val = KernelConfig(**kernel_cfg).dict()
-    print(kernel_cfg_val)
     assert kernel_cfg_val['src'] == kernel_cfg['src']
     assert kernel_cfg_val['flavour'] == flavour
     if sigma is None:
