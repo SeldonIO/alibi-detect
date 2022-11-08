@@ -157,7 +157,8 @@ class ClassifierDriftTorch(BaseClassifierDrift):
         if isinstance(train_kwargs, dict):
             self.train_kwargs.update(train_kwargs)
 
-    def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, np.ndarray, np.ndarray]:
+    def score(self, x: Union[np.ndarray, list]) \
+            -> Tuple[float, float, np.ndarray, np.ndarray, Union[np.ndarray, list], Union[np.ndarray, list]]:
         """
         Compute the out-of-fold drift metric such as the accuracy from a classifier
         trained to distinguish the reference data from the data to be tested.
@@ -171,10 +172,10 @@ class ClassifierDriftTorch(BaseClassifierDrift):
         -------
         p-value, a notion of distance between the trained classifier's out-of-fold performance \
         and that which we'd expect under the null assumption of no drift, \
-        and the out-of-fold classifier model prediction probabilities on the reference and test data
+        and the out-of-fold classifier model prediction probabilities on the reference and test data \
+        as well as the associated reference and test instances of the out-of-fold predictions.
         """
         x_ref, x = self.preprocess(x)
-        n_ref, n_cur = len(x_ref), len(x)
         x, y, splits = self.get_splits(x_ref, x)  # type: ignore
 
         # iterate over folds: train a new model for each fold and make out-of-fold (oof) predictions
@@ -200,6 +201,15 @@ class ClassifierDriftTorch(BaseClassifierDrift):
         probs_oof = softmax(preds_oof, axis=-1) if self.preds_type == 'logits' else preds_oof
         idx_oof = np.concatenate(idx_oof_list, axis=0)
         y_oof = y[idx_oof]
+        n_cur = y_oof.sum()
+        n_ref = len(y_oof) - n_cur
         p_val, dist = self.test_probs(y_oof, probs_oof, n_ref, n_cur)
-        probs_sort = probs_oof[np.argsort(idx_oof)]
-        return p_val, dist, probs_sort[:n_ref, 1], probs_sort[n_ref:, 1]
+        idx_sort = np.argsort(idx_oof)
+        probs_sort = probs_oof[idx_sort]
+        if isinstance(x, np.ndarray):
+            x_oof = x[idx_oof]
+            x_sort = x_oof[idx_sort]
+        else:
+            x_oof = [x[_] for _ in idx_oof]
+            x_sort = [x_oof[_] for _ in idx_sort]
+        return p_val, dist, probs_sort[:n_ref, 1], probs_sort[n_ref:, 1], x_sort[:n_ref], x_sort[n_ref:]

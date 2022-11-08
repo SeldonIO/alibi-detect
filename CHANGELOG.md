@@ -1,6 +1,6 @@
 # Change Log
 
-## v0.10.4dev
+## v0.11.0dev
 [Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.10.3...master)
 
 ### Added
@@ -9,6 +9,7 @@ See the [documentation](https://docs.seldon.io/projects/alibi-detect/en/latest/c
 - **New feature** Added support for serializing detectors with PyTorch backends, and detectors containing PyTorch models in their proprocessing functions ([#656](https://github.com/SeldonIO/alibi-detect/pull/656)).
 - **New feature** Added a PyTorch version of the `UAE` preprocessing utility function ([#656](https://github.com/SeldonIO/alibi-detect/pull/656)).
 - If a `categories_per_feature` dictionary is not passed to `TabularDrift`, a warning is now raised to inform the user that all features are assumed to be numerical ([#606](https://github.com/SeldonIO/alibi-detect/pull/606)).
+- For the `ClassifierDrift` and `SpotTheDiffDrift` detectors, we can also return the out-of-fold instances of the reference and test sets. When using `train_size` for training the detector, this allows to associate the returned prediction probabilities with the correct instances.
 
 ### Changed
 - Minimum `prophet` version bumped to `1.1.0` (used by `OutlierProphet`). This upgrade removes the dependency on `pystan` as `cmdstanpy` is used instead. This version also comes with pre-built wheels for all major platforms and Python versions, making both installation and testing easier ([#627](https://github.com/SeldonIO/alibi-detect/pull/627)).
@@ -20,6 +21,13 @@ See the [documentation](https://docs.seldon.io/projects/alibi-detect/en/latest/c
 - UTF-8 decoding is enforced when `README.md` is opened by `setup.py`. This is to prevent pip install errors on systems with `PYTHONIOENCODING` set to use other encoders ([#605](https://github.com/SeldonIO/alibi-detect/pull/605)).
 - Skip specific save/load tests that require downloading remote artefacts if the relevant URI(s) is/are down ([#607](https://github.com/SeldonIO/alibi-detect/pull/607)).
 
+## v0.10.4
+## [v0.10.4](https://github.com/SeldonIO/alibi-detect/tree/v0.10.4) (2022-10-21)
+[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.10.3...v0.10.4)
+
+### Fixed
+- Fixed an incorrect default value for the `alternative` kwarg in the `FETDrift` detector ([#661](https://github.com/SeldonIO/alibi-detect/pull/661)).
+- Fixed an issue with `ClassifierDrift` returning incorrect prediction probabilities when `train_size` given ([#662](https://github.com/SeldonIO/alibi-detect/pull/662)).
 
 ## [v0.10.3](https://github.com/SeldonIO/alibi-detect/tree/v0.10.3) (2022-08-17)
 [Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.10.2...v0.10.3)

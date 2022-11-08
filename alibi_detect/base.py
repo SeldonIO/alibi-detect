@@ -169,7 +169,7 @@ class DriftConfigMixin:
         name = self.__class__.__name__
 
         # Init config dict
-        self.config: Dict[str, Any] = {
+        self.config = {
             'name': name,
             'meta': {
                 'version': __version__,
