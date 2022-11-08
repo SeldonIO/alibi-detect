@@ -40,8 +40,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip setuptools wheel
           python -m pip install --upgrade --upgrade-strategy eager -r requirements/dev.txt -r testing/requirements.txt
-          python -m pip install --upgrade --upgrade-strategy eager -e .
-          python -m pip install --upgrade --upgrade-strategy eager -e .[prophet,torch,tensorflow]
+          python -m pip install --upgrade --upgrade-strategy eager .[prophet,torch,tensorflow]
           python -m pip freeze
 
       - name: Run notebooks
