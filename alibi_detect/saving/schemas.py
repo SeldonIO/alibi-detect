@@ -351,7 +351,7 @@ class KernelConfig(CustomBaseModelWithKwargs):
     "A string referencing a filepath to a serialized kernel in `.dill` format, or an object registry reference."
 
     # Below kwargs are only passed if kernel == @GaussianRBF
-    flavour: Literal['tensorflow', 'pytorch']
+    flavour: Literal['tensorflow', 'pytorch', 'keops']
     """
     Whether the kernel is a `tensorflow` or `pytorch` kernel.
     """
