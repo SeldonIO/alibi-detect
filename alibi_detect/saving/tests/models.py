@@ -21,6 +21,8 @@ from alibi_detect.utils.pytorch.kernels import GaussianRBF as GaussianRBF_pt
 from alibi_detect.utils.pytorch.kernels import DeepKernel as DeepKernel_pt
 from alibi_detect.utils.tensorflow.kernels import GaussianRBF as GaussianRBF_tf
 from alibi_detect.utils.tensorflow.kernels import DeepKernel as DeepKernel_tf
+from alibi_detect.utils.keops.kernels import GaussianRBF as GaussianRBF_ke
+from alibi_detect.utils.keops.kernels import DeepKernel as DeepKernel_ke
 from alibi_detect.models.pytorch import TransformerEmbedding as TransformerEmbedding_pt
 from alibi_detect.models.tensorflow import TransformerEmbedding as TransformerEmbedding_tf
 from alibi_detect.cd.pytorch import HiddenOutput as HiddenOutput_pt
@@ -46,7 +48,7 @@ def encoder_model(backend, current_cases):
                    tf.keras.layers.Dense(LATENT_DIM, activation=None)
                ]
            )
-    elif backend == 'pytorch':
+    elif backend in ('pytorch', 'keops'):
         model = nn.Sequential(nn.Linear(input_dim, 5),
                               nn.ReLU(),
                               nn.Linear(5, LATENT_DIM))
@@ -74,7 +76,7 @@ def encoder_dropout_model(backend, current_cases):
                    tf.keras.layers.Dense(LATENT_DIM, activation=None)
                ]
            )
-    elif backend == 'pytorch':
+    elif backend in ('pytorch', 'keops'):
         model = nn.Sequential(nn.Linear(input_dim, 5),
                               nn.ReLU(),
                               nn.Dropout(0.0),  # 0.0 to ensure determinism
@@ -114,8 +116,12 @@ def kernel(request, backend):
             if sigma is not None and not isinstance(sigma, torch.Tensor):
                 sigma = torch.tensor(sigma)
             kernel = GaussianRBF_pt(sigma=sigma, **kernel_cfg)
+        elif backend == 'keops':
+            if sigma is not None and not isinstance(sigma, torch.Tensor):
+                sigma = torch.tensor(sigma)
+            kernel = GaussianRBF_ke(sigma=sigma, **kernel_cfg)
         else:
-            pytest.skip('`kernel` only implemented for tensorflow and pytorch.')
+            pytest.skip('`kernel` only implemented for tensorflow, pytorch and keops.')
     return kernel
 
 
@@ -128,8 +134,8 @@ def optimizer(request, backend):
     the optimizer is a `torch.optim.Optimizer` class (NOT instantiated).
     """
     optimizer = request.param  # Get parametrized setting
-    if backend not in ('tensorflow', 'pytorch'):
-        pytest.skip('`optimizer` only implemented for tensorflow and pytorch.')
+    if backend not in ('tensorflow', 'pytorch', 'keops'):
+        pytest.skip('`optimizer` only implemented for tensorflow, pytorch and keops.')
     if isinstance(optimizer, str):
         module = 'tensorflow.keras.optimizers' if backend == 'tensorflow' else 'torch.optim'
         try:
@@ -156,12 +162,16 @@ def deep_kernel(request, backend, encoder_model):
     # Build DeepKernel
     if backend == 'tensorflow':
         kernel_a = GaussianRBF_tf(**kernel_a) if isinstance(kernel_a, dict) else kernel_a
-        kernel_a = GaussianRBF_tf(**kernel_b) if isinstance(kernel_b, dict) else kernel_b
+        kernel_b = GaussianRBF_tf(**kernel_b) if isinstance(kernel_b, dict) else kernel_b
         deep_kernel = DeepKernel_tf(proj, kernel_a=kernel_a, kernel_b=kernel_b, eps=eps)
     elif backend == 'pytorch':
         kernel_a = GaussianRBF_pt(**kernel_a) if isinstance(kernel_a, dict) else kernel_a
-        kernel_a = GaussianRBF_pt(**kernel_b) if isinstance(kernel_b, dict) else kernel_b
+        kernel_b = GaussianRBF_pt(**kernel_b) if isinstance(kernel_b, dict) else kernel_b
         deep_kernel = DeepKernel_pt(proj, kernel_a=kernel_a, kernel_b=kernel_b, eps=eps)
+    elif backend == 'keops':
+        kernel_a = GaussianRBF_ke(**kernel_a) if isinstance(kernel_a, dict) else kernel_a
+        kernel_b = GaussianRBF_ke(**kernel_b) if isinstance(kernel_b, dict) else kernel_b
+        deep_kernel = DeepKernel_ke(proj, kernel_a=kernel_a, kernel_b=kernel_b, eps=eps)
     else:
         pytest.skip('`deep_kernel` only implemented for tensorflow and pytorch.')
     return deep_kernel
@@ -181,13 +191,13 @@ def classifier_model(backend, current_cases):
                    tf.keras.layers.Dense(2, activation=tf.nn.softmax),
                ]
            )
-    elif backend == 'pytorch':
+    elif backend in ('pytorch', 'keops'):
         model = nn.Sequential(nn.Linear(input_dim, 2),
                               nn.Softmax(1))
     elif backend == 'sklearn':
         model = RandomForestClassifier()
     else:
-        pytest.skip('`classifier_model` only implemented for tensorflow, pytorch, and sklearn.')
+        pytest.skip('`classifier_model` only implemented for tensorflow, pytorch, keops and sklearn.')
     return model
 
 
@@ -258,11 +268,11 @@ def preprocess_nlp(embedding, tokenizer, max_len, backend):
     if backend == 'tensorflow':
         preprocess_fn = partial(preprocess_drift_tf, model=embedding, tokenizer=tokenizer,
                                 max_len=max_len, preprocess_batch_fn=preprocess_simple)
-    elif backend == 'pytorch':
+    elif backend in ('pytorch', 'keops'):
         preprocess_fn = partial(preprocess_drift_pt, model=embedding, tokenizer=tokenizer, max_len=max_len,
                                 preprocess_batch_fn=preprocess_simple)
     else:
-        pytest.skip('`preprocess_nlp` only implemented for tensorflow and pytorch.')
+        pytest.skip('`preprocess_nlp` only implemented for tensorflow, pytorch and keops.')
     return preprocess_fn
 
 
@@ -277,9 +287,9 @@ def preprocess_hiddenoutput(classifier_model, current_cases, backend):
     if backend == 'tensorflow':
         model = HiddenOutput_tf(classifier_model, layer=-1, input_shape=(None, input_dim))
         preprocess_fn = partial(preprocess_drift_tf, model=model)
-    elif backend == 'pytorch':
+    elif backend in ('pytorch', 'keops'):
         model = HiddenOutput_pt(classifier_model, layer=-1)
         preprocess_fn = partial(preprocess_drift_pt, model=model)
     else:
-        pytest.skip('`preprocess_hiddenoutput` only implemented for tensorflow and pytorch.')
+        pytest.skip('`preprocess_hiddenoutput` only implemented for tensorflow, pytorch and keops.')
     return preprocess_fn

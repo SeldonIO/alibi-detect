@@ -2,6 +2,7 @@ from pykeops.torch import LazyTensor
 import torch
 import torch.nn as nn
 from typing import Callable, Optional, Union
+from alibi_detect.utils.frameworks import Framework
 
 
 def sigma_mean(x: LazyTensor, y: LazyTensor, dist: LazyTensor, n_min: int = 100) -> torch.Tensor:
@@ -82,6 +83,7 @@ class GaussianRBF(nn.Module):
         """
         super().__init__()
         init_sigma_fn = sigma_mean if init_sigma_fn is None else init_sigma_fn
+        self.config = {'sigma': sigma, 'trainable': trainable, 'init_sigma_fn': init_sigma_fn}
         if sigma is None:
             self.log_sigma = nn.Parameter(torch.empty(1), requires_grad=trainable)
             self.init_required = True
@@ -115,13 +117,36 @@ class GaussianRBF(nn.Module):
             kernel_mat = kernel_mat.sum(-1) / len(self.sigma)
         return kernel_mat
 
+    def get_config(self) -> dict:
+        """
+        Returns a serializable config dict (excluding the input_sigma_fn, which is serialized in alibi_detect.saving).
+        """
+        cfg = self.config.copy()
+        if isinstance(cfg['sigma'], torch.Tensor):
+            cfg['sigma'] = cfg['sigma'].detach().cpu().numpy().tolist()
+        cfg.update({'flavour': Framework.KEOPS.value})
+        return cfg
+
+    @classmethod
+    def from_config(cls, config):
+        """
+        Instantiates a kernel from a config dictionary.
+
+        Parameters
+        ----------
+        config
+            A kernel config dictionary.
+        """
+        config.pop('flavour')
+        return cls(**config)
+
 
 class DeepKernel(nn.Module):
     def __init__(
         self,
         proj: nn.Module,
-        kernel_a: nn.Module = GaussianRBF(trainable=True),
-        kernel_b: Optional[nn.Module] = GaussianRBF(trainable=True),
+        kernel_a: Union[nn.Module, str] = 'rbf',
+        kernel_b: Optional[Union[nn.Module, str]] = 'rbf',
         eps: Union[float, str] = 'trainable'
     ) -> None:
         """
@@ -149,9 +174,13 @@ class DeepKernel(nn.Module):
             either specified or set to 'trainable'. Only relavent if kernel_b is not None.
         """
         super().__init__()
-
-        self.kernel_a = kernel_a
-        self.kernel_b = kernel_b
+        self.config = {'proj': proj, 'kernel_a': kernel_a, 'kernel_b': kernel_b, 'eps': eps}
+        if kernel_a == 'rbf':
+            kernel_a = GaussianRBF(trainable=True)
+        if kernel_b == 'rbf':
+            kernel_b = GaussianRBF(trainable=True)
+        self.kernel_a: Callable = kernel_a  # type: ignore[assignment]
+        self.kernel_b: Callable = kernel_b  # type: ignore[assignment]
         self.proj = proj
         if kernel_b is not None:
             self._init_eps(eps)
@@ -176,3 +205,10 @@ class DeepKernel(nn.Module):
         if self.kernel_b is not None:
             similarity = (1-self.eps)*similarity + self.eps*self.kernel_b(x, y)
         return similarity
+
+    def get_config(self) -> dict:
+        return self.config.copy()
+
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
