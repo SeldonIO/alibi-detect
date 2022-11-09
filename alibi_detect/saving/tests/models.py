@@ -156,11 +156,11 @@ def deep_kernel(request, backend, encoder_model):
     # Build DeepKernel
     if backend == 'tensorflow':
         kernel_a = GaussianRBF_tf(**kernel_a) if isinstance(kernel_a, dict) else kernel_a
-        kernel_a = GaussianRBF_tf(**kernel_b) if isinstance(kernel_b, dict) else kernel_b
+        kernel_b = GaussianRBF_tf(**kernel_b) if isinstance(kernel_b, dict) else kernel_b
         deep_kernel = DeepKernel_tf(proj, kernel_a=kernel_a, kernel_b=kernel_b, eps=eps)
     elif backend == 'pytorch':
         kernel_a = GaussianRBF_pt(**kernel_a) if isinstance(kernel_a, dict) else kernel_a
-        kernel_a = GaussianRBF_pt(**kernel_b) if isinstance(kernel_b, dict) else kernel_b
+        kernel_b = GaussianRBF_pt(**kernel_b) if isinstance(kernel_b, dict) else kernel_b
         deep_kernel = DeepKernel_pt(proj, kernel_a=kernel_a, kernel_b=kernel_b, eps=eps)
     else:
         pytest.skip('`deep_kernel` only implemented for tensorflow and pytorch.')

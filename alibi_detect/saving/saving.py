@@ -492,7 +492,7 @@ def _save_kernel_config(kernel: Callable,
         else:
             raise AttributeError("The detector's `kernel` must have a .get_config() method for it to be saved.")
         # Serialize the kernels (if needed)
-        kernel_a = cfg_kernel.get('kernel_b')
+        kernel_a = cfg_kernel.get('kernel_a')
         kernel_b = cfg_kernel.get('kernel_b')
         if not isinstance(kernel_a, str):
             cfg_kernel['kernel_a'] = _save_kernel_config(cfg_kernel['kernel_a'], base_path, Path('kernel_a'))
