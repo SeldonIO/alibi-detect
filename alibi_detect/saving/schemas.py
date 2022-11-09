@@ -114,6 +114,8 @@ class DetectorConfig(CustomBaseModel):
     "Config metadata. Should not be edited."
     # Note: Although not all detectors have a backend, we define in base class as `backend` also determines
     #  whether tf or torch models used for preprocess_fn.
+    # backend validation (only applied if the detector config has a `backend` field
+    _validate_backend = validator('backend', allow_reuse=True, pre=False, check_fields=False)(validate_framework)
 
 
 class ModelConfig(CustomBaseModel):
@@ -681,8 +683,6 @@ class MMDDriftConfig(DriftDetectorConfig):
     n_permutations: int = 100
     batch_size_permutations: int = 1000000
     device: Optional[Literal['cpu', 'cuda']] = None
-    # Validators
-    _validate_flavour = validator('backend', allow_reuse=True, pre=False)(validate_framework)
 
 
 class MMDDriftConfigResolved(DriftDetectorConfigResolved):
@@ -703,8 +703,6 @@ class MMDDriftConfigResolved(DriftDetectorConfigResolved):
     n_permutations: int = 100
     batch_size_permutations: int = 1000000
     device: Optional[Literal['cpu', 'cuda']] = None
-    # Validators
-    _validate_flavour = validator('backend', allow_reuse=True, pre=False)(validate_framework)
 
 
 class LSDDDriftConfig(DriftDetectorConfig):
@@ -724,8 +722,6 @@ class LSDDDriftConfig(DriftDetectorConfig):
     n_kernel_centers: Optional[int] = None
     lambda_rd_max: float = 0.2
     device: Optional[Literal['cpu', 'cuda']] = None
-    # Validators
-    _validate_flavour = validator('backend', allow_reuse=True, pre=False)(validate_framework)
 
 
 class LSDDDriftConfigResolved(DriftDetectorConfigResolved):
@@ -745,8 +741,6 @@ class LSDDDriftConfigResolved(DriftDetectorConfigResolved):
     n_kernel_centers: Optional[int] = None
     lambda_rd_max: float = 0.2
     device: Optional[Literal['cpu', 'cuda']] = None
-    # Validators
-    _validate_flavour = validator('backend', allow_reuse=True, pre=False)(validate_framework)
 
 
 class ClassifierDriftConfig(DriftDetectorConfig):
@@ -783,8 +777,6 @@ class ClassifierDriftConfig(DriftDetectorConfig):
     use_calibration: bool = False
     calibration_kwargs: Optional[dict] = None
     use_oob: bool = False
-    # Validators
-    _validate_flavour = validator('backend', allow_reuse=True, pre=False)(validate_framework)
 
 
 class ClassifierDriftConfigResolved(DriftDetectorConfigResolved):
@@ -821,8 +813,6 @@ class ClassifierDriftConfigResolved(DriftDetectorConfigResolved):
     use_calibration: bool = False
     calibration_kwargs: Optional[dict] = None
     use_oob: bool = False
-    # Validators
-    _validate_flavour = validator('backend', allow_reuse=True, pre=False)(validate_framework)
 
 
 class SpotTheDiffDriftConfig(DriftDetectorConfig):
@@ -855,8 +845,6 @@ class SpotTheDiffDriftConfig(DriftDetectorConfig):
     l1_reg: float = 0.01
     device: Optional[Literal['cpu', 'cuda']] = None
     dataloader: Optional[str] = None  # TODO: placeholder, will need to be updated for pytorch implementation
-    # Validators
-    _validate_flavour = validator('backend', allow_reuse=True, pre=False)(validate_framework)
 
 
 class SpotTheDiffDriftConfigResolved(DriftDetectorConfigResolved):
@@ -889,8 +877,6 @@ class SpotTheDiffDriftConfigResolved(DriftDetectorConfigResolved):
     l1_reg: float = 0.01
     device: Optional[Literal['cpu', 'cuda']] = None
     dataloader: Optional[Callable] = None  # TODO: placeholder, will need to be updated for pytorch implementation
-    # Validators
-    _validate_flavour = validator('backend', allow_reuse=True, pre=False)(validate_framework)
 
 
 class LearnedKernelDriftConfig(DriftDetectorConfig):
@@ -924,8 +910,6 @@ class LearnedKernelDriftConfig(DriftDetectorConfig):
     dataset: Optional[str] = None
     device: Optional[Literal['cpu', 'cuda']] = None
     dataloader: Optional[str] = None  # TODO: placeholder, will need to be updated for pytorch implementation
-    # Validators
-    _validate_flavour = validator('backend', allow_reuse=True, pre=False)(validate_framework)
 
 
 class LearnedKernelDriftConfigResolved(DriftDetectorConfigResolved):
@@ -959,8 +943,6 @@ class LearnedKernelDriftConfigResolved(DriftDetectorConfigResolved):
     dataset: Optional[Callable] = None
     device: Optional[Literal['cpu', 'cuda']] = None
     dataloader: Optional[Callable] = None  # TODO: placeholder, will need to be updated for pytorch implementation
-    # Validators
-    _validate_flavour = validator('backend', allow_reuse=True, pre=False)(validate_framework)
 
 
 class ContextMMDDriftConfig(DriftDetectorConfig):
@@ -985,8 +967,6 @@ class ContextMMDDriftConfig(DriftDetectorConfig):
     batch_size: Optional[int] = 256
     verbose: bool = False
     device: Optional[Literal['cpu', 'cuda']] = None
-    # Validators
-    _validate_flavour = validator('backend', allow_reuse=True, pre=False)(validate_framework)
 
 
 class ContextMMDDriftConfigResolved(DriftDetectorConfigResolved):
@@ -1010,8 +990,6 @@ class ContextMMDDriftConfigResolved(DriftDetectorConfigResolved):
     batch_size: Optional[int] = 256
     verbose: bool = False
     device: Optional[Literal['cpu', 'cuda']] = None
-    # Validators
-    _validate_flavour = validator('backend', allow_reuse=True, pre=False)(validate_framework)
 
 
 class MMDDriftOnlineConfig(DriftDetectorConfig):
@@ -1031,8 +1009,6 @@ class MMDDriftOnlineConfig(DriftDetectorConfig):
     n_bootstraps: int = 1000
     device: Optional[Literal['cpu', 'cuda']] = None
     verbose: bool = True
-    # Validators
-    _validate_flavour = validator('backend', allow_reuse=True, pre=False)(validate_framework)
 
 
 class MMDDriftOnlineConfigResolved(DriftDetectorConfigResolved):
@@ -1052,8 +1028,6 @@ class MMDDriftOnlineConfigResolved(DriftDetectorConfigResolved):
     n_bootstraps: int = 1000
     device: Optional[Literal['cpu', 'cuda']] = None
     verbose: bool = True
-    # Validators
-    _validate_flavour = validator('backend', allow_reuse=True, pre=False)(validate_framework)
 
 
 class LSDDDriftOnlineConfig(DriftDetectorConfig):
@@ -1074,8 +1048,6 @@ class LSDDDriftOnlineConfig(DriftDetectorConfig):
     lambda_rd_max: float = 0.2
     device: Optional[Literal['cpu', 'cuda']] = None
     verbose: bool = True
-    # Validators
-    _validate_flavour = validator('backend', allow_reuse=True, pre=False)(validate_framework)
 
 
 class LSDDDriftOnlineConfigResolved(DriftDetectorConfigResolved):
@@ -1096,8 +1068,6 @@ class LSDDDriftOnlineConfigResolved(DriftDetectorConfigResolved):
     lambda_rd_max: float = 0.2
     device: Optional[Literal['cpu', 'cuda']] = None
     verbose: bool = True
-    # Validators
-    _validate_flavour = validator('backend', allow_reuse=True, pre=False)(validate_framework)
 
 
 class CVMDriftOnlineConfig(DriftDetectorConfig):
@@ -1211,8 +1181,6 @@ class ClassifierUncertaintyDriftConfig(DetectorConfig):
     max_len: Optional[int] = None
     input_shape: Optional[tuple] = None
     data_type: Optional[str] = None
-    # Validators
-    _validate_flavour = validator('backend', allow_reuse=True, pre=False)(validate_framework)
 
 
 class ClassifierUncertaintyDriftConfigResolved(DetectorConfig):
@@ -1240,8 +1208,6 @@ class ClassifierUncertaintyDriftConfigResolved(DetectorConfig):
     max_len: Optional[int] = None
     input_shape: Optional[tuple] = None
     data_type: Optional[str] = None
-    # Validators
-    _validate_flavour = validator('backend', allow_reuse=True, pre=False)(validate_framework)
 
 
 class RegressorUncertaintyDriftConfig(DetectorConfig):
@@ -1268,8 +1234,6 @@ class RegressorUncertaintyDriftConfig(DetectorConfig):
     max_len: Optional[int] = None
     input_shape: Optional[tuple] = None
     data_type: Optional[str] = None
-    # Validators
-    _validate_flavour = validator('backend', allow_reuse=True, pre=False)(validate_framework)
 
 
 class RegressorUncertaintyDriftConfigResolved(DetectorConfig):
@@ -1296,8 +1260,6 @@ class RegressorUncertaintyDriftConfigResolved(DetectorConfig):
     max_len: Optional[int] = None
     input_shape: Optional[tuple] = None
     data_type: Optional[str] = None
-    # Validators
-    _validate_flavour = validator('backend', allow_reuse=True, pre=False)(validate_framework)
 
 
 # Unresolved schema dictionary (used in alibi_detect.utils.loading)
