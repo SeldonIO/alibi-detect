@@ -4,7 +4,8 @@ from operator import mul
 import numpy as np
 import pytest
 from alibi_detect.utils.data import Bunch
-from alibi_detect.utils.perturbation import apply_mask, inject_outlier_ts, mutate_categorical
+from alibi_detect.utils.perturbation import apply_mask, inject_outlier_ts
+from alibi_detect.utils.tensorflow.perturbation import mutate_categorical
 
 x = np.random.rand(20 * 20 * 3).reshape(1, 20, 20, 3)
 mask_size = [(2, 2), (8, 8)]

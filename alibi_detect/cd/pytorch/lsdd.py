@@ -2,16 +2,21 @@ import numpy as np
 import torch
 from typing import Callable, Dict, Optional, Tuple, Union
 from alibi_detect.cd.base import BaseLSDDDrift
+from alibi_detect.utils.pytorch import get_device
 from alibi_detect.utils.pytorch.kernels import GaussianRBF
 from alibi_detect.utils.pytorch.distance import permed_lsdds
+from alibi_detect.utils.warnings import deprecated_alias
+from alibi_detect.utils.frameworks import Framework
 
 
 class LSDDDriftTorch(BaseLSDDDrift):
+    @deprecated_alias(preprocess_x_ref='preprocess_at_init')
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
             p_val: float = .05,
-            preprocess_x_ref: bool = True,
+            x_ref_preprocessed: bool = False,
+            preprocess_at_init: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
             sigma: Optional[np.ndarray] = None,
@@ -31,8 +36,13 @@ class LSDDDriftTorch(BaseLSDDDrift):
             Data used as reference distribution.
         p_val
             p-value used for the significance of the permutation test.
-        preprocess_x_ref
-            Whether to already preprocess and store the reference data.
+        x_ref_preprocessed
+            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
+            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
+            data will also be preprocessed.
+        preprocess_at_init
+            Whether to preprocess the reference data when the detector is instantiated. Otherwise, the reference
+            data will be preprocessed at prediction time. Only applies if `x_ref_preprocessed=False`.
         update_x_ref
             Reference data can optionally be updated to the last n instances seen by the detector
             or via reservoir sampling with size n. For the former, the parameter equals {'last': n} while
@@ -63,7 +73,8 @@ class LSDDDriftTorch(BaseLSDDDrift):
         super().__init__(
             x_ref=x_ref,
             p_val=p_val,
-            preprocess_x_ref=preprocess_x_ref,
+            x_ref_preprocessed=x_ref_preprocessed,
+            preprocess_at_init=preprocess_at_init,
             update_x_ref=update_x_ref,
             preprocess_fn=preprocess_fn,
             sigma=sigma,
@@ -73,21 +84,16 @@ class LSDDDriftTorch(BaseLSDDDrift):
             input_shape=input_shape,
             data_type=data_type
         )
-        self.meta.update({'backend': 'pytorch'})
+        self.meta.update({'backend': Framework.PYTORCH.value})
 
-        # set backend
-        if device is None or device.lower() in ['gpu', 'cuda']:
-            self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-            if self.device.type == 'cpu':
-                print('No GPU detected, fall back on CPU.')
-        else:
-            self.device = torch.device('cpu')
+        # set device
+        self.device = get_device(device)
 
         # TODO: TBD: the several type:ignore's below are because x_ref is typed as an np.ndarray
         #  in the method signature, so we can't cast it to torch.Tensor unless we change the signature
         #  to also accept torch.Tensor. We also can't redefine it's type as that would involve enabling
         #  --allow-redefinitions in mypy settings (which we might do eventually).
-        if self.preprocess_x_ref or self.preprocess_fn is None:
+        if self.preprocess_at_init or self.preprocess_fn is None or self.x_ref_preprocessed:
             x_ref = torch.as_tensor(self.x_ref).to(self.device)  # type: ignore[assignment]
             self._configure_normalization(x_ref)  # type: ignore[arg-type]
             x_ref = self._normalize(x_ref)
@@ -122,7 +128,7 @@ class LSDDDriftTorch(BaseLSDDDrift):
         x_ref_eff = x_ref[non_c_inds]  # the effective reference set
         self.k_xc = self.kernel(x_ref_eff, self.kernel_centers)
 
-    def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, np.ndarray]:
+    def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, float]:
         """
         Compute the p-value resulting from a permutation test using the least-squares density
         difference as a distance measure between the reference data and the data to be tested.
@@ -134,14 +140,14 @@ class LSDDDriftTorch(BaseLSDDDrift):
 
         Returns
         -------
-        p-value obtained from the permutation test, the LSDD between the reference and test set
-        and the LSDD values from the permutation test.
+        p-value obtained from the permutation test, the LSDD between the reference and test set,
+        and the LSDD threshold above which drift is flagged.
         """
         x_ref, x = self.preprocess(x)
         x_ref = torch.from_numpy(x_ref).to(self.device)  # type: ignore[assignment]
         x = torch.from_numpy(x).to(self.device)  # type: ignore[assignment]
 
-        if self.preprocess_fn is not None and self.preprocess_x_ref is False:
+        if self.preprocess_fn is not None and self.preprocess_at_init is False and not self.x_ref_preprocessed:
             self._configure_normalization(x_ref)  # type: ignore[arg-type]
             x_ref = self._normalize(x_ref)
             self._initialize_kernel(x_ref)  # type: ignore[arg-type]
@@ -162,6 +168,8 @@ class LSDDDriftTorch(BaseLSDDDrift):
         lsdd_permuted, _, lsdd = permed_lsdds(  # type: ignore
             k_all_c, x_perms, y_perms, self.H, lam_rd_max=self.lambda_rd_max, return_unpermed=True
         )
-
         p_val = (lsdd <= lsdd_permuted).float().mean()
-        return float(p_val.cpu()), float(lsdd.cpu().numpy()), lsdd_permuted.cpu().numpy()
+
+        idx_threshold = int(self.p_val * len(lsdd_permuted))
+        distance_threshold = torch.sort(lsdd_permuted, descending=True).values[idx_threshold]
+        return float(p_val.cpu()), float(lsdd.cpu().numpy()), distance_threshold.cpu().numpy()

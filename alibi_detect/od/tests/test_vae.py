@@ -69,7 +69,8 @@ def test_vae(vae_params):
     )
 
     assert vae.threshold == threshold
-    assert vae.meta == {'name': 'OutlierVAE', 'detector_type': 'offline', 'data_type': None, 'version': __version__}
+    assert vae.meta == {'name': 'OutlierVAE', 'detector_type': 'outlier', 'data_type': None,
+                        'online': False, 'version': __version__}
 
     # fit OutlierVAE, infer threshold and compute scores
     vae.fit(X, loss_fn=loss_fn, epochs=5, verbose=False)

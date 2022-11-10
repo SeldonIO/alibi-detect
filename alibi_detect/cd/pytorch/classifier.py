@@ -1,6 +1,5 @@
 from copy import deepcopy
 from functools import partial
-import logging
 import numpy as np
 import torch
 import torch.nn as nn
@@ -9,19 +8,22 @@ from scipy.special import softmax
 from typing import Callable, Dict, Optional, Union, Tuple
 from alibi_detect.cd.base import BaseClassifierDrift
 from alibi_detect.models.pytorch.trainer import trainer
+from alibi_detect.utils.pytorch import get_device
 from alibi_detect.utils.pytorch.data import TorchDataset
 from alibi_detect.utils.pytorch.prediction import predict_batch
-
-logger = logging.getLogger(__name__)
+from alibi_detect.utils.warnings import deprecated_alias
+from alibi_detect.utils.frameworks import Framework
 
 
 class ClassifierDriftTorch(BaseClassifierDrift):
+    @deprecated_alias(preprocess_x_ref='preprocess_at_init')
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
             model: Union[nn.Module, nn.Sequential],
             p_val: float = .05,
-            preprocess_x_ref: bool = True,
+            x_ref_preprocessed: bool = False,
+            preprocess_at_init: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
             preds_type: str = 'probs',
@@ -41,6 +43,7 @@ class ClassifierDriftTorch(BaseClassifierDrift):
             device: Optional[str] = None,
             dataset: Callable = TorchDataset,
             dataloader: Callable = DataLoader,
+            input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None
     ) -> None:
         """
@@ -56,8 +59,13 @@ class ClassifierDriftTorch(BaseClassifierDrift):
             PyTorch classification model used for drift detection.
         p_val
             p-value used for the significance of the test.
-        preprocess_x_ref
-            Whether to already preprocess and store the reference data.
+        x_ref_preprocessed
+           Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
+           the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
+           data will also be preprocessed.
+        preprocess_at_init
+            Whether to preprocess the reference data when the detector is instantiated. Otherwise, the reference
+            data will be preprocessed at prediction time. Only applies if `x_ref_preprocessed=False`.
         update_x_ref
             Reference data can optionally be updated to the last n instances seen by the detector
             or via reservoir sampling with size n. For the former, the parameter equals {'last': n} while
@@ -106,13 +114,16 @@ class ClassifierDriftTorch(BaseClassifierDrift):
             Dataset object used during training.
         dataloader
             Dataloader object used during training.
+        input_shape
+            Shape of input data.
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
         super().__init__(
             x_ref=x_ref,
             p_val=p_val,
-            preprocess_x_ref=preprocess_x_ref,
+            x_ref_preprocessed=x_ref_preprocessed,
+            preprocess_at_init=preprocess_at_init,
             update_x_ref=update_x_ref,
             preprocess_fn=preprocess_fn,
             preds_type=preds_type,
@@ -121,21 +132,17 @@ class ClassifierDriftTorch(BaseClassifierDrift):
             n_folds=n_folds,
             retrain_from_scratch=retrain_from_scratch,
             seed=seed,
+            input_shape=input_shape,
             data_type=data_type
         )
 
         if preds_type not in ['probs', 'logits']:
             raise ValueError("'preds_type' should be 'probs' or 'logits'")
 
-        self.meta.update({'backend': 'pytorch'})
+        self.meta.update({'backend': Framework.PYTORCH.value})
 
         # set device, define model and training kwargs
-        if device is None or device.lower() in ['gpu', 'cuda']:
-            self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-            if self.device.type == 'cpu':
-                logger.warning('No GPU detected, fall back on CPU.')
-        else:
-            self.device = torch.device('cpu')
+        self.device = get_device(device)
         self.original_model = model
         self.model = deepcopy(model)
 
@@ -150,7 +157,8 @@ class ClassifierDriftTorch(BaseClassifierDrift):
         if isinstance(train_kwargs, dict):
             self.train_kwargs.update(train_kwargs)
 
-    def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, np.ndarray, np.ndarray]:
+    def score(self, x: Union[np.ndarray, list]) \
+            -> Tuple[float, float, np.ndarray, np.ndarray, Union[np.ndarray, list], Union[np.ndarray, list]]:
         """
         Compute the out-of-fold drift metric such as the accuracy from a classifier
         trained to distinguish the reference data from the data to be tested.
@@ -164,10 +172,10 @@ class ClassifierDriftTorch(BaseClassifierDrift):
         -------
         p-value, a notion of distance between the trained classifier's out-of-fold performance \
         and that which we'd expect under the null assumption of no drift, \
-        and the out-of-fold classifier model prediction probabilities on the reference and test data
+        and the out-of-fold classifier model prediction probabilities on the reference and test data \
+        as well as the associated reference and test instances of the out-of-fold predictions.
         """
         x_ref, x = self.preprocess(x)
-        n_ref, n_cur = len(x_ref), len(x)
         x, y, splits = self.get_splits(x_ref, x)  # type: ignore
 
         # iterate over folds: train a new model for each fold and make out-of-fold (oof) predictions
@@ -193,6 +201,15 @@ class ClassifierDriftTorch(BaseClassifierDrift):
         probs_oof = softmax(preds_oof, axis=-1) if self.preds_type == 'logits' else preds_oof
         idx_oof = np.concatenate(idx_oof_list, axis=0)
         y_oof = y[idx_oof]
+        n_cur = y_oof.sum()
+        n_ref = len(y_oof) - n_cur
         p_val, dist = self.test_probs(y_oof, probs_oof, n_ref, n_cur)
-        probs_sort = probs_oof[np.argsort(idx_oof)]
-        return p_val, dist, probs_sort[:n_ref, 1], probs_sort[n_ref:, 1]
+        idx_sort = np.argsort(idx_oof)
+        probs_sort = probs_oof[idx_sort]
+        if isinstance(x, np.ndarray):
+            x_oof = x[idx_oof]
+            x_sort = x_oof[idx_sort]
+        else:
+            x_oof = [x[_] for _ in idx_oof]
+            x_sort = [x_oof[_] for _ in idx_sort]
+        return p_val, dist, probs_sort[:n_ref, 1], probs_sort[n_ref:, 1], x_sort[:n_ref], x_sort[n_ref:]

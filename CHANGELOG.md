@@ -1,5 +1,96 @@
 # Change Log
 
+## v0.11.0dev
+[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.10.3...master)
+
+### Added
+- **New feature** MMD drift detector has been extended with a [KeOps](https://www.kernel-operations.io/keops/index.html) backend to scale and speed up the detector. 
+See the [documentation](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/mmddrift.html) and [example notebook](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_mmd_keops.html) for more info ([#548](https://github.com/SeldonIO/alibi-detect/pull/548)).
+- If a `categories_per_feature` dictionary is not passed to `TabularDrift`, a warning is now raised to inform the user that all features are assumed to be numerical ([#606](https://github.com/SeldonIO/alibi-detect/pull/606)).
+- For the `ClassifierDrift` and `SpotTheDiffDrift` detectors, we can also return the out-of-fold instances of the reference and test sets. When using `train_size` for training the detector, this allows to associate the returned prediction probabilities with the correct instances.
+
+### Changed
+- Minimum `prophet` version bumped to `1.1.0` (used by `OutlierProphet`). This upgrade removes the dependency on `pystan` as `cmdstanpy` is used instead. This version also comes with pre-built wheels for all major platforms and Python versions, making both installation and testing easier ([#627](https://github.com/SeldonIO/alibi-detect/pull/627)).
+- **Breaking change** The configuration field `config_spec` has been removed. In order to load detectors serialized from previous Alibi Detect versions, the field will need to be deleted from the detector's `config.toml` file. However, in any case, serialization compatibility across Alibi Detect versions is not currently guranteed. ([#641](https://github.com/SeldonIO/alibi-detect/pull/641)).
+
+
+### Development
+- UTF-8 decoding is enforced when `README.md` is opened by `setup.py`. This is to prevent pip install errors on systems with `PYTHONIOENCODING` set to use other encoders ([#605](https://github.com/SeldonIO/alibi-detect/pull/605)).
+- Skip specific save/load tests that require downloading remote artefacts if the relevant URI(s) is/are down ([#607](https://github.com/SeldonIO/alibi-detect/pull/607)).
+
+## v0.10.4
+## [v0.10.4](https://github.com/SeldonIO/alibi-detect/tree/v0.10.4) (2022-10-21)
+[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.10.3...v0.10.4)
+
+### Fixed
+- Fixed an incorrect default value for the `alternative` kwarg in the `FETDrift` detector ([#661](https://github.com/SeldonIO/alibi-detect/pull/661)).
+- Fixed an issue with `ClassifierDrift` returning incorrect prediction probabilities when `train_size` given ([#662](https://github.com/SeldonIO/alibi-detect/pull/662)).
+
+## [v0.10.3](https://github.com/SeldonIO/alibi-detect/tree/v0.10.3) (2022-08-17)
+[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.10.2...v0.10.3)
+
+### Fixed
+- Fix to allow `config.toml` files to be loaded when the [meta] field is not present ([#591](https://github.com/SeldonIO/alibi-detect/pull/591)).
+
+## [v0.10.2](https://github.com/SeldonIO/alibi-detect/tree/v0.10.2) (2022-08-16)
+[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.10.1...v0.10.2)
+
+### Fixed
+- Fixed a bug in the MMDDrift detector with `pytorch` backend, where the `kernel` attribute was not sent to the selected device ([#587](https://github.com/SeldonIO/alibi-detect/pull/587)).
+
+### Development
+- Code Coverage added ([#584](https://github.com/SeldonIO/alibi-detect/pull/584)).
+
+## [v0.10.1](https://github.com/SeldonIO/alibi-detect/tree/v0.10.1) (2022-08-10)
+[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.10.0...v0.10.1)
+
+### Fixed
+- Corrected a missing optional dependency error when `tensorflow` was installed without `tensorflow-probability` ([#580](https://github.com/SeldonIO/alibi-detect/pull/580)).
+
+### Development
+- An upper version bound has been added for `torch` (<1.13.0) ([#575](https://github.com/SeldonIO/alibi-detect/pull/575)).
+
+## [v0.10.0](https://github.com/SeldonIO/alibi-detect/tree/v0.10.0) (2022-07-26)
+[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.9.1...v0.10.0)
+
+### Added
+- **New feature** Drift detectors save/load functionality has been significantly reworked. All offline and online drift detectors (`tensorflow` backend only) can now be saved and loaded via `config.toml` files, allowing for more flexibility. Config files are also validated with `pydantic`. See [the documentation](https://docs.seldon.io/projects/alibi-detect/en/stable/overview/config_files.html) for more info ([#516](https://github.com/SeldonIO/alibi-detect/pull/516)).
+- **New feature** Option to use out-of-bag predictions when using a `RandomForestClassifier` with `ClassifierDrift` ([#426](https://github.com/SeldonIO/alibi-detect/pull/426)).
+- Python 3.10 support. Note that PyTorch at the time of writing doesn't support Python 3.10 on Windows ([#485](https://github.com/SeldonIO/alibi-detect/pull/485)).
+
+### Fixed
+- Fixed a bug in the TensorFlow trainer which occured when the data was a minibatch of size 2 ([#492](https://github.com/SeldonIO/alibi-detect/pull/492)).
+
+### Changed
+- TensorFlow is now an optional dependency. Error messages for incorrect use of detectors that are dependent on missing optional dependencies have been improved to include installation instructions and be more informative ([#537](https://github.com/SeldonIO/alibi-detect/pull/537)).
+- The optional dependency work has resulted in some imports being reorganised. The original imports will still work as long as the relevant optional dependencies are installed ([#538](https://github.com/SeldonIO/alibi-detect/pull/538)).
+  - `from alibi_detect.utils.tensorflow.kernels import DeepKernel` -> `from alibi_detect.utils.tensorflow import DeepKernel`
+  - `from alibi_detect.utils.tensorflow.prediction import predict_batch` -> `from alibi_detect.utils.tensorflow import predict_batch`
+  - `from alibi_detect.utils.pytorch.data import TorchDataset` -> `from alibi_detect.utils.pytorch import TorchDataset`
+  - `from alibi_detect.models.pytorch.trainer import trainer` -> `from alibi_detect.models.pytorch import trainer`
+  - `from alibi_detect.models.tensorflow.resnet import scale_by_instance` -> `from alibi_detect.models.tensorflow import scale_by_instance`
+  - `from alibi_detect.models.tensorflow.resnet import scale_by_instance` -> `from alibi_detect.models.tensorflow import scale_by_instance`
+  - `from alibi_detect.utils.pytorch.kernels import DeepKernel` -> `from alibi_detect.utils.pytorch import DeepKernel`
+  - `from alibi_detect.models.tensorflow.autoencoder import eucl_cosim_features` -> `from alibi_detect.models.tensorflow import eucl_cosim_features`
+  - `from alibi_detect.utils.tensorflow.prediction import predict_batch` -> `from alibi_detect.utils.tensorflow import predict_batch`
+  - `from alibi_detect.models.tensorflow.losses import elbo` -> `from alibi_detect.models.tensorflow import elbo`
+  - `from alibi_detect.models import PixelCNN` -> `from alibi_detect.models.tensorflow import PixelCNN`
+  - `from alibi_detect.utils.tensorflow.data import TFDataset` -> `from alibi_detect.utils.tensorflow import TFDataset`
+  - `from alibi_detect.utils.pytorch.data import TorchDataset` -> `from alibi_detect.utils.pytorch import TorchDataset`
+- The maximum `tensorflow` version has been bumped from 2.8 to 2.9 ([#508](https://github.com/SeldonIO/alibi-detect/pull/508)).
+- **breaking change** The `detector_type` field in the `detector.meta` dictionary now indicates whether a detector is a 'drift', 'outlier' or 'adversarial' detector. Its previous meaning, whether a detector is online or offline, is now covered by the `online` field ([#564](https://github.com/SeldonIO/alibi-detect/pull/564)).
+
+### Development
+- Added `MissingDependency` class and `import_optional` for protecting objects that are dependent on optional dependencies ([#537](https://github.com/SeldonIO/alibi-detect/pull/537)).
+- Added `BackendValidator` to factor out similar logic across detectors with backends ([#538](https://github.com/SeldonIO/alibi-detect/pull/538)).
+- Added missing CI test for `ClassifierDrift` with `sklearn` backend ([#523](https://github.com/SeldonIO/alibi-detect/pull/523)).
+- Fixed typing for `ContextMMDDrift` `pytorch` backend with `numpy`>=1.22 ([#520](https://github.com/SeldonIO/alibi-detect/pull/520)).
+- Drift detectors with backends refactored to perform distance threshold computation in `score` instead of `predict` ([#489](https://github.com/SeldonIO/alibi-detect/pull/489)).
+- Factored out PyTorch device setting to `utils.pytorch.misc.get_device()` ([#503](https://github.com/SeldonIO/alibi-detect/pull/503)). Thanks to @kuutsav!
+- Added `utils._random` submodule and `pytest-randomly` to manage determinism in CI build tests ([#496](https://github.com/SeldonIO/alibi-detect/pull/496)).
+- From this release onwards we exclude the directories `doc/` and `examples/` from the source distribution (by adding `prune` directives in `MANIFEST.in`). This results in considerably smaller file sizes for the source distribution.
+- `mypy` has been updated to `~=0.900` which requires additional development dependencies for type stubs, currently only `types-requests` and `types-toml` have been necessary to add to `requirements/dev.txt`.
+
 ## [v0.9.1](https://github.com/SeldonIO/alibi-detect/tree/v0.9.1) (2022-04-01)
 [Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.9.0...v0.9.1)
 

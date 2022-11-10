@@ -38,6 +38,7 @@ version = '.'.join(release.split('.')[:3])
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    "sphinx.ext.autodoc",
     "sphinx.ext.doctest",
     "sphinx.ext.intersphinx",
     "sphinx.ext.todo",
@@ -46,12 +47,12 @@ extensions = [
     "sphinx.ext.ifconfig",
     "sphinx.ext.viewcode",
     "sphinx.ext.napoleon",
-    "sphinx.ext.autodoc.typehints",  # still used with autoapi
+    "sphinx_autodoc_typehints",
+    "sphinxcontrib.apidoc",  # automatically generate API docs, see https://github.com/rtfd/readthedocs.org/issues/1139
     "sphinxcontrib.bibtex",
     "nbsphinx",
     "myst_parser",
     "sphinx_design",
-    "autoapi.extension"
 ]
 
 # -- nbsphinx settings -------------------------------------------------------
@@ -71,17 +72,41 @@ for nb_file in nb_files:
 bibtex_bibfiles = ['refs.bib']
 bibtex_default_style = 'unsrtalpha'
 
-# -- Other settings ----------------------------------------------------------
-# autoapi settings
-autoapi_type = 'python'
-autoapi_dirs = ['../../alibi_detect/']
-autoapi_root = 'api'  # rename api directory from 'autoapi' to 'api'
-autoapi_add_toctree_entry = False  # Don't add toctree entry as we enter it manually in top-level index.rst
-autoapi_keep_files = True  # Keep api files after building api docs as we ref to them elsewhere in docs
-autoapi_ignore = ["**/test_*"]  # Don't document tests in api docs
-autoapi_options = ['members', 'show-inheritance', 'imported-members', 'undoc-members']
-autoapi_python_class_content = 'both'
-autodoc_typehints = 'description'
+# apidoc settings
+apidoc_module_dir = "../../alibi_detect"
+apidoc_output_dir = "api"
+apidoc_excluded_paths = ["**/*test*"]
+apidoc_module_first = True
+apidoc_separate_modules = True
+apidoc_extra_args = ["-d 6"]
+
+# mock imports
+# numpy, pandas and matplotlib are not included as these are installed on 
+# ReadTheDocs PYTHON_VERSION_39 docker image (https://hub.docker.com/r/readthedocs/build/dockerfile/)
+autodoc_mock_imports = [
+    "sklearn",
+    "skimage",
+    "requests",
+    "cv2",
+    "bs4",
+    "keras",
+    "seaborn",
+    "PIL",
+    "tensorflow",
+    "spacy",
+    "tensorflow_probability",
+    "scipy",
+    "fbprophet",
+    "torch",
+    "transformers",
+    "tqdm",
+    "dill",
+    "numba",
+    "pydantic",
+    "toml",
+    "catalogue",
+    "pykeops"
+]
 
 # Napoleon settings
 napoleon_google_docstring = False
@@ -143,7 +168,7 @@ html_theme_options = {"logo_only": True}
 html_static_path = ["_static"]
 
 # override default theme width
-html_css_files = ['theme_overrides.css'] # override wide tables in RTD theme
+html_css_files = ['theme_overrides.css', 'custom_docs.css'] # override wide tables in RTD theme
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.
@@ -177,6 +202,8 @@ latex_elements = {
     'preamble': r''' 
         \DeclareUnicodeCharacter{2588}{=}
         \DeclareUnicodeCharacter{258E}{|} 
+        \DeclareUnicodeCharacter{274C}{$\times$} 
+        \DeclareUnicodeCharacter{2705}{$\checkmark$} 
 
         \usepackage{enumitem}
         \setlistdepth{99}
@@ -295,4 +322,17 @@ myst_enable_extensions = [
 
 # Create heading anchors for h1 to h3 (useful for local toc's)
 myst_heading_anchors = 3
+
+# Below code fixes a problem with sphinx>=3.2.0 processing functions with
+# torch.jit.script decorator. Probably occuring because torch is being mocked
+# (see https://github.com/sphinx-doc/sphinx/issues/6709).
+def call_mock(self, *args, **kw):
+    from types import FunctionType, MethodType
+    if args and type(args[0]) in [type, FunctionType, MethodType]:
+        # Appears to be a decorator, pass through unchanged
+        return args[0]
+    return self
+
+from sphinx.ext.autodoc.mock import _MockObject
+_MockObject.__call__ = call_mock
 

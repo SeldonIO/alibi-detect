@@ -65,8 +65,9 @@ class OutlierAEGMM(BaseDetector, FitMixin, ThresholdMixin):
                             'or `encoder_net`, `decoder_net` and `gmm_density_net` (tf.keras.Sequential).')
 
         # set metadata
-        self.meta['detector_type'] = 'offline'
+        self.meta['detector_type'] = 'outlier'
         self.meta['data_type'] = data_type
+        self.meta['online'] = False
 
         self.phi, self.mu, self.cov, self.L, self.log_det_cov = None, None, None, None, None
 

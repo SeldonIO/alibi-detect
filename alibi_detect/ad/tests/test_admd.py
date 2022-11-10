@@ -55,8 +55,8 @@ def test_adv_md(adv_md_params):
     )
 
     assert admd.threshold == threshold
-    assert admd.meta == {'name': 'ModelDistillation', 'detector_type': 'offline', 'data_type': None,
-                         'version': __version__}
+    assert admd.meta == {'name': 'ModelDistillation', 'detector_type': 'adversarial', 'data_type': None,
+                         'online': False, 'version': __version__}
     for layer in admd.model.layers:
         assert not layer.trainable
 

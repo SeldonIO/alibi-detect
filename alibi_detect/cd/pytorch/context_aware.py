@@ -3,7 +3,10 @@ import numpy as np
 import torch
 from typing import Callable, Dict, Optional, Tuple, Union
 from alibi_detect.cd.base import BaseContextMMDDrift
+from alibi_detect.utils.pytorch import get_device
 from alibi_detect.utils.pytorch.kernels import GaussianRBF
+from alibi_detect.utils.warnings import deprecated_alias
+from alibi_detect.utils.frameworks import Framework
 from alibi_detect.cd._domain_clf import _SVCDomainClf
 from tqdm import tqdm
 
@@ -13,12 +16,14 @@ logger = logging.getLogger(__name__)
 class ContextMMDDriftTorch(BaseContextMMDDrift):
     lams: Optional[Tuple[torch.Tensor, torch.Tensor]] = None
 
+    @deprecated_alias(preprocess_x_ref='preprocess_at_init')
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
             c_ref: np.ndarray,
             p_val: float = .05,
-            preprocess_x_ref: bool = True,
+            x_ref_preprocessed: bool = False,
+            preprocess_at_init: bool = True,
             update_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
             x_kernel: Callable = GaussianRBF,
@@ -30,7 +35,7 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
             device: Optional[str] = None,
             input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None,
-            verbose: bool = False
+            verbose: bool = False,
     ) -> None:
         """
         A context-aware drift detector based on a conditional analogue of the maximum mean discrepancy (MMD).
@@ -45,8 +50,13 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
             Context for the reference distribution.
         p_val
             p-value used for the significance of the permutation test.
-        preprocess_x_ref
-            Whether to already preprocess and store the reference data `x_ref`.
+        x_ref_preprocessed
+            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
+            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
+            data will also be preprocessed.
+        preprocess_at_init
+            Whether to preprocess the reference data when the detector is instantiated. Otherwise, the reference
+            data will be preprocessed at prediction time. Only applies if `x_ref_preprocessed=False`.
         update_ref
             Reference data can optionally be updated to the last N instances seen by the detector.
             The parameter should be passed as a dictionary *{'last': N}*.
@@ -78,7 +88,8 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
             x_ref=x_ref,
             c_ref=c_ref,
             p_val=p_val,
-            preprocess_x_ref=preprocess_x_ref,
+            x_ref_preprocessed=x_ref_preprocessed,
+            preprocess_at_init=preprocess_at_init,
             update_ref=update_ref,
             preprocess_fn=preprocess_fn,
             x_kernel=x_kernel,
@@ -89,17 +100,12 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
             batch_size=batch_size,
             input_shape=input_shape,
             data_type=data_type,
-            verbose=verbose
+            verbose=verbose,
         )
-        self.meta.update({'backend': 'pytorch'})
+        self.meta.update({'backend': Framework.PYTORCH.value})
 
         # set device
-        if device is None or device.lower() in ['gpu', 'cuda']:
-            self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-            if self.device.type == 'cpu':
-                print('No GPU detected, fall back on CPU.')
-        else:
-            self.device = torch.device('cpu')
+        self.device = get_device(device)
 
         # initialize kernel
         self.x_kernel = x_kernel(init_sigma_fn=_sigma_median_diag) if x_kernel == GaussianRBF else x_kernel
@@ -109,7 +115,7 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
         self.clf = _SVCDomainClf(self.c_kernel)
 
     def score(self,  # type: ignore[override]
-              x: Union[np.ndarray, list], c: np.ndarray) -> Tuple[float, float, np.ndarray, Tuple]:
+              x: Union[np.ndarray, list], c: np.ndarray) -> Tuple[float, float, float, Tuple]:
         """
         Compute the MMD based conditional test statistic, and perform a conditional permutation test to obtain a
         p-value representing the test statistic's extremity under the null hypothesis.
@@ -123,8 +129,9 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
 
         Returns
         -------
-        p-value obtained from the conditional permutation test, the conditional MMD test statistic, the permuted
-        test statistics, and a tuple containing the coupling matrices (Wref,ref, Wtest,test, Wref,test).
+        p-value obtained from the conditional permutation test, the conditional MMD test statistic, the test
+        statistic threshold above which drift is flagged, and a tuple containing the coupling matrices
+        (W_{ref,ref}, W_{test,test}, W_{ref,test}).
         """
         x_ref, x = self.preprocess(x)
         x_ref = torch.from_numpy(x_ref).to(self.device)  # type: ignore[assignment]
@@ -165,7 +172,11 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
         p_val = (stat <= permuted_stats).float().mean()
         coupling = (coupling_xx.numpy(), coupling_yy.numpy(), coupling_xy.numpy())
 
-        return p_val.numpy().item(), stat.numpy().item(), permuted_stats.numpy(), coupling
+        # compute distance threshold
+        idx_threshold = int(self.p_val * len(permuted_stats))
+        distance_threshold = torch.sort(permuted_stats, descending=True).values[idx_threshold]
+
+        return p_val.numpy().item(), stat.numpy().item(), distance_threshold.numpy(), coupling
 
     def _cmmd(self, K: torch.Tensor, L: torch.Tensor, bools: torch.Tensor, L_held: torch.Tensor = None) \
             -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
@@ -229,8 +240,8 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
         K, L = K[perm][:, perm], L[perm][:, perm]
         losses = torch.zeros_like(lams, dtype=torch.float).to(K.device)
         for fold in range(n_folds):
-            inds_oof = np.arange(n)[(fold*fold_size):((fold+1)*fold_size)]
-            inds_if = np.setdiff1d(np.arange(n), inds_oof)
+            inds_oof = list(np.arange(n)[(fold*fold_size):((fold+1)*fold_size)])
+            inds_if = list(np.setdiff1d(np.arange(n), inds_oof))
             K_if, L_if = K[inds_if][:, inds_if], L[inds_if][:, inds_if]
             n_if = len(K_if)
             L_inv_lams = torch.stack(
@@ -264,5 +275,5 @@ def _sigma_median_diag(x: torch.Tensor, y: torch.Tensor, dist: torch.Tensor) -> 
     The computed bandwidth, `sigma`.
     """
     n_median = np.prod(dist.shape) // 2
-    sigma = (.5 * dist.flatten().sort().values[n_median].unsqueeze(dim=-1)) ** .5
+    sigma = (.5 * dist.flatten().sort().values[int(n_median)].unsqueeze(dim=-1)) ** .5
     return sigma

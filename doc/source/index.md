@@ -13,6 +13,7 @@
 overview/getting_started
 overview/algorithms
 overview/saving
+overview/config_files
 overview/roadmap
 ```
 
@@ -67,7 +68,7 @@ models/overview
 :caption: API reference
 :maxdepth: 1
 
-API reference <api/alibi_detect/index>
+API reference <api/modules>
 ```
 
 ```{toctree}

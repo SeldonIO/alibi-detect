@@ -35,7 +35,7 @@ def trainer(
     y_train
         Training labels.
     dataset
-        Training dataset.
+        Training dataset which returns (x, y).
     optimizer
         Optimizer used for training.
     loss_fn_kwargs
@@ -57,6 +57,7 @@ def trainer(
     callbacks
         Callbacks used during training.
     """
+    return_xy = False if not isinstance(dataset, tf.keras.utils.Sequence) and y_train is None else True
     if not isinstance(dataset, tf.keras.utils.Sequence):  # create dataset
         train_data = x_train if y_train is None else (x_train, y_train)
         dataset = tf.data.Dataset.from_tensor_slices(train_data)
@@ -74,7 +75,7 @@ def trainer(
             dataset.on_epoch_end()
         loss_val_ma = 0.
         for step, data in enumerate(dataset):
-            x, y = data if len(data) == 2 else (data, None)
+            x, y = data if return_xy else (data, None)
             if isinstance(preprocess_fn, Callable):  # type: ignore
                 x = preprocess_fn(x)
             with tf.GradientTape() as tape:

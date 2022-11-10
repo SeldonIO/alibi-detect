@@ -1,7 +1,9 @@
 import logging
 import numpy as np
 from typing import Callable, Dict, Optional, Union, Tuple
-from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
+from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, has_keops, BackendValidator, Framework
+from alibi_detect.utils.warnings import deprecated_alias
+from alibi_detect.base import DriftConfigMixin
 
 if has_pytorch:
     from alibi_detect.cd.pytorch.mmd import MMDDriftTorch
@@ -9,22 +11,28 @@ if has_pytorch:
 if has_tensorflow:
     from alibi_detect.cd.tensorflow.mmd import MMDDriftTF
 
+if has_keops and has_pytorch:
+    from alibi_detect.cd.keops.mmd import MMDDriftKeops
+
 logger = logging.getLogger(__name__)
 
 
-class MMDDrift:
+class MMDDrift(DriftConfigMixin):
+    @deprecated_alias(preprocess_x_ref='preprocess_at_init')
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
             backend: str = 'tensorflow',
             p_val: float = .05,
-            preprocess_x_ref: bool = True,
+            x_ref_preprocessed: bool = False,
+            preprocess_at_init: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
             kernel: Callable = None,
             sigma: Optional[np.ndarray] = None,
             configure_kernel_from_x_ref: bool = True,
             n_permutations: int = 100,
+            batch_size_permutations: int = 1000000,
             device: Optional[str] = None,
             input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None
@@ -40,8 +48,13 @@ class MMDDrift:
             Backend used for the MMD implementation.
         p_val
             p-value used for the significance of the permutation test.
-        preprocess_x_ref
-            Whether to already preprocess and store the reference data.
+        x_ref_preprocessed
+            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
+            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
+            data will also be preprocessed.
+        preprocess_at_init
+            Whether to preprocess the reference data when the detector is instantiated. Otherwise, the reference
+            data will be preprocessed at prediction time. Only applies if `x_ref_preprocessed=False`.
         update_x_ref
             Reference data can optionally be updated to the last n instances seen by the detector
             or via reservoir sampling with size n. For the former, the parameter equals {'last': n} while
@@ -57,6 +70,9 @@ class MMDDrift:
             Whether to already configure the kernel bandwidth from the reference data.
         n_permutations
             Number of permutations used in the permutation test.
+        batch_size_permutations
+            KeOps computes the n_permutations of the MMD^2 statistics in chunks of batch_size_permutations.
+            Only relevant for 'keops' backend.
         device
             Device type used. The default None tries to use the GPU and falls back on CPU if needed.
             Can be specified by passing either 'cuda', 'gpu' or 'cpu'. Only relevant for 'pytorch' backend.
@@ -67,30 +83,40 @@ class MMDDrift:
         """
         super().__init__()
 
+        # Set config
+        self._set_config(locals())
+
         backend = backend.lower()
-        if backend == 'tensorflow' and not has_tensorflow or backend == 'pytorch' and not has_pytorch:
-            raise ImportError(f'{backend} not installed. Cannot initialize and run the '
-                              f'MMDDrift detector with {backend} backend.')
-        elif backend not in ['tensorflow', 'pytorch']:
-            raise NotImplementedError(f'{backend} not implemented. Use tensorflow or pytorch instead.')
+        BackendValidator(
+            backend_options={Framework.TENSORFLOW: [Framework.TENSORFLOW],
+                             Framework.PYTORCH: [Framework.PYTORCH],
+                             Framework.KEOPS: [Framework.KEOPS]},
+            construct_name=self.__class__.__name__
+        ).verify_backend(backend)
 
         kwargs = locals()
         args = [kwargs['x_ref']]
         pop_kwargs = ['self', 'x_ref', 'backend', '__class__']
+        if backend == Framework.TENSORFLOW:
+            pop_kwargs += ['device', 'batch_size_permutations']
+            detector = MMDDriftTF
+        elif backend == Framework.PYTORCH:
+            pop_kwargs += ['batch_size_permutations']
+            detector = MMDDriftTorch
+        else:
+            detector = MMDDriftKeops
         [kwargs.pop(k, None) for k in pop_kwargs]
 
         if kernel is None:
-            if backend == 'tensorflow':
+            if backend == Framework.TENSORFLOW:
                 from alibi_detect.utils.tensorflow.kernels import GaussianRBF
-            else:
+            elif backend == Framework.PYTORCH:
                 from alibi_detect.utils.pytorch.kernels import GaussianRBF  # type: ignore
+            else:
+                from alibi_detect.utils.keops.kernels import GaussianRBF  # type: ignore
             kwargs.update({'kernel': GaussianRBF})
 
-        if backend == 'tensorflow' and has_tensorflow:
-            kwargs.pop('device', None)
-            self._detector = MMDDriftTF(*args, **kwargs)  # type: ignore
-        else:
-            self._detector = MMDDriftTorch(*args, **kwargs)  # type: ignore
+        self._detector = detector(*args, **kwargs)  # type: ignore
         self.meta = self._detector.meta
 
     def predict(self, x: Union[np.ndarray, list], return_p_val: bool = True, return_distance: bool = True) \
@@ -115,7 +141,7 @@ class MMDDrift:
         """
         return self._detector.predict(x, return_p_val, return_distance)
 
-    def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, np.ndarray]:
+    def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, float]:
         """
         Compute the p-value resulting from a permutation test using the maximum mean discrepancy
         as a distance measure between the reference data and the data to be tested.
@@ -127,7 +153,7 @@ class MMDDrift:
 
         Returns
         -------
-        p-value obtained from the permutation test, the MMD^2 between the reference and test set
-        and the MMD^2 values from the permutation test.
+        p-value obtained from the permutation test, the MMD^2 between the reference and test set,
+        and the MMD^2 threshold above which drift is flagged.
         """
         return self._detector.score(x)

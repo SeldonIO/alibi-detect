@@ -32,7 +32,8 @@ def test_mahalanobis(mahalanobis_params):
                      start_clip=start_clip, max_n=max_n)
     assert mh.threshold == threshold
     assert mh.n == 0
-    assert mh.meta == {'name': 'Mahalanobis', 'detector_type': 'online', 'data_type': 'tabular', 'version': __version__}
+    assert mh.meta == {'name': 'Mahalanobis', 'detector_type': 'outlier', 'data_type': 'tabular',
+                       'online': True, 'version': __version__}
     mh.infer_threshold(X, threshold_perc=threshold_perc)
     assert mh.n == X.shape[0]
     iscore = mh.score(X)  # noqa

@@ -6,15 +6,19 @@ from alibi_detect.cd.base import BaseLearnedKernelDrift
 from alibi_detect.utils.tensorflow.data import TFDataset
 from alibi_detect.utils.tensorflow.misc import clone_model
 from alibi_detect.utils.tensorflow.distance import mmd2_from_kernel_matrix, batch_compute_kernel_matrix
+from alibi_detect.utils.warnings import deprecated_alias
+from alibi_detect.utils.frameworks import Framework
 
 
 class LearnedKernelDriftTF(BaseLearnedKernelDrift):
+    @deprecated_alias(preprocess_x_ref='preprocess_at_init')
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
             kernel: tf.keras.Model,
             p_val: float = .05,
-            preprocess_x_ref: bool = True,
+            x_ref_preprocessed: bool = False,
+            preprocess_at_init: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
             n_permutations: int = 100,
@@ -22,7 +26,7 @@ class LearnedKernelDriftTF(BaseLearnedKernelDrift):
             reg_loss_fn: Callable = (lambda kernel: 0),
             train_size: Optional[float] = .75,
             retrain_from_scratch: bool = True,
-            optimizer: tf.keras.optimizers = tf.keras.optimizers.Adam,
+            optimizer: tf.keras.optimizers.Optimizer = tf.keras.optimizers.Adam,
             learning_rate: float = 1e-3,
             batch_size: int = 32,
             preprocess_batch_fn: Optional[Callable] = None,
@@ -30,6 +34,7 @@ class LearnedKernelDriftTF(BaseLearnedKernelDrift):
             verbose: int = 0,
             train_kwargs: Optional[dict] = None,
             dataset: Callable = TFDataset,
+            input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None
     ) -> None:
         """
@@ -49,8 +54,13 @@ class LearnedKernelDriftTF(BaseLearnedKernelDrift):
             Trainable TensorFlow model that returns a similarity between two instances.
         p_val
             p-value used for the significance of the test.
-        preprocess_x_ref
-            Whether to already preprocess and store the reference data.
+        x_ref_preprocessed
+            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
+            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
+            data will also be preprocessed.
+        preprocess_at_init
+            Whether to preprocess the reference data when the detector is instantiated. Otherwise, the reference
+            data will be preprocessed at prediction time. Only applies if `x_ref_preprocessed=False`.
         update_x_ref
             Reference data can optionally be updated to the last n instances seen by the detector
             or via reservoir sampling with size n. For the former, the parameter equals {'last': n} while
@@ -86,21 +96,25 @@ class LearnedKernelDriftTF(BaseLearnedKernelDrift):
             Optional additional kwargs when training the kernel.
         dataset
             Dataset object used during training.
+        input_shape
+            Shape of input data.
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
         super().__init__(
             x_ref=x_ref,
             p_val=p_val,
-            preprocess_x_ref=preprocess_x_ref,
+            x_ref_preprocessed=x_ref_preprocessed,
+            preprocess_at_init=preprocess_at_init,
             update_x_ref=update_x_ref,
             preprocess_fn=preprocess_fn,
             n_permutations=n_permutations,
             train_size=train_size,
             retrain_from_scratch=retrain_from_scratch,
+            input_shape=input_shape,
             data_type=data_type
         )
-        self.meta.update({'backend': 'tensorflow'})
+        self.meta.update({'backend': Framework.TENSORFLOW.value})
 
         # define and compile kernel
         self.original_kernel = kernel
@@ -141,7 +155,7 @@ class LearnedKernelDriftTF(BaseLearnedKernelDrift):
 
             return mmd2_est/tf.math.sqrt(reg_var_est)
 
-    def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, np.ndarray]:
+    def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, float]:
         """
         Compute the p-value resulting from a permutation test using the maximum mean discrepancy
         as a distance measure between the reference data and the data to be tested. The kernel
@@ -154,8 +168,8 @@ class LearnedKernelDriftTF(BaseLearnedKernelDrift):
 
         Returns
         -------
-        p-value obtained from the permutation test, the MMD^2 between the reference and test set
-        and the MMD^2 values from the permutation test.
+        p-value obtained from the permutation test, the MMD^2 between the reference and test set,
+        and the MMD^2 threshold above which drift is flagged.
         """
         x_ref, x_cur = self.preprocess(x)
         (x_ref_tr, x_cur_tr), (x_ref_te, x_cur_te) = self.get_splits(x_ref, x_cur)
@@ -177,13 +191,16 @@ class LearnedKernelDriftTF(BaseLearnedKernelDrift):
                 for _ in range(self.n_permutations)]
         )
         p_val = (mmd2 <= mmd2_permuted).mean()
-        return p_val, mmd2, mmd2_permuted
+
+        idx_threshold = int(self.p_val * len(mmd2_permuted))
+        distance_threshold = np.sort(mmd2_permuted)[::-1][idx_threshold]
+        return p_val, mmd2, distance_threshold
 
     @staticmethod
     def trainer(
         j_hat: JHat,
         datasets: Tuple[tf.keras.utils.Sequence, tf.keras.utils.Sequence],
-        optimizer: tf.keras.optimizers = tf.keras.optimizers.Adam,
+        optimizer: tf.keras.optimizers.Optimizer = tf.keras.optimizers.Adam,
         learning_rate: float = 1e-3,
         preprocess_fn: Callable = None,
         epochs: int = 20,
@@ -194,7 +211,7 @@ class LearnedKernelDriftTF(BaseLearnedKernelDrift):
         Train the kernel to maximise an estimate of test power using minibatch gradient descent.
         """
         ds_ref, ds_cur = datasets
-        optimizer = optimizer(learning_rate)
+        optimizer = optimizer(learning_rate=learning_rate) if isinstance(optimizer, type) else optimizer
         n_minibatch = min(len(ds_ref), len(ds_cur))
         # iterate over epochs
         loss_ma = 0.
