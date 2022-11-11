@@ -80,31 +80,13 @@ apidoc_module_first = True
 apidoc_separate_modules = True
 apidoc_extra_args = ["-d 6"]
 
-# mock imports
-# numpy, pandas and matplotlib are not included as these are installed on 
-# ReadTheDocs PYTHON_VERSION_39 docker image (https://hub.docker.com/r/readthedocs/build/dockerfile/)
+# mock optional deps (since these are not installed on RTD)
 autodoc_mock_imports = [
-    "sklearn",
-    "skimage",
-    "requests",
-    "cv2",
-    "bs4",
-    "keras",
-    "seaborn",
-    "PIL",
-    "tensorflow",
-    "spacy",
-    "tensorflow_probability",
-    "scipy",
-    "fbprophet",
+    "prophet",
     "torch",
-    "transformers",
-    "tqdm",
-    "dill",
-    "numba",
-    "pydantic",
-    "toml",
-    "catalogue",
+    "tensorflow",
+    "keras",
+    "tensorflow_probability",
     "pykeops"
 ]
 
