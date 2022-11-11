@@ -68,6 +68,7 @@ dependencies = [
 ]
 
 [project.urls]
+homepage = "https://www.seldon.io/solutions/open-source-projects/alibi-detect" 
 repository = "https://github.com/SeldonIO/alibi-detect"
 documentation = "https://docs.seldon.io/projects/alibi-detect/en/stable/"
 
@@ -111,6 +112,9 @@ show_error_codes = true
 # tox test environment for generating licenses (below syntax subject to change - https://tox.wiki/en/latest/example/basic.html#pyproject-toml-tox-legacy-ini)
 [tool.tox]
 legacy_tox_ini = """
+[tox]
+isolated_build = True
+
 # tox test environments for generating licenses and testing optional dependencies
 [tox:tox]
 envlist=
