@@ -68,9 +68,9 @@ dependencies = [
 ]
 
 [project.urls]
-homepage = "https://www.seldon.io/solutions/open-source-projects/alibi-detect" 
 repository = "https://github.com/SeldonIO/alibi-detect"
 documentation = "https://docs.seldon.io/projects/alibi-detect/en/stable/"
+homepage = "https://docs.seldon.io/projects/alibi-detect/en/stable/"
 
 [project.optional-dependencies]
 prophet = ["prophet>=1.1.0, <2.0.0"]
