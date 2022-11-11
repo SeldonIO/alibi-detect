@@ -1,7 +1,7 @@
 # This github action builds Alibi Detect and publishes it to PyPI.
 # It is only run when a new tag is pushed to github.
 # See https://packaging.python.org/en/latest/guides/publishing-package-distribution-releases-using-github-actions-ci-cd-workflows/
-name: Publish Alibi Detect 📦 to PyPI 
+name: Publish 📦 to PyPI 
 
 # Only run when tags starting with "v" are pushed
 on: 
@@ -11,7 +11,7 @@ on:
 
 jobs:
   build-and-publish:
-    name: Build and publish Alibi Detect
+    name: Build and publish
     runs-on: ubuntu-18.04
 
     steps:
@@ -35,15 +35,20 @@ jobs:
       run: python -m build --sdist --wheel --outdir dist/ .
 
     # Publish to Test PyPI unconditionally
-    - name: Publish Alibi Detect 📦 to Test PyPI
+    - name: Publish 📦 to Test PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         password: ${{ secrets.TEST_PYPI_API_TOKEN }}
         repository_url: https://test.pypi.org/legacy/
-          
+
+# TODO - Test below by:
+# 1) AVOID adding PyPI api token, to protect from inadvertant release if the conditional is broken
+# 2) Uncomment.
+# 3) Push a non-stable tag (e.g. v11.0.0-alpha1). Check below step is NOT triggered.
+# 4) Once happy, we can setup PyPI api token and it'll be ready to go.
 #    # Publish to real PyPI if the tag is stable (i.e. not an alpha, beta or rc tag)
 #    (see https://github.com/nowsprinting/check-version-format-action#is_stable)
-#    - name: Publish Alibi Detect 📦 to PyPI
+#    - name: Publish 📦 to PyPI
 #      if: steps.version.outputs.is_stable == 'true'
 #      uses: pypa/gh-action-pypi-publish@release/v1
 #      with:
