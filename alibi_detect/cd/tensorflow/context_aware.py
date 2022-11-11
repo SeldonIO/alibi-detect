@@ -126,9 +126,6 @@ class ContextMMDDriftTF(BaseContextMMDDrift):
         self.x_kernel = x_kernel
         self.c_kernel = c_kernel
 
-        # Initialize classifier (hardcoded for now)
-        self.clf = _SVCDomainClf(self.c_kernel)
-
     def score(self,  # type: ignore[override]
               x: Union[np.ndarray, list], c: np.ndarray) -> Tuple[float, float, float, Tuple]:
         """
@@ -150,6 +147,9 @@ class ContextMMDDriftTF(BaseContextMMDDrift):
         """
         x_ref, x = self.preprocess(x)
 
+        # Initialize classifier (hardcoded for now)
+        self.clf = _SVCDomainClf()
+
         # Hold out a portion of contexts for conditioning on
         n, n_held = len(c), int(len(c)*self.prop_c_held)
         inds_held = np.random.choice(n, n_held, replace=False)
@@ -167,12 +167,13 @@ class ContextMMDDriftTF(BaseContextMMDDrift):
         L_held = self.c_kernel(c_held, c_all)
 
         # Fit and calibrate the domain classifier
-        c_all_np, bools_np = c_all.numpy(), bools.numpy()
-        self.clf.fit(c_all_np, bools_np)
-        self.clf.calibrate(c_all_np, bools_np)
+        bools_np = bools.numpy()
+        K_c_all_np = self.c_kernel(c_all, c_all).numpy()
+        self.clf.fit(K_c_all_np, bools_np)
+        self.clf.calibrate(K_c_all_np, bools_np)
 
         # Obtain n_permutations conditional reassignments
-        prop_scores = self.clf.predict(c_all_np)
+        prop_scores = self.clf.predict(K_c_all_np)
         self.redrawn_bools = [tfp.distributions.Bernoulli(probs=prop_scores).sample()
                               for _ in range(self.n_permutations)]
         iters = tqdm(self.redrawn_bools, total=self.n_permutations) if self.verbose else self.redrawn_bools

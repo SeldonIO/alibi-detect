@@ -79,11 +79,12 @@ class LSDDDriftTF(BaseLSDDDrift):
         )
         self.meta.update({'backend': Framework.TENSORFLOW.value})
 
-        self.kernel = GaussianRBF()
         if self.preprocess_at_init or self.preprocess_fn is None or self.x_ref_preprocessed:
             x_ref = tf.convert_to_tensor(self.x_ref)
             self._configure_normalization(x_ref)
             x_ref = self._normalize(x_ref)
+            self.kernel = GaussianRBF()
+            _ = self.kernel(x_ref, x_ref, infer_parameter=True)  # infer sigma
             self._configure_kernel_centers(x_ref)
             self.x_ref = x_ref.numpy()  # type: ignore[union-attr]
             # For stability in high dimensions we don't divide H by (pi*sigma^2)^(d/2)
@@ -127,6 +128,8 @@ class LSDDDriftTF(BaseLSDDDrift):
         if self.preprocess_fn is not None and not self.preprocess_at_init and not self.x_ref_preprocessed:
             self._configure_normalization(x_ref)
             x_ref = self._normalize(x_ref)
+            self.kernel = GaussianRBF()
+            _ = self.kernel(x_ref, x_ref, infer_parameter=True)  # infer sigma
             self._configure_kernel_centers(x_ref)
             self.H = GaussianRBF(np.sqrt(2.) * self.kernel.sigma)(self.kernel_centers, self.kernel_centers)
 

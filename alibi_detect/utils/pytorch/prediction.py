@@ -35,6 +35,8 @@ def predict_batch(x: Union[list, np.ndarray, torch.Tensor], model: Union[Callabl
     Numpy array, torch tensor or tuples of those with model outputs.
     """
     device = get_device(device)
+    if isinstance(model, nn.Module):
+        model = model.to(device)
     if isinstance(x, np.ndarray):
         x = torch.from_numpy(x)
     n = len(x)

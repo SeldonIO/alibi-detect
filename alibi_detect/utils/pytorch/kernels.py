@@ -57,13 +57,33 @@ def sigma_median(x: torch.Tensor, y: torch.Tensor, dist: torch.Tensor) -> torch.
 
     Returns
     -------
-    The logrithm of the computed bandwidth, `log-sigma`.
+    The computed bandwidth, `log-sigma`.
     """
     n = min(x.shape[0], y.shape[0])
     n = n if (x[:n] == y[:n]).all() and x.shape == y.shape else 0
     n_median = n + (np.prod(dist.shape) - n) // 2 - 1
     sigma = (.5 * dist.flatten().sort().values[int(n_median)].unsqueeze(dim=-1)) ** .5
-    return sigma.log()
+    return sigma
+
+
+def log_sigma_median(x: torch.Tensor, y: torch.Tensor, dist: torch.Tensor) -> torch.Tensor:
+    """
+    Bandwidth estimation using the median heuristic :cite:t:`Gretton2012`.
+
+    Parameters
+    ----------
+    x
+        Tensor of instances with dimension [Nx, features].
+    y
+        Tensor of instances with dimension [Ny, features].
+    dist
+        Tensor with dimensions [Nx, Ny], containing the pairwise distances between `x` and `y`.
+
+    Returns
+    -------
+    The logrithm of the computed bandwidth, `log-sigma`.
+    """
+    return torch.log(sigma_median(x, y, dist))
 
 
 class KernelParameter:
@@ -96,7 +116,7 @@ class KernelParameter:
 
 
 class BaseKernel(nn.Module):
-    def __init__(self, active_dims: list = None, feature_axis: int = -1) -> None:
+    def __init__(self, active_dims: list = None) -> None:
         """
         The base class for all kernels.
 
@@ -104,8 +124,6 @@ class BaseKernel(nn.Module):
         ----------
         active_dims
             Indices of the dimensions of the feature to be used for the kernel. If None, all dimensions are used.
-        feature_axis
-            Axis of the feature dimension.
         """
         super().__init__()
         self.parameter_dict: dict = {}
@@ -113,20 +131,18 @@ class BaseKernel(nn.Module):
             self.active_dims = torch.as_tensor(active_dims)
         else:
             self.active_dims = None
-        self.feature_axis = feature_axis
         self.init_required = False
 
     @abstractmethod
-    def kernel_function(self, x: Union[np.ndarray, torch.Tensor], y: Union[np.ndarray, torch.Tensor],
+    def kernel_function(self, x: torch.Tensor, y: torch.Tensor,
                         infer_parameter: Optional[bool] = False) -> torch.Tensor:
         raise NotImplementedError
 
-    def forward(self, x: Union[np.ndarray, torch.Tensor], y: Union[np.ndarray, torch.Tensor],
+    def forward(self, x: torch.Tensor, y: torch.Tensor,
                 infer_parameter: bool = False) -> torch.Tensor:
-        x, y = torch.as_tensor(x), torch.as_tensor(y)
         if self.active_dims is not None:
-            x = torch.index_select(x, self.feature_axis, self.active_dims)
-            y = torch.index_select(y, self.feature_axis, self.active_dims)
+            x = torch.index_select(x, -1, self.active_dims)
+            y = torch.index_select(y, -1, self.active_dims)
         if len(self.parameter_dict) > 0:
             return self.kernel_function(x, y, infer_parameter)
         else:
@@ -134,14 +150,12 @@ class BaseKernel(nn.Module):
 
     def __add__(
         self,
-        other: Union['BaseKernel', 'SumKernel', 'ProductKernel', torch.Tensor]
+        other: Union['BaseKernel', torch.Tensor]
     ) -> 'SumKernel':
         if isinstance(other, SumKernel):
             other.kernel_list.append(self)
             return other
-        elif (isinstance(other, BaseKernel) or
-              isinstance(other, ProductKernel) or
-              isinstance(other, torch.Tensor)):
+        elif isinstance(other, (BaseKernel, ProductKernel, torch.Tensor)):
             sum_kernel = SumKernel()
             sum_kernel.kernel_list.append(self)
             sum_kernel.kernel_list.append(other)
@@ -149,13 +163,13 @@ class BaseKernel(nn.Module):
         else:
             raise ValueError('Kernels can only added to another kernel or a constant.')
 
-    def __radd__(self, other: Union['BaseKernel', 'SumKernel', 'ProductKernel']) -> 'SumKernel':
+    def __radd__(self, other: 'BaseKernel') -> 'SumKernel':
         return self.__add__(other)
 
     def __mul__(
         self,
-        other: Union['BaseKernel', 'SumKernel', 'ProductKernel', torch.Tensor]
-    ) -> Union['SumKernel', 'ProductKernel']:
+        other: Union['BaseKernel', torch.Tensor]
+    ) -> 'BaseKernel':
         if isinstance(other, ProductKernel):
             other.kernel_factors.append(self)
             return other
@@ -172,11 +186,11 @@ class BaseKernel(nn.Module):
 
     def __rmul__(
         self,
-        other: Union['BaseKernel', 'SumKernel', 'ProductKernel']
-    ) -> Union['SumKernel', 'ProductKernel']:
+        other: 'BaseKernel'
+    ) -> 'BaseKernel':
         return self.__mul__(other)
 
-    def __truediv__(self, other: torch.Tensor) -> Union['SumKernel', 'ProductKernel']:
+    def __truediv__(self, other: torch.Tensor) -> 'BaseKernel':
         if isinstance(other, torch.Tensor):
             return self.__mul__(1. / other)
         else:
@@ -186,25 +200,25 @@ class BaseKernel(nn.Module):
         raise ValueError('Kernels can not be used as divisor.')
 
     def __sub__(self, other):
-        raise ValueError('Kernels do not support substraction.')
+        raise ValueError('Kernels do not support subtraction.')
 
     def __rsub__(self, other):
-        raise ValueError('Kernels do not support substraction.')
+        raise ValueError('Kernels do not support subtraction.')
 
 
-class SumKernel(torch.nn.Module):
+class SumKernel(BaseKernel):
     def __init__(self) -> None:
         """
         Construct a kernel by summing different kernels.
         """
         super().__init__()
-        self.kernel_list: List[Union[BaseKernel, SumKernel, ProductKernel, torch.Tensor]] = []
+        self.kernel_list: List[Union[BaseKernel, torch.Tensor]] = []
 
-    def forward(self, x: Union[np.ndarray, torch.Tensor], y: Union[np.ndarray, torch.Tensor],
-                infer_parameter: bool = False) -> torch.Tensor:
+    def kernel_function(self, x: torch.Tensor, y: torch.Tensor,
+                        infer_parameter: bool = False) -> torch.Tensor:
         value_list: List[torch.Tensor] = []
         for k in self.kernel_list:
-            if isinstance(k, BaseKernel) or isinstance(k, SumKernel) or isinstance(k, ProductKernel):
+            if isinstance(k, (BaseKernel, SumKernel, ProductKernel)):
                 value_list.append(k(x, y, infer_parameter))
             elif isinstance(k, torch.Tensor):
                 value_list.append(k * torch.ones((x.shape[0], y.shape[0])))
@@ -214,7 +228,7 @@ class SumKernel(torch.nn.Module):
 
     def __add__(
         self,
-        other: Union[BaseKernel, 'SumKernel', 'ProductKernel', torch.Tensor]
+        other: Union[BaseKernel, torch.Tensor]
     ) -> 'SumKernel':
         if isinstance(other, SumKernel):
             for k in other.kernel_list:
@@ -223,13 +237,13 @@ class SumKernel(torch.nn.Module):
             self.kernel_list.append(other)
         return self
 
-    def __radd__(self, other: Union[BaseKernel, 'SumKernel', 'ProductKernel']) -> 'SumKernel':
+    def __radd__(self, other: BaseKernel) -> 'SumKernel':
         return self.__add__(other)
 
     def __mul__(
         self,
-        other: Union[BaseKernel, 'SumKernel', 'ProductKernel', torch.Tensor]
-    ) -> Union['SumKernel', 'ProductKernel']:
+        other: Union[BaseKernel, torch.Tensor]
+    ) -> BaseKernel:
         if isinstance(other, SumKernel):
             sum_kernel = SumKernel()
             for ki in self.kernel_list:
@@ -248,11 +262,11 @@ class SumKernel(torch.nn.Module):
 
     def __rmul__(
         self,
-        other: Union[BaseKernel, 'SumKernel', 'ProductKernel']
-    ) -> Union['SumKernel', 'ProductKernel']:
+        other: BaseKernel
+    ) -> BaseKernel:
         return self.__mul__(other)
 
-    def __truediv__(self, other: torch.Tensor) -> Union['SumKernel', 'ProductKernel']:
+    def __truediv__(self, other: torch.Tensor) -> BaseKernel:
         if isinstance(other, torch.Tensor):
             return self.__mul__(1 / other)
         else:
@@ -262,22 +276,22 @@ class SumKernel(torch.nn.Module):
         raise ValueError('Kernels can not be used as divisor.')
 
     def __sub__(self, other):
-        raise ValueError('Kernels do not support substraction.')
+        raise ValueError('Kernels do not support subtraction.')
 
     def __rsub__(self, other):
-        raise ValueError('Kernels do not support substraction.')
+        raise ValueError('Kernels do not support subtraction.')
 
 
-class ProductKernel(torch.nn.Module):
+class ProductKernel(BaseKernel):
     def __init__(self) -> None:
         """
         Construct a kernel by multiplying different kernels.
         """
         super().__init__()
-        self.kernel_factors: List[Union[BaseKernel, SumKernel, ProductKernel, torch.Tensor]] = []
+        self.kernel_factors: List[Union[BaseKernel, torch.Tensor]] = []
 
-    def forward(self, x: Union[np.ndarray, torch.Tensor], y: Union[np.ndarray, torch.Tensor],
-                infer_parameter: bool = False) -> torch.Tensor:
+    def kernel_function(self, x: torch.Tensor, y: torch.Tensor,
+                        infer_parameter: bool = False) -> torch.Tensor:
         value_list: List[torch.Tensor] = []
         for k in self.kernel_factors:
             if isinstance(k, BaseKernel) or isinstance(k, SumKernel) or isinstance(k, ProductKernel):
@@ -290,7 +304,7 @@ class ProductKernel(torch.nn.Module):
 
     def __add__(
         self,
-        other: Union[BaseKernel, 'SumKernel', 'ProductKernel', torch.Tensor]
+        other: Union[BaseKernel, torch.Tensor]
     ) -> 'SumKernel':
         if isinstance(other, SumKernel):
             other.kernel_list.append(self)
@@ -303,14 +317,14 @@ class ProductKernel(torch.nn.Module):
 
     def __radd__(
         self,
-        other: Union[BaseKernel, 'SumKernel', 'ProductKernel']
+        other: BaseKernel
     ) -> 'SumKernel':
         return self.__add__(other)
 
     def __mul__(
         self,
-        other: Union[BaseKernel, 'SumKernel', 'ProductKernel', torch.Tensor]
-    ) -> Union['SumKernel', 'ProductKernel']:
+        other: Union[BaseKernel, torch.Tensor]
+    ) -> BaseKernel:
         if isinstance(other, SumKernel):
             sum_kernel = SumKernel()
             for k in other.kernel_list:
@@ -330,11 +344,11 @@ class ProductKernel(torch.nn.Module):
 
     def __rmul__(
         self,
-        other: Union[BaseKernel, 'SumKernel', 'ProductKernel']
-    ) -> Union['SumKernel', 'ProductKernel']:
+        other: BaseKernel
+    ) -> BaseKernel:
         return self.__mul__(other)
 
-    def __truediv__(self, other: torch.Tensor) -> Union['SumKernel', 'ProductKernel']:
+    def __truediv__(self, other: torch.Tensor) -> BaseKernel:
         if isinstance(other, torch.Tensor):
             return self.__mul__(1 / other)
         else:
@@ -344,10 +358,10 @@ class ProductKernel(torch.nn.Module):
         raise ValueError('Kernels can not be used as divisor.')
 
     def __sub__(self, other):
-        raise ValueError('Kernels do not support substraction.')
+        raise ValueError('Kernels do not support subtraction.')
 
     def __rsub__(self, other):
-        raise ValueError('Kernels do not support substraction.')
+        raise ValueError('Kernels do not support subtraction.')
 
 
 class GaussianRBF(BaseKernel):
@@ -356,8 +370,7 @@ class GaussianRBF(BaseKernel):
        sigma: Optional[torch.Tensor] = None,
        init_fn_sigma: Optional[Callable] = None,
        trainable: bool = False,
-       active_dims: list = None,
-       feature_axis: int = -1
+       active_dims: list = None
     ) -> None:
         """
         Gaussian RBF kernel: k(x,y) = exp(-(1/(2*sigma^2)||x-y||^2). A forward pass takes
@@ -381,8 +394,8 @@ class GaussianRBF(BaseKernel):
         feature_axis
             Axis of the feature dimension.
         """
-        super().__init__(active_dims, feature_axis)
-        init_fn_sigma = sigma_median if init_fn_sigma is None else init_fn_sigma
+        super().__init__(active_dims)
+        init_fn_sigma = log_sigma_median if init_fn_sigma is None else init_fn_sigma
         self.config = {'sigma': sigma, 'trainable': trainable, 'init_sigma_fn': init_fn_sigma}
         self.parameter_dict['log-sigma'] = KernelParameter(
                 value=sigma.log().reshape(-1) if sigma is not None else None,
@@ -397,11 +410,10 @@ class GaussianRBF(BaseKernel):
     def sigma(self) -> torch.Tensor:
         return self.parameter_dict['log-sigma'].value.exp()
 
-    def kernel_function(self, x: Union[np.ndarray, torch.Tensor], y: Union[np.ndarray, torch.Tensor],
+    def kernel_function(self, x: torch.Tensor, y: torch.Tensor,
                         infer_parameter: bool = False) -> torch.Tensor:
-
-        x, y = torch.as_tensor(x), torch.as_tensor(y)
-        dist = distance.squared_pairwise_distance(x.flatten(1), y.flatten(1))  # [Nx, Ny]
+        n_x, n_y = x.shape[0], y.shape[0]
+        dist = distance.squared_pairwise_distance(x.reshape(n_x, -1), y.reshape(n_y, -1))  # [Nx, Ny]
 
         if infer_parameter or self.init_required:
             infer_kernel_parameter(self, x, y, dist, infer_parameter)
@@ -441,10 +453,9 @@ class RationalQuadratic(BaseKernel):
         alpha: torch.Tensor = None,
         init_fn_alpha: Callable = None,
         sigma: torch.Tensor = None,
-        init_fn_sigma: Callable = sigma_median,
+        init_fn_sigma: Callable = log_sigma_median,
         trainable: bool = False,
-        active_dims: list = None,
-        feature_axis: int = -1
+        active_dims: list = None
     ) -> None:
         """
         Rational Quadratic kernel: k(x,y) = (1 + ||x-y||^2 / (2*sigma^2))^(-alpha).
@@ -465,10 +476,8 @@ class RationalQuadratic(BaseKernel):
             Whether or not to track gradients w.r.t. `sigma` to allow it to be trained.
         active_dims
             Indices of the dimensions of the feature to be used for the kernel. If None, all dimensions are used.
-        feature_axis
-            Axis of the feature dimension.
         """
-        super().__init__(active_dims, feature_axis)
+        super().__init__(active_dims)
         self.parameter_dict['alpha'] = KernelParameter(
             value=alpha.reshape(-1) if alpha is not None else None,
             init_fn=init_fn_alpha,
@@ -492,10 +501,8 @@ class RationalQuadratic(BaseKernel):
     def sigma(self) -> torch.Tensor:
         return self.parameter_dict['log-sigma'].value.exp()
 
-    def kernel_function(self, x: Union[np.ndarray, torch.Tensor], y: Union[np.ndarray, torch.Tensor],
+    def kernel_function(self, x: torch.Tensor, y: torch.Tensor,
                         infer_parameter: bool = False) -> torch.Tensor:
-
-        x, y = torch.as_tensor(x), torch.as_tensor(y)
         dist = distance.squared_pairwise_distance(x.flatten(1), y.flatten(1))
 
         if infer_parameter or self.init_required:
@@ -514,10 +521,9 @@ class Periodic(BaseKernel):
         tau: torch.Tensor = None,
         init_fn_tau: Callable = None,
         sigma: torch.Tensor = None,
-        init_fn_sigma: Callable = sigma_median,
+        init_fn_sigma: Callable = log_sigma_median,
         trainable: bool = False,
-        active_dims: list = None,
-        feature_axis: int = -1
+        active_dims: list = None
     ) -> None:
         """
         Periodic kernel: k(x,y) = exp(-2 * sin(pi * |x - y| / tau)^2 / (sigma^2)).
@@ -528,11 +534,11 @@ class Periodic(BaseKernel):
         ----------
         tau
             Period of the periodic kernel.
-        init_tau_fn
+        init_fn_tau
             Function used to compute the period `tau`. Used when `tau` is to be inferred.
         sigma
             Bandwidth used for the kernel.
-        init_sigma_fn
+        init_fn_sigma
             Function used to compute the bandwidth `sigma`. Used when `sigma` is to be inferred.
         trainable
             Whether or not to track gradients w.r.t. `sigma` to allow it to be trained.
@@ -541,7 +547,7 @@ class Periodic(BaseKernel):
         feature_axis
             Axis of the feature dimension.
         """
-        super().__init__(active_dims, feature_axis)
+        super().__init__(active_dims)
         self.parameter_dict['log-tau'] = KernelParameter(
             value=tau.log().reshape(-1) if tau is not None else None,
             init_fn=init_fn_tau,
@@ -565,10 +571,9 @@ class Periodic(BaseKernel):
     def sigma(self) -> torch.Tensor:
         return self.parameter_dict['log-sigma'].value.exp()
 
-    def kernel_function(self, x: Union[np.ndarray, torch.Tensor], y: Union[np.ndarray, torch.Tensor],
+    def kernel_function(self, x: torch.Tensor, y: torch.Tensor,
                         infer_parameter: bool = False) -> torch.Tensor:
-        x, y = torch.as_tensor(x), torch.as_tensor(y)
-        dist = torch.sqrt(distance.squared_pairwise_distance(x.flatten(1), y.flatten(1)))
+        dist = distance.squared_pairwise_distance(x.flatten(1), y.flatten(1))
 
         if infer_parameter or self.init_required:
             infer_kernel_parameter(self, x, y, dist, infer_parameter)
@@ -659,8 +664,8 @@ class DeepKernel(BaseKernel):
 
     def kernel_function(
         self,
-        x: Union[np.ndarray, torch.Tensor],
-        y: Union[np.ndarray, torch.Tensor],
+        x: torch.Tensor,
+        y: torch.Tensor,
         infer_parameter: Optional[bool] = False
     ) -> torch.Tensor:
         return self.comp_kernel(x, y, infer_parameter)

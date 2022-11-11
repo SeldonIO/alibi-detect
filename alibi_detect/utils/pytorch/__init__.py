@@ -14,7 +14,7 @@ mmd2, mmd2_from_kernel_matrix, squared_pairwise_distance, permed_lsdds, batch_co
 
 GaussianRBF, DeepKernel = import_optional(
     'alibi_detect.utils.pytorch.kernels',
-    names=['GaussianRBF', 'DeepKernel, BaseKernel, RationalQuadratic, Periodic']
+    names=['GaussianRBF', 'DeepKernel, BaseKernel, RationalQuadratic, Periodic, log_sigma_median']
 )
 
 predict_batch, predict_batch_transformer = import_optional(
@@ -43,5 +43,6 @@ __all__ = [
     "get_device",
     "quantile",
     "zero_diag",
+    "log_sigma_median",
     "TorchDataset"
 ]

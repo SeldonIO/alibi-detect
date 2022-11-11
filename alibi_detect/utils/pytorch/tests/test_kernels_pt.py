@@ -4,7 +4,9 @@ import pytest
 import torch
 from torch import nn
 from typing import Union
-from alibi_detect.utils.pytorch import GaussianRBF, DeepKernel, BaseKernel, RationalQuadratic, Periodic
+from alibi_detect.utils.pytorch import GaussianRBF, DeepKernel, BaseKernel, RationalQuadratic, Periodic, \
+    log_sigma_median
+from alibi_detect.utils.pytorch.distance import squared_pairwise_distance
 
 sigma = [None, np.array([1.]), np.array([1., 2.])]
 n_features = [5, 10]
@@ -38,6 +40,54 @@ def test_gaussian_kernel(gaussian_kernel_params):
         assert k_xy.shape == n_instances and k_xx.shape == (xshape[0], xshape[0])
         np.testing.assert_almost_equal(k_xx.trace(), xshape[0], decimal=4)
         assert (k_xx > 0.).all() and (k_xy > 0.).all()
+
+
+def log_sigma_mean(x: torch.Tensor, y: torch.Tensor, dist: torch.Tensor) -> torch.Tensor:
+    sigma = (.5 * torch.mean(dist.flatten()) ** .5).unsqueeze(-1)
+    return torch.log(sigma)
+
+
+kernel_ref = ['GaussianRBF', 'RationalQuadratic', 'Periodic']
+n_features = [5, 10]
+n_instances = [(100, 100), (100, 75)]
+trainable = [True, False]
+init_fn = [None, log_sigma_median, log_sigma_mean]
+tests_init_fn = list(product(kernel_ref, n_features, n_instances, trainable, init_fn))
+
+
+@pytest.fixture
+def init_fn_params(request):
+    return tests_init_fn[request.param]
+
+
+@pytest.mark.parametrize('init_fn_params', list(range(len(tests_init_fn))), indirect=True)
+def test_init_fn(init_fn_params):
+    kernel_ref, n_features, n_instances, trainable, init_fn = init_fn_params
+    xshape, yshape = (n_instances[0], n_features), (n_instances[1], n_features)
+    x = torch.from_numpy(np.random.random(xshape)).float()
+    y = torch.from_numpy(np.random.random(yshape)).float()
+
+    if kernel_ref == 'GaussianRBF':
+        kernel = GaussianRBF(trainable=trainable, init_fn_sigma=init_fn)
+    elif kernel_ref == 'RationalQuadratic':
+        kernel = RationalQuadratic(trainable=trainable, init_fn_sigma=init_fn)
+    elif kernel_ref == 'Periodic':
+        kernel = Periodic(trainable=trainable, init_fn_sigma=init_fn)
+    else:
+        raise NotImplementedError
+    if trainable:
+        with pytest.raises(Exception):
+            kernel(x, y, infer_parameter=True)
+    else:
+        k_xy = kernel(x, y, infer_parameter=True).numpy()
+        k_xx = kernel(x, x, infer_parameter=True).numpy()
+        assert k_xy.shape == n_instances and k_xx.shape == (xshape[0], xshape[0])
+        np.testing.assert_almost_equal(k_xx.trace(), xshape[0], decimal=4)
+        assert (k_xx > 0.).all() and (k_xy > 0.).all()
+        if init_fn is not None:
+            np.testing.assert_almost_equal(kernel.sigma.numpy(),
+                                           np.exp(init_fn(x, y, squared_pairwise_distance(x, y)).numpy()),
+                                           decimal=4)
 
 
 sigma = [None, np.array([1.]), np.array([2.])]

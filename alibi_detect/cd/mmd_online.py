@@ -22,7 +22,6 @@ class MMDDriftOnline(DriftConfigMixin):
             preprocess_fn: Optional[Callable] = None,
             x_ref_preprocessed: bool = False,
             kernel: Optional[Union[BaseKernelTorch, BaseKernelTF]] = None,
-            # sigma: Optional[np.ndarray] = None,
             n_bootstraps: int = 1000,
             device: Optional[str] = None,
             verbose: bool = True,

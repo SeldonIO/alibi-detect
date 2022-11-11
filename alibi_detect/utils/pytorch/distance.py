@@ -24,8 +24,8 @@ def squared_pairwise_distance(x: torch.Tensor, y: torch.Tensor, a_min: float = 1
     -------
     Pairwise squared Euclidean distance [Nx, Ny].
     """
-    x2 = x.pow(2).sum(dim=-1, keepdim=True)
-    y2 = y.pow(2).sum(dim=-1, keepdim=True)
+    x2 = torch.square(x).sum(dim=-1, keepdim=True)
+    y2 = torch.square(y).sum(dim=-1, keepdim=True)
     dist = torch.addmm(y2.transpose(-2, -1), x, y.transpose(-2, -1), alpha=-2).add_(x2)
     return dist.clamp_min_(a_min)
 
