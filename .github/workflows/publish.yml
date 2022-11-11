@@ -46,10 +46,10 @@ jobs:
 # 2) Uncomment.
 # 3) Push a non-stable tag (e.g. v11.0.0-alpha1). Check below step is NOT triggered.
 # 4) Once happy, we can setup PyPI api token and it'll be ready to go.
-#    # Publish to real PyPI if the tag is stable (i.e. not an alpha, beta or rc tag)
+#    # Publish to real PyPI if the tag doesn't indicate a pre-release (i.e. not an alpha, beta or rc tag)
 #    (see https://github.com/nowsprinting/check-version-format-action#is_stable)
 #    - name: Publish 📦 to PyPI
-#      if: steps.version.outputs.is_stable == 'true'
+#      if: steps.version.outputs.prerelease == ''
 #      uses: pypa/gh-action-pypi-publish@release/v1
 #      with:
 #        password: ${{ secrets.PYPI_API_TOKEN }}        
