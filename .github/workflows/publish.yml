@@ -3,15 +3,25 @@
 # See https://packaging.python.org/en/latest/guides/publishing-package-distribution-releases-using-github-actions-ci-cd-workflows/
 name: Publish Alibi Detect 📦 to PyPI 
 
-on: push
+# Only run when tags starting with "v" are pushed
+on: 
+  push:
+    tags:
+      - 'v*'
 
 jobs:
-  build-n-publish:
+  build-and-publish:
     name: Build and publish Alibi Detect
     runs-on: ubuntu-18.04
 
     steps:
-    # Setup
+    # Setup version extractor (from tag)
+    - uses: nowsprinting/check-version-format-action@v3
+      id: version
+      with:
+        prefix: 'v'
+
+    # Setup Python
     - uses: actions/checkout@master
     - name: Set up Python 3.9
       uses: actions/setup-python@v1
@@ -24,17 +34,17 @@ jobs:
     - name: Build a binary wheel and a source tarball
       run: python -m build --sdist --wheel --outdir dist/ .
 
-    # Publish to test PyPI TODO - perhaps only do this for rc tags?
-    - name: Publish distribution 📦 to Test PyPI
-      if: startsWith(github.ref, 'refs/tags')  # Only publish when tag pushed
+    # Publish to Test PyPI unconditionally
+    - name: Publish Alibi Detect 📦 to Test PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         password: ${{ secrets.TEST_PYPI_API_TOKEN }}
         repository_url: https://test.pypi.org/legacy/
           
-#    # Publish to real PyPI TODO - only do this for non-rc tags?
-#    - name: Publish distribution 📦 to PyPI
-#      if: startsWith(github.ref, 'refs/tags')
+#    # Publish to real PyPI if the tag is stable (i.e. not an alpha, beta or rc tag)
+#    (see https://github.com/nowsprinting/check-version-format-action#is_stable)
+#    - name: Publish Alibi Detect 📦 to PyPI
+#      if: steps.version.outputs.is_stable == 'true'
 #      uses: pypa/gh-action-pypi-publish@release/v1
 #      with:
 #        password: ${{ secrets.PYPI_API_TOKEN }}        
