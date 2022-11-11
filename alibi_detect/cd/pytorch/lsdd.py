@@ -81,11 +81,12 @@ class LSDDDriftTorch(BaseLSDDDrift):
         #  in the method signature, so we can't cast it to torch.Tensor unless we change the signature
         #  to also accept torch.Tensor. We also can't redefine it's type as that would involve enabling
         #  --allow-redefinitions in mypy settings (which we might do eventually).
-        self.kernel = GaussianRBF()
         if self.preprocess_x_ref or self.preprocess_fn is None:
             x_ref = torch.as_tensor(self.x_ref).to(self.device)  # type: ignore[assignment]
             self._configure_normalization(x_ref)  # type: ignore[arg-type]
             x_ref = self._normalize(x_ref)
+            self.kernel = GaussianRBF()
+            _ = self.kernel(x_ref, x_ref, infer_parameter=True)  # infer sigma
             self._configure_kernel_centers(x_ref)  # type: ignore[arg-type]
             self.x_ref = x_ref.cpu().numpy()  # type: ignore[union-attr]
             # For stability in high dimensions we don't divide H by (pi*sigma^2)^(d/2)
@@ -130,6 +131,8 @@ class LSDDDriftTorch(BaseLSDDDrift):
         if self.preprocess_fn is not None and self.preprocess_x_ref is False:
             self._configure_normalization(x_ref)  # type: ignore[arg-type]
             x_ref = self._normalize(x_ref)
+            self.kernel = GaussianRBF()
+            _ = self.kernel(x_ref, x_ref, infer_parameter=True)  # infer sigma
             self._configure_kernel_centers(x_ref)  # type: ignore[arg-type]
             self.H = GaussianRBF(np.sqrt(2.) * self.kernel.sigma)(self.kernel_centers, self.kernel_centers)
 

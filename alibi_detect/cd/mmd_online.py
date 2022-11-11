@@ -20,7 +20,6 @@ class MMDDriftOnline:
             backend: str = 'tensorflow',
             preprocess_fn: Optional[Callable] = None,
             kernel: Union[BaseKernelTorch, BaseKernelTF] = None,
-            # sigma: Optional[np.ndarray] = None,
             n_bootstraps: int = 1000,
             device: Optional[str] = None,
             verbose: bool = True,

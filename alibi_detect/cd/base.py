@@ -606,8 +606,6 @@ class BaseLSDDDrift(BaseDetector):
             preprocess_x_ref: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
-            # kernel: BaseKernel = None,
-            # sigma: Optional[np.ndarray] = None,
             n_permutations: int = 100,
             n_kernel_centers: Optional[int] = None,
             lambda_rd_max: float = 0.2,
@@ -660,7 +658,6 @@ class BaseLSDDDrift(BaseDetector):
             self.x_ref = preprocess_fn(x_ref)
         else:
             self.x_ref = x_ref
-        # self.sigma = sigma
         self.preprocess_x_ref = preprocess_x_ref
         self.update_x_ref = update_x_ref
         self.preprocess_fn = preprocess_fn

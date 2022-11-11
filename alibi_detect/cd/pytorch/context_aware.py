@@ -123,8 +123,6 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
         self.x_kernel = x_kernel
         self.c_kernel = c_kernel
 
-        # Initialize classifier (hardcoded for now)
-        self.clf = _SVCDomainClf(self.c_kernel)
 
     def score(self,  # type: ignore[override]
               x: Union[np.ndarray, list], c: np.ndarray) -> Tuple[float, float, float, Tuple]:
@@ -148,6 +146,9 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
         x_ref, x = self.preprocess(x)
         x_ref = torch.from_numpy(x_ref).to(self.device)  # type: ignore[assignment]
         c_ref = torch.from_numpy(self.c_ref).to(self.device)  # type: ignore[assignment]
+        
+        # Initialize classifier (hardcoded for now)
+        self.clf = _SVCDomainClf()
 
         # Hold out a portion of contexts for conditioning on
         n, n_held = len(c), int(len(c)*self.prop_c_held)
@@ -167,12 +168,13 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
         L_held = self.c_kernel(c_held, c_all)
 
         # Fit and calibrate the domain classifier
-        c_all_np, bools_np = c_all.cpu().numpy(), bools.cpu().numpy()
-        self.clf.fit(c_all_np, bools_np)
-        self.clf.calibrate(c_all_np, bools_np)
+        bools_np = bools.cpu().numpy()
+        K_c_all_np = self.c_kernel(c_all, c_all).cpu().numpy()
+        self.clf.fit(K_c_all_np, bools_np)
+        self.clf.calibrate(K_c_all_np, bools_np)
 
         # Obtain n_permutations conditional reassignments
-        prop_scores = torch.as_tensor(self.clf.predict(c_all_np))
+        prop_scores = torch.as_tensor(self.clf.predict(K_c_all_np))
         self.redrawn_bools = [torch.bernoulli(prop_scores) for _ in range(self.n_permutations)]
         iters = tqdm(self.redrawn_bools, total=self.n_permutations) if self.verbose else self.redrawn_bools
 

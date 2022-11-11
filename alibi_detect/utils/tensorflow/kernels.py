@@ -61,7 +61,27 @@ def sigma_median(x: tf.Tensor, y: tf.Tensor, dist: tf.Tensor) -> tf.Tensor:
     n = n if tf.reduce_all(x[:n] == y[:n]) and x.shape == y.shape else 0
     n_median = n + (tf.math.reduce_prod(dist.shape) - n) // 2 - 1
     sigma = tf.expand_dims((.5 * tf.sort(tf.reshape(dist, (-1,)))[n_median]) ** .5, axis=0)
-    return tf.math.log(sigma)
+    return sigma
+
+
+def log_sigma_median(x: tf.Tensor, y: tf.Tensor, dist: tf.Tensor) -> tf.Tensor:
+    """
+    Bandwidth estimation using the median heuristic :cite:t:`Gretton2012`.
+
+    Parameters
+    ----------
+    x
+        Tensor of instances with dimension [Nx, features].
+    y
+        Tensor of instances with dimension [Ny, features].
+    dist
+        Tensor with dimensions [Nx, Ny], containing the pairwise distances between `x` and `y`.
+
+    Returns
+    -------
+    The logrithm of the computed bandwidth, `log-sigma`.
+    """
+    return tf.math.log(sigma_median(x, y, dist))
 
 
 class KernelParameter:
@@ -97,7 +117,7 @@ class KernelParameter:
 
 
 class BaseKernel(tf.keras.Model):
-    def __init__(self, active_dims: list = None, feature_axis: int = -1) -> None:
+    def __init__(self, active_dims: list = None) -> None:
         """
         The base class for all kernels.
 
@@ -105,13 +125,10 @@ class BaseKernel(tf.keras.Model):
         ----------
         active_dims
             Indices of the dimensions of the feature to be used for the kernel. If None, all dimensions are used.
-        feature_axis
-            Axis of the feature dimension.
         """
         super().__init__()
         self.parameter_dict: dict = {}
         self.active_dims = active_dims
-        self.feature_axis = feature_axis
         self.init_required = False
 
     @abstractmethod
@@ -128,14 +145,12 @@ class BaseKernel(tf.keras.Model):
 
     def __add__(
         self,
-        other: Union['BaseKernel', 'SumKernel', 'ProductKernel', tf.Tensor]
+        other: Union['BaseKernel', tf.Tensor]
     ) -> 'SumKernel':
         if isinstance(other, SumKernel):
             other.kernel_list.append(self)
             return other
-        elif (isinstance(other, BaseKernel) or
-              isinstance(other, ProductKernel) or
-              isinstance(other, tf.Tensor)):
+        elif isinstance(other, (BaseKernel, ProductKernel, tf.Tensor)):
             sum_kernel = SumKernel()
             sum_kernel.kernel_list.append(self)
             sum_kernel.kernel_list.append(other)
@@ -143,13 +158,13 @@ class BaseKernel(tf.keras.Model):
         else:
             raise ValueError('Kernels can only added to another kernel or a constant.')
 
-    def __radd__(self, other: Union['BaseKernel', 'SumKernel', 'ProductKernel']) -> 'SumKernel':
+    def __radd__(self, other: 'BaseKernel') -> 'SumKernel':
         return self.__add__(other)
 
     def __mul__(
         self,
-        other: Union['BaseKernel', 'SumKernel', 'ProductKernel', tf.Tensor]
-    ) -> Union['SumKernel', 'ProductKernel']:
+        other: Union['BaseKernel', tf.Tensor]
+    ) -> 'BaseKernel':
         if isinstance(other, ProductKernel):
             other.kernel_factors.append(self)
             return other
@@ -166,8 +181,8 @@ class BaseKernel(tf.keras.Model):
 
     def __rmul__(
         self,
-        other: Union['BaseKernel', 'SumKernel', 'ProductKernel']
-    ) -> Union['SumKernel', 'ProductKernel']:
+        other: 'BaseKernel'
+    ) -> 'BaseKernel':
         return self.__mul__(other)
 
     def __truediv__(self, other: tf.Tensor) -> 'ProductKernel':
@@ -180,19 +195,19 @@ class BaseKernel(tf.keras.Model):
         raise ValueError('Kernels can not be used as divisor.')
 
     def __sub__(self, other):
-        raise ValueError('Kernels do not support substraction.')
+        raise ValueError('Kernels do not support subtraction.')
 
     def __rsub__(self, other):
-        raise ValueError('Kernels do not support substraction.')
+        raise ValueError('Kernels do not support subtraction.')
 
 
-class SumKernel(tf.keras.Model):
+class SumKernel(BaseKernel):
     def __init__(self) -> None:
         """
         Construct a kernel by summing different kernels.
         """
         super().__init__()
-        self.kernel_list: List[Union[BaseKernel, SumKernel, ProductKernel, tf.Tensor]] = []
+        self.kernel_list: List[Union[BaseKernel, tf.Tensor]] = []
 
     def call(self, x: Union[np.ndarray, tf.Tensor], y: Union[np.ndarray, tf.Tensor],
              infer_parameter: bool = False) -> tf.Tensor:
@@ -208,7 +223,7 @@ class SumKernel(tf.keras.Model):
 
     def __add__(
         self,
-        other: Union[BaseKernel, 'SumKernel', 'ProductKernel', tf.Tensor]
+        other: Union[BaseKernel, tf.Tensor]
     ) -> 'SumKernel':
         if isinstance(other, SumKernel):
             for k in other.kernel_list:
@@ -217,13 +232,13 @@ class SumKernel(tf.keras.Model):
             self.kernel_list.append(other)
         return self
 
-    def __radd__(self, other: Union[BaseKernel, 'SumKernel', 'ProductKernel']) -> 'SumKernel':
+    def __radd__(self, other: BaseKernel) -> 'SumKernel':
         return self.__add__(other)
 
     def __mul__(
         self,
-        other: Union[BaseKernel, 'SumKernel', 'ProductKernel', tf.Tensor]
-    ) -> Union['SumKernel', 'ProductKernel']:
+        other: Union[BaseKernel, tf.Tensor]
+    ) -> BaseKernel:
         if isinstance(other, SumKernel):
             sum_kernel = SumKernel()
             for ki in self.kernel_list:
@@ -242,11 +257,11 @@ class SumKernel(tf.keras.Model):
 
     def __rmul__(
         self,
-        other: Union[BaseKernel, 'SumKernel', 'ProductKernel']
-    ) -> Union['SumKernel', 'ProductKernel']:
+        other: BaseKernel
+    ) -> BaseKernel:
         return self.__mul__(other)
 
-    def __truediv__(self, other: tf.Tensor) -> Union['SumKernel', 'ProductKernel']:
+    def __truediv__(self, other: tf.Tensor) -> BaseKernel:
         if isinstance(other, tf.Tensor):
             return self.__mul__(1 / other)
         else:
@@ -256,10 +271,10 @@ class SumKernel(tf.keras.Model):
         raise ValueError('Kernels can not be used as divisor.')
 
     def __sub__(self, other):
-        raise ValueError('Kernels do not support substraction.')
+        raise ValueError('Kernels do not support subtraction.')
 
     def __rsub__(self, other):
-        raise ValueError('Kernels do not support substraction.')
+        raise ValueError('Kernels do not support subtraction.')
 
 
 class ProductKernel(tf.keras.Model):
@@ -338,20 +353,19 @@ class ProductKernel(tf.keras.Model):
         raise ValueError('Kernels can not be used as divisor.')
 
     def __sub__(self, other):
-        raise ValueError('Kernels do not support substraction.')
+        raise ValueError('Kernels do not support subtraction.')
 
     def __rsub__(self, other):
-        raise ValueError('Kernels do not support substraction.')
+        raise ValueError('Kernels do not support subtraction.')
 
 
 class GaussianRBF(BaseKernel):
     def __init__(
             self,
             sigma: Optional[tf.Tensor] = None,
-            init_fn_sigma: Callable = sigma_median,
+            init_fn_sigma: Callable = log_sigma_median,
             trainable: bool = False,
-            active_dims: list = None,
-            feature_axis: int = -1
+            active_dims: list = None
     ) -> None:
         """
         Gaussian RBF kernel: k(x,y) = exp(-(1/(2*sigma^2)||x-y||^2). A forward pass takes
@@ -371,14 +385,12 @@ class GaussianRBF(BaseKernel):
             Whether or not to track gradients w.r.t. sigma to allow it to be trained.
         active_dims
             Indices of the dimensions of the feature to be used for the kernel. If None, all dimensions are used.
-        feature_axis
-            Axis of the feature dimension.
         """
-        super().__init__(active_dims, feature_axis)
+        super().__init__(active_dims)
         self.config = {'sigma': sigma, 'trainable': trainable}
         self.parameter_dict['log-sigma'] = KernelParameter(
             value=tf.reshape(tf.math.log(
-                tf.cast(sigma, tf.keras.backend.floatx())), -1) if sigma is not None else None,
+                tf.cast(sigma, tf.keras.backend.floatx())), -1) if sigma is not None else tf.zeros(1),
             init_fn=init_fn_sigma,
             requires_grad=trainable,
             requires_init=True if sigma is None else False
@@ -417,10 +429,9 @@ class RationalQuadratic(BaseKernel):
         alpha: tf.Tensor = None,
         init_fn_alpha: Callable = None,
         sigma: tf.Tensor = None,
-        init_fn_sigma: Callable = sigma_median,
+        init_fn_sigma: Callable = log_sigma_median,
         trainable: bool = False,
-        active_dims: list = None,
-        feature_axis: int = -1
+        active_dims: list = None
     ) -> None:
         """
         Rational Quadratic kernel: k(x,y) = (1 + ||x-y||^2 / (2*sigma^2))^(-alpha).
@@ -441,10 +452,8 @@ class RationalQuadratic(BaseKernel):
             Whether or not to track gradients w.r.t. `sigma` to allow it to be trained.
         active_dims
             Indices of the dimensions of the feature to be used for the kernel. If None, all dimensions are used.
-        feature_axis
-            Axis of the feature dimension.
         """
-        super().__init__(active_dims, feature_axis)
+        super().__init__(active_dims)
         self.parameter_dict['alpha'] = KernelParameter(
             value=tf.reshape(
                 tf.cast(alpha, tf.keras.backend.floatx()), -1) if alpha is not None else None,
@@ -454,7 +463,7 @@ class RationalQuadratic(BaseKernel):
         )
         self.parameter_dict['log-sigma'] = KernelParameter(
             value=tf.reshape(tf.math.log(
-                tf.cast(sigma, tf.keras.backend.floatx())), -1) if sigma is not None else None,
+                tf.cast(sigma, tf.keras.backend.floatx())), -1) if sigma is not None else tf.zeros(1),
             init_fn=init_fn_sigma,
             requires_grad=trainable,
             requires_init=True if sigma is None else False
@@ -490,10 +499,9 @@ class Periodic(BaseKernel):
         tau: tf.Tensor = None,
         init_fn_tau: Callable = None,
         sigma: tf.Tensor = None,
-        init_fn_sigma: Callable = sigma_median,
+        init_fn_sigma: Callable = log_sigma_median,
         trainable: bool = False,
-        active_dims: list = None,
-        feature_axis: int = -1
+        active_dims: list = None
     ) -> None:
         """
         Periodic kernel: k(x,y) = exp(-2 * sin(pi * |x - y| / tau)^2 / (sigma^2)).
@@ -514,20 +522,18 @@ class Periodic(BaseKernel):
             Whether or not to track gradients w.r.t. `sigma` to allow it to be trained.
         active_dims
             Indices of the dimensions of the feature to be used for the kernel. If None, all dimensions are used.
-        feature_axis
-            Axis of the feature dimension.
         """
-        super().__init__(active_dims, feature_axis)
+        super().__init__(active_dims)
         self.parameter_dict['log-tau'] = KernelParameter(
             value=tf.reshape(tf.math.log(
-                tf.cast(tau, tf.keras.backend.floatx())), -1) if tau is not None else None,
+                tf.cast(tau, tf.keras.backend.floatx())), -1) if tau is not None else tf.zeros(1),
             init_fn=init_fn_tau,
             requires_grad=trainable,
             requires_init=True if tau is None else False
         )
         self.parameter_dict['log-sigma'] = KernelParameter(
             value=tf.reshape(tf.math.log(
-                tf.cast(sigma, tf.keras.backend.floatx())), -1) if sigma is not None else None,
+                tf.cast(sigma, tf.keras.backend.floatx())), -1) if sigma is not None else tf.zeros(1),
             init_fn=init_fn_sigma,
             requires_grad=trainable,
             requires_init=True if sigma is None else False
