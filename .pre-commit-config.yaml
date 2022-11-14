@@ -11,3 +11,4 @@ repos:
           types-requests~=2.25,
           types-toml~=0.10
         ]
+        exclude: 'doc/'

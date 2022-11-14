@@ -776,7 +776,7 @@ SOFTWARE.
 
 
 alibi-detect
-0.11.0.dev0
+0.10.5.dev55+gbf6d5de.d20221111
 Apache Software License
                                  Apache License
                            Version 2.0, January 2004
@@ -1224,7 +1224,7 @@ SOFTWARE.
 
 
 fsspec
-2022.10.0
+2022.11.0
 BSD License
 BSD 3-Clause License
 
@@ -7180,7 +7180,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 
 tokenizers
-0.13.1
+0.13.2
 Apache Software License
 UNKNOWN
 

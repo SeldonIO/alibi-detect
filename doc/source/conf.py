@@ -14,10 +14,7 @@
 #
 import os
 import sys
-# Hide RemovedInSphinx40Warning. Can remove once upgraded to sphinx>=4.0
-import warnings
-warnings.filterwarnings("ignore", category=DeprecationWarning) 
-
+from importlib.metadata import version
 sys.path.insert(0, os.path.abspath("../.."))
 
 # -- Project information -----------------------------------------------------
@@ -26,13 +23,10 @@ project = "alibi-detect"
 copyright = "2019, Seldon Technologies Ltd"
 author = "Seldon Technologies Ltd"
 
-# The short X.Y version
-# import alibi_detect
-exec(open("../../alibi_detect/version.py").read())
-
-version = __version__
-# The full version, including alpha/beta/rc tags
-release = __version__
+# Full version including dev/commit/date tags
+release = version('alibi-detect')
+# Major/minor/patch version
+version = '.'.join(release.split('.')[:3])
 
 # -- General configuration ---------------------------------------------------
 
@@ -86,31 +80,13 @@ apidoc_module_first = True
 apidoc_separate_modules = True
 apidoc_extra_args = ["-d 6"]
 
-# mock imports
-# numpy, pandas and matplotlib are not included as these are installed on 
-# ReadTheDocs PYTHON_VERSION_39 docker image (https://hub.docker.com/r/readthedocs/build/dockerfile/)
+# mock optional deps (since these are not installed on RTD)
 autodoc_mock_imports = [
-    "sklearn",
-    "skimage",
-    "requests",
-    "cv2",
-    "bs4",
-    "keras",
-    "seaborn",
-    "PIL",
-    "tensorflow",
-    "spacy",
-    "tensorflow_probability",
-    "scipy",
-    "fbprophet",
+    "prophet",
     "torch",
-    "transformers",
-    "tqdm",
-    "dill",
-    "numba",
-    "pydantic",
-    "toml",
-    "catalogue",
+    "tensorflow",
+    "keras",
+    "tensorflow_probability",
     "pykeops"
 ]
 

@@ -2,9 +2,14 @@
 install: ## Install package in editable mode with all the dependencies
 	pip install -e .
 
+.PHONY: clean
+clean:	# Clean up install (and build)
+	pip uninstall -y alibi-detect
+	rm -r alibi_detect.egg-info/ dist/ build/ 
+
 .PHONY: test
 test: ## Run all tests
-	python setup.py test
+	pytest alibi-detect
 
 .PHONY: lint
 lint: ## Check linting according to the flake8 configuration in setup.cfg
@@ -33,8 +38,9 @@ clean_docs: ## Clean the documentation build
 	rm -r doc/source/api
 
 .PHONY: build_pypi
-build_pypi: ## Build the Python package
-	python setup.py sdist bdist_wheel
+build_pypi: ## Build the Python package (virtualenv installed due to Debian issue https://github.com/pypa/build/issues/224)
+	pip install --upgrade build virtualenv
+	python -m build --sdist --wheel
 
 .PHONY: push_pypi_test
 push_pypi_test: ## Upload the Python package to the test PyPI registry
