@@ -78,6 +78,10 @@ class PValNormaliser(BaseTransform):
 
 
 class ShiftAndScaleNormaliser(BaseTransform):
+    """Maps scores from an ensemble of to a set of .
+
+    Needs to be fit on a reference dataset using fit.
+    """
     def _fit(self, val_scores: np.ndarray) -> BaseTransform:
         self.val_means = val_scores.mean(0)[None, :]
         self.val_scales = val_scores.std(0)[None, :]
@@ -123,3 +127,9 @@ class MinAggregator(BaseTransform):
 
     def _transform(self, scores: np.ndarray) -> np.ndarray:
         return np.min(scores, axis=-1)
+
+
+class Accumulator(BaseFittedTransform):
+    def __init__(self, normaliser: BaseFittedTransform, aggregator: BaseTransform):
+        self.normaliser = normaliser
+        self.aggregator = aggregator

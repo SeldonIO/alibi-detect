@@ -21,8 +21,7 @@ class KNN(OutlierDetector):
         self,
         k: Union[int, np.ndarray],
         kernel: Optional[Callable] = None,
-        aggregator: Union[BaseTransform, None] = None,
-        normaliser: Union[BaseTransform, None] = None,
+        accumulator: Optional[]=None,
         backend: Literal['pytorch', 'keops'] = 'pytorch'
     ) -> None:
         super().__init__()
@@ -36,8 +35,7 @@ class KNN(OutlierDetector):
         self.k = k
         self.kernel = kernel
         self.ensemble = isinstance(self.k, (np.ndarray, list))
-        self.normaliser = normaliser
-        self.aggregator = aggregator
+        self.accumulator = accumulator
         self.fitted = False
         self.backend = backends[backend]
 
