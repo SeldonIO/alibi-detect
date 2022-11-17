@@ -2,7 +2,7 @@ from typing import Callable, Literal, Union, Optional
 import numpy as np
 
 from alibi_detect.od.base import OutlierDetector
-from alibi_detect.od.transforms import BaseTransform
+from alibi_detect.od.backend.torch.ensemble import Accumulator
 
 from alibi_detect.od.backend import KNNTorch
 from alibi_detect.od.backend import KNNKeops
@@ -21,7 +21,7 @@ class KNN(OutlierDetector):
         self,
         k: Union[int, np.ndarray],
         kernel: Optional[Callable] = None,
-        accumulator: Optional[]=None,
+        accumulator: Optional[Accumulator] = None,
         backend: Literal['pytorch', 'keops'] = 'pytorch'
     ) -> None:
         super().__init__()
