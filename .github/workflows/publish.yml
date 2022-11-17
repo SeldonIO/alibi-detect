@@ -8,6 +8,8 @@ on:
   push:
     tags:
       - 'v*'
+  release:
+    types: [published]
 
 jobs:
   build-and-publish:
@@ -15,12 +17,6 @@ jobs:
     runs-on: ubuntu-18.04
 
     steps:
-    # Setup version extractor (from tag)
-    - uses: nowsprinting/check-version-format-action@v3
-      id: version
-      with:
-        prefix: 'v'
-
     # Setup Python
     - uses: actions/checkout@master
     - name: Set up Python 3.9
@@ -29,27 +25,28 @@ jobs:
         python-version: 3.9
 
     # Build
-    - name: Install pypa/build
-      run: python -m pip install --user build==0.9.0
     - name: Build a binary wheel and a source tarball
-      run: python -m build --sdist --wheel --outdir dist/ .
+      run: make build
 
-    # Publish to Test PyPI unconditionally
+    # Publish to Test PyPI if this action was triggered by pushing a v* tag
     - name: Publish 📦 to Test PyPI
-      uses: pypa/gh-action-pypi-publish@release/v1
-      with:
-        password: ${{ secrets.TEST_PYPI_API_TOKEN }}
-        repository_url: https://test.pypi.org/legacy/
+      if: github.event_name == 'push'  # check for `push` since action only triggered for tag pushes
+      run: |
+        python -m pip install .
+        echo "Dummy release of alibi-detect..."
+        python -c "from alibi_detect.version import __version__; print(__version__)" 
+      #     uses: pypa/gh-action-pypi-publish@release/v1
+      #     with:
+      #       password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+      #       repository_url: https://test.pypi.org/legacy/
 
-# TODO - Test below by:
-# 1) AVOID adding PyPI api token, to protect from inadvertant release if the conditional is broken
-# 2) Uncomment.
-# 3) Push a non-stable tag (e.g. v11.0.0-alpha1). Check below step is NOT triggered.
-# 4) Once happy, we can setup PyPI api token and it'll be ready to go.
-#    # Publish to real PyPI if the tag doesn't indicate a pre-release (i.e. not an alpha, beta or rc tag)
-#    (see https://github.com/nowsprinting/check-version-format-action#is_stable)
-#    - name: Publish 📦 to PyPI
-#      if: steps.version.outputs.prerelease == ''
-#      uses: pypa/gh-action-pypi-publish@release/v1
-#      with:
-#        password: ${{ secrets.PYPI_API_TOKEN }}        
+    # If this action was triggered by a GitHub release, publish the associated tag to PyPI
+    - name: Publish 📦 to PyPI
+      if: github.event_name == 'release'
+      run: |
+        python -m pip install .
+        echo "Dummy release of alibi-detect..."
+        python -c "from alibi_detect.version import __version__; print(__version__)" 
+        #      uses: pypa/gh-action-pypi-publish@release/v1
+        #      with:
+        #        password: ${{ secrets.PYPI_API_TOKEN }}        

@@ -21,9 +21,11 @@ mypy: ## Run typeckecking according to mypy configuration in setup.cfg
 
 .PHONY: build
 build: ## Build the Python package (for debugging, building for release is done via a GitHub Action)
-	# (virtualenv installed due to Debian issue https://github.com/pypa/build/issues/224)
-	pip install --upgrade pip build virtualenv
-	python -m build --sdist --wheel
+	# Below commands are a duplicate of those in the publish.yml "Build" step
+	# (virtualenv added due to Debian issue https://github.com/pypa/build/issues/224)
+	python -m pip install --upgrade pip virtualenv
+	python -m pip install build~=0.9
+	python -m build --sdist --wheel --outdir dist/ .
 
 .PHONY: build_docs
 build_docs:
