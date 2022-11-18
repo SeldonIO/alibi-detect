@@ -37,9 +37,9 @@ jobs:
         password: ${{ secrets.PYPI_API_TOKEN }}
 
     # Wait for a while to give PyPI time to update (otherwise the pip install might fail)
-    - name: Sleep for a minute
+    - name: Sleep for 3 minutes
       shell: bash
-      run: sleep 1m
+      run: sleep 3m
 
     # Install from PyPI and test
     - name: Install 📦 from PyPI and test
