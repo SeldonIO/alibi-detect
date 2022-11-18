@@ -48,4 +48,4 @@ jobs:
         make clean
         python -m pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple alibi-detect==${{ env.PACKAGE_VERS }}
         python -c "import alibi_detect; print(alibi_detect)"
-        python -c "from alibi_detect.cd import *; print(MMDDrift2)"
+        python -c "from alibi_detect.cd import *; print(MMDDrift)"
