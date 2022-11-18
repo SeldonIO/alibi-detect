@@ -46,4 +46,5 @@ jobs:
       run: |
         make clean
         python -m pip install alibi-detect==${{ env.PACKAGE_VERS }}
-        python -c "from alibi_detect.cd import KSDrift"
+        python -c "import alibi_detect; print(alibi_detect)"
+        python -c "from alibi_detect.cd import *; print(MMDDrift)"
