@@ -38,9 +38,9 @@ jobs:
       run: echo "PACKAGE_VERS=$(python setup.py --version)" >> $GITHUB_ENV
 
     # Wait for a while to give PyPI time to update (otherwise the pip install might fail)
-    - name: Sleep for 10 minutes
+    - name: Sleep for a minute
       shell: bash
-      run: sleep 10m
+      run: sleep 1m
 
     # Install from Test PyPI and test
     - name: Install 📦 from PyPI and test
