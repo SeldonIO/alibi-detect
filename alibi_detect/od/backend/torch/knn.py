@@ -19,10 +19,10 @@ class KNNTorch(TorchOutlierDetector):
         self.accumulator = accumulator
 
     def forward(self, X):
-        scores = self.score(X)
-        predictions = self.accumulator(scores) \
-            if self.accumulator is not None else scores
-        return predictions.cpu()
+        raw_scores = self.score(X)
+        scores = self._accumulator(raw_scores)
+        preds = self._classify_outlier(scores)
+        return preds.cpu() if preds is not None else scores
 
     def score(self, X):
         K = -self.kernel(X, self.x_ref) if self.kernel is not None else torch.cdist(X, self.x_ref)

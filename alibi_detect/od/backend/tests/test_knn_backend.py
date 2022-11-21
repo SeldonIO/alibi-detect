@@ -9,11 +9,19 @@ def test_knn_torch_backend(accumulator):
     x_ref = torch.randn((1024, 10))
     knn_torch.fit(x_ref)
     x = torch.randn((3, 10))
+    outputs = knn_torch.predict(x)
+    assert outputs['scores'].shape == (3, )
+    assert outputs['preds'] is None
+    assert outputs['p_vals'] is None
     scores = knn_torch(x)
-    assert scores.shape == (3, )
-    knn_torch = torch.jit.script(knn_torch)
-    scores_2 = knn_torch(x)
-    assert torch.all(scores == scores_2)
+    assert torch.all(scores == outputs['scores'])
+
+    knn_torch.infer_threshold(x_ref, 0.1)
+    outputs = knn_torch.predict(x)
+    assert torch.all(outputs['preds'] == torch.tensor([False, False, False]))
+
+    x = torch.randn((1, 10)) * 100
+    assert knn_torch(x)
 
 
 def test_knn_torch_backend_ensemble(accumulator):
@@ -23,9 +31,13 @@ def test_knn_torch_backend_ensemble(accumulator):
     x = torch.randn((3, 10))
     scores = knn_torch(x)
     assert scores.shape == (3,)
-    knn_torch = torch.jit.script(knn_torch)
-    scores_2 = knn_torch(x)
-    assert torch.all(scores == scores_2)
+
+    knn_torch.infer_threshold(x_ref, 0.1)
+    outputs = knn_torch.predict(x)
+    assert torch.all(outputs['preds'] == torch.tensor([False, False, False]))
+
+    x = torch.randn((1, 10)) * 100
+    assert knn_torch(x)
 
 
 def test_knn_kernel(accumulator):
@@ -36,6 +48,11 @@ def test_knn_kernel(accumulator):
     x = torch.randn((3, 10))
     scores = knn_torch(x)
     assert scores.shape == (3,)
-    # knn_torch = torch.jit.script(knn_torch)
-    # scores_2 = knn_torch(x)
-    # assert torch.all(scores == scores_2)
+
+    knn_torch.infer_threshold(x_ref, 0.1)
+    outputs = knn_torch.predict(x)
+    assert torch.all(outputs['preds'] == torch.tensor([False, False, False]))
+
+    x = torch.randn((1, 10)) * 100
+    print(knn_torch(x))
+    assert knn_torch(x)
