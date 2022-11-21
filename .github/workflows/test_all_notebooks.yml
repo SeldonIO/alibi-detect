@@ -45,4 +45,4 @@ jobs:
 
       - name: Run notebooks
         run: |
-          pytest --suppress-no-test-exit-code --no-cov -rA --durations=0 -vv testing/test_notebooks.py
+          pytest --suppress-no-test-exit-code --no-cov -rA --durations=0 -vv -p no:randomly testing/test_notebooks.py
