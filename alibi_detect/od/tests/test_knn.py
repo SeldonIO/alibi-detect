@@ -2,8 +2,8 @@ import pytest
 import numpy as np
 
 from alibi_detect.od.knn import KNN
-from alibi_detect.od.transforms import AverageAggregator, TopKAggregator, MaxAggregator, MinAggregator, \
-    ShiftAndScaleNormaliser, PValNormaliser
+from alibi_detect.od.backend.torch.ensemble import AverageAggregator, TopKAggregator, MaxAggregator, \
+    MinAggregator, ShiftAndScaleNormaliser, PValNormaliser
 
 
 def test_knn_single():

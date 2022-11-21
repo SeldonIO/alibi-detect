@@ -173,14 +173,34 @@ class MinAggregator(BaseTransform):
 
 
 class Accumulator(BaseFittedTransform):
-    def __init__(self, normaliser: BaseFittedTransform, aggregator: BaseTransform):
+    def __init__(self,
+                 normaliser: BaseFittedTransform = None,
+                 aggregator: BaseTransform = AverageAggregator()):
+        """Wraps a normaliser and aggregator into a single object.
+
+        The accumulator wraps normalisers and aggregators into a single object.
+
+        Parameters
+        ----------
+        normaliser
+            normaliser that's an instance of BaseFittedTransform. Maps the outputs of
+            a set of detectors to a common range.
+        aggregator
+            aggregator extendng BaseTransform. Maps outputs of the normaliser to
+            single score.
+        """
         super().__init__()
         self.normaliser = normaliser
+        if self.normaliser is None:
+            self.fitted = True
         self.aggregator = aggregator
 
     def _transform(self, X: torch.Tensor):
-        X = self.normaliser(X)
-        return self.aggregator(X)
+        if self.normaliser is not None:
+            X = self.normaliser(X)
+        X = self.aggregator(X)
+        return X
 
     def _fit(self, X: torch.Tensor):
-        return self.normaliser.fit(X)
+        if self.normaliser is not None:
+            X = self.normaliser.fit(X)
