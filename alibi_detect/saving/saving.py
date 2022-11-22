@@ -287,6 +287,10 @@ def _save_preprocess_config(preprocess_fn: Callable,
             cfg_token = _save_tokenizer_config(v, filepath, local_path)
             kwargs.update({k: cfg_token})
 
+        # torch device
+        elif v.__class__.__name__ == 'device':  # avoiding torch import in case not installed
+            kwargs.update({k: v.type})
+
         # Arbitrary function
         elif callable(v):
             src, _ = _serialize_object(v, filepath, local_path)

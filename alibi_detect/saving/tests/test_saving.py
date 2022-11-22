@@ -207,17 +207,20 @@ def test_save_mmddrift(data, kernel, preprocess_custom, backend, tmp_path, seed)
 
     # Init detector and make predictions
     X_ref, X_h0 = data
+    kwargs = {
+        'p_val': P_VAL,
+        'backend': backend,
+        'preprocess_fn': preprocess_custom,
+        'n_permutations': N_PERMUTATIONS,
+        'preprocess_at_init': True,
+        'kernel': kernel,
+        'configure_kernel_from_x_ref': False,
+        'sigma': np.array([0.5])
+    }
+    if backend == 'pytorch':
+        kwargs['device'] = 'cuda' if torch.cuda.is_available() else 'cpu'
     with fixed_seed(seed):
-        cd = MMDDrift(X_ref,
-                      p_val=P_VAL,
-                      backend=backend,
-                      preprocess_fn=preprocess_custom,
-                      n_permutations=N_PERMUTATIONS,
-                      preprocess_at_init=True,
-                      kernel=kernel,
-                      configure_kernel_from_x_ref=False,
-                      sigma=np.array([0.5])
-                      )
+        cd = MMDDrift(X_ref, **kwargs)
         preds = cd.predict(X_h0)
     save_detector(cd, tmp_path)
 
