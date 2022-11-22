@@ -21,8 +21,8 @@ class KNNTorch(TorchOutlierDetector):
     def forward(self, X):
         raw_scores = self.score(X)
         scores = self._accumulator(raw_scores)
-        preds = self._classify_outlier(scores)
-        return preds.cpu() if preds is not None else scores
+        preds = scores > self.threshold
+        return preds.cpu()
 
     def score(self, X):
         K = -self.kernel(X, self.x_ref) if self.kernel is not None else torch.cdist(X, self.x_ref)

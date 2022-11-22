@@ -46,29 +46,47 @@ class BaseTransform(Module, ABC):
         return self.transform(X=X)
 
 
-class BaseFittedTransform(BaseTransform):
-    """Base Fitted Transform class.
+class FitMixin:
+    """Fit mixin
 
-    Provides abstract methods for transforms that have an aditional
-    fit step.
+    Utility class that provides fitted checks for alibi-detect objects that require to be fit before use.
+
+    TODO: this should be encorporated into alibi_detect/base.py FitMixin once we can be sure that the
+    behavour is compatible.
     """
-    fitted = False
+    _fitted = False
 
     def __init__(self):
         super().__init__()
 
     def fit(self, X: torch.Tensor) -> BaseTransform:
-        if not self.fitted and hasattr(self, '_fit'):
-            self._fit(X)
-            self.fitted = True
+        self._fit(X)
+        self._fitted = True
         return self
 
     def _fit(self, X: torch.Tensor):
         raise NotImplementedError()
 
+    @torch.jit.ignore
+    def check_fitted(self):
+        if not self._fitted:
+            # TODO: make our own NotFitted Error here!
+            raise ValueError(f'{self.__class__.__name__} has not been fit!')
+
+
+class BaseFittedTransform(BaseTransform, FitMixin):
+    """Base Fitted Transform class.
+
+    Provides abstract methods for transforms that have an aditional
+    fit step.
+    """
+
+    def __init__(self):
+        BaseTransform.__init__(self)
+        FitMixin.__init__(self)
+
     def transform(self, X: torch.Tensor):
-        if not self.fitted:
-            raise ValueError('Transform not fitted, call fit before calling transform!')
+        self.check_fitted()
         return self._transform(X)
 
 

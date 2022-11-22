@@ -41,7 +41,7 @@ class TorchOutlierDetector(torch.nn.Module, ABC):
         self.threshold_inferred = True
 
     def predict(self, X: torch.Tensor) -> torch.Tensor:
-        output = {}
+        output = {'threshold_inferred': self.threshold_inferred}
         raw_scores = self.score(X)
         output['scores'] = self._accumulator(raw_scores)
         output['preds'] = self._classify_outlier(output['scores'])
