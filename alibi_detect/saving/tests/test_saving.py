@@ -801,18 +801,17 @@ def test_save_onlinefetdrift(data, tmp_path, seed):
 
 @parametrize("detector", [CVMDriftOnline, MMDDriftOnline, LSDDDriftOnline])
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
-def test_save_online_state(detector, data, backend, tmp_path):
+def test_save_online_state(detector, data, tmp_path):
     """
     Test the saving (and loading) of online detectors' state when `save_state=True` is passed to `save_detector`.
     To simplify data loading `FETDriftOnline` is skipped.
     """
-    # TODO - add pytest.skips conditional on detector + backend combo's once pytorch PR merged in
     # Init detector and make prediction to update state
     X_ref, X_h0 = data
     if detector == CVMDriftOnline:  # univariate
         dd = detector(X_ref, ert=100, window_sizes=[10])
     else:  # multivariate
-        dd = detector(X_ref, ert=100, window_size=10, backend=backend)
+        dd = detector(X_ref, ert=100, window_size=10, backend='pytorch')
     dd.predict(X_h0[0])
 
     # Save detector (with state)

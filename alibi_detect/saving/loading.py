@@ -147,11 +147,12 @@ def _load_detector_config(filepath: Union[str, os.PathLike]) -> ConfigurableDete
     # Load state if it exists (and detector supports it)
     if isinstance(detector, StatefulDetector):
         state_dir = config_dir.joinpath((STATE_PATH))
-        try:
-            detector.load_state(state_dir)
-        except Exception as error:
-            raise IOError(f'Failed to load state in {state_dir}. This directory should be created by the save_state '
-                          'method of the detector to be loaded.') from error
+        if state_dir.is_dir():
+            try:
+                detector.load_state(state_dir)
+            except Exception as error:
+                raise IOError(f'Failed to load state in {state_dir}. This directory should be created by the '
+                              '`save_state` method of the detector to be loaded.') from error
 
     return detector
 
