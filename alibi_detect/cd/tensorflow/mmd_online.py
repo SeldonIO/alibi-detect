@@ -6,6 +6,7 @@ from typing import Any, Callable, Optional, Union
 from alibi_detect.cd.base_online import BaseMultiDriftOnline
 from alibi_detect.utils.tensorflow.kernels import GaussianRBF
 from alibi_detect.utils.tensorflow import zero_diag, quantile, subset_matrix
+from alibi_detect.utils.frameworks import Framework
 
 
 class MMDDriftOnlineTF(BaseMultiDriftOnline):
@@ -75,7 +76,7 @@ class MMDDriftOnlineTF(BaseMultiDriftOnline):
             input_shape=input_shape,
             data_type=data_type
         )
-        self.meta.update({'backend': 'tensorflow'})
+        self.meta.update({'backend': Framework.TENSORFLOW.value})
 
         # initialize kernel
         if isinstance(sigma, np.ndarray):

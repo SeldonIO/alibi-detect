@@ -6,6 +6,7 @@ from alibi_detect.cd.base import BaseContextMMDDrift
 from alibi_detect.utils.pytorch import get_device
 from alibi_detect.utils.pytorch.kernels import GaussianRBF
 from alibi_detect.utils.warnings import deprecated_alias
+from alibi_detect.utils.frameworks import Framework
 from alibi_detect.cd._domain_clf import _SVCDomainClf
 from tqdm import tqdm
 
@@ -101,7 +102,7 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
             data_type=data_type,
             verbose=verbose,
         )
-        self.meta.update({'backend': 'pytorch'})
+        self.meta.update({'backend': Framework.PYTORCH.value})
 
         # set device
         self.device = get_device(device)

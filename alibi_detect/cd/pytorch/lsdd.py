@@ -6,6 +6,7 @@ from alibi_detect.utils.pytorch import get_device
 from alibi_detect.utils.pytorch.kernels import GaussianRBF
 from alibi_detect.utils.pytorch.distance import permed_lsdds
 from alibi_detect.utils.warnings import deprecated_alias
+from alibi_detect.utils.frameworks import Framework
 
 
 class LSDDDriftTorch(BaseLSDDDrift):
@@ -83,7 +84,7 @@ class LSDDDriftTorch(BaseLSDDDrift):
             input_shape=input_shape,
             data_type=data_type
         )
-        self.meta.update({'backend': 'pytorch'})
+        self.meta.update({'backend': Framework.PYTORCH.value})
 
         # set device
         self.device = get_device(device)
@@ -115,6 +116,8 @@ class LSDDDriftTorch(BaseLSDDDrift):
         x_ref_means = x_ref.mean(0)
         x_ref_stds = x_ref.std(0)
         self._normalize = lambda x: (torch.as_tensor(x) - x_ref_means) / (x_ref_stds + eps)  # type: ignore[assignment]
+        self._unnormalize = lambda x: (torch.as_tensor(x) * (x_ref_stds + eps)  # type: ignore[assignment]
+                                       + x_ref_means).cpu().numpy()
 
     def _configure_kernel_centers(self, x_ref: torch.Tensor):
         "Set aside reference samples to act as kernel centers"

@@ -6,6 +6,7 @@ from typing import Callable, Dict, List, Optional, Tuple, Union
 from alibi_detect.cd.base import BaseMMDDrift
 from alibi_detect.utils.keops.kernels import GaussianRBF
 from alibi_detect.utils.pytorch import get_device
+from alibi_detect.utils.frameworks import Framework
 
 logger = logging.getLogger(__name__)
 
@@ -82,7 +83,7 @@ class MMDDriftKeops(BaseMMDDrift):
             input_shape=input_shape,
             data_type=data_type
         )
-        self.meta.update({'backend': 'keops'})
+        self.meta.update({'backend': Framework.KEOPS.value})
 
         # set device
         self.device = get_device(device)
@@ -168,7 +169,7 @@ class MMDDriftKeops(BaseMMDDrift):
         x_ref = torch.from_numpy(x_ref).float()  # type: ignore[assignment]
         x = torch.from_numpy(x).float()  # type: ignore[assignment]
         # compute kernel matrix, MMD^2 and apply permutation test
-        m, n = x_ref.shape[0], x.shape[0]
+        m, n = x_ref.shape[0], x.shape[0]  # type: ignore[union-attr]
         perms = [torch.randperm(m + n) for _ in range(self.n_permutations)]
         # TODO - Rethink typings (related to https://github.com/SeldonIO/alibi-detect/issues/540)
         x_all = torch.cat([x_ref, x], 0)  # type: ignore[list-item]

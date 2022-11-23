@@ -7,6 +7,7 @@ from alibi_detect.cd.base_online import BaseMultiDriftOnline
 from alibi_detect.utils.pytorch import get_device
 from alibi_detect.utils.pytorch.kernels import GaussianRBF
 from alibi_detect.utils.pytorch import zero_diag, quantile
+from alibi_detect.utils.frameworks import Framework
 
 
 class MMDDriftOnlineTorch(BaseMultiDriftOnline):
@@ -80,7 +81,7 @@ class MMDDriftOnlineTorch(BaseMultiDriftOnline):
             input_shape=input_shape,
             data_type=data_type
         )
-        self.meta.update({'backend': 'pytorch'})
+        self.meta.update({'backend': Framework.PYTORCH.value})
 
         # set device
         self.device = get_device(device)

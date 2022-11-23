@@ -1,20 +1,43 @@
 # Change Log
 
-## v0.10.4dev
+## v0.11.0dev
 [Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.10.3...master)
 
 ### Added
 - **New feature** MMD drift detector has been extended with a [KeOps](https://www.kernel-operations.io/keops/index.html) backend to scale and speed up the detector. 
 See the [documentation](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/mmddrift.html) and [example notebook](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_mmd_keops.html) for more info ([#548](https://github.com/SeldonIO/alibi-detect/pull/548)).
+- **New feature** Added support for serializing detectors with PyTorch backends, and detectors containing PyTorch models in their proprocessing functions ([#656](https://github.com/SeldonIO/alibi-detect/pull/656)).
+- **New feature** Added a PyTorch version of the `UAE` preprocessing utility function ([#656](https://github.com/SeldonIO/alibi-detect/pull/656)).
+- If a `categories_per_feature` dictionary is not passed to `TabularDrift`, a warning is now raised to inform the user that all features are assumed to be numerical ([#606](https://github.com/SeldonIO/alibi-detect/pull/606)).
+- For the `ClassifierDrift` and `SpotTheDiffDrift` detectors, we can also return the out-of-fold instances of the reference and test sets. When using `train_size` for training the detector, this allows to associate the returned prediction probabilities with the correct instances.
 
-## v0.10.3
+### Changed
+- Minimum `prophet` version bumped to `1.1.0` (used by `OutlierProphet`). This upgrade removes the dependency on `pystan` as `cmdstanpy` is used instead. This version also comes with pre-built wheels for all major platforms and Python versions, making both installation and testing easier ([#627](https://github.com/SeldonIO/alibi-detect/pull/627)).
+- **Breaking change** The configuration field `config_spec` has been removed. In order to load detectors serialized from previous Alibi Detect versions, the field will need to be deleted from the detector's `config.toml` file. However, in any case, serialization compatibility across Alibi Detect versions is not currently guranteed. ([#641](https://github.com/SeldonIO/alibi-detect/pull/641)).
+- Added support for serializing tensorflow optimizers. Previously, tensorflow optimizers were not serialized, which meant the default `optimizer` kwarg would also be set when a detector was loaded with `load_detector`, regardless of the `optimizer` given to the original detector ([#656](https://github.com/SeldonIO/alibi-detect/pull/656)).
+- Strengthened pydantic validation of detector configs. The `flavour` backend is now validated whilst taking into account the optional dependencies. For example, a `ValidationError` will be raised if `flavour='pytorch'` is given but PyTorch is not installed ([#656](https://github.com/SeldonIO/alibi-detect/pull/656)).
+
+### Fixed
+- Fixed an issue with the serialization of `kernel_a` and `kernel_b` in `DeepKernel`'s ([#656](https://github.com/SeldonIO/alibi-detect/pull/656)).
+
+### Development
+- UTF-8 decoding is enforced when `README.md` is opened by `setup.py`. This is to prevent pip install errors on systems with `PYTHONIOENCODING` set to use other encoders ([#605](https://github.com/SeldonIO/alibi-detect/pull/605)).
+- Skip specific save/load tests that require downloading remote artefacts if the relevant URI(s) is/are down ([#607](https://github.com/SeldonIO/alibi-detect/pull/607)).
+
+## v0.10.4
+## [v0.10.4](https://github.com/SeldonIO/alibi-detect/tree/v0.10.4) (2022-10-21)
+[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.10.3...v0.10.4)
+
+### Fixed
+- Fixed an incorrect default value for the `alternative` kwarg in the `FETDrift` detector ([#661](https://github.com/SeldonIO/alibi-detect/pull/661)).
+- Fixed an issue with `ClassifierDrift` returning incorrect prediction probabilities when `train_size` given ([#662](https://github.com/SeldonIO/alibi-detect/pull/662)).
+
 ## [v0.10.3](https://github.com/SeldonIO/alibi-detect/tree/v0.10.3) (2022-08-17)
 [Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.10.2...v0.10.3)
 
 ### Fixed
 - Fix to allow `config.toml` files to be loaded when the [meta] field is not present ([#591](https://github.com/SeldonIO/alibi-detect/pull/591)).
 
-## v0.10.2
 ## [v0.10.2](https://github.com/SeldonIO/alibi-detect/tree/v0.10.2) (2022-08-16)
 [Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.10.1...v0.10.2)
 

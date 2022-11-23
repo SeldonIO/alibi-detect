@@ -5,6 +5,7 @@ from alibi_detect.cd.base import BaseLSDDDrift
 from alibi_detect.utils.tensorflow.kernels import GaussianRBF
 from alibi_detect.utils.tensorflow.distance import permed_lsdds
 from alibi_detect.utils.warnings import deprecated_alias
+from alibi_detect.utils.frameworks import Framework
 
 
 class LSDDDriftTF(BaseLSDDDrift):
@@ -78,7 +79,7 @@ class LSDDDriftTF(BaseLSDDDrift):
             input_shape=input_shape,
             data_type=data_type
         )
-        self.meta.update({'backend': 'tensorflow'})
+        self.meta.update({'backend': Framework.TENSORFLOW.value})
 
         if self.preprocess_at_init or self.preprocess_fn is None or self.x_ref_preprocessed:
             x_ref = tf.convert_to_tensor(self.x_ref)

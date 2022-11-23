@@ -1,9 +1,10 @@
 import logging
 import os
+from importlib import import_module
 import warnings
 from functools import partial
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from typing import Callable, Dict, List, Optional, Tuple, Union, Type
 
 import dill
 import tensorflow as tf
@@ -25,6 +26,7 @@ from alibi_detect.od import (LLR, IForest, Mahalanobis, OutlierAE,
                              OutlierVAE, OutlierVAEGMM, SpectralResidual)
 from alibi_detect.od.llr import build_model
 from alibi_detect.utils.tensorflow.kernels import DeepKernel
+from alibi_detect.utils.frameworks import Framework
 # Below imports are used for legacy loading, and will be removed (or moved to utils/loading.py) in the future
 from alibi_detect.version import __version__
 from alibi_detect.base import Detector
@@ -69,7 +71,7 @@ def load_model(filepath: Union[str, os.PathLike],
     return model
 
 
-def prep_model_and_emb(model: Optional[Callable], emb: Optional[TransformerEmbedding]) -> Callable:
+def prep_model_and_emb(model: Callable, emb: Optional[TransformerEmbedding]) -> Callable:
     """
     Function to perform final preprocessing of model (and/or embedding) before it is passed to preprocess_drift.
 
@@ -78,25 +80,17 @@ def prep_model_and_emb(model: Optional[Callable], emb: Optional[TransformerEmbed
     model
         A compatible model.
     emb
-        A text embedding model.
+        An optional text embedding model.
 
     Returns
     -------
     The final model ready to passed to preprocess_drift.
     """
-    # If a model exists, process it (and embedding)
-    if model is not None:
-        model = model.encoder if isinstance(model, UAE) else model  # This is to avoid nesting UAE's already a UAE
-        if emb is not None:
-            model = _Encoder(emb, mlp=model)
-            model = UAE(encoder_net=model)
-    # If no model exists, store embedding as model
-    else:
-        model = emb
-    if model is None:
-        raise ValueError("A 'model'  and/or `embedding` must be specified when "
-                         "preprocess_fn='preprocess_drift'")
-
+    # Process model (and embedding)
+    model = model.encoder if isinstance(model, UAE) else model  # This is to avoid nesting UAE's already a UAE
+    if emb is not None:
+        model = _Encoder(emb, mlp=model)
+        model = UAE(encoder_net=model)
     return model
 
 
@@ -135,10 +129,9 @@ def load_kernel_config(cfg: dict) -> Callable:
     return kernel
 
 
-def load_optimizer(cfg: dict) -> tf.keras.optimizers.Optimizer:
+def load_optimizer(cfg: dict) -> Union[Type[tf.keras.optimizers.Optimizer], tf.keras.optimizers.Optimizer]:
     """
-    Loads a TensorFlow optimzier from a TensorFlow optimizer config dict. The config dict should be in
-    the format given by tf.keras.optimizers.serialize().
+    Loads a TensorFlow optimzier from a optimizer config dict.
 
     Parameters
     ----------
@@ -147,10 +140,18 @@ def load_optimizer(cfg: dict) -> tf.keras.optimizers.Optimizer:
 
     Returns
     -------
-    The loaded optimizer.
+    The loaded optimizer, either as an instantiated object (if `cfg` is a tensorflow optimizer config dict), otherwise
+    as an uninstantiated class.
     """
-    optimizer = tf.keras.optimizers.deserialize(cfg)
-    return optimizer
+    class_name = cfg.get('class_name')
+    tf_config = cfg.get('config')
+    if tf_config is not None:  # cfg is a tensorflow config dict
+        return tf.keras.optimizers.deserialize(cfg)
+    else:
+        try:
+            return getattr(import_module('tensorflow.keras.optimizers'), class_name)
+        except AttributeError:
+            raise ValueError(f"{class_name} is not a recognised optimizer in `tensorflow.keras.optimizers`.")
 
 
 def load_embedding(src: str, embedding_type, layers) -> TransformerEmbedding:
@@ -222,7 +223,7 @@ def load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwarg
         warnings.warn('Trying to load detector from an older version.'
                       'This may lead to breaking code or invalid results.')
 
-    if 'backend' in list(meta_dict.keys()) and meta_dict['backend'] == 'pytorch':
+    if 'backend' in list(meta_dict.keys()) and meta_dict['backend'] == Framework.PYTORCH:
         raise NotImplementedError('Detectors with PyTorch backend are not yet supported.')
 
     detector_name = meta_dict['name']

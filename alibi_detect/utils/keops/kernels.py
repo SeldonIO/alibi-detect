@@ -1,10 +1,10 @@
 from pykeops.torch import LazyTensor
 import torch
 import torch.nn as nn
-from typing import Callable, Optional
+from typing import Callable, Optional, Union
 
 
-def sigma_mean(x: LazyTensor, y: LazyTensor, dist: LazyTensor, n_min: int = None) -> torch.Tensor:
+def sigma_mean(x: LazyTensor, y: LazyTensor, dist: LazyTensor, n_min: int = 100) -> torch.Tensor:
     """
     Set bandwidth to the mean distance between instances x and y.
 
@@ -25,8 +25,8 @@ def sigma_mean(x: LazyTensor, y: LazyTensor, dist: LazyTensor, n_min: int = None
         consists of all zeros. We do this by computing the k-min distances and k-argmin indices over the
         columns of the distance matrix. We then check if the distances on the diagonal of the distance matrix
         are all zero or not. If they are all zero, then we do not use these distances (zeros) when computing
-        the mean pairwise distance as bandwidth. The default `None` sets k to Nx (=Ny). If Nx becomes very large,
-        it is advised to set `n_min` to a lower value.
+        the mean pairwise distance as bandwidth. If Nx becomes very large, it is advised to set `n_min`
+        to a low enough value to avoid OOM issues. By default we set it to 100 instances.
 
     Returns
     -------
@@ -41,7 +41,7 @@ def sigma_mean(x: LazyTensor, y: LazyTensor, dist: LazyTensor, n_min: int = None
         axis = 2
     n_mean = nx * ny
     if nx == ny:
-        n_min = n_min if isinstance(n_min, int) else nx
+        n_min = min(n_min, nx) if isinstance(n_min, int) else nx
         d_min, id_min = dist.Kmin_argKmin(n_min, axis=axis)
         if batched:
             d_min, id_min = d_min[0], id_min[0]  # first instance in permutation test contains the original data
@@ -57,7 +57,7 @@ class GaussianRBF(nn.Module):
     def __init__(
         self,
         sigma: Optional[torch.Tensor] = None,
-        init_sigma_fn: Callable = None,
+        init_sigma_fn: Optional[Callable] = None,
         trainable: bool = False
     ) -> None:
         """
@@ -114,3 +114,65 @@ class GaussianRBF(nn.Module):
         if len(dist.shape) < len(gamma.shape):
             kernel_mat = kernel_mat.sum(-1) / len(self.sigma)
         return kernel_mat
+
+
+class DeepKernel(nn.Module):
+    def __init__(
+        self,
+        proj: nn.Module,
+        kernel_a: nn.Module = GaussianRBF(trainable=True),
+        kernel_b: Optional[nn.Module] = GaussianRBF(trainable=True),
+        eps: Union[float, str] = 'trainable'
+    ) -> None:
+        """
+        Computes similarities as k(x,y) = (1-eps)*k_a(proj(x), proj(y)) + eps*k_b(x,y).
+        A forward pass takes an already projected batch of instances x_proj and y_proj and optionally
+        (if k_b is present) a batch of instances x and y and returns the kernel matrix.
+        x_proj can be of shape [Nx, 1, features_proj] or [batch_size, Nx, 1, features_proj].
+        y_proj can be of shape [1, Ny, features_proj] or [batch_size, 1, Ny, features_proj].
+        x can be of shape [Nx, 1, features] or [batch_size, Nx, 1, features].
+        y can be of shape [1, Ny, features] or [batch_size, 1, Ny, features].
+        The returned kernel matrix can be of shape [Nx, Ny] or [batch_size, Nx, Ny].
+        x, y and the returned kernel matrix are all lazy tensors.
+
+        Parameters
+        ----------
+        proj
+            The projection to be applied to the inputs before applying kernel_a
+        kernel_a
+            The kernel to apply to the projected inputs. Defaults to a Gaussian RBF with trainable bandwidth.
+        kernel_b
+            The kernel to apply to the raw inputs. Defaults to a Gaussian RBF with trainable bandwidth.
+            Set to None in order to use only the deep component (i.e. eps=0).
+        eps
+            The proportion (in [0,1]) of weight to assign to the kernel applied to raw inputs. This can be
+            either specified or set to 'trainable'. Only relavent if kernel_b is not None.
+        """
+        super().__init__()
+
+        self.kernel_a = kernel_a
+        self.kernel_b = kernel_b
+        self.proj = proj
+        if kernel_b is not None:
+            self._init_eps(eps)
+
+    def _init_eps(self, eps: Union[float, str]) -> None:
+        if isinstance(eps, float):
+            if not 0 < eps < 1:
+                raise ValueError("eps should be in (0,1)")
+            self.logit_eps = nn.Parameter(torch.tensor(eps).logit(), requires_grad=False)
+        elif eps == 'trainable':
+            self.logit_eps = nn.Parameter(torch.tensor(0.))
+        else:
+            raise NotImplementedError("eps should be 'trainable' or a float in (0,1)")
+
+    @property
+    def eps(self) -> torch.Tensor:
+        return self.logit_eps.sigmoid() if self.kernel_b is not None else torch.tensor(0.)
+
+    def forward(self, x_proj: LazyTensor, y_proj: LazyTensor, x: Optional[LazyTensor] = None,
+                y: Optional[LazyTensor] = None) -> LazyTensor:
+        similarity = self.kernel_a(x_proj, y_proj)
+        if self.kernel_b is not None:
+            similarity = (1-self.eps)*similarity + self.eps*self.kernel_b(x, y)
+        return similarity

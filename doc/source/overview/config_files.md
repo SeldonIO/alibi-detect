@@ -166,11 +166,6 @@ The following table shows the allowable formats for all possible config file art
 |`optimizer`               |           |✔           |✔                                | {class}`~alibi_detect.saving.schemas.OptimizerConfig`                                                      |
 ```
 
-```{note}
-When TensorFlow, PyTorch, or scikit-learn `model`'s are specified, the model type should be specified via the `backend` field in the *config.toml*.
-For example, if `model` is a TensorFlow model, set `backend='tensorflow'`. This is the case even for detectors that don't take a `backend` kwarg.
-```
-
 (dictionaries)=
 ### Artefact dictionaries
 
@@ -192,7 +187,7 @@ dictionaries able to be specified with {} brackets or by sections demarcated wit
 [TOML documentation](https://toml.io/en/) for more details on the TOML format).
 
 Other config fields in the {ref}`all-artefacts-table` table can be specified via artefact dictionaries in a similar way. 
-For example, the `model` and `proj` fields can be set as TensorFlow (and soon PyTorch) 
+For example, the `model` and `proj` fields can be set as TensorFlow or PyTorch
 models via the {class}`~alibi_detect.saving.schemas.ModelConfig` dictionary. Often an artefact dictionary may itself
 contain nested artefact dictionaries, as is the case in in the following example, where a `preprocess_fn` is specified 
 with a TensorFlow `model`.
@@ -461,9 +456,6 @@ artefacts before attempting the sometimes time-consuming operation of instantiat
 %```python
 %{'name': {'title': 'Name', 'type': 'string'},
 % 'version': {'title': 'Version', 'default': '0.8.1dev', 'type': 'string'},
-% 'config_spec': {'title': 'Config Spec',
-%  'default': '0.1.0dev',
-%  'type': 'string'},
 % 'backend': {'title': 'Backend',
 %  'default': 'tensorflow',
 %  'enum': ['tensorflow', 'pytorch'],
