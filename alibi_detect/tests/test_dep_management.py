@@ -69,6 +69,7 @@ def test_cd_torch_dependencies(opt_dep):
     dependency_map = defaultdict(lambda: ['default'])
     for dependency, relations in [
         ("HiddenOutput", ['torch', 'keops']),
+        ("UAE", ['torch', 'keops']),
         ("preprocess_drift", ['torch', 'keops'])
     ]:
         dependency_map[dependency] = relations
@@ -207,11 +208,32 @@ def test_saving_tf_dependencies(opt_dep):
         ('prep_model_and_emb_tf', ['tensorflow']),
         ('save_detector_legacy', ['tensorflow']),
         ('save_model_config_tf', ['tensorflow']),
+        ('save_optimizer_config_tf', ['tensorflow']),
         ('get_tf_dtype', ['tensorflow'])
     ]:
         dependency_map[dependency] = relations
     from alibi_detect.saving import _tensorflow as tf_saving
     check_correct_dependencies(tf_saving, dependency_map, opt_dep)
+
+
+def test_saving_torch_dependencies(opt_dep):
+    """Tests that the alibi_detect.saving._pytorch module correctly protects against uninstalled optional
+    dependencies.
+    """
+
+    dependency_map = defaultdict(lambda: ['default'])
+    for dependency, relations in [
+        ('load_embedding_pt', ['torch', 'keops']),
+        ('load_kernel_config_pt', ['torch', 'keops']),
+        ('load_model_pt', ['torch', 'keops']),
+        ('load_optimizer_pt', ['torch', 'keops']),
+        ('prep_model_and_emb_pt', ['torch', 'keops']),
+        ('save_model_config_pt', ['torch', 'keops']),
+        ('get_pt_dtype', ['torch', 'keops'])
+    ]:
+        dependency_map[dependency] = relations
+    from alibi_detect.saving import _pytorch as pt_saving
+    check_correct_dependencies(pt_saving, dependency_map, opt_dep)
 
 
 def test_saving_dependencies(opt_dep):

@@ -1,9 +1,10 @@
 import logging
 import os
+from importlib import import_module
 import warnings
 from functools import partial
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from typing import Callable, Dict, List, Optional, Tuple, Union, Type
 
 import dill
 import tensorflow as tf
@@ -128,10 +129,9 @@ def load_kernel_config(cfg: dict) -> Callable:
     return kernel
 
 
-def load_optimizer(cfg: dict) -> tf.keras.optimizers.Optimizer:
+def load_optimizer(cfg: dict) -> Union[Type[tf.keras.optimizers.Optimizer], tf.keras.optimizers.Optimizer]:
     """
-    Loads a TensorFlow optimzier from a TensorFlow optimizer config dict. The config dict should be in
-    the format given by tf.keras.optimizers.serialize().
+    Loads a TensorFlow optimzier from a optimizer config dict.
 
     Parameters
     ----------
@@ -140,10 +140,18 @@ def load_optimizer(cfg: dict) -> tf.keras.optimizers.Optimizer:
 
     Returns
     -------
-    The loaded optimizer.
+    The loaded optimizer, either as an instantiated object (if `cfg` is a tensorflow optimizer config dict), otherwise
+    as an uninstantiated class.
     """
-    optimizer = tf.keras.optimizers.deserialize(cfg)
-    return optimizer
+    class_name = cfg.get('class_name')
+    tf_config = cfg.get('config')
+    if tf_config is not None:  # cfg is a tensorflow config dict
+        return tf.keras.optimizers.deserialize(cfg)
+    else:
+        try:
+            return getattr(import_module('tensorflow.keras.optimizers'), class_name)
+        except AttributeError:
+            raise ValueError(f"{class_name} is not a recognised optimizer in `tensorflow.keras.optimizers`.")
 
 
 def load_embedding(src: str, embedding_type, layers) -> TransformerEmbedding:

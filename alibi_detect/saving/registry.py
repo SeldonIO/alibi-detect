@@ -67,4 +67,4 @@ if has_pytorch:
     registry.register('utils.pytorch.kernels.GaussianRBF', func=GaussianRBF_torch)
     registry.register('utils.pytorch.kernels.sigma_median', func=sigma_median_torch)
     registry.register('cd.pytorch.context_aware._sigma_median_diag', func=_sigma_median_diag_torch)
-    registry.register('utils.pytorch.preprocess.preprocess_drift', func=preprocess_drift_torch)
+    registry.register('cd.pytorch.preprocess.preprocess_drift', func=preprocess_drift_torch)
