@@ -2,6 +2,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 import numpy as np
 import logging
+from typing_extensions import Protocol, runtime_checkable
 from alibi_detect.base import BaseDetector
 
 logger = logging.getLogger(__name__)
@@ -25,44 +26,31 @@ class OutlierDetector(BaseDetector, ABC):
     def score(self, X: np.ndarray) -> np.ndarray:
         pass
 
+    @abstractmethod
     def infer_threshold(self, X: np.ndarray, fpr: float) -> None:
-        """
-        Infers the threshold above which only fpr% of inlying data scores.
-        Also saves down the scores to be later used for computing p-values
-            of new data points (by comparison to the empirical cdf).
-        For ensemble models the scores are normalised and aggregated before
-            saving scores and inferring threshold.
-        """
-        self.val_scores = self.score(X)
-        if self.ensemble:
-            self.val_scores = self.normaliser.fit(self.val_scores).transform(self.val_scores) \
-                if getattr(self, 'normaliser') else self.val_scores
-            self.val_scores = self.aggregator.fit(self.val_scores).transform(self.val_scores) \
-                if getattr(self, 'aggregator') else self.val_scores
-        self.threshold = np.quantile(self.val_scores, 1-fpr)
-        self.threshold_inferred = True
+        pass
 
+    @abstractmethod
     def predict(self, X: np.ndarray) -> np.ndarray:
-        """
-        Scores the instances and then compares to pre-inferred threshold.
-        For ensemble models the scores from each constituent is added to the output.
-        p-values are also returned by comparison to validation scores (of inliers)
-        """
-        output = {}
-        scores = self.score(X)
-        output['raw_scores'] = scores
+        pass
 
-        if getattr(self, 'normaliser'):
-            scores = self.normaliser.transform(scores)
-            output['normalised_scores'] = scores
 
-        if getattr(self, 'aggregator'):
-            scores = self.aggregator.transform(scores)
-            output['aggregate_scores'] = scores
+@runtime_checkable
+class TransformProtocol(Protocol):
+    def transform(self, X):
+        pass
 
-        if self.threshold_inferred:
-            p_vals = (1 + (scores[:, None] < self.val_scores).sum(-1))/len(self.val_scores)
-            preds = scores > self.threshold
-            output.update(scores=scores, preds=preds, p_vals=p_vals)
+    def _transform(self, X):
+        pass
 
-        return output
+
+@runtime_checkable
+class FittedTransformProtocol(TransformProtocol, Protocol):
+    def fit(self, x_ref):
+        pass
+
+    def _fit(self, x_ref):
+        pass
+
+    def check_fitted(self):
+        pass

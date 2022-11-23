@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Union, List
 import numpy as np
 import torch
 from alibi_detect.od.backend.torch.ensemble import Accumulator
@@ -8,8 +8,8 @@ from alibi_detect.od.backend.torch.base import TorchOutlierDetector
 class KNNTorch(TorchOutlierDetector):
     def __init__(
             self,
-            k,
-            kernel=None,
+            k: Union[np.ndarray, List],
+            kernel: Optional[torch.nn.Module] = None,
             accumulator: Optional[Accumulator] = None
             ):
         super().__init__()
@@ -30,8 +30,8 @@ class KNNTorch(TorchOutlierDetector):
         all_knn_dists = bot_k_dists.values[:, self.ks-1]
         return all_knn_dists if self.ensemble else all_knn_dists[:, 0]
 
-    def fit(self, X: torch.tensor):
-        self.x_ref = torch.as_tensor(X, dtype=torch.float32)
+    def fit(self, x_ref: torch.tensor):
+        self.x_ref = x_ref
         if self.accumulator is not None:
-            scores = self.score(X)
+            scores = self.score(x_ref)
             self.accumulator.fit(scores)

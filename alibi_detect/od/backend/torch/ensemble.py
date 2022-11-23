@@ -13,7 +13,7 @@ import numpy as np
 logger = logging.getLogger(__name__)
 
 
-class BaseTransform(Module, ABC):
+class BaseTransformTorch(Module, ABC):
     """Base Transform class.
 
     provides abstract methods for transform objects that map a numpy
@@ -46,12 +46,12 @@ class BaseTransform(Module, ABC):
         return self.transform(X=X)
 
 
-class FitMixin:
+class FitMixinTorch:
     """Fit mixin
 
     Utility class that provides fitted checks for alibi-detect objects that require to be fit before use.
 
-    TODO: this should be encorporated into alibi_detect/base.py FitMixin once we can be sure that the
+    TODO: this should be encorporated into alibi_detect/base.py FitMixinTorch once we can be sure that the
     behavour is compatible.
     """
     _fitted = False
@@ -59,7 +59,7 @@ class FitMixin:
     def __init__(self):
         super().__init__()
 
-    def fit(self, X: torch.Tensor) -> BaseTransform:
+    def fit(self, X: torch.Tensor) -> BaseTransformTorch:
         self._fit(X)
         self._fitted = True
         return self
@@ -74,7 +74,7 @@ class FitMixin:
             raise ValueError(f'{self.__class__.__name__} has not been fit!')
 
 
-class BaseFittedTransform(BaseTransform, FitMixin):
+class BaseFittedTransformTorch(BaseTransformTorch, FitMixinTorch):
     """Base Fitted Transform class.
 
     Provides abstract methods for transforms that have an aditional
@@ -82,15 +82,15 @@ class BaseFittedTransform(BaseTransform, FitMixin):
     """
 
     def __init__(self):
-        BaseTransform.__init__(self)
-        FitMixin.__init__(self)
+        BaseTransformTorch.__init__(self)
+        FitMixinTorch.__init__(self)
 
     def transform(self, X: torch.Tensor):
         self.check_fitted()
         return self._transform(X)
 
 
-class PValNormaliser(BaseFittedTransform):
+class PValNormaliser(BaseFittedTransformTorch):
     """Maps scores to there p values.
 
     Needs to be fit on a reference dataset using fit. Transform counts the number of scores
@@ -112,7 +112,7 @@ class PValNormaliser(BaseFittedTransform):
         return 1 - p_vals
 
 
-class ShiftAndScaleNormaliser(BaseFittedTransform):
+class ShiftAndScaleNormaliser(BaseFittedTransformTorch):
     """Maps scores to their normalised values.
 
     Needs to be fit on a reference dataset using fit. Subtracts the dataset mean and
@@ -123,7 +123,7 @@ class ShiftAndScaleNormaliser(BaseFittedTransform):
         self.val_means = None
         self.val_scales = None
 
-    def _fit(self, val_scores: torch.Tensor) -> BaseTransform:
+    def _fit(self, val_scores: torch.Tensor) -> BaseTransformTorch:
         self.val_means = val_scores.mean(0)[None, :]
         self.val_scales = val_scores.std(0)[None, :]
 
@@ -131,7 +131,7 @@ class ShiftAndScaleNormaliser(BaseFittedTransform):
         return (scores - self.val_means)/self.val_scales
 
 
-class TopKAggregator(BaseTransform):
+class TopKAggregator(BaseTransformTorch):
     def __init__(self, k: Optional[int] = None):
         """Takes the mean of the top k scores.
 
@@ -151,7 +151,7 @@ class TopKAggregator(BaseTransform):
         return sorted_scores[:, -self.k:].mean(-1)
 
 
-class AverageAggregator(BaseTransform):
+class AverageAggregator(BaseTransformTorch):
     """Averages the scores of the detectors in an ensemble.
 
     Parameters
@@ -170,7 +170,7 @@ class AverageAggregator(BaseTransform):
         return scores @ self.weights
 
 
-class MaxAggregator(BaseTransform):
+class MaxAggregator(BaseTransformTorch):
     """Takes the max score of a set of detectors in an ensemble."""
     def __init__(self):
         super().__init__()
@@ -180,7 +180,7 @@ class MaxAggregator(BaseTransform):
         return vals
 
 
-class MinAggregator(BaseTransform):
+class MinAggregator(BaseTransformTorch):
     """Takes the min score of a set of detectors in an ensemble."""
     def __init__(self):
         super().__init__()
@@ -190,10 +190,10 @@ class MinAggregator(BaseTransform):
         return vals
 
 
-class Accumulator(BaseFittedTransform):
+class Accumulator(BaseFittedTransformTorch):
     def __init__(self,
-                 normaliser: BaseFittedTransform = None,
-                 aggregator: BaseTransform = AverageAggregator()):
+                 normaliser: BaseFittedTransformTorch = None,
+                 aggregator: BaseTransformTorch = AverageAggregator()):
         """Wraps a normaliser and aggregator into a single object.
 
         The accumulator wraps normalisers and aggregators into a single object.
@@ -201,10 +201,10 @@ class Accumulator(BaseFittedTransform):
         Parameters
         ----------
         normaliser
-            normaliser that's an instance of BaseFittedTransform. Maps the outputs of
+            normaliser that's an instance of BaseFittedTransformTorch. Maps the outputs of
             a set of detectors to a common range.
         aggregator
-            aggregator extendng BaseTransform. Maps outputs of the normaliser to
+            aggregator extendng BaseTransformTorch. Maps outputs of the normaliser to
             single score.
         """
         super().__init__()

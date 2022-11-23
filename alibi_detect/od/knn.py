@@ -1,16 +1,13 @@
-from typing import Callable, Literal, Union, Optional
+from typing import Callable, Literal, Union, Optional, List, Dict
 import numpy as np
 
-from alibi_detect.od.base import OutlierDetector
-from alibi_detect.od.backend.torch.ensemble import Accumulator
-
-from alibi_detect.od.backend import KNNTorch
+from alibi_detect.od.base import OutlierDetector, TransformProtocol, FittedTransformProtocol
+from alibi_detect.od.backend import KNNTorch, AccumulatorTorch
 from alibi_detect.utils.frameworks import BackendValidator
 
-X_REF_FILENAME = 'x_ref.npy'
 
 backends = {
-    'pytorch': KNNTorch,
+    'pytorch': (KNNTorch, AccumulatorTorch)
 }
 
 
@@ -19,11 +16,12 @@ class KNN(OutlierDetector):
         self,
         k: Union[int, np.ndarray],
         kernel: Optional[Callable] = None,
-        normaliser=None,
-        aggregator=None,
+        normaliser: Optional[Union[TransformProtocol, FittedTransformProtocol]] = None,
+        aggregator: Optional[TransformProtocol] = None,
         backend: Literal['pytorch'] = 'pytorch'
     ) -> None:
         super().__init__()
+
         backend = backend.lower()
         BackendValidator(
             backend_options={'pytorch': ['pytorch']},
@@ -36,19 +34,25 @@ class KNN(OutlierDetector):
                               'specify at least an aggregator if you want to use the knn detector'
                               'an ensemble like this.'))
 
-        self.k = k
-        self.kernel = kernel
-        self.ensemble = isinstance(self.k, (np.ndarray, list))
-        self.normaliser = normaliser
-        self.aggregator = aggregator
-        self.fitted = False
-        self.backend = backends[backend]
+        backend, accumulator_cls = backends[backend]
+        accumulator = None
+        if normaliser is not None or aggregator is not None:
+            accumulator = accumulator_cls(
+                normaliser=normaliser,
+                aggregator=aggregator
+            )
+        self.backend = backend(k, kernel=kernel, accumulator=accumulator)
 
-    def fit(self, X: np.ndarray) -> None:
-        self.x_ref = self.backend.fit(X)
-        val_scores = self.score(X)
-        if getattr(self, 'normaliser'):
-            self.normaliser.fit(val_scores)
+    def fit(self, x_ref: Union[np.ndarray, List]) -> None:
+        self.backend.fit(self.backend._to_tensor(x_ref))
 
-    def score(self, X: np.ndarray) -> np.ndarray:
-        return self.backend.score(X, self.x_ref, self.k, kernel=self.kernel)
+    def score(self, X: Union[np.ndarray, List]) -> np.ndarray:
+        score = self.backend.score(self.backend._to_tensor(X))
+        return self.backend._to_numpy(score)
+
+    def infer_threshold(self, x_ref: Union[np.ndarray, List], fpr: float) -> None:
+        self.backend.infer_threshold(self.backend._to_tensor(x_ref), fpr)
+
+    def predict(self, X: Union[np.ndarray, List]) -> Dict[str, np.ndarray]:
+        outputs = self.backend.predict(self.backend._to_tensor(X))
+        return self.backend._to_numpy(outputs)
