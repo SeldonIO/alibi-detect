@@ -56,11 +56,10 @@ jobs:
         run: |
           python -m pip install --upgrade pip setuptools wheel
           python -m pip install --upgrade --upgrade-strategy eager -r requirements/dev.txt
-          python -m pip install --upgrade --upgrade-strategy eager -e .
+          python -m pip install --upgrade --upgrade-strategy eager .[prophet,tensorflow,torch]
           if [ "$RUNNER_OS" == "Linux" ]; then  # Currently, we only support KeOps on Linux.
-            python -m pip install --upgrade --upgrade-strategy eager -e .[keops]
+            python -m pip install --upgrade --upgrade-strategy eager .[prophet,tensorflow,torch,keops]
           fi
-          python -m pip install --upgrade --upgrade-strategy eager -e .[prophet,tensorflow,torch]
           python -m pip freeze
 
       - name: Setup tmate session
@@ -82,7 +81,9 @@ jobs:
           if [ "$RUNNER_OS" == "macOS" ]; then  # Avoid numba/OpenMP segfault in CVMDrift (https://github.com/SeldonIO/alibi-detect/issues/648)
             export NUMBA_THREADING_LAYER="workqueue"
           fi
-          pytest alibi_detect
+          pytest --randomly-seed=0 alibi_detect
+          # Note: The pytest-randomly seed is fixed at 0 for now. Once the legacy np.random.seed(0)'s 
+          # are removed from tests, this can be removed, allowing all tests to use random seeds.
 
       - name: Upload coverage to Codecov
         if: ${{ success() }}

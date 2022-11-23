@@ -114,6 +114,8 @@ class DetectorConfig(CustomBaseModel):
     "Config metadata. Should not be edited."
     # Note: Although not all detectors have a backend, we define in base class as `backend` also determines
     #  whether tf or torch models used for preprocess_fn.
+    # backend validation (only applied if the detector config has a `backend` field
+    _validate_backend = validator('backend', allow_reuse=True, pre=False, check_fields=False)(validate_framework)
 
 
 class ModelConfig(CustomBaseModel):

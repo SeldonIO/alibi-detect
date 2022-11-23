@@ -15,7 +15,10 @@ See the [documentation](https://docs.seldon.io/projects/alibi-detect/en/latest/c
 - Minimum `prophet` version bumped to `1.1.0` (used by `OutlierProphet`). This upgrade removes the dependency on `pystan` as `cmdstanpy` is used instead. This version also comes with pre-built wheels for all major platforms and Python versions, making both installation and testing easier ([#627](https://github.com/SeldonIO/alibi-detect/pull/627)).
 - **Breaking change** The configuration field `config_spec` has been removed. In order to load detectors serialized from previous Alibi Detect versions, the field will need to be deleted from the detector's `config.toml` file. However, in any case, serialization compatibility across Alibi Detect versions is not currently guranteed. ([#641](https://github.com/SeldonIO/alibi-detect/pull/641)).
 - Added support for serializing tensorflow optimizers. Previously, tensorflow optimizers were not serialized, which meant the default `optimizer` kwarg would also be set when a detector was loaded with `load_detector`, regardless of the `optimizer` given to the original detector ([#656](https://github.com/SeldonIO/alibi-detect/pull/656)).
-- strengthened pydantic validation of detector configs. The `flavour` backend is now validated whilst taking into account the optional dependencies. For example, a `ValidationError` will be raised if `flavour='pytorch'` is given but PyTorch is not installed ([#656](https://github.com/SeldonIO/alibi-detect/pull/656)).
+- Strengthened pydantic validation of detector configs. The `flavour` backend is now validated whilst taking into account the optional dependencies. For example, a `ValidationError` will be raised if `flavour='pytorch'` is given but PyTorch is not installed ([#656](https://github.com/SeldonIO/alibi-detect/pull/656)).
+
+### Fixed
+- Fixed an issue with the serialization of `kernel_a` and `kernel_b` in `DeepKernel`'s ([#656](https://github.com/SeldonIO/alibi-detect/pull/656)).
 
 ### Development
 - UTF-8 decoding is enforced when `README.md` is opened by `setup.py`. This is to prevent pip install errors on systems with `PYTHONIOENCODING` set to use other encoders ([#605](https://github.com/SeldonIO/alibi-detect/pull/605)).

@@ -94,7 +94,8 @@ def preprocess_custom(encoder_model):
     if isinstance(encoder_model, tf.keras.Model):
         preprocess_fn = partial(preprocess_drift_tf, model=encoder_model)
     else:
-        preprocess_fn = partial(preprocess_drift_pt, model=encoder_model)
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        preprocess_fn = partial(preprocess_drift_pt, model=encoder_model, device=device)
     return preprocess_fn
 
 
@@ -269,8 +270,9 @@ def preprocess_nlp(embedding, tokenizer, max_len, backend):
         preprocess_fn = partial(preprocess_drift_tf, model=embedding, tokenizer=tokenizer,
                                 max_len=max_len, preprocess_batch_fn=preprocess_simple)
     elif backend in ('pytorch', 'keops'):
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         preprocess_fn = partial(preprocess_drift_pt, model=embedding, tokenizer=tokenizer, max_len=max_len,
-                                preprocess_batch_fn=preprocess_simple)
+                                preprocess_batch_fn=preprocess_simple, device=device)
     else:
         pytest.skip('`preprocess_nlp` only implemented for tensorflow, pytorch and keops.')
     return preprocess_fn
@@ -289,7 +291,8 @@ def preprocess_hiddenoutput(classifier_model, current_cases, backend):
         preprocess_fn = partial(preprocess_drift_tf, model=model)
     elif backend in ('pytorch', 'keops'):
         model = HiddenOutput_pt(classifier_model, layer=-1)
-        preprocess_fn = partial(preprocess_drift_pt, model=model)
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        preprocess_fn = partial(preprocess_drift_pt, model=model, device=device)
     else:
         pytest.skip('`preprocess_hiddenoutput` only implemented for tensorflow, pytorch and keops.')
     return preprocess_fn
