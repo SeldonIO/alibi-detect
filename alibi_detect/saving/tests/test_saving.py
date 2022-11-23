@@ -47,13 +47,17 @@ from alibi_detect.saving.schemas import DeepKernelConfig, KernelConfig, ModelCon
 from alibi_detect.utils.pytorch.kernels import DeepKernel as DeepKernel_pt
 from alibi_detect.utils.tensorflow.kernels import DeepKernel as DeepKernel_tf
 from alibi_detect.utils.keops.kernels import DeepKernel as DeepKernel_ke
+from alibi_detect.utils.frameworks import has_keops
 
 if version.parse(scipy.__version__) >= version.parse('1.7.0'):
     from alibi_detect.cd import CVMDrift
 
 # TODO: We currently parametrize encoder_model etc (in models.py) with backend, so the same flavour of
 # preprocessing is used as the detector backend. In the future we could decouple this in tests.
-backend = param_fixture("backend", ['tensorflow', 'pytorch', 'sklearn', 'keops'])
+backends = ['tensorflow', 'pytorch', 'sklearn']
+if has_keops:  # keops currently only installed during linux CI
+    backends.append('keops')
+backend = param_fixture("backend", backends)
 P_VAL = 0.05
 ERT = 10
 N_PERMUTATIONS = 10
