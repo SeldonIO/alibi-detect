@@ -17,7 +17,6 @@ import scipy
 import tensorflow as tf
 import torch
 import torch.nn as nn
-from pykeops.torch import LazyTensor
 
 from .datasets import BinData, CategoricalData, ContinuousData, MixedData, TextData
 from .models import (encoder_model, preprocess_custom, preprocess_hiddenoutput, preprocess_simple,  # noqa: F401
@@ -46,8 +45,10 @@ from alibi_detect.saving.saving import (_path2str, _int2str_keys, _save_kernel_c
 from alibi_detect.saving.schemas import DeepKernelConfig, KernelConfig, ModelConfig, PreprocessConfig
 from alibi_detect.utils.pytorch.kernels import DeepKernel as DeepKernel_pt
 from alibi_detect.utils.tensorflow.kernels import DeepKernel as DeepKernel_tf
-from alibi_detect.utils.keops.kernels import DeepKernel as DeepKernel_ke
 from alibi_detect.utils.frameworks import has_keops
+if has_keops:
+    from pykeops.torch import LazyTensor
+    from alibi_detect.utils.keops.kernels import DeepKernel as DeepKernel_ke
 
 if version.parse(scipy.__version__) >= version.parse('1.7.0'):
     from alibi_detect.cd import CVMDrift
