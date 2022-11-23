@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 class TorchOutlierDetector(torch.nn.Module, ABC):
     """ Base class for torch backend outlier detection algorithms."""
     threshold_inferred = False
+    threshold = None
 
     def __init__(self):
         super().__init__()
@@ -41,7 +42,10 @@ class TorchOutlierDetector(torch.nn.Module, ABC):
         self.threshold_inferred = True
 
     def predict(self, X: torch.Tensor) -> torch.Tensor:
-        output = {'threshold_inferred': self.threshold_inferred}
+        output = {
+            'threshold_inferred': self.threshold_inferred,
+            'threshold': self.threshold
+        }
         raw_scores = self.score(X)
         output['scores'] = self._accumulator(raw_scores)
         output['preds'] = self._classify_outlier(output['scores'])
