@@ -222,9 +222,9 @@ def test_save_mmddrift(data, kernel, preprocess_custom, backend, tmp_path, seed)
         'preprocess_at_init': True,
         'kernel': kernel,
         'configure_kernel_from_x_ref': False,
-        'sigma': np.array([0.5])
+        'sigma': np.array([0.5], dtype=np.float32)
     }
-    if backend == 'pytorch':
+    if backend in ('pytorch', 'keops'):
         kwargs['device'] = 'cuda' if torch.cuda.is_available() else 'cpu'
     with fixed_seed(seed):
         cd = MMDDrift(X_ref, **kwargs)
