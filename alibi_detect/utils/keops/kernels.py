@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 from typing import Callable, Optional, Union
 from alibi_detect.utils.frameworks import Framework
+from alibi_detect.utils._types import Literal
 from copy import deepcopy
 
 
@@ -146,9 +147,9 @@ class DeepKernel(nn.Module):
     def __init__(
         self,
         proj: nn.Module,
-        kernel_a: Union[nn.Module, str] = 'rbf',
-        kernel_b: Optional[Union[nn.Module, str]] = 'rbf',
-        eps: Union[float, str] = 'trainable'
+        kernel_a: Union[nn.Module, Literal['rbf']] = 'rbf',
+        kernel_b: Optional[Union[nn.Module, Literal['rbf']]] = 'rbf',
+        eps: Union[float, Literal['trainable']] = 'trainable'
     ) -> None:
         """
         Computes similarities as k(x,y) = (1-eps)*k_a(proj(x), proj(y)) + eps*k_b(x,y).
@@ -186,7 +187,7 @@ class DeepKernel(nn.Module):
         if kernel_b is not None:
             self._init_eps(eps)
 
-    def _init_eps(self, eps: Union[float, str]) -> None:
+    def _init_eps(self, eps: Union[float, Literal['trainable']]) -> None:
         if isinstance(eps, float):
             if not 0 < eps < 1:
                 raise ValueError("eps should be in (0,1)")
