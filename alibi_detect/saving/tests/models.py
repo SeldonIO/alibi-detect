@@ -26,7 +26,7 @@ from alibi_detect.models.tensorflow import TransformerEmbedding as TransformerEm
 from alibi_detect.cd.pytorch import HiddenOutput as HiddenOutput_pt
 from alibi_detect.cd.tensorflow import HiddenOutput as HiddenOutput_tf
 from alibi_detect.utils.frameworks import has_keops
-if has_keops:
+if has_keops:  # pykeops only installed in Linux CI
     from alibi_detect.utils.keops.kernels import GaussianRBF as GaussianRBF_ke
     from alibi_detect.utils.keops.kernels import DeepKernel as DeepKernel_ke
 
