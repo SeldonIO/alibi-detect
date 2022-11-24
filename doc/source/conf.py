@@ -102,7 +102,7 @@ autodoc_mock_imports = [
     "spacy",
     "tensorflow_probability",
     "scipy",
-    "fbprophet",
+    "prophet",
     "torch",
     "transformers",
     "tqdm",
