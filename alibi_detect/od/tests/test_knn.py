@@ -47,3 +47,10 @@ def test_knn_ensemble(aggregator, normaliser):
     pred = knn_detector.predict(x)
 
     assert np.all(pred['preds'] == [True, False])
+
+
+def test_incorrect_knn_ensemble_init():
+    with pytest.raises(ValueError) as err:
+        KNN(k=[8, 9, 10])
+    assert str(err.value) == ("k=[8, 9, 10] is type <class 'list'> but aggregator is None, you must specify at least an"
+                              " aggregator if you want to use the knn detector ensemble like this.")

@@ -2,6 +2,7 @@ from __future__ import annotations
 import numpy as np
 from typing import List, Dict, Union
 import torch
+from alibi_detect.od.backend.torch.ensemble import FitMixinTorch
 
 import logging
 from abc import ABC, abstractmethod
@@ -9,7 +10,7 @@ from abc import ABC, abstractmethod
 logger = logging.getLogger(__name__)
 
 
-class TorchOutlierDetector(torch.nn.Module, ABC):
+class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
     """ Base class for torch backend outlier detection algorithms."""
     threshold_inferred = False
     threshold = None
@@ -18,12 +19,18 @@ class TorchOutlierDetector(torch.nn.Module, ABC):
         super().__init__()
 
     @abstractmethod
-    def fit(self, x_ref: torch.Tensor) -> None:
+    def _fit(self, x_ref: torch.Tensor) -> None:
         raise NotImplementedError()
 
     @abstractmethod
     def score(self, X: torch.Tensor) -> torch.Tensor:
         raise NotImplementedError()
+
+    @torch.jit.ignore
+    def check_threshould_infered(self):
+        if not self.threshold_inferred:
+            raise ValueError((f'{self.__class__.__name__} has no threshold set, '
+                              'call `infer_threshold` before predicting.'))
 
     def _to_tensor(self, X: Union[List, np.ndarray]):
         return torch.as_tensor(X, dtype=torch.float32)
@@ -55,6 +62,7 @@ class TorchOutlierDetector(torch.nn.Module, ABC):
         self.threshold_inferred = True
 
     def predict(self, X: torch.Tensor) -> torch.Tensor:
+        self.check_fitted()
         output = {
             'threshold_inferred': self.threshold_inferred,
             'threshold': self.threshold

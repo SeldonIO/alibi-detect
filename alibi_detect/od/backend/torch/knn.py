@@ -21,16 +21,18 @@ class KNNTorch(TorchOutlierDetector):
     def forward(self, X):
         raw_scores = self.score(X)
         scores = self._accumulator(raw_scores)
+        self.check_threshould_infered()
         preds = scores > self.threshold
         return preds.cpu()
 
     def score(self, X):
+        self.check_fitted()
         K = -self.kernel(X, self.x_ref) if self.kernel is not None else torch.cdist(X, self.x_ref)
         bot_k_dists = torch.topk(K, torch.max(self.ks), dim=1, largest=False)
         all_knn_dists = bot_k_dists.values[:, self.ks-1]
         return all_knn_dists if self.ensemble else all_knn_dists[:, 0]
 
-    def fit(self, x_ref: torch.tensor):
+    def _fit(self, x_ref: torch.tensor):
         self.x_ref = x_ref
         if self.accumulator is not None:
             scores = self.score(x_ref)

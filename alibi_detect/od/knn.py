@@ -28,11 +28,10 @@ class KNN(OutlierDetector):
             construct_name=self.__class__.__name__
         ).verify_backend(backend)
 
-        # TODO: Abstract to pydantic model.
         if isinstance(k, (list, np.ndarray)) and aggregator is None:
             raise ValueError((f'k={k} is type {type(k)} but aggregator is {aggregator}, you must '
-                              'specify at least an aggregator if you want to use the knn detector'
-                              'an ensemble like this.'))
+                              'specify at least an aggregator if you want to use the knn detector '
+                              'ensemble like this.'))
 
         backend, accumulator_cls = backends[backend]
         accumulator = None

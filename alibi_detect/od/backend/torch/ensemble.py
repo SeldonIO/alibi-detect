@@ -60,8 +60,8 @@ class FitMixinTorch:
         super().__init__()
 
     def fit(self, X: torch.Tensor) -> BaseTransformTorch:
-        self._fit(X)
         self._fitted = True
+        self._fit(X)
         return self
 
     def _fit(self, X: torch.Tensor):
