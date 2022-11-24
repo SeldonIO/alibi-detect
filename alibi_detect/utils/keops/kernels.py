@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 from typing import Callable, Optional, Union
 from alibi_detect.utils.frameworks import Framework
+from copy import deepcopy
 
 
 def sigma_mean(x: LazyTensor, y: LazyTensor, dist: LazyTensor, n_min: int = 100) -> torch.Tensor:
@@ -121,7 +122,7 @@ class GaussianRBF(nn.Module):
         """
         Returns a serializable config dict (excluding the input_sigma_fn, which is serialized in alibi_detect.saving).
         """
-        cfg = self.config.copy()
+        cfg = deepcopy(self.config)
         if isinstance(cfg['sigma'], torch.Tensor):
             cfg['sigma'] = cfg['sigma'].detach().cpu().numpy().tolist()
         cfg.update({'flavour': Framework.KEOPS.value})
@@ -207,7 +208,7 @@ class DeepKernel(nn.Module):
         return similarity
 
     def get_config(self) -> dict:
-        return self.config.copy()
+        return deepcopy(self.config)
 
     @classmethod
     def from_config(cls, config):
