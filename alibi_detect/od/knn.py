@@ -1,4 +1,5 @@
-from typing import Callable, Literal, Union, Optional, List, Dict
+from typing import Callable, Union, Optional, List, Dict
+from typing_extensions import Literal
 import numpy as np
 
 from alibi_detect.od.base import OutlierDetector, TransformProtocol, FittedTransformProtocol
