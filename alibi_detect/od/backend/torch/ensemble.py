@@ -50,16 +50,13 @@ class FitMixinTorch:
     """Fit mixin
 
     Utility class that provides fitted checks for alibi-detect objects that require to be fit before use.
-
-    TODO: this should be encorporated into alibi_detect/base.py FitMixinTorch once we can be sure that the
-    behavour is compatible.
     """
     _fitted = False
 
     def __init__(self):
         super().__init__()
 
-    def fit(self, X: torch.Tensor) -> BaseTransformTorch:
+    def fit(self, X: torch.Tensor) -> FitMixinTorch:
         self._fitted = True
         self._fit(X)
         return self
@@ -102,8 +99,9 @@ class PValNormaliser(BaseFittedTransformTorch):
         super().__init__()
         self.val_scores = None
 
-    def _fit(self, val_scores: torch.Tensor):
+    def _fit(self, val_scores: torch.Tensor) -> PValNormaliser:
         self.val_scores = val_scores
+        return self
 
     def _transform(self, scores: torch.Tensor) -> torch.Tensor:
         p_vals = (
@@ -123,9 +121,10 @@ class ShiftAndScaleNormaliser(BaseFittedTransformTorch):
         self.val_means = None
         self.val_scales = None
 
-    def _fit(self, val_scores: torch.Tensor) -> BaseTransformTorch:
+    def _fit(self, val_scores: torch.Tensor) -> ShiftAndScaleNormaliser:
         self.val_means = val_scores.mean(0)[None, :]
         self.val_scales = val_scores.std(0)[None, :]
+        return self
 
     def _transform(self, scores: torch.Tensor) -> torch.Tensor:
         return (scores - self.val_means)/self.val_scales
@@ -221,4 +220,4 @@ class Accumulator(BaseFittedTransformTorch):
 
     def _fit(self, X: torch.Tensor):
         if self.normaliser is not None:
-            X = self.normaliser.fit(X)
+            self.normaliser.fit(X)

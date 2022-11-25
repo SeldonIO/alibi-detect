@@ -12,7 +12,7 @@ class KNNTorch(TorchOutlierDetector):
             kernel: Optional[torch.nn.Module] = None,
             accumulator: Optional[Accumulator] = None
             ):
-        super().__init__()
+        TorchOutlierDetector.__init__(self)
         self.kernel = kernel
         self.ensemble = isinstance(k, (np.ndarray, list, tuple))
         self.ks = torch.tensor(k) if self.ensemble else torch.tensor([k])
@@ -32,7 +32,7 @@ class KNNTorch(TorchOutlierDetector):
         all_knn_dists = bot_k_dists.values[:, self.ks-1]
         return all_knn_dists if self.ensemble else all_knn_dists[:, 0]
 
-    def _fit(self, x_ref: torch.tensor):
+    def _fit(self, x_ref: torch.Tensor):
         self.x_ref = x_ref
         if self.accumulator is not None:
             scores = self.score(x_ref)

@@ -22,36 +22,36 @@ class KNN(OutlierDetector):
     ) -> None:
         super().__init__()
 
-        backend = backend.lower()
+        backend_str: str = backend.lower()
         BackendValidator(
             backend_options={'pytorch': ['pytorch']},
             construct_name=self.__class__.__name__
-        ).verify_backend(backend)
+        ).verify_backend(backend_str)
 
         if isinstance(k, (list, np.ndarray)) and aggregator is None:
             raise ValueError((f'k={k} is type {type(k)} but aggregator is {aggregator}, you must '
                               'specify at least an aggregator if you want to use the knn detector '
                               'ensemble like this.'))
 
-        backend, accumulator_cls = backends[backend]
+        backend_cls, accumulator_cls = backends[backend]
         accumulator = None
         if normaliser is not None or aggregator is not None:
             accumulator = accumulator_cls(
                 normaliser=normaliser,
                 aggregator=aggregator
             )
-        self.backend = backend(k, kernel=kernel, accumulator=accumulator)
+        self.backend = backend_cls(k, kernel=kernel, accumulator=accumulator)
 
     def fit(self, x_ref: Union[np.ndarray, List]) -> None:
         self.backend.fit(self.backend._to_tensor(x_ref))
 
     def score(self, X: Union[np.ndarray, List]) -> np.ndarray:
         score = self.backend.score(self.backend._to_tensor(X))
-        return self.backend._to_numpy(score)
+        return score.numpy()
 
     def infer_threshold(self, x_ref: Union[np.ndarray, List], fpr: float) -> None:
         self.backend.infer_threshold(self.backend._to_tensor(x_ref), fpr)
 
     def predict(self, X: Union[np.ndarray, List]) -> Dict[str, np.ndarray]:
         outputs = self.backend.predict(self.backend._to_tensor(X))
-        return self.backend._to_numpy(outputs)
+        return outputs.numpy()
