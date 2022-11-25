@@ -3,6 +3,15 @@ import torch
 
 from alibi_detect.od.backend.torch.knn import KNNTorch
 from alibi_detect.utils.pytorch.kernels import GaussianRBF
+from alibi_detect.od.backend.torch.ensemble import Accumulator, PValNormaliser, AverageAggregator
+
+
+@pytest.fixture(scope='session')
+def accumulator(request):
+    return Accumulator(
+        normaliser=PValNormaliser(),
+        aggregator=AverageAggregator()
+    )
 
 
 def test_knn_torch_backend():
