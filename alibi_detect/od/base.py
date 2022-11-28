@@ -2,11 +2,16 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 import numpy as np
 import logging
-from typing import Dict
+from typing import Dict, TypedDict, Union
 from typing_extensions import Protocol, runtime_checkable
 from alibi_detect.base import BaseDetector
 
 logger = logging.getLogger(__name__)
+
+
+class OutlierDetectorOutput(TypedDict):
+    meta: Dict[str, str]
+    data: Dict[str, Union[bool, np.ndarray]]
 
 
 class OutlierDetector(BaseDetector, ABC):
@@ -32,7 +37,7 @@ class OutlierDetector(BaseDetector, ABC):
         pass
 
     @abstractmethod
-    def predict(self, X: np.ndarray) -> Dict[str, np.ndarray]:
+    def predict(self, X: np.ndarray) -> OutlierDetectorOutput:
         pass
 
 
