@@ -18,7 +18,7 @@ class KNN(OutlierDetector):
         self,
         k: Union[int, np.ndarray],
         kernel: Optional[Callable] = None,
-        normaliser: Optional[Union[TransformProtocol, FittedTransformProtocol]] = None,
+        normalizer: Optional[Union[TransformProtocol, FittedTransformProtocol]] = None,
         aggregator: Optional[TransformProtocol] = None,
         backend: Literal['pytorch'] = 'pytorch'
     ) -> None:
@@ -32,8 +32,8 @@ class KNN(OutlierDetector):
             to aggregate the scores.
         kernel
             Kernel function to use for outlier detection. If None, `torch.cdist` is used.
-        normaliser
-            Normaliser to use for outlier detection. If None, no normalisation is applied.
+        normalizer
+            Normalizer to use for outlier detection. If None, no normalisation is applied.
         aggregator
             Aggregator to use for outlier detection. If None, no aggregation is applied. If an array is passed for `k`,
             then an aggregator is required.
@@ -62,9 +62,9 @@ class KNN(OutlierDetector):
 
         backend_cls, accumulator_cls = backends[backend]
         accumulator = None
-        if normaliser is not None or aggregator is not None:
+        if normalizer is not None or aggregator is not None:
             accumulator = accumulator_cls(
-                normaliser=normaliser,
+                normalizer=normalizer,
                 aggregator=aggregator
             )
         self.backend = backend_cls(k, kernel=kernel, accumulator=accumulator)

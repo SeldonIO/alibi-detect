@@ -112,7 +112,7 @@ class BaseFittedTransformTorch(BaseTransformTorch, FitMixinTorch):
         return self._transform(X)
 
 
-class PValNormaliser(BaseFittedTransformTorch):
+class PValNormalizer(BaseFittedTransformTorch):
     def __init__(self):
         """Maps scores to there p values.
 
@@ -124,7 +124,7 @@ class PValNormaliser(BaseFittedTransformTorch):
         super().__init__()
         self.val_scores = None
 
-    def _fit(self, val_scores: torch.Tensor) -> PValNormaliser:
+    def _fit(self, val_scores: torch.Tensor) -> PValNormalizer:
         """Fit transform on scores.
 
         Parameters
@@ -157,7 +157,7 @@ class PValNormaliser(BaseFittedTransformTorch):
         return 1 - p_vals
 
 
-class ShiftAndScaleNormaliser(BaseFittedTransformTorch):
+class ShiftAndScaleNormalizer(BaseFittedTransformTorch):
     def __init__(self):
         """Maps scores to their normalised values.
 
@@ -168,7 +168,7 @@ class ShiftAndScaleNormaliser(BaseFittedTransformTorch):
         self.val_means = None
         self.val_scales = None
 
-    def _fit(self, val_scores: torch.Tensor) -> ShiftAndScaleNormaliser:
+    def _fit(self, val_scores: torch.Tensor) -> ShiftAndScaleNormalizer:
         """Computes the mean and standard deviation of the scores and stores them.
 
         Parameters
@@ -306,27 +306,27 @@ class MinAggregator(BaseTransformTorch):
 
 class Accumulator(BaseFittedTransformTorch):
     def __init__(self,
-                 normaliser: Optional[BaseFittedTransformTorch] = None,
+                 normalizer: Optional[BaseFittedTransformTorch] = None,
                  aggregator: BaseTransformTorch = AverageAggregator()):
         """Accumulates the scores of the detectors in an ensemble. Can be used to normalise and aggregate
         the scores from an ensemble of detectors.
 
         Parameters
         ----------
-        normaliser
+        normalizer
             `BaseFittedTransformTorch` object to normalise the scores. If `None` then no normalisation
             is applied.
         aggregator
             `BaseTransformTorch` object to aggregate the scores.
         """
         super().__init__()
-        self.normaliser = normaliser
-        if self.normaliser is None:
+        self.normalizer = normalizer
+        if self.normalizer is None:
             self.fitted = True
         self.aggregator = aggregator
 
     def _transform(self, X: torch.Tensor):
-        """Apply the normaliser and aggregator to the scores.
+        """Apply the normalizer and aggregator to the scores.
 
         Parameters
         ----------
@@ -337,18 +337,18 @@ class Accumulator(BaseFittedTransformTorch):
         -------
         `Torch.Tensor` of aggregated and normalised scores.
         """
-        if self.normaliser is not None:
-            X = self.normaliser(X)
+        if self.normalizer is not None:
+            X = self.normalizer(X)
         X = self.aggregator(X)
         return X
 
     def _fit(self, X: torch.Tensor):
-        """Fit the normaliser to the scores.
+        """Fit the normalizer to the scores.
 
         Parameters
         ----------
         X
             `Torch.Tensor` of scores from ensemble of detectors.
         """
-        if self.normaliser is not None:
-            self.normaliser.fit(X)
+        if self.normalizer is not None:
+            self.normalizer.fit(X)

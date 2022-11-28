@@ -4,11 +4,11 @@ import torch
 
 from alibi_detect.od.knn import KNN
 from alibi_detect.od.backend import AverageAggregatorTorch, TopKAggregatorTorch, MaxAggregatorTorch, \
-    MinAggregatorTorch, ShiftAndScaleNormaliserTorch, PValNormaliserTorch
+    MinAggregatorTorch, ShiftAndScaleNormalizerTorch, PValNormalizerTorch
 
 
-def make_knn_detector(k=5, aggregator=None, normaliser=None):
-    knn_detector = KNN(k=k, aggregator=aggregator, normaliser=normaliser)
+def make_knn_detector(k=5, aggregator=None, normalizer=None):
+    knn_detector = KNN(k=k, aggregator=aggregator, normalizer=normalizer)
     x_ref = np.random.randn(100, 2)
     knn_detector.fit(x_ref)
     knn_detector.infer_threshold(x_ref, 0.1)
@@ -56,12 +56,12 @@ def test_fitted_knn_predict():
 
 @pytest.mark.parametrize("aggregator", [AverageAggregatorTorch, lambda: TopKAggregatorTorch(k=7),
                                         MaxAggregatorTorch, MinAggregatorTorch])
-@pytest.mark.parametrize("normaliser", [ShiftAndScaleNormaliserTorch, PValNormaliserTorch, lambda: None])
-def test_unfitted_knn_ensemble(aggregator, normaliser):
+@pytest.mark.parametrize("normalizer", [ShiftAndScaleNormalizerTorch, PValNormalizerTorch, lambda: None])
+def test_unfitted_knn_ensemble(aggregator, normalizer):
     knn_detector = KNN(
         k=[8, 9, 10],
         aggregator=aggregator(),
-        normaliser=normaliser()
+        normalizer=normalizer()
     )
     x = np.array([[0, 10], [0.1, 0]])
     with pytest.raises(ValueError) as err:
@@ -71,12 +71,12 @@ def test_unfitted_knn_ensemble(aggregator, normaliser):
 
 @pytest.mark.parametrize("aggregator", [AverageAggregatorTorch, lambda: TopKAggregatorTorch(k=7),
                                         MaxAggregatorTorch, MinAggregatorTorch])
-@pytest.mark.parametrize("normaliser", [ShiftAndScaleNormaliserTorch, PValNormaliserTorch, lambda: None])
-def test_fitted_knn_ensemble(aggregator, normaliser):
+@pytest.mark.parametrize("normalizer", [ShiftAndScaleNormalizerTorch, PValNormalizerTorch, lambda: None])
+def test_fitted_knn_ensemble(aggregator, normalizer):
     knn_detector = KNN(
         k=[8, 9, 10],
         aggregator=aggregator(),
-        normaliser=normaliser()
+        normalizer=normalizer()
     )
     x_ref = np.random.randn(100, 2)
     knn_detector.fit(x_ref)
@@ -92,12 +92,12 @@ def test_fitted_knn_ensemble(aggregator, normaliser):
 
 @pytest.mark.parametrize("aggregator", [AverageAggregatorTorch, lambda: TopKAggregatorTorch(k=7),
                                         MaxAggregatorTorch, MinAggregatorTorch])
-@pytest.mark.parametrize("normaliser", [ShiftAndScaleNormaliserTorch, PValNormaliserTorch, lambda: None])
-def test_fitted_knn_ensemble_predict(aggregator, normaliser):
+@pytest.mark.parametrize("normalizer", [ShiftAndScaleNormalizerTorch, PValNormalizerTorch, lambda: None])
+def test_fitted_knn_ensemble_predict(aggregator, normalizer):
     knn_detector = make_knn_detector(
         k=[8, 9, 10],
         aggregator=aggregator(),
-        normaliser=normaliser()
+        normalizer=normalizer()
     )
     x = np.array([[0, 10], [0, 0.1]])
     y = knn_detector.predict(x)
@@ -117,9 +117,9 @@ def test_incorrect_knn_ensemble_init():
 
 @pytest.mark.parametrize("aggregator", [AverageAggregatorTorch, lambda: TopKAggregatorTorch(k=7),
                                         MaxAggregatorTorch, MinAggregatorTorch])
-@pytest.mark.parametrize("normaliser", [ShiftAndScaleNormaliserTorch, PValNormaliserTorch, lambda: None])
-def test_knn_ensemble_torch_script(aggregator, normaliser):
-    knn_detector = make_knn_detector(k=[5, 6, 7], aggregator=aggregator(), normaliser=normaliser())
+@pytest.mark.parametrize("normalizer", [ShiftAndScaleNormalizerTorch, PValNormalizerTorch, lambda: None])
+def test_knn_ensemble_torch_script(aggregator, normalizer):
+    knn_detector = make_knn_detector(k=[5, 6, 7], aggregator=aggregator(), normalizer=normalizer())
     tsknn = torch.jit.script(knn_detector.backend)
     x = torch.tensor([[0, 10], [0, 0.1]])
     y = tsknn(x)
