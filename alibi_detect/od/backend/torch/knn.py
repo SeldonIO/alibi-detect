@@ -77,7 +77,7 @@ class KNNTorch(TorchOutlierDetector):
         """
         self.check_fitted()
         K = -self.kernel(X, self.x_ref) if self.kernel is not None else torch.cdist(X, self.x_ref)
-        bot_k_dists = torch.topk(K, torch.max(self.ks), dim=1, largest=False)
+        bot_k_dists = torch.topk(K, int(torch.max(self.ks)), dim=1, largest=False)
         all_knn_dists = bot_k_dists.values[:, self.ks-1]
         return all_knn_dists if self.ensemble else all_knn_dists[:, 0]
 

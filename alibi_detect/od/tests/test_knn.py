@@ -29,6 +29,7 @@ def test_fitted_knn_single_score():
     knn_detector.fit(x_ref)
     x = np.array([[0, 10], [0.1, 0]])
     y = knn_detector.predict(x)
+    y = y['data']
     assert y['scores'][0] > 5
     assert y['scores'][1] < 1
 
@@ -44,6 +45,7 @@ def test_fitted_knn_predict():
     knn_detector.infer_threshold(x_ref, 0.1)
     x = np.array([[0, 10], [0, 0.1]])
     y = knn_detector.predict(x)
+    y = y['data']
     assert y['scores'][0] > 5
     assert y['scores'][1] < 1
     assert y['threshold_inferred']
@@ -80,6 +82,7 @@ def test_fitted_knn_ensemble(aggregator, normaliser):
     knn_detector.fit(x_ref)
     x = np.array([[0, 10], [0, 0.1]])
     y = knn_detector.predict(x)
+    y = y['data']
     assert y['scores'].all()
     assert not y['threshold_inferred']
     assert y['threshold'] is None
@@ -98,6 +101,7 @@ def test_fitted_knn_ensemble_predict(aggregator, normaliser):
     )
     x = np.array([[0, 10], [0, 0.1]])
     y = knn_detector.predict(x)
+    y = y['data']
     assert y['threshold_inferred']
     assert y['threshold'] is not None
     assert y['p_vals'].all()
