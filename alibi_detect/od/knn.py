@@ -27,14 +27,15 @@ class KNN(OutlierDetector):
         Parameters
         ----------
         k
-            Number of nearest neighbours to use for outlier detection. If an array is passed, a aggregator is required to
-            aggregate the scores.
+            Number of nearest neighbours to use for outlier detection. If an array is passed, an aggregator is required
+            to aggregate the scores.
         kernel
             Kernel function to use for outlier detection. If None, `torch.cdist` is used.
         normaliser
             Normaliser to use for outlier detection. If None, no normalisation is applied.
         aggregator
-            Aggregator to use for outlier detection. If None, no aggregation is applied.
+            Aggregator to use for outlier detection. If None, no aggregation is applied. If an array is passed for `k`,
+            then an aggregator is required.
         backend
             Backend used for outlier detection. Defaults to `'pytorch'`. Options are `'pytorch'`.
 
@@ -87,7 +88,7 @@ class KNN(OutlierDetector):
 
         Returns
         -------
-        Anomaly scores. The shape of the scores is `(n_instances,)`. The higher the score, the more anomalous the 
+        Anomaly scores. The shape of the scores is `(n_instances,)`. The higher the score, the more anomalous the
         instance.
         """
         score = self.backend.score(self.backend._to_tensor(X))
