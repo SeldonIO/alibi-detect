@@ -75,7 +75,7 @@ class OutlierDetector(BaseDetector, ABC):
         ----------
         X
             Data to predict.
- 
+
         Returns
         -------
         Dict with keys 'data' and 'meta'. 'data' contains the outlier scores. If threshold inference was performed,

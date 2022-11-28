@@ -124,6 +124,25 @@ def test_od_dependencies(opt_dep):
     check_correct_dependencies(od, dependency_map, opt_dep)
 
 
+def test_od_backend_dependencies(opt_dep):
+    """Tests that the od module correctly protects against uninstalled optional dependencies.
+    """
+    dependency_map = defaultdict(lambda: ['default'])
+    for dependency, relations in [
+             ('PValNormalizerTorch', ['torch', 'keops']),
+             ('ShiftAndScaleNormalizerTorch', ['torch', 'keops']),
+             ('TopKAggregatorTorch', ['torch', 'keops']),
+             ('AverageAggregatorTorch', ['torch', 'keops']),
+             ('MaxAggregatorTorch', ['torch', 'keops']),
+             ('MinAggregatorTorch', ['torch', 'keops']),
+             ('AccumulatorTorch', ['torch', 'keops']),
+             ('KNNTorch', ['torch', 'keops']),
+            ]:
+        dependency_map[dependency] = relations
+    from alibi_detect.od import backend as od_backend
+    check_correct_dependencies(od_backend, dependency_map, opt_dep)
+
+
 def test_tensorflow_model_dependencies(opt_dep):
     """Tests that the tensorflow models module correctly protects against uninstalled optional dependencies.
     """
