@@ -26,7 +26,7 @@ class KNNTorch(TorchOutlierDetector):
             while computing the k nearest neighbor distance.
         accumulator
             If `k` is an array of integers then the accumulator must not be None. Should be an instance
-            of :py:obj:`alibi_detect.od.backend.torch.ensemble.Accumulator`. Responsible for combining 
+            of :py:obj:`alibi_detect.od.backend.torch.ensemble.Accumulator`. Responsible for combining
             multiple scores into a single score.
         """
         TorchOutlierDetector.__init__(self)
@@ -64,7 +64,7 @@ class KNNTorch(TorchOutlierDetector):
         Parameters
         ----------
         X
-            Score a tensor of instances. First dimesnion corresponds to batch. 
+            Score a tensor of instances. First dimesnion corresponds to batch.
 
         Returns
         -------
