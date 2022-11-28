@@ -1,6 +1,8 @@
 from typing import Optional, Union, List
+
 import numpy as np
 import torch
+
 from alibi_detect.od.backend.torch.ensemble import Accumulator
 from alibi_detect.od.backend.torch.base import TorchOutlierDetector
 

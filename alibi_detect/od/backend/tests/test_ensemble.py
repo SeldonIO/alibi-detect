@@ -1,5 +1,6 @@
 import pytest
 import torch
+
 from alibi_detect.od.backend.torch import ensemble
 
 

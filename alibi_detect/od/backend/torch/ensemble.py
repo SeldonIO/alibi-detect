@@ -1,16 +1,10 @@
 from __future__ import annotations
-
-import logging
-
-from typing import Optional
 from abc import ABC, abstractmethod
+from typing import Optional
 
 import torch
-from torch.nn import Module
 import numpy as np
-
-
-logger = logging.getLogger(__name__)
+from torch.nn import Module
 
 
 class BaseTransformTorch(Module, ABC):

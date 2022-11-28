@@ -1,14 +1,12 @@
 from __future__ import annotations
-import numpy as np
 from typing import List, Dict, Union, Optional
-import torch
-from alibi_detect.od.backend.torch.ensemble import FitMixinTorch
 from dataclasses import dataclass, asdict
-
-import logging
 from abc import ABC, abstractmethod
 
-logger = logging.getLogger(__name__)
+import numpy as np
+import torch
+
+from alibi_detect.od.backend.torch.ensemble import FitMixinTorch
 
 
 @dataclass
