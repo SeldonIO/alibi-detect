@@ -5,6 +5,7 @@ import torch
 from alibi_detect.od.knn import KNN
 from alibi_detect.od.backend import AverageAggregatorTorch, TopKAggregatorTorch, MaxAggregatorTorch, \
     MinAggregatorTorch, ShiftAndScaleNormalizerTorch, PValNormalizerTorch
+from sklearn.datasets import make_moons
 
 
 def make_knn_detector(k=5, aggregator=None, normalizer=None):
@@ -132,3 +133,52 @@ def test_knn_single_torchscript():
     x = torch.tensor([[0, 10], [0, 0.1]])
     y = tsknn(x)
     assert torch.all(y == torch.tensor([True, False]))
+
+
+@pytest.mark.parametrize("aggregator", [AverageAggregatorTorch, lambda: TopKAggregatorTorch(k=7),
+                                        MaxAggregatorTorch, MinAggregatorTorch])
+@pytest.mark.parametrize("normalizer", [ShiftAndScaleNormalizerTorch, PValNormalizerTorch, lambda: None])
+def test_knn_ensemble_integration(aggregator, normalizer):
+    knn_detector = KNN(
+        k=[10, 14, 18],
+        aggregator=aggregator(),
+        normalizer=normalizer()
+    )
+    X_ref, _ = make_moons(1001, shuffle=True, noise=0.05, random_state=None)
+    X_ref, x_inlier = X_ref[0:1000], X_ref[1000][None]
+    knn_detector.fit(X_ref)
+    knn_detector.infer_threshold(X_ref, 0.1)
+    result = knn_detector.predict(x_inlier)
+    result = result['data']['preds'][0]
+    assert not result
+
+    x_outlier = np.array([[-1, 1.5]])
+    result = knn_detector.predict(x_outlier)
+    result = result['data']['preds'][0]
+    assert result
+
+    tsknn = torch.jit.script(knn_detector.backend)
+    x = torch.tensor([x_inlier[0], x_outlier[0]], dtype=torch.float32)
+    y = tsknn(x)
+    assert torch.all(y == torch.tensor([False, True]))
+
+
+def test_knn_integration():
+    knn_detector = KNN(k=18)
+    X_ref, _ = make_moons(1001, shuffle=True, noise=0.05, random_state=None)
+    X_ref, x_inlier = X_ref[0:1000], X_ref[1000][None]
+    knn_detector.fit(X_ref)
+    knn_detector.infer_threshold(X_ref, 0.1)
+    result = knn_detector.predict(x_inlier)
+    result = result['data']['preds'][0]
+    assert not result
+
+    x_outlier = np.array([[-1, 1.5]])
+    result = knn_detector.predict(x_outlier)
+    result = result['data']['preds'][0]
+    assert result
+
+    tsknn = torch.jit.script(knn_detector.backend)
+    x = torch.tensor([x_inlier[0], x_outlier[0]], dtype=torch.float32)
+    y = tsknn(x)
+    assert torch.all(y == torch.tensor([False, True]))
