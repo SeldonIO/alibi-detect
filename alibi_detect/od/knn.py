@@ -89,7 +89,7 @@ class KNN(OutlierDetector):
 
         Returns
         -------
-        Anomaly scores. The shape of the scores is `(n_instances,)`. The higher the score, the more anomalous the
+        Anomaly scores. The shape of the scores is `(n_instances,)`. The higher the score, the more anomalous the \
         instance.
         """
         score = self.backend.score(self.backend._to_tensor(X))
@@ -117,9 +117,9 @@ class KNN(OutlierDetector):
 
         Returns
         -------
-        Dict with keys 'data' and 'meta'. 'data' contains the outlier scores. If threshold inference was performed,
-        'data' also contains the threshold value, outlier labels and p_vals . The shape of the scores is
-        `(n_instances,)`. The higher the score, the more anomalous the instance. 'meta' contains information about
+        Dict with keys 'data' and 'meta'. 'data' contains the outlier scores. If threshold inference was performed, \
+        'data' also contains the threshold value, outlier labels and p_vals . The shape of the scores is \
+        `(n_instances,)`. The higher the score, the more anomalous the instance. 'meta' contains information about \
         the detector.
         """
         outputs = self.backend.predict(self.backend._to_tensor(X))
