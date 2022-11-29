@@ -1,17 +1,11 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import Dict, TypedDict, Union
+from typing import Dict, Any
 
 from typing_extensions import Protocol, runtime_checkable
 import numpy as np
 
 from alibi_detect.base import BaseDetector
-
-
-class OutlierDetectorOutput(TypedDict):
-    """Outlier detector output type definition."""
-    meta: Dict[str, str]
-    data: Dict[str, Union[bool, np.ndarray]]
 
 
 class OutlierDetector(BaseDetector, ABC):
@@ -67,7 +61,7 @@ class OutlierDetector(BaseDetector, ABC):
         pass
 
     @abstractmethod
-    def predict(self, X: np.ndarray) -> OutlierDetectorOutput:
+    def predict(self, X: np.ndarray) -> Dict[str, Any]:
         """
         Predict whether the instances in X are outliers or not.
 

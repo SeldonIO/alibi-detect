@@ -1,9 +1,9 @@
-from typing import Callable, Union, Optional, List
+from typing import Callable, Union, Optional, List, Dict, Any
 
 from typing_extensions import Literal
 import numpy as np
 
-from alibi_detect.od.base import OutlierDetector, TransformProtocol, FittedTransformProtocol, OutlierDetectorOutput
+from alibi_detect.od.base import OutlierDetector, TransformProtocol, FittedTransformProtocol
 from alibi_detect.od.backend import KNNTorch, AccumulatorTorch
 from alibi_detect.utils.frameworks import BackendValidator
 
@@ -107,7 +107,7 @@ class KNN(OutlierDetector):
         """
         self.backend.infer_threshold(self.backend._to_tensor(x_ref), fpr)
 
-    def predict(self, X: Union[np.ndarray, List]) -> OutlierDetectorOutput:
+    def predict(self, X: Union[np.ndarray, List]) -> Dict[str, Any]:
         """Predict whether the instances in X are outliers or not.
 
         Parameters
@@ -123,7 +123,7 @@ class KNN(OutlierDetector):
         the detector.
         """
         outputs = self.backend.predict(self.backend._to_tensor(X))
-        output: OutlierDetectorOutput = {
+        output: Dict[str, Any] = {
             'data': outputs.numpy(),
             'meta': self.meta
         }
