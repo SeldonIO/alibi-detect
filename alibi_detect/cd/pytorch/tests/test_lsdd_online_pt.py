@@ -117,7 +117,7 @@ def test_lsdd_online_state_functional(tmp_path):
     A functional test of save/load/reset methods or LSDDDriftOnlineTorch. State is saved, reset, and loaded, with
     prediction results checked.
     """
-    n = 1000  # Use larger n than above as will compare test stats averaged over n
+    n = 100
     x_ref = np.random.normal(0, 1, (n, n_classes))
     x = np.random.normal(0.1, 1, (n, n_classes))
 
@@ -137,13 +137,12 @@ def test_lsdd_online_state_functional(tmp_path):
     for t, x_t in enumerate(x):
         preds = dd.predict(x_t)
         test_stats_2.append(preds['data']['test_stat'])
-    # Randomness involved in .reset(), but test stats should still be statistically equivalent
-    assert np.mean(test_stats_2) == pytest.approx(np.mean(test_stats_1), rel=None, abs=1e-2)
+    np.testing.assert_array_equal(test_stats_1, test_stats_2)
 
-    # Load state from t=20 timestep and check results of t=21 approx. equal
+    # Load state from t=20 timestep and check results of t=21 equal
     dd.load_state(tmp_path)
     new_pred = dd.predict(x[21])
-    assert new_pred['data']['test_stat'] == pytest.approx(test_stats_1[21], rel=None, abs=1e-2)
+    assert new_pred['data']['test_stat'] == test_stats_1[21]
 
 
 def test_lsdd_online_state_unit(tmp_path):
@@ -159,7 +158,7 @@ def test_lsdd_online_state_unit(tmp_path):
         orig_state_dict[key] = getattr(dd, key)
     # Save, reset and load
     dd.save_state(tmp_path)
-    dd.reset()
+    dd.reset_state()
     dd.load_state(tmp_path)
     # Compare state to original
     for key, orig_val in orig_state_dict.items():

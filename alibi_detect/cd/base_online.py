@@ -119,6 +119,10 @@ class BaseMultiDriftOnline(BaseDetector):
     def load_state(self, filepath: Union[str, os.PathLike]):
         pass
 
+    @abstractmethod
+    def reset(self) -> None:
+        pass
+
     def _set_state_path(self, filepath: Union[str, os.PathLike]):
         self.state_path = Path(filepath)
         self.state_path.mkdir(parents=True, exist_ok=True)
@@ -149,11 +153,6 @@ class BaseMultiDriftOnline(BaseDetector):
         self.t = 0  # corresponds to a test set of ref data
         self.test_stats = np.array([])  # type: ignore[var-annotated]
         self.drift_preds = np.array([])  # type: ignore[var-annotated]
-        self._configure_ref_subset()
-
-    def reset(self) -> None:
-        "Resets the detector but does not reconfigure thresholds."
-        self._initialise()
 
     def predict(self, x_t: Union[np.ndarray, Any], return_test_stat: bool = True,
                 ) -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:

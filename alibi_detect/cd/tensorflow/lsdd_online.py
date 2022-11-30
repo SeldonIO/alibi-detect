@@ -9,6 +9,7 @@ from alibi_detect.utils.frameworks import Framework
 
 
 class LSDDDriftOnlineTF(BaseMultiDriftOnline):
+    init_test_inds: Optional[tf.Tensor] = None
     # State attributes (init in _configure_ref_subset, called in _initialise)
     test_window: tf.Tensor
     k_xtc: tf.Tensor
@@ -165,6 +166,11 @@ class LSDDDriftOnlineTF(BaseMultiDriftOnline):
         etw_size = 2*self.window_size-1  # etw = extended test window
         nkc_size = self.n - self.n_kernel_centers  # nkc = non-kernel-centers
         rw_size = nkc_size - etw_size  # rw = ref-window
+        # Check if already configured, re-initialise stateful attributes w/o reconfiguring if so
+        if self.init_test_inds is not None:
+            self.test_window = self.x_ref_eff[self.init_test_inds]
+            self.k_xtc = self.kernel(self.test_window, self.kernel_centers)
+            return
         # Make split and ensure it doesn't cause an initial detection
         lsdd_init = None
         while lsdd_init is None or lsdd_init >= self.get_threshold(0):

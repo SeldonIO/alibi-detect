@@ -112,6 +112,7 @@ class LSDDDriftOnlineTorch(BaseMultiDriftOnline):
 
         self._configure_kernel_centers()
         self._configure_thresholds()
+        self._configure_ref_subset()
         self._initialise()
 
     def _configure_normalization(self, eps: float = 1e-12):
@@ -173,6 +174,10 @@ class LSDDDriftOnlineTorch(BaseMultiDriftOnline):
         self.H_lam_inv = H_lam_inv
 
     def _configure_ref_subset(self):
+        """
+        Configure reference subset. If already configured, the stateful attributes `test_window` and `k_xtc` are
+        reset without re-configuring a new reference subset.
+        """
         etw_size = 2 * self.window_size - 1  # etw = extended test window
         nkc_size = self.n - self.n_kernel_centers  # nkc = non-kernel-centers
         rw_size = nkc_size - etw_size  # rw = ref-window
@@ -225,7 +230,7 @@ class LSDDDriftOnlineTorch(BaseMultiDriftOnline):
         filepath
             The directory to save state to.
         """
-        super()._set_state_path(filepath)
+        self._set_state_path(filepath)
         state_dict = {
             't': self.t,
             'test_window': self.test_window,
@@ -243,8 +248,16 @@ class LSDDDriftOnlineTorch(BaseMultiDriftOnline):
         filepath
             The directory to load state from.
         """
-        super()._set_state_path(filepath)
+        self._set_state_path(filepath)
         state_dict = torch.load(self.state_path.joinpath('state_dict.pt'))
         self.t = state_dict.get('t')
         self.test_window = state_dict.get('test_window')
         self.k_xtc = state_dict.get('k_xtc')
+
+    def reset(self):
+        """
+        Resets the detector to its initial (t=0) state. This does not include reconfiguring thresholds.
+        """
+        self._initialise()
+        self.test_window = self.x_ref_eff[self.init_test_inds]
+        self.k_xtc = self.kernel(self.test_window, self.kernel_centers)

@@ -801,7 +801,7 @@ def test_save_onlinefetdrift(data, tmp_path, seed):
 
 @parametrize("detector", [CVMDriftOnline, MMDDriftOnline, LSDDDriftOnline])
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
-def test_save_online_state(detector, data, tmp_path):
+def test_save_online_state(detector, data, seed, tmp_path):
     """
     Test the saving (and loading) of online detectors' state when `save_state=True` is passed to `save_detector`.
     To simplify data loading `FETDriftOnline` is skipped.
@@ -811,24 +811,30 @@ def test_save_online_state(detector, data, tmp_path):
     if detector == CVMDriftOnline:  # univariate
         dd = detector(X_ref, ert=100, window_sizes=[10])
     else:  # multivariate
-        dd = detector(X_ref, ert=100, window_size=10, backend='pytorch')
-    dd.predict(X_h0[0])
+        with fixed_seed(seed):
+            dd = detector(X_ref, ert=100, window_size=10, backend='pytorch')
+    # Run for 50 time-steps
+    test_stats = []
+    for t, x_t in enumerate(X_h0[:50]):
+        test_stats.append(dd.predict(x_t)['data']['test_stat'])
+        if t == 20:
+            # Save detector (with state)
+            save_detector(dd, tmp_path, save_state=True)
 
-    # Save detector (with state)
-    save_detector(dd, tmp_path, save_state=True)
     # Check state/ dir created
     state_path = dd.state_path if detector == CVMDriftOnline else dd._detector.state_path
     assert state_path == tmp_path.joinpath('state')
     assert state_path.is_dir()
 
     # Load
-    dd_new = load_detector(tmp_path)
-    # Compare new state against old (only comparing attributes shared by all detectors)
-    assert dd_new.t == dd.t
-    if detector == CVMDriftOnline:
-        np.testing.assert_array_equal(dd_new.xs, dd.xs)
+    with fixed_seed(seed):
+        dd_new = load_detector(tmp_path)
+    # Check attributes and compare predictions at t=21
+    assert dd_new.t == 21
+    if detector == LSDDDriftOnline:  # Often a small (~1e-6) difference in LSDD test stats post-load # TODO - why?
+        np.testing.assert_array_almost_equal(dd_new.predict(X_h0[21])['data']['test_stat'], test_stats[21], 5)
     else:
-        np.testing.assert_array_equal(dd_new._detector.test_window, dd._detector.test_window)
+        np.testing.assert_array_equal(dd_new.predict(X_h0[21])['data']['test_stat'], test_stats[21])
 
 
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
