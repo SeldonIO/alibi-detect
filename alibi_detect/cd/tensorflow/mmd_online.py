@@ -1,4 +1,3 @@
-import os
 from tqdm import tqdm
 import numpy as np
 import tensorflow as tf
@@ -10,6 +9,8 @@ from alibi_detect.utils.frameworks import Framework
 
 
 class MMDDriftOnlineTF(BaseMultiDriftOnline):
+    online_state_keys: tuple = ('t', 'test_window', 'k_xy')
+
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
@@ -72,7 +73,8 @@ class MMDDriftOnlineTF(BaseMultiDriftOnline):
             input_shape=input_shape,
             data_type=data_type
         )
-        self.meta.update({'backend': Framework.TENSORFLOW.value})
+        self.backend = Framework.TENSORFLOW.value
+        self.meta.update({'backend': self.backend})
 
         # initialize kernel
         if isinstance(sigma, np.ndarray):
@@ -216,36 +218,3 @@ class MMDDriftOnlineTF(BaseMultiDriftOnline):
                 2 * tf.reduce_mean(self.k_xy)
         )
         return mmd.numpy()
-
-    def save_state(self, filepath: Union[str, os.PathLike]):
-        """
-        Save a detector's state to disk in order to generate a checkpoint.
-
-        Parameters
-        ----------
-        filepath
-            The directory to save state to.
-        """
-        super()._set_state_path(filepath)
-        state_dict = {
-            't': self.t,
-            'test_window': self.test_window,
-            'k_xy': self.k_xy
-        }
-        np.savez(self.state_path.joinpath('state.npz'), **state_dict)
-
-    def load_state(self, filepath: Union[str, os.PathLike]):
-        """
-        Load the detector's state from disk, in order to restart from a checkpoint previously generated with
-        `save_state`.
-
-        Parameters
-        ----------
-        filepath
-            The directory to load state from.
-        """
-        super()._set_state_path(filepath)
-        state_dict = np.load(self.state_path.joinpath('state.npz'))
-        self.t = state_dict.get('t')
-        self.test_window = state_dict.get('test_window')
-        self.k_xy = state_dict.get('k_xy')

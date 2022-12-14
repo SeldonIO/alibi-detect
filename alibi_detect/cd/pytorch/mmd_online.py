@@ -1,4 +1,3 @@
-import os
 from tqdm import tqdm
 import numpy as np
 import torch
@@ -11,6 +10,8 @@ from alibi_detect.utils.frameworks import Framework
 
 
 class MMDDriftOnlineTorch(BaseMultiDriftOnline):
+    online_state_keys: tuple = ('t', 'test_window', 'k_xy')
+
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
@@ -77,7 +78,8 @@ class MMDDriftOnlineTorch(BaseMultiDriftOnline):
             input_shape=input_shape,
             data_type=data_type
         )
-        self.meta.update({'backend': Framework.PYTORCH.value})
+        self.backend = Framework.PYTORCH.value
+        self.meta.update({'backend': self.backend})
 
         # set device
         self.device = get_device(device)
@@ -224,36 +226,3 @@ class MMDDriftOnlineTorch(BaseMultiDriftOnline):
                 2 * self.k_xy.mean()
         )
         return float(mmd.detach().cpu())
-
-    def save_state(self, filepath: Union[str, os.PathLike]):
-        """
-        Save a detector's state to disk in order to generate a checkpoint.
-
-        Parameters
-        ----------
-        filepath
-            The directory to save state to.
-        """
-        super()._set_state_path(filepath)
-        state_dict = {
-            't': self.t,
-            'test_window': self.test_window,
-            'k_xy': self.k_xy
-        }
-        torch.save(state_dict, self.state_path.joinpath('state_dict.pt'))
-
-    def load_state(self, filepath: Union[str, os.PathLike]):
-        """
-        Load the detector's state from disk, in order to restart from a checkpoint previously generated with
-        `save_state`.
-
-        Parameters
-        ----------
-        filepath
-            The directory to load state from.
-        """
-        super()._set_state_path(filepath)
-        state_dict = torch.load(self.state_path.joinpath('state_dict.pt'))
-        self.t = state_dict.get('t')
-        self.test_window = state_dict.get('test_window')
-        self.k_xy = state_dict.get('k_xy')

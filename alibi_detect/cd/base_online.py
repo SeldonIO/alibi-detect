@@ -2,12 +2,14 @@ import os
 from pathlib import Path
 import logging
 from abc import abstractmethod
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Union, Tuple
 
 import numpy as np
 from alibi_detect.base import BaseDetector, concept_drift_dict
 from alibi_detect.cd.utils import get_input_shape
-from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
+from alibi_detect.utils.frameworks import Framework, has_pytorch, has_tensorflow
+from alibi_detect.utils._state import save_state_dict, load_state_dict
+from alibi_detect.utils._types import Literal
 
 if has_pytorch:
     import torch
@@ -19,8 +21,9 @@ logger = logging.getLogger(__name__)
 
 
 class BaseMultiDriftOnline(BaseDetector):
-    state_path: Path
     thresholds: np.ndarray
+    backend: Literal['pytorch', 'tensorflow']
+    online_state_keys: Tuple[str, ...]
 
     def __init__(
             self,
@@ -109,25 +112,44 @@ class BaseMultiDriftOnline(BaseDetector):
     def _update_state(self, x_t: Union[np.ndarray, 'tf.Tensor', 'torch.Tensor']):
         pass
 
-    @abstractmethod
-    def save_state(self, filepath: Union[str, os.PathLike]):
-        pass
-
-    @abstractmethod
-    def load_state(self, filepath: Union[str, os.PathLike]):
-        pass
-
-    def _set_state_path(self, filepath: Union[str, os.PathLike]):
+    def _set_state_path(self, dirpath: Union[str, os.PathLike]):
         """
-        Set the filepath to store state in, and create an empty directory if it doesn't already exist.
+        Set the directory path to store state in, and create an empty directory if it doesn't already exist.
+
+        Parameters
+        ----------
+        dirpath
+            The directory to save state file inside.
+        """
+        dirpath = Path(dirpath)
+        dirpath.mkdir(parents=True, exist_ok=True)
+        self.state_path = dirpath.joinpath('state.pt') if self.backend == Framework.PYTORCH else \
+            dirpath.joinpath('state.npz')
+
+    def save_state(self, filepath: Union[str, os.PathLike]):
+        """
+        Save a detector's state to disk in order to generate a checkpoint.
 
         Parameters
         ----------
         filepath
-            The filepath to save state to.
+            The directory to save state to.
         """
-        self.state_path = Path(filepath)
-        self.state_path.mkdir(parents=True, exist_ok=True)
+        self._set_state_path(filepath)
+        save_state_dict(self, self.online_state_keys, self.state_path)
+
+    def load_state(self, filepath: Union[str, os.PathLike]):
+        """
+        Load the detector's state from disk, in order to restart from a checkpoint previously generated with
+        `save_state`.
+
+        Parameters
+        ----------
+        filepath
+            The directory to load state from.
+        """
+        self._set_state_path(filepath)
+        load_state_dict(self, self.state_path)
 
     def _preprocess_xt(self, x_t: Union[np.ndarray, Any]) -> np.ndarray:
         """
@@ -221,8 +243,8 @@ class BaseMultiDriftOnline(BaseDetector):
 
 
 class BaseUniDriftOnline(BaseDetector):
-    state_path: Path
     thresholds: np.ndarray
+    online_state_keys: Tuple[str, ...]
 
     def __init__(
             self,
@@ -334,20 +356,43 @@ class BaseUniDriftOnline(BaseDetector):
     def _update_state(self, x_t: np.ndarray):
         pass
 
-    @abstractmethod
+    def _set_state_path(self, dirpath: Union[str, os.PathLike]):
+        """
+        Set the directory path to store state in, and create an empty directory if it doesn't already exist.
+
+        Parameters
+        ----------
+        dirpath
+            The directory to save state file inside.
+        """
+        dirpath = Path(dirpath)
+        dirpath.mkdir(parents=True, exist_ok=True)
+        self.state_path = dirpath.joinpath('state.npz')
+
     def save_state(self, filepath: Union[str, os.PathLike]):
-        pass
+        """
+        Save a detector's state to disk in order to generate a checkpoint.
 
-    @abstractmethod
+        Parameters
+        ----------
+        filepath
+            The directory to save state to.
+        """
+        self._set_state_path(filepath)
+        save_state_dict(self, self.online_state_keys, self.state_path)
+
     def load_state(self, filepath: Union[str, os.PathLike]):
-        pass
+        """
+        Load the detector's state from disk, in order to restart from a checkpoint previously generated with
+        `save_state`.
 
-    def _set_state_path(self, filepath: Union[str, os.PathLike]):
+        Parameters
+        ----------
+        filepath
+            The directory to load state from.
         """
-        Set the filepath to store state in, and create an empty directory if it doesn't already exist.
-        """
-        self.state_path = Path(filepath)
-        self.state_path.mkdir(parents=True, exist_ok=True)
+        self._set_state_path(filepath)
+        load_state_dict(self, self.state_path)
 
     def _check_x(self, x: Any, x_ref: bool = False) -> np.ndarray:
         """

@@ -1,7 +1,6 @@
-import os
 from tqdm import tqdm
 import numpy as np
-from typing import Any, Callable, List, Optional, Union, Dict
+from typing import Any, Callable, List, Optional, Union
 from alibi_detect.base import DriftConfigMixin
 from alibi_detect.cd.base_online import BaseUniDriftOnline
 from alibi_detect.utils.misc import quantile
@@ -11,6 +10,8 @@ import warnings
 
 
 class FETDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
+    online_state_keys = ('t', 'xs')
+
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
@@ -247,36 +248,6 @@ class FETDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
         else:
             # Update stream
             self.xs = np.concatenate([self.xs, x_t])
-
-    def save_state(self, filepath: Union[str, os.PathLike]):
-        """
-        Save a detector's state to disk in order to generate a checkpoint.
-
-        Parameters
-        ----------
-        filepath
-            The directory to save state to.
-        """
-        super()._set_state_path(filepath)
-        state_dict = {'t': self.t}  # type: Dict[str, Union[int, np.ndarray]]
-        if self.t > 0:
-            state_dict.update({'xs': self.xs})
-        np.savez(self.state_path.joinpath('state.npz'), **state_dict)
-
-    def load_state(self, filepath: Union[str, os.PathLike]):
-        """
-        Load the detector's state from disk, in order to restart from a checkpoint previously generated with
-        `save_state`.
-
-        Parameters
-        ----------
-        filepath
-            The directory to load state from.
-        """
-        super()._set_state_path(filepath)
-        state_dict = np.load(self.state_path.joinpath('state.npz'))
-        self.t = state_dict.get('t')
-        self.xs = state_dict.get('xs')
 
     def _check_drift(self, test_stats: np.ndarray, thresholds: np.ndarray) -> int:
         """

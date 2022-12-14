@@ -1,4 +1,3 @@
-import os
 from tqdm import tqdm
 import numpy as np
 import tensorflow as tf
@@ -9,6 +8,8 @@ from alibi_detect.utils.frameworks import Framework
 
 
 class LSDDDriftOnlineTF(BaseMultiDriftOnline):
+    online_state_keys: tuple = ('t', 'test_window', 'k_xtc')
+
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
@@ -79,7 +80,9 @@ class LSDDDriftOnlineTF(BaseMultiDriftOnline):
             input_shape=input_shape,
             data_type=data_type
         )
-        self.meta.update({'backend': Framework.TENSORFLOW.value})
+        self.backend = Framework.TENSORFLOW.value
+        self.meta.update({'backend': self.backend})
+
         self.n_kernel_centers = n_kernel_centers
         self.lambda_rd_max = lambda_rd_max
 
@@ -226,36 +229,3 @@ class LSDDDriftOnlineTF(BaseMultiDriftOnline):
         h = self.c2s - tf.reduce_mean(self.k_xtc, axis=0)  # (Eqn 21)
         lsdd = h[None, :] @ self.H_lam_inv @ h[:, None]  # (Eqn 11)
         return float(lsdd)
-
-    def save_state(self, filepath: Union[str, os.PathLike]):
-        """
-        Save a detector's state to disk in order to generate a checkpoint.
-
-        Parameters
-        ----------
-        filepath
-            The directory to save state to.
-        """
-        super()._set_state_path(filepath)
-        state_dict = {
-            't': self.t,
-            'test_window': self.test_window,
-            'k_xtc': self.k_xtc
-        }
-        np.savez(self.state_path.joinpath('state.npz'), **state_dict)
-
-    def load_state(self, filepath: Union[str, os.PathLike]):
-        """
-        Load the detector's state from disk, in order to restart from a checkpoint previously generated with
-        `save_state`.
-
-        Parameters
-        ----------
-        filepath
-            The directory to load state from.
-        """
-        super()._set_state_path(filepath)
-        state_dict = np.load(self.state_path.joinpath('state.npz'))
-        self.t = state_dict.get('t')
-        self.test_window = state_dict.get('test_window')
-        self.k_xtc = state_dict.get('k_xtc')
