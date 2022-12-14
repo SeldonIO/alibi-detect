@@ -72,7 +72,7 @@ class FitMixinTorch:
         """
         raise NotImplementedError()
 
-    @torch.jit.ignore
+    @torch.jit.unused
     def check_fitted(self):
         """Raises error if parent object instance has not been fit.
 
@@ -108,7 +108,8 @@ class BaseFittedTransformTorch(BaseTransformTorch, FitMixinTorch):
         -------
         transformed `torch.Tensor`.
         """
-        self.check_fitted()
+        if not torch.jit.is_scripting():
+            self.check_fitted()
         return self._transform(X)
 
 

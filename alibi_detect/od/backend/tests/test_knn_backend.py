@@ -46,7 +46,7 @@ def test_knn_torch_backend_ensemble(accumulator):
     assert torch.all(knn_torch(x) == torch.tensor([False, False, True]))
 
 
-def test_knn_torch_backend_ensemble_ts(accumulator):
+def test_knn_torch_backend_ensemble_ts(tmp_path, accumulator):
     knn_torch = KNNTorch(k=[4, 5], accumulator=accumulator)
     x = torch.randn((3, 10)) * torch.tensor([[1], [1], [100]])
 
@@ -66,8 +66,13 @@ def test_knn_torch_backend_ensemble_ts(accumulator):
     pred_2 = knn_torch(x)
     assert torch.all(pred_1 == pred_2)
 
+    knn_torch.save(tmp_path / 'knn_torch.pt')
+    knn_torch = torch.load(tmp_path / 'knn_torch.pt')
+    pred_2 = knn_torch(x)
+    assert torch.all(pred_1 == pred_2)
 
-def test_knn_torch_backend_ts():
+
+def test_knn_torch_backend_ts(tmp_path):
     knn_torch = KNNTorch(k=7)
     x = torch.randn((3, 10)) * torch.tensor([[1], [1], [100]])
     x_ref = torch.randn((1024, 10))
@@ -75,6 +80,11 @@ def test_knn_torch_backend_ts():
     knn_torch.infer_threshold(x_ref, 0.1)
     pred_1 = knn_torch(x)
     knn_torch = torch.jit.script(knn_torch)
+    pred_2 = knn_torch(x)
+    assert torch.all(pred_1 == pred_2)
+
+    knn_torch.save(tmp_path / 'knn_torch.pt')
+    knn_torch = torch.load(tmp_path / 'knn_torch.pt')
     pred_2 = knn_torch(x)
     assert torch.all(pred_1 == pred_2)
 

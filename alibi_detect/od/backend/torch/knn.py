@@ -56,7 +56,8 @@ class KNNTorch(TorchOutlierDetector):
         """
         raw_scores = self.score(X)
         scores = self._accumulator(raw_scores)
-        self.check_threshould_infered()
+        if not torch.jit.is_scripting():
+            self.check_threshould_infered()
         preds = scores > self.threshold
         return preds.cpu()
 
@@ -77,7 +78,8 @@ class KNNTorch(TorchOutlierDetector):
         ValueError
             If called before detector has been fit.
         """
-        self.check_fitted()
+        if not torch.jit.is_scripting():
+            self.check_fitted()
         K = -self.kernel(X, self.x_ref) if self.kernel is not None else torch.cdist(X, self.x_ref)
         bot_k_dists = torch.topk(K, int(torch.max(self.ks)), dim=1, largest=False)
         all_knn_dists = bot_k_dists.values[:, self.ks-1]

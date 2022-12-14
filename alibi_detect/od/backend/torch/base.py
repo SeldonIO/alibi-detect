@@ -67,7 +67,7 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
         """
         raise NotImplementedError()
 
-    @torch.jit.ignore
+    @torch.jit.unused
     def check_threshould_infered(self):
         """Check if threshold is inferred.
 
