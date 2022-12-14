@@ -10,11 +10,6 @@ import warnings
 
 
 class CVMDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
-    # State attributes (init _initialise)
-    ids_ref_wins: Optional[np.ndarray] = None
-    ids_wins_ref: Optional[np.ndarray] = None
-    ids_wins_wins: Optional[np.ndarray] = None
-
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
@@ -98,10 +93,14 @@ class CVMDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
         self.batch_size = n_bootstraps if batch_size is None else batch_size
 
         # Configure thresholds and initialise detector
-        self._initialise()
+        self._initialise_state()
         self._configure_thresholds()
+        self._configure_ref()
 
     def _configure_ref(self) -> None:
+        """
+        Configure the reference data.
+        """
         ids_ref_ref = self.x_ref[None, :, :] >= self.x_ref[:, None, :]
         self.ref_cdf_ref = np.sum(ids_ref_ref, axis=0) / self.n
 
@@ -168,6 +167,14 @@ class CVMDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
         return stats
 
     def _update_state(self, x_t: np.ndarray):
+        """
+        Update online state based on the provided test instance.
+
+        Parameters
+        ----------
+        x_t
+            The test instance.
+        """
         self.t += 1
         if self.t == 1:
             # Initialise stream
@@ -230,13 +237,11 @@ class CVMDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
         self.ids_wins_ref = state_dict.get('ids_wins_ref')
         self.ids_wins_wins = state_dict.get('ids_wins_wins')
 
-    def _initialise(self) -> None:
+    def _initialise_state(self) -> None:
         """
-        Initialise detector. So that reset() properly resets state, all state attributes must be initialised in this
-        method. For detector-specific attributes, a _initialise() method that calls super()._initialise() should be
-        implemented.
+        Initialise online state (the stateful attributes updated by `score` and `predict`).
         """
-        super()._initialise()
+        super()._initialise_state()
         self.ids_ref_wins = None
         self.ids_wins_ref = None
         self.ids_wins_wins = None

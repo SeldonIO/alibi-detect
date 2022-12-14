@@ -11,10 +11,6 @@ from alibi_detect.utils.frameworks import Framework
 
 
 class MMDDriftOnlineTorch(BaseMultiDriftOnline):
-    # State attributes (init in _configure_ref_subset, called in _initialise)
-    test_window: torch.Tensor
-    k_xy: torch.Tensor
-
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
@@ -96,9 +92,22 @@ class MMDDriftOnlineTorch(BaseMultiDriftOnline):
         self.k_xx = self.kernel(self.x_ref, self.x_ref, infer_sigma=(sigma is None))
 
         self._configure_thresholds()
-        self._initialise()
+        self._configure_ref_subset()  # self.initialise_state() called inside here
+
+    def _initialise_state(self) -> None:
+        """
+        Initialise online state (the stateful attributes updated by `score` and `predict`). This method relies on
+        attributes defined by `_configure_ref_subset`, hence must be called afterwards.
+        """
+        super()._initialise_state()
+        self.test_window = self.x_ref[self.init_test_inds]
+        self.k_xy = self.kernel(self.x_ref[self.ref_inds], self.test_window)
 
     def _configure_ref_subset(self):
+        """
+        Configure the reference data split. If the randomly selected split causes an initial detection, further splits
+        are attempted.
+        """
         etw_size = 2 * self.window_size - 1  # etw = extended test window
         rw_size = self.n - etw_size  # rw = ref-window
         # Make split and ensure it doesn't cause an initial detection
@@ -107,11 +116,10 @@ class MMDDriftOnlineTorch(BaseMultiDriftOnline):
             # Make split
             perm = torch.randperm(self.n)
             self.ref_inds, self.init_test_inds = perm[:rw_size], perm[-self.window_size:]
-            self.test_window = self.x_ref[self.init_test_inds]
             # Compute initial mmd to check for initial detection
+            self._initialise_state()  # to set self.test_window and self.k_xy
             self.k_xx_sub = self.k_xx[self.ref_inds][:, self.ref_inds]
             self.k_xx_sub_sum = zero_diag(self.k_xx_sub).sum() / (rw_size * (rw_size - 1))
-            self.k_xy = self.kernel(self.x_ref[self.ref_inds], self.test_window)
             k_yy = self.kernel(self.test_window, self.test_window)
             mmd_init = (
                     self.k_xx_sub_sum +
@@ -120,7 +128,9 @@ class MMDDriftOnlineTorch(BaseMultiDriftOnline):
             )
 
     def _configure_thresholds(self):
-
+        """
+        Configure the test statistic thresholds via bootstrapping.
+        """
         # Each bootstrap sample splits the reference samples into a sub-reference sample (x)
         # and an extended test window (y). The extended test window will be treated as W overlapping
         # test windows of size W (so 2W-1 test samples in total)
@@ -178,6 +188,14 @@ class MMDDriftOnlineTorch(BaseMultiDriftOnline):
         self.thresholds = thresholds
 
     def _update_state(self, x_t: torch.Tensor):  # type: ignore[override]
+        """
+        Update online state based on the provided test instance.
+
+        Parameters
+        ----------
+        x_t
+            The test instance.
+        """
         self.t += 1
         kernel_col = self.kernel(self.x_ref[self.ref_inds], x_t)
         self.test_window = torch.cat([self.test_window[(1 - self.window_size):], x_t], 0)

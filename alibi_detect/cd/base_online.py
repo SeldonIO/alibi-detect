@@ -21,8 +21,6 @@ logger = logging.getLogger(__name__)
 class BaseMultiDriftOnline(BaseDetector):
     state_path: Path
     thresholds: np.ndarray
-    # State attributes (init _initialise)
-    t: int
 
     def __init__(
             self,
@@ -119,11 +117,15 @@ class BaseMultiDriftOnline(BaseDetector):
     def load_state(self, filepath: Union[str, os.PathLike]):
         pass
 
-    @abstractmethod
-    def reset(self) -> None:
-        pass
-
     def _set_state_path(self, filepath: Union[str, os.PathLike]):
+        """
+        Set the filepath to store state in, and create an empty directory if it doesn't already exist.
+
+        Parameters
+        ----------
+        filepath
+            The filepath to save state to.
+        """
         self.state_path = Path(filepath)
         self.state_path.mkdir(parents=True, exist_ok=True)
 
@@ -147,12 +149,37 @@ class BaseMultiDriftOnline(BaseDetector):
         return x_t[None, :]
 
     def get_threshold(self, t: int) -> float:
+        """
+        Return the threshold for timestep `t`.
+
+        Parameters
+        ----------
+        t
+            The timestep to return a threshold for.
+
+        Returns
+        -------
+        The threshold at timestep `t`.
+        """
         return self.thresholds[t] if t < self.window_size else self.thresholds[-1]
 
-    def _initialise(self) -> None:
+    def _initialise_state(self) -> None:
+        """
+        Initialise online state (the stateful attributes updated by `score` and `predict`).
+
+        If a subclassed detector has additional online state, an additional `_initialise_state` should be defined,
+        with a call to `super()._initialise_state()` included (see `LSDDDriftOnlineTorch._initialise_state()` for
+        an example).
+        """
         self.t = 0  # corresponds to a test set of ref data
         self.test_stats = np.array([])  # type: ignore[var-annotated]
         self.drift_preds = np.array([])  # type: ignore[var-annotated]
+
+    def reset(self) -> None:
+        """
+        Resets the detector to its initial state (`t=0`). This does not include reconfiguring thresholds.
+        """
+        self._initialise_state()
 
     def predict(self, x_t: Union[np.ndarray, Any], return_test_stat: bool = True,
                 ) -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
@@ -196,9 +223,6 @@ class BaseMultiDriftOnline(BaseDetector):
 class BaseUniDriftOnline(BaseDetector):
     state_path: Path
     thresholds: np.ndarray
-    # State attributes (init _initialise)
-    t: int
-    xs: Optional[np.ndarray] = None
 
     def __init__(
             self,
@@ -319,10 +343,27 @@ class BaseUniDriftOnline(BaseDetector):
         pass
 
     def _set_state_path(self, filepath: Union[str, os.PathLike]):
+        """
+        Set the filepath to store state in, and create an empty directory if it doesn't already exist.
+        """
         self.state_path = Path(filepath)
         self.state_path.mkdir(parents=True, exist_ok=True)
 
     def _check_x(self, x: Any, x_ref: bool = False) -> np.ndarray:
+        """
+        Check the type and shape of the data `x`, and coerces it to the correct shape if possible.
+
+        Parameters
+        ----------
+        x
+            The data to be checked.
+        x_ref
+            Whether `x` is a batch of reference data instances (if `True`), or a single test data instance (if `False`).
+
+        Returns
+        -------
+        The checked data, coerced to be a np.ndarray of the correct shape.
+        """
         # Check the type of x
         if isinstance(x, np.ndarray):
             pass
@@ -365,27 +406,42 @@ class BaseUniDriftOnline(BaseDetector):
         return x_t
 
     def get_threshold(self, t: int) -> np.ndarray:
+        """
+        Return the threshold for timestep `t`.
+
+        Parameters
+        ----------
+        t
+            The timestep to return a threshold for.
+
+        Returns
+        -------
+        The threshold at timestep `t`.
+        """
         return self.thresholds[t] if t < len(self.thresholds) else self.thresholds[-1]
 
-    def _initialise(self) -> None:
+    def _initialise_state(self) -> None:
         """
-        Initialise detector. So that reset() properly resets state, all state attributes must be initialised in this
-        method. For detector-specific attributes, a _initialise() method that calls super()._initialise() should be
-        implemented (e.g. see CVMDrift._initialise).
+        Initialise online state (the stateful attributes updated by `score` and `predict`).
+
+        If a subclassed detector has additional online state, an additional `_initialise_state` should be defined,
+        with a call to `super()._initialise_state()` included (see `CVMDriftOnlineTorch._initialise_state()` for
+        an example).
         """
         self.t = 0
-        self.xs = None
+        self.xs = np.array([])
         self.test_stats = np.empty([0, len(self.window_sizes), self.n_features])
         self.drift_preds = np.array([])  # type: ignore[var-annotated]
-        self._configure_ref()
 
     @abstractmethod
     def _check_drift(self, test_stats: np.ndarray, thresholds: np.ndarray) -> int:
         pass
 
     def reset(self) -> None:
-        "Resets the detector but does not reconfigure thresholds."
-        self._initialise()
+        """
+        Resets the detector to its initial state (`t=0`). This does not include reconfiguring thresholds.
+        """
+        self._initialise_state()
 
     def predict(self, x_t: Union[np.ndarray, Any], return_test_stat: bool = True,
                 ) -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:

@@ -158,7 +158,7 @@ def test_lsdd_online_state_unit(tmp_path):
         orig_state_dict[key] = getattr(dd, key)
     # Save, reset and load
     dd.save_state(tmp_path)
-    dd.reset_state()
+    dd.reset()
     dd.load_state(tmp_path)
     # Compare state to original
     for key, orig_val in orig_state_dict.items():
