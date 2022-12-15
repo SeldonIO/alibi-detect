@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 from alibi_detect.cd import CVMDriftOnline
+from alibi_detect.utils._random import fixed_seed
 
 STATE_DICT = ('t', 'xs', 'ids_ref_wins', 'ids_wins_ref', 'ids_wins_wins')
 n, n_test = 200, 500
@@ -16,17 +17,18 @@ n_features = [1, 3]
 @pytest.mark.parametrize('window_sizes', window_sizes)
 @pytest.mark.parametrize('batch_size', batch_size)
 @pytest.mark.parametrize('n_feat', n_features)
-def test_cvmdriftonline(window_sizes, batch_size, n_feat):
-    # Reference data
-    x_ref = np.random.normal(0, 1, size=(n, n_feat)).squeeze()  # squeeze to test vec input in 1D case
+def test_cvmdriftonline(window_sizes, batch_size, n_feat, seed):
+    with fixed_seed(seed):
+        # Reference data
+        x_ref = np.random.normal(0, 1, size=(n, n_feat)).squeeze()  # squeeze to test vec input in 1D case
 
-    # Instantiate detector
-    cd = CVMDriftOnline(x_ref=x_ref, ert=ert, window_sizes=window_sizes,
-                        n_bootstraps=n_bootstraps, batch_size=batch_size)
+        # Instantiate detector
+        cd = CVMDriftOnline(x_ref=x_ref, ert=ert, window_sizes=window_sizes,
+                            n_bootstraps=n_bootstraps, batch_size=batch_size)
 
-    # Test predict
-    x_h0 = np.random.normal(0, 1, size=(n_test, n_feat))
-    x_h1 = np.random.normal(1, 1, size=(n_test, n_feat))
+        # Test predict
+        x_h0 = np.random.normal(0, 1, size=(n_test, n_feat))
+        x_h1 = np.random.normal(1, 1, size=(n_test, n_feat))
 
     # Reference data
     detection_times_h0 = []
@@ -61,17 +63,17 @@ def test_cvmdriftonline(window_sizes, batch_size, n_feat):
 
 
 @pytest.mark.parametrize('n_feat', n_features)
-def test_cvm_online_state_functional(n_feat, tmp_path):
+def test_cvm_online_state_functional(n_feat, tmp_path, seed):
     """
     A functional test of save/load/reset methods or CVMDriftOnline. State is saved, reset, and loaded, with
     prediction results checked.
     """
     window_sizes = [10]
 
-    x_ref = np.random.normal(0, 1, (n, n_feat)).squeeze()
-    x = np.random.normal(0.1, 1, (n, n_feat))
-
-    dd = CVMDriftOnline(x_ref, window_sizes=window_sizes, ert=20)
+    with fixed_seed(seed):
+        x_ref = np.random.normal(0, 1, (n, n_feat)).squeeze()
+        x = np.random.normal(0.1, 1, (n, n_feat))
+        dd = CVMDriftOnline(x_ref, window_sizes=window_sizes, ert=20)
 
     # Run for 50 time steps
     test_stats_1 = []

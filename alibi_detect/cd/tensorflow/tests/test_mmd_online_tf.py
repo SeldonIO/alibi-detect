@@ -7,11 +7,10 @@ from tensorflow.keras.layers import Dense, Input, InputLayer
 from typing import Callable, List
 from alibi_detect.cd.tensorflow.mmd_online import MMDDriftOnlineTF
 from alibi_detect.cd.tensorflow.preprocess import HiddenOutput, UAE, preprocess_drift
+from alibi_detect.utils._random import fixed_seed
 
 STATE_DICT = ('t', 'test_window', 'k_xy')
 n, n_hidden, n_classes = 400, 10, 5
-
-tf.random.set_seed(0)
 
 
 def mymodel(shape):
@@ -49,12 +48,11 @@ def mmd_online_params(request):
 
 
 @pytest.mark.parametrize('mmd_online_params', list(range(n_tests)), indirect=True)
-def test_mmd_online(mmd_online_params):
+def test_mmd_online(mmd_online_params, seed):
     n_features, n_enc, ert, window_size, preprocess, n_bootstraps = mmd_online_params
 
-    np.random.seed(0)
-
-    x_ref = np.random.randn(n * n_features).reshape(n, n_features).astype(np.float32)
+    with fixed_seed(seed):
+        x_ref = np.random.randn(n * n_features).reshape(n, n_features).astype(np.float32)
     preprocess_fn, preprocess_kwargs = preprocess
     to_list = False
     if hasattr(preprocess_fn, '__name__') and preprocess_fn.__name__ == 'preprocess_list':
@@ -68,28 +66,30 @@ def test_mmd_online(mmd_online_params):
             preprocess_fn = partial(preprocess_fn, model=HiddenOutput(model=model, layer=layer))
         elif preprocess_kwargs['model'].__name__ == 'UAE' \
                 and n_features > 1 and isinstance(n_enc, int):
-            tf.random.set_seed(0)
-            encoder_net = tf.keras.Sequential(
-                [
-                    InputLayer(input_shape=(n_features,)),
-                    Dense(n_enc)
-                ]
-            )
+            with fixed_seed(0):
+                encoder_net = tf.keras.Sequential(
+                    [
+                        InputLayer(input_shape=(n_features,)),
+                        Dense(n_enc)
+                    ]
+                )
             preprocess_fn = partial(preprocess_fn, model=UAE(encoder_net=encoder_net))
         else:
             preprocess_fn = None
     else:
         preprocess_fn = None
 
-    cd = MMDDriftOnlineTF(
-        x_ref=x_ref,
-        ert=ert,
-        window_size=window_size,
-        preprocess_fn=preprocess_fn,
-        n_bootstraps=n_bootstraps
-    )
+    with fixed_seed(seed):
+        cd = MMDDriftOnlineTF(
+            x_ref=x_ref,
+            ert=ert,
+            window_size=window_size,
+            preprocess_fn=preprocess_fn,
+            n_bootstraps=n_bootstraps
+        )
+        x_h0 = np.random.randn(n * n_features).reshape(n, n_features).astype(np.float32)
+        x_h1 = np.random.randn(n * n_features).reshape(n, n_features).astype(np.float32) + 1
 
-    x_h0 = np.random.randn(n * n_features).reshape(n, n_features).astype(np.float32)
     detection_times_h0 = []
     test_stats_h0 = []
     for x_t in x_h0:
@@ -106,7 +106,6 @@ def test_mmd_online(mmd_online_params):
 
     cd.reset()
 
-    x_h1 = 1 + np.random.randn(n * n_features).reshape(n, n_features).astype(np.float32)
     detection_times_h1 = []
     test_stats_h1 = []
     for x_t in x_h1:
@@ -118,22 +117,23 @@ def test_mmd_online(mmd_online_params):
             detection_times_h1.append(pred_t['data']['time'])
             cd.reset()
     average_delay_h1 = np.array(detection_times_h1).mean()
+    print(detection_times_h0, average_delay_h0)
     test_stats_h1 = [ts for ts in test_stats_h1 if ts is not None]
     assert np.abs(average_delay_h1) < ert/2
 
     assert np.mean(test_stats_h1) > np.mean(test_stats_h0)
 
 
-def test_mmd_online_state_functional(tmp_path):
+def test_mmd_online_state_functional(tmp_path, seed):
     """
     A functional test of save/load/reset methods or MMDDriftOnlineTorch. State is saved, reset, and loaded, with
     prediction results checked.
     """
     n = 100
-    x_ref = np.random.normal(0, 1, (n, n_classes))
-    x = np.random.normal(0.1, 1, (n, n_classes))
-
-    dd = MMDDriftOnlineTF(x_ref, window_size=10, ert=20)
+    with fixed_seed(seed):
+        x_ref = np.random.normal(0, 1, (n, n_classes))
+        x = np.random.normal(0.1, 1, (n, n_classes))
+        dd = MMDDriftOnlineTF(x_ref, window_size=10, ert=20)
 
     # Run for 50 time steps
     test_stats_1 = []

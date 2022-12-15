@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 from functools import partial
 from alibi_detect.cd import FETDriftOnline
+from alibi_detect.utils._random import fixed_seed
 
 STATE_DICT = ('t', 'xs')
 n = 250
@@ -16,20 +17,21 @@ n_features = [1, 3]
 
 @pytest.mark.parametrize('alternative', alternatives)
 @pytest.mark.parametrize('n_feat', n_features)
-def test_fetdriftonline(alternative, n_feat):
+def test_fetdriftonline(alternative, n_feat, seed):
     # Reference data
-    np.random.seed(0)
     p_h0 = 0.5
-    x_ref = np.random.choice((0, 1), (n, n_feat), p=[1 - p_h0, p_h0]).squeeze()  # squeeze to test vec input in 1D case
-    x_h0 = partial(np.random.choice, (0, 1), size=n_feat, p=[1-p_h0, p_h0])
+    with fixed_seed(seed):
+        # squeeze to test vector input in 1D case
+        x_ref = np.random.choice((0, 1), (n, n_feat), p=[1 - p_h0, p_h0]).squeeze()
+        x_h0 = partial(np.random.choice, (0, 1), size=n_feat, p=[1-p_h0, p_h0])
 
     detection_times_h0 = []
     detection_times_h1 = []
-    for init in range(n_inits):
+    for _ in range(n_inits):
         # Instantiate detector
-        np.random.seed(init+1)
-        cd = FETDriftOnline(x_ref=x_ref, ert=ert, window_sizes=window_sizes,
-                            n_bootstraps=n_bootstraps, alternative=alternative)
+        with fixed_seed(seed+1):
+            cd = FETDriftOnline(x_ref=x_ref, ert=ert, window_sizes=window_sizes,
+                                n_bootstraps=n_bootstraps, alternative=alternative)
 
         # Reference data
         count = 0
@@ -69,16 +71,18 @@ def test_fetdriftonline(alternative, n_feat):
 
 
 @pytest.mark.parametrize('n_feat', n_features)
-def test_fet_online_state_functional(n_feat, tmp_path):
+def test_fet_online_state_functional(n_feat, tmp_path, seed):
     """
     A functional test of save/load/reset methods or FETDriftOnline. State is saved, reset, and loaded, with
     prediction results checked.
     """
     p_h0 = 0.5
     p_h1 = 0.3
-    x_ref = np.random.choice((0, 1), (n, n_feat), p=[1 - p_h0, p_h0]).squeeze()  # squeeze to test vec input in 1D case
-    x = np.random.choice((0, 1), (n, n_feat), p=[1 - p_h1, p_h1])  # squeeze to test vec input in 1D case
-    dd = FETDriftOnline(x_ref, window_sizes=window_sizes, ert=20)
+    with fixed_seed(seed):
+        # squeeze to test vector input in 1D case
+        x_ref = np.random.choice((0, 1), (n, n_feat), p=[1 - p_h0, p_h0]).squeeze()
+        x = np.random.choice((0, 1), (n, n_feat), p=[1 - p_h1, p_h1])
+        dd = FETDriftOnline(x_ref, window_sizes=window_sizes, ert=20)
 
     # Run for 50 time steps
     test_stats_1 = []
