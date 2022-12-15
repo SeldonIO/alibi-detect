@@ -821,10 +821,12 @@ def test_save_online_state(detector, data, seed, tmp_path):
             # Save detector (with state)
             save_detector(dd, tmp_path, save_state=True)
 
-    # Check state/ dir created
-    state_path = dd.state_path if detector == CVMDriftOnline else dd._detector.state_path
-    assert state_path == tmp_path.joinpath('state')
-    assert state_path.is_dir()
+    # Check state file created
+    state_path_attr = dd.state_path if detector == CVMDriftOnline else dd._detector.state_path
+    expected_path = tmp_path.joinpath('state/state.npz') if detector == CVMDriftOnline \
+        else tmp_path.joinpath('state/state.pt')
+    assert state_path_attr == expected_path
+    assert state_path_attr.is_file()
 
     # Load
     with fixed_seed(seed):
