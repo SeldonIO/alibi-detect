@@ -245,7 +245,6 @@ class BaseMultiDriftOnline(BaseDetector):
 class BaseUniDriftOnline(BaseDetector):
     thresholds: np.ndarray
     online_state_keys: Tuple[str, ...]
-    offline_state_keys: Tuple[str, ...]
 
     def __init__(
             self,
@@ -394,19 +393,6 @@ class BaseUniDriftOnline(BaseDetector):
         """
         self._set_state_path(filepath)
         load_state_dict(self, self.state_path)
-
-    def _save_offline_state(self, filepath: Union[str, os.PathLike]):
-        """
-        Save a detector's offline state to disk, so that expensive instantiation steps such as configuring thresholds
-        can be avoided when the detector is loaded.
-
-        Parameters
-        ----------
-        filepath
-            The directory to save offline state to.
-        """
-        self._set_state_path(filepath)
-        save_state_dict(self, self.offline_state_keys, self.state_path)
 
     def _check_x(self, x: Any, x_ref: bool = False) -> np.ndarray:
         """
