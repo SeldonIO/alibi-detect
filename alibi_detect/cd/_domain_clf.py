@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from typing import Callable
 import numpy as np
 from sklearn.svm import SVC
 from sklearn.calibration import CalibratedClassifierCV

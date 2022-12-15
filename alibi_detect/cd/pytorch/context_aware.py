@@ -123,7 +123,6 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
         self.x_kernel = x_kernel
         self.c_kernel = c_kernel
 
-
     def score(self,  # type: ignore[override]
               x: Union[np.ndarray, list], c: np.ndarray) -> Tuple[float, float, float, Tuple]:
         """
@@ -146,7 +145,7 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
         x_ref, x = self.preprocess(x)
         x_ref = torch.from_numpy(x_ref).to(self.device)  # type: ignore[assignment]
         c_ref = torch.from_numpy(self.c_ref).to(self.device)  # type: ignore[assignment]
-        
+
         # Initialize classifier (hardcoded for now)
         self.clf = _SVCDomainClf()
 

@@ -116,7 +116,6 @@ class ContextMMDDriftTF(BaseContextMMDDrift):
         self.x_kernel = x_kernel
         self.c_kernel = c_kernel
 
-
     def score(self,  # type: ignore[override]
               x: Union[np.ndarray, list], c: np.ndarray) -> Tuple[float, float, float, Tuple]:
         """
@@ -137,7 +136,7 @@ class ContextMMDDriftTF(BaseContextMMDDrift):
         (W_{ref,ref}, W_{test,test}, W_{ref,test}).
         """
         x_ref, x = self.preprocess(x)
-        
+
         # Initialize classifier (hardcoded for now)
         self.clf = _SVCDomainClf()
 

@@ -40,6 +40,7 @@ tests_lsdddrift = list(product(n_features, n_enc, preprocess,
                                n_permutations, update_x_ref, preprocess_x_ref))
 n_tests = len(tests_lsdddrift)
 
+
 @pytest.fixture
 def lsdd_params(request):
     return tests_lsdddrift[request.param]
