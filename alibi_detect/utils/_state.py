@@ -7,8 +7,8 @@ TODO: This submodule will eventually be moved to alibi_detect.saving, however th
 """
 import numpy as np
 from pathlib import Path
-from alibi_detect.utils.pytorch._state import save_state_dict as save_state_dict_pt, \
-    load_state_dict as load_state_dict_pt
+from alibi_detect.utils.pytorch import _save_state_dict as _save_state_dict_pt, \
+    _load_state_dict as _load_state_dict_pt
 
 from alibi_detect.base import BaseDetector
 
@@ -30,7 +30,7 @@ def save_state_dict(detector: BaseDetector, keys: tuple, filepath: Path):
     state_dict = {key: getattr(detector, key, None) for key in keys}
     # Save to disk
     if filepath.suffix == '.pt':
-        save_state_dict_pt(state_dict, filepath)
+        _save_state_dict_pt(state_dict, filepath)
     else:
         np.savez(filepath, **state_dict)
 
@@ -52,7 +52,7 @@ def load_state_dict(detector: BaseDetector, filepath: Path):
     None. The detector is updated inplace.
     """
     if filepath.suffix == '.pt':
-        state_dict = load_state_dict_pt(filepath)
+        state_dict = _load_state_dict_pt(filepath)
     else:
         state_dict = np.load(filepath)
     for key, value in state_dict.items():

@@ -26,6 +26,11 @@ get_device, quantile, zero_diag = import_optional(
     'alibi_detect.utils.pytorch.misc',
     names=['get_device', 'quantile', 'zero_diag']
 )
+_save_state_dict, _load_state_dict = import_optional(
+    'alibi_detect.utils.pytorch._state',
+    names=['save_state_dict', 'load_state_dict']
+)
+
 
 __all__ = [
     "batch_compute_kernel_matrix",
@@ -40,5 +45,7 @@ __all__ = [
     "get_device",
     "quantile",
     "zero_diag",
-    "TorchDataset"
+    "TorchDataset",
+    "_save_state_dict",
+    "_load_state_dict",
 ]
