@@ -20,7 +20,8 @@ class KNN(OutlierDetector):
         kernel: Optional[Callable] = None,
         normalizer: Optional[Union[TransformProtocol, FittedTransformProtocol]] = None,
         aggregator: Optional[TransformProtocol] = None,
-        backend: Literal['pytorch'] = 'pytorch'
+        backend: Literal['pytorch'] = 'pytorch',
+        device: Literal['cuda', 'gpu', 'cpu'] = 'cpu',
     ) -> None:
         """
         k-Nearest Neighbours (kNN) outlier detector.
@@ -67,7 +68,7 @@ class KNN(OutlierDetector):
                 normalizer=normalizer,
                 aggregator=aggregator
             )
-        self.backend = backend_cls(k, kernel=kernel, accumulator=accumulator)
+        self.backend = backend_cls(k, kernel=kernel, accumulator=accumulator, device=device)
 
     def fit(self, x_ref: Union[np.ndarray, List]) -> None:
         """Fit the kNN detector on reference data.

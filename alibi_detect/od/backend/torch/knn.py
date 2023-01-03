@@ -12,7 +12,8 @@ class KNNTorch(TorchOutlierDetector):
             self,
             k: Union[np.ndarray, List],
             kernel: Optional[torch.nn.Module] = None,
-            accumulator: Optional[Accumulator] = None
+            accumulator: Optional[Accumulator] = None,
+            device: Optional[str] = None
             ):
         """PyTorch backend for KNN detector.
 
@@ -31,10 +32,10 @@ class KNNTorch(TorchOutlierDetector):
             of :py:obj:`alibi_detect.od.backend.torch.ensemble.Accumulator`. Responsible for combining
             multiple scores into a single score.
         """
-        TorchOutlierDetector.__init__(self)
+        TorchOutlierDetector.__init__(self, device=device)
         self.kernel = kernel
         self.ensemble = isinstance(k, (np.ndarray, list, tuple))
-        self.ks = torch.tensor(k) if self.ensemble else torch.tensor([k])
+        self.ks = torch.tensor(k) if self.ensemble else torch.tensor([k], device=self.device)
         self.accumulator = accumulator
 
     def forward(self, X: torch.Tensor) -> torch.Tensor:

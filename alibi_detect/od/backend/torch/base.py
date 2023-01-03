@@ -7,7 +7,7 @@ import numpy as np
 import torch
 
 from alibi_detect.od.backend.torch.ensemble import FitMixinTorch
-
+from alibi_detect.utils.pytorch.misc import get_device
 
 @dataclass
 class TorchOutlierDetectorOutput:
@@ -32,7 +32,8 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
     threshold_inferred = False
     threshold = None
 
-    def __init__(self):
+    def __init__(self, device: Optional[str] = None):
+        self.device = get_device(device)
         super().__init__()
 
     @abstractmethod
@@ -92,7 +93,7 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
         -------
         `torch.Tensor`
         """
-        return torch.as_tensor(X, dtype=torch.float32)
+        return torch.as_tensor(X, dtype=torch.float32, device=self.device)
 
     def _accumulator(self, X: torch.Tensor) -> torch.Tensor:
         """Accumulates the data.
