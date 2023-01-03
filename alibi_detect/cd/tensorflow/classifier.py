@@ -3,21 +3,25 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.keras.losses import BinaryCrossentropy
 from scipy.special import softmax
-from typing import Callable, Dict, Optional, Tuple
+from typing import Callable, Dict, Optional, Tuple, Union
 from alibi_detect.cd.base import BaseClassifierDrift
 from alibi_detect.models.tensorflow.trainer import trainer
 from alibi_detect.utils.tensorflow.data import TFDataset
 from alibi_detect.utils.tensorflow.misc import clone_model
 from alibi_detect.utils.tensorflow.prediction import predict_batch
+from alibi_detect.utils.warnings import deprecated_alias
+from alibi_detect.utils.frameworks import Framework
 
 
 class ClassifierDriftTF(BaseClassifierDrift):
+    @deprecated_alias(preprocess_x_ref='preprocess_at_init')
     def __init__(
             self,
             x_ref: np.ndarray,
             model: tf.keras.Model,
             p_val: float = .05,
-            preprocess_x_ref: bool = True,
+            x_ref_preprocessed: bool = False,
+            preprocess_at_init: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
             preds_type: str = 'probs',
@@ -27,7 +31,7 @@ class ClassifierDriftTF(BaseClassifierDrift):
             n_folds: Optional[int] = None,
             retrain_from_scratch: bool = True,
             seed: int = 0,
-            optimizer: tf.keras.optimizers = tf.keras.optimizers.Adam,
+            optimizer: tf.keras.optimizers.Optimizer = tf.keras.optimizers.Adam,
             learning_rate: float = 1e-3,
             batch_size: int = 32,
             preprocess_batch_fn: Optional[Callable] = None,
@@ -35,6 +39,7 @@ class ClassifierDriftTF(BaseClassifierDrift):
             verbose: int = 0,
             train_kwargs: Optional[dict] = None,
             dataset: Callable = TFDataset,
+            input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None
     ) -> None:
         """
@@ -50,8 +55,13 @@ class ClassifierDriftTF(BaseClassifierDrift):
             TensorFlow classification model used for drift detection.
         p_val
             p-value used for the significance of the test.
-        preprocess_x_ref
-            Whether to already preprocess and store the reference data.
+        x_ref_preprocessed
+            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
+            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
+            data will also be preprocessed.
+        preprocess_at_init
+            Whether to preprocess the reference data when the detector is instantiated. Otherwise, the reference
+            data will be preprocessed at prediction time. Only applies if `x_ref_preprocessed=False`.
         update_x_ref
             Reference data can optionally be updated to the last n instances seen by the detector
             or via reservoir sampling with size n. For the former, the parameter equals {'last': n} while
@@ -84,6 +94,9 @@ class ClassifierDriftTF(BaseClassifierDrift):
             Learning rate used by optimizer.
         batch_size
             Batch size used during training of the classifier.
+        preprocess_batch_fn
+            Optional batch preprocessing function. For example to convert a list of objects to a batch which can be
+            processed by the model.
         epochs
             Number of training epochs for the classifier for each (optional) fold.
         verbose
@@ -93,13 +106,16 @@ class ClassifierDriftTF(BaseClassifierDrift):
             Optional additional kwargs when fitting the classifier.
         dataset
             Dataset object used during training.
+        input_shape
+            Shape of input data.
         data_type
             Optionally specify the data type (tabular, image or time-series). Added to metadata.
         """
         super().__init__(
             x_ref=x_ref,
             p_val=p_val,
-            preprocess_x_ref=preprocess_x_ref,
+            x_ref_preprocessed=x_ref_preprocessed,
+            preprocess_at_init=preprocess_at_init,
             update_x_ref=update_x_ref,
             preprocess_fn=preprocess_fn,
             preds_type=preds_type,
@@ -108,13 +124,13 @@ class ClassifierDriftTF(BaseClassifierDrift):
             n_folds=n_folds,
             retrain_from_scratch=retrain_from_scratch,
             seed=seed,
+            input_shape=input_shape,
             data_type=data_type
         )
-
         if preds_type not in ['probs', 'logits']:
             raise ValueError("'preds_type' should be 'probs' or 'logits'")
 
-        self.meta.update({'backend': 'tensorflow'})
+        self.meta.update({'backend': Framework.TENSORFLOW.value})
 
         # define and compile classifier model
         self.original_model = model
@@ -122,12 +138,14 @@ class ClassifierDriftTF(BaseClassifierDrift):
         self.loss_fn = BinaryCrossentropy(from_logits=(self.preds_type == 'logits'))
         self.dataset = partial(dataset, batch_size=batch_size, shuffle=True)
         self.predict_fn = partial(predict_batch, preprocess_fn=preprocess_batch_fn, batch_size=batch_size)
-        self.train_kwargs = {'optimizer': optimizer(learning_rate=learning_rate), 'epochs': epochs,
+        optimizer = optimizer(learning_rate=learning_rate) if isinstance(optimizer, type) else optimizer
+        self.train_kwargs = {'optimizer': optimizer, 'epochs': epochs,
                              'reg_loss_fn': reg_loss_fn, 'preprocess_fn': preprocess_batch_fn, 'verbose': verbose}
         if isinstance(train_kwargs, dict):
             self.train_kwargs.update(train_kwargs)
 
-    def score(self, x: np.ndarray) -> Tuple[float, float, np.ndarray, np.ndarray]:  # type: ignore[override]
+    def score(self, x: np.ndarray) -> Tuple[float, float, np.ndarray, np.ndarray,  # type: ignore[override]
+                                            Union[np.ndarray, list], Union[np.ndarray, list]]:
         """
         Compute the out-of-fold drift metric such as the accuracy from a classifier
         trained to distinguish the reference data from the data to be tested.
@@ -141,10 +159,10 @@ class ClassifierDriftTF(BaseClassifierDrift):
         -------
         p-value, a notion of distance between the trained classifier's out-of-fold performance \
         and that which we'd expect under the null assumption of no drift, \
-        and the out-of-fold classifier model prediction probabilities on the reference and test data
+        and the out-of-fold classifier model prediction probabilities on the reference and test data \
+        as well as the associated reference and test instances of the out-of-fold predictions.
         """
         x_ref, x = self.preprocess(x)  # type: ignore[assignment]
-        n_ref, n_cur = len(x_ref), len(x)
         x, y, splits = self.get_splits(x_ref, x)  # type: ignore
 
         # iterate over folds: train a new model for each fold and make out-of-fold (oof) predictions
@@ -170,6 +188,15 @@ class ClassifierDriftTF(BaseClassifierDrift):
         probs_oof = softmax(preds_oof, axis=-1) if self.preds_type == 'logits' else preds_oof
         idx_oof = np.concatenate(idx_oof_list, axis=0)
         y_oof = y[idx_oof]
+        n_cur = y_oof.sum()
+        n_ref = len(y_oof) - n_cur
         p_val, dist = self.test_probs(y_oof, probs_oof, n_ref, n_cur)
-        probs_sort = probs_oof[np.argsort(idx_oof)]
-        return p_val, dist, probs_sort[:n_ref, 1], probs_sort[n_ref:, 1]
+        idx_sort = np.argsort(idx_oof)
+        probs_sort = probs_oof[idx_sort]
+        if isinstance(x, np.ndarray):
+            x_oof = x[idx_oof]
+            x_sort = x_oof[idx_sort]
+        else:
+            x_oof = [x[_] for _ in idx_oof]
+            x_sort = [x_oof[_] for _ in idx_sort]
+        return p_val, dist, probs_sort[:n_ref, 1], probs_sort[n_ref:, 1], x_sort[:n_ref], x_sort[n_ref:]

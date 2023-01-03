@@ -3,6 +3,7 @@ import torch
 from torch import nn
 from . import distance
 from typing import Optional, Union, Callable
+from alibi_detect.utils.frameworks import Framework
 
 
 def sigma_median(x: torch.Tensor, y: torch.Tensor, dist: torch.Tensor) -> torch.Tensor:
@@ -25,7 +26,7 @@ def sigma_median(x: torch.Tensor, y: torch.Tensor, dist: torch.Tensor) -> torch.
     n = min(x.shape[0], y.shape[0])
     n = n if (x[:n] == y[:n]).all() and x.shape == y.shape else 0
     n_median = n + (np.prod(dist.shape) - n) // 2 - 1
-    sigma = (.5 * dist.flatten().sort().values[n_median].unsqueeze(dim=-1)) ** .5
+    sigma = (.5 * dist.flatten().sort().values[int(n_median)].unsqueeze(dim=-1)) ** .5
     return sigma
 
 
@@ -33,7 +34,7 @@ class GaussianRBF(nn.Module):
     def __init__(
         self,
         sigma: Optional[torch.Tensor] = None,
-        init_sigma_fn: Callable = sigma_median,
+        init_sigma_fn: Optional[Callable] = None,
         trainable: bool = False
     ) -> None:
         """
@@ -49,11 +50,14 @@ class GaussianRBF(nn.Module):
         init_sigma_fn
             Function used to compute the bandwidth `sigma`. Used when `sigma` is to be inferred.
             The function's signature should match :py:func:`~alibi_detect.utils.pytorch.kernels.sigma_median`,
-            meaning that it should take in the tensors `x`, `y` and `dist` and return `sigma`.
+            meaning that it should take in the tensors `x`, `y` and `dist` and return `sigma`. If `None`, it is set to
+            :func:`~alibi_detect.utils.pytorch.kernels.sigma_median`.
         trainable
             Whether or not to track gradients w.r.t. `sigma` to allow it to be trained.
         """
         super().__init__()
+        init_sigma_fn = sigma_median if init_sigma_fn is None else init_sigma_fn
+        self.config = {'sigma': sigma, 'trainable': trainable, 'init_sigma_fn': init_sigma_fn}
         if sigma is None:
             self.log_sigma = nn.Parameter(torch.empty(1), requires_grad=trainable)
             self.init_required = True
@@ -87,6 +91,29 @@ class GaussianRBF(nn.Module):
         kernel_mat = torch.exp(- torch.cat([(g * dist)[None, :, :] for g in gamma], dim=0))  # [Ns, Nx, Ny]
         return kernel_mat.mean(dim=0)  # [Nx, Ny]
 
+    def get_config(self) -> dict:
+        """
+        Returns a serializable config dict (excluding the input_sigma_fn, which is serialized in alibi_detect.saving).
+        """
+        cfg = self.config.copy()
+        if isinstance(cfg['sigma'], torch.Tensor):
+            cfg['sigma'] = cfg['sigma'].detach().cpu().numpy().tolist()
+        cfg.update({'flavour': Framework.PYTORCH.value})
+        return cfg
+
+    @classmethod
+    def from_config(cls, config):
+        """
+        Instantiates a kernel from a config dictionary.
+
+        Parameters
+        ----------
+        config
+            A kernel config dictionary.
+        """
+        config.pop('flavour')
+        return cls(**config)
+
 
 class DeepKernel(nn.Module):
     """
@@ -111,12 +138,16 @@ class DeepKernel(nn.Module):
     def __init__(
         self,
         proj: nn.Module,
-        kernel_a: nn.Module = GaussianRBF(trainable=True),
-        kernel_b: Optional[nn.Module] = GaussianRBF(trainable=True),
+        kernel_a: Union[nn.Module, str] = 'rbf',
+        kernel_b: Optional[Union[nn.Module, str]] = 'rbf',
         eps: Union[float, str] = 'trainable'
     ) -> None:
         super().__init__()
-
+        self.config = {'proj': proj, 'kernel_a': kernel_a, 'kernel_b': kernel_b, 'eps': eps}
+        if kernel_a == 'rbf':
+            kernel_a = GaussianRBF(trainable=True)
+        if kernel_b == 'rbf':
+            kernel_b = GaussianRBF(trainable=True)
         self.kernel_a = kernel_a
         self.kernel_b = kernel_b
         self.proj = proj
@@ -138,7 +169,14 @@ class DeepKernel(nn.Module):
         return self.logit_eps.sigmoid() if self.kernel_b is not None else torch.tensor(0.)
 
     def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-        similarity = self.kernel_a(self.proj(x), self.proj(y))
+        similarity = self.kernel_a(self.proj(x), self.proj(y))  # type: ignore[operator]
         if self.kernel_b is not None:
-            similarity = (1-self.eps)*similarity + self.eps*self.kernel_b(x, y)
+            similarity = (1-self.eps)*similarity + self.eps*self.kernel_b(x, y)  # type: ignore[operator]
         return similarity
+
+    def get_config(self) -> dict:
+        return self.config.copy()
+
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)

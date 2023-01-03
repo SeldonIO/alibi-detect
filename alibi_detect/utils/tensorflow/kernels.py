@@ -3,6 +3,7 @@ import numpy as np
 from . import distance
 from typing import Optional, Union, Callable
 from scipy.special import logit
+from alibi_detect.utils.frameworks import Framework
 
 
 def sigma_median(x: tf.Tensor, y: tf.Tensor, dist: tf.Tensor) -> tf.Tensor:
@@ -33,7 +34,7 @@ class GaussianRBF(tf.keras.Model):
     def __init__(
             self,
             sigma: Optional[tf.Tensor] = None,
-            init_sigma_fn: Callable = sigma_median,
+            init_sigma_fn: Optional[Callable] = None,
             trainable: bool = False
     ) -> None:
         """
@@ -49,12 +50,14 @@ class GaussianRBF(tf.keras.Model):
         init_sigma_fn
             Function used to compute the bandwidth `sigma`. Used when `sigma` is to be inferred.
             The function's signature should match :py:func:`~alibi_detect.utils.tensorflow.kernels.sigma_median`,
-            meaning that it should take in the tensors `x`, `y` and `dist` and return `sigma`.
+            meaning that it should take in the tensors `x`, `y` and `dist` and return `sigma`. If `None`, it is set to
+            :func:`~alibi_detect.utils.tensorflow.kernels.sigma_median`.
         trainable
             Whether or not to track gradients w.r.t. sigma to allow it to be trained.
         """
         super().__init__()
-        self.config = {'sigma': sigma, 'trainable': trainable}
+        init_sigma_fn = sigma_median if init_sigma_fn is None else init_sigma_fn
+        self.config = {'sigma': sigma, 'trainable': trainable, 'init_sigma_fn': init_sigma_fn}
         if sigma is None:
             self.log_sigma = tf.Variable(np.empty(1), dtype=tf.keras.backend.floatx(), trainable=trainable)
             self.init_required = True
@@ -87,10 +90,26 @@ class GaussianRBF(tf.keras.Model):
         return tf.reduce_mean(kernel_mat, axis=0)  # [Nx, Ny]
 
     def get_config(self) -> dict:
-        return self.config
+        """
+        Returns a serializable config dict (excluding the input_sigma_fn, which is serialized in alibi_detect.saving).
+        """
+        cfg = self.config.copy()
+        if isinstance(cfg['sigma'], tf.Tensor):
+            cfg['sigma'] = cfg['sigma'].numpy().tolist()
+        cfg.update({'flavour': Framework.TENSORFLOW.value})
+        return cfg
 
     @classmethod
     def from_config(cls, config):
+        """
+        Instantiates a kernel from a config dictionary.
+
+        Parameters
+        ----------
+        config
+            A kernel config dictionary.
+        """
+        config.pop('flavour')
         return cls(**config)
 
 
@@ -122,11 +141,11 @@ class DeepKernel(tf.keras.Model):
         eps: Union[float, str] = 'trainable'
     ) -> None:
         super().__init__()
+        self.config = {'proj': proj, 'kernel_a': kernel_a, 'kernel_b': kernel_b, 'eps': eps}
         if kernel_a == 'rbf':
             kernel_a = GaussianRBF(trainable=True)
         if kernel_b == 'rbf':
             kernel_b = GaussianRBF(trainable=True)
-        self.config = {'proj': proj, 'kernel_a': kernel_a, 'kernel_b': kernel_b, 'eps': eps}
         self.kernel_a = kernel_a
         self.kernel_b = kernel_b
         self.proj = proj
@@ -149,13 +168,13 @@ class DeepKernel(tf.keras.Model):
         return tf.math.sigmoid(self.logit_eps) if self.kernel_b is not None else tf.constant(0.)
 
     def call(self, x: tf.Tensor, y: tf.Tensor) -> tf.Tensor:
-        similarity = self.kernel_a(self.proj(x), self.proj(y))  # type: ignore
+        similarity = self.kernel_a(self.proj(x), self.proj(y))  # type: ignore[operator]
         if self.kernel_b is not None:
-            similarity = (1-self.eps)*similarity + self.eps*self.kernel_b(x, y)  # type: ignore
+            similarity = (1-self.eps)*similarity + self.eps*self.kernel_b(x, y)  # type: ignore[operator]
         return similarity
 
     def get_config(self) -> dict:
-        return self.config
+        return self.config.copy()
 
     @classmethod
     def from_config(cls, config):

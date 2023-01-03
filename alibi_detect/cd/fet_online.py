@@ -1,6 +1,7 @@
 from tqdm import tqdm
 import numpy as np
 from typing import Any, Callable, List, Optional, Union
+from alibi_detect.base import DriftConfigMixin
 from alibi_detect.cd.base_online import BaseUniDriftOnline
 from alibi_detect.utils.misc import quantile
 from scipy.stats import hypergeom
@@ -8,13 +9,14 @@ import numba as nb
 import warnings
 
 
-class FETDriftOnline(BaseUniDriftOnline):
+class FETDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
             ert: float,
             window_sizes: List[int],
             preprocess_fn: Optional[Callable] = None,
+            x_ref_preprocessed: bool = False,
             n_bootstraps: int = 10000,
             t_max: Optional[int] = None,
             alternative: str = 'greater',
@@ -53,6 +55,10 @@ class FETDriftOnline(BaseUniDriftOnline):
             ability to detect slight drift.
         preprocess_fn
             Function to preprocess the data before computing the data drift metrics.
+        x_ref_preprocessed
+            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
+            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
+            data will also be preprocessed.
         n_bootstraps
             The number of bootstrap simulations used to configure the thresholds. The larger this is the
             more accurately the desired ERT will be targeted. Should ideally be at least an order of magnitude
@@ -81,12 +87,16 @@ class FETDriftOnline(BaseUniDriftOnline):
             ert=ert,
             window_sizes=window_sizes,
             preprocess_fn=preprocess_fn,
+            x_ref_preprocessed=x_ref_preprocessed,
             n_bootstraps=n_bootstraps,
             n_features=n_features,
             verbose=verbose,
             input_shape=input_shape,
             data_type=data_type
         )
+        # Set config
+        self._set_config(locals())
+
         self.lam = lam
         if alternative.lower() not in ['greater', 'less']:
             raise ValueError("`alternative` must be either 'greater' or 'less'.")

@@ -4,9 +4,10 @@ repos:
     hooks:
       - id: flake8
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v0.942
+    rev: v0.990
     hooks:
       - id: mypy
         additional_dependencies: [
-          types-requests>=2.25.0,
+          types-requests~=2.25,
+          types-toml~=0.10
         ]

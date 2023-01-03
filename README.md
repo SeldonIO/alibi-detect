@@ -6,6 +6,7 @@
 
 [![Build Status](https://github.com/SeldonIO/alibi-detect/workflows/CI/badge.svg?branch=master)][#build-status]
 [![Documentation Status](https://readthedocs.org/projects/alibi-detect/badge/?version=latest)][#docs-package]
+[![codecov](https://codecov.io/gh/SeldonIO/alibi-detect/branch/master/graph/badge.svg)](https://codecov.io/gh/SeldonIO/alibi-detect)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/alibi-detect?logo=pypi&style=flat&color=blue)][#pypi-package]
 [![PyPI - Package Version](https://img.shields.io/pypi/v/alibi-detect?logo=pypi&style=flat&color=orange)][#pypi-package]
 [![Conda (channel only)](https://img.shields.io/conda/vn/conda-forge/alibi-detect?logo=anaconda&style=flat&color=orange)][#conda-forge-package]
@@ -69,20 +70,28 @@ The package, `alibi-detect` can be installed from:
 ### With pip
 
 - alibi-detect can be installed from [PyPI](https://pypi.org/project/alibi-detect):
-
    ```bash
    pip install alibi-detect
    ```
    
 - Alternatively, the development version can be installed:
-
    ```bash
    pip install git+https://github.com/SeldonIO/alibi-detect.git
    ```
 
-- To install with the PyTorch backend (in addition to the default TensorFlow backend):
+- To install with the TensorFlow backend:
+  ```bash
+  pip install alibi-detect[tensorflow]
+  ```
+
+- To install with the PyTorch backend:
   ```bash
   pip install alibi-detect[torch]
+  ```
+
+- To install with the KeOps backend:
+  ```bash
+  pip install alibi-detect[keops]
   ```
 
 - To use the `Prophet` time series outlier detector:
@@ -90,6 +99,7 @@ The package, `alibi-detect` can be installed from:
    ```bash
    pip install alibi-detect[prophet]
    ```
+
 
 ### With conda
 
@@ -100,24 +110,19 @@ which can be installed to the *base* conda enviroment with:
 conda install mamba -n base -c conda-forge
 ```
 
-- To install alibi-detect with the default TensorFlow backend:
+To install alibi-detect:
 
-  ```bash
-  mamba install -c conda-forge alibi-detect
-  ```
+```bash
+mamba install -c conda-forge alibi-detect
+```
 
-- To install with the PyTorch backend:
-
-  ```bash
-  mamba install -c conda-forge alibi-detect pytorch
-  ```
 
 ### Usage
 We will use the [VAE outlier detector](https://docs.seldon.io/projects/alibi-detect/en/stable/od/methods/vae.html) to illustrate the API.
 
 ```python
 from alibi_detect.od import OutlierVAE
-from alibi_detect.utils import save_detector, load_detector
+from alibi_detect.saving import save_detector, load_detector
 
 # initialize and fit detector
 od = OutlierVAE(threshold=0.1, encoder_net=encoder_net, decoder_net=decoder_net, latent_dim=1024)
@@ -181,8 +186,8 @@ The following tables show the advised use cases for each algorithm. The column *
 
 #### TensorFlow and PyTorch support
 
-The drift detectors support TensorFlow and PyTorch backends. Alibi Detect does however not install PyTorch for you. 
-Check the [PyTorch docs](https://pytorch.org/) how to do this. Example:
+The drift detectors support TensorFlow, PyTorch and (where applicable) [KeOps](https://www.kernel-operations.io/keops/index.html) backends. 
+However, Alibi Detect does not install these by default. See the [installation options](#installation-and-usage) for more details.
 
 ```python
 from alibi_detect.cd import MMDDrift
@@ -195,6 +200,13 @@ The same detector in PyTorch:
 
 ```python
 cd = MMDDrift(x_ref, backend='pytorch', p_val=.05)
+preds = cd.predict(x)
+```
+
+Or in KeOps:
+
+```python
+cd = MMDDrift(x_ref, backend='keops', p_val=.05)
 preds = cd.predict(x)
 ```
 
@@ -393,10 +405,10 @@ BibTeX entry:
 ```
 @software{alibi-detect,
   title = {Alibi Detect: Algorithms for outlier, adversarial and drift detection},
-  author = {Van Looveren, Arnaud and Klaise, Janis and Vacanti, Giovanni and Cobb, Oliver and Scillitoe, Ashley and Samoilescu, Robert},
+  author = {Van Looveren, Arnaud and Klaise, Janis and Vacanti, Giovanni and Cobb, Oliver and Scillitoe, Ashley and Samoilescu, Robert and Athorne, Alex},
   url = {https://github.com/SeldonIO/alibi-detect},
-  version = {0.9.1},
-  date = {2022-04-01},
+  version = {0.10.4},
+  date = {2022-10-21},
   year = {2019}
 }
 ```

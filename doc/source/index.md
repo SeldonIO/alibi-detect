@@ -13,6 +13,7 @@
 overview/getting_started
 overview/algorithms
 overview/saving
+overview/config_files
 overview/roadmap
 ```
 

@@ -6,6 +6,7 @@ from alibi_detect.cd.base_online import BaseMultiDriftOnline
 from alibi_detect.utils.pytorch import get_device
 from alibi_detect.utils.pytorch.kernels import GaussianRBF
 from alibi_detect.utils.pytorch import zero_diag, quantile
+from alibi_detect.utils.frameworks import Framework
 
 
 class MMDDriftOnlineTorch(BaseMultiDriftOnline):
@@ -15,6 +16,7 @@ class MMDDriftOnlineTorch(BaseMultiDriftOnline):
             ert: float,
             window_size: int,
             preprocess_fn: Optional[Callable] = None,
+            x_ref_preprocessed: bool = False,
             kernel: Callable = GaussianRBF,
             sigma: Optional[np.ndarray] = None,
             n_bootstraps: int = 1000,
@@ -39,6 +41,10 @@ class MMDDriftOnlineTorch(BaseMultiDriftOnline):
             ability to detect slight drift.
         preprocess_fn
             Function to preprocess the data before computing the data drift metrics.
+        x_ref_preprocessed
+            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
+            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
+            data will also be preprocessed.
         kernel
             Kernel used for the MMD computation, defaults to Gaussian RBF kernel.
         sigma
@@ -64,12 +70,13 @@ class MMDDriftOnlineTorch(BaseMultiDriftOnline):
             ert=ert,
             window_size=window_size,
             preprocess_fn=preprocess_fn,
+            x_ref_preprocessed=x_ref_preprocessed,
             n_bootstraps=n_bootstraps,
             verbose=verbose,
             input_shape=input_shape,
             data_type=data_type
         )
-        self.meta.update({'backend': 'pytorch'})
+        self.meta.update({'backend': Framework.PYTORCH.value})
 
         # set device
         self.device = get_device(device)

@@ -6,16 +6,20 @@ from alibi_detect.cd.base import BaseMMDDrift
 from alibi_detect.utils.pytorch import get_device
 from alibi_detect.utils.pytorch.distance import mmd2_from_kernel_matrix
 from alibi_detect.utils.pytorch.kernels import GaussianRBF
+from alibi_detect.utils.warnings import deprecated_alias
+from alibi_detect.utils.frameworks import Framework
 
 logger = logging.getLogger(__name__)
 
 
 class MMDDriftTorch(BaseMMDDrift):
+    @deprecated_alias(preprocess_x_ref='preprocess_at_init')
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
             p_val: float = .05,
-            preprocess_x_ref: bool = True,
+            x_ref_preprocessed: bool = False,
+            preprocess_at_init: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
             kernel: Callable = GaussianRBF,
@@ -35,8 +39,13 @@ class MMDDriftTorch(BaseMMDDrift):
             Data used as reference distribution.
         p_val
             p-value used for the significance of the permutation test.
-        preprocess_x_ref
-            Whether to already preprocess and store the reference data.
+        x_ref_preprocessed
+            Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
+            the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
+            data will also be preprocessed.
+        preprocess_at_init
+            Whether to preprocess the reference data when the detector is instantiated. Otherwise, the reference
+            data will be preprocessed at prediction time. Only applies if `x_ref_preprocessed=False`.
         update_x_ref
             Reference data can optionally be updated to the last n instances seen by the detector
             or via reservoir sampling with size n. For the former, the parameter equals {'last': n} while
@@ -63,7 +72,8 @@ class MMDDriftTorch(BaseMMDDrift):
         super().__init__(
             x_ref=x_ref,
             p_val=p_val,
-            preprocess_x_ref=preprocess_x_ref,
+            x_ref_preprocessed=x_ref_preprocessed,
+            preprocess_at_init=preprocess_at_init,
             update_x_ref=update_x_ref,
             preprocess_fn=preprocess_fn,
             sigma=sigma,
@@ -72,7 +82,7 @@ class MMDDriftTorch(BaseMMDDrift):
             input_shape=input_shape,
             data_type=data_type
         )
-        self.meta.update({'backend': 'pytorch'})
+        self.meta.update({'backend': Framework.PYTORCH.value})
 
         # set device
         self.device = get_device(device)
@@ -80,7 +90,7 @@ class MMDDriftTorch(BaseMMDDrift):
         # initialize kernel
         sigma = torch.from_numpy(sigma).to(self.device) if isinstance(sigma,  # type: ignore[assignment]
                                                                       np.ndarray) else None
-        self.kernel = kernel(sigma) if kernel == GaussianRBF else kernel
+        self.kernel = kernel(sigma).to(self.device) if kernel == GaussianRBF else kernel
 
         # compute kernel matrix for the reference data
         if self.infer_sigma or isinstance(sigma, torch.Tensor):
@@ -117,7 +127,8 @@ class MMDDriftTorch(BaseMMDDrift):
         x_ref = torch.from_numpy(x_ref).to(self.device)  # type: ignore[assignment]
         x = torch.from_numpy(x).to(self.device)  # type: ignore[assignment]
         # compute kernel matrix, MMD^2 and apply permutation test using the kernel matrix
-        n = x.shape[0]
+        # TODO: (See https://github.com/SeldonIO/alibi-detect/issues/540)
+        n = x.shape[0]  # type: ignore
         kernel_mat = self.kernel_matrix(x_ref, x)  # type: ignore[arg-type]
         kernel_mat = kernel_mat - torch.diag(kernel_mat.diag())  # zero diagonal
         mmd2 = mmd2_from_kernel_matrix(kernel_mat, n, permute=False, zero_diag=False)
