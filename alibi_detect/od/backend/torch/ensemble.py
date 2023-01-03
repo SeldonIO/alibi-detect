@@ -259,7 +259,7 @@ class AverageAggregator(BaseTransformTorch):
         """
         if self.weights is None:
             m = scores.shape[-1]
-            self.weights = torch.ones(m)/m
+            self.weights = torch.ones(m, device=scores.device)/m
         return scores @ self.weights
 
 
