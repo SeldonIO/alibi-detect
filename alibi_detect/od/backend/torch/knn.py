@@ -98,6 +98,6 @@ class KNNTorch(TorchOutlierDetector):
             The Dataset tensor.
         """
         self.x_ref = x_ref
-        if self.accumulator is not None:
+        if self.ensemble:
             scores = self.score(x_ref)
             self.accumulator.fit(scores)

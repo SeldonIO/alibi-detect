@@ -40,6 +40,22 @@ def test_fitted_knn_single_score():
     assert y['p_vals'] is None
 
 
+def test_default_knn_ensemble_init():
+    knn_detector = KNN(k=[8, 9, 10])
+    x_ref = np.random.randn(100, 2)
+    knn_detector.fit(x_ref)
+    x = np.array([[0, 10], [0.1, 0]])
+    y = knn_detector.predict(x)
+    y = y['data']
+    assert y['scores'][0] > 5
+    assert y['scores'][1] < 1
+
+    assert not y['threshold_inferred']
+    assert y['threshold'] is None
+    assert y['preds'] is None
+    assert y['p_vals'] is None
+
+
 def test_fitted_knn_predict():
     knn_detector = make_knn_detector(k=10)
     x_ref = np.random.randn(100, 2)
@@ -107,14 +123,7 @@ def test_fitted_knn_ensemble_predict(aggregator, normalizer):
     assert y['threshold'] is not None
     assert y['p_vals'].all()
     assert (y['preds'] == [True, False]).all()
-
-
-def test_incorrect_knn_ensemble_init():
-    with pytest.raises(ValueError) as err:
-        KNN(k=[8, 9, 10])
-    assert str(err.value) == ("k=[8, 9, 10] is type <class 'list'> but aggregator is None, you must specify at least an"
-                              " aggregator if you want to use the knn detector ensemble like this.")
-
+    
 
 @pytest.mark.parametrize("aggregator", [AverageAggregatorTorch, lambda: TopKAggregatorTorch(k=7),
                                         MaxAggregatorTorch, MinAggregatorTorch])

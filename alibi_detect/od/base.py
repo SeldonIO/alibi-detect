@@ -10,7 +10,6 @@ from alibi_detect.base import BaseDetector
 
 class OutlierDetector(BaseDetector, ABC):
     threshold_inferred = False
-    ensemble = False
 
     def __init__(self):
         """ Base class for outlier detection algorithms."""
