@@ -9,6 +9,7 @@ import torch
 from alibi_detect.od.backend.torch.ensemble import FitMixinTorch
 from alibi_detect.utils.pytorch.misc import get_device
 
+
 @dataclass
 class TorchOutlierDetectorOutput:
     """Output of the outlier detector."""
@@ -18,7 +19,7 @@ class TorchOutlierDetectorOutput:
     preds: Optional[torch.Tensor]
     p_vals: Optional[torch.Tensor]
 
-    def numpy(self) -> Dict[str, Union[bool, Optional[torch.Tensor]]]:
+    def _to_numpy(self) -> Dict[str, Union[bool, Optional[torch.Tensor]]]:
         """Converts the output to numpy."""
         outputs = asdict(self)
         for key, value in outputs.items():
@@ -94,6 +95,20 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
         `torch.Tensor`
         """
         return torch.as_tensor(X, dtype=torch.float32, device=self.device)
+
+    def _to_numpy(self, X: torch.Tensor):
+        """Converts the data to numpy.
+
+        Parameters
+        ----------
+        X
+            Data to convert.
+
+        Returns
+        -------
+        `np.ndarray`
+        """
+        return X.cpu().detach().numpy()
 
     def _accumulator(self, X: torch.Tensor) -> torch.Tensor:
         """Accumulates the data.

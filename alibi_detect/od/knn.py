@@ -94,7 +94,7 @@ class KNN(OutlierDetector):
         instance.
         """
         score = self.backend.score(self.backend._to_tensor(X))
-        return score.numpy()
+        return self.backend._to_numpy(score)
 
     def infer_threshold(self, x_ref: Union[np.ndarray, List], fpr: float) -> None:
         """Infer the threshold for the kNN detector.
@@ -125,7 +125,7 @@ class KNN(OutlierDetector):
         """
         outputs = self.backend.predict(self.backend._to_tensor(X))
         output: Dict[str, Any] = {
-            'data': outputs.numpy(),
+            'data': outputs._to_numpy(),
             'meta': self.meta
         }
         return output
