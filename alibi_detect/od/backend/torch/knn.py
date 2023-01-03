@@ -13,7 +13,7 @@ class KNNTorch(TorchOutlierDetector):
             k: Union[np.ndarray, List],
             kernel: Optional[torch.nn.Module] = None,
             accumulator: Optional[Accumulator] = None,
-            device: Optional[str] = None
+            device: Optional[Union[str, torch.device]] = None
             ):
         """PyTorch backend for KNN detector.
 
@@ -31,6 +31,9 @@ class KNNTorch(TorchOutlierDetector):
             If `k` is an array of integers then the accumulator must not be None. Should be an instance
             of :py:obj:`alibi_detect.od.backend.torch.ensemble.Accumulator`. Responsible for combining
             multiple scores into a single score.
+        device
+            Device type used. The default None tries to use the GPU and falls back on CPU if needed.
+            Can be specified by passing either 'cuda', 'gpu' or 'cpu'. Only relevant for 'pytorch' backend.
         """
         TorchOutlierDetector.__init__(self, device=device)
         self.kernel = kernel

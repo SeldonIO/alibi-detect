@@ -33,7 +33,7 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
     threshold_inferred = False
     threshold = None
 
-    def __init__(self, device: Optional[str] = None):
+    def __init__(self, device: Optional[Union[str, torch.device]] = None):
         self.device = get_device(device)
         super().__init__()
 

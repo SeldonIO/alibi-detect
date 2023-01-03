@@ -6,6 +6,10 @@ import numpy as np
 from alibi_detect.od.base import OutlierDetector, TransformProtocol, FittedTransformProtocol
 from alibi_detect.od.backend import KNNTorch, AccumulatorTorch
 from alibi_detect.utils.frameworks import BackendValidator
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import torch
 
 
 backends = {
@@ -21,7 +25,7 @@ class KNN(OutlierDetector):
         normalizer: Optional[Union[TransformProtocol, FittedTransformProtocol]] = None,
         aggregator: Optional[TransformProtocol] = None,
         backend: Literal['pytorch'] = 'pytorch',
-        device: Literal['cuda', 'gpu', 'cpu'] = 'cpu',
+        device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
     ) -> None:
         """
         k-Nearest Neighbours (kNN) outlier detector.
@@ -40,6 +44,9 @@ class KNN(OutlierDetector):
             then an aggregator is required.
         backend
             Backend used for outlier detection. Defaults to `'pytorch'`. Options are `'pytorch'`.
+        device
+            Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
+            passing either 'cuda', 'gpu' or 'cpu'. Only relevant for 'pytorch' backend.
 
         Raises
         ------
