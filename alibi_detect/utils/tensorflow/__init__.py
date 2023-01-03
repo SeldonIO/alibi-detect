@@ -8,9 +8,9 @@ mmd2, mmd2_from_kernel_matrix, batch_compute_kernel_matrix, relative_euclidean_d
     )
 
 
-GaussianRBF, DeepKernel = import_optional(
+GaussianRBF, DeepKernel, BaseKernel, RationalQuadratic, Periodic, log_sigma_median = import_optional(
     'alibi_detect.utils.tensorflow.kernels',
-    names=['GaussianRBF', 'DeepKernel, BaseKernel, RationalQuadratic, Periodic, log_sigma_median']
+    names=['GaussianRBF', 'DeepKernel', 'BaseKernel', 'RationalQuadratic', 'Periodic', 'log_sigma_median']
 )
 
 

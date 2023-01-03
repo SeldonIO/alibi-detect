@@ -12,9 +12,9 @@ mmd2, mmd2_from_kernel_matrix, squared_pairwise_distance, permed_lsdds, batch_co
            'permed_lsdds', 'batch_compute_kernel_matrix']
 )
 
-GaussianRBF, DeepKernel = import_optional(
+GaussianRBF, DeepKernel, BaseKernel, RationalQuadratic, Periodic, log_sigma_median = import_optional(
     'alibi_detect.utils.pytorch.kernels',
-    names=['GaussianRBF', 'DeepKernel, BaseKernel, RationalQuadratic, Periodic, log_sigma_median']
+    names=['GaussianRBF', 'DeepKernel', 'BaseKernel', 'RationalQuadratic', 'Periodic', 'log_sigma_median']
 )
 
 predict_batch, predict_batch_transformer = import_optional(
