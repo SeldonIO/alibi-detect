@@ -8,6 +8,7 @@ import torch
 
 from alibi_detect.od.backend.torch.ensemble import FitMixinTorch
 from alibi_detect.utils.pytorch.misc import get_device
+from alibi_detect.od.base import ThresholdNotInferredException
 
 
 @dataclass
@@ -75,12 +76,12 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
 
         Raises
         ------
-        ValueError
+        ThresholdNotInferredException
             Raised if threshold is not inferred.
         """
         if not self.threshold_inferred:
-            raise ValueError((f'{self.__class__.__name__} has no threshold set, '
-                              'call `infer_threshold` before predicting.'))
+            raise ThresholdNotInferredException((f'{self.__class__.__name__} has no threshold set, '
+                                                 'call `infer_threshold` before predicting.'))
 
     def _to_tensor(self, x: Union[List, np.ndarray]):
         """Converts the data to a tensor.
@@ -88,7 +89,7 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
         Parameters
         ----------
         x
-            Data to convert.
+            Data to convert.ThresholdNotInferredException
 
         Returns
         -------

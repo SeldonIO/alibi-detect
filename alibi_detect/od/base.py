@@ -103,3 +103,13 @@ class FittedTransformProtocol(TransformProtocol, Protocol):
 
 
 transform_protocols = Union[TransformProtocol, FittedTransformProtocol]
+
+
+class NotFitException(Exception):
+    """Exception raised when a transform is not fitted."""
+    pass
+
+
+class ThresholdNotInferredException(Exception):
+    """Exception raised when a transform is not fitted."""
+    pass

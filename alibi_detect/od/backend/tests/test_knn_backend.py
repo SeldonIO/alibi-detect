@@ -4,6 +4,7 @@ import torch
 from alibi_detect.od.backend.torch.knn import KNNTorch
 from alibi_detect.utils.pytorch.kernels import GaussianRBF
 from alibi_detect.od.backend.torch.ensemble import Accumulator, PValNormalizer, AverageAggregator
+from alibi_detect.od.base import NotFitException, ThresholdNotInferredException
 
 
 @pytest.fixture(scope='session')
@@ -50,11 +51,11 @@ def test_knn_torch_backend_ensemble_ts(tmp_path, accumulator):
     knn_torch = KNNTorch(k=[4, 5], accumulator=accumulator)
     x = torch.randn((3, 10)) * torch.tensor([[1], [1], [100]])
 
-    with pytest.raises(ValueError) as err:
+    with pytest.raises(NotFitException) as err:
         knn_torch(x)
     assert str(err.value) == 'KNNTorch has not been fit!'
 
-    with pytest.raises(ValueError) as err:
+    with pytest.raises(NotFitException) as err:
         knn_torch.predict(x)
     assert str(err.value) == 'KNNTorch has not been fit!'
 
@@ -116,11 +117,11 @@ def test_knn_torch_backend_ensemble_fit_errors(accumulator):
     assert not knn_torch._fitted
 
     x = torch.randn((1, 10))
-    with pytest.raises(ValueError) as err:
+    with pytest.raises(NotFitException) as err:
         knn_torch(x)
     assert str(err.value) == 'KNNTorch has not been fit!'
 
-    with pytest.raises(ValueError) as err:
+    with pytest.raises(NotFitException) as err:
         knn_torch.predict(x)
     assert str(err.value) == 'KNNTorch has not been fit!'
 
@@ -128,7 +129,7 @@ def test_knn_torch_backend_ensemble_fit_errors(accumulator):
     knn_torch.fit(x_ref)
     assert knn_torch._fitted
 
-    with pytest.raises(ValueError) as err:
+    with pytest.raises(ThresholdNotInferredException) as err:
         knn_torch(x)
     assert str(err.value) == 'KNNTorch has no threshold set, call `infer_threshold` before predicting.'
 
@@ -140,11 +141,11 @@ def test_knn_torch_backend_fit_errors():
     assert not knn_torch._fitted
 
     x = torch.randn((1, 10))
-    with pytest.raises(ValueError) as err:
+    with pytest.raises(NotFitException) as err:
         knn_torch(x)
     assert str(err.value) == 'KNNTorch has not been fit!'
 
-    with pytest.raises(ValueError) as err:
+    with pytest.raises(NotFitException) as err:
         knn_torch.predict(x)
     assert str(err.value) == 'KNNTorch has not been fit!'
 
@@ -153,7 +154,7 @@ def test_knn_torch_backend_fit_errors():
 
     assert knn_torch._fitted
 
-    with pytest.raises(ValueError) as err:
+    with pytest.raises(ThresholdNotInferredException) as err:
         knn_torch(x)
     assert str(err.value) == 'KNNTorch has no threshold set, call `infer_threshold` before predicting.'
 

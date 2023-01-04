@@ -5,6 +5,8 @@ import torch
 from alibi_detect.od.knn import KNN
 from alibi_detect.od.backend import AverageAggregatorTorch, TopKAggregatorTorch, MaxAggregatorTorch, \
     MinAggregatorTorch, ShiftAndScaleNormalizerTorch, PValNormalizerTorch
+from alibi_detect.od.base import NotFitException
+
 from sklearn.datasets import make_moons
 
 
@@ -22,7 +24,7 @@ def make_knn_detector(k=5, aggregator=None, normalizer=None):
 def test_unfitted_knn_single_score():
     knn_detector = KNN(k=10)
     x = np.array([[0, 10], [0.1, 0]])
-    with pytest.raises(ValueError) as err:
+    with pytest.raises(NotFitException) as err:
         _ = knn_detector.predict(x)
     assert str(err.value) == 'KNNTorch has not been fit!'
 
@@ -90,7 +92,7 @@ def test_unfitted_knn_ensemble(aggregator, normalizer):
         normalizer=normalizer()
     )
     x = np.array([[0, 10], [0.1, 0]])
-    with pytest.raises(ValueError) as err:
+    with pytest.raises(NotFitException) as err:
         _ = knn_detector.predict(x)
     assert str(err.value) == 'KNNTorch has not been fit!'
 

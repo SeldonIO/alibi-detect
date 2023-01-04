@@ -6,6 +6,8 @@ import torch
 import numpy as np
 from torch.nn import Module
 
+from alibi_detect.od.base import NotFitException
+
 
 class BaseTransformTorch(Module, ABC):
     def __init__(self):
@@ -78,12 +80,11 @@ class FitMixinTorch:
 
         Raises
         ------
-        ValueError
+        NotFitException
             Raised if method called and object has not been fit.
         """
         if not self._fitted:
-            # TODO: make our own NotFitted Error here!
-            raise ValueError(f'{self.__class__.__name__} has not been fit!')
+            raise NotFitException(f'{self.__class__.__name__} has not been fit!')
 
 
 class BaseFittedTransformTorch(BaseTransformTorch, FitMixinTorch):
@@ -117,7 +118,7 @@ class PValNormalizer(BaseFittedTransformTorch):
     def __init__(self):
         """Maps scores to there p values.
 
-        Needs to be fit (see py:obj:alibi_detect.od.backend.torch.ensemble.BaseFittedTransformTorch).
+        Needs to be fit (see :py:obj:`~alibi_detect.od.backend.torch.ensemble.BaseFittedTransformTorch`).
         Returns the proportion of scores in the reference dataset that are greater than the score of
         interest. Output is between 1 and 0. Small values are likely to be outliers.
         """
@@ -161,7 +162,7 @@ class ShiftAndScaleNormalizer(BaseFittedTransformTorch):
     def __init__(self):
         """Maps scores to their normalised values.
 
-        Needs to be fit (see py:obj:alibi_detect.od.backend.torch.ensemble.BaseFittedTransformTorch).
+        Needs to be fit (see :py:obj:`~alibi_detect.od.backend.torch.ensemble.BaseFittedTransformTorch`).
         Subtracts the dataset mean and scales by the standard deviation.
         """
         super().__init__()
@@ -204,7 +205,8 @@ class TopKAggregator(BaseTransformTorch):
         """Takes the mean of the top k scores.
 
         Parameters
-        ----------Anomaly
+        ----------
+        k
             number of scores to take the mean of. If `k` is left `None` then will be set to
             half the number of scores passed in the forward call.
         """
@@ -244,9 +246,7 @@ class AverageAggregator(BaseTransformTorch):
 
     def _transform(self, scores: torch.Tensor) -> torch.Tensor:
         """Averages the scores of the detectors in an ensemble. If weights where passed in the init
-        then these are used to weight the scores.
-
-        Parameters
+        then these are used to weight the scores.Anomaly
         ----------
         scores
             `Torch.Tensor` of scores from ensemble of detectors.
