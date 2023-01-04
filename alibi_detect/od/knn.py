@@ -105,14 +105,17 @@ class KNN(OutlierDetector):
         return self.backend._to_numpy(score)
 
     def infer_threshold(self, x_ref: Union[np.ndarray, List], fpr: float) -> None:
-        """Infer the threshold for the kNN detector.
+        """Infer the threshold for the kNN detector. The threshold is inferred using the reference data and the false
+        positive rate. The threshold is used to determine the outlier labels in the predict method.
 
         Parameters
         ----------
         x_ref
             Reference data used to infer the threshold.
         fpr
-            False positive rate used to infer the threshold.
+            False positive rate used to infer the threshold. The false positive rate is the proportion of instances in \
+            `x_ref` that are incorrectly classified as outliers. The false positive rate should be in the range \
+            `(0, 1)`.
         """
         self.backend.infer_threshold(self.backend._to_tensor(x_ref), fpr)
 
