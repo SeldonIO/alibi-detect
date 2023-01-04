@@ -74,7 +74,7 @@ def save_model_config(model: Callable,
         model = None
     elif isinstance(model, HiddenOutput):
         model = model.model
-    elif isinstance(model, tf.keras.Model):  # This must be last as TransferEmbedding is a tf.keras.Model
+    elif isinstance(model, tf.keras.Model):  # Last as TransformerEmbedding and UAE are tf.keras.Model's
         model = model
     else:
         raise ValueError('Model not recognised, cannot save.')
@@ -156,6 +156,21 @@ def save_embedding_config(embed: TransformerEmbedding,
     embed.model.save_pretrained(filepath)
 
     return cfg_embed
+
+
+def save_optimizer_config(optimizer: tf.keras.optimizers.Optimizer):
+    """
+
+    Parameters
+    ----------
+    optimizer
+        The tensorflow optimizer to serialize.
+
+    Returns
+    -------
+    The tensorflow optimizer's config dictionary.
+    """
+    return tf.keras.optimizers.serialize(optimizer)
 
 
 #######################################################################################################

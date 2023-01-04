@@ -97,10 +97,6 @@ for the remaining detectors is in the [Roadmap](roadmap.md).
 ```
 ````
 
-```{note}
-For detectors with backends, or using preprocessing, save/load support is currently limited to TensorFlow models and backends.
-```
-
 (supported_models)=
 ## Supported ML models
 
@@ -108,7 +104,7 @@ Alibi Detect drift detectors offer the option to perform [preprocessing](../cd/b
 with user-defined machine learning models:
 
 ```python
-model = ... # TensorFlow model; tf.keras.Model or tf.keras.Sequential
+model = ... # A TensorFlow model
 preprocess_fn = partial(preprocess_drift, model=model, batch_size=128)
 cd = MMDDrift(x_ref, backend='tensorflow', p_val=.05, preprocess_fn=preprocess_fn)
 ```
@@ -118,19 +114,25 @@ for example the [Classifier](../cd/methods/classifierdrift.ipynb) drift detector
 as an argument:
 
 ```python
-cd = ClassifierDrift(x_ref, model, p_val=.05, preds_type='probs')
+cd = ClassifierDrift(x_ref, model, backend='sklearn', p_val=.05, preds_type='probs')
 ```
 
 In order for a detector to be saveable and loadable, any models contained within it (or referenced within a 
 [detector configuration file](config_files.md#specifying-artefacts)) must fall within the family of supported models
 documented below.
 
-### TensorFlow models
+### TensorFlow
 
 Alibi Detect supports serialization of any TensorFlow model that can be serialized to the 
 [HDF5](https://www.tensorflow.org/guide/keras/save_and_serialize#keras_h5_format) format. 
 Custom objects should be pre-registered with 
 [register_keras_serializable](https://www.tensorflow.org/api_docs/python/tf/keras/utils/register_keras_serializable).
+
+### PyTorch
+
+PyTorch models are serialized by saving the [entire model](https://pytorch.org/tutorials/beginner/saving_loading_models.html#save-load-entire-model)
+using the [dill](https://dill.readthedocs.io/en/latest/index.html) module. Therefore, Alibi Detect should support any PyTorch 
+model that can be saved and loaded with `torch.save(..., pickle_module=dill)` and `torch.load(..., pickle_module=dill)`.
 
 ### Scikit-learn
 
@@ -139,5 +141,3 @@ Any scikit-learn model that is a subclass of {py:class}`sklearn.base.BaseEstimat
 [xgboost](https://xgboost.readthedocs.io/en/latest/python/python_api.html#module-xgboost.sklearn) models following 
 the scikit-learn API.
 
-
-%### PyTorch

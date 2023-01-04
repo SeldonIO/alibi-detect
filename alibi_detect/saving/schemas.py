@@ -19,18 +19,10 @@ import numpy as np
 from pydantic import BaseModel, validator
 
 from alibi_detect.utils.frameworks import Framework
-from alibi_detect.utils._types import (Literal, NDArray, supported_models_all, supported_models_tf,
+from alibi_detect.utils._types import (Literal, supported_models_all, supported_models_tf,
                                        supported_models_sklearn, supported_models_torch, supported_optimizers_tf,
                                        supported_optimizers_torch, supported_optimizers_all)
-
-
-# Custom validators (defined here for reuse in multiple pydantic models)
-def coerce_int2list(value: int) -> List[int]:
-    """Validator to coerce int to list (pydantic doesn't do this by default)."""
-    if isinstance(value, int):
-        return [value]
-    else:
-        return value
+from alibi_detect.saving.validators import NDArray, validate_framework, coerce_int2list, coerce_2_tensor
 
 
 class SupportedModel:
@@ -46,7 +38,7 @@ class SupportedModel:
     def validate_model(cls, model: Any, values: dict) -> Any:
         backend = values['backend']
         err_msg = f"`backend={backend}` but the `model` doesn't appear to be a {backend} supported model, "\
-                  f"or {backend} is not installed."
+                  f"or {backend} is not installed. Model: {model}"
         if backend == Framework.TENSORFLOW and not isinstance(model, supported_models_tf):
             raise TypeError(err_msg)
         elif backend == Framework.PYTORCH and not isinstance(model, supported_models_torch):
@@ -71,8 +63,8 @@ class SupportedOptimizer:
     @classmethod
     def validate_optimizer(cls, optimizer: Any, values: dict) -> Any:
         backend = values['backend']
-        err_msg = f"`backend={backend}` but the `optimizer` doesn't appear to be a {backend} supported model, "\
-                  f"or {backend} is not installed."
+        err_msg = f"`backend={backend}` but the `optimizer` doesn't appear to be a {backend} supported optimizer, "\
+                  f"or {backend} is not installed. Optimizer: {optimizer}"
         if backend == Framework.TENSORFLOW and not isinstance(optimizer, supported_optimizers_tf):
             raise TypeError(err_msg)
         elif backend == Framework.PYTORCH and not isinstance(optimizer, supported_optimizers_torch):
@@ -122,6 +114,8 @@ class DetectorConfig(CustomBaseModel):
     "Config metadata. Should not be edited."
     # Note: Although not all detectors have a backend, we define in base class as `backend` also determines
     #  whether tf or torch models used for preprocess_fn.
+    # backend validation (only applied if the detector config has a `backend` field
+    _validate_backend = validator('backend', allow_reuse=True, pre=False, check_fields=False)(validate_framework)
 
 
 class ModelConfig(CustomBaseModel):
@@ -164,6 +158,8 @@ class ModelConfig(CustomBaseModel):
     :class:`~alibi_detect.cd.pytorch.preprocess.HiddenOutput` model is returned (dependent on `flavour`).
     Only applies to 'tensorflow' and 'pytorch' models.
     """
+    # Validators
+    _validate_flavour = validator('flavour', allow_reuse=True, pre=False)(validate_framework)
 
 
 class EmbeddingConfig(CustomBaseModel):
@@ -201,6 +197,8 @@ class EmbeddingConfig(CustomBaseModel):
     Model name e.g. `"bert-base-cased"`, or a filepath to directory storing the model to extract embeddings from
     (relative to the `config.toml` file, or absolute).
     """
+    # Validators
+    _validate_flavour = validator('flavour', allow_reuse=True, pre=False)(validate_framework)
 
 
 class TokenizerConfig(CustomBaseModel):
@@ -353,7 +351,11 @@ class KernelConfig(CustomBaseModelWithKwargs):
     "A string referencing a filepath to a serialized kernel in `.dill` format, or an object registry reference."
 
     # Below kwargs are only passed if kernel == @GaussianRBF
-    sigma: Optional[NDArray[np.float32]] = None
+    flavour: Literal['tensorflow', 'pytorch', 'keops']
+    """
+    Whether the kernel is a `tensorflow` or `pytorch` kernel.
+    """
+    sigma: Optional[Union[float, List[float]]] = None
     """
     Bandwidth used for the kernel. Needn’t be specified if being inferred or trained. Can pass multiple values to eval
     kernel with and then average.
@@ -367,6 +369,9 @@ class KernelConfig(CustomBaseModelWithKwargs):
     should match :py:func:`~alibi_detect.utils.tensorflow.kernels.sigma_median`. If `None`, it is set to
     :func:`~alibi_detect.utils.tensorflow.kernels.sigma_median`.
     """
+    # Validators
+    _validate_flavour = validator('flavour', allow_reuse=True, pre=False)(validate_framework)
+    _coerce_sigma2tensor = validator('sigma', allow_reuse=True, pre=False)(coerce_2_tensor)
 
 
 class DeepKernelConfig(CustomBaseModel):
@@ -420,11 +425,14 @@ class DeepKernelConfig(CustomBaseModel):
 
 class OptimizerConfig(CustomBaseModelWithKwargs):
     """
-    Unresolved schema for optimizers. Note that the model "backend" e.g. 'tensorflow', 'pytorch', 'sklearn', is set
-    by `backend` in :class:`DetectorConfig`. If `backend='tensorflow'`, the `optimizer` dictionary is expected to be
-    a configuration dictionary compatible with
-    `tf.keras.optimizers.deserialize <https://www.tensorflow.org/api_docs/python/tf/keras/optimizers/deserialize>`_.
+    Unresolved schema for optimizers. The `optimizer` dictionary has two possible formats:
 
+    1. A configuration dictionary compatible with
+    `tf.keras.optimizers.deserialize <https://www.tensorflow.org/api_docs/python/tf/keras/optimizers/deserialize>`_.
+    For `backend='tensorflow'` only.
+    2. A dictionary containing only `class_name`, where this is a string referencing the optimizer name e.g.
+    `optimizer.class_name = 'Adam'`. In this case, the tensorflow or pytorch optimizer class of the same name is
+    loaded. For `backend='tensorflow'` and `backend='pytorch'`.
 
     Examples
     --------
@@ -439,9 +447,16 @@ class OptimizerConfig(CustomBaseModelWithKwargs):
         name = "Adam"
         learning_rate = 0.001
         decay = 0.0
+
+    A PyTorch Adam optimizer:
+
+    .. code-block :: toml
+
+        [optimizer]
+        class_name = "Adam"
     """
     class_name: str
-    config: Dict[str, Any]
+    config: Optional[Dict[str, Any]] = None
 
 
 class DriftDetectorConfig(DetectorConfig):
