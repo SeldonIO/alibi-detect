@@ -240,8 +240,15 @@ class AverageAggregator(BaseTransformTorch):
         weights
             Optional parameter to weight the scores. If `weights` is left `None` then will be set to
             a vector of ones.
+
+        Raises
+        ------
+        ValueError
+            If `weights` does not sum to 1.
         """
         super().__init__()
+        if weights is not None and weights.sum() != 1:
+            raise ValueError("Weights must sum to 1.")
         self.weights = weights
 
     def _transform(self, scores: torch.Tensor) -> torch.Tensor:

@@ -55,17 +55,28 @@ def test_average_aggregator():
     aggregator = ensemble.AverageAggregator()
     scores = torch.randn((3, 10))
     aggregated_scores = aggregator(scores)
+    assert torch.all(torch.isclose(aggregated_scores, scores.mean(dim=1)))
     assert aggregated_scores.shape == (3, )
+
     aggregator = torch.jit.script(aggregator)
     aggregated_scores_2 = aggregator(scores)
     assert torch.all(aggregated_scores_2 == aggregated_scores)
 
 
 def test_weighted_average_aggregator():
-    aggregator = ensemble.AverageAggregator(weights=torch.randn((10)))
+    weights = abs(torch.randn((10)))
+
+    with pytest.raises(ValueError) as err:
+        aggregator = ensemble.AverageAggregator(weights=weights)
+    assert err.value.args[0] == 'Weights must sum to 1.'
+
+    weights /= weights.sum()
+    aggregator = ensemble.AverageAggregator(weights=weights)
     scores = torch.randn((3, 10))
     aggregated_scores = aggregator(scores)
+    torch.allclose(aggregated_scores, (weights @ scores.T))
     assert aggregated_scores.shape == (3, )
+
     aggregator = torch.jit.script(aggregator)
     aggregated_scores_2 = aggregator(scores)
     assert torch.all(aggregated_scores_2 == aggregated_scores)
@@ -76,6 +87,9 @@ def test_topk_aggregator():
     scores = torch.randn((3, 10))
     aggregated_scores = aggregator(scores)
     assert aggregated_scores.shape == (3, )
+    scores_sorted, _ = torch.sort(scores)
+    torch.allclose(scores_sorted[:, -4:].mean(dim=1), aggregated_scores)
+
     aggregator = torch.jit.script(aggregator)
     aggregated_scores_2 = aggregator(scores)
     assert torch.all(aggregated_scores_2 == aggregated_scores)
@@ -86,6 +100,8 @@ def test_max_aggregator():
     scores = torch.randn((3, 10))
     aggregated_scores = aggregator(scores)
     assert aggregated_scores.shape == (3, )
+    max_vals, _ = scores.max(dim=1)
+    torch.all(max_vals == aggregated_scores)
     aggregator = torch.jit.script(aggregator)
     aggregated_scores_2 = aggregator(scores)
     assert torch.all(aggregated_scores_2 == aggregated_scores)
@@ -96,6 +112,8 @@ def test_min_aggregator():
     scores = torch.randn((3, 10))
     aggregated_scores = aggregator(scores)
     assert aggregated_scores.shape == (3, )
+    min_vals, _ = scores.min(dim=1)
+    torch.all(min_vals == aggregated_scores)
     aggregator = torch.jit.script(aggregator)
     aggregated_scores_2 = aggregator(scores)
     assert torch.all(aggregated_scores_2 == aggregated_scores)
