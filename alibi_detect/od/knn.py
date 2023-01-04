@@ -88,20 +88,20 @@ class KNN(OutlierDetector):
         """
         self.backend.fit(self.backend._to_tensor(x_ref))
 
-    def score(self, X: Union[np.ndarray, List]) -> np.ndarray:
-        """Score X instances using the kNN.
+    def score(self, x: Union[np.ndarray, List]) -> np.ndarray:
+        """Score x instances using the kNN.
 
         Parameters
         ----------
-        X
-            Data to score. The shape of `X` should be `(n_instances, n_features)`.
+        x
+            Data to score. The shape of `x` should be `(n_instances, n_features)`.
 
         Returns
         -------
         Anomaly scores. The shape of the scores is `(n_instances,)`. The higher the score, the more anomalous the \
         instance.
         """
-        score = self.backend.score(self.backend._to_tensor(X))
+        score = self.backend.score(self.backend._to_tensor(x))
         return self.backend._to_numpy(score)
 
     def infer_threshold(self, x_ref: Union[np.ndarray, List], fpr: float) -> None:
@@ -116,13 +116,13 @@ class KNN(OutlierDetector):
         """
         self.backend.infer_threshold(self.backend._to_tensor(x_ref), fpr)
 
-    def predict(self, X: Union[np.ndarray, List]) -> Dict[str, Any]:
-        """Predict whether the instances in X are outliers or not.
+    def predict(self, x: Union[np.ndarray, List]) -> Dict[str, Any]:
+        """Predict whether the instances in x are outliers or not.
 
         Parameters
         ----------
-        X
-            Data to predict. The shape of `X` should be `(n_instances, n_features)`.
+        x
+            Data to predict. The shape of `x` should be `(n_instances, n_features)`.
 
         Returns
         -------
@@ -131,7 +131,7 @@ class KNN(OutlierDetector):
         `(n_instances,)`. The higher the score, the more anomalous the instance. 'meta' contains information about \
         the detector.
         """
-        outputs = self.backend.predict(self.backend._to_tensor(X))
+        outputs = self.backend.predict(self.backend._to_tensor(x))
         output: Dict[str, Any] = {
             'data': outputs._to_numpy(),
             'meta': self.meta

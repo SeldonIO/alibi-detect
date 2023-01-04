@@ -54,12 +54,12 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def score(self, X: torch.Tensor) -> torch.Tensor:
+    def score(self, x: torch.Tensor) -> torch.Tensor:
         """Score the data.
 
         Parameters
         ----------
-        X
+        x
             Data to score.
 
         Raises
@@ -82,40 +82,40 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
             raise ValueError((f'{self.__class__.__name__} has no threshold set, '
                               'call `infer_threshold` before predicting.'))
 
-    def _to_tensor(self, X: Union[List, np.ndarray]):
+    def _to_tensor(self, x: Union[List, np.ndarray]):
         """Converts the data to a tensor.
 
         Parameters
         ----------
-        X
+        x
             Data to convert.
 
         Returns
         -------
         `torch.Tensor`
         """
-        return torch.as_tensor(X, dtype=torch.float32, device=self.device)
+        return torch.as_tensor(x, dtype=torch.float32, device=self.device)
 
-    def _to_numpy(self, X: torch.Tensor):
+    def _to_numpy(self, x: torch.Tensor):
         """Converts the data to numpy.
 
         Parameters
         ----------
-        X
+        x
             Data to convert.
 
         Returns
         -------
         `np.ndarray`
         """
-        return X.cpu().detach().numpy()
+        return x.cpu().detach().numpy()
 
-    def _accumulator(self, X: torch.Tensor) -> torch.Tensor:
+    def _accumulator(self, x: torch.Tensor) -> torch.Tensor:
         """Accumulates the data.
 
         Parameters
         ----------
-        X
+        x
             Data to accumulate.
 
         Returns
@@ -124,7 +124,7 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
         """
         # `type: ignore` here becuase self.accumulator here causes an error with mypy when using torch.jit.script.
         # For some reason it thinks self.accumulator is a torch.Tensor and therefore is not callable.
-        return self.accumulator(X) if self.accumulator is not None else X  # type: ignore
+        return self.accumulator(x) if self.accumulator is not None else x  # type: ignore
 
     def _classify_outlier(self, scores: torch.Tensor) -> torch.Tensor:
         """Classify the data as outlier or not.
@@ -155,12 +155,12 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
         return (1 + (scores[:, None] < self.val_scores).sum(-1))/len(self.val_scores) \
             if self.threshold_inferred else None
 
-    def infer_threshold(self, X: torch.Tensor, fpr: float) -> None:
+    def infer_threshold(self, x: torch.Tensor, fpr: float) -> None:
         """Infer the threshold for the data. Prerequisite for outlier predictions.
 
         Parameters
         ----------
-        X
+        x
             Data to infer the threshold for.
         fpr
             False positive rate to use for threshold inference.
@@ -172,12 +172,12 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
         """
         if not 0 < fpr < 1:
             ValueError('fpr must be in (0, 1).')
-        self.val_scores = self.score(X)
+        self.val_scores = self.score(x)
         self.val_scores = self._accumulator(self.val_scores)
         self.threshold = torch.quantile(self.val_scores, 1-fpr)
         self.threshold_inferred = True
 
-    def predict(self, X: torch.Tensor) -> TorchOutlierDetectorOutput:
+    def predict(self, x: torch.Tensor) -> TorchOutlierDetectorOutput:
         """Predict outlier labels for the data.
 
         Computes the outlier scores. If the detector is not fit on reference data we raise an error.
@@ -186,7 +186,7 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
 
         Parameters
         ----------
-        X
+        x
             Data to predict.
 
         Raises
@@ -201,7 +201,7 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
 
         """
         self.check_fitted()  # type: ignore
-        raw_scores = self.score(X)
+        raw_scores = self.score(x)
         scores = self._accumulator(raw_scores)
         return TorchOutlierDetectorOutput(
             scores=scores,

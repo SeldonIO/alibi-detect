@@ -41,12 +41,12 @@ class KNNTorch(TorchOutlierDetector):
         self.ks = torch.tensor(k) if self.ensemble else torch.tensor([k], device=self.device)
         self.accumulator = accumulator
 
-    def forward(self, X: torch.Tensor) -> torch.Tensor:
-        """Detect if X is an outlier.
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Detect if x is an outlier.
 
         Parameters
         ----------
-        X
+        x
             `torch.Tensor` with leading batch dimension.
 
         Returns
@@ -58,24 +58,24 @@ class KNNTorch(TorchOutlierDetector):
         ValueError
             If called before detector has had threshould_infered method called.
         """
-        raw_scores = self.score(X)
+        raw_scores = self.score(x)
         scores = self._accumulator(raw_scores)
         if not torch.jit.is_scripting():
             self.check_threshould_infered()
         preds = scores > self.threshold
         return preds.cpu()
 
-    def score(self, X: torch.Tensor) -> torch.Tensor:
-        """Computes the score of `X`
+    def score(self, x: torch.Tensor) -> torch.Tensor:
+        """Computes the score of `x`
 
         Parameters
         ----------
-        X
+        x
             Score a tensor of instances. First dimesnion corresponds to batch.
 
         Returns
         -------
-            Tensor of scores for each element in `X`.
+            Tensor of scores for each element in `x`.
 
         Raises
         ------
@@ -84,7 +84,7 @@ class KNNTorch(TorchOutlierDetector):
         """
         if not torch.jit.is_scripting():
             self.check_fitted()
-        K = -self.kernel(X, self.x_ref) if self.kernel is not None else torch.cdist(X, self.x_ref)
+        K = -self.kernel(x, self.x_ref) if self.kernel is not None else torch.cdist(x, self.x_ref)
         bot_k_dists = torch.topk(K, int(torch.max(self.ks)), dim=1, largest=False)
         all_knn_dists = bot_k_dists.values[:, self.ks-1]
         return all_knn_dists if self.ensemble else all_knn_dists[:, 0]

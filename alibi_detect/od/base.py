@@ -18,25 +18,25 @@ class OutlierDetector(BaseDetector, ABC):
         self.meta['detector_type'] = 'outlier'
 
     @abstractmethod
-    def fit(self, X: np.ndarray) -> None:
+    def fit(self, x: np.ndarray) -> None:
         """
         Fit outlier detector to data.
 
         Parameters
         ----------
-        X
+        x
             Reference data.
         """
         pass
 
     @abstractmethod
-    def score(self, X: np.ndarray) -> np.ndarray:
+    def score(self, x: np.ndarray) -> np.ndarray:
         """
-        Compute anomaly scores of the instances in X.
+        Compute anomaly scores of the instances in x.
 
         Parameters
         ----------
-        X
+        x
             Data to score.
 
         Returns
@@ -46,13 +46,13 @@ class OutlierDetector(BaseDetector, ABC):
         pass
 
     @abstractmethod
-    def infer_threshold(self, X: np.ndarray, fpr: float) -> None:
+    def infer_threshold(self, x: np.ndarray, fpr: float) -> None:
         """
         Infer the threshold for the outlier detector.
 
         Parameters
         ----------
-        X
+        x
             Reference data.
         fpr
             False positive rate used to infer the threshold.
@@ -60,13 +60,13 @@ class OutlierDetector(BaseDetector, ABC):
         pass
 
     @abstractmethod
-    def predict(self, X: np.ndarray) -> Dict[str, Any]:
+    def predict(self, x: np.ndarray) -> Dict[str, Any]:
         """
-        Predict whether the instances in X are outliers or not.
+        Predict whether the instances in x are outliers or not.
 
         Parameters
         ----------
-        X
+        x
             Data to predict.
 
         Returns
@@ -77,15 +77,15 @@ class OutlierDetector(BaseDetector, ABC):
         pass
 
 
-# Using Protocols instead base classes for the backend classes. This is a bit more flexible and allows us to
+# Use Protocols instead of base classes for the backend associated objects. This is a bit more flexible and allows us to
 # avoid the torch/tensorflow imports in the base class.
 @runtime_checkable
 class TransformProtocol(Protocol):
     """Protocol for transformer objects."""
-    def transform(self, X):
+    def transform(self, x):
         pass
 
-    def _transform(self, X):
+    def _transform(self, x):
         pass
 
 
