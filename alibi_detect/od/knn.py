@@ -1,6 +1,5 @@
-from typing import Callable, Union, Optional, List, Dict, Any
-
-from typing_extensions import Literal
+from typing import Callable, Union, Optional, Dict, Any, List, Tuple
+from alibi_detect.utils._types import Literal
 import numpy as np
 
 from alibi_detect.od.base import OutlierDetector, TransformProtocol, transform_protocols
@@ -21,7 +20,7 @@ backends = {
 class KNN(OutlierDetector):
     def __init__(
         self,
-        k: Union[int, np.ndarray],
+        k: Union[int, np.ndarray, List[int], Tuple[int]],
         kernel: Optional[Callable] = None,
         normalizer: Optional[Union[transform_protocols, normalizer_literals]] = 'ShiftAndScaleNormalizerTorch',
         aggregator: Union[TransformProtocol, aggregator_literals] = 'AverageAggregatorTorch',
@@ -78,7 +77,7 @@ class KNN(OutlierDetector):
             )
         self.backend = backend_cls(k, kernel=kernel, accumulator=accumulator, device=device)
 
-    def fit(self, x_ref: Union[np.ndarray, List]) -> None:
+    def fit(self, x_ref: np.ndarray) -> None:
         """Fit the detector on reference data.
 
         Parameters
@@ -88,7 +87,7 @@ class KNN(OutlierDetector):
         """
         self.backend.fit(self.backend._to_tensor(x_ref))
 
-    def score(self, x: Union[np.ndarray, List]) -> np.ndarray:
+    def score(self, x: np.ndarray) -> np.ndarray:
         """Score `x` instances using the detector.
 
         Parameters
@@ -104,7 +103,7 @@ class KNN(OutlierDetector):
         score = self.backend.score(self.backend._to_tensor(x))
         return self.backend._to_numpy(score)
 
-    def infer_threshold(self, x_ref: Union[np.ndarray, List], fpr: float) -> None:
+    def infer_threshold(self, x_ref: np.ndarray, fpr: float) -> None:
         """Infer the threshold for the kNN detector. The threshold is inferred using the reference data and the false
         positive rate. The threshold is used to determine the outlier labels in the predict method.
 
@@ -119,7 +118,7 @@ class KNN(OutlierDetector):
         """
         self.backend.infer_threshold(self.backend._to_tensor(x_ref), fpr)
 
-    def predict(self, x: Union[np.ndarray, List]) -> Dict[str, Any]:
+    def predict(self, x: np.ndarray) -> Dict[str, Any]:
         """Predict whether the instances in `x` are outliers or not.
 
         Parameters
