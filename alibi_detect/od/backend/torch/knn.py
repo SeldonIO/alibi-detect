@@ -55,7 +55,7 @@ class KNNTorch(TorchOutlierDetector):
 
         Raises
         ------
-        ValueError
+        ThresholdNotInferredException
             If called before detector has had `infer_threshold` method called.
         """
         raw_scores = self.score(x)
@@ -71,7 +71,7 @@ class KNNTorch(TorchOutlierDetector):
         Parameters
         ----------
         x
-            Score a tensor of instances. First dimesnion corresponds to batch.
+            The tensor of instances. First dimension corresponds to batch.
 
         Returns
         -------
@@ -79,7 +79,7 @@ class KNNTorch(TorchOutlierDetector):
 
         Raises
         ------
-        ValueError
+        NotFitException
             If called before detector has been fit.
         """
         if not torch.jit.is_scripting():
