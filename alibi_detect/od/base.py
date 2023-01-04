@@ -1,6 +1,6 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import Dict, Any
+from typing import Dict, Any, Union
 
 from typing_extensions import Protocol, runtime_checkable
 import numpy as np
@@ -100,3 +100,6 @@ class FittedTransformProtocol(TransformProtocol, Protocol):
 
     def check_fitted(self):
         pass
+
+
+transform_protocols = Union[TransformProtocol, FittedTransformProtocol]

@@ -9,7 +9,10 @@ from sklearn.datasets import make_moons
 
 
 def make_knn_detector(k=5, aggregator=None, normalizer=None):
-    knn_detector = KNN(k=k, aggregator=aggregator, normalizer=normalizer)
+    knn_detector = KNN(
+        k=k, aggregator=aggregator,
+        normalizer=normalizer
+    )
     x_ref = np.random.randn(100, 2)
     knn_detector.fit(x_ref)
     knn_detector.infer_threshold(x_ref, 0.1)
@@ -54,6 +57,12 @@ def test_default_knn_ensemble_init():
     assert y['threshold'] is None
     assert y['preds'] is None
     assert y['p_vals'] is None
+
+
+def test_incorrect_knn_ensemble_init():
+    with pytest.raises(ValueError) as err:
+        KNN(k=[8, 9, 10], aggregator=None)
+    assert str(err.value) == 'If `k` is an array, an aggregator is required.'
 
 
 def test_fitted_knn_predict():
@@ -123,7 +132,7 @@ def test_fitted_knn_ensemble_predict(aggregator, normalizer):
     assert y['threshold'] is not None
     assert y['p_vals'].all()
     assert (y['preds'] == [True, False]).all()
-    
+
 
 @pytest.mark.parametrize("aggregator", [AverageAggregatorTorch, lambda: TopKAggregatorTorch(k=7),
                                         MaxAggregatorTorch, MinAggregatorTorch])
@@ -145,8 +154,11 @@ def test_knn_single_torchscript():
 
 
 @pytest.mark.parametrize("aggregator", [AverageAggregatorTorch, lambda: TopKAggregatorTorch(k=7),
-                                        MaxAggregatorTorch, MinAggregatorTorch])
-@pytest.mark.parametrize("normalizer", [ShiftAndScaleNormalizerTorch, PValNormalizerTorch, lambda: None])
+                                        MaxAggregatorTorch, MinAggregatorTorch, lambda: 'AverageAggregatorTorch',
+                                        lambda: 'TopKAggregatorTorch', lambda: 'MaxAggregatorTorch',
+                                        lambda: 'MinAggregatorTorch'])
+@pytest.mark.parametrize("normalizer", [ShiftAndScaleNormalizerTorch, PValNormalizerTorch, lambda: None,
+                                        lambda: 'ShiftAndScaleNormalizerTorch', lambda: 'PValNormalizerTorch'])
 def test_knn_ensemble_integration(aggregator, normalizer):
     knn_detector = KNN(
         k=[10, 14, 18],

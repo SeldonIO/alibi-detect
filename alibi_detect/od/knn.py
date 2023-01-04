@@ -3,9 +3,9 @@ from typing import Callable, Union, Optional, List, Dict, Any
 from typing_extensions import Literal
 import numpy as np
 
-from alibi_detect.od.base import OutlierDetector, TransformProtocol, FittedTransformProtocol
+from alibi_detect.od.base import OutlierDetector, TransformProtocol, transform_protocols
 from alibi_detect.od import backend as backend_objs
-from alibi_detect.od.backend import NormalizerLiterals, AggregatorLiterals, KNNTorch, AccumulatorTorch
+from alibi_detect.od.backend import normalizer_literals, aggregator_literals, KNNTorch, AccumulatorTorch
 from alibi_detect.utils.frameworks import BackendValidator
 from typing import TYPE_CHECKING
 
@@ -23,11 +23,10 @@ class KNN(OutlierDetector):
         self,
         k: Union[int, np.ndarray],
         kernel: Optional[Callable] = None,
-        normalizer: Optional[Union[TransformProtocol, FittedTransformProtocol, NormalizerLiterals]] 
-        = 'ShiftAndScaleNormalizerTorch',
-        aggregator: Optional[Union[TransformProtocol, AggregatorLiterals]] = 'AverageAggregatorTorch',
-        backend: Literal['pytorch'] = 'pytorch',
+        normalizer: Optional[Union[transform_protocols, normalizer_literals]] = 'ShiftAndScaleNormalizerTorch',
+        aggregator: Optional[Union[TransformProtocol, aggregator_literals]] = 'AverageAggregatorTorch',
         device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
+        backend: Literal['pytorch'] = 'pytorch',
     ) -> None:
         """
         k-Nearest Neighbours (kNN) outlier detector.
@@ -39,11 +38,10 @@ class KNN(OutlierDetector):
             to aggregate the scores.
         kernel
             Kernel function to use for outlier detection. If None, `torch.cdist` is used.
-        # normalizer
-        #     Normalizer to use for outlier detection. If None, no normalisation is applied.
-        # aggregator
-        #     Aggregator to use for outlier detection. If None, no aggregation is applied. If an array is passed for `k`,
-        #     then an aggregator is required.
+        normalizer
+            Normalizer to use for outlier detection. If None, no normalisation is applied.
+        aggregator
+            Aggregator to use for outlier detection. Can be set to None if `k` is a single value.
         backend
             Backend used for outlier detection. Defaults to `'pytorch'`. Options are `'pytorch'`.
         device
@@ -70,6 +68,8 @@ class KNN(OutlierDetector):
         if isinstance(k, (list, np.ndarray, tuple)):
             if isinstance(aggregator, str):
                 aggregator = getattr(backend_objs, aggregator)()
+            if aggregator is None:
+                raise ValueError("If `k` is an array, an aggregator is required.")
             if isinstance(normalizer, str):
                 normalizer = getattr(backend_objs, normalizer)()
             accumulator = accumulator_cls(

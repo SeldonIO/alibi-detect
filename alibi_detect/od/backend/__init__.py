@@ -9,6 +9,6 @@ PValNormalizerTorch, ShiftAndScaleNormalizerTorch, TopKAggregatorTorch, AverageA
          'AverageAggregator', 'MaxAggregator', 'MinAggregator', 'Accumulator']
     )
 
-NormalizerLiterals = Literal['PValNormalizerTorch', 'ShiftAndScaleNormalizerTorch']
-AggregatorLiterals = Literal['TopKAggregatorTorch', 'AverageAggregatorTorch',
-                             'MaxAggregatorTorch', 'MinAggregatorTorch']
+normalizer_literals = Literal['PValNormalizerTorch', 'ShiftAndScaleNormalizerTorch']
+aggregator_literals = Literal['TopKAggregatorTorch', 'AverageAggregatorTorch',
+                              'MaxAggregatorTorch', 'MinAggregatorTorch']
