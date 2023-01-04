@@ -118,9 +118,8 @@ class PValNormalizer(BaseFittedTransformTorch):
         """Maps scores to there p values.
 
         Needs to be fit (see py:obj:alibi_detect.od.backend.torch.ensemble.BaseFittedTransformTorch).
-        Transform counts the number of scores in the reference dataset that are greter than the score
-        of interest and divides by the size of the reference dataset. Output is between 1 and 0. Small
-        values are likely to be outliers.
+        Returns the proportion of scores in the reference dataset that are greater than the score of
+        interest. Output is between 1 and 0. Small values are likely to be outliers.
         """
         super().__init__()
         self.val_scores = None
@@ -205,8 +204,7 @@ class TopKAggregator(BaseTransformTorch):
         """Takes the mean of the top k scores.
 
         Parameters
-        ----------
-        k
+        ----------Anomaly
             number of scores to take the mean of. If `k` is left `None` then will be set to
             half the number of scores passed in the forward call.
         """
