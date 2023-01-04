@@ -61,7 +61,7 @@ class KNNTorch(TorchOutlierDetector):
         raw_scores = self.score(x)
         scores = self._accumulator(raw_scores)
         if not torch.jit.is_scripting():
-            self.check_threshould_infered()
+            self.check_threshold_infered()
         preds = scores > self.threshold
         return preds.cpu()
 

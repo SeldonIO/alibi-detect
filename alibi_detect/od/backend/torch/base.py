@@ -62,7 +62,7 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
         pass
 
     @torch.jit.unused
-    def check_threshould_infered(self):
+    def check_threshold_infered(self):
         """Check if threshold is inferred.
 
         Raises
