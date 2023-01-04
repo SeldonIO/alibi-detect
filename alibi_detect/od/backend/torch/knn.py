@@ -1,4 +1,4 @@
-from typing import Optional, Union, List
+from typing import Optional, Union, List, Tuple
 
 import numpy as np
 import torch
@@ -10,7 +10,7 @@ from alibi_detect.od.backend.torch.base import TorchOutlierDetector
 class KNNTorch(TorchOutlierDetector):
     def __init__(
             self,
-            k: Union[np.ndarray, List],
+            k: Union[np.ndarray, List, Tuple],
             kernel: Optional[torch.nn.Module] = None,
             accumulator: Optional[Accumulator] = None,
             device: Optional[Union[str, torch.device]] = None
@@ -42,7 +42,7 @@ class KNNTorch(TorchOutlierDetector):
         self.accumulator = accumulator
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Detect if x is an outlier.
+        """Detect if `x` is an outlier.
 
         Parameters
         ----------
@@ -56,7 +56,7 @@ class KNNTorch(TorchOutlierDetector):
         Raises
         ------
         ValueError
-            If called before detector has had threshould_infered method called.
+            If called before detector has had `infer_threshold` method called.
         """
         raw_scores = self.score(x)
         scores = self._accumulator(raw_scores)

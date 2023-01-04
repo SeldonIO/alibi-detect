@@ -79,17 +79,17 @@ class KNN(OutlierDetector):
         self.backend = backend_cls(k, kernel=kernel, accumulator=accumulator, device=device)
 
     def fit(self, x_ref: Union[np.ndarray, List]) -> None:
-        """Fit the kNN detector on reference data.
+        """Fit the detector on reference data.
 
         Parameters
         ----------
         x_ref
-            Reference data used to fit the kNN detector.
+            Reference data used to fit the detector.
         """
         self.backend.fit(self.backend._to_tensor(x_ref))
 
     def score(self, x: Union[np.ndarray, List]) -> np.ndarray:
-        """Score x instances using the kNN.
+        """Score `x` instances using the detector.
 
         Parameters
         ----------
@@ -120,7 +120,7 @@ class KNN(OutlierDetector):
         self.backend.infer_threshold(self.backend._to_tensor(x_ref), fpr)
 
     def predict(self, x: Union[np.ndarray, List]) -> Dict[str, Any]:
-        """Predict whether the instances in x are outliers or not.
+        """Predict whether the instances in `x` are outliers or not.
 
         Parameters
         ----------

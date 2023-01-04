@@ -32,7 +32,7 @@ class OutlierDetector(BaseDetector, ABC):
     @abstractmethod
     def score(self, x: np.ndarray) -> np.ndarray:
         """
-        Compute outlier scores of the instances in x.
+        Compute outlier scores of the instances in `x`.
 
         Parameters
         ----------
@@ -62,7 +62,7 @@ class OutlierDetector(BaseDetector, ABC):
     @abstractmethod
     def predict(self, x: np.ndarray) -> Dict[str, Any]:
         """
-        Predict whether the instances in x are outliers or not.
+        Predict whether the instances in `x` are outliers or not.
 
         Parameters
         ----------

@@ -89,7 +89,7 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
         return torch.as_tensor(x, dtype=torch.float32, device=self.device)
 
     def _to_numpy(self, x: torch.Tensor):
-        """Converts the data to numpy.
+        """Converts the data to `numpy.ndarray`.
 
         Parameters
         ----------

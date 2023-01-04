@@ -192,7 +192,7 @@ class ShiftAndScaleNormalizer(BaseFittedTransformTorch):
 
 class TopKAggregator(BaseTransformTorch):
     def __init__(self, k: Optional[int] = None):
-        """Takes the mean of the top k scores.
+        """Takes the mean of the top `k` scores.
 
         Parameters
         ----------
@@ -204,7 +204,7 @@ class TopKAggregator(BaseTransformTorch):
         self.k = k
 
     def _transform(self, scores: torch.Tensor) -> torch.Tensor:
-        """Takes the mean of the top k scores.
+        """Takes the mean of the top `k` scores.
 
         Parameters
         ----------
@@ -213,7 +213,7 @@ class TopKAggregator(BaseTransformTorch):
 
         Returns
         -------
-        `Torch.Tensor` of mean of top k scores.
+        `Torch.Tensor` of mean of top `k` scores.
         """
         if self.k is None:
             self.k = int(np.ceil(scores.shape[1]/2))
@@ -234,7 +234,7 @@ class AverageAggregator(BaseTransformTorch):
         Raises
         ------
         ValueError
-            If `weights` does not sum to 1.
+            If `weights` does not sum to `1`.
         """
         super().__init__()
         if weights is not None and weights.sum() != 1:
@@ -242,8 +242,8 @@ class AverageAggregator(BaseTransformTorch):
         self.weights = weights
 
     def _transform(self, scores: torch.Tensor) -> torch.Tensor:
-        """Averages the scores of the detectors in an ensemble. If weights where passed in the init
-        then these are used to weight the scores.Anomaly
+        """Averages the scores of the detectors in an ensemble. If weights where passed in the `__init__`
+        then these are used to weight the scores.
         ----------
         scores
             `Torch.Tensor` of scores from ensemble of detectors.
@@ -264,7 +264,7 @@ class MaxAggregator(BaseTransformTorch):
         super().__init__()
 
     def _transform(self, scores: torch.Tensor) -> torch.Tensor:
-        """Takes the max score of a set of detectors in an ensemble.
+        """Takes the maximum score of a set of detectors in an ensemble.
 
         Parameters
         ----------
@@ -273,7 +273,7 @@ class MaxAggregator(BaseTransformTorch):
 
         Returns
         -------
-        `Torch.Tensor` of max of scores.
+        `Torch.Tensor` of maximum scores.
         """
         vals, _ = torch.max(scores, dim=-1)
         return vals
@@ -281,11 +281,11 @@ class MaxAggregator(BaseTransformTorch):
 
 class MinAggregator(BaseTransformTorch):
     def __init__(self):
-        """Takes the min score of a set of detectors in an ensemble."""
+        """Takes the minimum score of a set of detectors in an ensemble."""
         super().__init__()
 
     def _transform(self, scores: torch.Tensor) -> torch.Tensor:
-        """Takes the min score of a set of detectors in an ensemble.
+        """Takes the minimum score of a set of detectors in an ensemble.
 
         Parameters
         ----------
@@ -294,7 +294,7 @@ class MinAggregator(BaseTransformTorch):
 
         Returns
         -------
-        `Torch.Tensor` of min of scores.
+        `Torch.Tensor` of minimum scores.
         """
         vals, _ = torch.min(scores, dim=-1)
         return vals
