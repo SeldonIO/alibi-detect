@@ -111,5 +111,5 @@ class NotFitException(Exception):
 
 
 class ThresholdNotInferredException(Exception):
-    """Exception raised when a transform is not fitted."""
+    """Exception raised when a threshold not inferred for an outlier detector."""
     pass

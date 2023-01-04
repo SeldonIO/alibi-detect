@@ -29,20 +29,14 @@ class BaseTransformTorch(Module, ABC):
         ----------
         x
             numpy array to be transformed
-
-        Raises
-        ------
-        NotImplementedError
-            if _transform is not implimented on child class raise
-            NotImplementedError
         """
-        raise NotImplementedError()
+        pass
 
     def forward(self, x: torch.Tensor):
         return self.transform(x=x)
 
 
-class FitMixinTorch:
+class FitMixinTorch(ABC):
     _fitted = False
 
     def __init__(self):
@@ -57,6 +51,7 @@ class FitMixinTorch:
         self._fit(x)
         return self
 
+    @abstractmethod
     def _fit(self, x: torch.Tensor):
         """Fit on `x` tensor.
 
@@ -66,13 +61,8 @@ class FitMixinTorch:
         ----------
         x
             Reference `torch.Tensor` for fitting object.
-
-        Raises
-        ------
-        NotImplementedError
-            Raised if unimplimented.
         """
-        raise NotImplementedError()
+        pass
 
     @torch.jit.unused
     def check_fitted(self):

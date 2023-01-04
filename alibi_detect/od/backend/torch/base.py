@@ -46,13 +46,8 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
         ----------
         x_ref
             Reference data.
-
-        Raises
-        ------
-        `NotImplementedError`
-            Raised if not implemented.
         """
-        raise NotImplementedError()
+        pass
 
     @abstractmethod
     def score(self, x: torch.Tensor) -> torch.Tensor:
@@ -63,12 +58,8 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
         x
             Data to score.
 
-        Raises
-        ------
-        `NotImplementedError`
-            Raised if not implemented.
         """
-        raise NotImplementedError()
+        pass
 
     @torch.jit.unused
     def check_threshould_infered(self):
