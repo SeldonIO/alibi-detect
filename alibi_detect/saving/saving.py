@@ -15,7 +15,6 @@ from alibi_detect.saving.loading import _replace, validate_config, STATE_PATH
 from alibi_detect.saving.registry import registry
 from alibi_detect.utils._types import supported_models_all, supported_models_tf, supported_models_torch, \
     supported_models_sklearn
-from alibi_detect.utils.frameworks import Framework
 from alibi_detect.base import Detector, ConfigurableDetector, StatefulDetector
 from alibi_detect.saving._tensorflow import save_detector_legacy, save_model_config_tf, save_optimizer_config_tf
 from alibi_detect.saving._pytorch import save_model_config_pt
