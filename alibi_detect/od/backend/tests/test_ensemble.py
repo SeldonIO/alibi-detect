@@ -16,6 +16,17 @@ def test_pval_normalizer():
 
     normalizer.fit(x_ref)
     x_norm = normalizer(x)
+
+    # check that the p-values are correct
+    assert torch.all(0 < x_norm)
+    assert torch.all(x_norm < 1)
+    for i in range(3):
+        for j in range(10):
+            comp_pval = ((x_ref[:, j] > x[i][j]).to(torch.float32)).sum() + 1
+            comp_pval /= (x_ref.shape[0] + 1)
+            normalizer_pval = x_norm[i][j].to(torch.float32)
+            assert torch.isclose(1 - comp_pval, normalizer_pval, atol=1e-4)
+
     normalizer = torch.jit.script(normalizer)
     x_norm_2 = normalizer(x)
     assert torch.all(x_norm_2 == x_norm)
@@ -23,8 +34,8 @@ def test_pval_normalizer():
 
 def test_shift_and_scale_normalizer():
     normalizer = ensemble.ShiftAndScaleNormalizer()
-    x = torch.randn(3, 10)
-    x_ref = torch.randn(64, 10)
+    x = torch.randn(3, 10) * 3 + 2
+    x_ref = torch.randn(5000, 10) * 3 + 2
     # unfit normalizer raises exception
     with pytest.raises(NotFitException) as err:
         normalizer(x)
@@ -32,6 +43,9 @@ def test_shift_and_scale_normalizer():
 
     normalizer.fit(x_ref)
     x_norm = normalizer(x)
+    assert torch.isclose(x_norm.mean(), torch.tensor(0.), atol=0.1)
+    assert torch.isclose(x_norm.std(), torch.tensor(1.), atol=0.1)
+
     normalizer = torch.jit.script(normalizer)
     x_norm_2 = normalizer(x)
     assert torch.all(x_norm_2 == x_norm)
