@@ -3,7 +3,6 @@ import pytest
 from alibi_detect.cd import CVMDriftOnline
 from alibi_detect.utils._random import fixed_seed
 
-STATE_DICT = ('t', 'xs', 'ids_ref_wins', 'ids_wins_ref', 'ids_wins_wins')
 n, n_test = 200, 500
 n_bootstraps = 1000
 ert = 50
@@ -63,10 +62,10 @@ def test_cvmdriftonline(window_sizes, batch_size, n_feat, seed):
 
 
 @pytest.mark.parametrize('n_feat', n_features)
-def test_cvm_online_state_functional(n_feat, tmp_path, seed):
+def test_cvm_online_state_online(n_feat, tmp_path, seed):
     """
-    A functional test of save/load/reset methods or CVMDriftOnline. State is saved, reset, and loaded, with
-    prediction results checked.
+        Test save/load/reset state methods for CVMDriftOnline. State is saved, reset, and loaded, with
+    prediction results and stateful attributes compared to original.
     """
     window_sizes = [10]
 
@@ -75,13 +74,17 @@ def test_cvm_online_state_functional(n_feat, tmp_path, seed):
         x = np.random.normal(0.1, 1, (n, n_feat))
         dd = CVMDriftOnline(x_ref, window_sizes=window_sizes, ert=20)
 
-    # Run for 50 time steps
+    # Run for 10 time steps
     test_stats_1 = []
     for t, x_t in enumerate(x):
+        if t == 5:
+            dd.save_state(tmp_path)
+            # Store state for comparison
+            orig_state_dict = {}
+            for key in dd.online_state_keys:
+                orig_state_dict[key] = getattr(dd, key)
         preds = dd.predict(x_t)
         test_stats_1.append(preds['data']['test_stat'])
-        if t == 20:
-            dd.save_state(tmp_path)
 
     # Clear state and repeat, check that same test_stats both times
     dd.reset()
@@ -91,29 +94,13 @@ def test_cvm_online_state_functional(n_feat, tmp_path, seed):
         test_stats_2.append(preds['data']['test_stat'])
     np.testing.assert_array_equal(test_stats_1, test_stats_2)
 
-    # Load state from t=20 timestep and check results of t=21 the same
+    # Load state from t=5 timestep
     dd.load_state(tmp_path)
-    new_pred = dd.predict(x[21])
-    np.testing.assert_array_equal(new_pred['data']['test_stat'], test_stats_1[21])
 
-
-@pytest.mark.parametrize('n_feat', n_features)
-def test_cvm_online_state_unit(n_feat, tmp_path):
-    """
-    A unit-type test of save/load/reset methods or CVMDriftOnline. Stateful attributes in STATE_DICT are
-    compared pre and post save/load.
-    """
-    window_sizes = [10]
-    x_ref = np.random.normal(0, 1, (n, n_feat))
-    dd = CVMDriftOnline(x_ref, window_sizes=window_sizes, ert=20)
-    # Get original state
-    orig_state_dict = {}
-    for key in STATE_DICT:
-        orig_state_dict[key] = getattr(dd, key)
-    # Save, reset and load
-    dd.save_state(tmp_path)
-    dd.reset()
-    dd.load_state(tmp_path)
-    # Compare state to original
+    # Compare stateful attributes to original at t=5
     for key, orig_val in orig_state_dict.items():
-        np.testing.assert_array_equal(orig_val, getattr(dd, key))  # use np.testing here as it handles tt.Tensor etc
+        np.testing.assert_array_equal(orig_val, getattr(dd, key))  # use np.testing here as it handles torch.Tensor etc
+
+    # Compare predictions to original at t=5
+    new_pred = dd.predict(x[5])
+    np.testing.assert_array_equal(new_pred['data']['test_stat'], test_stats_1[5])

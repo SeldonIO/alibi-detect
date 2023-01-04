@@ -9,7 +9,6 @@ from alibi_detect.cd.tensorflow.mmd_online import MMDDriftOnlineTF
 from alibi_detect.cd.tensorflow.preprocess import HiddenOutput, UAE, preprocess_drift
 from alibi_detect.utils._random import fixed_seed
 
-STATE_DICT = ('t', 'test_window', 'k_xy')
 n, n_hidden, n_classes = 400, 10, 5
 
 
@@ -124,10 +123,10 @@ def test_mmd_online(mmd_online_params, seed):
     assert np.mean(test_stats_h1) > np.mean(test_stats_h0)
 
 
-def test_mmd_online_state_functional(tmp_path, seed):
+def test_mmd_online_state_online(tmp_path, seed):
     """
-    A functional test of save/load/reset methods or MMDDriftOnlineTorch. State is saved, reset, and loaded, with
-    prediction results checked.
+        Test save/load/reset state methods for MMDDriftOnlineTF. State is saved, reset, and loaded, with
+    prediction results and stateful attributes compared to original.
     """
     n = 100
     with fixed_seed(seed):
@@ -135,13 +134,17 @@ def test_mmd_online_state_functional(tmp_path, seed):
         x = np.random.normal(0.1, 1, (n, n_classes))
         dd = MMDDriftOnlineTF(x_ref, window_size=10, ert=20)
 
-    # Run for 50 time steps
+    # Run for 10 time steps
     test_stats_1 = []
     for t, x_t in enumerate(x):
+        if t == 5:
+            dd.save_state(tmp_path)
+            # Store state for comparison
+            orig_state_dict = {}
+            for key in dd.online_state_keys:
+                orig_state_dict[key] = getattr(dd, key)
         preds = dd.predict(x_t)
         test_stats_1.append(preds['data']['test_stat'])
-        if t == 20:
-            dd.save_state(tmp_path)
 
     # Clear state and repeat, check that same test_stats both times
     dd.reset()
@@ -151,27 +154,13 @@ def test_mmd_online_state_functional(tmp_path, seed):
         test_stats_2.append(preds['data']['test_stat'])
     np.testing.assert_array_equal(test_stats_1, test_stats_2)
 
-    # Load state from t=20 timestep and check results of t=21 equal
+    # Load state from t=5 timestep
     dd.load_state(tmp_path)
-    new_pred = dd.predict(x[21])
-    assert new_pred['data']['test_stat'] == test_stats_1[21]
 
-
-def test_mmd_online_state_unit(tmp_path):
-    """
-    A unit-type test of save/load/reset methods or MMDDriftOnlineTorch. Stateful attributes in STATE_DICT are
-    compared pre and post save/load.
-    """
-    x_ref = np.random.normal(0, 1, (n, n_classes))
-    dd = MMDDriftOnlineTF(x_ref, window_size=10, ert=20)
-    # Get original state
-    orig_state_dict = {}
-    for key in STATE_DICT:
-        orig_state_dict[key] = getattr(dd, key)
-    # Save, reset and load
-    dd.save_state(tmp_path)
-    dd.reset()
-    dd.load_state(tmp_path)
-    # Compare state to original
+    # Compare stateful attributes to original at t=5
     for key, orig_val in orig_state_dict.items():
-        np.testing.assert_array_equal(orig_val, getattr(dd, key))  # use np.testing here as it handles tt.Tensor etc
+        np.testing.assert_array_equal(orig_val, getattr(dd, key))  # use np.testing here as it handles torch.Tensor etc
+
+    # Compare predictions to original at t=5
+    new_pred = dd.predict(x[5])
+    assert new_pred['data']['test_stat'] == test_stats_1[5]
