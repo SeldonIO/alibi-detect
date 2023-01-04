@@ -24,7 +24,7 @@ class KNN(OutlierDetector):
         k: Union[int, np.ndarray],
         kernel: Optional[Callable] = None,
         normalizer: Optional[Union[transform_protocols, normalizer_literals]] = 'ShiftAndScaleNormalizerTorch',
-        aggregator: Optional[Union[TransformProtocol, aggregator_literals]] = 'AverageAggregatorTorch',
+        aggregator: Union[TransformProtocol, aggregator_literals] = 'AverageAggregatorTorch',
         device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
         backend: Literal['pytorch'] = 'pytorch',
     ) -> None:
