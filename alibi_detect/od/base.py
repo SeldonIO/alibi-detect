@@ -32,7 +32,7 @@ class OutlierDetector(BaseDetector, ABC):
     @abstractmethod
     def score(self, x: np.ndarray) -> np.ndarray:
         """
-        Compute anomaly scores of the instances in x.
+        Compute outlier scores of the instances in x.
 
         Parameters
         ----------
@@ -41,7 +41,7 @@ class OutlierDetector(BaseDetector, ABC):
 
         Returns
         -------
-        Anomaly scores. The higher the score, the more anomalous the instance.
+        Outlier scores. The higher the score, the more anomalous the instance.
         """
         pass
 

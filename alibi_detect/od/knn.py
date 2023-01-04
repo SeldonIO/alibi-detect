@@ -98,7 +98,7 @@ class KNN(OutlierDetector):
 
         Returns
         -------
-        Anomaly scores. The shape of the scores is `(n_instances,)`. The higher the score, the more anomalous the \
+        Outlier scores. The shape of the scores is `(n_instances,)`. The higher the score, the more anomalous the \
         instance.
         """
         score = self.backend.score(self.backend._to_tensor(x))
