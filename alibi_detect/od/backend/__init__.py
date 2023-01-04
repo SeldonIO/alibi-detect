@@ -1,5 +1,5 @@
 from alibi_detect.utils.missing_optional_dependency import import_optional
-from typing import Literal
+from alibi_detect.utils._types import Literal
 
 KNNTorch = import_optional('alibi_detect.od.backend.torch.knn', ['KNNTorch'])
 PValNormalizerTorch, ShiftAndScaleNormalizerTorch, TopKAggregatorTorch, AverageAggregatorTorch, \
