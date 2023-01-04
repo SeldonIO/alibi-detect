@@ -15,6 +15,7 @@ from alibi_detect.saving._tensorflow import load_detector_legacy, load_embedding
     load_model_tf, load_optimizer_tf, prep_model_and_emb_tf, get_tf_dtype
 from alibi_detect.saving._pytorch import load_embedding_pt, load_kernel_config_pt, load_model_pt, \
     load_optimizer_pt, prep_model_and_emb_pt, get_pt_dtype
+from alibi_detect.saving._keops import load_kernel_config_ke
 from alibi_detect.saving._sklearn import load_model_sk
 from alibi_detect.saving.validate import validate_config
 from alibi_detect.base import Detector, ConfigurableDetector, StatefulDetector
@@ -134,11 +135,6 @@ def _load_detector_config(filepath: Union[str, os.PathLike]) -> ConfigurableDete
     cfg = validate_config(cfg, resolved=True)
     logger.info('Validated resolved config.')
 
-    # Backend
-    backend = cfg.get('backend')
-    if backend is not None and backend.lower() not in (Framework.TENSORFLOW, Framework.PYTORCH, Framework.SKLEARN):
-        raise NotImplementedError('Loading detectors with keops backend is not yet supported.')
-
     # Init detector from config
     logger.info('Instantiating detector.')
     detector = _init_detector(cfg)
@@ -196,8 +192,10 @@ def _load_kernel_config(cfg: dict, backend: str = Framework.TENSORFLOW) -> Calla
     """
     if backend == Framework.TENSORFLOW:
         kernel = load_kernel_config_tf(cfg)
-    else:
+    elif backend == Framework.PYTORCH:
         kernel = load_kernel_config_pt(cfg)
+    else:  # backend=='keops'
+        kernel = load_kernel_config_ke(cfg)
     return kernel
 
 

@@ -35,7 +35,7 @@ Instead of using a decorator, objects can also be registered by directly using t
 
 import catalogue
 
-from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
+from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, has_keops
 
 if has_tensorflow:
     from alibi_detect.cd.tensorflow import \
@@ -51,6 +51,10 @@ if has_pytorch:
     from alibi_detect.utils.pytorch.kernels import \
         GaussianRBF as GaussianRBF_torch, sigma_median as sigma_median_torch
     from alibi_detect.cd.pytorch.context_aware import _sigma_median_diag as _sigma_median_diag_torch
+
+if has_keops:
+    from alibi_detect.utils.keops.kernels import \
+        GaussianRBF as GaussianRBF_keops, sigma_mean as sigma_mean_keops
 
 # Create registry
 registry = catalogue.create("alibi_detect", "registry")
@@ -68,3 +72,7 @@ if has_pytorch:
     registry.register('utils.pytorch.kernels.sigma_median', func=sigma_median_torch)
     registry.register('cd.pytorch.context_aware._sigma_median_diag', func=_sigma_median_diag_torch)
     registry.register('cd.pytorch.preprocess.preprocess_drift', func=preprocess_drift_torch)
+
+if has_keops:
+    registry.register('utils.keops.kernels.GaussianRBF', func=GaussianRBF_keops)
+    registry.register('utils.keops.kernels.sigma_mean', func=sigma_mean_keops)

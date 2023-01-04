@@ -77,7 +77,7 @@ def coerce_2_tensor(value: Union[float, List[float]], values: dict):
         raise ValueError('`coerce_2tensor` failed since no framework identified.')
     elif framework == Framework.TENSORFLOW and has_tensorflow:
         return tf.convert_to_tensor(value)
-    elif framework == Framework.PYTORCH and has_pytorch:
+    elif (framework == Framework.PYTORCH and has_pytorch) or (framework == Framework.KEOPS and has_keops):
         return torch.tensor(value)
     else:
         # Error should not be raised since `flavour` should have already been validated.

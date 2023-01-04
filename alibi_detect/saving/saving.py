@@ -60,9 +60,6 @@ def save_detector(
         if save_state:
             warnings.warn("The `save_state` option isn't supported in combination with the `legacy` option.")
 
-    if 'backend' in list(detector.meta.keys()) and detector.meta['backend'] == Framework.KEOPS:
-        raise NotImplementedError('Saving detectors with keops backend is not yet supported.')
-
     # TODO: Replace .__args__ w/ typing.get_args() once Python 3.7 dropped (and remove type ignore below)
     detector_name = detector.__class__.__name__
     if detector_name not in [detector for detector in VALID_DETECTORS]:
@@ -141,11 +138,7 @@ def _save_detector_config(detector: ConfigurableDetector,
         Whether to save the detector's state (state is then automatically loaded by `load_detector`). Only supported
         for detectors with `save_state` methods, such as online detectors.
     """
-    # Get backend, input_shape and detector_name
-    backend = detector.meta.get('backend')
-    if backend not in (None, Framework.TENSORFLOW, Framework.PYTORCH, Framework.SKLEARN):
-        raise NotImplementedError("Currently, saving is only supported with backend='tensorflow', 'pytorch', and "
-                                  "'sklearn'.")
+    # detector name
     detector_name = detector.__class__.__name__
 
     # Process file paths
