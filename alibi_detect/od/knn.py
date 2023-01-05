@@ -64,18 +64,27 @@ class KNN(OutlierDetector):
 
         backend_cls, accumulator_cls = backends[backend]
         accumulator = None
+
+        if aggregator is None and isinstance(k, (list, np.ndarray, tuple)):
+            raise ValueError("If `k` is an array, an aggregator is required.")
+
         if isinstance(k, (list, np.ndarray, tuple)):
-            if isinstance(aggregator, str):
-                aggregator = getattr(backend_objs, aggregator)()
-            if aggregator is None:
-                raise ValueError("If `k` is an array, an aggregator is required.")
-            if isinstance(normalizer, str):
-                normalizer = getattr(backend_objs, normalizer)()
             accumulator = accumulator_cls(
-                normalizer=normalizer,
-                aggregator=aggregator
+                normalizer=self._make_normalizer(normalizer),
+                aggregator=self._make_aggregator(aggregator)
             )
+
         self.backend = backend_cls(k, kernel=kernel, accumulator=accumulator, device=device)
+
+    def _make_aggregator(self, aggregator: Union[TransformProtocol, aggregator_literals]) -> TransformProtocol:
+        if isinstance(aggregator, str):
+            aggregator = getattr(backend_objs, aggregator)()
+        return aggregator
+
+    def _make_normalizer(self, normalizer: Union[transform_protocols, normalizer_literals]) -> transform_protocols:
+        if isinstance(normalizer, str):
+            normalizer = getattr(backend_objs, normalizer)()
+        return normalizer
 
     def fit(self, x_ref: np.ndarray) -> None:
         """Fit the detector on reference data.
