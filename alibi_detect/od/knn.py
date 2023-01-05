@@ -3,8 +3,8 @@ from alibi_detect.utils._types import Literal
 import numpy as np
 
 from alibi_detect.od.base import OutlierDetector, TransformProtocol, transform_protocols
-from alibi_detect.od import backend as backend_objs
-from alibi_detect.od.backend import normalizer_literals, aggregator_literals, KNNTorch, AccumulatorTorch
+from alibi_detect.od.backend import normalizer_literals, aggregator_literals, KNNTorch, AccumulatorTorch, \
+    get_aggregator, get_normalizer
 from alibi_detect.utils.frameworks import BackendValidator
 from typing import TYPE_CHECKING
 
@@ -33,8 +33,8 @@ class KNN(OutlierDetector):
         Parameters
         ----------
         k
-            Number of nearest neighbours to use for outlier detection. If an array is passed, an aggregator is required
-            to aggregate the scores.
+            Number of nearest neighboursreveal_type(normalizer) to use for outlier detection. If an array is passed, an
+            aggregator is required to aggregate the scores.
         kernel
             Kernel function to use for outlier detection. If None, `torch.cdist` is used.
         normalizer
@@ -70,21 +70,11 @@ class KNN(OutlierDetector):
 
         if isinstance(k, (list, np.ndarray, tuple)):
             accumulator = accumulator_cls(
-                normalizer=self._make_normalizer(normalizer),
-                aggregator=self._make_aggregator(aggregator)
+                normalizer=get_normalizer(normalizer),
+                aggregator=get_aggregator(aggregator)
             )
 
         self.backend = backend_cls(k, kernel=kernel, accumulator=accumulator, device=device)
-
-    def _make_aggregator(self, aggregator: Union[TransformProtocol, aggregator_literals]) -> TransformProtocol:
-        if isinstance(aggregator, str):
-            aggregator = getattr(backend_objs, aggregator)()
-        return aggregator
-
-    def _make_normalizer(self, normalizer: Union[transform_protocols, normalizer_literals]) -> transform_protocols:
-        if isinstance(normalizer, str):
-            normalizer = getattr(backend_objs, normalizer)()
-        return normalizer
 
     def fit(self, x_ref: np.ndarray) -> None:
         """Fit the detector on reference data.
