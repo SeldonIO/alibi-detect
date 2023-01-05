@@ -135,7 +135,7 @@ class KNN(OutlierDetector):
         """
         outputs = self.backend.predict(self.backend._to_tensor(x))
         output: Dict[str, Any] = {
-            'data': outputs._to_numpy(),
+            'data': self.backend._to_numpy(outputs),
             'meta': self.meta
         }
         return output

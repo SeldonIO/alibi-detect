@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import List, Dict, Union, Optional
+from typing import List, Union, Optional
 from dataclasses import dataclass, asdict
 from abc import ABC, abstractmethod
 
@@ -19,14 +19,6 @@ class TorchOutlierDetectorOutput:
     threshold: Optional[torch.Tensor]
     preds: Optional[torch.Tensor]
     p_vals: Optional[torch.Tensor]
-
-    def _to_numpy(self) -> Dict[str, Union[bool, Optional[torch.Tensor]]]:
-        """Converts the output to numpy."""
-        outputs = asdict(self)
-        for key, value in outputs.items():
-            if isinstance(value, torch.Tensor):
-                outputs[key] = value.cpu().detach().numpy()
-        return outputs
 
 
 class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
@@ -88,7 +80,7 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
         """
         return torch.as_tensor(x, dtype=torch.float32, device=self.device)
 
-    def _to_numpy(self, x: torch.Tensor):
+    def _to_numpy(self, x: Union[torch.Tensor, TorchOutlierDetectorOutput]):
         """Converts the data to `numpy.ndarray`.
 
         Parameters
@@ -100,7 +92,14 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
         -------
         `np.ndarray`
         """
-        return x.cpu().detach().numpy()
+        if isinstance(x, torch.Tensor):
+            return x.cpu().detach().numpy()
+        elif isinstance(x, TorchOutlierDetectorOutput):
+            outputs = asdict(x)
+            for key, value in outputs.items():
+                if isinstance(value, torch.Tensor):
+                    outputs[key] = value.cpu().detach().numpy()
+            return outputs
 
     def _accumulator(self, x: torch.Tensor) -> torch.Tensor:
         """Accumulates the data.
