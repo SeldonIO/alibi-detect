@@ -822,30 +822,35 @@ def test_save_online_state(detector, data, seed, tmp_path):
     else:  # multivariate
         with fixed_seed(seed):
             dd = detector(X_ref, ert=100, window_size=10, backend='pytorch')
-    # Run for 50 time-steps
+
+    # Run for 10 time-steps
     test_stats = []
-    for t, x_t in enumerate(X_h0[:50]):
-        test_stats.append(dd.predict(x_t)['data']['test_stat'])
-        if t == 20:
+    for t, x_t in enumerate(X_h0[:10]):
+        if t == 5:
             # Save detector (with state)
             save_detector(dd, tmp_path, save_state=True)
+        test_stats.append(dd.predict(x_t)['data']['test_stat'])
 
     # Check state file created
-    state_path_attr = dd.state_path if detector == CVMDriftOnline else dd._detector.state_path
-    expected_path = tmp_path.joinpath('state/state.npz') if detector == CVMDriftOnline \
-        else tmp_path.joinpath('state/state.pt')
-    assert state_path_attr == expected_path
-    assert state_path_attr.is_file()
+    state_path_attr = dd.state_dir if detector == CVMDriftOnline else dd._detector.state_dir
+    assert state_path_attr == tmp_path.joinpath('state')
 
     # Load
     with fixed_seed(seed):
         dd_new = load_detector(tmp_path)
-    # Check attributes and compare predictions at t=21
-    assert dd_new.t == 21
+    # Check attributes and compare predictions at t=5
+    assert dd_new.t == 5
     if detector == LSDDDriftOnline:  # Often a small (~1e-6) difference in LSDD test stats post-load # TODO - why?
-        np.testing.assert_array_almost_equal(dd_new.predict(X_h0[21])['data']['test_stat'], test_stats[21], 5)
+        np.testing.assert_array_almost_equal(dd_new.predict(X_h0[5])['data']['test_stat'], test_stats[5], 5)
     else:
-        np.testing.assert_array_equal(dd_new.predict(X_h0[21])['data']['test_stat'], test_stats[21])
+        np.testing.assert_array_equal(dd_new.predict(X_h0[5])['data']['test_stat'], test_stats[5])
+
+    # Check that error raised if no state file inside `state/` dir
+    for child in tmp_path.joinpath('state').glob('*'):
+        if child.is_file():
+            child.unlink()
+    with pytest.raises(FileNotFoundError):
+        load_detector(tmp_path)
 
 
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')

@@ -5,12 +5,16 @@ TODO: This submodule will eventually be moved to alibi_detect.saving, however th
  support to be refactored or removed, so that the detectors imported in saving._tensorflow.saving/loading do not cause
  circular dependency issues.
 """
+import logging
+
 import numpy as np
 from pathlib import Path
 from alibi_detect.utils.pytorch import _save_state_dict as _save_state_dict_pt, \
     _load_state_dict as _load_state_dict_pt
 
 from alibi_detect.base import BaseDetector
+
+logger = logging.getLogger(__name__)
 
 
 def save_state_dict(detector: BaseDetector, keys: tuple, filepath: Path):
@@ -35,7 +39,7 @@ def save_state_dict(detector: BaseDetector, keys: tuple, filepath: Path):
         np.savez(filepath, **state_dict)
 
 
-def load_state_dict(detector: BaseDetector, filepath: Path):
+def load_state_dict(detector: BaseDetector, filepath: Path, raise_error: bool = True):
     """
     Utility function to load a detector's state dictionary from a filepath, and update the detectors attributes with
     the values in the state dictionary.
@@ -46,14 +50,22 @@ def load_state_dict(detector: BaseDetector, filepath: Path):
         The detector to update.
     filepath
         File to load state dictionary from.
+    raise_error
+        Whether to raise an error if a file is not found at `filepath`. Otherwise, raise a warning and skip loading.
 
     Returns
     -------
     None. The detector is updated inplace.
     """
-    if filepath.suffix == '.pt':
-        state_dict = _load_state_dict_pt(filepath)
+    if filepath.is_file():
+        if filepath.suffix == '.pt':
+            state_dict = _load_state_dict_pt(filepath)
+        else:
+            state_dict = np.load(str(filepath))
+        for key, value in state_dict.items():
+            setattr(detector, key, value)
     else:
-        state_dict = np.load(filepath)
-    for key, value in state_dict.items():
-        setattr(detector, key, value)
+        if raise_error:
+            raise FileNotFoundError('State file not found at {}.'.format(filepath))
+        else:
+            logger.warning('State file not found at {}. Skipping loading of state.'.format(filepath))

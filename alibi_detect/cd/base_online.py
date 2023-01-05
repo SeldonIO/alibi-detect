@@ -112,7 +112,7 @@ class BaseMultiDriftOnline(BaseDetector):
     def _update_state(self, x_t: Union[np.ndarray, 'tf.Tensor', 'torch.Tensor']):
         pass
 
-    def _set_state_path(self, dirpath: Union[str, os.PathLike]):
+    def _set_state_dir(self, dirpath: Union[str, os.PathLike]):
         """
         Set the directory path to store state in, and create an empty directory if it doesn't already exist.
 
@@ -121,10 +121,8 @@ class BaseMultiDriftOnline(BaseDetector):
         dirpath
             The directory to save state file inside.
         """
-        dirpath = Path(dirpath)
-        dirpath.mkdir(parents=True, exist_ok=True)
-        self.state_path = dirpath.joinpath('state.pt') if self.backend == Framework.PYTORCH else \
-            dirpath.joinpath('state.npz')
+        self.state_dir = Path(dirpath)
+        self.state_dir.mkdir(parents=True, exist_ok=True)
 
     def save_state(self, filepath: Union[str, os.PathLike]):
         """
@@ -135,8 +133,8 @@ class BaseMultiDriftOnline(BaseDetector):
         filepath
             The directory to save state to.
         """
-        self._set_state_path(filepath)
-        save_state_dict(self, self.online_state_keys, self.state_path)
+        self._set_state_dir(filepath)
+        self._save_state()
 
     def load_state(self, filepath: Union[str, os.PathLike]):
         """
@@ -148,8 +146,29 @@ class BaseMultiDriftOnline(BaseDetector):
         filepath
             The directory to load state from.
         """
-        self._set_state_path(filepath)
-        load_state_dict(self, self.state_path)
+        self._set_state_dir(filepath)
+        self._load_state()
+
+    def _save_state(self):
+        """
+        Private method to save a detector's state to disk.
+
+        TODO - Method slightly verbose as designed to facilitate saving of "offline" state in follow-up PR.
+        """
+        suffix = '.pt' if self.backend == Framework.PYTORCH else '.npz'
+        filename = 'state'
+        keys = self.online_state_keys
+        save_state_dict(self, keys, self.state_dir.joinpath(filename + suffix))
+
+    def _load_state(self, offline: bool = False):
+        """
+        Private method to load a detector's state from disk.
+
+        TODO - Method slightly verbose as designed to facilitate loading of "offline" state in follow-up PR.
+        """
+        suffix = '.pt' if self.backend == Framework.PYTORCH else '.npz'
+        filename = 'state'
+        load_state_dict(self, self.state_dir.joinpath(filename + suffix), raise_error=True)
 
     def _preprocess_xt(self, x_t: Union[np.ndarray, Any]) -> np.ndarray:
         """
@@ -369,6 +388,18 @@ class BaseUniDriftOnline(BaseDetector):
         dirpath.mkdir(parents=True, exist_ok=True)
         self.state_path = dirpath.joinpath('state.npz')
 
+    def _set_state_dir(self, dirpath: Union[str, os.PathLike]):
+        """
+        Set the directory path to store state in, and create an empty directory if it doesn't already exist.
+
+        Parameters
+        ----------
+        dirpath
+            The directory to save state file inside.
+        """
+        self.state_dir = Path(dirpath)
+        self.state_dir.mkdir(parents=True, exist_ok=True)
+
     def save_state(self, filepath: Union[str, os.PathLike]):
         """
         Save a detector's state to disk in order to generate a checkpoint.
@@ -378,8 +409,8 @@ class BaseUniDriftOnline(BaseDetector):
         filepath
             The directory to save state to.
         """
-        self._set_state_path(filepath)
-        save_state_dict(self, self.online_state_keys, self.state_path)
+        self._set_state_dir(filepath)
+        self._save_state()
 
     def load_state(self, filepath: Union[str, os.PathLike]):
         """
@@ -391,8 +422,27 @@ class BaseUniDriftOnline(BaseDetector):
         filepath
             The directory to load state from.
         """
-        self._set_state_path(filepath)
-        load_state_dict(self, self.state_path)
+        self._set_state_dir(filepath)
+        self._load_state()
+
+    def _save_state(self):
+        """
+        Private method to save a detector's state to disk.
+
+        TODO - Method slightly verbose as designed to facilitate saving of "offline" state in follow-up PR.
+        """
+        filename = 'state'
+        keys = self.online_state_keys
+        save_state_dict(self, keys, self.state_dir.joinpath(filename + '.npz'))
+
+    def _load_state(self, offline: bool = False):
+        """
+        Private method to load a detector's state from disk.
+
+        TODO - Method slightly verbose as designed to facilitate loading of "offline" state in follow-up PR.
+        """
+        filename = 'state'
+        load_state_dict(self, self.state_dir.joinpath(filename + '.npz'), raise_error=True)
 
     def _check_x(self, x: Any, x_ref: bool = False) -> np.ndarray:
         """
