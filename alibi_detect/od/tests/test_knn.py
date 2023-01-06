@@ -36,13 +36,13 @@ def test_fitted_knn_single_score():
     x = np.array([[0, 10], [0.1, 0]])
     y = knn_detector.predict(x)
     y = y['data']
-    assert y['scores'][0] > 5
-    assert y['scores'][1] < 1
+    assert y['instance_score'][0] > 5
+    assert y['instance_score'][1] < 1
 
     assert not y['threshold_inferred']
     assert y['threshold'] is None
-    assert y['preds'] is None
-    assert y['p_vals'] is None
+    assert y['is_outlier'] is None
+    assert y['p_value'] is None
 
 
 def test_default_knn_ensemble_init():
@@ -52,13 +52,13 @@ def test_default_knn_ensemble_init():
     x = np.array([[0, 10], [0.1, 0]])
     y = knn_detector.predict(x)
     y = y['data']
-    assert y['scores'][0] > 5
-    assert y['scores'][1] < 1
+    assert y['instance_score'][0] > 5
+    assert y['instance_score'][1] < 1
 
     assert not y['threshold_inferred']
     assert y['threshold'] is None
-    assert y['preds'] is None
-    assert y['p_vals'] is None
+    assert y['is_outlier'] is None
+    assert y['p_value'] is None
 
 
 def test_incorrect_knn_ensemble_init():
@@ -74,12 +74,12 @@ def test_fitted_knn_predict():
     x = np.array([[0, 10], [0, 0.1]])
     y = knn_detector.predict(x)
     y = y['data']
-    assert y['scores'][0] > 5
-    assert y['scores'][1] < 1
+    assert y['instance_score'][0] > 5
+    assert y['instance_score'][1] < 1
     assert y['threshold_inferred']
     assert y['threshold'] is not None
-    assert y['p_vals'].all()
-    assert (y['preds'] == [True, False]).all()
+    assert y['p_value'].all()
+    assert (y['is_outlier'] == [True, False]).all()
 
 
 @pytest.mark.parametrize("aggregator", [AverageAggregatorTorch, lambda: TopKAggregatorTorch(k=7),
@@ -111,11 +111,11 @@ def test_fitted_knn_ensemble(aggregator, normalizer):
     x = np.array([[0, 10], [0, 0.1]])
     y = knn_detector.predict(x)
     y = y['data']
-    assert y['scores'].all()
+    assert y['instance_score'].all()
     assert not y['threshold_inferred']
     assert y['threshold'] is None
-    assert y['preds'] is None
-    assert y['p_vals'] is None
+    assert y['is_outlier'] is None
+    assert y['p_value'] is None
 
 
 @pytest.mark.parametrize("aggregator", [AverageAggregatorTorch, lambda: TopKAggregatorTorch(k=7),
@@ -132,8 +132,8 @@ def test_fitted_knn_ensemble_predict(aggregator, normalizer):
     y = y['data']
     assert y['threshold_inferred']
     assert y['threshold'] is not None
-    assert y['p_vals'].all()
-    assert (y['preds'] == [True, False]).all()
+    assert y['p_value'].all()
+    assert (y['is_outlier'] == [True, False]).all()
 
 
 @pytest.mark.parametrize("aggregator", [AverageAggregatorTorch, lambda: TopKAggregatorTorch(k=7),
@@ -172,12 +172,12 @@ def test_knn_ensemble_integration(aggregator, normalizer):
     knn_detector.fit(X_ref)
     knn_detector.infer_threshold(X_ref, 0.1)
     result = knn_detector.predict(x_inlier)
-    result = result['data']['preds'][0]
+    result = result['data']['is_outlier'][0]
     assert not result
 
     x_outlier = np.array([[-1, 1.5]])
     result = knn_detector.predict(x_outlier)
-    result = result['data']['preds'][0]
+    result = result['data']['is_outlier'][0]
     assert result
 
     tsknn = torch.jit.script(knn_detector.backend)
@@ -193,12 +193,12 @@ def test_knn_integration():
     knn_detector.fit(X_ref)
     knn_detector.infer_threshold(X_ref, 0.1)
     result = knn_detector.predict(x_inlier)
-    result = result['data']['preds'][0]
+    result = result['data']['is_outlier'][0]
     assert not result
 
     x_outlier = np.array([[-1, 1.5]])
     result = knn_detector.predict(x_outlier)
-    result = result['data']['preds'][0]
+    result = result['data']['is_outlier'][0]
     assert result
 
     tsknn = torch.jit.script(knn_detector.backend)

@@ -1,12 +1,16 @@
 from typing import Callable, Union, Optional, Dict, Any, List, Tuple
-from alibi_detect.utils._types import Literal
+from typing import TYPE_CHECKING
+
 import numpy as np
 
+from alibi_detect.utils._types import Literal
+from alibi_detect.base import outlier_prediction_dict
 from alibi_detect.od.base import OutlierDetector, TransformProtocol, transform_protocols
 from alibi_detect.od.backend import normalizer_literals, aggregator_literals, KNNTorch, AccumulatorTorch, \
     get_aggregator, get_normalizer
 from alibi_detect.utils.frameworks import BackendValidator
-from typing import TYPE_CHECKING
+from alibi_detect.version import __version__
+
 
 if TYPE_CHECKING:
     import torch
@@ -133,8 +137,16 @@ class KNN(OutlierDetector):
         the detector.
         """
         outputs = self.backend.predict(self.backend._to_tensor(x))
-        output: Dict[str, Any] = {
-            'data': self.backend._to_numpy(outputs),
-            'meta': self.meta
+        output = outlier_prediction_dict()
+        output['data'] = {
+            **output['data'],
+            **self.backend._to_numpy(outputs)
+        }
+        output['meta'] = {
+            **output['meta'],
+            'name': self.__class__.__name__,
+            'detector_type': 'outlier',
+            'online': False,
+            'version': __version__,
         }
         return output

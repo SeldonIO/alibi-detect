@@ -15,10 +15,10 @@ from alibi_detect.od.base import ThresholdNotInferredException
 class TorchOutlierDetectorOutput:
     """Output of the outlier detector."""
     threshold_inferred: bool
-    scores: torch.Tensor
+    instance_score: torch.Tensor
     threshold: Optional[torch.Tensor]
-    preds: Optional[torch.Tensor]
-    p_vals: Optional[torch.Tensor]
+    is_outlier: Optional[torch.Tensor]
+    p_value: Optional[torch.Tensor]
 
 
 class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
@@ -194,10 +194,11 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
         self.check_fitted()  # type: ignore
         raw_scores = self.score(x)
         scores = self._accumulator(raw_scores)
+
         return TorchOutlierDetectorOutput(
-            scores=scores,
-            preds=self._classify_outlier(scores),
-            p_vals=self._p_vals(scores),
+            instance_score=scores,
+            is_outlier=self._classify_outlier(scores),
+            p_value=self._p_vals(scores),
             threshold_inferred=self.threshold_inferred,
             threshold=self.threshold
         )

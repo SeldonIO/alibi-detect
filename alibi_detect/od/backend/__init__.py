@@ -23,7 +23,7 @@ def get_normalizer(normalizer: Union[transform_protocols, normalizer_literals]) 
             return {
                 'PValNormalizerTorch': PValNormalizerTorch,
                 'ShiftAndScaleNormalizerTorch': ShiftAndScaleNormalizerTorch,
-            }.get(normalizer, )()
+            }.get(normalizer)()
         except KeyError:
             raise NotImplementedError(f'Normalizer {normalizer} not implemented.')
     return normalizer
@@ -37,7 +37,7 @@ def get_aggregator(aggregator: Union[TransformProtocol, aggregator_literals]) ->
                 'AverageAggregatorTorch': AverageAggregatorTorch,
                 'MaxAggregatorTorch': MaxAggregatorTorch,
                 'MinAggregatorTorch': MinAggregatorTorch,
-            }.get(aggregator, )()
+            }.get(aggregator)()
         except KeyError:
             raise NotImplementedError(f'Aggregator {aggregator} not implemented.')
     return aggregator
