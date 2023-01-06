@@ -3,8 +3,8 @@ import numpy as np
 import torch
 
 from alibi_detect.od.knn import KNN
-from alibi_detect.od.backend import AverageAggregatorTorch, TopKAggregatorTorch, MaxAggregatorTorch, \
-    MinAggregatorTorch, ShiftAndScaleNormalizerTorch, PValNormalizerTorch
+from alibi_detect.od import AverageAggregator, TopKAggregator, MaxAggregator, \
+    MinAggregator, ShiftAndScaleNormalizer, PValNormalizer
 from alibi_detect.od.base import NotFitException
 
 from sklearn.datasets import make_moons
@@ -82,9 +82,9 @@ def test_fitted_knn_predict():
     assert (y['is_outlier'] == [True, False]).all()
 
 
-@pytest.mark.parametrize("aggregator", [AverageAggregatorTorch, lambda: TopKAggregatorTorch(k=7),
-                                        MaxAggregatorTorch, MinAggregatorTorch])
-@pytest.mark.parametrize("normalizer", [ShiftAndScaleNormalizerTorch, PValNormalizerTorch, lambda: None])
+@pytest.mark.parametrize("aggregator", [AverageAggregator, lambda: TopKAggregator(k=7),
+                                        MaxAggregator, MinAggregator])
+@pytest.mark.parametrize("normalizer", [ShiftAndScaleNormalizer, PValNormalizer, lambda: None])
 def test_unfitted_knn_ensemble(aggregator, normalizer):
     knn_detector = KNN(
         k=[8, 9, 10],
@@ -97,9 +97,9 @@ def test_unfitted_knn_ensemble(aggregator, normalizer):
     assert str(err.value) == 'KNNTorch has not been fit!'
 
 
-@pytest.mark.parametrize("aggregator", [AverageAggregatorTorch, lambda: TopKAggregatorTorch(k=7),
-                                        MaxAggregatorTorch, MinAggregatorTorch])
-@pytest.mark.parametrize("normalizer", [ShiftAndScaleNormalizerTorch, PValNormalizerTorch, lambda: None])
+@pytest.mark.parametrize("aggregator", [AverageAggregator, lambda: TopKAggregator(k=7),
+                                        MaxAggregator, MinAggregator])
+@pytest.mark.parametrize("normalizer", [ShiftAndScaleNormalizer, PValNormalizer, lambda: None])
 def test_fitted_knn_ensemble(aggregator, normalizer):
     knn_detector = KNN(
         k=[8, 9, 10],
@@ -118,9 +118,9 @@ def test_fitted_knn_ensemble(aggregator, normalizer):
     assert y['p_value'] is None
 
 
-@pytest.mark.parametrize("aggregator", [AverageAggregatorTorch, lambda: TopKAggregatorTorch(k=7),
-                                        MaxAggregatorTorch, MinAggregatorTorch])
-@pytest.mark.parametrize("normalizer", [ShiftAndScaleNormalizerTorch, PValNormalizerTorch, lambda: None])
+@pytest.mark.parametrize("aggregator", [AverageAggregator, lambda: TopKAggregator(k=7),
+                                        MaxAggregator, MinAggregator])
+@pytest.mark.parametrize("normalizer", [ShiftAndScaleNormalizer, PValNormalizer, lambda: None])
 def test_fitted_knn_ensemble_predict(aggregator, normalizer):
     knn_detector = make_knn_detector(
         k=[8, 9, 10],
@@ -136,9 +136,9 @@ def test_fitted_knn_ensemble_predict(aggregator, normalizer):
     assert (y['is_outlier'] == [True, False]).all()
 
 
-@pytest.mark.parametrize("aggregator", [AverageAggregatorTorch, lambda: TopKAggregatorTorch(k=7),
-                                        MaxAggregatorTorch, MinAggregatorTorch])
-@pytest.mark.parametrize("normalizer", [ShiftAndScaleNormalizerTorch, PValNormalizerTorch, lambda: None])
+@pytest.mark.parametrize("aggregator", [AverageAggregator, lambda: TopKAggregator(k=7),
+                                        MaxAggregator, MinAggregator])
+@pytest.mark.parametrize("normalizer", [ShiftAndScaleNormalizer, PValNormalizer, lambda: None])
 def test_knn_ensemble_torch_script(aggregator, normalizer):
     knn_detector = make_knn_detector(k=[5, 6, 7], aggregator=aggregator(), normalizer=normalizer())
     tsknn = torch.jit.script(knn_detector.backend)
@@ -155,12 +155,12 @@ def test_knn_single_torchscript():
     assert torch.all(y == torch.tensor([True, False]))
 
 
-@pytest.mark.parametrize("aggregator", [AverageAggregatorTorch, lambda: TopKAggregatorTorch(k=7),
-                                        MaxAggregatorTorch, MinAggregatorTorch, lambda: 'AverageAggregatorTorch',
-                                        lambda: 'TopKAggregatorTorch', lambda: 'MaxAggregatorTorch',
-                                        lambda: 'MinAggregatorTorch'])
-@pytest.mark.parametrize("normalizer", [ShiftAndScaleNormalizerTorch, PValNormalizerTorch, lambda: None,
-                                        lambda: 'ShiftAndScaleNormalizerTorch', lambda: 'PValNormalizerTorch'])
+@pytest.mark.parametrize("aggregator", [AverageAggregator, lambda: TopKAggregator(k=7),
+                                        MaxAggregator, MinAggregator, lambda: 'AverageAggregator',
+                                        lambda: 'TopKAggregator', lambda: 'MaxAggregator',
+                                        lambda: 'MinAggregator'])
+@pytest.mark.parametrize("normalizer", [ShiftAndScaleNormalizer, PValNormalizer, lambda: None,
+                                        lambda: 'ShiftAndScaleNormalizer', lambda: 'PValNormalizer'])
 def test_knn_ensemble_integration(aggregator, normalizer):
     knn_detector = KNN(
         k=[10, 14, 18],

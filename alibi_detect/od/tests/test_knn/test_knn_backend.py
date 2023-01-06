@@ -1,9 +1,9 @@
 import pytest
 import torch
 
-from alibi_detect.od.backend.torch.knn import KNNTorch
+from alibi_detect.od.pytorch.knn import KNNTorch
 from alibi_detect.utils.pytorch.kernels import GaussianRBF
-from alibi_detect.od.backend.torch.ensemble import Accumulator, PValNormalizer, AverageAggregator
+from alibi_detect.od.pytorch.ensemble import Accumulator, PValNormalizer, AverageAggregator
 from alibi_detect.od.base import NotFitException, ThresholdNotInferredException
 
 

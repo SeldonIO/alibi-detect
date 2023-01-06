@@ -108,7 +108,7 @@ class PValNormalizer(BaseFittedTransformTorch):
     def __init__(self):
         """Maps scores to there p values.
 
-        Needs to be fit (see :py:obj:`~alibi_detect.od.backend.torch.ensemble.BaseFittedTransformTorch`).
+        Needs to be fit (see :py:obj:`~alibi_detect.od.pytorch.ensemble.BaseFittedTransformTorch`).
         Returns the proportion of scores in the reference dataset that are greater than the score of
         interest. Output is between 1 and 0. Small values are likely to be outliers.
         """
@@ -152,7 +152,7 @@ class ShiftAndScaleNormalizer(BaseFittedTransformTorch):
     def __init__(self):
         """Maps scores to their normalised values.
 
-        Needs to be fit (see :py:obj:`~alibi_detect.od.backend.torch.ensemble.BaseFittedTransformTorch`).
+        Needs to be fit (see :py:obj:`~alibi_detect.od.pytorch.ensemble.BaseFittedTransformTorch`).
         Subtracts the dataset mean and scales by the standard deviation.
         """
         super().__init__()

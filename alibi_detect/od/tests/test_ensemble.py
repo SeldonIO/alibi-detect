@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-from alibi_detect.od.backend.torch import ensemble
+from alibi_detect.od.pytorch import ensemble
 from alibi_detect.od.base import NotFitException
 
 

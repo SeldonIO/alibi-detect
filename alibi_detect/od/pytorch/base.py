@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 import torch
 
-from alibi_detect.od.backend.torch.ensemble import FitMixinTorch
+from alibi_detect.od.pytorch.ensemble import FitMixinTorch
 from alibi_detect.utils.pytorch.misc import get_device
 from alibi_detect.od.base import ThresholdNotInferredException
 

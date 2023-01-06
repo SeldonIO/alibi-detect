@@ -3,8 +3,8 @@ from typing import Optional, Union, List, Tuple
 import numpy as np
 import torch
 
-from alibi_detect.od.backend.torch.ensemble import Accumulator
-from alibi_detect.od.backend.torch.base import TorchOutlierDetector
+from alibi_detect.od.pytorch.ensemble import Accumulator
+from alibi_detect.od.pytorch.base import TorchOutlierDetector
 
 
 class KNNTorch(TorchOutlierDetector):
@@ -29,7 +29,7 @@ class KNNTorch(TorchOutlierDetector):
             while computing the k nearest neighbor distance.
         accumulator
             If `k` is an array of integers then the accumulator must not be None. Should be an instance
-            of :py:obj:`alibi_detect.od.backend.torch.ensemble.Accumulator`. Responsible for combining
+            of :py:obj:`alibi_detect.od.pytorch.ensemble.Accumulator`. Responsible for combining
             multiple scores into a single score.
         device
             Device type used. The default None tries to use the GPU and falls back on CPU if needed.

@@ -6,8 +6,8 @@ import numpy as np
 from alibi_detect.utils._types import Literal
 from alibi_detect.base import outlier_prediction_dict
 from alibi_detect.od.base import OutlierDetector, TransformProtocol, transform_protocols
-from alibi_detect.od.backend import normalizer_literals, aggregator_literals, KNNTorch, AccumulatorTorch, \
-    get_aggregator, get_normalizer
+from alibi_detect.od.pytorch import KNNTorch, Accumulator
+from alibi_detect.od import normalizer_literals, aggregator_literals, get_aggregator, get_normalizer
 from alibi_detect.utils.frameworks import BackendValidator
 from alibi_detect.version import __version__
 
@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 
 backends = {
-    'pytorch': (KNNTorch, AccumulatorTorch)
+    'pytorch': (KNNTorch, Accumulator)
 }
 
 
@@ -26,8 +26,8 @@ class KNN(OutlierDetector):
         self,
         k: Union[int, np.ndarray, List[int], Tuple[int]],
         kernel: Optional[Callable] = None,
-        normalizer: Optional[Union[transform_protocols, normalizer_literals]] = 'ShiftAndScaleNormalizerTorch',
-        aggregator: Union[TransformProtocol, aggregator_literals] = 'AverageAggregatorTorch',
+        normalizer: Optional[Union[transform_protocols, normalizer_literals]] = 'ShiftAndScaleNormalizer',
+        aggregator: Union[TransformProtocol, aggregator_literals] = 'AverageAggregator',
         device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
         backend: Literal['pytorch'] = 'pytorch',
     ) -> None:
