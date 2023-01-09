@@ -107,6 +107,7 @@ autodoc_mock_imports = [
     "transformers",
     "tqdm",
     "dill",
+    "joblib",
     "numba",
     "pydantic",
     "toml",
