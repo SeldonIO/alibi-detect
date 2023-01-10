@@ -808,20 +808,21 @@ def test_save_onlinefetdrift(data, tmp_path, seed):
     np.testing.assert_array_almost_equal(stats, stats_load, 4)
 
 
-@parametrize("detector", [CVMDriftOnline, MMDDriftOnline, LSDDDriftOnline])
+@parametrize("detector", [MMDDriftOnline, LSDDDriftOnline])
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
-def test_save_online_state(detector, data, seed, tmp_path):
+def test_save_multivariate_online_state(detector, data, backend, seed, tmp_path):
     """
-    Test the saving (and loading) of online detectors' state when `save_state=True` is passed to `save_detector`.
-    To simplify data loading `FETDriftOnline` is skipped.
+    Test the saving (and loading) of multivariate online detectors' state when `save_state=True` is passed to
+    `save_detector`.
     """
+    # Skip if backend not `tensorflow` or `pytorch`
+    if backend not in ('tensorflow', 'pytorch'):
+        pytest.skip("Detector doesn't have this backend")
+
     # Init detector and make prediction to update state
     X_ref, X_h0 = data
-    if detector == CVMDriftOnline:  # univariate
-        dd = detector(X_ref, ert=100, window_sizes=[10])
-    else:  # multivariate
-        with fixed_seed(seed):
-            dd = detector(X_ref, ert=100, window_size=10, backend='pytorch')
+    with fixed_seed(seed):
+        dd = detector(X_ref, ert=100, window_size=10, backend=backend)
 
     # Run for 10 time-steps
     test_stats = []
@@ -832,8 +833,7 @@ def test_save_online_state(detector, data, seed, tmp_path):
         test_stats.append(dd.predict(x_t)['data']['test_stat'])
 
     # Check state file created
-    state_path_attr = dd.state_dir if detector == CVMDriftOnline else dd._detector.state_dir
-    assert state_path_attr == tmp_path.joinpath('state')
+    assert dd._detector.state_dir == tmp_path.joinpath('state')
 
     # Load
     with fixed_seed(seed):
@@ -844,6 +844,78 @@ def test_save_online_state(detector, data, seed, tmp_path):
         np.testing.assert_array_almost_equal(dd_new.predict(X_h0[5])['data']['test_stat'], test_stats[5], 5)
     else:
         np.testing.assert_array_equal(dd_new.predict(X_h0[5])['data']['test_stat'], test_stats[5])
+
+    # Check that error raised if no state file inside `state/` dir
+    for child in tmp_path.joinpath('state').glob('*'):
+        if child.is_file():
+            child.unlink()
+    with pytest.raises(FileNotFoundError):
+        load_detector(tmp_path)
+
+
+@parametrize("detector", [CVMDriftOnline])
+@parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
+def test_save_cvm_online_state(detector, data, seed, tmp_path):
+    """
+    Test the saving (and loading) of the CVM online detector's state when `save_state=True` is passed to
+    `save_detector`.
+    """
+    # Init detector and make prediction to update state
+    X_ref, X_h0 = data
+    dd = detector(X_ref, ert=100, window_sizes=[10])
+
+    # Run for 10 time-steps
+    test_stats = []
+    for t, x_t in enumerate(X_h0[:10]):
+        if t == 5:
+            # Save detector (with state)
+            save_detector(dd, tmp_path, save_state=True)
+        test_stats.append(dd.predict(x_t)['data']['test_stat'])
+
+    # Check state file created
+    assert dd.state_dir == tmp_path.joinpath('state')
+
+    # Load
+    dd_new = load_detector(tmp_path)
+    # Check attributes and compare predictions at t=5
+    assert dd_new.t == 5
+    np.testing.assert_array_equal(dd_new.predict(X_h0[5])['data']['test_stat'], test_stats[5])
+
+    # Check that error raised if no state file inside `state/` dir
+    for child in tmp_path.joinpath('state').glob('*'):
+        if child.is_file():
+            child.unlink()
+    with pytest.raises(FileNotFoundError):
+        load_detector(tmp_path)
+
+
+@parametrize("detector", [FETDriftOnline])
+@parametrize_with_cases("data", cases=BinData, prefix='data_')
+def test_save_fet_online_state(detector, data, seed, tmp_path):
+    """
+    Test the saving (and loading) of the FET online detector's state when `save_state=True` is passed to
+    `save_detector`.
+    """
+    # Init detector and make prediction to update state
+    X_ref, X_h0 = data
+    dd = detector(X_ref, ert=100, window_sizes=[10])
+
+    # Run for 10 time-steps
+    test_stats = []
+    for t, x_t in enumerate(X_h0[:10]):
+        if t == 5:
+            # Save detector (with state)
+            save_detector(dd, tmp_path, save_state=True)
+        test_stats.append(dd.predict(x_t)['data']['test_stat'])
+
+    # Check state file created
+    assert dd.state_dir == tmp_path.joinpath('state')
+
+    # Load
+    dd_new = load_detector(tmp_path)
+    # Check attributes and compare predictions at t=5
+    assert dd_new.t == 5
+    np.testing.assert_array_equal(dd_new.predict(X_h0[5])['data']['test_stat'], test_stats[5])
 
     # Check that error raised if no state file inside `state/` dir
     for child in tmp_path.joinpath('state').glob('*'):
