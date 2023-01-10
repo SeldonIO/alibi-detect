@@ -148,6 +148,7 @@ class BaseMultiDriftOnline(BaseDetector):
         """
         self._set_state_dir(filepath)
         self._load_state()
+        logger.info('State loaded for t={} from {}'.format(self.t, self.state_dir))
 
     def _save_state(self):
         """
@@ -159,6 +160,7 @@ class BaseMultiDriftOnline(BaseDetector):
         filename = 'state'
         keys = self.online_state_keys
         save_state_dict(self, keys, self.state_dir.joinpath(filename + suffix))
+        logger.info('Saved state for t={} to {}'.format(self.t, self.state_dir))
 
     def _load_state(self, offline: bool = False):
         """
@@ -411,6 +413,7 @@ class BaseUniDriftOnline(BaseDetector):
         """
         self._set_state_dir(filepath)
         self._save_state()
+        logger.info('Saved state for t={} to {}'.format(self.t, self.state_dir))
 
     def load_state(self, filepath: Union[str, os.PathLike]):
         """
@@ -424,6 +427,7 @@ class BaseUniDriftOnline(BaseDetector):
         """
         self._set_state_dir(filepath)
         self._load_state()
+        logger.info('State loaded for t={} from {}'.format(self.t, self.state_dir))
 
     def _save_state(self):
         """

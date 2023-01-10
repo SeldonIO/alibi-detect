@@ -138,7 +138,6 @@ def _load_detector_config(filepath: Union[str, os.PathLike]) -> ConfigurableDete
     # Init detector from config
     logger.info('Instantiating detector.')
     detector = _init_detector(cfg)
-    logger.info('Finished loading detector.')
 
     # Load state if it exists (and detector supports it)
     # TODO - this will be removed in follow-up offline state PR, as loading to be moved to __init__ (w/ state_dir kwarg)
@@ -146,6 +145,8 @@ def _load_detector_config(filepath: Union[str, os.PathLike]) -> ConfigurableDete
         state_dir = config_dir.joinpath((STATE_PATH))
         if state_dir.is_dir():
             detector.load_state(state_dir)
+
+    logger.info('Finished loading detector.')
 
     return detector
 
