@@ -377,19 +377,6 @@ class BaseUniDriftOnline(BaseDetector):
     def _update_state(self, x_t: np.ndarray):
         pass
 
-    def _set_state_path(self, dirpath: Union[str, os.PathLike]):
-        """
-        Set the directory path to store state in, and create an empty directory if it doesn't already exist.
-
-        Parameters
-        ----------
-        dirpath
-            The directory to save state file inside.
-        """
-        dirpath = Path(dirpath)
-        dirpath.mkdir(parents=True, exist_ok=True)
-        self.state_path = dirpath.joinpath('state.npz')
-
     def _set_state_dir(self, dirpath: Union[str, os.PathLike]):
         """
         Set the directory path to store state in, and create an empty directory if it doesn't already exist.
