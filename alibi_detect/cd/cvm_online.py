@@ -9,7 +9,7 @@ import warnings
 
 
 class CVMDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
-    online_state_keys = ('t', 'xs', 'ids_ref_wins', 'ids_wins_ref', 'ids_wins_wins')
+    online_state_keys = ('t', 'test_stats', 'drift_preds', 'xs', 'ids_ref_wins', 'ids_wins_ref', 'ids_wins_wins')
 
     def __init__(
             self,

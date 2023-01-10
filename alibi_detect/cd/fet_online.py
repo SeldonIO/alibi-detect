@@ -10,7 +10,7 @@ import warnings
 
 
 class FETDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
-    online_state_keys = ('t', 'xs')
+    online_state_keys = ('t', 'test_stats', 'drift_preds', 'xs')
 
     def __init__(
             self,

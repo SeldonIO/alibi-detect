@@ -64,7 +64,7 @@ def test_cvmdriftonline(window_sizes, batch_size, n_feat, seed):
 @pytest.mark.parametrize('n_feat', n_features)
 def test_cvm_online_state_online(n_feat, tmp_path, seed):
     """
-        Test save/load/reset state methods for CVMDriftOnline. State is saved, reset, and loaded, with
+    Test save/load/reset state methods for CVMDriftOnline. State is saved, reset, and loaded, with
     prediction results and stateful attributes compared to original.
     """
     window_sizes = [10]
@@ -73,6 +73,10 @@ def test_cvm_online_state_online(n_feat, tmp_path, seed):
         x_ref = np.random.normal(0, 1, (n, n_feat)).squeeze()
         x = np.random.normal(0.1, 1, (n, n_feat))
         dd = CVMDriftOnline(x_ref, window_sizes=window_sizes, ert=20)
+    # Store state for comparison
+    state_dict_t0 = {}
+    for key in dd.online_state_keys:
+        state_dict_t0[key] = getattr(dd, key)
 
     # Run for 10 time steps
     test_stats_1 = []
@@ -80,14 +84,18 @@ def test_cvm_online_state_online(n_feat, tmp_path, seed):
         if t == 5:
             dd.save_state(tmp_path)
             # Store state for comparison
-            orig_state_dict = {}
+            state_dict_t5 = {}
             for key in dd.online_state_keys:
-                orig_state_dict[key] = getattr(dd, key)
+                state_dict_t5[key] = getattr(dd, key)
         preds = dd.predict(x_t)
         test_stats_1.append(preds['data']['test_stat'])
 
-    # Clear state and repeat, check that same test_stats both times
+    # Reset and check state cleared
     dd.reset()
+    for key, orig_val in state_dict_t0.items():
+        np.testing.assert_array_equal(orig_val, getattr(dd, key))  # use np.testing here as it handles torch.Tensor etc
+
+    # Repeat, check that same test_stats both times
     test_stats_2 = []
     for t, x_t in enumerate(x):
         preds = dd.predict(x_t)
@@ -98,7 +106,7 @@ def test_cvm_online_state_online(n_feat, tmp_path, seed):
     dd.load_state(tmp_path)
 
     # Compare stateful attributes to original at t=5
-    for key, orig_val in orig_state_dict.items():
+    for key, orig_val in state_dict_t5.items():
         np.testing.assert_array_equal(orig_val, getattr(dd, key))  # use np.testing here as it handles torch.Tensor etc
 
     # Compare predictions to original at t=5

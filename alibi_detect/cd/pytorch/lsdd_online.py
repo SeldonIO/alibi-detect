@@ -9,7 +9,7 @@ from alibi_detect.utils.frameworks import Framework
 
 
 class LSDDDriftOnlineTorch(BaseMultiDriftOnline):
-    online_state_keys: tuple = ('t', 'test_window', 'k_xtc')
+    online_state_keys: tuple = ('t', 'test_stats', 'drift_preds', 'test_window', 'k_xtc')
 
     def __init__(
             self,
