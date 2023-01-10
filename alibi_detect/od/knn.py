@@ -40,16 +40,16 @@ class KNN(OutlierDetector):
             Number of nearest neighboursreveal_type(normalizer) to use for outlier detection. If an array is passed, an
             aggregator is required to aggregate the scores.
         kernel
-            Kernel function to use for outlier detection. If None, `torch.cdist` is used.
+            Kernel function to use for outlier detection. If ``None``, `torch.cdist` is used.
         normalizer
-            Normalizer to use for outlier detection. If None, no normalisation is applied.
+            Normalizer to use for outlier detection. If ``None``, no normalisation is applied.
         aggregator
-            Aggregator to use for outlier detection. Can be set to None if `k` is a single value.
+            Aggregator to use for outlier detection. Can be set to ``None`` if `k` is a single value.
         backend
             Backend used for outlier detection. Defaults to `'pytorch'`. Options are `'pytorch'`.
         device
             Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
-            passing either 'cuda', 'gpu' or 'cpu'. Only relevant for 'pytorch' backend.
+            passing either `'cuda'`, `'gpu'` or `'cpu'`. Only relevant for `pytorch` backend.
 
         Raises
         ------
