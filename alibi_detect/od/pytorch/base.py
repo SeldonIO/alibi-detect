@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import List, Union, Optional
+from typing import List, Union, Optional, Dict
 from dataclasses import dataclass, asdict
 from abc import ABC, abstractmethod
 
@@ -66,7 +66,7 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
             raise ThresholdNotInferredException((f'{self.__class__.__name__} has no threshold set, '
                                                  'call `infer_threshold` before predicting.'))
 
-    def _to_tensor(self, x: Union[List, np.ndarray]):
+    def _to_tensor(self, x: Union[List, np.ndarray]) -> torch.Tensor:
         """Converts the data to a tensor.
 
         Parameters
@@ -80,8 +80,10 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
         """
         return torch.as_tensor(x, dtype=torch.float32, device=self.device)
 
-    def _to_numpy(self, x: Union[torch.Tensor, TorchOutlierDetectorOutput]):
-        """Converts the data to `numpy.ndarray`.
+    def _to_numpy(self, x: Union[torch.Tensor, TorchOutlierDetectorOutput]) -> Union[np.ndarray, Dict]:
+        """Converts any `torch` tensors found in input to `numpy` arrays.
+
+        Takes a `torch` tensor or `TorchOutlierDetectorOutput` and converts any `torch` tensors found to `numpy` arrays
 
         Parameters
         ----------
@@ -90,7 +92,7 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
 
         Returns
         -------
-        `np.ndarray`
+        `np.ndarray` or dictionary of containing `numpy` arrays
         """
         if isinstance(x, torch.Tensor):
             return x.cpu().detach().numpy()

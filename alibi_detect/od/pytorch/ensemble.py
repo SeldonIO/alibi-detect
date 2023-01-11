@@ -31,7 +31,7 @@ class BaseTransformTorch(Module, ABC):
         """
         pass
 
-    def forward(self, x: torch.Tensor):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.transform(x=x)
 
 
@@ -86,7 +86,7 @@ class BaseFittedTransformTorch(BaseTransformTorch, FitMixinTorch):
         BaseTransformTorch.__init__(self)
         FitMixinTorch.__init__(self)
 
-    def transform(self, x: torch.Tensor):
+    def transform(self, x: torch.Tensor) -> torch.Tensor:
         """Checks to make sure transform has been fitted and then applies trasform to input tensor.
 
         Parameters
@@ -320,7 +320,7 @@ class Accumulator(BaseFittedTransformTorch):
             self.fitted = True
         self.aggregator = aggregator
 
-    def _transform(self, x: torch.Tensor):
+    def _transform(self, x: torch.Tensor) -> torch.Tensor:
         """Apply the normalizer and aggregator to the scores.
 
         Parameters
