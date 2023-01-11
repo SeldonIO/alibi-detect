@@ -13,7 +13,7 @@ class BaseTransformTorch(Module, ABC):
     def __init__(self):
         """Base Transform class.
 
-        provides abstract methods for transform objects that map `numpy` arrays.
+        provides abstract methods for transform objects that map `torch` tensors.
         """
         super().__init__()
 
@@ -22,12 +22,12 @@ class BaseTransformTorch(Module, ABC):
 
     @abstractmethod
     def _transform(self, x: torch.Tensor):
-        """Applies class transform to numpy array
+        """Applies class transform to `torch.Tensor`
 
         Parameters
         ----------
         x
-            `numpy` array to be transformed
+            `torch.Tensor` array to be transformed
         """
         pass
 
