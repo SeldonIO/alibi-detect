@@ -25,15 +25,15 @@ class KNNTorch(TorchOutlierDetector):
             similarity to the `k`-th nearest neighbor. If `k` is a list then it returns the distance/kernel
             similarity to each of the specified `k` neighbors.
         kernel
-            If a kernel is specified then instead of using torch.cdist we compute the kernel similarity
+            If a kernel is specified then instead of using `torch.cdist` we compute the kernel similarity
             while computing the k nearest neighbor distance.
         accumulator
-            If `k` is an array of integers then the accumulator must not be None. Should be an instance
+            If `k` is an array of integers then the accumulator must not be ``None``. Should be an instance
             of :py:obj:`alibi_detect.od.pytorch.ensemble.Accumulator`. Responsible for combining
             multiple scores into a single score.
         device
             Device type used. The default None tries to use the GPU and falls back on CPU if needed.
-            Can be specified by passing either 'cuda', 'gpu' or 'cpu'. Only relevant for 'pytorch' backend.
+            Can be specified by passing either ``'cuda'``, ``'gpu'`` or ``'cpu'``.
         """
         TorchOutlierDetector.__init__(self, device=device)
         self.kernel = kernel
@@ -51,7 +51,7 @@ class KNNTorch(TorchOutlierDetector):
 
         Returns
         -------
-        `torch.Tensor` of `bool` values with leading batch dimension.
+        `torch.Tensor` of ``bool`` values with leading batch dimension.
 
         Raises
         ------

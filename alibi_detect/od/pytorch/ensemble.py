@@ -13,8 +13,7 @@ class BaseTransformTorch(Module, ABC):
     def __init__(self):
         """Base Transform class.
 
-        provides abstract methods for transform objects that map a numpy
-        array.
+        provides abstract methods for transform objects that map `numpy` arrays.
         """
         super().__init__()
 
@@ -28,7 +27,7 @@ class BaseTransformTorch(Module, ABC):
         Parameters
         ----------
         x
-            numpy array to be transformed
+            `numpy` array to be transformed
         """
         pass
 
@@ -81,7 +80,7 @@ class BaseFittedTransformTorch(BaseTransformTorch, FitMixinTorch):
     def __init__(self):
         """Base Fitted Transform class.
 
-        Extends BaseTransfrom with fit functionality. Ensures that transform has been fit prior to
+        Extends `BaseTransfrom` with fit functionality. Ensures that transform has been fit prior to
         applying transform.
         """
         BaseTransformTorch.__init__(self)
@@ -106,11 +105,11 @@ class BaseFittedTransformTorch(BaseTransformTorch, FitMixinTorch):
 
 class PValNormalizer(BaseFittedTransformTorch):
     def __init__(self):
-        """Maps scores to there p values.
+        """Maps scores to there p-values.
 
         Needs to be fit (see :py:obj:`~alibi_detect.od.pytorch.ensemble.BaseFittedTransformTorch`).
         Returns the proportion of scores in the reference dataset that are greater than the score of
-        interest. Output is between 1 and 0. Small values are likely to be outliers.
+        interest. Output is between ``1`` and ``0``. Small values are likely to be outliers.
         """
         super().__init__()
         self.val_scores = None
@@ -125,13 +124,13 @@ class PValNormalizer(BaseFittedTransformTorch):
 
         Returns
         -------
-        self
+        `self`
         """
         self.val_scores = val_scores
         return self
 
     def _transform(self, scores: torch.Tensor) -> torch.Tensor:
-        """Transform scores to 1 - p values.
+        """Transform scores to 1 - p-values.
 
         Parameters
         ----------
@@ -140,7 +139,7 @@ class PValNormalizer(BaseFittedTransformTorch):
 
         Returns
         -------
-        `Torch.Tensor` of 1 - p values.
+        `Torch.Tensor` of 1 - p-values.
         """
         p_vals = (
                 1 + (scores[:, None, :] < self.val_scores[None, :, :]).sum(1)
@@ -169,7 +168,7 @@ class ShiftAndScaleNormalizer(BaseFittedTransformTorch):
 
         Returns
         -------
-        self
+        `self`
         """
         self.val_means = val_scores.mean(0)[None, :]
         self.val_scales = val_scores.std(0)[None, :]
@@ -197,7 +196,7 @@ class TopKAggregator(BaseTransformTorch):
         Parameters
         ----------
         k
-            number of scores to take the mean of. If `k` is left `None` then will be set to
+            number of scores to take the mean of. If `k` is left ``None`` then will be set to
             half the number of scores passed in the forward call.
         """
         super().__init__()
@@ -228,13 +227,13 @@ class AverageAggregator(BaseTransformTorch):
         Parameters
         ----------
         weights
-            Optional parameter to weight the scores. If `weights` is left `None` then will be set to
+            Optional parameter to weight the scores. If `weights` is left ``None`` then will be set to
             a vector of ones.
 
         Raises
         ------
         ValueError
-            If `weights` does not sum to `1`.
+            If `weights` does not sum to ``1``.
         """
         super().__init__()
         if weights is not None and weights.sum() != 1:
@@ -310,7 +309,7 @@ class Accumulator(BaseFittedTransformTorch):
         Parameters
         ----------
         normalizer
-            `BaseFittedTransformTorch` object to normalise the scores. If `None` then no normalisation
+            `BaseFittedTransformTorch` object to normalise the scores. If ``None`` then no normalisation
             is applied.
         aggregator
             `BaseTransformTorch` object to aggregate the scores.

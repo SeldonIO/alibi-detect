@@ -37,7 +37,7 @@ class KNN(OutlierDetector):
         Parameters
         ----------
         k
-            Number of nearest neighboursreveal_type(normalizer) to use for outlier detection. If an array is passed, an
+            Number of nearest neighbours to use for outlier detection. If an array is passed, an
             aggregator is required to aggregate the scores.
         kernel
             Kernel function to use for outlier detection. If ``None``, `torch.cdist` is used.
@@ -46,10 +46,10 @@ class KNN(OutlierDetector):
         aggregator
             Aggregator to use for outlier detection. Can be set to ``None`` if `k` is a single value.
         backend
-            Backend used for outlier detection. Defaults to `'pytorch'`. Options are `'pytorch'`.
+            Backend used for outlier detection. Defaults to ``'pytorch'``. Options are ``'pytorch'``.
         device
             Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
-            passing either `'cuda'`, `'gpu'` or `'cpu'`. Only relevant for `pytorch` backend.
+            passing either ``'cuda'``, ``'gpu'`` or ``'cpu'``.
 
         Raises
         ------
@@ -70,7 +70,8 @@ class KNN(OutlierDetector):
         accumulator = None
 
         if aggregator is None and isinstance(k, (list, np.ndarray, tuple)):
-            raise ValueError("If `k` is an array, an aggregator is required.")
+            raise ValueError('If `k` is a `np.ndarray`, `list` or `tuple`, '
+                             'the `aggregator` argument cannot be ``None``.')
 
         if isinstance(k, (list, np.ndarray, tuple)):
             accumulator = accumulator_cls(
@@ -117,7 +118,7 @@ class KNN(OutlierDetector):
         fpr
             False positive rate used to infer the threshold. The false positive rate is the proportion of instances in \
             `x_ref` that are incorrectly classified as outliers. The false positive rate should be in the range \
-            `(0, 1)`.
+            ``(0, 1)``.
         """
         self.backend.infer_threshold(self.backend._to_tensor(x_ref), fpr)
 
@@ -131,8 +132,8 @@ class KNN(OutlierDetector):
 
         Returns
         -------
-        Dict with keys 'data' and 'meta'. 'data' contains the outlier scores. If threshold inference was performed, \
-        'data' also contains the threshold value, outlier labels and p_vals . The shape of the scores is \
+        Dictionary with keys 'data' and 'meta'. 'data' contains the outlier scores. If threshold inference was  \
+        performed, 'data' also contains the threshold value, outlier labels and p_vals . The shape of the scores is \
         `(n_instances,)`. The higher the score, the more anomalous the instance. 'meta' contains information about \
         the detector.
         """

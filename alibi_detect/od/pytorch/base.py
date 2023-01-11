@@ -72,7 +72,7 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
         Parameters
         ----------
         x
-            Data to convert.ThresholdNotInferredException
+            Data to convert.
 
         Returns
         -------
@@ -127,7 +127,7 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
 
         Returns
         -------
-        `torch.Tensor` or `None`
+        `torch.Tensor` or ``None``
         """
         return scores > self.threshold if self.threshold_inferred else None
 
@@ -141,7 +141,7 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
 
         Returns
         -------
-        `torch.Tensor` or `None`
+        `torch.Tensor` or ``None``
         """
         return (1 + (scores[:, None] < self.val_scores).sum(-1))/len(self.val_scores) \
             if self.threshold_inferred else None
@@ -159,10 +159,10 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
         Raises
         ------
         ValueError
-            Raised if fpr is not in (0, 1).
+            Raised if `fpr` is not in ``(0, 1)``.
         """
         if not 0 < fpr < 1:
-            ValueError('fpr must be in (0, 1).')
+            ValueError('`fpr` must be in `(0, 1)`.')
         self.val_scores = self.score(x)
         self.val_scores = self._accumulator(self.val_scores)
         self.threshold = torch.quantile(self.val_scores, 1-fpr)
@@ -173,7 +173,7 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
 
         Computes the outlier scores. If the detector is not fit on reference data we raise an error.
         If the threshold is inferred, the outlier labels and p-values are also computed and returned.
-        Otherwise, the outlier labels and p-values are set to `None`.
+        Otherwise, the outlier labels and p-values are set to ``None``.
 
         Parameters
         ----------

@@ -64,7 +64,8 @@ def test_default_knn_ensemble_init():
 def test_incorrect_knn_ensemble_init():
     with pytest.raises(ValueError) as err:
         KNN(k=[8, 9, 10], aggregator=None)
-    assert str(err.value) == 'If `k` is an array, an aggregator is required.'
+    assert str(err.value) == ('If `k` is a `np.ndarray`, `list` or `tuple`, '
+                              'the `aggregator` argument cannot be ``None``.')
 
 
 def test_fitted_knn_predict():

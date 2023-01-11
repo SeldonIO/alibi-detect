@@ -71,8 +71,8 @@ class OutlierDetector(BaseDetector, ABC):
 
         Returns
         -------
-        Dict with keys 'data' and 'meta'. 'data' contains the outlier scores. If threshold inference was performed, \
-        'data' also contains the outlier labels.
+        Dictionary with keys 'data' and 'meta'. 'data' contains the outlier scores. If threshold inference was \
+        performed, 'data' also contains the outlier labels.
         """
         pass
 
