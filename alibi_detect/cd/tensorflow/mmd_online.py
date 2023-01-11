@@ -192,7 +192,7 @@ class MMDDriftOnlineTF(BaseMultiDriftOnline):
             The test instance.
         """
         self.t += 1
-        kernel_col = self.kernel(self.x_ref[self.ref_inds], x_t)
+        kernel_col = self.kernel(tf.gather(self.x_ref, self.ref_inds), x_t)
         self.test_window = tf.concat([self.test_window[(1 - self.window_size):], x_t], axis=0)
         self.k_xy = tf.concat([self.k_xy[:, (1 - self.window_size):], kernel_col], axis=1)
 
