@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 import copy
 import json
 import numpy as np
-from typing import Dict, Any, Optional, Tuple
+from typing import Dict, Any, Optional
 from typing_extensions import Protocol, runtime_checkable
 from alibi_detect.version import __version__
 
@@ -231,8 +231,6 @@ class StatefulDetectorOnline(ConfigurableDetector, Protocol):
 
     Used for typing save and load functionality in `alibi_detect.saving.saving`.
     """
-    online_state_keys: Tuple[str, ...]
-
     def save_state(self, filepath): ...
 
     def load_state(self, filepath): ...
