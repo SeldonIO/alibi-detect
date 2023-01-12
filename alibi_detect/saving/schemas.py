@@ -905,6 +905,7 @@ class LearnedKernelDriftConfig(DriftDetectorConfig):
     batch_size_predict: int = 1000000
     preprocess_batch_fn: Optional[str] = None
     epochs: int = 3
+    num_workers: int = 4
     verbose: int = 0
     train_kwargs: Optional[dict] = None
     dataset: Optional[str] = None
@@ -938,6 +939,7 @@ class LearnedKernelDriftConfigResolved(DriftDetectorConfigResolved):
     batch_size_predict: int = 1000000
     preprocess_batch_fn: Optional[Callable] = None
     epochs: int = 3
+    num_workers: int = 4
     verbose: int = 0
     train_kwargs: Optional[dict] = None
     dataset: Optional[Callable] = None

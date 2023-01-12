@@ -35,6 +35,7 @@ class LearnedKernelDriftTorch(BaseLearnedKernelDrift):
             batch_size: int = 32,
             preprocess_batch_fn: Optional[Callable] = None,
             epochs: int = 3,
+            num_workers: int = 4,
             verbose: int = 0,
             train_kwargs: Optional[dict] = None,
             device: Optional[str] = None,
@@ -96,6 +97,8 @@ class LearnedKernelDriftTorch(BaseLearnedKernelDrift):
             processed by the kernel.
         epochs
             Number of training epochs for the kernel. Corresponds to the smaller of the reference and test sets.
+        num_workers
+            Number of workers for the dataloader.
         verbose
             Verbosity level during the training of the kernel. 0 is silent, 1 a progress bar.
         train_kwargs
@@ -134,7 +137,9 @@ class LearnedKernelDriftTorch(BaseLearnedKernelDrift):
 
         # define kwargs for dataloader and trainer
         self.dataset = dataset
-        self.dataloader = partial(dataloader, batch_size=batch_size, shuffle=True, drop_last=True)
+        self.dataloader = partial(dataloader, batch_size=batch_size, shuffle=True,
+                                  drop_last=True, num_workers=num_workers)
+
         self.kernel_mat_fn = partial(
             batch_compute_kernel_matrix, device=self.device, preprocess_fn=preprocess_batch_fn, batch_size=batch_size
         )
