@@ -123,10 +123,13 @@ def _load_detector_config(filepath: Union[str, os.PathLike]) -> ConfigurableDete
     -------
     The instantiated detector.
     """
-    # Load config dict from toml file
-    filepath = Path(filepath)
-    config_dir = filepath.parent
-    cfg = read_config(filepath)
+    # Load toml if needed
+    if isinstance(filepath, (str, os.PathLike)):
+        config_file = Path(filepath)
+        config_dir = config_file.parent
+        cfg = read_config(config_file)
+    else:
+        raise ValueError("`filepath` should point to a directory containing a 'config.toml' file.")
 
     # Resolve and validate config
     cfg = validate_config(cfg)
