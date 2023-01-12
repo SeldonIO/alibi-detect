@@ -42,7 +42,7 @@ def test_fetdriftonline(alternative, n_feat, seed):
             assert cd.t - t0 == 1  # This checks state updated (self.t at least)
             if pred_t['data']['is_drift']:
                 detection_times_h0.append(pred_t['data']['time'])
-                cd.reset()
+                cd.reset_state()
 
         # Drifted data
         if alternative == 'less':
@@ -52,7 +52,7 @@ def test_fetdriftonline(alternative, n_feat, seed):
             p_h1 = 0.9
             x_h1 = partial(np.random.choice, (0, 1), size=n_feat, p=[1-p_h1, p_h1])
 
-        cd.reset()
+        cd.reset_state()
         count = 0
         while len(detection_times_h1) < n_reps and count < int(1e6):
             count += 1
@@ -60,7 +60,7 @@ def test_fetdriftonline(alternative, n_feat, seed):
             pred_t = cd.predict(x_t)
             if pred_t['data']['is_drift']:
                 detection_times_h1.append(pred_t['data']['time'])
-                cd.reset()
+                cd.reset_state()
 
     art = np.array(detection_times_h0).mean() - np.min(window_sizes) + 1
     add = np.array(detection_times_h1).mean() - np.min(window_sizes)
@@ -100,7 +100,7 @@ def test_fet_online_state_online(n_feat, tmp_path, seed):
         test_stats_1.append(preds['data']['test_stat'])
 
     # Reset and check state cleared
-    dd.reset()
+    dd.reset_state()
     for key, orig_val in state_dict_t0.items():
         np.testing.assert_array_equal(orig_val, getattr(dd, key))  # use np.testing here as it handles torch.Tensor etc
 

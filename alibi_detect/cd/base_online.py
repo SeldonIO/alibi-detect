@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 import logging
+import warnings
 from abc import abstractmethod
 from typing import Any, Callable, Dict, List, Optional, Union, Tuple
 
@@ -219,6 +220,15 @@ class BaseMultiDriftOnline(BaseDetector):
         self.drift_preds = np.array([])  # type: ignore[var-annotated]
 
     def reset(self) -> None:
+        """
+        Deprecated reset method. This method will be repurposed or removed in the future. To reset the detector to
+        its initial state (`t=0`) use :meth:`reset_state`.
+        """
+        self.reset_state()
+        warnings.warn('This method is deprecated and will be removed/repurposed in the future. To reset the detector '
+                      'to its initial state use `reset_state`.', DeprecationWarning)
+
+    def reset_state(self) -> None:
         """
         Resets the detector to its initial state (`t=0`). This does not include reconfiguring thresholds.
         """
@@ -524,6 +534,15 @@ class BaseUniDriftOnline(BaseDetector):
         pass
 
     def reset(self) -> None:
+        """
+        Deprecated reset method. This method will be repurposed or removed in the future. To reset the detector to
+        its initial state (`t=0`) use :meth:`reset_state`.
+        """
+        self.reset_state()
+        warnings.warn('This method is deprecated and will be removed/repurposed in the future. To reset the detector '
+                      'to its initial state use `reset_state`.', DeprecationWarning)
+
+    def reset_state(self) -> None:
         """
         Resets the detector to its initial state (`t=0`). This does not include reconfiguring thresholds.
         """

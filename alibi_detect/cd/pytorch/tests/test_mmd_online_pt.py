@@ -87,12 +87,12 @@ def test_mmd_online(mmd_online_params, seed):
         test_stats_h0.append(pred_t['data']['test_stat'])
         if pred_t['data']['is_drift']:
             detection_times_h0.append(pred_t['data']['time'])
-            cd.reset()
+            cd.reset_state()
     average_delay_h0 = np.array(detection_times_h0).mean()
     test_stats_h0 = [ts for ts in test_stats_h0 if ts is not None]
     assert ert/3 < average_delay_h0 < 3*ert
 
-    cd.reset()
+    cd.reset_state()
 
     detection_times_h1 = []
     test_stats_h1 = []
@@ -103,7 +103,7 @@ def test_mmd_online(mmd_online_params, seed):
         test_stats_h1.append(pred_t['data']['test_stat'])
         if pred_t['data']['is_drift']:
             detection_times_h1.append(pred_t['data']['time'])
-            cd.reset()
+            cd.reset_state()
     average_delay_h1 = np.array(detection_times_h1).mean()
     test_stats_h1 = [ts for ts in test_stats_h1 if ts is not None]
     assert np.abs(average_delay_h1) < ert/2
@@ -139,7 +139,7 @@ def test_mmd_online_state_online(tmp_path, seed):
         test_stats_1.append(preds['data']['test_stat'])
 
     # Reset and check state cleared
-    dd.reset()
+    dd.reset_state()
     for key, orig_val in state_dict_t0.items():
         np.testing.assert_array_equal(orig_val, getattr(dd, key))  # use np.testing here as it handles torch.Tensor etc
 
