@@ -226,8 +226,8 @@ class ConfigurableDetector(Detector, Protocol):
 
 
 @runtime_checkable
-class StatefulDetector(ConfigurableDetector, Protocol):
-    """Type Protocol for detectors that have support for save/loading of state.
+class StatefulDetectorOnline(ConfigurableDetector, Protocol):
+    """Type Protocol for detectors that have support for save/loading of online state.
 
     Used for typing save and load functionality in `alibi_detect.saving.saving`.
     """

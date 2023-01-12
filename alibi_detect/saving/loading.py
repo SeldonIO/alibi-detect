@@ -18,7 +18,7 @@ from alibi_detect.saving._pytorch import load_embedding_pt, load_kernel_config_p
 from alibi_detect.saving._keops import load_kernel_config_ke
 from alibi_detect.saving._sklearn import load_model_sk
 from alibi_detect.saving.validate import validate_config
-from alibi_detect.base import Detector, ConfigurableDetector, StatefulDetector
+from alibi_detect.base import Detector, ConfigurableDetector, StatefulDetectorOnline
 from alibi_detect.utils.frameworks import has_tensorflow, has_pytorch, Framework
 from alibi_detect.saving.schemas import supported_models_tf, supported_models_torch
 from alibi_detect.utils.missing_optional_dependency import import_optional
@@ -144,7 +144,7 @@ def _load_detector_config(filepath: Union[str, os.PathLike]) -> ConfigurableDete
 
     # Load state if it exists (and detector supports it)
     # TODO - this will be removed in follow-up offline state PR, as loading to be moved to __init__ (w/ state_dir kwarg)
-    if isinstance(detector, StatefulDetector):
+    if isinstance(detector, StatefulDetectorOnline):
         state_dir = config_dir.joinpath((STATE_PATH))
         if state_dir.is_dir():
             detector.load_state(state_dir)
