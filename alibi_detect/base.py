@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
+import os
 import copy
 import json
 import numpy as np
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Union
 from typing_extensions import Protocol, runtime_checkable
 from alibi_detect.version import __version__
 
@@ -153,7 +154,7 @@ class DriftConfigMixin:
         detector.config['meta']['version_warning'] = version_warning
         return detector
 
-    def _set_config(self, inputs):  # TODO - move to BaseDetector once config save/load implemented for non-drift
+    def _set_config(self, inputs: dict):  # TODO - move to BaseDetector once config save/load implemented for non-drift
         """
         Set a detectors `config` attribute upon detector instantiation.
 
@@ -218,11 +219,12 @@ class ConfigurableDetector(Detector, Protocol):
 
     Used for typing save and load functionality in `alibi_detect.saving.saving`.
     """
-    def get_config(self): ...
+    def get_config(self) -> dict: ...
 
-    def from_config(self): ...
+    @classmethod
+    def from_config(cls, config: dict): ...
 
-    def _set_config(self): ...
+    def _set_config(self, inputs: dict): ...
 
 
 @runtime_checkable
@@ -231,9 +233,9 @@ class StatefulDetectorOnline(ConfigurableDetector, Protocol):
 
     Used for typing save and load functionality in `alibi_detect.saving.saving`.
     """
-    def save_state(self, filepath): ...
+    def save_state(self, filepath: Union[str, os.PathLike]): ...
 
-    def load_state(self, filepath): ...
+    def load_state(self, filepath: Union[str, os.PathLike]): ...
 
 
 class NumpyEncoder(json.JSONEncoder):
