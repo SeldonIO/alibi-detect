@@ -156,7 +156,7 @@ class LearnedKernelDrift(DriftConfigMixin):
             if dataloader is None:
                 kwargs.update({'dataloader': DataLoader})
             if backend == Framework.PYTORCH:
-                pop_kwargs = ['batch_size_permutations', 'batch_size_predict']
+                pop_kwargs = ['batch_size_permutations']
                 [kwargs.pop(k, None) for k in pop_kwargs]
                 detector = LearnedKernelDriftTorch
             else:
