@@ -101,7 +101,7 @@ class LearnedKernelDriftKeops(BaseLearnedKernelDrift):
         epochs
             Number of training epochs for the kernel. Corresponds to the smaller of the reference and test sets.
         num_workers
-            Number of workers for the dataloader.
+            Number of workers for the dataloader. Note: Setting `num_workers>0` may be unreliable on Windows.
         verbose
             Verbosity level during the training of the kernel. 0 is silent, 1 a progress bar.
         train_kwargs

@@ -486,7 +486,8 @@ def test_save_learnedkernel(data, deep_kernel, backend, tmp_path, seed):  # noqa
                                 deep_kernel,
                                 p_val=P_VAL,
                                 backend=backend,
-                                train_size=0.7)
+                                train_size=0.7,
+                                num_workers=0)
         preds = cd.predict(X_h0)  # noqa: F841
     save_detector(cd, tmp_path)
     with fixed_seed(seed):
