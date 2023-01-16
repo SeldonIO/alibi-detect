@@ -36,7 +36,6 @@ def save_detector(
         detector: Union[Detector, ConfigurableDetector],
         filepath: Union[str, os.PathLike],
         legacy: bool = False,
-        save_state: bool = False
         ) -> None:
     """
     Save outlier, drift or adversarial detector.
@@ -50,14 +49,9 @@ def save_detector(
     legacy
         Whether to save in the legacy .dill format instead of via a config.toml file. Default is `False`.
         This option will be removed in a future version.
-    save_state
-        Whether to save the detector's state (state is then automatically loaded by `load_detector`). Only supported
-        for detectors with `save_state` methods, such as online detectors.
     """
     if legacy:
         warnings.warn('The `legacy` option will be removed in a future version.', DeprecationWarning)
-        if save_state:
-            warnings.warn("The `save_state` option isn't supported in combination with the `legacy` option.")
 
     # TODO: Replace .__args__ w/ typing.get_args() once Python 3.7 dropped (and remove type ignore below)
     detector_name = detector.__class__.__name__
@@ -74,7 +68,7 @@ def save_detector(
 
         # If a drift detector, wrap drift detector save method
         if isinstance(detector, ConfigurableDetector) and not legacy:
-            _save_detector_config(detector, filepath, save_state=save_state)
+            _save_detector_config(detector, filepath)
 
         # Otherwise, save via the previous meta and state_dict approach
         else:
@@ -118,8 +112,7 @@ def _cleanup_filepath(orig_files: set, filepath: Path):
 
 # TODO - eventually this will become save_detector (once outlier and adversarial updated to save via config.toml)
 def _save_detector_config(detector: ConfigurableDetector,
-                          filepath: Union[str, os.PathLike],
-                          save_state: bool = False):
+                          filepath: Union[str, os.PathLike]):
     """
     Save a drift detector. The detector is saved as a yaml config file. Artefacts such as
     `preprocess_fn`, models, embeddings, tokenizers etc are serialized, and their filepaths are
@@ -133,9 +126,6 @@ def _save_detector_config(detector: ConfigurableDetector,
         The detector to save.
     filepath
         File path to save serialized artefacts to.
-    save_state
-        Whether to save the detector's state (state is then automatically loaded by `load_detector`). Only supported
-        for detectors with `save_state` methods, such as online detectors.
     """
     # detector name
     detector_name = detector.__class__.__name__
@@ -153,11 +143,10 @@ def _save_detector_config(detector: ConfigurableDetector,
     else:
         raise NotImplementedError(f'{detector_name} does not yet support config.toml based saving.')
 
-    # Optionally save state
-    if save_state:
-        if not isinstance(detector, StatefulDetectorOnline):
-            raise ValueError("`save_state=True` but detector doesn't support saving of state.")
-        detector.save_state(filepath.joinpath(STATE_PATH))
+    # Save state if an online detector and online state exists (self.t > 0)
+    if isinstance(detector, StatefulDetectorOnline):
+        if detector.t > 0:
+            detector.save_state(filepath.joinpath(STATE_PATH))
 
     # Save x_ref
     save_path = filepath.joinpath(X_REF_FILENAME)

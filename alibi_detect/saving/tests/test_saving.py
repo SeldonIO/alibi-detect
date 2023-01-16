@@ -812,8 +812,7 @@ def test_save_onlinefetdrift(data, tmp_path, seed):
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
 def test_save_multivariate_online_state(detector, data, backend, seed, tmp_path):
     """
-    Test the saving (and loading) of multivariate online detectors' state when `save_state=True` is passed to
-    `save_detector`.
+    Test the saving (and loading) of multivariate online detectors' state via `save_detector`.
     """
     # Skip if backend not `tensorflow` or `pytorch`
     if backend not in ('tensorflow', 'pytorch'):
@@ -829,7 +828,7 @@ def test_save_multivariate_online_state(detector, data, backend, seed, tmp_path)
     for t, x_t in enumerate(X_h0[:10]):
         if t == 5:
             # Save detector (with state)
-            save_detector(dd, tmp_path, save_state=True)
+            save_detector(dd, tmp_path)
         test_stats.append(dd.predict(x_t)['data']['test_stat'])
 
     # Check state file created
@@ -857,8 +856,7 @@ def test_save_multivariate_online_state(detector, data, backend, seed, tmp_path)
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
 def test_save_cvm_online_state(detector, data, tmp_path):
     """
-    Test the saving (and loading) of the CVM online detector's state when `save_state=True` is passed to
-    `save_detector`.
+    Test the saving (and loading) of the CVM online detector's state via `save_detector`.
     """
     # Init detector and make prediction to update state
     X_ref, X_h0 = data
@@ -869,7 +867,7 @@ def test_save_cvm_online_state(detector, data, tmp_path):
     for t, x_t in enumerate(X_h0[:10]):
         if t == 5:
             # Save detector (with state)
-            save_detector(dd, tmp_path, save_state=True)
+            save_detector(dd, tmp_path)
         test_stats.append(dd.predict(x_t)['data']['test_stat'])
 
     # Check state file created
@@ -893,8 +891,7 @@ def test_save_cvm_online_state(detector, data, tmp_path):
 @parametrize_with_cases("data", cases=BinData, prefix='data_')
 def test_save_fet_online_state(detector, data, tmp_path):
     """
-    Test the saving (and loading) of the FET online detector's state when `save_state=True` is passed to
-    `save_detector`.
+    Test the saving (and loading) of the FET online detector's state via `save_detector`.
     """
     # Init detector and make prediction to update state
     X_ref, X_h0 = data
@@ -905,7 +902,7 @@ def test_save_fet_online_state(detector, data, tmp_path):
     for t, x_t in enumerate(X_h0[:10]):
         if t == 5:
             # Save detector (with state)
-            save_detector(dd, tmp_path, save_state=True)
+            save_detector(dd, tmp_path)
         test_stats.append(dd.predict(x_t)['data']['test_stat'])
 
     # Check state file created
@@ -926,16 +923,21 @@ def test_save_fet_online_state(detector, data, tmp_path):
 
 
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
-def test_save_unsupported_state_error(data, tmp_path):
+def test_save_online_state_t0(data, tmp_path):
     """
-    Test that an error is raised when `save_state=True` is passed to `save_detector` with a detector that doesn't
-    support saving of state.
+    Test that state is not saved when t=0.
     """
     # Init detector
     X_ref, X_h0 = data
-    dd = KSDrift(X_ref)
-    with pytest.raises(RuntimeError):
-        save_detector(dd, tmp_path, save_state=True)
+    dd = CVMDriftOnline(X_ref, ert=100, window_sizes=[10])
+    # Check state NOT saved when t=0
+    state_dir = tmp_path.joinpath('state')
+    save_detector(dd, tmp_path)
+    assert not state_dir.is_dir()
+    # Check state IS saved when t>0
+    dd.predict(X_h0[0])
+    save_detector(dd, tmp_path)
+    assert state_dir.is_dir()
 
 
 @parametrize_with_cases("data", cases=ContinuousData.data_synthetic_nd)

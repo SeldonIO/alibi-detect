@@ -233,6 +233,8 @@ class StatefulDetectorOnline(ConfigurableDetector, Protocol):
 
     Used for typing save and load functionality in `alibi_detect.saving.saving`.
     """
+    t: int = 0
+
     def save_state(self, filepath: Union[str, os.PathLike]): ...
 
     def load_state(self, filepath: Union[str, os.PathLike]): ...
