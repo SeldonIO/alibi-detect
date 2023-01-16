@@ -265,6 +265,7 @@ class BaseMultiDriftOnline(BaseDriftOnline):
 
 
 class BaseUniDriftOnline(BaseDriftOnline):
+    """Base class for univariate online drift detectors."""
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
