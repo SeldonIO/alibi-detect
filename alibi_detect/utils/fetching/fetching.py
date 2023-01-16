@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     from alibi_detect.base import BaseDetector  # noqa
     from alibi_detect.od.llr import LLR  # noqa
     from alibi_detect.od.isolationforest import IForest  # noqa
-    from alibi_detect.od.mahalanobis import Mahalanobis  # noqa
+    from alibi_detect.od.stateful_mahalanobis import Mahalanobis  # noqa
     from alibi_detect.od.aegmm import OutlierAEGMM  # noqa
     from alibi_detect.od.ae import OutlierAE  # noqa
     from alibi_detect.od.prophet import OutlierProphet  # noqa

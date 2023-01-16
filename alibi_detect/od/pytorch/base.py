@@ -117,7 +117,8 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
         """
         # `type: ignore` here becuase self.accumulator here causes an error with mypy when using torch.jit.script.
         # For some reason it thinks self.accumulator is a torch.Tensor and therefore is not callable.
-        return self.accumulator(x) if self.accumulator is not None else x  # type: ignore
+        return self.accumulator(x) if hasattr(self, 'accumulator') \
+            and self.accumulator is not None else x  # type: ignore
 
     def _classify_outlier(self, scores: torch.Tensor) -> torch.Tensor:
         """Classify the data as outlier or not.
