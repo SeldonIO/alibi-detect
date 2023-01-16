@@ -11,7 +11,6 @@ import numpy as np
 from pathlib import Path
 from alibi_detect.utils.pytorch import _save_state_dict as _save_state_dict_pt, \
     _load_state_dict as _load_state_dict_pt
-
 from alibi_detect.base import BaseDetector
 
 logger = logging.getLogger(__name__)

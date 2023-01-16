@@ -8,24 +8,98 @@ from typing import Any, Callable, Dict, List, Optional, Union, Tuple
 import numpy as np
 from alibi_detect.base import BaseDetector, concept_drift_dict
 from alibi_detect.cd.utils import get_input_shape
-from alibi_detect.utils.frameworks import Framework, has_pytorch, has_tensorflow
+from alibi_detect.utils.frameworks import Framework
 from alibi_detect.utils._state import save_state_dict, load_state_dict
 from alibi_detect.utils._types import Literal
-
-if has_pytorch:
-    import torch
-
-if has_tensorflow:
-    import tensorflow as tf
 
 logger = logging.getLogger(__name__)
 
 
-class BaseMultiDriftOnline(BaseDetector):
+class BaseDriftOnline(BaseDetector):
+    """
+    Base class for online drift detectors.
+    """
+    t: int = 0
     thresholds: np.ndarray
-    backend: Literal['pytorch', 'tensorflow']
     online_state_keys: Tuple[str, ...]
+    backend: Optional[Literal['pytorch', 'tensorflow']] = None
 
+    @abstractmethod
+    def _configure_thresholds(self):
+        pass
+
+    @abstractmethod
+    def _update_state(self, x_t):
+        pass
+
+    def _set_state_dir(self, dirpath: Union[str, os.PathLike]):
+        """
+        Set the directory path to store state in, and create an empty directory if it doesn't already exist.
+
+        Parameters
+        ----------
+        dirpath
+            The directory to save state file inside.
+        """
+        self.state_dir = Path(dirpath)
+        self.state_dir.mkdir(parents=True, exist_ok=True)
+
+    def save_state(self, filepath: Union[str, os.PathLike]):
+        """
+        Save a detector's state to disk in order to generate a checkpoint.
+
+        Parameters
+        ----------
+        filepath
+            The directory to save state to.
+        """
+        self._set_state_dir(filepath)
+        suffix = '.pt' if self.backend == Framework.PYTORCH else '.npz'
+        keys = self.online_state_keys
+        save_state_dict(self, keys, self.state_dir.joinpath('state' + suffix))
+        logger.info('Saved state for t={} to {}'.format(self.t, self.state_dir))
+
+    def load_state(self, filepath: Union[str, os.PathLike]):
+        """
+        Load the detector's state from disk, in order to restart from a checkpoint previously generated with
+        `save_state`.
+
+        Parameters
+        ----------
+        filepath
+            The directory to load state from.
+        """
+        self._set_state_dir(filepath)
+        suffix = '.pt' if self.backend == Framework.PYTORCH else '.npz'
+        load_state_dict(self, self.state_dir.joinpath('state' + suffix), raise_error=True)
+        logger.info('State loaded for t={} from {}'.format(self.t, self.state_dir))
+
+    @abstractmethod
+    def _initialise_state(self):
+        pass
+
+    @abstractmethod
+    def get_threshold(self, t: int):
+        pass
+
+    def reset(self) -> None:
+        """
+        Deprecated reset method. This method will be repurposed or removed in the future. To reset the detector to
+        its initial state (`t=0`) use :meth:`reset_state`.
+        """
+        self.reset_state()
+        warnings.warn('This method is deprecated and will be removed/repurposed in the future. To reset the detector '
+                      'to its initial state use `reset_state`.', DeprecationWarning)
+
+    def reset_state(self) -> None:
+        """
+        Resets the detector to its initial state (`t=0`). This does not include reconfiguring thresholds.
+        """
+        self._initialise_state()
+
+
+class BaseMultiDriftOnline(BaseDriftOnline):
+    """Base class for multivariate online drift detectors."""
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
@@ -102,76 +176,8 @@ class BaseMultiDriftOnline(BaseDetector):
         self.meta['online'] = True
 
     @abstractmethod
-    def _configure_thresholds(self):
-        pass
-
-    @abstractmethod
     def _configure_ref_subset(self):
         pass
-
-    @abstractmethod
-    def _update_state(self, x_t: Union[np.ndarray, 'tf.Tensor', 'torch.Tensor']):
-        pass
-
-    def _set_state_dir(self, dirpath: Union[str, os.PathLike]):
-        """
-        Set the directory path to store state in, and create an empty directory if it doesn't already exist.
-
-        Parameters
-        ----------
-        dirpath
-            The directory to save state file inside.
-        """
-        self.state_dir = Path(dirpath)
-        self.state_dir.mkdir(parents=True, exist_ok=True)
-
-    def save_state(self, filepath: Union[str, os.PathLike]):
-        """
-        Save a detector's state to disk in order to generate a checkpoint.
-
-        Parameters
-        ----------
-        filepath
-            The directory to save state to.
-        """
-        self._set_state_dir(filepath)
-        self._save_state()
-
-    def load_state(self, filepath: Union[str, os.PathLike]):
-        """
-        Load the detector's state from disk, in order to restart from a checkpoint previously generated with
-        `save_state`.
-
-        Parameters
-        ----------
-        filepath
-            The directory to load state from.
-        """
-        self._set_state_dir(filepath)
-        self._load_state()
-        logger.info('State loaded for t={} from {}'.format(self.t, self.state_dir))
-
-    def _save_state(self):
-        """
-        Private method to save a detector's state to disk.
-
-        TODO - Method slightly verbose as designed to facilitate saving of "offline" state in follow-up PR.
-        """
-        suffix = '.pt' if self.backend == Framework.PYTORCH else '.npz'
-        filename = 'state'
-        keys = self.online_state_keys
-        save_state_dict(self, keys, self.state_dir.joinpath(filename + suffix))
-        logger.info('Saved state for t={} to {}'.format(self.t, self.state_dir))
-
-    def _load_state(self, offline: bool = False):
-        """
-        Private method to load a detector's state from disk.
-
-        TODO - Method slightly verbose as designed to facilitate loading of "offline" state in follow-up PR.
-        """
-        suffix = '.pt' if self.backend == Framework.PYTORCH else '.npz'
-        filename = 'state'
-        load_state_dict(self, self.state_dir.joinpath(filename + suffix), raise_error=True)
 
     def _preprocess_xt(self, x_t: Union[np.ndarray, Any]) -> np.ndarray:
         """
@@ -219,21 +225,6 @@ class BaseMultiDriftOnline(BaseDetector):
         self.test_stats = np.array([])  # type: ignore[var-annotated]
         self.drift_preds = np.array([])  # type: ignore[var-annotated]
 
-    def reset(self) -> None:
-        """
-        Deprecated reset method. This method will be repurposed or removed in the future. To reset the detector to
-        its initial state (`t=0`) use :meth:`reset_state`.
-        """
-        self.reset_state()
-        warnings.warn('This method is deprecated and will be removed/repurposed in the future. To reset the detector '
-                      'to its initial state use `reset_state`.', DeprecationWarning)
-
-    def reset_state(self) -> None:
-        """
-        Resets the detector to its initial state (`t=0`). This does not include reconfiguring thresholds.
-        """
-        self._initialise_state()
-
     def predict(self, x_t: Union[np.ndarray, Any], return_test_stat: bool = True,
                 ) -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
         """
@@ -273,10 +264,7 @@ class BaseMultiDriftOnline(BaseDetector):
         return cd
 
 
-class BaseUniDriftOnline(BaseDetector):
-    thresholds: np.ndarray
-    online_state_keys: Tuple[str, ...]
-
+class BaseUniDriftOnline(BaseDriftOnline):
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
@@ -376,74 +364,8 @@ class BaseUniDriftOnline(BaseDetector):
         self.meta['online'] = True
 
     @abstractmethod
-    def _configure_thresholds(self):
-        pass
-
-    @abstractmethod
     def _configure_ref(self):
         pass
-
-    @abstractmethod
-    def _update_state(self, x_t: np.ndarray):
-        pass
-
-    def _set_state_dir(self, dirpath: Union[str, os.PathLike]):
-        """
-        Set the directory path to store state in, and create an empty directory if it doesn't already exist.
-
-        Parameters
-        ----------
-        dirpath
-            The directory to save state file inside.
-        """
-        self.state_dir = Path(dirpath)
-        self.state_dir.mkdir(parents=True, exist_ok=True)
-
-    def save_state(self, filepath: Union[str, os.PathLike]):
-        """
-        Save a detector's state to disk in order to generate a checkpoint.
-
-        Parameters
-        ----------
-        filepath
-            The directory to save state to.
-        """
-        self._set_state_dir(filepath)
-        self._save_state()
-        logger.info('Saved state for t={} to {}'.format(self.t, self.state_dir))
-
-    def load_state(self, filepath: Union[str, os.PathLike]):
-        """
-        Load the detector's state from disk, in order to restart from a checkpoint previously generated with
-        `save_state`.
-
-        Parameters
-        ----------
-        filepath
-            The directory to load state from.
-        """
-        self._set_state_dir(filepath)
-        self._load_state()
-        logger.info('State loaded for t={} from {}'.format(self.t, self.state_dir))
-
-    def _save_state(self):
-        """
-        Private method to save a detector's state to disk.
-
-        TODO - Method slightly verbose as designed to facilitate saving of "offline" state in follow-up PR.
-        """
-        filename = 'state'
-        keys = self.online_state_keys
-        save_state_dict(self, keys, self.state_dir.joinpath(filename + '.npz'))
-
-    def _load_state(self, offline: bool = False):
-        """
-        Private method to load a detector's state from disk.
-
-        TODO - Method slightly verbose as designed to facilitate loading of "offline" state in follow-up PR.
-        """
-        filename = 'state'
-        load_state_dict(self, self.state_dir.joinpath(filename + '.npz'), raise_error=True)
 
     def _check_x(self, x: Any, x_ref: bool = False) -> np.ndarray:
         """
@@ -525,28 +447,13 @@ class BaseUniDriftOnline(BaseDetector):
         an example).
         """
         self.t = 0
-        self.xs = np.array([])
+        self.xs = np.array([])  # type: ignore[var-annotated]
         self.test_stats = np.empty([0, len(self.window_sizes), self.n_features])
         self.drift_preds = np.array([])  # type: ignore[var-annotated]
 
     @abstractmethod
     def _check_drift(self, test_stats: np.ndarray, thresholds: np.ndarray) -> int:
         pass
-
-    def reset(self) -> None:
-        """
-        Deprecated reset method. This method will be repurposed or removed in the future. To reset the detector to
-        its initial state (`t=0`) use :meth:`reset_state`.
-        """
-        self.reset_state()
-        warnings.warn('This method is deprecated and will be removed/repurposed in the future. To reset the detector '
-                      'to its initial state use `reset_state`.', DeprecationWarning)
-
-    def reset_state(self) -> None:
-        """
-        Resets the detector to its initial state (`t=0`). This does not include reconfiguring thresholds.
-        """
-        self._initialise_state()
 
     def predict(self, x_t: Union[np.ndarray, Any], return_test_stat: bool = True,
                 ) -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
