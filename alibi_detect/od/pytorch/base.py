@@ -2,6 +2,8 @@ from __future__ import annotations
 from typing import List, Union, Optional, Dict
 from dataclasses import dataclass, asdict
 from abc import ABC, abstractmethod
+from functools import singledispatchmethod
+
 
 import numpy as np
 import torch
@@ -80,7 +82,8 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
         """
         return torch.as_tensor(x, dtype=torch.float32, device=self.device)
 
-    def _to_numpy(self, x: Union[torch.Tensor, TorchOutlierDetectorOutput]) -> Union[np.ndarray, Dict]:
+    @singledispatchmethod
+    def _to_numpy(self, arg):
         """Converts any `torch` tensors found in input to `numpy` arrays.
 
         Takes a `torch` tensor or `TorchOutlierDetectorOutput` and converts any `torch` tensors found to `numpy` arrays
@@ -94,14 +97,19 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
         -------
         `np.ndarray` or dictionary of containing `numpy` arrays
         """
-        if isinstance(x, torch.Tensor):
-            return x.cpu().detach().numpy()
-        elif isinstance(x, TorchOutlierDetectorOutput):
-            outputs = asdict(x)
-            for key, value in outputs.items():
-                if isinstance(value, torch.Tensor):
-                    outputs[key] = value.cpu().detach().numpy()
-            return outputs
+        raise NotImplementedError(f"Cannot transform type {type(arg)} to numpy array.")
+
+    @_to_numpy.register
+    def _(self, x: torch.Tensor) -> np.ndarray:
+        return x.cpu().detach().numpy()
+
+    @_to_numpy.register
+    def _(self, x: TorchOutlierDetectorOutput) -> Dict:
+        outputs = asdict(x)
+        for key, value in outputs.items():
+            if isinstance(value, torch.Tensor):
+                outputs[key] = value.cpu().detach().numpy()
+        return outputs
 
     def _accumulator(self, x: torch.Tensor) -> torch.Tensor:
         """Accumulates the data.
