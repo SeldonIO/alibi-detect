@@ -855,7 +855,7 @@ def test_save_multivariate_online_state(detector, data, backend, seed, tmp_path)
 
 @parametrize("detector", [CVMDriftOnline])
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
-def test_save_cvm_online_state(detector, data, seed, tmp_path):
+def test_save_cvm_online_state(detector, data, tmp_path):
     """
     Test the saving (and loading) of the CVM online detector's state when `save_state=True` is passed to
     `save_detector`.
@@ -891,7 +891,7 @@ def test_save_cvm_online_state(detector, data, seed, tmp_path):
 
 @parametrize("detector", [FETDriftOnline])
 @parametrize_with_cases("data", cases=BinData, prefix='data_')
-def test_save_fet_online_state(detector, data, seed, tmp_path):
+def test_save_fet_online_state(detector, data, tmp_path):
     """
     Test the saving (and loading) of the FET online detector's state when `save_state=True` is passed to
     `save_detector`.
