@@ -55,11 +55,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip setuptools wheel
           python -m pip install --upgrade --upgrade-strategy eager -r requirements/dev.txt -r testing/requirements.txt
-          python -m pip install --upgrade --upgrade-strategy eager -e .
-          if [ "$RUNNER_OS" != "Windows" ] && ${{ matrix.python-version != '3.10' }}; then  # Skip Prophet tests on Windows as installation complex. Skip on Python 3.10 as not supported.
-            python -m pip install --upgrade --upgrade-strategy eager -e .[prophet]
-          fi
-          python -m pip install --upgrade --upgrade-strategy eager -e .[torch,tensorflow]
+          python -m pip install --upgrade --upgrade-strategy eager .[prophet,torch,tensorflow]
           python -m pip freeze
 
       - name: Run notebooks
@@ -69,4 +65,4 @@ jobs:
         # adding the `or` quantifier between the names and concatenating with the test name `test_notebook_execution`.
         run: |
           tests="test_notebook_execution[$(echo ${FILES} | sed 's|doc/source/examples/||g' | sed 's| | or |g')]" &&
-          pytest --suppress-no-test-exit-code --no-cov -rA --durations=0 -vv testing/test_notebooks.py -k "$tests"
+          pytest --suppress-no-test-exit-code --no-cov -rA --durations=0 -vv -p no:randomly testing/test_notebooks.py -k "$tests"

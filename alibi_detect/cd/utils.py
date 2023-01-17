@@ -4,6 +4,7 @@ from typing import Callable, Dict, Optional, Tuple, Union
 
 import numpy as np
 from alibi_detect.utils.sampling import reservoir_sampling
+from alibi_detect.utils.frameworks import Framework
 
 logger = logging.getLogger(__name__)
 
@@ -63,9 +64,9 @@ def encompass_batching(
     backend = backend.lower()
     kwargs = {'batch_size': batch_size, 'tokenizer': tokenizer, 'max_len': max_len,
               'preprocess_batch_fn': preprocess_batch_fn}
-    if backend == 'tensorflow':
+    if backend == Framework.TENSORFLOW:
         from alibi_detect.cd.tensorflow.preprocess import preprocess_drift
-    elif backend == 'pytorch':
+    elif backend == Framework.PYTORCH:
         from alibi_detect.cd.pytorch.preprocess import preprocess_drift  # type: ignore[no-redef]
         kwargs['device'] = device
     else:

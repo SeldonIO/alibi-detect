@@ -6,6 +6,7 @@ from alibi_detect.cd.base import BaseMMDDrift
 from alibi_detect.utils.tensorflow.distance import mmd2_from_kernel_matrix
 from alibi_detect.utils.tensorflow.kernels import GaussianRBF
 from alibi_detect.utils.warnings import deprecated_alias
+from alibi_detect.utils.frameworks import Framework
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +77,7 @@ class MMDDriftTF(BaseMMDDrift):
             input_shape=input_shape,
             data_type=data_type
         )
-        self.meta.update({'backend': 'tensorflow'})
+        self.meta.update({'backend': Framework.TENSORFLOW.value})
 
         # initialize kernel
         if isinstance(sigma, np.ndarray):

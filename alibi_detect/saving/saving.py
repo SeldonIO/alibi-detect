@@ -4,7 +4,7 @@ import shutil
 import warnings
 from functools import partial
 from pathlib import Path
-from typing import Callable, Optional, Tuple, Union
+from typing import Callable, Optional, Tuple, Union, Any, TYPE_CHECKING
 import dill
 import numpy as np
 import toml
@@ -13,9 +13,15 @@ from transformers import PreTrainedTokenizerBase
 from alibi_detect.saving._typing import VALID_DETECTORS
 from alibi_detect.saving.loading import _replace, validate_config
 from alibi_detect.saving.registry import registry
-from alibi_detect.saving.schemas import SupportedModels
-from alibi_detect.saving.tensorflow import save_detector_legacy, save_model_config_tf
+from alibi_detect.utils._types import supported_models_all, supported_models_tf, supported_models_torch, \
+    supported_models_sklearn
 from alibi_detect.base import Detector, ConfigurableDetector
+from alibi_detect.saving._tensorflow import save_detector_legacy, save_model_config_tf, save_optimizer_config_tf
+from alibi_detect.saving._pytorch import save_model_config_pt
+from alibi_detect.saving._sklearn import save_model_config_sk
+
+if TYPE_CHECKING:
+    import tensorflow as tf
 
 # do not extend pickle dispatch table so as not to change pickle behaviour
 dill.extend(use_dill=False)
@@ -45,9 +51,6 @@ def save_detector(
     """
     if legacy:
         warnings.warn('The `legacy` option will be removed in a future version.', DeprecationWarning)
-
-    if 'backend' in list(detector.meta.keys()) and detector.meta['backend'] in ['pytorch', 'sklearn', 'keops']:
-        raise NotImplementedError('Saving detectors with PyTorch, sklearn or keops backend is not yet supported.')
 
     # TODO: Replace .__args__ w/ typing.get_args() once Python 3.7 dropped (and remove type ignore below)
     detector_name = detector.__class__.__name__
@@ -122,10 +125,7 @@ def _save_detector_config(detector: ConfigurableDetector, filepath: Union[str, o
     filepath
         File path to save serialized artefacts to.
     """
-    # Get backend, input_shape and detector_name
-    backend = detector.meta.get('backend', 'tensorflow')
-    if backend != 'tensorflow':
-        raise NotImplementedError("Currently, saving is only supported with backend='tensorflow'.")
+    # detector name
     detector_name = detector.__class__.__name__
 
     # Process file paths
@@ -147,37 +147,42 @@ def _save_detector_config(detector: ConfigurableDetector, filepath: Union[str, o
     cfg.update({'x_ref': X_REF_FILENAME})
 
     # Save c_ref
-    c_ref = cfg.get('c_ref', None)
+    c_ref = cfg.get('c_ref')
     if c_ref is not None:
         save_path = filepath.joinpath(C_REF_FILENAME)
         np.save(str(save_path), cfg['c_ref'])
         cfg.update({'c_ref': C_REF_FILENAME})
 
     # Save preprocess_fn
-    preprocess_fn = cfg.get('preprocess_fn', None)
+    preprocess_fn = cfg.get('preprocess_fn')
     if preprocess_fn is not None:
         logger.info('Saving the preprocess_fn function.')
-        preprocess_cfg = _save_preprocess_config(preprocess_fn, backend, cfg['input_shape'], filepath)
+        preprocess_cfg = _save_preprocess_config(preprocess_fn, cfg['input_shape'], filepath)
         cfg['preprocess_fn'] = preprocess_cfg
 
     # Serialize kernels
     for kernel_str in ('kernel', 'x_kernel', 'c_kernel'):
-        kernel = cfg.get(kernel_str, None)
+        kernel = cfg.get(kernel_str)
         if kernel is not None:
             cfg[kernel_str] = _save_kernel_config(kernel, filepath, Path(kernel_str))
             if 'proj' in cfg[kernel_str]:  # serialise proj from DeepKernel - do here as need input_shape
                 cfg[kernel_str]['proj'], _ = _save_model_config(cfg[kernel_str]['proj'], base_path=filepath,
-                                                                input_shape=cfg['input_shape'], backend=backend)
+                                                                input_shape=cfg['input_shape'])
 
     # ClassifierDrift and SpotTheDiffDrift specific artefacts.
     # Serialize detector model
-    model = cfg.get('model', None)
+    model = cfg.get('model')
     if model is not None:
-        model_cfg, _ = _save_model_config(model, base_path=filepath, input_shape=cfg['input_shape'], backend=backend)
+        model_cfg, _ = _save_model_config(model, base_path=filepath, input_shape=cfg['input_shape'])
         cfg['model'] = model_cfg
 
+    # Serialize optimizer
+    optimizer = cfg.get('optimizer')
+    if optimizer is not None:
+        cfg['optimizer'] = _save_optimizer_config(optimizer)
+
     # Serialize dataset
-    dataset = cfg.get('dataset', None)
+    dataset = cfg.get('dataset')
     if dataset is not None:
         dataset_cfg, dataset_kwargs = _serialize_object(dataset, filepath, Path('dataset'))
         cfg.update({'dataset': dataset_cfg})
@@ -185,13 +190,13 @@ def _save_detector_config(detector: ConfigurableDetector, filepath: Union[str, o
             cfg['dataset']['kwargs'] = dataset_kwargs
 
     # Serialize reg_loss_fn
-    reg_loss_fn = cfg.get('reg_loss_fn', None)
+    reg_loss_fn = cfg.get('reg_loss_fn')
     if reg_loss_fn is not None:
         reg_loss_fn_cfg, _ = _serialize_object(reg_loss_fn, filepath, Path('reg_loss_fn'))
         cfg['reg_loss_fn'] = reg_loss_fn_cfg
 
     # Save initial_diffs
-    initial_diffs = cfg.get('initial_diffs', None)
+    initial_diffs = cfg.get('initial_diffs')
     if initial_diffs is not None:
         save_path = filepath.joinpath('initial_diffs.npy')
         np.save(str(save_path), initial_diffs)
@@ -232,7 +237,6 @@ def write_config(cfg: dict, filepath: Union[str, os.PathLike]):
 
 
 def _save_preprocess_config(preprocess_fn: Callable,
-                            backend: str,
                             input_shape: Optional[tuple],
                             filepath: Path) -> dict:
     """
@@ -243,8 +247,6 @@ def _save_preprocess_config(preprocess_fn: Callable,
     ----------
     preprocess_fn
         The preprocess function to be serialized.
-    backend
-        Specifies the detectors backend (if it has one). Either `'tensorflow'`, `'pytorch'` or `None`.
     input_shape
         Input shape for a model (if a model exists).
     filepath
@@ -266,8 +268,8 @@ def _save_preprocess_config(preprocess_fn: Callable,
     kwargs = {}
     for k, v in func_kwargs.items():
         # Model/embedding
-        if isinstance(v, SupportedModels):
-            cfg_model, cfg_embed = _save_model_config(v, filepath, input_shape, backend, local_path)
+        if isinstance(v, supported_models_all):
+            cfg_model, cfg_embed = _save_model_config(v, filepath, input_shape, local_path)
             kwargs.update({k: cfg_model})
             if cfg_embed is not None:
                 kwargs.update({'embedding': cfg_embed})
@@ -276,6 +278,10 @@ def _save_preprocess_config(preprocess_fn: Callable,
         elif isinstance(v, PreTrainedTokenizerBase):
             cfg_token = _save_tokenizer_config(v, filepath, local_path)
             kwargs.update({k: cfg_token})
+
+        # torch device
+        elif v.__class__.__name__ == 'device':  # avoiding torch import in case not installed
+            kwargs.update({k: v.type})
 
         # Arbitrary function
         elif callable(v):
@@ -390,10 +396,9 @@ def _int2str_keys(dikt: dict) -> dict:
     return dikt_copy
 
 
-def _save_model_config(model: Callable,
+def _save_model_config(model: Any,
                        base_path: Path,
-                       input_shape: tuple,
-                       backend: str,
+                       input_shape: Optional[tuple] = None,
                        path: Path = Path('.')) -> Tuple[dict, Optional[dict]]:
     """
     Save a model to a config dictionary. When a model has a text embedding model contained within it,
@@ -407,8 +412,6 @@ def _save_model_config(model: Callable,
         Base filepath to save to.
     input_shape
         The input dimensions of the model (after the optional embedding has been applied).
-    backend
-        The backend.
     path
         A local (relative) filepath to append to base_path.
 
@@ -416,10 +419,14 @@ def _save_model_config(model: Callable,
     -------
     A tuple containing the model and embedding config dicts.
     """
-    if backend == 'tensorflow':
+    if isinstance(model, supported_models_tf):
         return save_model_config_tf(model, base_path, input_shape, path)
+    elif isinstance(model, supported_models_torch):
+        return save_model_config_pt(model, base_path, path)
+    elif isinstance(model, supported_models_sklearn):
+        return save_model_config_sk(model, base_path, path), None
     else:
-        raise NotImplementedError("Saving of pytorch models is not yet implemented.")
+        raise NotImplementedError("Support for saving the given model is not yet implemented")
 
 
 def _save_tokenizer_config(tokenizer: PreTrainedTokenizerBase,
@@ -481,7 +488,7 @@ def _save_kernel_config(kernel: Callable,
         else:
             raise AttributeError("The detector's `kernel` must have a .get_config() method for it to be saved.")
         # Serialize the kernels (if needed)
-        kernel_a = cfg_kernel.get('kernel_b')
+        kernel_a = cfg_kernel.get('kernel_a')
         kernel_b = cfg_kernel.get('kernel_b')
         if not isinstance(kernel_a, str):
             cfg_kernel['kernel_a'] = _save_kernel_config(cfg_kernel['kernel_a'], base_path, Path('kernel_a'))
@@ -505,3 +512,22 @@ def _save_kernel_config(kernel: Callable,
         cfg_kernel['src'], _ = _serialize_object(kernel_class, base_path, local_path.joinpath('kernel'))
 
     return cfg_kernel
+
+
+def _save_optimizer_config(optimizer: Union['tf.keras.optimizers.Optimizer', type]) -> dict:
+    """
+    Function to save tensorflow or pytorch optimizers.
+
+    Parameters
+    ----------
+    optimizer
+        The optimizer to save.
+
+    Returns
+    -------
+    Optimizer config dict.
+    """
+    if isinstance(optimizer, type):
+        return {'class_name': optimizer.__name__}
+    else:
+        return save_optimizer_config_tf(optimizer)

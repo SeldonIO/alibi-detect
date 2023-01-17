@@ -13,58 +13,71 @@ The `resolved` kwarg of :func:`~alibi_detect.utils.validate.validate_config` det
     For detector pydantic models, the fields match the corresponding detector's args/kwargs. Refer to the
     detector's api docs for a full description of each arg/kwarg.
 """
-
 from typing import Callable, Dict, List, Optional, Type, Union, Any
 
-# TODO - conditional checks depending on backend etc
-# TODO - consider validating output of get_config calls
 import numpy as np
 from pydantic import BaseModel, validator
 
-from alibi_detect.cd.tensorflow import UAE as UAE_tf
-from alibi_detect.cd.tensorflow import HiddenOutput as HiddenOutput_tf
-from alibi_detect.utils._types import Literal, NDArray
-from alibi_detect.utils.frameworks import has_tensorflow, has_pytorch
-
-# Define supported models for each optional dependency
-SupportedModels_tf, SupportedModels_torch, SupportedModels_sklearn = (), (), ()  # type: ignore
-if has_tensorflow:
-    import tensorflow as tf
-    SupportedModels_tf = (tf.keras.Model, UAE_tf, HiddenOutput_tf)  # type: ignore
-if has_pytorch:
-    # import torch
-    SupportedModels_torch = ()  # type: ignore # TODO - fill
-
-# import sklearn
-# SupportedModels_sklearn = ()  # type: ignore # TODO - fill
-
-# Build SupportedModels - a tuple of all possible models for use in isinstance() etc.
-SupportedModels = SupportedModels_tf + SupportedModels_torch + SupportedModels_sklearn
-# TODO - could define a Union with fwdrefs here, for use in mypy type annotations in saving.py etc
+from alibi_detect.utils.frameworks import Framework
+from alibi_detect.utils._types import (Literal, supported_models_all, supported_models_tf,
+                                       supported_models_sklearn, supported_models_torch, supported_optimizers_tf,
+                                       supported_optimizers_torch, supported_optimizers_all)
+from alibi_detect.saving.validators import NDArray, validate_framework, coerce_int2list, coerce_2_tensor
 
 
-# Custom validators (defined here for reuse in multiple pydantic models)
-def coerce_int2list(value: int) -> List[int]:
-    """Validator to coerce int to list (pydantic doesn't do this by default)."""
-    if isinstance(value, int):
-        return [value]
-    else:
-        return value
+class SupportedModel:
+    """
+    Pydantic custom type to check the model is one of the supported types (conditional on what optional deps
+    are installed).
+    """
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate_model
+
+    @classmethod
+    def validate_model(cls, model: Any, values: dict) -> Any:
+        backend = values['backend']
+        err_msg = f"`backend={backend}` but the `model` doesn't appear to be a {backend} supported model, "\
+                  f"or {backend} is not installed. Model: {model}"
+        if backend == Framework.TENSORFLOW and not isinstance(model, supported_models_tf):
+            raise TypeError(err_msg)
+        elif backend == Framework.PYTORCH and not isinstance(model, supported_models_torch):
+            raise TypeError(err_msg)
+        elif backend == Framework.SKLEARN and not isinstance(model, supported_models_sklearn):
+            raise TypeError(f"`backend={backend}` but the `model` doesn't appear to be a {backend} supported model.")
+        elif isinstance(model, supported_models_all):  # If model supported and no `backend` incompatibility
+            return model
+        else:  # Catch any other unexpected issues
+            raise TypeError('The model is not recognised as a supported type.')
 
 
-def validate_model(model: Callable, values: dict) -> Callable:
-    """Validator to check the model is compatible with the given backend"""
-    backend = values['backend']
-    if backend == 'tensorflow' and not isinstance(model, SupportedModels_tf):
-        raise ValueError('A TensorFlow backend is not available for this model')
-    elif backend == 'pytorch' and not isinstance(model, SupportedModels_torch):
-        raise ValueError('A PyTorch backend is not available for this model')
-    elif backend == 'sklearn' and not isinstance(model, SupportedModels_sklearn):
-        raise ValueError('A sklearn backend is not available for this model')
-    return model
+class SupportedOptimizer:
+    """
+    Pydantic custom type to check the optimizer is one of the supported types (conditional on what optional deps
+    are installed).
+    """
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate_optimizer
+
+    @classmethod
+    def validate_optimizer(cls, optimizer: Any, values: dict) -> Any:
+        backend = values['backend']
+        err_msg = f"`backend={backend}` but the `optimizer` doesn't appear to be a {backend} supported optimizer, "\
+                  f"or {backend} is not installed. Optimizer: {optimizer}"
+        if backend == Framework.TENSORFLOW and not isinstance(optimizer, supported_optimizers_tf):
+            raise TypeError(err_msg)
+        elif backend == Framework.PYTORCH and not isinstance(optimizer, supported_optimizers_torch):
+            raise TypeError(err_msg)
+        elif isinstance(optimizer, supported_optimizers_all):  # If optimizer supported and no `backend` incompatibility
+            return optimizer
+        else:  # Catch any other unexpected issues
+            raise TypeError('The model is not recognised as a supported type.')
 
 
-# TODO - we could add another validator to check given "backend" against what optional deps are installed?
+# TODO - We could add validator to check `model` and `embedding` type when chained together. Leave this until refactor
+#  of preprocess_drift.
+
 
 # Custom BaseModel so that we can set default config
 class CustomBaseModel(BaseModel):
@@ -88,7 +101,6 @@ class CustomBaseModelWithKwargs(BaseModel):
 
 class MetaData(CustomBaseModel):
     version: str
-    config_spec: str
     version_warning: bool = False
 
 
@@ -98,12 +110,12 @@ class DetectorConfig(CustomBaseModel):
     """
     name: str
     "Name of the detector e.g. `MMDDrift`."
-    backend: Literal['tensorflow', 'pytorch', 'sklearn', 'keops'] = 'tensorflow'
-    "The detector backend."
     meta: Optional[MetaData] = None
     "Config metadata. Should not be edited."
     # Note: Although not all detectors have a backend, we define in base class as `backend` also determines
     #  whether tf or torch models used for preprocess_fn.
+    # backend validation (only applied if the detector config has a `backend` field
+    _validate_backend = validator('backend', allow_reuse=True, pre=False, check_fields=False)(validate_framework)
 
 
 class ModelConfig(CustomBaseModel):
@@ -118,8 +130,14 @@ class ModelConfig(CustomBaseModel):
     .. code-block :: toml
 
         [model]
+        flavour = "tensorflow"
         src = "model/"
         layer = -1
+    """
+    flavour: Literal['tensorflow', 'pytorch', 'sklearn']
+    """
+    Whether the model is a `tensorflow`, `pytorch` or `sklearn` model. XGBoost models following the scikit-learn API
+    are also included under `sklearn`.
     """
     src: str
     """
@@ -130,8 +148,12 @@ class ModelConfig(CustomBaseModel):
     layer: Optional[int] = None
     """
     Optional index of hidden layer to extract. If not `None`, a
-    :class:`~alibi_detect.cd.tensorflow.preprocess.HiddenOutput` model is returned.
+    :class:`~alibi_detect.cd.tensorflow.preprocess.HiddenOutput` or
+    :class:`~alibi_detect.cd.pytorch.preprocess.HiddenOutput` model is returned (dependent on `flavour`).
+    Only applies to 'tensorflow' and 'pytorch' models.
     """
+    # Validators
+    _validate_flavour = validator('flavour', allow_reuse=True, pre=False)(validate_framework)
 
 
 class EmbeddingConfig(CustomBaseModel):
@@ -141,15 +163,20 @@ class EmbeddingConfig(CustomBaseModel):
 
     Examples
     --------
-    Using the hidden states at the output of each layer of the
+    Using the hidden states at the output of each layer of a TensorFlow
     `BERT base <https://huggingface.co/bert-base-cased>`_ model as text embeddings:
 
     .. code-block :: toml
 
         [embedding]
+        flavour = "tensorflow"
         src = "bert-base-cased"
         type = "hidden_state"
         layers = [-1, -2, -3, -4, -5, -6, -7, -8]
+    """
+    flavour: Literal['tensorflow', 'pytorch'] = 'tensorflow'
+    """
+    Whether the embedding model is a `tensorflow` or `pytorch` model.
     """
     type: Literal['pooler_output', 'last_hidden_state', 'hidden_state', 'hidden_state_cls']
     """
@@ -164,6 +191,8 @@ class EmbeddingConfig(CustomBaseModel):
     Model name e.g. `"bert-base-cased"`, or a filepath to directory storing the model to extract embeddings from
     (relative to the `config.toml` file, or absolute).
     """
+    # Validators
+    _validate_flavour = validator('flavour', allow_reuse=True, pre=False)(validate_framework)
 
 
 class TokenizerConfig(CustomBaseModel):
@@ -316,7 +345,11 @@ class KernelConfig(CustomBaseModelWithKwargs):
     "A string referencing a filepath to a serialized kernel in `.dill` format, or an object registry reference."
 
     # Below kwargs are only passed if kernel == @GaussianRBF
-    sigma: Optional[NDArray[np.float32]] = None
+    flavour: Literal['tensorflow', 'pytorch', 'keops']
+    """
+    Whether the kernel is a `tensorflow` or `pytorch` kernel.
+    """
+    sigma: Optional[Union[float, List[float]]] = None
     """
     Bandwidth used for the kernel. Needn’t be specified if being inferred or trained. Can pass multiple values to eval
     kernel with and then average.
@@ -330,6 +363,9 @@ class KernelConfig(CustomBaseModelWithKwargs):
     should match :py:func:`~alibi_detect.utils.tensorflow.kernels.sigma_median`. If `None`, it is set to
     :func:`~alibi_detect.utils.tensorflow.kernels.sigma_median`.
     """
+    # Validators
+    _validate_flavour = validator('flavour', allow_reuse=True, pre=False)(validate_framework)
+    _coerce_sigma2tensor = validator('sigma', allow_reuse=True, pre=False)(coerce_2_tensor)
 
 
 class DeepKernelConfig(CustomBaseModel):
@@ -383,11 +419,14 @@ class DeepKernelConfig(CustomBaseModel):
 
 class OptimizerConfig(CustomBaseModelWithKwargs):
     """
-    Unresolved schema for optimizers. Note that the model "backend" e.g. 'tensorflow', 'pytorch', 'sklearn', is set
-    by `backend` in :class:`DetectorConfig`. If `backend='tensorflow'`, the `optimizer` dictionary is expected to be
-    a configuration dictionary compatible with
-    `tf.keras.optimizers.deserialize <https://www.tensorflow.org/api_docs/python/tf/keras/optimizers/deserialize>`_.
+    Unresolved schema for optimizers. The `optimizer` dictionary has two possible formats:
 
+    1. A configuration dictionary compatible with
+    `tf.keras.optimizers.deserialize <https://www.tensorflow.org/api_docs/python/tf/keras/optimizers/deserialize>`_.
+    For `backend='tensorflow'` only.
+    2. A dictionary containing only `class_name`, where this is a string referencing the optimizer name e.g.
+    `optimizer.class_name = 'Adam'`. In this case, the tensorflow or pytorch optimizer class of the same name is
+    loaded. For `backend='tensorflow'` and `backend='pytorch'`.
 
     Examples
     --------
@@ -402,9 +441,16 @@ class OptimizerConfig(CustomBaseModelWithKwargs):
         name = "Adam"
         learning_rate = 0.001
         decay = 0.0
+
+    A PyTorch Adam optimizer:
+
+    .. code-block :: toml
+
+        [optimizer]
+        class_name = "Adam"
     """
     class_name: str
-    config: Dict[str, Any]
+    config: Optional[Dict[str, Any]] = None
 
 
 class DriftDetectorConfig(DetectorConfig):
@@ -621,6 +667,7 @@ class MMDDriftConfig(DriftDetectorConfig):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.MMDDrift` documentation for a description of each field.
     """
+    backend: Literal['tensorflow', 'pytorch', 'keops'] = 'tensorflow'
     p_val: float = .05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
@@ -640,6 +687,7 @@ class MMDDriftConfigResolved(DriftDetectorConfigResolved):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.MMDDrift` documentation for a description of each field.
     """
+    backend: Literal['tensorflow', 'pytorch', 'keops'] = 'tensorflow'
     p_val: float = .05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
@@ -659,6 +707,7 @@ class LSDDDriftConfig(DriftDetectorConfig):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.LSDDDrift` documentation for a description of each field.
     """
+    backend: Literal['tensorflow', 'pytorch'] = 'tensorflow'
     p_val: float = .05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
@@ -677,6 +726,7 @@ class LSDDDriftConfigResolved(DriftDetectorConfigResolved):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.LSDDDrift` documentation for a description of each field.
     """
+    backend: Literal['tensorflow', 'pytorch'] = 'tensorflow'
     p_val: float = .05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
@@ -696,6 +746,7 @@ class ClassifierDriftConfig(DriftDetectorConfig):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.ClassifierDrift` documentation for a description of each field.
     """
+    backend: Literal['tensorflow', 'pytorch', 'sklearn'] = 'tensorflow'
     p_val: float = .05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
@@ -731,10 +782,11 @@ class ClassifierDriftConfigResolved(DriftDetectorConfigResolved):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.ClassifierDrift` documentation for a description of each field.
     """
+    backend: Literal['tensorflow', 'pytorch', 'sklearn'] = 'tensorflow'
     p_val: float = .05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
-    model: Optional[Callable] = None
+    model: Optional[SupportedModel] = None
     preds_type: Literal['probs', 'logits'] = 'probs'
     binarize_preds: bool = False
     reg_loss_fn: Optional[Callable] = None
@@ -742,7 +794,7 @@ class ClassifierDriftConfigResolved(DriftDetectorConfigResolved):
     n_folds: Optional[int] = None
     retrain_from_scratch: bool = True
     seed: int = 0
-    optimizer: Optional['tf.keras.optimizers.Optimizer'] = None
+    optimizer: Optional[SupportedOptimizer] = None
     learning_rate: float = 1e-3
     batch_size: int = 32
     preprocess_batch_fn: Optional[Callable] = None
@@ -756,9 +808,6 @@ class ClassifierDriftConfigResolved(DriftDetectorConfigResolved):
     calibration_kwargs: Optional[dict] = None
     use_oob: bool = False
 
-    # validators
-    _validate_model = validator('model', allow_reuse=True, pre=True)(validate_model)
-
 
 class SpotTheDiffDriftConfig(DriftDetectorConfig):
     """
@@ -769,6 +818,7 @@ class SpotTheDiffDriftConfig(DriftDetectorConfig):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.SpotTheDiffDrift` documentation for a description of each field.
     """
+    backend: Literal['tensorflow', 'pytorch'] = 'tensorflow'
     p_val: float = .05
     binarize_preds: bool = False
     train_size: Optional[float] = .75
@@ -800,13 +850,14 @@ class SpotTheDiffDriftConfigResolved(DriftDetectorConfigResolved):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.SpotTheDiffDrift` documentation for a description of each field.
     """
+    backend: Literal['tensorflow', 'pytorch'] = 'tensorflow'
     p_val: float = .05
     binarize_preds: bool = False
     train_size: Optional[float] = .75
     n_folds: Optional[int] = None
     retrain_from_scratch: bool = True
     seed: int = 0
-    optimizer: Optional['tf.keras.optimizers.Optimizer'] = None
+    optimizer: Optional[SupportedOptimizer] = None
     learning_rate: float = 1e-3
     batch_size: int = 32
     preprocess_batch_fn: Optional[Callable] = None
@@ -831,6 +882,7 @@ class LearnedKernelDriftConfig(DriftDetectorConfig):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.LearnedKernelDrift` documentation for a description of each field.
     """
+    backend: Literal['tensorflow', 'pytorch', 'keops'] = 'tensorflow'
     p_val: float = .05
     kernel: Union[str, DeepKernelConfig]
     preprocess_at_init: bool = True
@@ -863,6 +915,7 @@ class LearnedKernelDriftConfigResolved(DriftDetectorConfigResolved):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.LearnedKernelDrift` documentation for a description of each field.
     """
+    backend: Literal['tensorflow', 'pytorch', 'keops'] = 'tensorflow'
     p_val: float = .05
     kernel: Optional[Callable] = None
     preprocess_at_init: bool = True
@@ -873,7 +926,7 @@ class LearnedKernelDriftConfigResolved(DriftDetectorConfigResolved):
     reg_loss_fn: Optional[Callable] = None
     train_size: Optional[float] = .75
     retrain_from_scratch: bool = True
-    optimizer: Optional['tf.keras.optimizers.Optimizer'] = None
+    optimizer: Optional[SupportedOptimizer] = None
     learning_rate: float = 1e-3
     batch_size: int = 32
     batch_size_predict: int = 1000000
@@ -895,6 +948,7 @@ class ContextMMDDriftConfig(DriftDetectorConfig):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.ContextMMDDrift` documentation for a description of each field.
     """
+    backend: Literal['tensorflow', 'pytorch'] = 'tensorflow'
     p_val: float = .05
     c_ref: str
     preprocess_at_init: bool = True
@@ -917,6 +971,7 @@ class ContextMMDDriftConfigResolved(DriftDetectorConfigResolved):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.MMDDrift` documentation for a description of each field.
     """
+    backend: Literal['tensorflow', 'pytorch'] = 'tensorflow'
     p_val: float = .05
     c_ref: np.ndarray
     preprocess_at_init: bool = True
@@ -940,6 +995,7 @@ class MMDDriftOnlineConfig(DriftDetectorConfig):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.MMDDriftOnline` documentation for a description of each field.
     """
+    backend: Literal['tensorflow', 'pytorch'] = 'tensorflow'
     ert: float
     window_size: int
     kernel: Optional[Union[str, KernelConfig]] = None
@@ -958,6 +1014,7 @@ class MMDDriftOnlineConfigResolved(DriftDetectorConfigResolved):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.MMDDriftOnline` documentation for a description of each field.
     """
+    backend: Literal['tensorflow', 'pytorch'] = 'tensorflow'
     ert: float
     window_size: int
     kernel: Optional[Callable] = None
@@ -976,6 +1033,7 @@ class LSDDDriftOnlineConfig(DriftDetectorConfig):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.LSDDDriftOnline` documentation for a description of each field.
     """
+    backend: Literal['tensorflow', 'pytorch'] = 'tensorflow'
     ert: float
     window_size: int
     sigma: Optional[np.ndarray] = None
@@ -995,6 +1053,7 @@ class LSDDDriftOnlineConfigResolved(DriftDetectorConfigResolved):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.LSDDDriftOnline` documentation for a description of each field.
     """
+    backend: Literal['tensorflow', 'pytorch'] = 'tensorflow'
     ert: float
     window_size: int
     sigma: Optional[np.ndarray] = None
@@ -1100,6 +1159,7 @@ class ClassifierUncertaintyDriftConfig(DetectorConfig):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.ClassifierUncertaintyDrift` documentation for a description of each field.
     """
+    backend: Literal['tensorflow', 'pytorch'] = 'tensorflow'
     x_ref: str
     model: Union[str, ModelConfig]
     p_val: float = .05
@@ -1126,8 +1186,9 @@ class ClassifierUncertaintyDriftConfigResolved(DetectorConfig):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.ClassifierUncertaintyDrift` documentation for a description of each field.
     """
+    backend: Literal['tensorflow', 'pytorch'] = 'tensorflow'
     x_ref: Union[np.ndarray, list]
-    model: Optional[Callable] = None
+    model: Optional[SupportedModel] = None
     p_val: float = .05
     x_ref_preprocessed: bool = False
     update_x_ref: Optional[Dict[str, int]] = None
@@ -1142,9 +1203,6 @@ class ClassifierUncertaintyDriftConfigResolved(DetectorConfig):
     input_shape: Optional[tuple] = None
     data_type: Optional[str] = None
 
-    # validators
-    _validate_model = validator('model', allow_reuse=True, pre=True)(validate_model)
-
 
 class RegressorUncertaintyDriftConfig(DetectorConfig):
     """
@@ -1155,6 +1213,7 @@ class RegressorUncertaintyDriftConfig(DetectorConfig):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.RegressorUncertaintyDrift` documentation for a description of each field.
     """
+    backend: Literal['tensorflow', 'pytorch'] = 'tensorflow'
     x_ref: str
     model: Union[str, ModelConfig]
     p_val: float = .05
@@ -1180,8 +1239,9 @@ class RegressorUncertaintyDriftConfigResolved(DetectorConfig):
     Except for the `name` and `meta` fields, the fields match the detector's args and kwargs. Refer to the
     :class:`~alibi_detect.cd.RegressorUncertaintyDrift` documentation for a description of each field.
     """
+    backend: Literal['tensorflow', 'pytorch'] = 'tensorflow'
     x_ref: Union[np.ndarray, list]
-    model: Optional[Callable] = None
+    model: Optional[SupportedModel] = None
     p_val: float = .05
     x_ref_preprocessed: bool = False
     update_x_ref: Optional[Dict[str, int]] = None
@@ -1194,9 +1254,6 @@ class RegressorUncertaintyDriftConfigResolved(DetectorConfig):
     max_len: Optional[int] = None
     input_shape: Optional[tuple] = None
     data_type: Optional[str] = None
-
-    # validators
-    _validate_model = validator('model', allow_reuse=True, pre=True)(validate_model)
 
 
 # Unresolved schema dictionary (used in alibi_detect.utils.loading)

@@ -4,7 +4,7 @@ import json
 import numpy as np
 from typing import Dict, Any, Optional
 from typing_extensions import Protocol, runtime_checkable
-from alibi_detect.version import __version__, __config_spec__
+from alibi_detect.version import __version__
 
 
 DEFAULT_META = {
@@ -171,11 +171,10 @@ class DriftConfigMixin:
         name = self.__class__.__name__
 
         # Init config dict
-        self.config: Dict[str, Any] = {
+        self.config = {
             'name': name,
             'meta': {
                 'version': __version__,
-                'config_spec': __config_spec__,
             }
         }
 
@@ -204,7 +203,7 @@ class DriftConfigMixin:
 class Detector(Protocol):
     """Type Protocol for all detectors.
 
-    Used for typing legacy save and load functionality in `alibi_detect.saving.tensorflow._saving.py`.
+    Used for typing legacy save and load functionality in `alibi_detect.saving._tensorflow.saving.py`.
 
     Note:
         This exists to distinguish between detectors with and without support for config saving and loading. Once all

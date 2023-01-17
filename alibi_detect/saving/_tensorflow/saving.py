@@ -22,6 +22,7 @@ from alibi_detect.od import (LLR, IForest, Mahalanobis, OutlierAE,
 from alibi_detect.utils._types import Literal
 from alibi_detect.utils.tensorflow.kernels import GaussianRBF
 from alibi_detect.utils.missing_optional_dependency import MissingDependency
+from alibi_detect.utils.frameworks import Framework
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +32,7 @@ def save_model_config(model: Callable,
                       input_shape: Optional[tuple] = None,
                       local_path: Path = Path('.')) -> Tuple[dict, Optional[dict]]:
     """
-    Save a model to a config dictionary. When a model has a text embedding model contained within it,
+    Save a TensorFlow model to a config dictionary. When a model has a text embedding model contained within it,
     this is extracted and saved separately.
 
     Parameters
@@ -53,6 +54,9 @@ def save_model_config(model: Callable,
     cfg_embed = None  # type: Optional[Dict[str, Any]]
     if isinstance(model, UAE):
         if isinstance(model.encoder.layers[0], TransformerEmbedding):  # if UAE contains embedding and encoder
+            if input_shape is None:
+                raise ValueError('Cannot save combined embedding and model when `input_shape` is None.')
+
             # embedding
             embed = model.encoder.layers[0]
             cfg_embed = save_embedding_config(embed, base_path, local_path.joinpath('embedding'))
@@ -70,7 +74,7 @@ def save_model_config(model: Callable,
         model = None
     elif isinstance(model, HiddenOutput):
         model = model.model
-    elif isinstance(model, tf.keras.Model):  # This must be last as TransferEmbedding is a tf.keras.Model
+    elif isinstance(model, tf.keras.Model):  # Last as TransformerEmbedding and UAE are tf.keras.Model's
         model = model
     else:
         raise ValueError('Model not recognised, cannot save.')
@@ -78,7 +82,10 @@ def save_model_config(model: Callable,
     if model is not None:
         filepath = base_path.joinpath(local_path)
         save_model(model, filepath=filepath, save_dir='model', input_shape=input_shape)
-        cfg_model = {'src': local_path.joinpath('model')}
+        cfg_model = {
+            'flavour': Framework.TENSORFLOW.value,
+            'src': local_path.joinpath('model')
+        }
     return cfg_model, cfg_embed
 
 
@@ -150,12 +157,28 @@ def save_embedding_config(embed: TransformerEmbedding,
     cfg_embed.update({'type': embed.emb_type})
     cfg_embed.update({'layers': embed.hs_emb.keywords['layers']})
     cfg_embed.update({'src': local_path})
+    cfg_embed.update({'flavour': Framework.TENSORFLOW.value})
 
     # Save embedding model
     logger.info('Saving embedding model to {}.'.format(filepath))
     embed.model.save_pretrained(filepath)
 
     return cfg_embed
+
+
+def save_optimizer_config(optimizer: tf.keras.optimizers.Optimizer):
+    """
+
+    Parameters
+    ----------
+    optimizer
+        The tensorflow optimizer to serialize.
+
+    Returns
+    -------
+    The tensorflow optimizer's config dictionary.
+    """
+    return tf.keras.optimizers.serialize(optimizer)
 
 
 #######################################################################################################

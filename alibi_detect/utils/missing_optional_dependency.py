@@ -29,9 +29,7 @@ dict is used to control two behaviours:
     before the pip install message is issued as this is the most robust place to capture these differences.
 """
 ERROR_TYPES = {
-    "fbprophet": 'prophet',
-    "holidays": 'prophet',
-    "pystan": 'prophet',
+    "prophet": 'prophet',
     "tensorflow_probability": 'tensorflow',
     "tensorflow": 'tensorflow',
     "torch": 'torch',
@@ -108,7 +106,7 @@ def import_optional(module_name: str, names: Optional[List[str]] = None) -> Any:
         return module
     except (ImportError, ModuleNotFoundError) as err:
         if err.name is None:
-            raise TypeError()
+            raise err
         dep_name, *_ = err.name.split('.')
         if str(dep_name) not in ERROR_TYPES:
             raise err

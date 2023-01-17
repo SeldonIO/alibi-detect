@@ -6,7 +6,7 @@ from alibi_detect.cd.ks import KSDrift
 from alibi_detect.cd.chisquare import ChiSquareDrift
 from alibi_detect.cd.preprocess import classifier_uncertainty, regressor_uncertainty
 from alibi_detect.cd.utils import encompass_batching, encompass_shuffling_and_batch_filling
-from alibi_detect.utils.frameworks import BackendValidator
+from alibi_detect.utils.frameworks import BackendValidator, Framework
 from alibi_detect.base import DriftConfigMixin
 
 logger = logging.getLogger(__name__)
@@ -85,8 +85,8 @@ class ClassifierUncertaintyDrift(DriftConfigMixin):
 
         if backend:
             backend = backend.lower()
-        BackendValidator(backend_options={'tensorflow': ['tensorflow'],
-                                          'pytorch': ['pytorch'],
+        BackendValidator(backend_options={Framework.TENSORFLOW: [Framework.TENSORFLOW],
+                                          Framework.PYTORCH: [Framework.PYTORCH],
                                           None: []},
                          construct_name=self.__class__.__name__).verify_backend(backend)
 
@@ -238,8 +238,8 @@ class RegressorUncertaintyDrift(DriftConfigMixin):
 
         if backend:
             backend = backend.lower()
-        BackendValidator(backend_options={'tensorflow': ['tensorflow'],
-                                          'pytorch': ['pytorch'],
+        BackendValidator(backend_options={Framework.TENSORFLOW: [Framework.TENSORFLOW],
+                                          Framework.PYTORCH: [Framework.PYTORCH],
                                           None: []},
                          construct_name=self.__class__.__name__).verify_backend(backend)
 
@@ -247,10 +247,10 @@ class RegressorUncertaintyDrift(DriftConfigMixin):
             model_fn = model
         else:
             if uncertainty_type == 'mc_dropout':
-                if backend == 'pytorch':
+                if backend == Framework.PYTORCH:
                     from alibi_detect.cd.pytorch.utils import activate_train_mode_for_dropout_layers
                     model = activate_train_mode_for_dropout_layers(model)
-                elif backend == 'tensorflow':
+                elif backend == Framework.TENSORFLOW:
                     logger.warning(
                         "MC dropout being applied to tensorflow model. May not be suitable if model contains"
                         "non-dropout layers with different train and inference time behaviour"
@@ -268,7 +268,7 @@ class RegressorUncertaintyDrift(DriftConfigMixin):
                 max_len=max_len
             )
 
-            if uncertainty_type == 'mc_dropout' and backend == 'tensorflow':
+            if uncertainty_type == 'mc_dropout' and backend == Framework.TENSORFLOW:
                 # To average over possible batchnorm effects as all layers evaluated in training mode.
                 model_fn = encompass_shuffling_and_batch_filling(model_fn, batch_size=batch_size)
 

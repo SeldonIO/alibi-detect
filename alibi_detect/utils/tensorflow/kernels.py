@@ -3,6 +3,7 @@ import numpy as np
 from . import distance
 from typing import Optional, Union, Callable
 from scipy.special import logit
+from alibi_detect.utils.frameworks import Framework
 
 
 def sigma_median(x: tf.Tensor, y: tf.Tensor, dist: tf.Tensor) -> tf.Tensor:
@@ -94,7 +95,8 @@ class GaussianRBF(tf.keras.Model):
         """
         cfg = self.config.copy()
         if isinstance(cfg['sigma'], tf.Tensor):
-            cfg['sigma'] = cfg['sigma'].numpy()
+            cfg['sigma'] = cfg['sigma'].numpy().tolist()
+        cfg.update({'flavour': Framework.TENSORFLOW.value})
         return cfg
 
     @classmethod
@@ -107,6 +109,7 @@ class GaussianRBF(tf.keras.Model):
         config
             A kernel config dictionary.
         """
+        config.pop('flavour')
         return cls(**config)
 
 
@@ -165,9 +168,9 @@ class DeepKernel(tf.keras.Model):
         return tf.math.sigmoid(self.logit_eps) if self.kernel_b is not None else tf.constant(0.)
 
     def call(self, x: tf.Tensor, y: tf.Tensor) -> tf.Tensor:
-        similarity = self.kernel_a(self.proj(x), self.proj(y))  # type: ignore
+        similarity = self.kernel_a(self.proj(x), self.proj(y))  # type: ignore[operator]
         if self.kernel_b is not None:
-            similarity = (1-self.eps)*similarity + self.eps*self.kernel_b(x, y)  # type: ignore
+            similarity = (1-self.eps)*similarity + self.eps*self.kernel_b(x, y)  # type: ignore[operator]
         return similarity
 
     def get_config(self) -> dict:

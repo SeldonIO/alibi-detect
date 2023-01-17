@@ -5,9 +5,11 @@ from typing import Any, Callable, Optional, Union
 from alibi_detect.cd.base_online import BaseMultiDriftOnline
 from alibi_detect.utils.pytorch import get_device
 from alibi_detect.utils.pytorch import GaussianRBF, permed_lsdds, quantile
+from alibi_detect.utils.frameworks import Framework
+from alibi_detect.base import DriftConfigMixin
 
 
-class LSDDDriftOnlineTorch(BaseMultiDriftOnline):
+class LSDDDriftOnlineTorch(BaseMultiDriftOnline, DriftConfigMixin):
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
@@ -82,7 +84,7 @@ class LSDDDriftOnlineTorch(BaseMultiDriftOnline):
             input_shape=input_shape,
             data_type=data_type
         )
-        self.meta.update({'backend': 'pytorch'})
+        self.meta.update({'backend': Framework.PYTORCH.value})
         self.n_kernel_centers = n_kernel_centers
         self.lambda_rd_max = lambda_rd_max
 
@@ -113,6 +115,7 @@ class LSDDDriftOnlineTorch(BaseMultiDriftOnline):
         x_ref_means = x_ref.mean(0)
         x_ref_stds = x_ref.std(0)
         self._normalize = lambda x: (x - x_ref_means) / (x_ref_stds + eps)
+        self._unnormalize = lambda x: (torch.as_tensor(x) * (x_ref_stds + eps) + x_ref_means).cpu().numpy()
         self.x_ref = self._normalize(x_ref).cpu().numpy()
 
     def _configure_kernel_centers(self):

@@ -8,6 +8,7 @@ from sklearn.exceptions import NotFittedError
 from sklearn.ensemble import RandomForestClassifier
 from alibi_detect.cd.base import BaseClassifierDrift
 from alibi_detect.utils.warnings import deprecated_alias
+from alibi_detect.utils.frameworks import Framework
 
 logger = logging.getLogger(__name__)
 
@@ -112,7 +113,7 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
         if preds_type not in ['probs', 'scores']:
             raise ValueError("'preds_type' should be 'probs' or 'scores'")
 
-        self.meta.update({'backend': 'sklearn'})
+        self.meta.update({'backend': Framework.SKLEARN.value})
         self.original_model = model
         self.use_calibration = use_calibration
         self.calibration_kwargs = dict() if calibration_kwargs is None else calibration_kwargs
@@ -228,7 +229,8 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
 
         return model
 
-    def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, np.ndarray, np.ndarray]:
+    def score(self, x: Union[np.ndarray, list]) \
+            -> Tuple[float, float, np.ndarray, np.ndarray, Union[np.ndarray, list], Union[np.ndarray, list]]:
         """
         Compute the out-of-fold drift metric such as the accuracy from a classifier
         trained to distinguish the reference data from the data to be tested.
@@ -242,53 +244,67 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
         -------
         p-value, a notion of distance between the trained classifier's out-of-fold performance \
         and that which we'd expect under the null assumption of no drift, \
-        and the out-of-fold classifier model prediction probabilities on the reference and test data
+        and the out-of-fold classifier model prediction probabilities on the reference and test data \
+        as well as the associated reference and test instances of the out-of-fold predictions.
         """
         if self.use_oob and isinstance(self.model, RandomForestClassifier):
             return self._score_rf(x)
 
         return self._score(x)
 
-    def _score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, np.ndarray, np.ndarray]:
+    def _score(self, x: Union[np.ndarray, list]) \
+            -> Tuple[float, float, np.ndarray, np.ndarray, Union[np.ndarray, list], Union[np.ndarray, list]]:
         x_ref, x = self.preprocess(x)
-        n_ref, n_cur = len(x_ref), len(x)
         x, y, splits = self.get_splits(x_ref, x, return_splits=True)  # type: ignore
 
         # iterate over folds: train a new model for each fold and make out-of-fold (oof) predictions
         probs_oof_list, idx_oof_list = [], []
         for idx_tr, idx_te in splits:
             y_tr = y[idx_tr]
-
             if isinstance(x, np.ndarray):
                 x_tr, x_te = x[idx_tr], x[idx_te]
             elif isinstance(x, list):
                 x_tr, x_te = [x[_] for _ in idx_tr], [x[_] for _ in idx_te]
             else:
                 raise TypeError(f'x needs to be of type np.ndarray or list and not {type(x)}.')
-
             self.model.fit(x_tr, y_tr)
             probs = self.model.aux_predict_proba(x_te)
             probs_oof_list.append(probs)
             idx_oof_list.append(idx_te)
-
         probs_oof = np.concatenate(probs_oof_list, axis=0)
         idx_oof = np.concatenate(idx_oof_list, axis=0)
         y_oof = y[idx_oof]
+        n_cur = y_oof.sum()
+        n_ref = len(y_oof) - n_cur
         p_val, dist = self.test_probs(y_oof, probs_oof, n_ref, n_cur)
-        probs_sort = probs_oof[np.argsort(idx_oof)]
-        return p_val, dist, probs_sort[:n_ref, 1], probs_sort[n_ref:, 1]
+        idx_sort = np.argsort(idx_oof)
+        probs_sort = probs_oof[idx_sort]
+        if isinstance(x, np.ndarray):
+            x_oof = x[idx_oof]
+            x_sort = x_oof[idx_sort]
+        else:
+            x_oof = [x[_] for _ in idx_oof]
+            x_sort = [x_oof[_] for _ in idx_sort]
+        return p_val, dist, probs_sort[:n_ref, 1], probs_sort[n_ref:, 1], x_sort[:n_ref], x_sort[n_ref:]
 
-    def _score_rf(self, x: Union[np.ndarray, list]) -> Tuple[float, float, np.ndarray, np.ndarray]:
+    def _score_rf(self, x: Union[np.ndarray, list]) \
+            -> Tuple[float, float, np.ndarray, np.ndarray, Union[np.ndarray, list], Union[np.ndarray, list]]:
         x_ref, x = self.preprocess(x)
         x, y = self.get_splits(x_ref, x, return_splits=False)  # type: ignore
         self.model.fit(x, y)
         # it is possible that some inputs do not have OOB scores. This is probably means
         # that too few trees were used to compute any reliable estimates.
-        index_oob = np.where(np.all(~np.isnan(self.model.oob_decision_function_), axis=1))[0]
-        probs_oob = self.model.oob_decision_function_[index_oob]
-        y_oob = y[index_oob]
+        idx_oob = np.where(np.all(~np.isnan(self.model.oob_decision_function_), axis=1))[0]
+        probs_oob = self.model.oob_decision_function_[idx_oob]
+        y_oob = y[idx_oob]
+        if isinstance(x, np.ndarray):
+            x_oob = x[idx_oob]
+        elif isinstance(x, list):
+            x_oob = [x[_] for _ in idx_oob]
+        else:
+            raise TypeError(f'x needs to be of type np.ndarray or list and not {type(x)}.')
         # comparison due to ordering in get_split (i.e, x = [x_ref, x])
-        n_ref = np.sum(index_oob < len(x_ref)).item()
-        n_cur = np.sum(index_oob >= len(x_ref)).item()
+        n_ref = np.sum(idx_oob < len(x_ref)).item()
+        n_cur = np.sum(idx_oob >= len(x_ref)).item()
         p_val, dist = self.test_probs(y_oob, probs_oob, n_ref, n_cur)
-        return p_val, dist, probs_oob[:n_ref, 1], probs_oob[n_ref:, 1]
+        return p_val, dist, probs_oob[:n_ref, 1], probs_oob[n_ref:, 1], x_oob[:n_ref], x_oob[n_ref:]
