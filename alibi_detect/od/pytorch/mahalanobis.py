@@ -11,7 +11,7 @@ class MahalanobisTorch(TorchOutlierDetector):
             min_eigenvalue: float = 1e-6,
             device: Optional[Union[str, torch.device]] = None
             ):
-        """PyTorch backend for KNN detector.
+        """PyTorch backend for Mahalanobis detector.
 
         Parameters
         ----------

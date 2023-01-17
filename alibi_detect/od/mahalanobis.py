@@ -30,12 +30,9 @@ class Mahalanobis(OutlierDetector):
         """
         Outliers identified via Mahalanobis distance.
 
-        The kernel variant isn't exactly well known. For details/motivation see section
-        3.4.3 of Aggarwal's Outlier Analysis. In summary, the linear variant can be
-        interpreted as projecting onto (orthogonal) eigenvectors of the covariance matrix, scaled
-        such that projections onto the eigenvectors have mean 0 and std 1. The Mahalanobis distance
-        is then the l2-norm from the origin. The same thing is done for the kernel case. It is
-        important to center the kernel matrix, however,
+        The linear variant can be interpreted as projecting onto (orthogonal) eigenvectors of the
+        covariance matrix, scaled such that projections onto the eigenvectors have mean 0 and std 1.
+        The Mahalanobis distance is then the l2-norm from the origin.
 
         Parameters
         ----------
