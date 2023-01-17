@@ -37,8 +37,8 @@ logger = logging.getLogger(__name__)
 
 def load_model(filepath: Union[str, os.PathLike],
                load_dir: str = 'model',
-               custom_objects: dict = None,  # TODO - remove when legacy save/load removed
                layer: Optional[int] = None,
+               **kwargs
                ) -> tf.keras.Model:
     """
     Load TensorFlow model.
@@ -49,8 +49,6 @@ def load_model(filepath: Union[str, os.PathLike],
         Saved model directory.
     load_dir
         Name of saved model folder within the filepath directory.
-    custom_objects
-        Optional custom objects when loading the TensorFlow model.
     layer
         Optional index of a hidden layer to extract. If not `None`, a
         :py:class:`~alibi_detect.cd.tensorflow.HiddenOutput` model is returned.
@@ -64,7 +62,7 @@ def load_model(filepath: Union[str, os.PathLike],
     if 'model.h5' in [f.name for f in model_path.glob('[!.]*.h5')]:
         model_path = model_path.joinpath('model.h5')
     # Load model
-    model = tf.keras.models.load_model(model_path, custom_objects=custom_objects)
+    model = tf.keras.models.load_model(model_path, **kwargs)
     # Optionally extract hidden layer
     if isinstance(layer, int):
         model = HiddenOutput(model, layer=layer)

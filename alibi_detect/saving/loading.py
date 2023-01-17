@@ -94,7 +94,7 @@ def load_detector(filepath: Union[str, os.PathLike], **kwargs) -> Union[Detector
     elif filepath.is_dir():
         files = [str(f.name) for f in filepath.iterdir() if f.is_file()]
         if 'config.toml' in files:
-            return _load_detector_config(filepath.joinpath('config.toml'))
+            return _load_detector_config(filepath.joinpath('config.toml'), **kwargs)
         elif 'meta.dill' in files:
             return load_detector_legacy(filepath, '.dill', **kwargs)
         elif 'meta.pickle' in files:
@@ -108,7 +108,7 @@ def load_detector(filepath: Union[str, os.PathLike], **kwargs) -> Union[Detector
 
 
 # TODO - will eventually become load_detector
-def _load_detector_config(filepath: Union[str, os.PathLike]) -> ConfigurableDetector:
+def _load_detector_config(filepath: Union[str, os.PathLike], **kwargs) -> ConfigurableDetector:
     """
     Loads a drift detector specified in a detector config dict. Validation is performed with pydantic.
 
@@ -132,7 +132,7 @@ def _load_detector_config(filepath: Union[str, os.PathLike]) -> ConfigurableDete
     # Resolve and validate config
     cfg = validate_config(cfg)
     logger.info('Validated unresolved config.')
-    cfg = resolve_config(cfg, config_dir=config_dir)
+    cfg = resolve_config(cfg, config_dir=config_dir, **kwargs)
     cfg = validate_config(cfg, resolved=True)
     logger.info('Validated resolved config.')
 
@@ -245,7 +245,7 @@ def _load_preprocess_config(cfg: dict) -> Optional[Callable]:
     return partial(preprocess_fn, **kwargs)
 
 
-def _load_model_config(cfg: dict) -> Callable:
+def _load_model_config(cfg: dict, **kwargs) -> Callable:
     """
     Loads supported models from a model config dict.
 
@@ -269,9 +269,9 @@ def _load_model_config(cfg: dict) -> Callable:
                                 "a compatible model.")
 
     if flavour == Framework.TENSORFLOW:
-        model = load_model_tf(src, load_dir='.', layer=layer)
+        model = load_model_tf(src, load_dir='.', layer=layer, **kwargs)
     elif flavour == Framework.PYTORCH:
-        model = load_model_pt(src, layer=layer)
+        model = load_model_pt(src, layer=layer, **kwargs)
     elif flavour == Framework.SKLEARN:
         model = load_model_sk(src)
 
@@ -438,7 +438,7 @@ def read_config(filepath: Union[os.PathLike, str]) -> dict:
     return cfg
 
 
-def resolve_config(cfg: dict, config_dir: Optional[Path]) -> dict:
+def resolve_config(cfg: dict, config_dir: Optional[Path], **kwargs) -> dict:
     """
     Resolves artefacts in a config dict. For example x_ref='x_ref.npy' is resolved by loading the np.ndarray from
     the .npy file. For a list of fields that are resolved, see
@@ -497,7 +497,7 @@ def resolve_config(cfg: dict, config_dir: Optional[Path]) -> dict:
         elif isinstance(src, dict):
             backend = cfg.get('backend', Framework.TENSORFLOW)
             if key[-1] in ('model', 'proj'):
-                obj = _load_model_config(src)
+                obj = _load_model_config(src, **kwargs)
             elif key[-1] == 'embedding':
                 obj = _load_embedding_config(src)
             elif key[-1] == 'tokenizer':

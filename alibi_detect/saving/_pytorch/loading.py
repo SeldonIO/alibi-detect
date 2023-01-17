@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 def load_model(filepath: Union[str, os.PathLike],
                layer: Optional[int] = None,
+               **kwargs
                ) -> nn.Module:
     """
     Load PyTorch model.
@@ -35,7 +36,9 @@ def load_model(filepath: Union[str, os.PathLike],
     Loaded model.
     """
     filepath = Path(filepath).joinpath('model.pt')
-    model = torch.load(filepath, pickle_module=dill)
+    if 'pickle_module' not in kwargs:
+        kwargs['pickle_module'] = dill
+    model = torch.load(filepath, **kwargs)
     # Optionally extract hidden layer
     if isinstance(layer, int):
         model = HiddenOutput(model, layer=layer)
