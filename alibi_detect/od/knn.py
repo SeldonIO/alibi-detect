@@ -6,7 +6,7 @@ import numpy as np
 from typing_extensions import Literal
 from alibi_detect.base import outlier_prediction_dict
 from alibi_detect.od.base import OutlierDetector, TransformProtocol, transform_protocols
-from alibi_detect.od.pytorch import KNNTorch, Accumulator
+from alibi_detect.od.pytorch import KNNTorch, Accumulator, to_numpy
 from alibi_detect.od import normalizer_literals, aggregator_literals, get_aggregator, get_normalizer
 from alibi_detect.utils.frameworks import BackendValidator
 from alibi_detect.version import __version__
@@ -105,7 +105,7 @@ class KNN(OutlierDetector):
         instance.
         """
         score = self.backend.score(self.backend._to_tensor(x))
-        return self.backend._to_numpy(score)
+        return to_numpy(score)
 
     def infer_threshold(self, x_ref: np.ndarray, fpr: float) -> None:
         """Infer the threshold for the kNN detector. The threshold is inferred using the reference data and the false
@@ -141,7 +141,7 @@ class KNN(OutlierDetector):
         output = outlier_prediction_dict()
         output['data'] = {
             **output['data'],
-            **self.backend._to_numpy(outputs)
+            **to_numpy(outputs)
         }
         output['meta'] = {
             **output['meta'],
