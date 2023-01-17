@@ -31,9 +31,9 @@ class Mahalanobis(OutlierDetector):
         """
         Outliers identified via Mahalanobis distance.
 
-        The linear variant can be interpreted as projecting onto (orthogonal) eigenvectors of the
-        covariance matrix, scaled such that projections onto the eigenvectors have mean 0 and std 1.
-        The Mahalanobis distance is then the l2-norm from the origin.
+        The Mahalanobis method can be interpreted as projecting data points onto (orthogonal) eigenvectors of the
+        covariance matrix of the reference dataset. The eigenvectors are scaled such that projections onto them
+        have mean 0 and std 1. The Mahalanobis distance is then the l2-norm from the origin.
 
         Parameters
         ----------
