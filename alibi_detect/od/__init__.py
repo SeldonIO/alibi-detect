@@ -5,7 +5,7 @@ from .mahalanobis import Mahalanobis
 from .sr import SpectralResidual
 
 from alibi_detect.od.base import TransformProtocol, transform_protocols
-from alibi_detect.utils._types import Literal
+from typing_extensions import Literal
 from typing import Union
 
 PValNormalizer, ShiftAndScaleNormalizer, TopKAggregator, AverageAggregator, \

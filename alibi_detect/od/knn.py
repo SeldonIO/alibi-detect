@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from alibi_detect.utils._types import Literal
+from typing_extensions import Literal
 from alibi_detect.base import outlier_prediction_dict
 from alibi_detect.od.base import OutlierDetector, TransformProtocol, transform_protocols
 from alibi_detect.od.pytorch import KNNTorch, Accumulator
