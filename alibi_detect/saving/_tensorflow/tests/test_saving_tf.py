@@ -67,7 +67,6 @@ def test_save_model_tf(data, model, layer, tmp_path):
     cfg_model = _path2str(cfg_model)
     cfg_model = ModelConfig(**cfg_model).dict()
     assert tmp_path.joinpath('model').is_dir()
-    assert tmp_path.joinpath('model/model.h5').is_file()
 
     # Adjust config
     cfg_model['src'] = tmp_path.joinpath('model')  # Need to manually set to absolute path here

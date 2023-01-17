@@ -925,14 +925,14 @@ def test_save_deepkernel(data, deep_kernel, backend, tmp_path):  # noqa: F811
     Kernels are saved and then loaded, with assertions to check equivalence.
     """
     # Get data dim
+    X, _ = data
     if backend == 'tensorflow':
-        X = tf.random.normal((10, 1), dtype=tf.float32)
+        X = tf.convert_to_tensor(X, dtype=tf.float32)
     elif backend == 'pytorch':
-        X = torch.randn((10, 1), dtype=torch.float32)
+        X = torch.from_numpy(X)
     else:  # backend == 'keops'
-        X = torch.randn((10, 1), dtype=torch.float32)
+        X = torch.from_numpy(X)
         X = LazyTensor(X[None, :])
-#    X, _ = data
     input_shape = (X.shape[1],)
 
     # Save kernel to config
