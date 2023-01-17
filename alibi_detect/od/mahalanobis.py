@@ -93,8 +93,8 @@ class Mahalanobis(OutlierDetector):
         return self.backend._to_numpy(score)
 
     def infer_threshold(self, x_ref: np.ndarray, fpr: float) -> None:
-        """Infer the threshold for the Mahalanobis detector. The threshold is inferred using the reference data and the false
-        positive rate. The threshold is used to determine the outlier labels in the predict method.
+        """Infer the threshold for the Mahalanobis detector. The threshold is inferred using the reference data
+        and the false positive rate. The threshold is used to determine the outlier labels in the predict method.
 
         Parameters
         ----------
