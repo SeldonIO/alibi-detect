@@ -2,7 +2,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Dict, Any, Union
 
-from alibi_detect.utils._types import Protocol, runtime_checkable
+from typing_extensions import Protocol, runtime_checkable
 import numpy as np
 
 from alibi_detect.base import BaseDetector
