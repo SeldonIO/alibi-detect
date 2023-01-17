@@ -6,6 +6,7 @@ import numpy as np
 from alibi_detect.utils._types import Literal
 from alibi_detect.base import outlier_prediction_dict
 from alibi_detect.od.base import OutlierDetector
+from alibi_detect.od.pytorch.base import to_numpy
 from alibi_detect.od.pytorch.mahalanobis import MahalanobisTorch
 from alibi_detect.utils.frameworks import BackendValidator
 from alibi_detect.version import __version__
@@ -87,7 +88,7 @@ class Mahalanobis(OutlierDetector):
         instance.
         """
         score = self.backend.score(self.backend._to_tensor(x))
-        return self.backend._to_numpy(score)
+        return to_numpy(score)
 
     def infer_threshold(self, x_ref: np.ndarray, fpr: float) -> None:
         """Infer the threshold for the Mahalanobis detector. The threshold is inferred using the reference data
@@ -123,7 +124,7 @@ class Mahalanobis(OutlierDetector):
         output = outlier_prediction_dict()
         output['data'] = {
             **output['data'],
-            **self.backend._to_numpy(outputs)
+            **to_numpy(outputs)
         }
         output['meta'] = {
             **output['meta'],
