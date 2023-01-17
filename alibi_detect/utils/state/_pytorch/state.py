@@ -1,9 +1,5 @@
 """
 Submodule to handle saving and loading of detector state dictionaries when the dictionaries contain `torch.Tensor`'s.
-
-TODO: This submodule will eventually be moved to alibi_detect.saving.pytorch, however this will require legacy
- save/load support to be refactored or removed, so that the detectors imported in saving._tensorflow.saving/loading
- do not cause circular dependency issues.
 """
 from pathlib import Path
 import torch
