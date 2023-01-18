@@ -50,13 +50,6 @@ class MahalanobisTorch(TorchOutlierDetector):
     def score(self, x: torch.Tensor) -> torch.Tensor:
         """Computes the score of `x`
 
-        Project onto the PCs.
-
-        Note: that if one computes ``x_ref_proj = self._compute_method_proj(self.x_ref)``
-        then one can check that each column has zero mean and unit variance. The idea
-        is that new data will be similarly distributed if from the same distribution and therefore
-        its distance from the origin forms a sensible outlier score.
-
         Parameters
         ----------
         x
@@ -87,14 +80,14 @@ class MahalanobisTorch(TorchOutlierDetector):
         """
         self.x_ref = x_ref
         self._compute_linear_pcs(self.x_ref)
-        # As a sanity check one can call x_ref_proj = self._compute_method_proj(self.x_ref) and see that
-        # we have fully whitened the data: each column has mean 0 and std 1.
 
     def _compute_linear_pcs(self, X: torch.Tensor):
-        """
-        This saves the *residual* pcs (those whose eigenvalues are not in
-        the largest n_components). These are all that are needed to compute
-        the reconstruction error in the linear case.
+        """Computes the principle components of the data.
+
+        Parameters
+        ----------
+        X
+            The reference dataset.
         """
         self.means = X.mean(0)
         X = X - self.means
@@ -104,6 +97,13 @@ class MahalanobisTorch(TorchOutlierDetector):
         self.pcs = V[:, non_zero_inds] / D[None,  non_zero_inds].sqrt()
 
     def _compute_linear_proj(self, X: torch.Tensor) -> torch.Tensor:
+        """Projects the data point being tested onto the principle components.
+
+        Parameters
+        ----------
+        X
+            The data point being tested.
+        """
         X_cen = X - self.means
         X_proj = X_cen @ self.pcs
         return X_proj

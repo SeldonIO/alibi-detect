@@ -28,12 +28,14 @@ class Mahalanobis(OutlierDetector):
         device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
         backend: Literal['pytorch'] = 'pytorch',
     ) -> None:
-        """
-        Outliers identified via Mahalanobis distance.
+        """The Mahalanobis outlier detection method.
 
-        The Mahalanobis method can be interpreted as projecting data points onto (orthogonal) eigenvectors of the
-        covariance matrix of the reference dataset. The eigenvectors are scaled such that projections onto them
-        have mean 0 and std 1. The Mahalanobis distance is then the l2-norm from the origin.
+        The Mahalanobis method computes the covariance matrix of a reference dataset passed in the `fit` method. It
+        then saves the eigenvectors of this matrix with eigenvalues greater than `min_eigenvalue`. While doing so
+        it also scales the eigenvectors such that the reference data projected onto them has mean ``0`` and std ``1``.
+
+        When we score a test point `x` we project it onto the eigenvectors and compute the l2-norm of the
+        projected point. The higher the score, the more outlying the instance.
 
         Parameters
         ----------
@@ -67,6 +69,9 @@ class Mahalanobis(OutlierDetector):
     def fit(self, x_ref: np.ndarray) -> None:
         """Fit the detector on reference data.
 
+        Fitting the Mahalanobis method amounts to computing the covariance matrix of the reference data and
+        saving the eigenvectors with eigenvalues greater than `min_eigenvalue`.
+
         Parameters
         ----------
         x_ref
@@ -76,6 +81,9 @@ class Mahalanobis(OutlierDetector):
 
     def score(self, x: np.ndarray) -> np.ndarray:
         """Score `x` instances using the detector.
+
+        The mahalanobis method projects `x` onto the eigenvectors of the covariance matrix of the reference data.
+        The score is then the l2-norm of the projected data. The higher the score, the more outlying the instance.
 
         Parameters
         ----------
@@ -91,8 +99,10 @@ class Mahalanobis(OutlierDetector):
         return to_numpy(score)
 
     def infer_threshold(self, x_ref: np.ndarray, fpr: float) -> None:
-        """Infer the threshold for the Mahalanobis detector. The threshold is inferred using the reference data
-        and the false positive rate. The threshold is used to determine the outlier labels in the predict method.
+        """Infer the threshold for the Mahalanobis detector.
+
+        The threshold is inferred using the reference data and the false positive rate. The threshold is used to
+        determine the outlier labels in the predict method.
 
         Parameters
         ----------
