@@ -143,26 +143,34 @@ the scikit-learn API.
 ```
 ````
 
-## Saving state
+## Online detectors
 
-[Online drift detectors](../cd/methods.md#online) are stateful, with their state updated upon each `predict` call. 
-When saving an online detector, the `save_state` option controls whether to include the detector's state:
+[Online drift detectors](../cd/methods.md#online) are stateful, with their state updated each timestep `t` (each time
+`.predict()` or `.state()` is called). {func}`~alibi_detect.saving.save_detector` will save the state of online 
+detectors to disk if `t > 0`. At load time, {func}`~alibi_detect.saving.load_detector` will load this state.
+For example:
 
 ```python
 from alibi_detect.cd import LSDDDriftOnline
 from alibi_detect.saving import save_detector, load_detector
 
-# Init detector (self.t = 0)
-dd = LSDDDriftOnline(x_ref, ert, window_size)
+# Init detector (t=0)
+dd = LSDDDriftOnline(x_ref, window_size=10, ert=50)
 
-# Perform predict call to update state (e.g. self.t = self.t + 1)
-dd.predict(x)
+# Run 2 predictions
+pred_1 = dd.predict(x_1)  # t=1 
+pred_2 = dd.predict(x_2)  # t=2
 
-# Save detector with its state included
-save_detector(dd, filepath, save_state=True)
+# Save detector (state will be saved since t>0)
+save_detector(dd, filepath)
 
-# Load stateful detector (i.e. self.t = 1)
-dd_new = load_detector(filepath)
+# Load detector
+dd_new = load_detector(filepath)  # detector will start at t=2
 ```
 
-Note that `load_detector` will load an online detector's state if it exists within the save directory. 
+To save a clean (stateless) detector, it should be reset before saving:
+
+```python
+dd.reset_state()  # reset to t=0
+save_detector(dd, filepath)  # save the detector without state
+```
