@@ -1,8 +1,8 @@
 # Saving and Loading
 
 Alibi Detect includes support for saving and loading detectors to disk. To 
-save a detector, simply call the `save_detector` method and provide a path to a directory (a new
-one will be created if it doesn't exist):
+save a detector, simply call the {func}`~alibi_detect.saving.save_detector` method and provide a path to a directory 
+(a new one will be created if it doesn't exist):
 
 ```python
 from alibi_detect.od import OutlierVAE
@@ -14,8 +14,8 @@ filepath = './my_detector/'
 save_detector(od, filepath)
 ```
 
-To load a previously saved detector, use the `load_detector` method and provide it with the path to the detector's 
-directory:
+To load a previously saved detector, use the {func}`~alibi_detect.saving.load_detector` method and provide it with the 
+path to the detector's directory:
 
 ```python
 from alibi_detect.saving import load_detector
@@ -34,13 +34,14 @@ bugs and incompatibilities**.
 ## Formats
 Detectors can be saved using two formats:
 
-- **Config format**: For drift detectors, by default `save_detector` serializes the detector via a config file named `config.toml`, 
-stored in `filepath`. The [TOML](https://toml.io/en/) format is human-readable, which makes the config files useful for 
-record keeping, and allows a detector to be edited before it is reloaded. For more details, see 
-[Detector Configuration Files](config_files.md).
+- **Config format**: For drift detectors, by default {func}`~alibi_detect.saving.save_detector` serializes the detector 
+- via a config file named `config.toml`, stored in `filepath`. The [TOML](https://toml.io/en/) format is human-readable,
+which makes the config files useful for record keeping, and allows a detector to be edited before it is reloaded. For 
+more details, see [Detector Configuration Files](config_files.md).
 
-- **Legacy format**: Outlier and adversarial detectors are saved to [dill](https://dill.readthedocs.io/en/latest/dill.html) files stored
-within `filepath`. Drift detectors can also be saved in this legacy format by running `save_detector` with 
+- **Legacy format**: Outlier and adversarial detectors are saved to
+[dill](https://dill.readthedocs.io/en/latest/dill.html) files stored within `filepath`. Drift detectors can also be 
+saved in this legacy format by running {func}`~alibi_detect.saving.save_detector` with 
 `legacy=True`. Loading is performed in the same way, by simply running `load_detector(filepath)`.
 
 
@@ -110,7 +111,7 @@ cd = MMDDrift(x_ref, backend='tensorflow', p_val=.05, preprocess_fn=preprocess_f
 ```
 
 Additionally, some detectors are built upon models directly, 
-for example the [Classifier](../cd/methods/classifierdrift.ipynb) drift detector requires a `model` to be passed
+for example the [Classifier drift detector](../cd/methods/classifierdrift.ipynb) requires a `model` to be passed
 as an argument:
 
 ```python
@@ -121,30 +122,77 @@ In order for a detector to be saveable and loadable, any models contained within
 [detector configuration file](config_files.md#specifying-artefacts)) must fall within the family of supported models
 documented below.
 
-### TensorFlow models
+`````{tab-set}
 
-Alibi Detect supports any TensorFlow model that can be serialized to the 
-[SavedModel](https://www.tensorflow.org/guide/saved_model) format. For loading, `load_detector` supports both
-the TensorFlow [SavedModel](https://www.tensorflow.org/guide/saved_model) and 
-[HDF5](https://www.tensorflow.org/guide/keras/save_and_serialize#keras_h5_format) formats. 
+````{tab-item} PyTorch
+PyTorch models are serialized by saving the
+[entire model](https://pytorch.org/tutorials/beginner/saving_loading_models.html#save-load-entire-model)
+using the [dill](https://dill.readthedocs.io/en/latest/index.html) module. Therefore, Alibi Detect should support 
+any PyTorch model that can be saved and loaded with `torch.save(..., pickle_module=dill)` and 
+`torch.load(..., pickle_module=dill)`.
+````
 
-```{tip}
-The TensorFlow SavedModel format has in-built support for models containing custom objects such as custom layers.
-However, for models saved in the old HDF5 format, or for models saved in the SavedModel format with `save_traces=False`,
-you will need to pre-register your custom objects with
-[register_keras_serializable](https://www.tensorflow.org/api_docs/python/tf/keras/utils/register_keras_serializable).
+````{tab-item} TensorFlow
+TensorFlow models are serialized to the TensorFlow 
+[SavedModel](https://www.tensorflow.org/guide/saved_model) format. For loading, 
+{func}`~alibi_detect.saving.load_detector` supports both the TensorFlow 
+[SavedModel](https://www.tensorflow.org/guide/saved_model) and 
+[HDF5](https://www.tensorflow.org/guide/keras/save_and_serialize#keras_h5_format) formats. If the model, or constituent 
+layers, are constructed by [subclassing](https://www.tensorflow.org/guide/keras/custom_layers_and_models), and either:
+
+1. The TensorFlow version is `<2.9`
+2. The model is used in the `model` arg of [ClassifierDrift](../cd/methods/classifierdrift.ipynb) or
+[LearnedKernelDrift](../cd/methods/learnedkerneldrift.ipynb)
+
+the custom classes must be defined in the loading runtime and decorated with
+[register_keras_serializable](https://www.tensorflow.org/api_docs/python/tf/keras/utils/register_keras_serializable),
+or stored in a [custom_objects](https://www.tensorflow.org/guide/keras/save_and_serialize#custom_objects) dictionary 
+given to {func}`~alibi_detect.saving.load_detector`.
+See [Drift detection on Amazon reviews](../examples/cd_text_amazon.ipynb) for an example.
+
+```{admonition} Tips
+- Make sure to define `get_config` and `from_config` methods for subclassed layers and models (see
+[here](https://www.tensorflow.org/tutorials/keras/save_and_load#saving_custom_objects)).
+- The {obj}`~alibi_detect.cd.tensorflow.HiddenOutput` utility class is not currently compatible with subclassed models.
 ```
+````
 
-### PyTorch
-
-PyTorch models are serialized by saving the [entire model](https://pytorch.org/tutorials/beginner/saving_loading_models.html#save-load-entire-model)
-using the [dill](https://dill.readthedocs.io/en/latest/index.html) module. Therefore, Alibi Detect should support any PyTorch 
-model that can be saved and loaded with `torch.save(..., pickle_module=dill)` and `torch.load(..., pickle_module=dill)`.
-
-### Scikit-learn
-
+````{tab-item} Scikit-learn
 Scikit-learn models are serialized using [joblib](https://joblib.readthedocs.io/en/latest/persistence.html).
 Any scikit-learn model that is a subclass of {py:class}`sklearn.base.BaseEstimator` is supported, including 
 [xgboost](https://xgboost.readthedocs.io/en/latest/python/python_api.html#module-xgboost.sklearn) models following 
 the scikit-learn API.
+````
+`````
 
+## Online detectors
+
+[Online drift detectors](../cd/methods.md#online) are stateful, with their state updated each timestep `t` (each time
+`.predict()` or `.state()` is called). {func}`~alibi_detect.saving.save_detector` will save the state of online 
+detectors to disk if `t > 0`. At load time, {func}`~alibi_detect.saving.load_detector` will load this state.
+For example:
+
+```python
+from alibi_detect.cd import LSDDDriftOnline
+from alibi_detect.saving import save_detector, load_detector
+
+# Init detector (t=0)
+dd = LSDDDriftOnline(x_ref, window_size=10, ert=50)
+
+# Run 2 predictions
+pred_1 = dd.predict(x_1)  # t=1 
+pred_2 = dd.predict(x_2)  # t=2
+
+# Save detector (state will be saved since t>0)
+save_detector(dd, filepath)
+
+# Load detector
+dd_new = load_detector(filepath)  # detector will start at t=2
+```
+
+To save a clean (stateless) detector, it should be reset before saving:
+
+```python
+dd.reset_state()  # reset to t=0
+save_detector(dd, filepath)  # save the detector without state
+```

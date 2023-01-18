@@ -30,6 +30,8 @@ def load_model(filepath: Union[str, os.PathLike],
     layer
         Optional index of a hidden layer to extract. If not `None`, a
         :py:class:`~alibi_detect.cd.pytorch.HiddenOutput` model is returned.
+    kwargs
+        Additional keyword arguments to be passed to :func:`torch.load`.
 
     Returns
     -------

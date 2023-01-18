@@ -80,6 +80,8 @@ def load_detector(filepath: Union[str, os.PathLike], **kwargs) -> Union[Detector
     ----------
     filepath
         Load directory.
+    kwargs
+        Additional keyword arguments to be passed to :func:`tf.keras.models.load_model` or :func:`torch.load`.
 
     Returns
     -------
@@ -116,6 +118,8 @@ def _load_detector_config(filepath: Union[str, os.PathLike], **kwargs) -> Config
     ----------
     filepath
         Directory containing the `config.toml` file.
+    kwargs
+        Additional keyword arguments to be passed to :func:`tf.keras.models.load_model` or :func:`torch.load`.
 
     Returns
     -------
@@ -253,6 +257,8 @@ def _load_model_config(cfg: dict, **kwargs) -> Callable:
     ----------
     cfg
         Model config dict. (see pydantic model schemas).
+    kwargs
+        Additional keyword arguments to be passed to :func:`tf.keras.models.load_model` or :func:`torch.load`.
 
     Returns
     -------
@@ -451,6 +457,8 @@ def resolve_config(cfg: dict, config_dir: Optional[Path], **kwargs) -> dict:
     config_dir
         Filepath to directory the `config.toml` is located in. Only required if different from the
         runtime directory, and artefacts are specified with filepaths relative to the config.toml file.
+    kwargs
+        Additional keyword arguments to be passed to :func:`tf.keras.models.load_model` or :func:`torch.load`.
 
     Returns
     -------

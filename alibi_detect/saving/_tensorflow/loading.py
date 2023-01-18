@@ -52,7 +52,8 @@ def load_model(filepath: Union[str, os.PathLike],
     layer
         Optional index of a hidden layer to extract. If not `None`, a
         :py:class:`~alibi_detect.cd.tensorflow.HiddenOutput` model is returned.
-
+    kwargs
+        Additional keyword arguments to be passed to :func:`tf.keras.models.load_model`.
     Returns
     -------
     Loaded model.
