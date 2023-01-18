@@ -146,7 +146,7 @@ the scikit-learn API.
 ## Online detectors
 
 [Online drift detectors](../cd/methods.md#online) are stateful, with their state updated each timestep `t` (each time
-`.predict()` or `.state()` is called). {func}`~alibi_detect.saving.save_detector` will save the state of online 
+`.predict()` is called). {func}`~alibi_detect.saving.save_detector` will save the state of online 
 detectors to disk if `t > 0`. At load time, {func}`~alibi_detect.saving.load_detector` will load this state.
 For example:
 
