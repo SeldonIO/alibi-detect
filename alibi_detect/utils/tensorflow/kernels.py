@@ -3,6 +3,7 @@ import numpy as np
 from . import distance
 from typing import Optional, Union, Callable
 from scipy.special import logit
+from alibi_detect.utils._types import Literal
 from alibi_detect.utils.frameworks import Framework
 
 
@@ -136,8 +137,8 @@ class DeepKernel(tf.keras.Model):
     def __init__(
         self,
         proj: tf.keras.Model,
-        kernel_a: Union[tf.keras.Model, str] = 'rbf',
-        kernel_b: Optional[Union[tf.keras.Model, str]] = 'rbf',
+        kernel_a: Union[tf.keras.Model, Literal['rbf']] = 'rbf',
+        kernel_b: Optional[Union[tf.keras.Model, Literal['rbf']]] = 'rbf',
         eps: Union[float, str] = 'trainable'
     ) -> None:
         super().__init__()
@@ -146,8 +147,8 @@ class DeepKernel(tf.keras.Model):
             kernel_a = GaussianRBF(trainable=True)
         if kernel_b == 'rbf':
             kernel_b = GaussianRBF(trainable=True)
-        self.kernel_a = kernel_a
-        self.kernel_b = kernel_b
+        self.kernel_a: Callable = kernel_a  # type: ignore[assignment]
+        self.kernel_b: Callable = kernel_b  # type: ignore[assignment]
         self.proj = proj
         if kernel_b is not None:
             self._init_eps(eps)

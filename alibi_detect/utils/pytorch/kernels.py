@@ -3,6 +3,7 @@ import torch
 from torch import nn
 from . import distance
 from typing import Optional, Union, Callable
+from alibi_detect.utils._types import Literal
 from alibi_detect.utils.frameworks import Framework
 
 
@@ -138,8 +139,8 @@ class DeepKernel(nn.Module):
     def __init__(
         self,
         proj: nn.Module,
-        kernel_a: Union[nn.Module, str] = 'rbf',
-        kernel_b: Optional[Union[nn.Module, str]] = 'rbf',
+        kernel_a: Union[nn.Module, Literal['rbf']] = 'rbf',
+        kernel_b: Optional[Union[nn.Module, Literal['rbf']]] = 'rbf',
         eps: Union[float, str] = 'trainable'
     ) -> None:
         super().__init__()
@@ -148,8 +149,8 @@ class DeepKernel(nn.Module):
             kernel_a = GaussianRBF(trainable=True)
         if kernel_b == 'rbf':
             kernel_b = GaussianRBF(trainable=True)
-        self.kernel_a = kernel_a
-        self.kernel_b = kernel_b
+        self.kernel_a: Callable = kernel_a  # type: ignore[assignment]
+        self.kernel_b: Callable = kernel_b  # type: ignore[assignment]
         self.proj = proj
         if kernel_b is not None:
             self._init_eps(eps)
