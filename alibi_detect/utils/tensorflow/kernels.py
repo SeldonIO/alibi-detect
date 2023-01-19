@@ -5,6 +5,7 @@ from typing import Optional, Union, Callable
 from scipy.special import logit
 from alibi_detect.utils._types import Literal
 from alibi_detect.utils.frameworks import Framework
+from copy import deepcopy
 
 
 def sigma_median(x: tf.Tensor, y: tf.Tensor, dist: tf.Tensor) -> tf.Tensor:
@@ -94,7 +95,7 @@ class GaussianRBF(tf.keras.Model):
         """
         Returns a serializable config dict (excluding the input_sigma_fn, which is serialized in alibi_detect.saving).
         """
-        cfg = self.config.copy()
+        cfg = deepcopy(self.config)
         if isinstance(cfg['sigma'], tf.Tensor):
             cfg['sigma'] = cfg['sigma'].numpy().tolist()
         cfg.update({'flavour': Framework.TENSORFLOW.value})
@@ -175,7 +176,7 @@ class DeepKernel(tf.keras.Model):
         return similarity
 
     def get_config(self) -> dict:
-        return self.config.copy()
+        return deepcopy(self.config)
 
     @classmethod
     def from_config(cls, config):
