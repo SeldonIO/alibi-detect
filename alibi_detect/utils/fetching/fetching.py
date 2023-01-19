@@ -506,7 +506,7 @@ def fetch_detector(filepath: Union[str, os.PathLike],
 
     # load detector
     name = meta['name']
-    kwargs = {}  # type: dict
+    kwargs: dict = {}
     if name == 'OutlierAE':
         fetch_ae(url, filepath)
     elif name == 'OutlierAEGMM':
