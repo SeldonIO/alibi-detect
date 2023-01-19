@@ -1,7 +1,7 @@
 import logging
 import numpy as np
 from scipy.linalg import eigh
-from typing import Dict, Union
+from typing import Dict, Optional
 from alibi_detect.utils.discretizer import Discretizer
 from alibi_detect.utils.distance import abdm, mvdm, multidim_scaling
 from alibi_detect.utils.mapping import ohe2ord, ord2num
@@ -66,7 +66,7 @@ class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
         self.d_abs: Dict = {}
 
         # initial parameter values
-        self.clip: Union[None, list] = None
+        self.clip: Optional[list] = None
         self.mean = 0
         self.C = 0
         self.n = 0
