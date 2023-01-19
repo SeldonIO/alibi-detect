@@ -59,7 +59,7 @@ class GaussianRBF(nn.Module):
         """
         super().__init__()
         init_sigma_fn = sigma_median if init_sigma_fn is None else init_sigma_fn
-        self.config = {'sigma': sigma, 'trainable': trainable, 'init_sigma_fn': init_sigma_fn}
+        self.config = deepcopy({'sigma': sigma, 'trainable': trainable, 'init_sigma_fn': init_sigma_fn})
         if sigma is None:
             self.log_sigma = nn.Parameter(torch.empty(1), requires_grad=trainable)
             self.init_required = True
@@ -97,7 +97,7 @@ class GaussianRBF(nn.Module):
         """
         Returns a serializable config dict (excluding the input_sigma_fn, which is serialized in alibi_detect.saving).
         """
-        cfg = deepcopy(self.config)
+        cfg = self.config
         if isinstance(cfg['sigma'], torch.Tensor):
             cfg['sigma'] = cfg['sigma'].detach().cpu().numpy().tolist()
         cfg.update({'flavour': Framework.PYTORCH.value})
@@ -145,7 +145,7 @@ class DeepKernel(nn.Module):
         eps: Union[float, str] = 'trainable'
     ) -> None:
         super().__init__()
-        self.config = {'proj': proj, 'kernel_a': kernel_a, 'kernel_b': kernel_b, 'eps': eps}
+        self.config = deepcopy({'proj': proj, 'kernel_a': kernel_a, 'kernel_b': kernel_b, 'eps': eps})
         if kernel_a == 'rbf':
             kernel_a = GaussianRBF(trainable=True)
         if kernel_b == 'rbf':
@@ -177,7 +177,7 @@ class DeepKernel(nn.Module):
         return similarity
 
     def get_config(self) -> dict:
-        return deepcopy(self.config)
+        return self.config
 
     @classmethod
     def from_config(cls, config):
