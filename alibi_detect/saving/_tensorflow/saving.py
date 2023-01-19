@@ -119,14 +119,14 @@ def save_model(model: tf.keras.Model,
         model_path.mkdir(parents=True, exist_ok=True)
     model_path = model_path.joinpath('model.h5') if save_format == 'h5' else model_path
 
-    # Build model to set `input_shape` (Necessary for subclassed tf.keras.Model's)
-    # Note: .build() doesn't currently work as intended here, so pass synthetic data to .call() to build.
-    if input_shape is not None:
-        model(tf.zeros((1, *input_shape), dtype=tf.dtypes.float32))
-
     # Save the model
     if isinstance(model, tf.keras.Model):
-        model.save(model_path, save_format=save_format)
+        try:
+            model.save(model_path, save_format=save_format)
+        except ValueError as error:
+            raise ValueError("Saving of the `tf.keras.Model` failed. This might be because the model's input shape is "
+                             "not available. To specify an input shape call the model (on actual data) before passing "
+                             "it to the detector, or pass actual data to the detector's `predict` method.") from error
     else:
         raise ValueError('The extracted model to save is not a `tf.keras.Model`. Cannot save.')
 
