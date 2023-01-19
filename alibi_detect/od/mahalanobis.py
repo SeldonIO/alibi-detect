@@ -63,10 +63,10 @@ class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
         # keys = categorical columns; values = numerical value for each of the categories
         self.cat_vars = cat_vars
         self.ohe = ohe
-        self.d_abs = {}  # type: Dict
+        self.d_abs: Dict = {}
 
         # initial parameter values
-        self.clip = None  # type: Union[None, list]
+        self.clip: Union[None, list] = None
         self.mean = 0
         self.C = 0
         self.n = 0

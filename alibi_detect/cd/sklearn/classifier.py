@@ -118,7 +118,7 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
         self.use_calibration = use_calibration
         self.calibration_kwargs = dict() if calibration_kwargs is None else calibration_kwargs
         self.use_oob = use_oob
-        self.model = self._clone_model()  # type: ClassifierMixin
+        self.model: ClassifierMixin = self._clone_model()
 
     def _has_predict_proba(self, model) -> bool:
         try:

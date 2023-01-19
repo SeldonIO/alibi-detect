@@ -41,7 +41,7 @@ def predict_batch(x: Union[list, np.ndarray, torch.Tensor], model: Union[Callabl
     n_minibatch = int(np.ceil(n / batch_size))
     return_np = not isinstance(dtype, torch.dtype)
     return_list = False
-    preds = []  # type: Union[list, tuple]
+    preds: Union[list, tuple] = []
     with torch.no_grad():
         for i in range(n_minibatch):
             istart, istop = i * batch_size, min((i + 1) * batch_size, n)
@@ -66,8 +66,8 @@ def predict_batch(x: Union[list, np.ndarray, torch.Tensor], model: Union[Callabl
                 raise TypeError(f'Model output type {type(preds_tmp)} not supported. The model output '
                                 f'type needs to be one of list, tuple, np.ndarray or torch.Tensor.')
     concat = partial(np.concatenate, axis=0) if return_np else partial(torch.cat, dim=0)  # type: ignore[arg-type]
-    out = tuple(concat(p) for p in preds) if isinstance(preds, tuple) \
-        else concat(preds)  # type: Union[tuple, np.ndarray, torch.Tensor]
+    out: Union[tuple, np.ndarray, torch.Tensor] = tuple(concat(p) for p in preds) if isinstance(preds, tuple) \
+        else concat(preds)
     if return_list:
         out = list(out)  # type: ignore[assignment]
     return out  # TODO: update return type with list
