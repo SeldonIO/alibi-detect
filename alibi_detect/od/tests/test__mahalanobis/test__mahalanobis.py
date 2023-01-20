@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 import torch
 
-from alibi_detect.od.mahalanobis import Mahalanobis
+from alibi_detect.od._mahalanobis import Mahalanobis
 from alibi_detect.od.base import NotFitException
 from sklearn.datasets import make_moons
 

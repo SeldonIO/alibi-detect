@@ -1,7 +1,7 @@
 from alibi_detect.utils.missing_optional_dependency import import_optional
 
 from .isolationforest import IForest
-from .stateful_mahalanobis import Mahalanobis
+from .mahalanobis import Mahalanobis
 from .sr import SpectralResidual
 
 from alibi_detect.od.base import TransformProtocol, transform_protocols
