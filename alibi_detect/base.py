@@ -7,13 +7,13 @@ from typing_extensions import Protocol, runtime_checkable
 from alibi_detect.version import __version__
 
 
-DEFAULT_META = {
+DEFAULT_META: Dict = {
     "name": None,
     "online": None,  # true or false
     "data_type": None,  # tabular, image or time-series
     "version": None,
     "detector_type": None  # drift, outlier or adversarial
-}  # type: Dict
+}
 
 
 def outlier_prediction_dict():

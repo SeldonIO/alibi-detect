@@ -13,10 +13,10 @@ else:
 
 
 # Optional dep dependent tuples of types
-supported_models_tf = ()  # type: tuple
-supported_models_torch = ()  # type: tuple
-supported_optimizers_tf = ()  # type: tuple
-supported_optimizers_torch = ()  # type: tuple
+supported_models_tf: tuple = ()
+supported_models_torch: tuple = ()
+supported_optimizers_tf: tuple = ()
+supported_optimizers_torch: tuple = ()
 if has_tensorflow:
     import tensorflow as tf
     supported_models_tf = (tf.keras.Model, )
