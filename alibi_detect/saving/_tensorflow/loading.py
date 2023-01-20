@@ -234,7 +234,7 @@ def load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwarg
     state_dict = dill.load(open(filepath.joinpath(detector_name + suffix), 'rb'))
 
     # initialize detector
-    detector = None  # type: Optional[Detector]  # to avoid mypy errors
+    detector: Optional[Detector] = None  # to avoid mypy errors
     if detector_name == 'OutlierAE':
         ae = load_tf_ae(filepath)
         detector = init_od_ae(state_dict, ae)

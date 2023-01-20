@@ -34,8 +34,8 @@ def save_model_config(model: Callable,
     -------
     A tuple containing the model and embedding config dicts.
     """
-    cfg_model = None  # type: Optional[Dict[str, Any]]
-    cfg_embed = None  # type: Optional[Dict[str, Any]]
+    cfg_model: Optional[Dict[str, Any]] = None
+    cfg_embed: Optional[Dict[str, Any]] = None
     if isinstance(model, UAE):
         layers = list(model.encoder.children())
         if isinstance(layers[0], TransformerEmbedding):  # if UAE contains embedding and encoder
@@ -118,7 +118,7 @@ def save_embedding_config(embed: TransformerEmbedding,
         filepath.mkdir(parents=True, exist_ok=True)
 
     # Populate config dict
-    cfg_embed = {}  # type: Dict[str, Any]
+    cfg_embed: Dict[str, Any] = {}
     cfg_embed.update({'type': embed.emb_type})
     cfg_embed.update({'layers': embed.hs_emb.keywords['layers']})
     cfg_embed.update({'src': local_path})

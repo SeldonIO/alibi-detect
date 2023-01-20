@@ -1263,7 +1263,7 @@ class RegressorUncertaintyDriftConfigResolved(DetectorConfig):
 
 
 # Unresolved schema dictionary (used in alibi_detect.utils.loading)
-DETECTOR_CONFIGS = {
+DETECTOR_CONFIGS: Dict[str, Type[DetectorConfig]] = {
     'KSDrift': KSDriftConfig,
     'ChiSquareDrift': ChiSquareDriftConfig,
     'TabularDrift': TabularDriftConfig,
@@ -1281,11 +1281,11 @@ DETECTOR_CONFIGS = {
     'FETDriftOnline': FETDriftOnlineConfig,
     'ClassifierUncertaintyDrift': ClassifierUncertaintyDriftConfig,
     'RegressorUncertaintyDrift': RegressorUncertaintyDriftConfig,
-}  # type: Dict[str, Type[DetectorConfig]]
+}
 
 
 # Resolved schema dictionary (used in alibi_detect.utils.loading)
-DETECTOR_CONFIGS_RESOLVED = {
+DETECTOR_CONFIGS_RESOLVED: Dict[str, Type[DetectorConfig]] = {
     'KSDrift': KSDriftConfigResolved,
     'ChiSquareDrift': ChiSquareDriftConfigResolved,
     'TabularDrift': TabularDriftConfigResolved,
@@ -1303,4 +1303,4 @@ DETECTOR_CONFIGS_RESOLVED = {
     'FETDriftOnline': FETDriftOnlineConfigResolved,
     'ClassifierUncertaintyDrift': ClassifierUncertaintyDriftConfigResolved,
     'RegressorUncertaintyDrift': RegressorUncertaintyDriftConfigResolved,
-}  # type: Dict[str, Type[DetectorConfig]]
+}
