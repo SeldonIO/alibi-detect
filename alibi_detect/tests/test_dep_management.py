@@ -139,6 +139,8 @@ def test_od_backend_dependencies(opt_dep):
                 ('Accumulator', ['torch', 'keops']),
                 ('KNNTorch', ['torch', 'keops']),
                 ('MahalanobisTorch', ['torch', 'keops']),
+                ('KernelPCATorch', ['torch', 'keops']),
+                ('LinearPCATorch', ['torch', 'keops']),
                 ('to_numpy', ['torch', 'keops']),
             ]:
         dependency_map[dependency] = relations

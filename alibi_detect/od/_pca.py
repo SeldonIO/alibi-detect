@@ -7,7 +7,7 @@ from alibi_detect.utils._types import Literal
 from alibi_detect.base import outlier_prediction_dict
 from alibi_detect.od.base import OutlierDetector
 from alibi_detect.od.pytorch.base import to_numpy
-from alibi_detect.od.pytorch.pca import KernelPCATorch, LinearPCATorch
+from alibi_detect.od.pytorch import KernelPCATorch, LinearPCATorch
 from alibi_detect.utils.frameworks import BackendValidator
 from alibi_detect.version import __version__
 
