@@ -11,6 +11,7 @@ on:
     branches:
       - master
   pull_request:
+    # don't trigger for draft PRs
     types: [ opened, synchronize, reopened, ready_for_review ]
   # Trigger workflow once per week
   schedule:
