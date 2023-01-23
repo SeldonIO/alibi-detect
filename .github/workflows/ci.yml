@@ -11,9 +11,6 @@ on:
     branches:
       - master
   pull_request:
-    branches:
-      - master
-      - 'feature/*'
     types: [ opened, synchronize, reopened, ready_for_review ]
   # Trigger workflow once per week
   schedule:
