@@ -1,11 +1,11 @@
 import pytest
 import numpy as np
-# import torch
+import torch
 
 from alibi_detect.utils.pytorch.kernels import GaussianRBF
 from alibi_detect.od._pca import _PCA
 from alibi_detect.od.base import NotFitException
-# from sklearn.datasets import make_moons
+from sklearn.datasets import make_moons
 
 
 def make_PCA_detector(kernel=False):
@@ -91,22 +91,60 @@ def test_fitted_kernel_PCA_predict():
     assert (y['is_outlier'] == [True, False]).all()
 
 
-# def test_PCA_integration():
-#     pca_detector = _PCA(n_components=2)
-#     X_ref, _ = make_moons(1001, shuffle=True, noise=0.05, random_state=None)
-#     X_ref, x_inlier = X_ref[0:1000], X_ref[1000][None]
-#     pca_detector.fit(X_ref)
-#     pca_detector.infer_threshold(X_ref, 0.1)
-#     result = pca_detector.predict(x_inlier)
-#     result = result['data']['is_outlier'][0]
-#     assert not result
+def test_PCA_integration():
+    pca_detector = _PCA(n_components=1)
+    X_ref, _ = make_moons(1001, shuffle=True, noise=0.05, random_state=None)
+    X_ref, x_inlier = X_ref[0:1000], X_ref[1000][None]
+    pca_detector.fit(X_ref)
+    pca_detector.infer_threshold(X_ref, 0.1)
+    result = pca_detector.predict(x_inlier)
+    result = result['data']['is_outlier'][0]
+    assert not result
 
-#     x_outlier = np.array([[-1, 1.5]])
-#     result = pca_detector.predict(x_outlier)
-#     result = result['data']['is_outlier'][0]
-#     assert result
+    x_outlier = np.array([[0, -3]])
+    result = pca_detector.predict(x_outlier)
+    result = result['data']['is_outlier'][0]
+    assert result
 
-#     ts_PCA = torch.jit.script(pca_detector.backend)
-#     x = torch.tensor([x_inlier[0], x_outlier[0]], dtype=torch.float32)
-#     y = ts_PCA(x)
-#     assert torch.all(y == torch.tensor([False, True]))
+
+def test_PCA_integration_ts():
+    pca_detector = _PCA(n_components=1)
+    X_ref, _ = make_moons(1001, shuffle=True, noise=0.05, random_state=None)
+    X_ref, x_inlier = X_ref[0:1000], X_ref[1000][None]
+    pca_detector.fit(X_ref)
+    pca_detector.infer_threshold(X_ref, 0.1)
+    x_outlier = np.array([[0, -3]])
+    ts_PCA = torch.jit.script(pca_detector.backend)
+    x = torch.tensor([x_inlier[0], x_outlier[0]], dtype=torch.float32)
+    y = ts_PCA(x)
+    assert torch.all(y == torch.tensor([False, True]))
+
+
+def test_kernel_PCA_integration():
+    pca_detector = _PCA(n_components=10, kernel=GaussianRBF())
+    X_ref, _ = make_moons(1001, shuffle=True, noise=0.05, random_state=None)
+    X_ref, x_inlier = X_ref[0:1000], X_ref[1000][None]
+    pca_detector.fit(X_ref)
+    pca_detector.infer_threshold(X_ref, 0.1)
+    result = pca_detector.predict(x_inlier)
+    result = result['data']['is_outlier'][0]
+    assert not result
+
+    x_outlier = np.array([[1, 1]])
+    result = pca_detector.predict(x_outlier)
+    result = result['data']['is_outlier'][0]
+    assert result
+
+
+@pytest.mark.skip(reason='GaussianRBF kernel does not have torchscript supporrt yet.')
+def test_kernel_PCA_integration_ts():
+    pca_detector = _PCA(n_components=10, kernel=GaussianRBF())
+    X_ref, _ = make_moons(1001, shuffle=True, noise=0.05, random_state=None)
+    X_ref, x_inlier = X_ref[0:1000], X_ref[1000][None]
+    pca_detector.fit(X_ref)
+    pca_detector.infer_threshold(X_ref, 0.1)
+    x_outlier = np.array([[1, 1]])
+    ts_PCA = torch.jit.script(pca_detector.backend)
+    x = torch.tensor([x_inlier[0], x_outlier[0]], dtype=torch.float32)
+    y = ts_PCA(x)
+    assert torch.all(y == torch.tensor([False, True]))
