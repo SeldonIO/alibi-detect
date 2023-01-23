@@ -16,8 +16,8 @@ class PCATorch(TorchOutlierDetector):
         Parameters
         ----------
         n_components:
-            The number of dimensions in the principle subspace. For linear pca should have
-            1 <= n_components < dim(data). For kernel pca should have 1 <= n_components < len(data).
+            The number of dimensions in the principle subspace. For linear PCA should have
+            ``1 <= n_components < dim(data)``. For kernel pca should have ``1 <= n_components < len(data)``.
         device
             Device type used. The default None tries to use the GPU and falls back on CPU if needed.
             Can be specified by passing either ``'cuda'``, ``'gpu'`` or ``'cpu'``.
@@ -73,7 +73,7 @@ class PCATorch(TorchOutlierDetector):
         return score.cpu()
 
     def _fit(self, x_ref: torch.Tensor) -> None:
-        """Fits the pca detector.
+        """Fits the PCA detector.
 
         Parameters
         ----------
@@ -102,8 +102,7 @@ class LinearPCATorch(PCATorch):
         Parameters
         ----------
         n_components:
-            The number of dimensions in the principle subspace. For linear pca should have
-            1 <= n_components < dim(data). For kernel pca should have 1 <= n_components < len(data).
+            The number of dimensions in the principle subspace.
         device
             Device type used. The default None tries to use the GPU and falls back on CPU if needed.
             Can be specified by passing either ``'cuda'``, ``'gpu'`` or ``'cpu'``.
@@ -111,12 +110,41 @@ class LinearPCATorch(PCATorch):
         PCATorch.__init__(self, device=device, n_components=n_components)
 
     def _compute_pcs(self, x: torch.Tensor) -> torch.Tensor:
+        """Compute the principle components of the reference data.
+
+        We compute the principle components of the reference data using the covariance matrix and then
+        return the last `n_components` of the eigenvectors. These correspond to the invariant dimensions
+        of the data. Changes in these dimensions are used to compute the outlier score.
+
+        Parameters
+        ----------
+        x
+            The reference data.
+
+        Returns
+        -------
+            The principle components of the reference data.
+        """
         x -= self.x_ref_mean
         cov_mat = (x.t() @ x)/(len(x)-1)
         _, V = torch.linalg.eigh(cov_mat)
         return V[:, :-self.n_components]
 
     def _compute_score(self, x: torch.Tensor) -> torch.Tensor:
+        """Compute the outlier score.
+
+        Centers the data and projects it onto the principle components. The score is then the sum of the
+        squared projections.
+
+        Parameters
+        ----------
+        x
+            The test data.
+
+        Returns
+        -------
+            The outlier score.
+        """
         x_cen = x - self.x_ref_mean
         x_pcs = x_cen @ self.pcs
         return (x_pcs**2).sum(1)
@@ -134,11 +162,9 @@ class KernelPCATorch(PCATorch):
         Parameters
         ----------
         n_components:
-            The number of dimensions in the principle subspace. For linear pca should have
-            1 <= n_components < dim(data). For kernel pca should have 1 <= n_components < len(data).
+            The number of dimensions in the principle subspace.
         kernel
-            Kernel function to use for outlier detection. If ``None``, linear PCA is used instead of the
-            kernel variant.
+            Kernel function to use for outlier detection.
         device
             Device type used. The default None tries to use the GPU and falls back on CPU if needed.
             Can be specified by passing either ``'cuda'``, ``'gpu'`` or ``'cpu'``.
@@ -147,12 +173,41 @@ class KernelPCATorch(PCATorch):
         self.kernel = kernel
 
     def _compute_pcs(self, x: torch.Tensor) -> torch.Tensor:
-        K = self._compute_kernel_cov_mat(x)
+        """Compute the principle components of the reference data.
+
+        We compute the principle components of the reference data using the kernel matrix and then
+        return the last `n_components` of the eigenvectors. These correspond to the invariant dimensions
+        of the data. Changes in these dimensions are used to compute the outlier score.
+
+        Parameters
+        ----------
+        x
+            The reference data.
+
+        Returns
+        -------
+            The principle components of the reference data.
+        """
+        K = self._compute_kernel_mat(x)
         D, V = torch.linalg.eigh(K)
         pcs = V / torch.sqrt(D)[None, :]
         return pcs[:, -self.n_components:]
 
     def _compute_score(self, x: torch.Tensor) -> torch.Tensor:
+        """Compute the outlier score.
+
+        Centers the data and projects it onto the principle components. The score is then the sum of the
+        squared projections.
+
+        Parameters
+        ----------
+        x
+            The test data.
+
+        Returns
+        -------
+            The outlier score.
+        """
         k_xr = self.kernel(x, self.x_ref)
         # Now to center
         k_xr_row_sums = k_xr.sum(1)
@@ -162,7 +217,18 @@ class KernelPCATorch(PCATorch):
         scores = -2 * k_xr.mean(-1) - (x_pcs**2).sum(1)
         return scores
 
-    def _compute_kernel_cov_mat(self, x: torch.Tensor) -> torch.Tensor:
+    def _compute_kernel_mat(self, x: torch.Tensor) -> torch.Tensor:
+        """Computes the centered kernel matrix.
+
+        Parameters
+        ----------
+        x
+            The reference data.
+
+        Returns
+        -------
+            The centered kernel matrix.
+        """
         n = len(x)
         # Uncentered kernel matrix
         k = self.kernel(x, x)

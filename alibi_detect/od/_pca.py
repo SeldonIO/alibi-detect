@@ -29,12 +29,23 @@ class _PCA(OutlierDetector):
         device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
         backend: Literal['pytorch'] = 'pytorch',
     ) -> None:
-        """
+        """Principal Component Analysis (PCA) outlier detector.
+
+        The detector is based on the Principal Component Analysis (PCA) algorithm. There are two variants of PCA:
+        linear PCA and kernel PCA. Linear PCA computes the eigenvectors of the covariance matrix of the data. Kernel
+        PCA computes the eigenvectors of the kernel matrix of the data. In each case, we choose the smallest
+        `n_components` eigenvectors. We do this as they correspond to the invariant directions of the data. i.e the
+        directions along which the data is least spread out. Thus a point that deviates along these dimensions is more
+        likely to be an outlier.
+
+        When scoring a test instance we project it onto the eigenvectors and compute its score using the L2 norm. If
+        a threshold is fitted we use this to determine whether the instance is an outlier or not.
 
         Parameters
         ----------
-        min_eigenvalue
-            Eigenvectors with eigenvalues below this value will be discarded.
+        n_components:
+            The number of dimensions in the principle subspace. For linear pca should have
+            ``1 <= n_components < dim(data)``. For kernel pca should have ``1 <= n_components < len(data)``.
         backend
             Backend used for outlier detection. Defaults to ``'pytorch'``. Options are ``'pytorch'``.
         kernel
@@ -75,7 +86,8 @@ class _PCA(OutlierDetector):
     def fit(self, x_ref: np.ndarray) -> None:
         """Fit the detector on reference data.
 
-        ...
+        Compute the eigenvectors of the covariance/kernel matrix of `x_ref` and save the smallest `n_components`
+        eigenvectors.
 
         Parameters
         ----------
@@ -87,7 +99,7 @@ class _PCA(OutlierDetector):
     def score(self, x: np.ndarray) -> np.ndarray:
         """Score `x` instances using the detector.
 
-        ...
+        Project `x` onto the eigenvectors and compute its score using the L2 norm.
 
         Parameters
         ----------
@@ -105,7 +117,8 @@ class _PCA(OutlierDetector):
     def infer_threshold(self, x_ref: np.ndarray, fpr: float) -> None:
         """Infer the threshold for the Mahalanobis detector.
 
-        ...
+        The threshold is set such that the false positive rate of the detector on the reference data is `fpr`.
+
 
         Parameters
         ----------
@@ -120,8 +133,6 @@ class _PCA(OutlierDetector):
 
     def predict(self, x: np.ndarray) -> Dict[str, Any]:
         """Predict whether the instances in `x` are outliers or not.
-
-        ...
 
         Parameters
         ----------

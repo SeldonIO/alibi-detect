@@ -136,7 +136,7 @@ def test_kernel_PCA_integration():
     assert result
 
 
-@pytest.mark.skip(reason='GaussianRBF kernel does not have torchscript supporrt yet.')
+@pytest.mark.skip(reason='GaussianRBF kernel does not have torchscript support yet.')
 def test_kernel_PCA_integration_ts():
     pca_detector = _PCA(n_components=10, kernel=GaussianRBF())
     X_ref, _ = make_moons(1001, shuffle=True, noise=0.05, random_state=None)

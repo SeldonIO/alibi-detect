@@ -43,7 +43,6 @@ def test_pca_torch_backend_fit_errors(backend_detector):
 ])
 def test_pca_linear_scoring(backend_detector):
     pca_torch = backend_detector()
-    # pca_torch = LinearPCATorch(n_components=1)
     mean = [8, 8]
     cov = [[2., 0.], [0., 1.]]
     x_ref = torch.tensor(np.random.multivariate_normal(mean, cov, 1000))
@@ -92,7 +91,7 @@ def test_pca_linear_torch_backend_ts(tmp_path):
     assert torch.all(pred_1 == pred_2)
 
 
-@pytest.mark.skip(reason='GaussianRBF kernel does not have torchscript supporrt yet.')
+@pytest.mark.skip(reason='GaussianRBF kernel does not have torchscript support yet.')
 def test_pca_kernel_torch_backend_ts(tmp_path):
     pca_torch = KernelPCATorch(n_components=5, kernel=GaussianRBF())
     x = torch.randn((3, 10)) * torch.tensor([[1], [1], [100]])
