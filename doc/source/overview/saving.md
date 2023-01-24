@@ -118,26 +118,59 @@ cd = ClassifierDrift(x_ref, model, backend='sklearn', p_val=.05, preds_type='pro
 ```
 
 In order for a detector to be saveable and loadable, any models contained within it (or referenced within a 
-[detector configuration file](config_files.md#specifying-artefacts)) must fall within the family of supported models
-documented below.
+[detector configuration file](config_files.md#specifying-artefacts)) must fall within the family of supported models:
 
-### TensorFlow
+````{tab-set}
 
+```{tab-item} TensorFlow
 Alibi Detect supports serialization of any TensorFlow model that can be serialized to the 
 [HDF5](https://www.tensorflow.org/guide/keras/save_and_serialize#keras_h5_format) format. 
 Custom objects should be pre-registered with 
 [register_keras_serializable](https://www.tensorflow.org/api_docs/python/tf/keras/utils/register_keras_serializable).
+```
 
-### PyTorch
-
+```{tab-item} PyTorch
 PyTorch models are serialized by saving the [entire model](https://pytorch.org/tutorials/beginner/saving_loading_models.html#save-load-entire-model)
 using the [dill](https://dill.readthedocs.io/en/latest/index.html) module. Therefore, Alibi Detect should support any PyTorch 
 model that can be saved and loaded with `torch.save(..., pickle_module=dill)` and `torch.load(..., pickle_module=dill)`.
+```
 
-### Scikit-learn
-
+```{tab-item} Scikit-learn
 Scikit-learn models are serialized using [joblib](https://joblib.readthedocs.io/en/latest/persistence.html).
 Any scikit-learn model that is a subclass of {py:class}`sklearn.base.BaseEstimator` is supported, including 
 [xgboost](https://xgboost.readthedocs.io/en/latest/python/python_api.html#module-xgboost.sklearn) models following 
 the scikit-learn API.
+```
+````
 
+## Online detectors
+
+[Online drift detectors](../cd/methods.md#online) are stateful, with their state updated each timestep `t` (each time
+`.predict()` is called). {func}`~alibi_detect.saving.save_detector` will save the state of online 
+detectors to disk if `t > 0`. At load time, {func}`~alibi_detect.saving.load_detector` will load this state.
+For example:
+
+```python
+from alibi_detect.cd import LSDDDriftOnline
+from alibi_detect.saving import save_detector, load_detector
+
+# Init detector (t=0)
+dd = LSDDDriftOnline(x_ref, window_size=10, ert=50)
+
+# Run 2 predictions
+pred_1 = dd.predict(x_1)  # t=1 
+pred_2 = dd.predict(x_2)  # t=2
+
+# Save detector (state will be saved since t>0)
+save_detector(dd, filepath)
+
+# Load detector
+dd_new = load_detector(filepath)  # detector will start at t=2
+```
+
+To save a clean (stateless) detector, it should be reset before saving:
+
+```python
+dd.reset_state()  # reset to t=0
+save_detector(dd, filepath)  # save the detector without state
+```
