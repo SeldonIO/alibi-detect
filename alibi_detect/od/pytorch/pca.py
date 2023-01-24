@@ -23,7 +23,6 @@ class PCATorch(TorchOutlierDetector):
             Can be specified by passing either ``'cuda'``, ``'gpu'`` or ``'cpu'``.
         """
         TorchOutlierDetector.__init__(self, device=device)
-        self.accumulator = None
         self.n_components = n_components
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -43,8 +42,7 @@ class PCATorch(TorchOutlierDetector):
         ThresholdNotInferredException
             If called before detector has had `infer_threshold` method called.
         """
-        raw_scores = self.score(x)
-        scores = self._accumulator(raw_scores)
+        scores = self.score(x)
         if not torch.jit.is_scripting():
             self.check_threshold_infered()
         preds = scores > self.threshold
