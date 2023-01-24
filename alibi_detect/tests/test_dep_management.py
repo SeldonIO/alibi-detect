@@ -136,7 +136,7 @@ def test_od_backend_dependencies(opt_dep):
     """
     dependency_map = defaultdict(lambda: ['default'])
     for dependency, relations in [
-                ('Accumulator', ['torch', 'keops']),
+                ('Ensembler', ['torch', 'keops']),
                 ('KNNTorch', ['torch', 'keops']),
                 ('MahalanobisTorch', ['torch', 'keops']),
                 ('KernelPCATorch', ['torch', 'keops']),
@@ -315,6 +315,8 @@ def test_torch_utils_dependencies(opt_dep):
         ("zero_diag", ['torch', 'keops']),
         ("TorchDataset", ['torch', 'keops']),
         ("get_device", ['torch', 'keops']),
+        ("_save_state_dict", ['torch', 'keops']),
+        ("_load_state_dict", ['torch', 'keops']),
     ]:
         dependency_map[dependency] = relations
     from alibi_detect.utils import pytorch as pytorch_utils
