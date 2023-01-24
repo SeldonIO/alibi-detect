@@ -25,8 +25,8 @@ class KNNTorch(TorchOutlierDetector):
             similarity to the `k`-th nearest neighbor. If `k` is a list then it returns the distance/kernel
             similarity to each of the specified `k` neighbors.
         kernel
-            If a kernel is specified then instead of using `torch.cdist` we compute the kernel similarity
-            while computing the k nearest neighbor distance.
+            If a kernel is specified then instead of using `torch.cdist` the kernel defines the k nearest
+            neighbor distance.
         accumulator
             If `k` is an array of integers then the accumulator must not be ``None``. Should be an instance
             of :py:obj:`alibi_detect.od.pytorch.ensemble.Accumulator`. Responsible for combining

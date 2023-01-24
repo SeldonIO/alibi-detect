@@ -241,7 +241,7 @@ class AverageAggregator(BaseTransformTorch):
         self.weights = weights
 
     def _transform(self, scores: torch.Tensor) -> torch.Tensor:
-        """Averages the scores of the detectors in an ensemble. If weights where passed in the `__init__`
+        """Averages the scores of the detectors in an ensemble. If weights were passed in the `__init__`
         then these are used to weight the scores.
         ----------
         scores
