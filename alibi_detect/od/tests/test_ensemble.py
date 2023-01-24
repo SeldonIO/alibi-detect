@@ -121,16 +121,16 @@ def test_min_aggregator():
 
 @pytest.mark.parametrize('aggregator', ['AverageAggregator', 'MaxAggregator', 'MinAggregator', 'TopKAggregator'])
 @pytest.mark.parametrize('normalizer', ['PValNormalizer', 'ShiftAndScaleNormalizer'])
-def test_accumulator(aggregator, normalizer):
+def test_ensembler(aggregator, normalizer):
     aggregator = getattr(ensemble, aggregator)()
     normalizer = getattr(ensemble, normalizer)()
-    accumulator = ensemble.Accumulator(aggregator=aggregator, normalizer=normalizer)
+    ensembler = ensemble.Ensembler(aggregator=aggregator, normalizer=normalizer)
 
     x = torch.randn(3, 10)
     x_ref = torch.randn(64, 10)
 
-    accumulator.fit(x_ref)
-    x_norm = accumulator(x)
-    accumulator = torch.jit.script(accumulator)
-    x_norm_2 = accumulator(x)
+    ensembler.fit(x_ref)
+    x_norm = ensembler(x)
+    ensembler = torch.jit.script(ensembler)
+    x_norm_2 = ensembler(x)
     assert torch.all(x_norm_2 == x_norm)

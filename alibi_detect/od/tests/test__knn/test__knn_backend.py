@@ -3,13 +3,13 @@ import torch
 
 from alibi_detect.od.pytorch.knn import KNNTorch
 from alibi_detect.utils.pytorch.kernels import GaussianRBF
-from alibi_detect.od.pytorch.ensemble import Accumulator, PValNormalizer, AverageAggregator
+from alibi_detect.od.pytorch.ensemble import Ensembler, PValNormalizer, AverageAggregator
 from alibi_detect.od.base import NotFitException, ThresholdNotInferredException
 
 
 @pytest.fixture(scope='session')
-def accumulator(request):
-    return Accumulator(
+def ensembler(request):
+    return Ensembler(
         normalizer=PValNormalizer(),
         aggregator=AverageAggregator()
     )
@@ -33,8 +33,8 @@ def test_knn_torch_backend():
     assert torch.all(knn_torch(x) == torch.tensor([False, False, True]))
 
 
-def test_knn_torch_backend_ensemble(accumulator):
-    knn_torch = KNNTorch(k=[4, 5], accumulator=accumulator)
+def test_knn_torch_backend_ensemble(ensembler):
+    knn_torch = KNNTorch(k=[4, 5], ensembler=ensembler)
     x_ref = torch.randn((1024, 10))
     knn_torch.fit(x_ref)
     x = torch.randn((3, 10)) * torch.tensor([[1], [1], [100]])
@@ -47,8 +47,8 @@ def test_knn_torch_backend_ensemble(accumulator):
     assert torch.all(knn_torch(x) == torch.tensor([False, False, True]))
 
 
-def test_knn_torch_backend_ensemble_ts(tmp_path, accumulator):
-    knn_torch = KNNTorch(k=[4, 5], accumulator=accumulator)
+def test_knn_torch_backend_ensemble_ts(tmp_path, ensembler):
+    knn_torch = KNNTorch(k=[4, 5], ensembler=ensembler)
     x = torch.randn((3, 10)) * torch.tensor([[1], [1], [100]])
 
     with pytest.raises(NotFitException) as err:
@@ -90,9 +90,9 @@ def test_knn_torch_backend_ts(tmp_path):
     assert torch.all(pred_1 == pred_2)
 
 
-def test_knn_kernel(accumulator):
+def test_knn_kernel(ensembler):
     kernel = GaussianRBF(sigma=torch.tensor((0.25)))
-    knn_torch = KNNTorch(k=[4, 5], kernel=kernel, accumulator=accumulator)
+    knn_torch = KNNTorch(k=[4, 5], kernel=kernel, ensembler=ensembler)
     x_ref = torch.randn((1024, 10))
     knn_torch.fit(x_ref)
     x = torch.randn((3, 10)) * torch.tensor([[1], [1], [100]])
@@ -112,8 +112,8 @@ def test_knn_kernel(accumulator):
     # assert torch.all(pred_1 == pred_2)
 
 
-def test_knn_torch_backend_ensemble_fit_errors(accumulator):
-    knn_torch = KNNTorch(k=[4, 5], accumulator=accumulator)
+def test_knn_torch_backend_ensemble_fit_errors(ensembler):
+    knn_torch = KNNTorch(k=[4, 5], ensembler=ensembler)
     assert not knn_torch._fitted
 
     x = torch.randn((1, 10))

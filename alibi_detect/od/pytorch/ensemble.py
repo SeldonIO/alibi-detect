@@ -241,7 +241,7 @@ class AverageAggregator(BaseTransformTorch):
         self.weights = weights
 
     def _transform(self, scores: torch.Tensor) -> torch.Tensor:
-        """Averages the scores of the detectors in an ensemble. If weights where passed in the `__init__`
+        """Averages the scores of the detectors in an ensemble. If weights were passed in the `__init__`
         then these are used to weight the scores.
         ----------
         scores
@@ -299,12 +299,11 @@ class MinAggregator(BaseTransformTorch):
         return vals
 
 
-class Accumulator(BaseFittedTransformTorch):
+class Ensembler(BaseFittedTransformTorch):
     def __init__(self,
                  normalizer: Optional[BaseFittedTransformTorch] = None,
                  aggregator: BaseTransformTorch = AverageAggregator()):
-        """Accumulates the scores of the detectors in an ensemble. Can be used to normalise and aggregate
-        the scores from an ensemble of detectors.
+        """An Ensembler applies normlization and aggregation operations to the scores of an ensemble of detectors.
 
         Parameters
         ----------
