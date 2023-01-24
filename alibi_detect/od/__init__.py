@@ -54,7 +54,6 @@ OutlierVAEGMM = import_optional('alibi_detect.od.vaegmm', names=['OutlierVAEGMM'
 OutlierSeq2Seq = import_optional('alibi_detect.od.seq2seq', names=['OutlierSeq2Seq'])
 LLR = import_optional('alibi_detect.od.llr', names=['LLR'])
 OutlierProphet = import_optional('alibi_detect.od.prophet', names=['OutlierProphet'])
-KNN = import_optional('alibi_detect.od.knn', names=['KNN'])
 
 __all__ = [
     "OutlierAEGMM",
@@ -67,7 +66,6 @@ __all__ = [
     "SpectralResidual",
     "LLR",
     "OutlierProphet"
-    "KNN"
     "PValNormalizer",
     "ShiftAndScaleNormalizer",
     "TopKAggregator",

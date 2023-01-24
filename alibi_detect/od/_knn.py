@@ -21,7 +21,7 @@ backends = {
 }
 
 
-class KNN(OutlierDetector):
+class _KNN(OutlierDetector):
     def __init__(
         self,
         k: Union[int, np.ndarray, List[int], Tuple[int]],
