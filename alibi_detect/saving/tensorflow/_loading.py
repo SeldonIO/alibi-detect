@@ -277,6 +277,7 @@ def load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwarg
         try:  # legacy load_model behaviour was to return None if not found. Now it raises error, hence need try-except.
             model = load_model(model_dir, filename='encoder')
         except FileNotFoundError:
+            logger.warning('No model found in {}, setting `model` to `None`.'.format(model_dir))
             model = None
         if detector_name == 'KSDrift':
             load_fn = init_cd_ksdrift  # type: ignore[assignment]
