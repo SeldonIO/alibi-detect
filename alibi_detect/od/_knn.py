@@ -34,22 +34,38 @@ class _KNN(OutlierDetector):
         """
         k-Nearest Neighbours (kNN) outlier detector.
 
+        The kNN detector is a non-parametric method for outlier detection. The detector computes the distance
+        between each test point and its `k` nearest neighbors. The distance can be computed using a kernel function
+        or a distance metric. The distance is then normalized and aggregated to obtain a single outlier score.
+
+        The detector can be initialized with `k` a single value or an array of values. If `k` is a single value then
+        the outlier score is the distance/kernel similarity to the k-th nearest neighbor. If `k` is an array of
+        values then the outlier score is the distance/kernel similarity to each of the specified `k` neighbors.
+        In the latter case, an aggregator must be specified to aggregate the scores.
+
         Parameters
         ----------
         k
-            Number of nearest neighbours to use for outlier detection. If an array is passed, an
-            aggregator is required to aggregate the scores.
+            Number of neirest neighbors to compute distance to. `k` can be a single value or
+            an array of integers. If an array is passed, an aggregator is required to aggregate
+            the scores. If `k` is a single value the outlier score is the distance/kernel
+            similarity to the `k`-th nearest neighbor. If `k` is a list then it returns the
+            distance/kernel similarity to each of the specified `k` neighbors.
         kernel
             Kernel function to use for outlier detection. If ``None``, `torch.cdist` is used.
+            Otherwise if a kernel is specified then instead of using `torch.cdist` the kernel
+            defines the k nearest neighbor distance.
         normalizer
             Normalizer to use for outlier detection. If ``None``, no normalisation is applied.
+            For a list of available normalizers, see :mod:`alibi_detect.od.pytorch.ensemble`.
         aggregator
-            Aggregator to use for outlier detection. Can be set to ``None`` if `k` is a single value.
+            Aggregator to use for outlier detection. Can be set to ``None`` if `k` is a single
+            value. For a list of available aggregators, see :mod:`alibi_detect.od.pytorch.ensemble`.
         backend
             Backend used for outlier detection. Defaults to ``'pytorch'``. Options are ``'pytorch'``.
         device
-            Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
-            passing either ``'cuda'``, ``'gpu'`` or ``'cpu'``.
+            Device type used. The default tries to use the GPU and falls back on CPU if needed.
+            Can be specified by passing either ``'cuda'``, ``'gpu'`` or ``'cpu'``.
 
         Raises
         ------
@@ -94,6 +110,10 @@ class _KNN(OutlierDetector):
     def score(self, x: np.ndarray) -> np.ndarray:
         """Score `x` instances using the detector.
 
+        Computes the k nearest neighbor distance/kernel similarity for each instance in `x`. If `k` is a single
+        value then this is the score otherwise if `k` is an array of values then the score is aggregated using
+        the accumulator.
+
         Parameters
         ----------
         x
@@ -108,22 +128,26 @@ class _KNN(OutlierDetector):
         return to_numpy(score)
 
     def infer_threshold(self, x_ref: np.ndarray, fpr: float) -> None:
-        """Infer the threshold for the kNN detector. The threshold is inferred using the reference data and the false
-        positive rate. The threshold is used to determine the outlier labels in the predict method.
+        """Infer the threshold for the kNN detector.
+
+        The threshold is computed so that the outlier detector would incorectly classify `fpr` proportion of the
+        reference data as outliers.
 
         Parameters
         ----------
         x_ref
             Reference data used to infer the threshold.
         fpr
-            False positive rate used to infer the threshold. The false positive rate is the proportion of instances in \
-            `x_ref` that are incorrectly classified as outliers. The false positive rate should be in the range \
-            ``(0, 1)``.
+            False positive rate used to infer the threshold. The false positive rate is the proportion of
+            instances in `x_ref` that are incorrectly classified as outliers. The false positive rate should
+            be in the range ``(0, 1)``.
         """
         self.backend.infer_threshold(self.backend._to_tensor(x_ref), fpr)
 
     def predict(self, x: np.ndarray) -> Dict[str, Any]:
         """Predict whether the instances in `x` are outliers or not.
+
+        Scores the instances in `x` and if the threshold was inferred, returns the outlier labels and p-values as well.
 
         Parameters
         ----------
@@ -133,7 +157,7 @@ class _KNN(OutlierDetector):
         Returns
         -------
         Dictionary with keys 'data' and 'meta'. 'data' contains the outlier scores. If threshold inference was  \
-        performed, 'data' also contains the threshold value, outlier labels and p_vals . The shape of the scores is \
+        performed, 'data' also contains the threshold value, outlier labels and p-vals . The shape of the scores is \
         `(n_instances,)`. The higher the score, the more anomalous the instance. 'meta' contains information about \
         the detector.
         """
