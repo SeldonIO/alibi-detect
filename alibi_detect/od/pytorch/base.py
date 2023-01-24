@@ -114,22 +114,24 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
         """
         return torch.as_tensor(x, dtype=torch.float32, device=self.device)
 
-    def _accumulator(self, x: torch.Tensor) -> torch.Tensor:
-        """Accumulates the data.
+    def _ensembler(self, x: torch.Tensor) -> torch.Tensor:
+        """Aggregates and normalizes the data
+
+        If the detector has an ensembler attribute we use it to aggregate and normalize the data.
 
         Parameters
         ----------
         x
-            Data to accumulate.
+            Data to aggregate and normalize.
 
         Returns
         -------
         `torch.Tensor` or just returns original data
         """
-        if hasattr(self, 'accumulator') and self.accumulator is not None:
-            # `type: ignore` here becuase self.accumulator here causes an error with mypy when using torch.jit.script.
-            # For some reason it thinks self.accumulator is a torch.Tensor and therefore is not callable.
-            return self.accumulator(x)  # type: ignore
+        if hasattr(self, 'ensembler') and self.ensembler is not None:
+            # `type: ignore` here becuase self.ensembler here causes an error with mypy when using torch.jit.script.
+            # For some reason it thinks self.ensembler is a torch.Tensor and therefore is not callable.
+            return self.ensembler(x)  # type: ignore
         else:
             return x
 
@@ -180,7 +182,7 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
         if not 0 < fpr < 1:
             ValueError('`fpr` must be in `(0, 1)`.')
         self.val_scores = self.score(x)
-        self.val_scores = self._accumulator(self.val_scores)
+        self.val_scores = self._ensembler(self.val_scores)
         self.threshold = torch.quantile(self.val_scores, 1-fpr)
         self.threshold_inferred = True
 
@@ -209,7 +211,7 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
         """
         self.check_fitted()  # type: ignore
         raw_scores = self.score(x)
-        scores = self._accumulator(raw_scores)
+        scores = self._ensembler(raw_scores)
 
         return TorchOutlierDetectorOutput(
             instance_score=scores,

@@ -3,7 +3,7 @@ from typing import Optional, Union, List, Tuple
 import numpy as np
 import torch
 
-from alibi_detect.od.pytorch.ensemble import Accumulator
+from alibi_detect.od.pytorch.ensemble import Ensembler
 from alibi_detect.od.pytorch.base import TorchOutlierDetector
 
 
@@ -12,7 +12,7 @@ class KNNTorch(TorchOutlierDetector):
             self,
             k: Union[np.ndarray, List, Tuple],
             kernel: Optional[torch.nn.Module] = None,
-            accumulator: Optional[Accumulator] = None,
+            ensembler: Optional[Ensembler] = None,
             device: Optional[Union[str, torch.device]] = None
             ):
         """PyTorch backend for KNN detector.
@@ -27,9 +27,9 @@ class KNNTorch(TorchOutlierDetector):
         kernel
             If a kernel is specified then instead of using `torch.cdist` the kernel defines the `k` nearest
             neighbor distance.
-        accumulator
-            If `k` is an array of integers then the accumulator must not be ``None``. Should be an instance
-            of :py:obj:`alibi_detect.od.pytorch.ensemble.Accumulator`. Responsible for combining
+        ensembler
+            If `k` is an array of integers then the ensembler must not be ``None``. Should be an instance
+            of :py:obj:`alibi_detect.od.pytorch.ensemble.ensembler`. Responsible for combining
             multiple scores into a single score.
         device
             Device type used. The default None tries to use the GPU and falls back on CPU if needed.
@@ -39,7 +39,7 @@ class KNNTorch(TorchOutlierDetector):
         self.kernel = kernel
         self.ensemble = isinstance(k, (np.ndarray, list, tuple))
         self.ks = torch.tensor(k) if self.ensemble else torch.tensor([k], device=self.device)
-        self.accumulator = accumulator
+        self.ensembler = ensembler
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Detect if `x` is an outlier.
@@ -59,7 +59,7 @@ class KNNTorch(TorchOutlierDetector):
             If called before detector has had `infer_threshold` method called.
         """
         raw_scores = self.score(x)
-        scores = self._accumulator(raw_scores)
+        scores = self._ensembler(raw_scores)
         if not torch.jit.is_scripting():
             self.check_threshold_infered()
         preds = scores > self.threshold
@@ -100,4 +100,4 @@ class KNNTorch(TorchOutlierDetector):
         self.x_ref = x_ref
         if self.ensemble:
             scores = self.score(x_ref)
-            self.accumulator.fit(scores)
+            self.ensembler.fit(scores)

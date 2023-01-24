@@ -136,7 +136,7 @@ def test_od_backend_dependencies(opt_dep):
     """
     dependency_map = defaultdict(lambda: ['default'])
     for dependency, relations in [
-            ('Accumulator', ['torch', 'keops']),
+            ('Ensembler', ['torch', 'keops']),
             ('KNNTorch', ['torch', 'keops']),
             ('to_numpy', ['torch', 'keops']),
             ]:

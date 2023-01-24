@@ -6,7 +6,7 @@ import numpy as np
 from typing_extensions import Literal
 from alibi_detect.base import outlier_prediction_dict
 from alibi_detect.od.base import OutlierDetector, TransformProtocol, transform_protocols
-from alibi_detect.od.pytorch import KNNTorch, Accumulator, to_numpy
+from alibi_detect.od.pytorch import KNNTorch, Ensembler, to_numpy
 from alibi_detect.od import normalizer_literals, aggregator_literals, get_aggregator, get_normalizer
 from alibi_detect.utils.frameworks import BackendValidator
 from alibi_detect.version import __version__
@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 
 backends = {
-    'pytorch': (KNNTorch, Accumulator)
+    'pytorch': (KNNTorch, Ensembler)
 }
 
 
@@ -82,20 +82,20 @@ class _KNN(OutlierDetector):
             construct_name=self.__class__.__name__
         ).verify_backend(backend_str)
 
-        backend_cls, accumulator_cls = backends[backend]
-        accumulator = None
+        backend_cls, ensembler_cls = backends[backend]
+        ensembler = None
 
         if aggregator is None and isinstance(k, (list, np.ndarray, tuple)):
             raise ValueError('If `k` is a `np.ndarray`, `list` or `tuple`, '
                              'the `aggregator` argument cannot be ``None``.')
 
         if isinstance(k, (list, np.ndarray, tuple)):
-            accumulator = accumulator_cls(
+            ensembler = ensembler_cls(
                 normalizer=get_normalizer(normalizer),
                 aggregator=get_aggregator(aggregator)
             )
 
-        self.backend = backend_cls(k, kernel=kernel, accumulator=accumulator, device=device)
+        self.backend = backend_cls(k, kernel=kernel, ensembler=ensembler, device=device)
 
     def fit(self, x_ref: np.ndarray) -> None:
         """Fit the detector on reference data.
@@ -112,7 +112,7 @@ class _KNN(OutlierDetector):
 
         Computes the k nearest neighbor distance/kernel similarity for each instance in `x`. If `k` is a single
         value then this is the score otherwise if `k` is an array of values then the score is aggregated using
-        the accumulator.
+        the ensembler.
 
         Parameters
         ----------
