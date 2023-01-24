@@ -6,10 +6,11 @@ from alibi_detect.cd.base_online import BaseMultiDriftOnline
 from alibi_detect.utils.pytorch import get_device
 from alibi_detect.utils.pytorch import GaussianRBF, permed_lsdds, quantile
 from alibi_detect.utils.frameworks import Framework
-from alibi_detect.base import DriftConfigMixin
 
 
-class LSDDDriftOnlineTorch(BaseMultiDriftOnline, DriftConfigMixin):
+class LSDDDriftOnlineTorch(BaseMultiDriftOnline):
+    online_state_keys: tuple = ('t', 'test_stats', 'drift_preds', 'test_window', 'k_xtc')
+
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
@@ -84,7 +85,8 @@ class LSDDDriftOnlineTorch(BaseMultiDriftOnline, DriftConfigMixin):
             input_shape=input_shape,
             data_type=data_type
         )
-        self.meta.update({'backend': Framework.PYTORCH.value})
+        self.backend = Framework.PYTORCH.value
+        self.meta.update({'backend': self.backend})
         self.n_kernel_centers = n_kernel_centers
         self.lambda_rd_max = lambda_rd_max
 
@@ -108,9 +110,13 @@ class LSDDDriftOnlineTorch(BaseMultiDriftOnline, DriftConfigMixin):
 
         self._configure_kernel_centers()
         self._configure_thresholds()
-        self._initialise()
+        self._configure_ref_subset()  # self.initialise_state() called inside here
 
     def _configure_normalization(self, eps: float = 1e-12):
+        """
+        Configure the normalization functions used to normalize reference and test data to zero mean and unit variance.
+        The reference data `x_ref` is also normalized here.
+        """
         x_ref = torch.from_numpy(self.x_ref).to(self.device)
         x_ref_means = x_ref.mean(0)
         x_ref_stds = x_ref.std(0)
@@ -130,7 +136,9 @@ class LSDDDriftOnlineTorch(BaseMultiDriftOnline, DriftConfigMixin):
         self.k_xc = self.kernel(self.x_ref_eff, self.kernel_centers)
 
     def _configure_thresholds(self):
-
+        """
+        Configure the test statistic thresholds via bootstrapping.
+        """
         # Each bootstrap sample splits the reference samples into a sub-reference sample (x)
         # and an extended test window (y). The extended test window will be treated as W overlapping
         # test windows of size W (so 2W-1 test samples in total)
@@ -168,7 +176,20 @@ class LSDDDriftOnlineTorch(BaseMultiDriftOnline, DriftConfigMixin):
         self.thresholds = thresholds
         self.H_lam_inv = H_lam_inv
 
+    def _initialise_state(self) -> None:
+        """
+        Initialise online state (the stateful attributes updated by `score` and `predict`). This method relies on
+        attributes defined by `_configure_ref_subset`, hence must be called afterwards.
+        """
+        super()._initialise_state()
+        self.test_window = self.x_ref_eff[self.init_test_inds]
+        self.k_xtc = self.kernel(self.test_window, self.kernel_centers)
+
     def _configure_ref_subset(self):
+        """
+        Configure the reference data split. If the randomly selected split causes an initial detection, further splits
+        are attempted.
+        """
         etw_size = 2 * self.window_size - 1  # etw = extended test window
         nkc_size = self.n - self.n_kernel_centers  # nkc = non-kernel-centers
         rw_size = nkc_size - etw_size  # rw = ref-window
@@ -178,14 +199,21 @@ class LSDDDriftOnlineTorch(BaseMultiDriftOnline, DriftConfigMixin):
             # Make split
             perm = torch.randperm(nkc_size)
             self.ref_inds, self.init_test_inds = perm[:rw_size], perm[-self.window_size:]
-            self.test_window = self.x_ref_eff[self.init_test_inds]
             # Compute initial lsdd to check for initial detection
+            self._initialise_state()  # to set self.test_window and self.k_xtc
             self.c2s = self.k_xc[self.ref_inds].mean(0)  # (below Eqn 21)
-            self.k_xtc = self.kernel(self.test_window, self.kernel_centers)
             h_init = self.c2s - self.k_xtc.mean(0)  # (Eqn 21)
             lsdd_init = h_init[None, :] @ self.H_lam_inv @ h_init[:, None]  # (Eqn 11)
 
     def _update_state(self, x_t: torch.Tensor):  # type: ignore[override]
+        """
+        Update online state based on the provided test instance.
+
+        Parameters
+        ----------
+        x_t
+            The test instance.
+        """
         self.t += 1
         k_xtc = self.kernel(x_t, self.kernel_centers)
         self.test_window = torch.cat([self.test_window[(1 - self.window_size):], x_t], 0)

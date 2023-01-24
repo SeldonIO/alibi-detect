@@ -292,6 +292,8 @@ def test_torch_utils_dependencies(opt_dep):
         ("zero_diag", ['torch', 'keops']),
         ("TorchDataset", ['torch', 'keops']),
         ("get_device", ['torch', 'keops']),
+        ("_save_state_dict", ['torch', 'keops']),
+        ("_load_state_dict", ['torch', 'keops']),
     ]:
         dependency_map[dependency] = relations
     from alibi_detect.utils import pytorch as pytorch_utils
