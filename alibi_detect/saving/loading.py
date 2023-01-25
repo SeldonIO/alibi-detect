@@ -263,7 +263,7 @@ def _load_model_config(cfg: dict,
                                 "a compatible model.")
 
     if backend == 'tensorflow':
-        model = load_model_tf(src, load_dir='.', custom_objects=custom_obj, layer=layer)
+        model = load_model_tf(src, custom_objects=custom_obj, layer=layer)
     else:
         raise NotImplementedError('Loading of non-tensorflow models not currently supported')
 

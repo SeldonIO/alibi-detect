@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 
 
 def load_model(filepath: Union[str, os.PathLike],
-               load_dir: str = 'model',
+               filename: str = 'model',
                custom_objects: dict = None,
                layer: Optional[int] = None,
                ) -> tf.keras.Model:
@@ -45,8 +45,8 @@ def load_model(filepath: Union[str, os.PathLike],
     ----------
     filepath
         Saved model directory.
-    load_dir
-        Name of saved model folder within the filepath directory.
+    filename
+        Name of saved model within the filepath directory.
     custom_objects
         Optional custom objects when loading the TensorFlow model.
     layer
@@ -58,11 +58,12 @@ def load_model(filepath: Union[str, os.PathLike],
     Loaded model.
     """
     # TODO - update this to accept tf format - later PR.
-    model_dir = Path(filepath).joinpath(load_dir)
+    model_dir = Path(filepath)
+    model_name = filename + '.h5'
     # Check if model exists
-    if 'model.h5' not in [f.name for f in model_dir.glob('[!.]*.h5')]:
-        raise FileNotFoundError(f'No .h5 file found in {model_dir}.')
-    model = tf.keras.models.load_model(model_dir.joinpath('model.h5'), custom_objects=custom_objects)
+    if model_name not in [f.name for f in model_dir.glob('[!.]*.h5')]:
+        raise FileNotFoundError(f'{model_name} not found in {model_dir.resolve()}.')
+    model = tf.keras.models.load_model(model_dir.joinpath(model_name), custom_objects=custom_objects)
     # Optionally extract hidden layer
     if isinstance(layer, int):
         model = HiddenOutput(model, layer=layer)
@@ -233,7 +234,8 @@ def load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwarg
     state_dict = dill.load(open(filepath.joinpath(detector_name + suffix), 'rb'))
 
     # initialize detector
-    detector = None  # type: Optional[Detector]  # to avoid mypy errors
+    model_dir = filepath.joinpath('model')
+    detector: Optional[Detector] = None  # to avoid mypy errors
     if detector_name == 'OutlierAE':
         ae = load_tf_ae(filepath)
         detector = init_od_ae(state_dict, ae)
@@ -253,13 +255,13 @@ def load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwarg
     elif detector_name == 'AdversarialAE':
         ae = load_tf_ae(filepath)
         custom_objects = kwargs['custom_objects'] if 'custom_objects' in k else None
-        model = load_model(filepath, custom_objects=custom_objects)
+        model = load_model(model_dir, custom_objects=custom_objects)
         model_hl = load_tf_hl(filepath, model, state_dict)
         detector = init_ad_ae(state_dict, ae, model, model_hl)
     elif detector_name == 'ModelDistillation':
-        md = load_model(filepath, load_dir='distilled_model')
+        md = load_model(model_dir, filename='distilled_model')
         custom_objects = kwargs['custom_objects'] if 'custom_objects' in k else None
-        model = load_model(filepath, custom_objects=custom_objects)
+        model = load_model(model_dir, custom_objects=custom_objects)
         detector = init_ad_md(state_dict, md, model)
     elif detector_name == 'OutlierProphet':
         detector = init_od_prophet(state_dict)  # type: ignore[assignment]
@@ -273,8 +275,9 @@ def load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwarg
         if state_dict['other']['load_text_embedding']:
             emb, tokenizer = load_text_embed(filepath)
         try:  # legacy load_model behaviour was to return None if not found. Now it raises error, hence need try-except.
-            model = load_model(filepath, load_dir='encoder')
+            model = load_model(model_dir, filename='encoder')
         except FileNotFoundError:
+            logger.warning('No model found in {}, setting `model` to `None`.'.format(model_dir))
             model = None
         if detector_name == 'KSDrift':
             load_fn = init_cd_ksdrift  # type: ignore[assignment]
@@ -286,7 +289,7 @@ def load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwarg
             load_fn = init_cd_tabulardrift  # type: ignore[assignment]
         elif detector_name == 'ClassifierDriftTF':
             # Don't need try-except here since model is not optional for ClassifierDrift
-            clf_drift = load_model(filepath, load_dir='clf_drift')
+            clf_drift = load_model(model_dir, filename='clf_drift')
             load_fn = partial(init_cd_classifierdrift, clf_drift)  # type: ignore[assignment]
         else:
             raise NotImplementedError
