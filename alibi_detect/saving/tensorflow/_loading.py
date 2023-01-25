@@ -233,6 +233,10 @@ def load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwarg
     # load outlier detector specific parameters
     state_dict = dill.load(open(filepath.joinpath(detector_name + suffix), 'rb'))
 
+    # Set `x_ref_preprocessed=True` if it doesn't exist in `state_dict` (old `alibi-detect` versions did not write this)
+    if 'kwargs' in state_dict and 'x_ref_preprocessed' not in state_dict['kwargs']:
+        state_dict['kwargs']['x_ref_preprocessed'] = True
+
     # initialize detector
     model_dir = filepath.joinpath('model')
     detector: Optional[Detector] = None  # to avoid mypy errors
