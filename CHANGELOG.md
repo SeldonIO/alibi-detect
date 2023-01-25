@@ -5,10 +5,9 @@
 [Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.10.4...v0.10.5)
 
 ### Fixed
-- Fixed a bug preventing backward compatibility when loading detectors (containing TensorFlow models) saved with `<v0.10.0`
-([#729](https://github.com/SeldonIO/alibi-detect/pull/729)). This bug also meant that detectors (containing TensorFlow models) saved with 
-`save_detector(..., legacy=True)` in `>=v0.10.0` did not properly obey the legacy file format. The `config.toml` file format used by 
-default in `>=v0.10.0` is not affected. 
+- Fixed two bugs preventing backward compatibility when loading detectors saved with `<v0.10.0`
+([#729](https://github.com/SeldonIO/alibi-detect/pull/729) and [#732](https://github.com/SeldonIO/alibi-detect/pull/732)). This bug also meant that detectors
+saved with `save_detector(..., legacy=True)` in `>=v0.10.0` did not properly obey the legacy file format. The `config.toml` file format used by default in `>=v0.10.0` is unaffected. 
 
 ## v0.10.4
 ## [v0.10.4](https://github.com/SeldonIO/alibi-detect/tree/v0.10.4) (2022-10-21)

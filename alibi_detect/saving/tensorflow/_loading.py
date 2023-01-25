@@ -233,6 +233,15 @@ def load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwarg
     # load outlier detector specific parameters
     state_dict = dill.load(open(filepath.joinpath(detector_name + suffix), 'rb'))
 
+    # Update the drift detector preprocess kwargs if state_dict is from an old alibi-detect version (<v0.10).
+    # See https://github.com/SeldonIO/alibi-detect/pull/732
+    if 'kwargs' in state_dict and 'other' in state_dict:  # A drift detector if both of these exist
+        if 'x_ref_preprocessed' not in state_dict['kwargs']:  # if already exists then must have been saved w/ >=v0.10
+            # Set x_ref_preprocessed to True
+            state_dict['kwargs']['x_ref_preprocessed'] = True
+            # Move `preprocess_x_ref` from `other` to `kwargs`
+            state_dict['kwargs']['preprocess_x_ref'] = state_dict['other']['preprocess_x_ref']
+
     # initialize detector
     model_dir = filepath.joinpath('model')
     detector: Optional[Detector] = None  # to avoid mypy errors
