@@ -96,24 +96,59 @@ def test_save_model_tf(data, model, layer, tmp_path):
 
 
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
+@parametrize("run_predict, pass_custom_objects", [
+    (True, True),  # Run predict before saving and pass custom_objects - expected to pass
+    (False, True),  # Don't run predict before saving - expected to fail with...
+    (True, False)  # Don't pass custom objects, expected to raise warning (prior to tensorflow raising error)
+    ]
+)
 @parametrize("model", [classifier_model_subclassed])
-def test_save_classifierdrift_subclassed(data, model, tmp_path):  # noqa: F811
+def test_save_classifierdrift_subclassed(data, model, run_predict, pass_custom_objects, tmp_path):  # noqa: F811
     """
     Copy of `test_save_classifierdrift` to specifically test use with a subclassed tensorflow model, with the custom
     model class given to `load_detector`.
+
+    For a subclassed model to be saved/loaded it must 1) have been called/built 2) have valid `get_config` and
+    `from_config` methods 3) have any custom objects provided at load time. If these conditions are not met alibi-detect
+    raises various errors and warnings (see the TensorFlow tab in
+    https://docs.seldon.io/projects/alibi-detect/en/stable/overview/saving.html#supported-ml-models).
+
+    This test checks three different scenarios:
+
+        1. Detector `predict` called prior to saving, and `custom_objects` correctly passed. This should pass with no
+        warnings/errors.
+        2. `predict` not run before saving. `alibi_detect.saving._tensorflow.save_model` should raise `ValueError`.
+        3. `custom_objects` not passed to `load_detector`. `alibi_detect.saving._tensorflow.load_model` should raise
+        `UserWarning`.
     """
     # Init detector and predict
-
     X_ref, X_h0 = data
     cd = ClassifierDrift(X_ref,
                          model=model,
                          backend='tensorflow')
-    preds = cd.predict(X_h0)  # noqa: F841
-    save_detector(cd, tmp_path)
+    if run_predict:
+        preds = cd.predict(X_h0)  # noqa: F841
+        save_detector(cd, tmp_path)
+    else:
+        # We expect a RunTimeError (when any errors occur during saving clean up is performed and then this is raised)
+        with pytest.raises(RuntimeError) as excinfo:
+            save_detector(cd, tmp_path)
+        # Check that the underlying error is the expected ValueError (and check a snippet of the error message)
+        assert isinstance(excinfo.value.__cause__, ValueError)
+        assert "model's input shape is not available." in str(excinfo.value.__cause__)
+        return  # Skip the rest of the test
 
     # Load detector and make another prediction
-    custom_objects = {'ClassifierTF': ClassifierTF}
-    cd_load = load_detector(tmp_path, custom_objects=custom_objects)
+    custom_objects = {'ClassifierTF': ClassifierTF} if pass_custom_objects else None
+    if pass_custom_objects:
+        cd_load = load_detector(tmp_path, custom_objects=custom_objects)
+    else:
+        # Check the expected UserWarning is raised by searching for a snippet of the warning message
+        with pytest.warns(UserWarning, match='The TensorFlow model may have been loaded incorrectly.'):
+            with pytest.raises(Exception):  # Need to catch this as tf raises an error after the warning in this case
+                load_detector(tmp_path)
+        return  # Skip the rest of the test
+
     preds_load = cd_load.predict(X_h0)  # noqa: F841
 
     # Assert
