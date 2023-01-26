@@ -37,7 +37,6 @@ logger = logging.getLogger(__name__)
 
 
 def load_model(filepath: Union[str, os.PathLike],
-               load_dir: str = 'model',
                layer: Optional[int] = None,
                **kwargs
                ) -> tf.keras.Model:
@@ -47,9 +46,8 @@ def load_model(filepath: Union[str, os.PathLike],
     Parameters
     ----------
     filepath
-        Saved model directory.
-    load_dir
-        Name of saved model folder within the filepath directory.
+        Saved model filepath. This should be a directory if the model is in the `SavedModel` format. Otherwise, it
+        should be a path to a `.h5` file.
     layer
         Optional index of a hidden layer to extract. If not `None`, a
         :py:class:`~alibi_detect.cd.tensorflow.HiddenOutput` model is returned.
@@ -59,12 +57,8 @@ def load_model(filepath: Union[str, os.PathLike],
     -------
     Loaded model.
     """
-    model_path = Path(filepath).joinpath(load_dir)
-    # Check for legacy h5 file in directory, otherwise assume SavedModel format
-    if 'model.h5' in [f.name for f in model_path.glob('[!.]*.h5')]:
-        model_path = model_path.joinpath('model.h5')
     # Load model
-    model = tf.keras.models.load_model(model_path, **kwargs)
+    model = tf.keras.models.load_model(filepath, **kwargs)
     # Check the loaded model for problems
     check_model(model)
 
@@ -236,8 +230,18 @@ def load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwarg
     # load outlier detector specific parameters
     state_dict = dill.load(open(filepath.joinpath(detector_name + suffix), 'rb'))
 
+    # Update the drift detector preprocess kwargs if state_dict is from an old alibi-detect version (<v0.10).
+    # See https://github.com/SeldonIO/alibi-detect/pull/732
+    if 'kwargs' in state_dict and 'other' in state_dict:  # A drift detector if both of these exist
+        if 'x_ref_preprocessed' not in state_dict['kwargs']:  # if already exists then must have been saved w/ >=v0.10
+            # Set x_ref_preprocessed to True
+            state_dict['kwargs']['x_ref_preprocessed'] = True
+            # Move `preprocess_x_ref` from `other` to `kwargs`
+            state_dict['kwargs']['preprocess_x_ref'] = state_dict['other']['preprocess_x_ref']
+
     # initialize detector
-    detector = None  # type: Optional[Detector]  # to avoid mypy errors
+    model_dir = filepath.joinpath('model')
+    detector: Optional[Detector] = None  # to avoid mypy errors
     if detector_name == 'OutlierAE':
         ae = load_tf_ae(filepath)
         detector = init_od_ae(state_dict, ae)
@@ -257,13 +261,13 @@ def load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwarg
     elif detector_name == 'AdversarialAE':
         ae = load_tf_ae(filepath)
         custom_objects = kwargs['custom_objects'] if 'custom_objects' in k else None
-        model = load_model(filepath, custom_objects=custom_objects)
+        model = load_model(model_dir.joinpath('model.h5'), custom_objects=custom_objects)
         model_hl = load_tf_hl(filepath, model, state_dict)
         detector = init_ad_ae(state_dict, ae, model, model_hl)
     elif detector_name == 'ModelDistillation':
-        md = load_model(filepath, load_dir='distilled_model')
+        md = load_model(model_dir.joinpath('distilled_model.h5'))
         custom_objects = kwargs['custom_objects'] if 'custom_objects' in k else None
-        model = load_model(filepath, custom_objects=custom_objects)
+        model = load_model(model_dir.joinpath('model.h5'), custom_objects=custom_objects)
         detector = init_ad_md(state_dict, md, model)
     elif detector_name == 'OutlierProphet':
         detector = init_od_prophet(state_dict)  # type: ignore[assignment]
@@ -277,8 +281,9 @@ def load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwarg
         if state_dict['other']['load_text_embedding']:
             emb, tokenizer = load_text_embed(filepath)
         try:  # legacy load_model behaviour was to return None if not found. Now it raises error, hence need try-except.
-            model = load_model(filepath, load_dir='encoder')
+            model = load_model(model_dir.joinpath('encoder.h5'))
         except OSError:
+            logger.warning('No model found in {}, setting `model` to `None`.'.format(model_dir))
             model = None
         if detector_name == 'KSDrift':
             load_fn = init_cd_ksdrift  # type: ignore[assignment]
@@ -290,7 +295,7 @@ def load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwarg
             load_fn = init_cd_tabulardrift  # type: ignore[assignment]
         elif detector_name == 'ClassifierDriftTF':
             # Don't need try-except here since model is not optional for ClassifierDrift
-            clf_drift = load_model(filepath, load_dir='clf_drift')
+            clf_drift = load_model(model_dir.joinpath('clf_drift.h5'))
             load_fn = partial(init_cd_classifierdrift, clf_drift)  # type: ignore[assignment]
         else:
             raise NotImplementedError

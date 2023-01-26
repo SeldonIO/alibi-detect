@@ -119,8 +119,7 @@ cd = ClassifierDrift(x_ref, model, backend='sklearn', p_val=.05, preds_type='pro
 ```
 
 In order for a detector to be saveable and loadable, any models contained within it (or referenced within a 
-[detector configuration file](config_files.md#specifying-artefacts)) must fall within the family of supported models
-documented below.
+[detector configuration file](config_files.md#specifying-artefacts)) must fall within the family of supported models:
 
 `````{tab-set}
 
@@ -164,3 +163,35 @@ Any scikit-learn model that is a subclass of {py:class}`sklearn.base.BaseEstimat
 the scikit-learn API.
 ````
 `````
+
+## Online detectors
+
+[Online drift detectors](../cd/methods.md#online) are stateful, with their state updated each timestep `t` (each time
+`.predict()` is called). {func}`~alibi_detect.saving.save_detector` will save the state of online 
+detectors to disk if `t > 0`. At load time, {func}`~alibi_detect.saving.load_detector` will load this state.
+For example:
+
+```python
+from alibi_detect.cd import LSDDDriftOnline
+from alibi_detect.saving import save_detector, load_detector
+
+# Init detector (t=0)
+dd = LSDDDriftOnline(x_ref, window_size=10, ert=50)
+
+# Run 2 predictions
+pred_1 = dd.predict(x_1)  # t=1 
+pred_2 = dd.predict(x_2)  # t=2
+
+# Save detector (state will be saved since t>0)
+save_detector(dd, filepath)
+
+# Load detector
+dd_new = load_detector(filepath)  # detector will start at t=2
+```
+
+To save a clean (stateless) detector, it should be reset before saving:
+
+```python
+dd.reset_state()  # reset to t=0
+save_detector(dd, filepath)  # save the detector without state
+```

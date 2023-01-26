@@ -11,9 +11,7 @@ on:
     branches:
       - master
   pull_request:
-    branches:
-      - master
-      - 'feature/*'
+    # don't trigger for draft PRs
     types: [ opened, synchronize, reopened, ready_for_review ]
   # Trigger workflow once per week
   schedule:
@@ -41,14 +39,14 @@ jobs:
           - os: windows-latest
             python-version: '3.9'  # PyTorch doesn't yet have 3.10 support on Windows (https://pytorch.org/get-started/locally/#windows-python)
           - os: macos-latest
-            python-version: '3.10'
+            python-version: '3.9'  # Don't test python3.10 for macos (see https://github.com/orgs/community/discussions/38364 for details)
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -105,7 +103,7 @@ jobs:
       options: --user root
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Create a virtualenv to use for docs build
         run: |
           python3.9 -m virtualenv $HOME/docs
@@ -129,9 +127,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Set up Python 3.x
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: '3.8'
       - name: Check 3rd party licenses haven't changed
@@ -144,9 +142,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Set up Python 3.x
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: '3.8'
       - name: Check optional dependency imports are protected
