@@ -1,7 +1,7 @@
 # Change Log
 
 ## v0.10.5
-## [v0.10.5](https://github.com/SeldonIO/alibi-detect/tree/v0.10.5) (2023-01-24)
+## [v0.10.5](https://github.com/SeldonIO/alibi-detect/tree/v0.10.5) (2023-01-26)
 [Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.10.4...v0.10.5)
 
 ### Fixed
