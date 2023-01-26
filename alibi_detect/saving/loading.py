@@ -281,7 +281,7 @@ def _load_model_config(cfg: dict) -> Callable:
                                 "a compatible model.")
 
     if flavour == Framework.TENSORFLOW:
-        model = load_model_tf(src, load_dir='.', custom_objects=custom_obj, layer=layer)
+        model = load_model_tf(src, custom_objects=custom_obj, layer=layer)
     elif flavour == Framework.PYTORCH:
         model = load_model_pt(src, layer=layer)
     elif flavour == Framework.SKLEARN:

@@ -1,7 +1,7 @@
 # Change Log
 
 ## v0.11.0dev
-[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.10.3...master)
+[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.10.5...master)
 
 ### Added
 - **New feature** MMD drift detector has been extended with a [KeOps](https://www.kernel-operations.io/keops/index.html) backend to scale and speed up the detector. 
@@ -25,6 +25,15 @@ See the [documentation](https://docs.seldon.io/projects/alibi-detect/en/latest/c
 ### Development
 - UTF-8 decoding is enforced when `README.md` is opened by `setup.py`. This is to prevent pip install errors on systems with `PYTHONIOENCODING` set to use other encoders ([#605](https://github.com/SeldonIO/alibi-detect/pull/605)).
 - Skip specific save/load tests that require downloading remote artefacts if the relevant URI(s) is/are down ([#607](https://github.com/SeldonIO/alibi-detect/pull/607)).
+
+## v0.10.5
+## [v0.10.5](https://github.com/SeldonIO/alibi-detect/tree/v0.10.5) (2023-01-26)
+[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.10.4...v0.10.5)
+
+### Fixed
+- Fixed two bugs preventing backward compatibility when loading detectors saved with `<v0.10.0`
+([#729](https://github.com/SeldonIO/alibi-detect/pull/729) and [#732](https://github.com/SeldonIO/alibi-detect/pull/732)). This bug also meant that detectors
+saved with `save_detector(..., legacy=True)` in `>=v0.10.0` did not properly obey the legacy file format. The `config.toml` file format used by default in `>=v0.10.0` is unaffected. 
 
 ## v0.10.4
 ## [v0.10.4](https://github.com/SeldonIO/alibi-detect/tree/v0.10.4) (2022-10-21)
