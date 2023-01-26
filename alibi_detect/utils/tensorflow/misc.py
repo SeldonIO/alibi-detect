@@ -1,4 +1,5 @@
 import tensorflow as tf
+import warnings
 
 
 def zero_diag(mat: tf.Tensor) -> tf.Tensor:
@@ -95,3 +96,40 @@ def clone_model(model: tf.keras.Model) -> tf.keras.Model:
         except NotImplementedError:
             config = {}
         return model.__class__.from_config(config)
+
+
+def check_model(model: tf.keras.Model, raise_error: bool = False) -> None:
+    """
+
+    Parameters
+    ----------
+    model
+    raise_error
+
+    Raises
+    ------
+
+    """
+    # Message to display if there are problems
+    msg = "The TensorFlow model may have been loaded incorrectly. This could be because `get_config` and/or " \
+          "`from_config` methods were defined incorrectly. Otherwise, it could be because custom objects have not " \
+          "been provided. For more guidance see the TensorFlow tab at " \
+          "https://docs.seldon.io/projects/alibi-detect/en/stable/overview/saving.html#supported-ml-models."
+
+    try:
+        # Check if model is a `RevivedNetwork` rather than the real original model (this occurs when subclassed models
+        # are loaded without all custom objects being provided
+        # Note, could also do `if model.__class__.__base__.__name__ == 'RevivedNetwork':`
+        if model.__class__.__module__ == 'keras.saving.saved_model.load':
+            # Raise error (this will be caught and re-raised below)
+            raise ValueError('The model appears to be a `keras.saving.saved_model.load.RevivedNetwork. This suggests '
+                             'a subclassed model has been loaded without all custom objects being provided.')
+
+        # Check model cloning doesn't raise error
+        clone_model(model)
+
+    except Exception as error:
+        if raise_error:
+            raise ValueError(msg) from error
+        else:
+            warnings.warn(msg + f"Original error message: \n\t{error}")

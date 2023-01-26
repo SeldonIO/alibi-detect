@@ -21,6 +21,7 @@ from alibi_detect.models.tensorflow import PixelCNN, TransformerEmbedding
 from alibi_detect.models.tensorflow.autoencoder import (AE, AEGMM, VAE, VAEGMM,
                                                         DecoderLSTM,
                                                         EncoderLSTM, Seq2Seq)
+from alibi_detect.utils.tensorflow.misc import check_model
 from alibi_detect.od import (LLR, IForest, Mahalanobis, OutlierAE,
                              OutlierAEGMM, OutlierProphet, OutlierSeq2Seq,
                              OutlierVAE, OutlierVAEGMM, SpectralResidual)
@@ -64,6 +65,9 @@ def load_model(filepath: Union[str, os.PathLike],
         model_path = model_path.joinpath('model.h5')
     # Load model
     model = tf.keras.models.load_model(model_path, **kwargs)
+    # Check the loaded model for problems
+    check_model(model)
+
     # Optionally extract hidden layer
     if isinstance(layer, int):
         model = HiddenOutput(model, layer=layer)
