@@ -103,18 +103,7 @@ def save_model(model: tf.keras.Model,
     """
     filepath = Path(filepath)
     # Determine file format to save in
-    if filepath.suffix == '.h5':
-        model_dir = filepath.parent
-        save_format = 'h5'
-    else:
-        model_dir = filepath
-        save_format = 'tf'
-
-    # create folder to save model in  # TODO - is this needed?
-    if not model_dir.is_dir():
-        logger.warning('Directory {} does not exist and is now created.'.format(model_dir))
-        model_dir.mkdir(parents=True, exist_ok=True)
-
+    save_format = 'h5' if filepath.suffix == '.h5' else 'tf'
     # save model
     if isinstance(model, tf.keras.Model):
         try:
