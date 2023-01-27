@@ -109,9 +109,10 @@ def save_model(model: tf.keras.Model,
         try:
             model.save(filepath, save_format=save_format)
         except ValueError as error:
-            raise ValueError("Saving of the `tf.keras.Model` failed. This might be because the model's input shape is "
-                             "not available. To specify an input shape call the model (on actual data) before passing "
-                             "it to the detector, or pass actual data to the detector's `predict` method.") from error
+            raise ValueError("Saving of the `tf.keras.Model` failed. If the model is a subclassed tensorflow model, "
+                             "this might be because the model's input shape is not available. To specify an input "
+                             "shape call the model (on actual data) before passing it to the detector, or pass actual "
+                             "data to the detector's `predict` method.") from error
     else:
         raise ValueError('The extracted model to save is not a `tf.keras.Model`. Cannot save.')
 
