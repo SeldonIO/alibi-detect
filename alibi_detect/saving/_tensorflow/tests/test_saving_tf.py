@@ -16,6 +16,10 @@ import numpy as np
 
 backend = param_fixture("backend", ['tensorflow'])
 
+# Error/warning messages to check for (just snippets are enough to check...)
+INPUT_SHAPE_MSG = "model's input shape is not available."
+CUSTOM_OBJ_MSG = "The TensorFlow model may have been loaded incorrectly."
+
 
 # Note: The full save/load functionality of optimizers (inc. validation) is tested in test_save_classifierdrift.
 def test_load_optimizer_object(backend):
@@ -59,19 +63,15 @@ def test_load_optimizer_type(backend):
 
 
 @parametrize_with_cases("data", cases=ContinuousData.data_synthetic_nd, prefix='data_')
-@parametrize('model', [encoder_model, encoder_model_subclassed])
+@parametrize('model', [encoder_model])
 @parametrize('layer', [None, -1])
 def test_save_model_tf(data, model, layer, tmp_path):
     """
     Unit test for _save_model_config and _load_model_config with tensorflow model.
     """
-    if layer is not None and isinstance(model, EncoderTF):
-        pytest.skip("Don't test `layer != None` when the model is a subclassed model.")
-
     # Save model
     filepath = tmp_path
-    input_shape = (data[0].shape[1],)
-    cfg_model, _ = _save_model_config(model, base_path=filepath, input_shape=input_shape)
+    cfg_model, _ = _save_model_config(model, base_path=filepath)
     cfg_model = _path2str(cfg_model)
     cfg_model = ModelConfig(**cfg_model).dict()
     assert tmp_path.joinpath('model').is_dir()
@@ -82,23 +82,77 @@ def test_save_model_tf(data, model, layer, tmp_path):
         cfg_model['layer'] = layer
 
     # Load model
-    kwargs = {}
-    if isinstance(model, EncoderTF):
-        kwargs['custom_objects'] = {'EncoderTF': EncoderTF}
-    model_load = _load_model_config(cfg_model, **kwargs)
+    model_load = _load_model_config(cfg_model)
     if layer is None:
-        # Note: If something went wrong with passing `custom_objects` to the `tf.keras.models.load_model`
-        #  (in `_load_model_config`). The model will likely be a `keras.saving.saved_model.load.EncoderTF` object
-        #  instead of the `EncoderTF` object defined in `alibi_detect.saving.tests.models` (and below will fail)
         assert isinstance(model_load, type(model))
     else:
         assert isinstance(model_load, HiddenOutput_tf)
 
 
+@parametrize_with_cases("data", cases=ContinuousData.data_synthetic_nd, prefix='data_')
+@parametrize("call, pass_custom_objects", [
+    (True, True),  # call model before saving and pass custom_objects - expected to pass
+    (False, True),  # Don't call model before saving - expected to raise error
+    (True, False)  # Don't pass custom objects, expected to raise warning (prior to tensorflow raising error)
+    ]
+)
+@parametrize('model', [encoder_model_subclassed])
+def test_save_model_tf_subclassed(data, call, pass_custom_objects, model, tmp_path):
+    """
+    Unit test for _save_model_config and _load_model_config with a subclassed tensorflow model.
+
+    For a subclassed model to be saved/loaded it must 1) have been called/built 2) have valid `get_config` and
+    `from_config` methods 3) have any custom objects provided at load time. If these conditions are not met alibi-detect
+    raises various errors and warnings (see the TensorFlow tab in
+    https://docs.seldon.io/projects/alibi-detect/en/stable/overview/saving.html#supported-ml-models).
+
+    This test checks three different scenarios:
+
+        1. Model called prior to saving, and `custom_objects` correctly passed. This should pass with no
+        warnings/errors.
+        2. Model not called before saving. `alibi_detect.saving._tensorflow.save_model` should raise `ValueError`.
+        3. `custom_objects` not passed to `_load_model_config`. `alibi_detect.saving._tensorflow.load_model` should
+        raise `UserWarning`.
+    """
+    # Save model
+    filepath = tmp_path
+    if call:
+        # Call model, then save
+        X, _ = data
+        model(X)
+        cfg_model, _ = _save_model_config(model, base_path=filepath)
+    else:
+        # Don't call model, check correct error raised when saving
+        with pytest.raises(ValueError, match=INPUT_SHAPE_MSG):
+            _save_model_config(model, base_path=filepath)
+        return  # Skip the rest of the test
+
+    # Parse and check config
+    cfg_model = _path2str(cfg_model)
+    cfg_model = ModelConfig(**cfg_model).dict()
+    assert tmp_path.joinpath('model').is_dir()
+
+    # Adjust config
+    cfg_model['src'] = tmp_path.joinpath('model')  # Need to manually set to absolute path here
+
+    # Load model
+    if pass_custom_objects:
+        # Load model with custom objects passed
+        model_load = _load_model_config(cfg_model, custom_objects={'EncoderTF': EncoderTF})
+        # If there was a problem w/ passing custom_objects, model will be a `keras.saving.saved_model.load.EncoderTF`
+        # object instead of the original `EncoderTF` object
+        assert isinstance(model_load, type(model))
+    else:
+        # Don't load model, check correct warning raised
+        with pytest.warns(UserWarning, match=CUSTOM_OBJ_MSG):
+            _load_model_config(cfg_model)
+        return  # Skip the rest of the test
+
+
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
 @parametrize("run_predict, pass_custom_objects", [
     (True, True),  # Run predict before saving and pass custom_objects - expected to pass
-    (False, True),  # Don't run predict before saving - expected to fail with...
+    (False, True),  # Don't run predict before saving - expected to raise error
     (True, False)  # Don't pass custom objects, expected to raise warning (prior to tensorflow raising error)
     ]
 )
@@ -108,18 +162,9 @@ def test_save_classifierdrift_subclassed(data, model, run_predict, pass_custom_o
     Copy of `test_save_classifierdrift` to specifically test use with a subclassed tensorflow model, with the custom
     model class given to `load_detector`.
 
-    For a subclassed model to be saved/loaded it must 1) have been called/built 2) have valid `get_config` and
-    `from_config` methods 3) have any custom objects provided at load time. If these conditions are not met alibi-detect
-    raises various errors and warnings (see the TensorFlow tab in
-    https://docs.seldon.io/projects/alibi-detect/en/stable/overview/saving.html#supported-ml-models).
-
-    This test checks three different scenarios:
-
-        1. Detector `predict` called prior to saving, and `custom_objects` correctly passed. This should pass with no
-        warnings/errors.
-        2. `predict` not run before saving. `alibi_detect.saving._tensorflow.save_model` should raise `ValueError`.
-        3. `custom_objects` not passed to `load_detector`. `alibi_detect.saving._tensorflow.load_model` should raise
-        `UserWarning`.
+    The same three scenarios tested in `test_save_model_tf_subclassed` are tested here, but with the detector's
+    `predict` method called instead of the model directly. This is repeated here to check that the correct model
+    related errors/warnings are still raised prior to the final `RuntimeError` being raised when `save_detector` fails.
     """
     # Init detector and predict
     X_ref, X_h0 = data
@@ -135,16 +180,15 @@ def test_save_classifierdrift_subclassed(data, model, run_predict, pass_custom_o
             save_detector(cd, tmp_path)
         # Check that the underlying error is the expected ValueError (and check a snippet of the error message)
         assert isinstance(excinfo.value.__cause__, ValueError)
-        assert "model's input shape is not available." in str(excinfo.value.__cause__)
+        assert INPUT_SHAPE_MSG in str(excinfo.value.__cause__)
         return  # Skip the rest of the test
 
     # Load detector and make another prediction
-    custom_objects = {'ClassifierTF': ClassifierTF} if pass_custom_objects else None
     if pass_custom_objects:
-        cd_load = load_detector(tmp_path, custom_objects=custom_objects)
+        cd_load = load_detector(tmp_path, custom_objects={'ClassifierTF': ClassifierTF})
     else:
         # Check the expected UserWarning is raised by searching for a snippet of the warning message
-        with pytest.warns(UserWarning, match='The TensorFlow model may have been loaded incorrectly.'):
+        with pytest.warns(UserWarning, match=CUSTOM_OBJ_MSG):
             with pytest.raises(Exception):  # Need to catch this as tf raises an error after the warning in this case
                 load_detector(tmp_path)
         return  # Skip the rest of the test
