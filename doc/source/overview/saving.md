@@ -136,22 +136,21 @@ TensorFlow models are serialized to the TensorFlow
 [SavedModel](https://www.tensorflow.org/guide/saved_model) format. For loading, 
 {func}`~alibi_detect.saving.load_detector` supports both the TensorFlow 
 [SavedModel](https://www.tensorflow.org/guide/saved_model) and 
-[HDF5](https://www.tensorflow.org/guide/keras/save_and_serialize#keras_h5_format) formats. If the model, or constituent 
-layers, are constructed by [subclassing](https://www.tensorflow.org/guide/keras/custom_layers_and_models), and either:
+[HDF5](https://www.tensorflow.org/guide/keras/save_and_serialize#keras_h5_format) formats.
 
-1. The TensorFlow version is `<2.9`
-2. The model is used in the `model` arg of [ClassifierDrift](../cd/methods/classifierdrift.ipynb) or
-[LearnedKernelDrift](../cd/methods/learnedkerneldrift.ipynb)
-
-the custom classes must be defined in the loading runtime and decorated with
+```{warning}
+If the model, or constituent layers, are constructed by 
+[subclassing](https://www.tensorflow.org/guide/keras/custom_layers_and_models):
+- the custom classes must be defined in the loading runtime and decorated with
 [register_keras_serializable](https://www.tensorflow.org/api_docs/python/tf/keras/utils/register_keras_serializable),
 or stored in a [custom_objects](https://www.tensorflow.org/guide/keras/save_and_serialize#custom_objects) dictionary 
 given to {func}`~alibi_detect.saving.load_detector`.
-See [Drift detection on Amazon reviews](../examples/cd_text_amazon.ipynb) for an example.
-
-```{admonition} Tips
-- Make sure to define `get_config` and `from_config` methods for subclassed layers and models (see
+- Custom objects must have valid `get_config` and `from_config` (see
 [here](https://www.tensorflow.org/tutorials/keras/save_and_load#saving_custom_objects)).
+```
+
+```{note}
+
 - The {obj}`~alibi_detect.cd.tensorflow.HiddenOutput` utility class is not currently compatible with subclassed models.
 ```
 ````
