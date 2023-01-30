@@ -12,8 +12,11 @@ from alibi_detect.saving.loading import _load_model_config, _load_optimizer_conf
 from alibi_detect.saving._tensorflow.loading import MODEL_ERROR
 from alibi_detect.saving.saving import _path2str, _save_model_config
 from alibi_detect.saving.schemas import ModelConfig
+from alibi_detect.cd.tensorflow.preprocess import preprocess_drift
+from alibi_detect.cd import MMDDrift, KSDrift
 import tensorflow as tf
 import numpy as np
+from functools import partial
 
 backend = param_fixture("backend", ['tensorflow'])
 
@@ -197,3 +200,34 @@ def test_save_classifierdrift_subclassed(data, model, run_predict, pass_custom_o
     # Assert
     np.testing.assert_array_equal(X_ref, cd_load._detector.x_ref)
     assert isinstance(cd_load._detector.model, ClassifierTF)
+
+
+@parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
+@parametrize("model", [encoder_model_subclassed])
+@parametrize("detector", [MMDDrift, KSDrift])
+def test_save_drift_subclassed(data, detector, model, tmp_path):  # noqa: F811
+    """
+    Tests a selection of drift detectors with a subclassed tensorflow model used for preprocessing. These could fail
+    if there are any problems with setting and getting config, since the `model` inside `preprocess_fn` must be called
+    before saving.
+    """
+    # Preprocessing
+    preprocess_fn = partial(preprocess_drift, model=model)
+
+    # Init detector and predict
+    X_ref, X_h0 = data
+    try:
+        cd = detector(X_ref, preprocess_fn=preprocess_fn, backend='tensorflow')
+    except TypeError:
+        cd = detector(X_ref, preprocess_fn=preprocess_fn)
+    preds = cd.predict(X_h0)  # noqa: F841
+    save_detector(cd, tmp_path)
+
+    cd_load = load_detector(tmp_path, custom_objects={'EncoderTF': EncoderTF})
+
+    preds_load = cd_load.predict(X_h0)  # noqa: F841
+
+    # Assert
+    cd_load = cd._detector if hasattr(cd, '_detector') else cd
+    np.testing.assert_array_equal(preprocess_fn(X_ref), cd_load.x_ref)
+    assert isinstance(cd_load.preprocess_fn.keywords['model'], EncoderTF)
