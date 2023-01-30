@@ -33,7 +33,7 @@ class LearnedKernelDriftTorch(BaseLearnedKernelDrift):
             optimizer: torch.optim.Optimizer = torch.optim.Adam,  # type: ignore
             learning_rate: float = 1e-3,
             batch_size: int = 32,
-            batch_size_predict: int = 1000,
+            batch_size_predict: int = 32,
             preprocess_batch_fn: Optional[Callable] = None,
             epochs: int = 3,
             verbose: int = 0,
