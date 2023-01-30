@@ -21,7 +21,7 @@ from alibi_detect.models.tensorflow import PixelCNN, TransformerEmbedding
 from alibi_detect.models.tensorflow.autoencoder import (AE, AEGMM, VAE, VAEGMM,
                                                         DecoderLSTM,
                                                         EncoderLSTM, Seq2Seq)
-from alibi_detect.utils.tensorflow.misc import check_model
+from alibi_detect.utils.tensorflow.misc import clone_model
 from alibi_detect.od import (LLR, IForest, Mahalanobis, OutlierAE,
                              OutlierAEGMM, OutlierProphet, OutlierSeq2Seq,
                              OutlierVAE, OutlierVAEGMM, SpectralResidual)
@@ -34,6 +34,11 @@ from alibi_detect.base import Detector
 from alibi_detect.saving._typing import VALID_DETECTORS
 
 logger = logging.getLogger(__name__)
+
+MODEL_ERROR = "The TensorFlow model may have been loaded incorrectly. This could be because `get_config` " \
+              "and/or `from_config` methods were defined incorrectly. Otherwise, it could be because custom objects " \
+              "have not been provided. For more guidance see the TensorFlow tab at " \
+              "https://docs.seldon.io/projects/alibi-detect/en/stable/overview/saving.html#supported-ml-models."
 
 
 def load_model(filepath: Union[str, os.PathLike],
@@ -1014,3 +1019,39 @@ def init_od_llr(state_dict: Dict, models: tuple) -> LLR:
         od.model_s = models[2]
         od.model_b = models[3]
     return od
+
+
+def check_model(model: tf.keras.Model) -> None:
+    """
+    Function to check that a TensorFlow model has been loaded correctly. Specifically, this checks that the model
+    can be cloned, since this isn't possible if the model is a subclassed `tf.keras.Model` and custom objects
+    were not provided at load time. Additionally, in some cases (dependent on exact model and tf version) the model can
+    have problems being called if custom objects were not provided. As a general check for both cases, the model is
+    examined to see if it is a `keras.saving.saved_model.load.RevivedNetwork`. If it is, an error is also raised.
+
+    Parameters
+    ----------
+    model
+        The model to be checked.
+
+    Raises
+    ------
+    ValueError
+        Raised if the model appears to be a `keras.saving.saved_model.load.RevivedNetwork`, indicating that some
+        custom objects were not provided at load time.
+    """
+    try:
+        # Check if model is a `RevivedNetwork` rather than the real original model (this occurs when subclassed models
+        # are loaded without all custom objects being provided
+        # Note, could also do `if model.__class__.__base__.__name__ == 'RevivedNetwork':`
+        if model.__class__.__module__ == 'keras.saving.saved_model.load':
+            # Raise error (this will be caught and re-raised below)
+            raise ValueError('The model appears to be a `keras.saving.saved_model.load.RevivedNetwork. This suggests '
+                             'a subclassed model has been loaded without all custom objects being provided.')
+
+        # Check model cloning doesn't raise error
+        clone_model(model)
+
+    # Capture any errors and display custom error
+    except Exception as error:
+        raise ValueError(MODEL_ERROR) from error

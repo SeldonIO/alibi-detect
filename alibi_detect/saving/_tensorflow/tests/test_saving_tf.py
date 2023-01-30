@@ -9,6 +9,7 @@ from alibi_detect.saving.tests.models import encoder_model, encoder_model_subcla
 from alibi_detect.cd.tensorflow import HiddenOutput as HiddenOutput_tf
 from alibi_detect.saving import save_detector, load_detector
 from alibi_detect.saving.loading import _load_model_config, _load_optimizer_config
+from alibi_detect.saving._tensorflow.loading import MODEL_ERROR
 from alibi_detect.saving.saving import _path2str, _save_model_config
 from alibi_detect.saving.schemas import ModelConfig
 import tensorflow as tf
@@ -18,7 +19,6 @@ backend = param_fixture("backend", ['tensorflow'])
 
 # Error/warning messages to check for (just snippets are enough to check...)
 INPUT_SHAPE_MSG = "model's input shape is not available."
-CUSTOM_OBJ_MSG = "The TensorFlow model may have been loaded incorrectly."
 
 
 # Note: The full save/load functionality of optimizers (inc. validation) is tested in test_save_classifierdrift.
@@ -112,7 +112,7 @@ def test_save_model_tf_subclassed(data, call, pass_custom_objects, model, tmp_pa
         warnings/errors.
         2. Model not called before saving. `alibi_detect.saving._tensorflow.save_model` should raise `ValueError`.
         3. `custom_objects` not passed to `_load_model_config`. `alibi_detect.saving._tensorflow.load_model` should
-        raise `UserWarning`.
+        raise `ValueError`.
     """
     # Save model
     filepath = tmp_path
@@ -144,7 +144,7 @@ def test_save_model_tf_subclassed(data, call, pass_custom_objects, model, tmp_pa
         assert isinstance(model_load, type(model))
     else:
         # Don't load model, check correct warning raised
-        with pytest.warns(UserWarning, match=CUSTOM_OBJ_MSG):
+        with pytest.raises(ValueError, match=MODEL_ERROR):
             _load_model_config(cfg_model)
         return  # Skip the rest of the test
 
@@ -187,10 +187,9 @@ def test_save_classifierdrift_subclassed(data, model, run_predict, pass_custom_o
     if pass_custom_objects:
         cd_load = load_detector(tmp_path, custom_objects={'ClassifierTF': ClassifierTF})
     else:
-        # Check the expected UserWarning is raised by searching for a snippet of the warning message
-        with pytest.warns(UserWarning, match=CUSTOM_OBJ_MSG):
-            with pytest.raises(Exception):  # Need to catch this as tf raises an error after the warning in this case
-                load_detector(tmp_path)
+        # Check the expected ValueError is raised by searching for a snippet of the warning message
+        with pytest.raises(ValueError, match=MODEL_ERROR):
+            load_detector(tmp_path)
         return  # Skip the rest of the test
 
     preds_load = cd_load.predict(X_h0)  # noqa: F841
