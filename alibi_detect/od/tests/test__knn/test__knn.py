@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 import torch
 
-from alibi_detect.od._knn import _KNN
+from alibi_detect.od._knn import KNN
 from alibi_detect.od import AverageAggregator, TopKAggregator, MaxAggregator, \
     MinAggregator, ShiftAndScaleNormalizer, PValNormalizer
 from alibi_detect.od.base import NotFitException
@@ -11,7 +11,7 @@ from sklearn.datasets import make_moons
 
 
 def make_knn_detector(k=5, aggregator=None, normalizer=None):
-    knn_detector = _KNN(
+    knn_detector = KNN(
         k=k, aggregator=aggregator,
         normalizer=normalizer
     )
@@ -22,7 +22,7 @@ def make_knn_detector(k=5, aggregator=None, normalizer=None):
 
 
 def test_unfitted_knn_single_score():
-    knn_detector = _KNN(k=10)
+    knn_detector = KNN(k=10)
     x = np.array([[0, 10], [0.1, 0]])
     with pytest.raises(NotFitException) as err:
         _ = knn_detector.predict(x)
@@ -30,7 +30,7 @@ def test_unfitted_knn_single_score():
 
 
 def test_fitted_knn_single_score():
-    knn_detector = _KNN(k=10)
+    knn_detector = KNN(k=10)
     x_ref = np.random.randn(100, 2)
     knn_detector.fit(x_ref)
     x = np.array([[0, 10], [0.1, 0]])
@@ -46,7 +46,7 @@ def test_fitted_knn_single_score():
 
 
 def test_default_knn_ensemble_init():
-    knn_detector = _KNN(k=[8, 9, 10])
+    knn_detector = KNN(k=[8, 9, 10])
     x_ref = np.random.randn(100, 2)
     knn_detector.fit(x_ref)
     x = np.array([[0, 10], [0.1, 0]])
@@ -63,7 +63,7 @@ def test_default_knn_ensemble_init():
 
 def test_incorrect_knn_ensemble_init():
     with pytest.raises(ValueError) as err:
-        _KNN(k=[8, 9, 10], aggregator=None)
+        KNN(k=[8, 9, 10], aggregator=None)
     assert str(err.value) == ('If `k` is a `np.ndarray`, `list` or `tuple`, '
                               'the `aggregator` argument cannot be ``None``.')
 
@@ -87,7 +87,7 @@ def test_fitted_knn_predict():
                                         MaxAggregator, MinAggregator])
 @pytest.mark.parametrize("normalizer", [ShiftAndScaleNormalizer, PValNormalizer, lambda: None])
 def test_unfitted_knn_ensemble(aggregator, normalizer):
-    knn_detector = _KNN(
+    knn_detector = KNN(
         k=[8, 9, 10],
         aggregator=aggregator(),
         normalizer=normalizer()
@@ -102,7 +102,7 @@ def test_unfitted_knn_ensemble(aggregator, normalizer):
                                         MaxAggregator, MinAggregator])
 @pytest.mark.parametrize("normalizer", [ShiftAndScaleNormalizer, PValNormalizer, lambda: None])
 def test_fitted_knn_ensemble(aggregator, normalizer):
-    knn_detector = _KNN(
+    knn_detector = KNN(
         k=[8, 9, 10],
         aggregator=aggregator(),
         normalizer=normalizer()
@@ -163,7 +163,7 @@ def test_knn_single_torchscript():
 @pytest.mark.parametrize("normalizer", [ShiftAndScaleNormalizer, PValNormalizer, lambda: None,
                                         lambda: 'ShiftAndScaleNormalizer', lambda: 'PValNormalizer'])
 def test_knn_ensemble_integration(aggregator, normalizer):
-    knn_detector = _KNN(
+    knn_detector = KNN(
         k=[10, 14, 18],
         aggregator=aggregator(),
         normalizer=normalizer()
@@ -188,7 +188,7 @@ def test_knn_ensemble_integration(aggregator, normalizer):
 
 
 def test_knn_integration():
-    knn_detector = _KNN(k=18)
+    knn_detector = KNN(k=18)
     X_ref, _ = make_moons(1001, shuffle=True, noise=0.05, random_state=None)
     X_ref, x_inlier = X_ref[0:1000], X_ref[1000][None]
     knn_detector.fit(X_ref)
