@@ -3,16 +3,16 @@ import numpy as np
 import torch
 
 from alibi_detect.utils.pytorch.kernels import GaussianRBF
-from alibi_detect.od._pca import _PCA
+from alibi_detect.od._pca import PCA
 from alibi_detect.od.base import NotFitException
 from sklearn.datasets import make_moons
 
 
 def make_PCA_detector(kernel=False):
     if kernel:
-        pca_detector = _PCA(n_components=2, kernel=GaussianRBF())
+        pca_detector = PCA(n_components=2, kernel=GaussianRBF())
     else:
-        pca_detector = _PCA(n_components=2)
+        pca_detector = PCA(n_components=2)
     x_ref = np.random.randn(100, 3)
     pca_detector.fit(x_ref)
     pca_detector.infer_threshold(x_ref, 0.1)
@@ -20,8 +20,8 @@ def make_PCA_detector(kernel=False):
 
 
 @pytest.mark.parametrize('detector', [
-    lambda: _PCA(n_components=5),
-    lambda: _PCA(n_components=5, kernel=GaussianRBF())
+    lambda: PCA(n_components=5),
+    lambda: PCA(n_components=5, kernel=GaussianRBF())
 ])
 def test_unfitted_PCA_single_score(detector):
     pca = detector()
@@ -33,7 +33,7 @@ def test_unfitted_PCA_single_score(detector):
 
 
 def test_fitted_PCA_single_score():
-    pca_detector = _PCA(n_components=2)
+    pca_detector = PCA(n_components=2)
     x_ref = np.random.randn(100, 3)
     pca_detector.fit(x_ref)
     x = np.array([[0, 10, 0], [0.1, 0, 0]])
@@ -48,7 +48,7 @@ def test_fitted_PCA_single_score():
 
 
 def test_fitted_kernel_PCA_single_score():
-    pca_detector = _PCA(n_components=2, kernel=GaussianRBF())
+    pca_detector = PCA(n_components=2, kernel=GaussianRBF())
     x_ref = np.random.randn(100, 3) * np.array([1, 10, 0.1])
     pca_detector.fit(x_ref)
     x = np.array([[0, 5, 10], [0.1, 5, 0]])
@@ -77,7 +77,7 @@ def test_fitted_PCA_predict():
 
 
 def test_fitted_kernel_PCA_predict():
-    pca_detector = _PCA(n_components=2, kernel=GaussianRBF())
+    pca_detector = PCA(n_components=2, kernel=GaussianRBF())
     x_ref = np.random.randn(100, 3) * np.array([1, 10, 0.1])
     pca_detector.fit(x_ref)
     pca_detector.infer_threshold(x_ref, 0.1)
@@ -92,7 +92,7 @@ def test_fitted_kernel_PCA_predict():
 
 
 def test_PCA_integration():
-    pca_detector = _PCA(n_components=1)
+    pca_detector = PCA(n_components=1)
     X_ref, _ = make_moons(1001, shuffle=True, noise=0.05, random_state=None)
     X_ref, x_inlier = X_ref[0:1000], X_ref[1000][None]
     pca_detector.fit(X_ref)
@@ -108,7 +108,7 @@ def test_PCA_integration():
 
 
 def test_PCA_integration_ts():
-    pca_detector = _PCA(n_components=1)
+    pca_detector = PCA(n_components=1)
     X_ref, _ = make_moons(1001, shuffle=True, noise=0.05, random_state=None)
     X_ref, x_inlier = X_ref[0:1000], X_ref[1000][None]
     pca_detector.fit(X_ref)
@@ -121,7 +121,7 @@ def test_PCA_integration_ts():
 
 
 def test_kernel_PCA_integration():
-    pca_detector = _PCA(n_components=10, kernel=GaussianRBF())
+    pca_detector = PCA(n_components=10, kernel=GaussianRBF())
     X_ref, _ = make_moons(1001, shuffle=True, noise=0.05, random_state=None)
     X_ref, x_inlier = X_ref[0:1000], X_ref[1000][None]
     pca_detector.fit(X_ref)
@@ -138,7 +138,7 @@ def test_kernel_PCA_integration():
 
 @pytest.mark.skip(reason='GaussianRBF kernel does not have torchscript support yet.')
 def test_kernel_PCA_integration_ts():
-    pca_detector = _PCA(n_components=10, kernel=GaussianRBF())
+    pca_detector = PCA(n_components=10, kernel=GaussianRBF())
     X_ref, _ = make_moons(1001, shuffle=True, noise=0.05, random_state=None)
     X_ref, x_inlier = X_ref[0:1000], X_ref[1000][None]
     pca_detector.fit(X_ref)

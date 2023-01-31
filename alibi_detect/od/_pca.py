@@ -21,7 +21,7 @@ backends = {
 }
 
 
-class _PCA(OutlierDetector):
+class PCA(OutlierDetector):
     def __init__(
         self,
         n_components: int,
