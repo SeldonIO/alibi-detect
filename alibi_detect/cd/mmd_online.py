@@ -6,9 +6,11 @@ from alibi_detect.base import DriftConfigMixin
 
 if has_pytorch:
     from alibi_detect.cd.pytorch.mmd_online import MMDDriftOnlineTorch
+    from alibi_detect.utils.pytorch.kernels import BaseKernel as BaseKernelTorch
 
 if has_tensorflow:
     from alibi_detect.cd.tensorflow.mmd_online import MMDDriftOnlineTF
+    from alibi_detect.utils.tensorflow.kernels import BaseKernel as BaseKernelTF
 
 
 class MMDDriftOnline(DriftConfigMixin):
@@ -20,8 +22,7 @@ class MMDDriftOnline(DriftConfigMixin):
             backend: str = 'tensorflow',
             preprocess_fn: Optional[Callable] = None,
             x_ref_preprocessed: bool = False,
-            kernel: Optional[Callable] = None,
-            sigma: Optional[np.ndarray] = None,
+            kernel: Optional[Union[BaseKernelTorch, BaseKernelTF]] = None,
             n_bootstraps: int = 1000,
             device: Optional[str] = None,
             verbose: bool = True,
@@ -92,7 +93,7 @@ class MMDDriftOnline(DriftConfigMixin):
                 from alibi_detect.utils.tensorflow.kernels import GaussianRBF
             else:
                 from alibi_detect.utils.pytorch.kernels import GaussianRBF  # type: ignore
-            kwargs.update({'kernel': GaussianRBF})
+            kwargs.update({'kernel': GaussianRBF()})
 
         if backend == Framework.TENSORFLOW:
             kwargs.pop('device', None)

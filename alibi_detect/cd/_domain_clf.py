@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from typing import Callable
 import numpy as np
 from sklearn.svm import SVC
 from sklearn.calibration import CalibratedClassifierCV
@@ -34,7 +33,6 @@ class _DomainClf(ABC):
 
 class _SVCDomainClf(_DomainClf):
     def __init__(self,
-                 kernel: Callable,
                  cal_method: str = 'sigmoid',
                  clf_kwargs: dict = None):
         """
@@ -52,52 +50,51 @@ class _SVCDomainClf(_DomainClf):
         clf_kwargs
             A dictionary of keyword arguments to be passed to the :py:class:`~sklearn.svm.SVC` classifier.
         """
-        self.kernel = kernel
         self.cal_method = cal_method
         clf_kwargs = clf_kwargs or {}
-        self.clf = SVC(kernel=self.kernel, **clf_kwargs)
+        self.clf = SVC(kernel='precomputed', **clf_kwargs)
 
-    def fit(self, x: np.ndarray, y: np.ndarray):
+    def fit(self, K_x: np.ndarray, y: np.ndarray):
         """
         Method to fit the classifier.
 
         Parameters
         ----------
-        x
-            Array containing conditioning variables for each instance.
+        K_x
+            Kernel matrix on the conditioning variables.
         y
             Boolean array marking the domain each instance belongs to (`0` for reference, `1` for test).
         """
         clf = self.clf
-        clf.fit(x, y)
+        clf.fit(K_x, y)
         self.clf = clf
 
-    def calibrate(self, x: np.ndarray, y: np.ndarray):
+    def calibrate(self, K_x: np.ndarray, y: np.ndarray):
         """
         Method to calibrate the classifier's predicted probabilities.
 
         Parameters
         ----------
-        x
-            Array containing conditioning variables for each instance.
+        K_x
+            Kernel matrix on the conditioning variables.
         y
             Boolean array marking the domain each instance belongs to (`0` for reference, `1` for test).
         """
         clf = CalibratedClassifierCV(self.clf, method=self.cal_method, cv='prefit')
-        clf.fit(x, y)
+        clf.fit(K_x, y)
         self.clf = clf
 
-    def predict(self,  x: np.ndarray) -> np.ndarray:
+    def predict(self,  K_x: np.ndarray) -> np.ndarray:
         """
         The classifier's predict method.
 
         Parameters
         ----------
-        x
-            Array containing conditioning variables for each instance.
+        K_x
+            Kernel matrix on the conditioning variables.
 
         Returns
         -------
         Propensity scores (the probability of being test instances).
         """
-        return self.clf.predict_proba(x)[:, 1]
+        return self.clf.predict_proba(K_x)[:, 1]

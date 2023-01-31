@@ -4,6 +4,7 @@ from typing import Callable, Dict, Optional, Union, Tuple
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, BackendValidator, Framework
 from alibi_detect.utils.warnings import deprecated_alias
 from alibi_detect.base import DriftConfigMixin
+from alibi_detect.utils.pytorch.kernels import BaseKernel
 
 if has_pytorch:
     from alibi_detect.cd.pytorch.context_aware import ContextMMDDriftTorch
@@ -26,8 +27,8 @@ class ContextMMDDrift(DriftConfigMixin):
             preprocess_at_init: bool = True,
             update_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
-            x_kernel: Callable = None,
-            c_kernel: Callable = None,
+            x_kernel: BaseKernel = None,
+            c_kernel: BaseKernel = None,
             n_permutations: int = 1000,
             prop_c_held: float = 0.25,
             n_folds: int = 5,

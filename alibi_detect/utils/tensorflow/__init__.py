@@ -8,9 +8,9 @@ mmd2, mmd2_from_kernel_matrix, batch_compute_kernel_matrix, relative_euclidean_d
     )
 
 
-GaussianRBF, DeepKernel = import_optional(
+GaussianRBF, DeepKernel, BaseKernel, RationalQuadratic, Periodic, log_sigma_median = import_optional(
     'alibi_detect.utils.tensorflow.kernels',
-    names=['GaussianRBF', 'DeepKernel']
+    names=['GaussianRBF', 'DeepKernel', 'BaseKernel', 'RationalQuadratic', 'Periodic', 'log_sigma_median']
 )
 
 
@@ -45,6 +45,9 @@ __all__ = [
     "relative_euclidean_distance",
     "squared_pairwise_distance",
     "GaussianRBF",
+    "BaseKernel",
+    "RationalQuadratic",
+    "Periodic",
     "DeepKernel",
     "permed_lsdds",
     "predict_batch",
@@ -52,6 +55,7 @@ __all__ = [
     "quantile",
     "subset_matrix",
     "zero_diag",
+    "log_sigma_median",
     "mutate_categorical",
     "TFDataset"
 ]

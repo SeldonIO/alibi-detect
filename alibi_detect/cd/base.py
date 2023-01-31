@@ -508,7 +508,6 @@ class BaseMMDDrift(BaseDetector):
             preprocess_at_init: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
-            sigma: Optional[np.ndarray] = None,
             configure_kernel_from_x_ref: bool = True,
             n_permutations: int = 100,
             input_shape: Optional[tuple] = None,
@@ -553,12 +552,7 @@ class BaseMMDDrift(BaseDetector):
         if p_val is None:
             logger.warning('No p-value set for the drift threshold. Need to set it to detect data drift.')
 
-        self.infer_sigma = configure_kernel_from_x_ref
-        if configure_kernel_from_x_ref and isinstance(sigma, np.ndarray):
-            self.infer_sigma = False
-            logger.warning('`sigma` is specified for the kernel and `configure_kernel_from_x_ref` '
-                           'is set to True. `sigma` argument takes priority over '
-                           '`configure_kernel_from_x_ref` (set to False).')
+        self.infer_parameter = configure_kernel_from_x_ref
 
         # x_ref preprocessing
         self.preprocess_at_init = preprocess_at_init
@@ -668,7 +662,6 @@ class BaseLSDDDrift(BaseDetector):
             preprocess_at_init: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
-            sigma: Optional[np.ndarray] = None,
             n_permutations: int = 100,
             n_kernel_centers: Optional[int] = None,
             lambda_rd_max: float = 0.2,
@@ -731,7 +724,6 @@ class BaseLSDDDrift(BaseDetector):
 
         # Other attributes
         self.p_val = p_val
-        self.sigma = sigma
         self.update_x_ref = update_x_ref
         self.preprocess_fn = preprocess_fn
         self.n = len(x_ref)

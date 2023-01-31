@@ -19,7 +19,6 @@ class LSDDDriftOnline(DriftConfigMixin):
             backend: str = 'tensorflow',
             preprocess_fn: Optional[Callable] = None,
             x_ref_preprocessed: bool = False,
-            sigma: Optional[np.ndarray] = None,
             n_bootstraps: int = 1000,
             n_kernel_centers: Optional[int] = None,
             lambda_rd_max: float = 0.2,
