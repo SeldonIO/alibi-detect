@@ -21,7 +21,7 @@ backends = {
 }
 
 
-class _Mahalanobis(OutlierDetector):
+class Mahalanobis(OutlierDetector):
     def __init__(
         self,
         min_eigenvalue: float = 1e-6,
