@@ -2,13 +2,13 @@ import pytest
 import numpy as np
 import torch
 
-from alibi_detect.od._mahalanobis import _Mahalanobis
+from alibi_detect.od._mahalanobis import Mahalanobis
 from alibi_detect.od.base import NotFitException
 from sklearn.datasets import make_moons
 
 
 def make_mahalanobis_detector():
-    mahalanobis_detector = _Mahalanobis()
+    mahalanobis_detector = Mahalanobis()
     x_ref = np.random.randn(100, 2)
     mahalanobis_detector.fit(x_ref)
     mahalanobis_detector.infer_threshold(x_ref, 0.1)
@@ -16,7 +16,7 @@ def make_mahalanobis_detector():
 
 
 def test_unfitted_mahalanobis_single_score():
-    mahalanobis_detector = _Mahalanobis()
+    mahalanobis_detector = Mahalanobis()
     x = np.array([[0, 10], [0.1, 0]])
     with pytest.raises(NotFitException) as err:
         _ = mahalanobis_detector.predict(x)
@@ -24,7 +24,7 @@ def test_unfitted_mahalanobis_single_score():
 
 
 def test_fitted_mahalanobis_single_score():
-    mahalanobis_detector = _Mahalanobis()
+    mahalanobis_detector = Mahalanobis()
     x_ref = np.random.randn(100, 2)
     mahalanobis_detector.fit(x_ref)
     x = np.array([[0, 10], [0.1, 0]])
@@ -54,7 +54,7 @@ def test_fitted_mahalanobis_predict():
 
 
 def test_mahalanobis_integration():
-    mahalanobis_detector = _Mahalanobis()
+    mahalanobis_detector = Mahalanobis()
     X_ref, _ = make_moons(1001, shuffle=True, noise=0.05, random_state=None)
     X_ref, x_inlier = X_ref[0:1000], X_ref[1000][None]
     mahalanobis_detector.fit(X_ref)
