@@ -41,6 +41,7 @@ class LearnedKernelDrift(DriftConfigMixin):
             batch_size_predict: int = 1000000,
             preprocess_batch_fn: Optional[Callable] = None,
             epochs: int = 3,
+            num_workers: int = 0,
             verbose: int = 0,
             train_kwargs: Optional[dict] = None,
             device: Optional[str] = None,
@@ -108,6 +109,9 @@ class LearnedKernelDrift(DriftConfigMixin):
             processed by the kernel.
         epochs
             Number of training epochs for the kernel. Corresponds to the smaller of the reference and test sets.
+        num_workers
+            Number of workers for the dataloader. The default (`num_workers=0`) means multi-process data loading
+            is disabled. Setting `num_workers>0` may be unreliable on Windows.
         verbose
             Verbosity level during the training of the kernel. 0 is silent, 1 a progress bar.
         train_kwargs
@@ -145,7 +149,7 @@ class LearnedKernelDrift(DriftConfigMixin):
         [kwargs.pop(k, None) for k in pop_kwargs]
 
         if backend == Framework.TENSORFLOW:
-            pop_kwargs = ['device', 'dataloader', 'batch_size_permutations', 'batch_size_predict']
+            pop_kwargs = ['device', 'dataloader', 'batch_size_permutations', 'batch_size_predict', 'num_workers']
             [kwargs.pop(k, None) for k in pop_kwargs]
             if dataset is None:
                 kwargs.update({'dataset': TFDataset})
