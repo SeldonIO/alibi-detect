@@ -1,23 +1,26 @@
 import logging
+import warnings
 from abc import abstractmethod
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Union, Tuple, TYPE_CHECKING
 
 import numpy as np
 from alibi_detect.base import BaseDetector, concept_drift_dict
 from alibi_detect.cd.utils import get_input_shape
-from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
+from alibi_detect.utils.state import StateMixin
+from alibi_detect.utils._types import Literal
 
-if has_pytorch:
+if TYPE_CHECKING:
     import torch
-
-if has_tensorflow:
     import tensorflow as tf
 
 logger = logging.getLogger(__name__)
 
 
-class BaseMultiDriftOnline(BaseDetector):
+class BaseMultiDriftOnline(BaseDetector, StateMixin):
+    t: int = 0
     thresholds: np.ndarray
+    backend: Literal['pytorch', 'tensorflow']
+    online_state_keys: Tuple[str, ...]
 
     def __init__(
             self,
@@ -126,17 +129,46 @@ class BaseMultiDriftOnline(BaseDetector):
         return x_t[None, :]
 
     def get_threshold(self, t: int) -> float:
+        """
+        Return the threshold for timestep `t`.
+
+        Parameters
+        ----------
+        t
+            The timestep to return a threshold for.
+
+        Returns
+        -------
+        The threshold at timestep `t`.
+        """
         return self.thresholds[t] if t < self.window_size else self.thresholds[-1]
 
-    def _initialise(self) -> None:
+    def _initialise_state(self) -> None:
+        """
+        Initialise online state (the stateful attributes updated by `score` and `predict`).
+
+        If a subclassed detector has additional online state, an additional `_initialise_state` should be defined,
+        with a call to `super()._initialise_state()` included (see `LSDDDriftOnlineTorch._initialise_state()` for
+        an example).
+        """
         self.t = 0  # corresponds to a test set of ref data
         self.test_stats = np.array([])  # type: ignore[var-annotated]
         self.drift_preds = np.array([])  # type: ignore[var-annotated]
-        self._configure_ref_subset()
 
     def reset(self) -> None:
-        "Resets the detector but does not reconfigure thresholds."
-        self._initialise()
+        """
+        Deprecated reset method. This method will be repurposed or removed in the future. To reset the detector to
+        its initial state (`t=0`) use :meth:`reset_state`.
+        """
+        self.reset_state()
+        warnings.warn('This method is deprecated and will be removed/repurposed in the future. To reset the detector '
+                      'to its initial state use `reset_state`.', DeprecationWarning)
+
+    def reset_state(self) -> None:
+        """
+        Resets the detector to its initial state (`t=0`). This does not include reconfiguring thresholds.
+        """
+        self._initialise_state()
 
     def predict(self, x_t: Union[np.ndarray, Any], return_test_stat: bool = True,
                 ) -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
@@ -177,8 +209,10 @@ class BaseMultiDriftOnline(BaseDetector):
         return cd
 
 
-class BaseUniDriftOnline(BaseDetector):
+class BaseUniDriftOnline(BaseDetector, StateMixin):
+    t: int = 0
     thresholds: np.ndarray
+    online_state_keys: Tuple[str, ...]
 
     def __init__(
             self,
@@ -291,6 +325,20 @@ class BaseUniDriftOnline(BaseDetector):
         pass
 
     def _check_x(self, x: Any, x_ref: bool = False) -> np.ndarray:
+        """
+        Check the type and shape of the data `x`, and coerces it to the correct shape if possible.
+
+        Parameters
+        ----------
+        x
+            The data to be checked.
+        x_ref
+            Whether `x` is a batch of reference data instances (if `True`), or a single test data instance (if `False`).
+
+        Returns
+        -------
+        The checked data, coerced to be a np.ndarray of the correct shape.
+        """
         # Check the type of x
         if isinstance(x, np.ndarray):
             pass
@@ -333,21 +381,51 @@ class BaseUniDriftOnline(BaseDetector):
         return x_t
 
     def get_threshold(self, t: int) -> np.ndarray:
+        """
+        Return the threshold for timestep `t`.
+
+        Parameters
+        ----------
+        t
+            The timestep to return a threshold for.
+
+        Returns
+        -------
+        The threshold at timestep `t`.
+        """
         return self.thresholds[t] if t < len(self.thresholds) else self.thresholds[-1]
 
-    def _initialise(self) -> None:
+    def _initialise_state(self) -> None:
+        """
+        Initialise online state (the stateful attributes updated by `score` and `predict`).
+
+        If a subclassed detector has additional online state, an additional `_initialise_state` should be defined,
+        with a call to `super()._initialise_state()` included (see `CVMDriftOnlineTorch._initialise_state()` for
+        an example).
+        """
         self.t = 0
+        self.xs = np.array([])  # type: ignore[var-annotated]
         self.test_stats = np.empty([0, len(self.window_sizes), self.n_features])
         self.drift_preds = np.array([])  # type: ignore[var-annotated]
-        self._configure_ref()
 
     @abstractmethod
     def _check_drift(self, test_stats: np.ndarray, thresholds: np.ndarray) -> int:
         pass
 
     def reset(self) -> None:
-        "Resets the detector but does not reconfigure thresholds."
-        self._initialise()
+        """
+        Deprecated reset method. This method will be repurposed or removed in the future. To reset the detector to
+        its initial state (`t=0`) use :meth:`reset_state`.
+        """
+        self.reset_state()
+        warnings.warn('This method is deprecated and will be removed/repurposed in the future. To reset the detector '
+                      'to its initial state use `reset_state`.', DeprecationWarning)
+
+    def reset_state(self) -> None:
+        """
+        Resets the detector to its initial state (`t=0`). This does not include reconfiguring thresholds.
+        """
+        self._initialise_state()
 
     def predict(self, x_t: Union[np.ndarray, Any], return_test_stat: bool = True,
                 ) -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:

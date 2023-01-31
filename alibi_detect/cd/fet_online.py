@@ -10,6 +10,8 @@ import warnings
 
 
 class FETDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
+    online_state_keys = ('t', 'test_stats', 'drift_preds', 'xs')
+
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
@@ -119,10 +121,14 @@ class FETDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
             raise ValueError("The `x_ref` data consists of all 0's or all 1's. Thresholds cannot be configured.")
 
         # Configure thresholds and initialise detector
-        self._initialise()
+        self._initialise_state()
         self._configure_thresholds()
+        self._configure_ref()
 
     def _configure_ref(self) -> None:
+        """
+        Configure the reference data.
+        """
         self.sum_ref = np.sum(self.x_ref, axis=0)
 
     def _configure_thresholds(self) -> None:
@@ -227,6 +233,14 @@ class FETDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
         return output
 
     def _update_state(self, x_t: np.ndarray):
+        """
+        Update online state based on the provided test instance.
+
+        Parameters
+        ----------
+        x_t
+            The test instance.
+        """
         self.t += 1
         if self.t == 1:
             # Initialise stream

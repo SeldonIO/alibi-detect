@@ -9,6 +9,8 @@ from alibi_detect.utils.frameworks import Framework
 
 
 class MMDDriftOnlineTF(BaseMultiDriftOnline):
+    online_state_keys: tuple = ('t', 'test_stats', 'drift_preds', 'test_window', 'k_xy')
+
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
@@ -71,7 +73,8 @@ class MMDDriftOnlineTF(BaseMultiDriftOnline):
             input_shape=input_shape,
             data_type=data_type
         )
-        self.meta.update({'backend': Framework.TENSORFLOW.value})
+        self.backend = Framework.TENSORFLOW.value
+        self.meta.update({'backend': self.backend})
 
         # initialize kernel
         if isinstance(sigma, np.ndarray):
@@ -82,9 +85,22 @@ class MMDDriftOnlineTF(BaseMultiDriftOnline):
         self.k_xx = self.kernel(self.x_ref, self.x_ref, infer_sigma=(sigma is None))
 
         self._configure_thresholds()
-        self._initialise()
+        self._configure_ref_subset()  # self.initialise_state() called inside here
+
+    def _initialise_state(self) -> None:
+        """
+        Initialise online state (the stateful attributes updated by `score` and `predict`). This method relies on
+        attributes defined by `_configure_ref_subset`, hence must be called afterwards.
+        """
+        super()._initialise_state()
+        self.test_window = tf.gather(self.x_ref, self.init_test_inds)
+        self.k_xy = self.kernel(tf.gather(self.x_ref, self.ref_inds), self.test_window)
 
     def _configure_ref_subset(self):
+        """
+        Configure the reference data split. If the randomly selected split causes an initial detection, further splits
+        are attempted.
+        """
         etw_size = 2 * self.window_size - 1  # etw = extended test window
         rw_size = self.n - etw_size  # rw = ref window#
         # Make split and ensure it doesn't cause an initial detection
@@ -93,11 +109,10 @@ class MMDDriftOnlineTF(BaseMultiDriftOnline):
             # Make split
             perm = tf.random.shuffle(tf.range(self.n))
             self.ref_inds, self.init_test_inds = perm[:rw_size], perm[-self.window_size:]
-            self.test_window = tf.gather(self.x_ref, self.init_test_inds)
             # Compute initial mmd to check for initial detection
+            self._initialise_state()  # to set self.test_window and self.k_xtc
             self.k_xx_sub = subset_matrix(self.k_xx, self.ref_inds, self.ref_inds)
             self.k_xx_sub_sum = tf.reduce_sum(zero_diag(self.k_xx_sub)) / (rw_size * (rw_size - 1))
-            self.k_xy = self.kernel(tf.gather(self.x_ref, self.ref_inds), self.test_window)
             k_yy = self.kernel(self.test_window, self.test_window)
             mmd_init = (
                     self.k_xx_sub_sum +
@@ -106,7 +121,9 @@ class MMDDriftOnlineTF(BaseMultiDriftOnline):
             )
 
     def _configure_thresholds(self):
-
+        """
+        Configure the test statistic thresholds via bootstrapping.
+        """
         # Each bootstrap sample splits the reference samples into a sub-reference sample (x)
         # and an extended test window (y). The extended test window will be treated as W overlapping
         # test windows of size W (so 2W-1 test samples in total)
@@ -166,8 +183,16 @@ class MMDDriftOnlineTF(BaseMultiDriftOnline):
         self.thresholds = thresholds
 
     def _update_state(self, x_t: np.ndarray):  # type: ignore[override]
+        """
+        Update online state based on the provided test instance.
+
+        Parameters
+        ----------
+        x_t
+            The test instance.
+        """
         self.t += 1
-        kernel_col = self.kernel(self.x_ref[self.ref_inds], x_t)
+        kernel_col = self.kernel(tf.gather(self.x_ref, self.ref_inds), x_t)
         self.test_window = tf.concat([self.test_window[(1 - self.window_size):], x_t], axis=0)
         self.k_xy = tf.concat([self.k_xy[:, (1 - self.window_size):], kernel_col], axis=1)
 

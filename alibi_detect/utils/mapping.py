@@ -138,7 +138,7 @@ def ohe2ord(X_ohe: np.ndarray, cat_vars_ohe: dict) -> Tuple[np.ndarray, dict]:
     """
     n, cols = X_ohe.shape
     ohe_vars_keys = list(cat_vars_ohe.keys())
-    X_list = []  # type: List
+    X_list: List = []
     c = 0
     cat_vars_ord = {}
     while c < cols:

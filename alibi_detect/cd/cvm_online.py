@@ -9,6 +9,8 @@ import warnings
 
 
 class CVMDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
+    online_state_keys = ('t', 'test_stats', 'drift_preds', 'xs', 'ids_ref_wins', 'ids_wins_ref', 'ids_wins_wins')
+
     def __init__(
             self,
             x_ref: Union[np.ndarray, list],
@@ -92,10 +94,14 @@ class CVMDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
         self.batch_size = n_bootstraps if batch_size is None else batch_size
 
         # Configure thresholds and initialise detector
-        self._initialise()
+        self._initialise_state()
         self._configure_thresholds()
+        self._configure_ref()
 
     def _configure_ref(self) -> None:
+        """
+        Configure the reference data.
+        """
         ids_ref_ref = self.x_ref[None, :, :] >= self.x_ref[:, None, :]
         self.ref_cdf_ref = np.sum(ids_ref_ref, axis=0) / self.n
 
@@ -162,6 +168,14 @@ class CVMDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
         return stats
 
     def _update_state(self, x_t: np.ndarray):
+        """
+        Update online state based on the provided test instance.
+
+        Parameters
+        ----------
+        x_t
+            The test instance.
+        """
         self.t += 1
         if self.t == 1:
             # Initialise stream
@@ -185,6 +199,15 @@ class CVMDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
             self.ids_wins_wins = np.concatenate(
                 [self.ids_wins_wins, (x_t <= self.xs[-self.max_ws:, :])[None, :, :]], 0
             )
+
+    def _initialise_state(self) -> None:
+        """
+        Initialise online state (the stateful attributes updated by `score` and `predict`).
+        """
+        super()._initialise_state()
+        self.ids_ref_wins = np.array([])
+        self.ids_wins_ref = np.array([])
+        self.ids_wins_wins = np.array([])
 
     def score(self, x_t: Union[np.ndarray, Any]) -> np.ndarray:
         """
