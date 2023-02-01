@@ -24,7 +24,7 @@
 ### Fixed
 - Fixed an issue with the serialization of `kernel_a` and `kernel_b` in `DeepKernel`'s ([#656](https://github.com/SeldonIO/alibi-detect/pull/656)).
 - Fixed minor documentation issues ([#636](https://github.com/SeldonIO/alibi-detect/pull/636), [#640](https://github.com/SeldonIO/alibi-detect/pull/640), [#651](https://github.com/SeldonIO/alibi-detect/pull/651)).
-- Fixed an issue with a warning being incorrect raised when `device='cpu'` was passed to PyTorch based detectors ([#698](https://github.com/SeldonIO/alibi-detect/pull/698)).
+- Fixed an issue with a warning being incorrectly raised when `device='cpu'` was passed to PyTorch based detectors ([#698](https://github.com/SeldonIO/alibi-detect/pull/698)).
 - Fixed a bug that could cause `IndexError`'s to be raised in the TensorFlow `MMDDriftOnline` detector when older `numpy` versions were installed ([#710](https://github.com/SeldonIO/alibi-detect/pull/710)).
 
 ### Development
