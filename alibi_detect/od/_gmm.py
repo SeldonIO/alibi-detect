@@ -61,7 +61,7 @@ class GMM(OutlierDetector):
             args['device'] = device
         self.backend = backend_cls(**args)
 
-    def fit(self, x_ref: np.ndarray, *kwargs) -> None:
+    def fit(self, x_ref: np.ndarray, **kwargs) -> None:
         """Fit the detector on reference data.
 
         Parameters
@@ -69,7 +69,7 @@ class GMM(OutlierDetector):
         x_ref
             Reference data used to fit the detector.
         """
-        self.backend.fit(self.backend._to_tensor(x_ref), *kwargs)
+        self.backend.fit(self.backend._to_tensor(x_ref), **kwargs)
 
     def score(self, x: np.ndarray) -> np.ndarray:
         """Score `x` instances using the detector.

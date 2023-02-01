@@ -57,7 +57,7 @@ class GMMTorch(TorchOutlierDetector):
                 optimizer.step()  # type: ignore
                 if verbose == 1 and isinstance(dl, tqdm):
                     loss_ma = loss_ma + (nll.item() - loss_ma) / (step + 1)
-                    dl.set_description(f'Epoch {epoch + 1}/{self.epochs}')
+                    dl.set_description(f'Epoch {epoch + 1}/{epochs}')
                     dl.set_postfix(dict(loss_ma=loss_ma))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:

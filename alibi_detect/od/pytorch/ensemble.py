@@ -45,9 +45,9 @@ class FitMixinTorch(ABC):
         """
         super().__init__()
 
-    def fit(self, x: torch.Tensor) -> FitMixinTorch:
+    def fit(self, x: torch.Tensor, **kwargs: dict) -> FitMixinTorch:
         self._fitted = True
-        self._fit(x)
+        self._fit(x, **kwargs)
         return self
 
     @abstractmethod
