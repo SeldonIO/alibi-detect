@@ -136,7 +136,7 @@ class SklearnOutlierDetector(FitMixin, ABC):
         -------
         `np.ndarray`
         """
-        return x
+        return np.array(x)
 
     def _ensembler(self, x: np.ndarray) -> np.ndarray:
         """Aggregates and normalizes the data

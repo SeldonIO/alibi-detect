@@ -17,7 +17,7 @@ class GMMSklearn(SklearnOutlierDetector):
         """
         SklearnOutlierDetector.__init__(self)
         self.n_components = n_components
-        self.gmm = None
+        self.gmm = GaussianMixture(n_components=self.n_components)
 
     def _fit(self, x_ref: np.ndarray) -> None:
         """Fit the outlier detector to the reference data.
@@ -27,7 +27,7 @@ class GMMSklearn(SklearnOutlierDetector):
         x_ref
             Reference data.
         """
-        self.gmm = GaussianMixture(n_components=self.n_components).fit(x_ref)
+        self.gmm = self.gmm.fit(x_ref)
 
     def score(self, x: np.ndarray) -> np.ndarray:
         """Score the data.

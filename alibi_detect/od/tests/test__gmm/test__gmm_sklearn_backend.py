@@ -30,7 +30,7 @@ def test_gmm_sklearn_backend_fit_errors():
     assert gm_sklearn.predict(x)
 
 
-def test_gmm_linear_scoring():
+def test_gmm_sklearn_scoring():
     gm_sklearn = GMMSklearn(n_components=2)
     mean = [8, 8]
     cov = [[2., 0.], [0., 1.]]
