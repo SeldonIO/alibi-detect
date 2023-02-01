@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-import torch
+# import torch
 
 from alibi_detect.od._gmm import GMM
 from alibi_detect.od.base import NotFitException

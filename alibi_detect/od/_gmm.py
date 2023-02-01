@@ -69,7 +69,7 @@ class GMM(OutlierDetector):
         x_ref
             Reference data used to fit the detector.
         """
-        self.backend.fit(self.backend._to_tensor(x_ref))
+        self.backend.fit(self.backend._to_tensor(x_ref), *args)
 
     def score(self, x: np.ndarray) -> np.ndarray:
         """Score `x` instances using the detector.
