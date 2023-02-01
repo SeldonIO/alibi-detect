@@ -6,7 +6,6 @@ import numpy as np
 from alibi_detect.utils._types import Literal
 from alibi_detect.base import outlier_prediction_dict
 from alibi_detect.od.base import OutlierDetector
-from alibi_detect.od.pytorch.base import to_numpy
 from alibi_detect.od.pytorch import KernelPCATorch, LinearPCATorch
 from alibi_detect.utils.frameworks import BackendValidator
 from alibi_detect.version import __version__
@@ -112,7 +111,7 @@ class PCA(OutlierDetector):
         instance.
         """
         score = self.backend.score(self.backend._to_tensor(x))
-        return to_numpy(score)
+        return self.backend._to_numpy(score)
 
     def infer_threshold(self, x_ref: np.ndarray, fpr: float) -> None:
         """Infer the threshold for the Mahalanobis detector.
@@ -150,7 +149,7 @@ class PCA(OutlierDetector):
         output = outlier_prediction_dict()
         output['data'] = {
             **output['data'],
-            **to_numpy(outputs)
+            **self.backend._to_numpy(outputs)
         }
         output['meta'] = {
             **output['meta'],
