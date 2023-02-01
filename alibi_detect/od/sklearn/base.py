@@ -1,31 +1,12 @@
 from __future__ import annotations
 from typing import List, Union, Optional
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 from abc import ABC, abstractmethod
-from alibi_detect.od.base import NotFitException
-
 
 import numpy as np
 
+from alibi_detect.od.base import NotFitException
 from alibi_detect.od.base import ThresholdNotInferredException
-
-
-def to_numpy(arg):
-    """Map params to numpy arrays.
-
-    This function is for interface compatibility with the other backends. As such it does nothing but
-    return the input.
-
-    Parameters
-    ----------
-    x
-        Data to convert.
-
-    Returns
-    -------
-    `np.ndarray` or dictionary of containing `numpy` arrays
-    """
-    return arg
 
 
 @dataclass
@@ -121,7 +102,28 @@ class SklearnOutlierDetector(FitMixin, ABC):
             raise ThresholdNotInferredException((f'{self.__class__.__name__} has no threshold set, '
                                                  'call `infer_threshold` before predicting.'))
 
-    def _to_tensor(self, x: Union[List, np.ndarray]) -> np.ndarray:
+    @staticmethod
+    def _to_numpy(arg):
+        """Map params to numpy arrays.
+
+        This function is for interface compatibility with the other backends. As such it does nothing but
+        return the input.
+
+        Parameters
+        ----------
+        x
+            Data to convert.
+
+        Returns
+        -------
+        `np.ndarray` or dictionary of containing `numpy` arrays
+        """
+        if isinstance(arg, SklearnOutlierDetectorOutput):
+            return asdict(arg)
+        return arg
+
+    @staticmethod
+    def _to_tensor(x: Union[List, np.ndarray]) -> np.ndarray:
         """Converts the data to a tensor.
 
         This function is for interface compatibility with the other backends. As such it does nothing but
