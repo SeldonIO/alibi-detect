@@ -9,29 +9,35 @@ from alibi_detect.utils.pytorch import GaussianRBF as GaussianRBFTorch
 from alibi_detect.utils.pytorch import mmd2_from_kernel_matrix
 if has_keops:
     from alibi_detect.cd.keops.learned_kernel import LearnedKernelDriftKeops
-    from alibi_detect.utils.keops import GaussianRBF
-    from pykeops.torch import LazyTensor
+    from alibi_detect.utils.keops import GaussianRBF, BaseKernel, ProjKernel
 
 n = 50  # number of instances used for the reference and test data samples in the tests
 
 
 if has_keops:
-    class MyKernel(nn.Module):
+    class MyKernel(BaseKernel):
         def __init__(self, n_features: int, proj: bool):
             super().__init__()
             sigma = .1
-            self.kernel = GaussianRBF(trainable=True, sigma=torch.Tensor([sigma]))
+            self.kernel_a = GaussianRBF(trainable=True, sigma=torch.Tensor([sigma]))
+            self.log_sigma_a = self.kernel_a.parameter_dict['log-sigma'].value
             self.has_proj = proj
             if proj:
                 self.proj = nn.Linear(n_features, 2)
                 self.kernel_b = GaussianRBF(trainable=True, sigma=torch.Tensor([sigma]))
+                self.proj_kernel = ProjKernel(self.proj, self.kernel_b)
+                self.comp_kernel = self.proj_kernel + self.kernel_a
+                self.log_sigma_b = self.kernel_b.parameter_dict['log-sigma'].value
+            else:
+                self.comp_kernel = self.kernel_a
 
-        def forward(self, x_proj: LazyTensor, y_proj: LazyTensor, x: Optional[LazyTensor] = None,
-                    y: Optional[LazyTensor] = None) -> LazyTensor:
-            similarity = self.kernel(x_proj, y_proj)
-            if self.has_proj:
-                similarity = similarity + self.kernel_b(x, y)
-            return similarity
+        def kernel_function(
+            self,
+            x: torch.Tensor,
+            y: torch.Tensor,
+            infer_parameter: Optional[bool] = False
+        ) -> torch.Tensor:
+            return self.comp_kernel(x, y, infer_parameter)
 
 
 # test List[Any] inputs to the detector
@@ -124,7 +130,7 @@ def test_lkdrift(lkdrift_params):
 
         if isinstance(preprocess_batch, Callable):
             x_all = preprocess_batch(x_all)
-        kernel = GaussianRBFTorch(sigma=cd.kernel.kernel.sigma)
+        kernel = GaussianRBFTorch(sigma=cd.kernel.kernel_a.sigma.cpu())
         kernel_mat = kernel(x_all, x_all)
         mmd2_torch = mmd2_from_kernel_matrix(kernel_mat, n_test)
-        np.testing.assert_almost_equal(mmd2, mmd2_torch, decimal=6)
+        np.testing.assert_almost_equal(mmd2.cpu(), mmd2_torch.cpu(), decimal=6)

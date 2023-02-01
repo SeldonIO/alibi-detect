@@ -19,6 +19,7 @@ class LSDDDriftTorch(BaseLSDDDrift):
             preprocess_at_init: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
+            sigma: Optional[Union[np.ndarray, float]] = None,
             n_permutations: int = 100,
             n_kernel_centers: Optional[int] = None,
             lambda_rd_max: float = 0.2,
@@ -95,7 +96,7 @@ class LSDDDriftTorch(BaseLSDDDrift):
             x_ref = torch.as_tensor(self.x_ref).to(self.device)  # type: ignore[assignment]
             self._configure_normalization(x_ref)  # type: ignore[arg-type]
             x_ref = self._normalize(x_ref)
-            self.kernel = GaussianRBF()
+            self.kernel = GaussianRBF(sigma=torch.tensor(sigma).to(self.device) if sigma is not None else None)
             _ = self.kernel(x_ref, x_ref, infer_parameter=True)  # infer sigma
             self._configure_kernel_centers(x_ref)  # type: ignore[arg-type]
             self.x_ref = x_ref.cpu().numpy()  # type: ignore[union-attr]
@@ -104,10 +105,13 @@ class LSDDDriftTorch(BaseLSDDDrift):
             self.H = GaussianRBF(np.sqrt(2.) * self.kernel.sigma)(self.kernel_centers, self.kernel_centers)
 
     def _configure_normalization(self, x_ref: torch.Tensor, eps: float = 1e-12):
+        x_ref = x_ref.to(self.device)
         x_ref_means = x_ref.mean(0)
         x_ref_stds = x_ref.std(0)
-        self._normalize = lambda x: (torch.as_tensor(x) - x_ref_means) / (x_ref_stds + eps)  # type: ignore[assignment]
-        self._unnormalize = lambda x: (torch.as_tensor(x) * (x_ref_stds + eps)  # type: ignore[assignment]
+        self._normalize = lambda x: (torch.as_tensor(x, device=self.device)  # type: ignore[assignment]
+                                     - x_ref_means) / (x_ref_stds + eps)
+        self._unnormalize = lambda x: (torch.as_tensor(x, device=self.device)  # type: ignore[assignment]
+                                       * (x_ref_stds + eps)
                                        + x_ref_means).cpu().numpy()
 
     def _configure_kernel_centers(self, x_ref: torch.Tensor):

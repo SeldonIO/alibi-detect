@@ -18,8 +18,12 @@ from alibi_detect.cd.pytorch import preprocess_drift as preprocess_drift_pt
 from alibi_detect.cd.tensorflow import UAE as UAE_tf
 from alibi_detect.cd.tensorflow import preprocess_drift as preprocess_drift_tf
 from alibi_detect.utils.pytorch.kernels import GaussianRBF as GaussianRBF_pt
+from alibi_detect.utils.pytorch.kernels import RationalQuadratic as RationalQuadratic_pt
+from alibi_detect.utils.pytorch.kernels import Periodic as Periodic_pt
 from alibi_detect.utils.pytorch.kernels import DeepKernel as DeepKernel_pt
 from alibi_detect.utils.tensorflow.kernels import GaussianRBF as GaussianRBF_tf
+from alibi_detect.utils.tensorflow.kernels import RationalQuadratic as RationalQuadratic_tf
+from alibi_detect.utils.tensorflow.kernels import Periodic as Periodic_tf
 from alibi_detect.utils.tensorflow.kernels import DeepKernel as DeepKernel_tf
 from alibi_detect.models.pytorch import TransformerEmbedding as TransformerEmbedding_pt
 from alibi_detect.models.tensorflow import TransformerEmbedding as TransformerEmbedding_tf
@@ -147,8 +151,8 @@ def deep_kernel(request, backend, encoder_model):
     parametrised in the test function.
     """
     # Get DeepKernel options
-    kernel_a = request.param.get('kernel_a', 'rbf')
-    kernel_b = request.param.get('kernel_b', 'rbf')
+    kernel_a = request.param.get('kernel_a', {'kernel_name': 'GaussianRBF', 'kernel_config': {}})
+    kernel_b = request.param.get('kernel_b', {'kernel_name': 'GaussianRBF', 'kernel_config': {}})
     eps = request.param.get('eps', 'trainable')
 
     # Proj model (backend managed in encoder_model fixture)
@@ -156,16 +160,44 @@ def deep_kernel(request, backend, encoder_model):
 
     # Build DeepKernel
     if backend == 'tensorflow':
-        kernel_a = GaussianRBF_tf(**kernel_a) if isinstance(kernel_a, dict) else kernel_a
-        kernel_b = GaussianRBF_tf(**kernel_b) if isinstance(kernel_b, dict) else kernel_b
+        kernel_a = initial_kernel_tf(kernel_a['kernel_name'], kernel_a['kernel_config'])
+        kernel_b = initial_kernel_tf(kernel_b['kernel_name'], kernel_b['kernel_config'])
         deep_kernel = DeepKernel_tf(proj, kernel_a=kernel_a, kernel_b=kernel_b, eps=eps)
     elif backend == 'pytorch':
-        kernel_a = GaussianRBF_pt(**kernel_a) if isinstance(kernel_a, dict) else kernel_a
-        kernel_b = GaussianRBF_pt(**kernel_b) if isinstance(kernel_b, dict) else kernel_b
+        kernel_a = initial_kernel_pt(kernel_a['kernel_name'], kernel_a['kernel_config'])
+        kernel_b = initial_kernel_pt(kernel_b['kernel_name'], kernel_b['kernel_config'])
         deep_kernel = DeepKernel_pt(proj, kernel_a=kernel_a, kernel_b=kernel_b, eps=eps)
     else:
         pytest.skip('`deep_kernel` only implemented for tensorflow and pytorch.')
     return deep_kernel
+
+
+def initial_kernel_tf(kernel_name, kernel_config):
+    if 'sigma' in kernel_config:
+        kernel_config['sigma'] = tf.constant(kernel_config['sigma'])
+    if kernel_name == 'GaussianRBF':
+        kernel = GaussianRBF_tf(**kernel_config)
+    elif kernel_name == 'RationalQuadratic':
+        kernel = RationalQuadratic_tf(**kernel_config)
+    elif kernel_name == 'Periodic':
+        kernel = Periodic_tf(**kernel_config)
+    else:
+        pytest.skip('`initial_kernel_tf` only implemented for GaussianRBF, RationalQuadratic and Periodic.')
+    return kernel
+
+
+def initial_kernel_pt(kernel_name, kernel_config):
+    if 'sigma' in kernel_config:
+        kernel_config['sigma'] = torch.tensor(kernel_config['sigma'])
+    if kernel_name == 'GaussianRBF':
+        kernel = GaussianRBF_pt(**kernel_config)
+    elif kernel_name == 'RationalQuadratic':
+        kernel = RationalQuadratic_pt(**kernel_config)
+    elif kernel_name == 'Periodic':
+        kernel = Periodic_pt(**kernel_config)
+    else:
+        pytest.skip('`initial_kernel_pt` only implemented for GaussianRBF, RationalQuadratic and Periodic.')
+    return kernel
 
 
 @fixture

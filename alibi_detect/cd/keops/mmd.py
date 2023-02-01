@@ -1,10 +1,9 @@
 import logging
 import numpy as np
-from pykeops.torch import LazyTensor
 import torch
 from typing import Callable, Dict, List, Optional, Tuple, Union
 from alibi_detect.cd.base import BaseMMDDrift
-from alibi_detect.utils.keops.kernels import GaussianRBF
+from alibi_detect.utils.keops.kernels import BaseKernel, GaussianRBF
 from alibi_detect.utils.pytorch import get_device
 from alibi_detect.utils.frameworks import Framework
 
@@ -20,7 +19,7 @@ class MMDDriftKeops(BaseMMDDrift):
             preprocess_at_init: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
-            kernel: Callable = GaussianRBF,
+            kernel: BaseKernel = GaussianRBF(),
             sigma: Optional[np.ndarray] = None,
             configure_kernel_from_x_ref: bool = True,
             n_permutations: int = 100,
@@ -77,7 +76,6 @@ class MMDDriftKeops(BaseMMDDrift):
             preprocess_at_init=preprocess_at_init,
             update_x_ref=update_x_ref,
             preprocess_fn=preprocess_fn,
-            sigma=sigma,
             configure_kernel_from_x_ref=configure_kernel_from_x_ref,
             n_permutations=n_permutations,
             input_shape=input_shape,
@@ -89,23 +87,40 @@ class MMDDriftKeops(BaseMMDDrift):
         self.device = get_device(device)
 
         # initialize kernel
-        sigma = torch.from_numpy(sigma).to(self.device) if isinstance(sigma,  # type: ignore[assignment]
-                                                                      np.ndarray) else None
-        self.kernel = kernel(sigma).to(self.device) if kernel == GaussianRBF else kernel
+        self.kernel = kernel
+
+        if isinstance(self.kernel, GaussianRBF) & (sigma is not None):
+            self.kernel.parameter_dict['log-sigma'].value = torch.nn.Parameter(
+                torch.tensor(sigma).to(self.device).log(),
+                requires_grad=False)
+            self.kernel.parameter_dict['log-sigma'].requires_init = False
+            self.kernel.init_required = False
+
+        self.kernel_parameter_specified = True
+        if hasattr(kernel, 'parameter_dict'):
+            for param in self.kernel.parameter_dict.keys():
+                kernel.parameter_dict[param].value.to(self.device)
+                if kernel.parameter_dict[param].requires_init:
+                    self.given_kernel_parameter = False
+                    break
+
+        if self.kernel_parameter_specified and self.infer_parameter:
+            self.infer_parameter = False
+            logger.warning('parameters are specified for the kernel and `configure_kernel_from_x_ref` '
+                           'is set to True. Specified parameters take priority over '
+                           '`configure_kernel_from_x_ref` (set to False).')
 
         # set the correct MMD^2 function based on the batch size for the permutations
         self.batch_size = batch_size_permutations
         self.n_batches = 1 + (n_permutations - 1) // batch_size_permutations
 
         # infer the kernel bandwidth from the reference data
-        if isinstance(sigma, torch.Tensor):
-            self.infer_sigma = False
-        elif self.infer_sigma:
-            x = torch.from_numpy(self.x_ref).to(self.device)
-            _ = self.kernel(LazyTensor(x[:, None, :]), LazyTensor(x[None, :, :]), infer_sigma=self.infer_sigma)
-            self.infer_sigma = False
+        if self.infer_parameter:
+            x = torch.from_numpy(self.x_ref).to(self.device).reshape(1, self.x_ref.shape[0], -1)
+            _ = self.kernel(x, x, infer_parameter=self.infer_parameter)
+            self.infer_parameter = False
         else:
-            self.infer_sigma = True
+            self.infer_parameter = True
 
     def _mmd2(self, x_all: torch.Tensor, perms: List[torch.Tensor], m: int, n: int) \
             -> Tuple[torch.Tensor, torch.Tensor]:
@@ -139,12 +154,10 @@ class MMDDriftKeops(BaseMMDDrift):
             x, y = x.to(self.device), y.to(self.device)
 
             # batch-wise kernel matrix computation over the permutations
-            k_xy.append(self.kernel(
-                LazyTensor(x[:, :, None, :]), LazyTensor(y[:, None, :, :]), self.infer_sigma).sum(1).sum(1).squeeze(-1))
-            k_xx.append(self.kernel(
-                LazyTensor(x[:, :, None, :]), LazyTensor(x[:, None, :, :])).sum(1).sum(1).squeeze(-1))
-            k_yy.append(self.kernel(
-                LazyTensor(y[:, :, None, :]), LazyTensor(y[:, None, :, :])).sum(1).sum(1).squeeze(-1))
+            k_xy.append(self.kernel(x, y, infer_parameter=self.infer_parameter).sum(1).sum(1).squeeze(-1))
+            k_xx.append(self.kernel(x, x, infer_parameter=self.infer_parameter).sum(1).sum(1).squeeze(-1))
+            k_yy.append(self.kernel(y, y, infer_parameter=self.infer_parameter).sum(1).sum(1).squeeze(-1))
+
         c_xx, c_yy, c_xy = 1 / (m * (m - 1)), 1 / (n * (n - 1)), 2. / (m * n)
         # Note that the MMD^2 estimates assume that the diagonal of the kernel matrix consists of 1's
         stats = c_xx * (torch.cat(k_xx) - m) + c_yy * (torch.cat(k_yy) - n) - c_xy * torch.cat(k_xy)

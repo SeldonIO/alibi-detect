@@ -204,7 +204,6 @@ def test_save_mmddrift(data, kernel, preprocess_custom, backend, tmp_path, seed)
     """
     if backend not in ('tensorflow', 'pytorch', 'keops'):
         pytest.skip("Detector doesn't have this backend")
-
     # Init detector and make predictions
     X_ref, X_h0 = data
     kwargs = {
@@ -228,10 +227,9 @@ def test_save_mmddrift(data, kernel, preprocess_custom, backend, tmp_path, seed)
     with fixed_seed(seed):
         cd_load = load_detector(tmp_path)
         preds_load = cd_load.predict(X_h0)
-
     # assertions
     np.testing.assert_array_equal(preprocess_custom(X_ref), cd_load._detector.x_ref)
-    assert not cd_load._detector.infer_sigma
+    assert not cd_load._detector.infer_parameter
     assert cd_load._detector.n_permutations == N_PERMUTATIONS
     assert cd_load._detector.p_val == P_VAL
     assert isinstance(cd_load._detector.preprocess_fn, Callable)
@@ -459,8 +457,9 @@ def test_save_spotthediff(data, classifier_model, backend, tmp_path, seed):  # n
 
 
 @parametrize('deep_kernel', [
-        {'kernel_a': 'rbf', 'eps': 0.01}  # Default for kernel_a
-    ], indirect=True
+        {'kernel_a': {'kernel_name': 'GaussianRBF', 'kernel_config': {'sigma': 0.5, 'trainable': True}},
+         'eps': 0.01}
+        ], indirect=True
 )
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
 def test_save_learnedkernel(data, deep_kernel, backend, tmp_path, seed):  # noqa: F811
@@ -657,7 +656,10 @@ def test_save_onlinemmddrift(data, kernel, preprocess_custom, backend, tmp_path,
                 stats_load.append(pred['data']['test_stat'])
 
     # assertions
-    np.testing.assert_array_equal(preprocess_custom(X_ref), cd_load._detector.x_ref)
+    if backend == 'pytorch':
+        np.testing.assert_array_equal(preprocess_custom(X_ref), cd_load._detector.x_ref.cpu().numpy())
+    else:
+        np.testing.assert_array_equal(preprocess_custom(X_ref), cd_load._detector.x_ref)
     assert cd_load._detector.n_bootstraps == N_BOOTSTRAPS
     assert cd_load._detector.ert == ERT
     assert isinstance(cd_load._detector.preprocess_fn, Callable)
@@ -710,7 +712,11 @@ def test_save_onlinelsdddrift(data, preprocess_custom, backend, tmp_path, seed):
     assert cd_load._detector.ert == ERT
     assert isinstance(cd_load._detector.preprocess_fn, Callable)
     assert cd_load._detector.preprocess_fn.func.__name__ == 'preprocess_drift'
-    assert cd._detector.kernel.sigma == cd_load._detector.kernel.sigma
+    if backend == 'pytorch':
+        np.testing.assert_array_almost_equal(cd._detector.kernel.sigma.cpu().numpy(),
+                                             cd_load._detector.kernel.sigma.cpu().numpy(), 5)
+    else:
+        np.testing.assert_almost_equal(cd._detector.kernel.sigma, cd_load._detector.kernel.sigma, 5)
     assert cd._detector.kernel.init_sigma_fn == cd_load._detector.kernel.init_sigma_fn
     np.testing.assert_array_equal(stats, stats_load)
 
@@ -883,6 +889,12 @@ def test_save_kernel(kernel, backend, tmp_path):  # noqa: F811
 
     # Call kernels
     X = np.random.standard_normal((10, 1))
+    if backend == 'pytorch':
+        X = torch.from_numpy(X).float()
+    elif backend == 'tensorflow':
+        X = tf.convert_to_tensor(X)
+    else:
+        pytest.skip('Backend not supported.')
     kernel(X, X)
     kernel_loaded(X, X)
 
@@ -893,14 +905,20 @@ def test_save_kernel(kernel, backend, tmp_path):  # noqa: F811
     else:
         np.testing.assert_array_almost_equal(np.array(kernel_loaded.sigma), np.array(kernel.sigma), 5)
     assert kernel_loaded.trainable == kernel.trainable
-    assert kernel_loaded.init_sigma_fn == kernel.init_sigma_fn
+    for tmp_key in kernel.parameter_dict.keys():
+        assert kernel_loaded.parameter_dict[tmp_key].init_fn == kernel.parameter_dict[tmp_key].init_fn
+    # assert kernel_loaded.init_sigma_fn == kernel.init_sigma_fn
 
 
 # `data` passed below as needed in encoder_model, which is used in deep_kernel
 @parametrize_with_cases("data", cases=ContinuousData.data_synthetic_nd)
 @parametrize('deep_kernel', [
-        {'kernel_a': 'rbf', 'kernel_b': 'rbf', 'eps': 'trainable'},  # Default for kernel_a and kernel_b, trainable eps
-        {'kernel_a': {'trainable': True}, 'kernel_b': 'rbf', 'eps': 0.01},  # Explicit kernel_a, fixed eps
+        {'kernel_a': {'kernel_name': 'GaussianRBF', 'kernel_config': {}},
+         'kernel_b': {'kernel_name': 'GaussianRBF', 'kernel_config': {}},
+         'eps': 'trainable'},  # Default for kernel_a and kernel_b, trainable eps
+        {'kernel_a': {'kernel_name': 'GaussianRBF', 'kernel_config': {'trainable': True}},
+         'kernel_b': {'kernel_name': 'GaussianRBF', 'kernel_config': {}},
+         'eps': 0.01},  # Explicit kernel_a, fixed eps
     ], indirect=True
 )
 def test_save_deepkernel(data, deep_kernel, backend, tmp_path):  # noqa: F811
@@ -930,6 +948,12 @@ def test_save_deepkernel(data, deep_kernel, backend, tmp_path):  # noqa: F811
     kernel_loaded = resolve_config(cfg, tmp_path)['kernel']  # implicitly calls _load_kernel_config
 
     # Call kernels
+    if backend == 'pytorch':
+        X = torch.from_numpy(X).float()
+    elif backend == 'tensorflow':
+        X = tf.convert_to_tensor(X)
+    else:
+        pytest.skip('Backend not supported.')
     deep_kernel.kernel_a(X, X)
     deep_kernel.kernel_b(X, X)
     kernel_loaded.kernel_a(X, X)

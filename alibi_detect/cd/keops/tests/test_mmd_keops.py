@@ -112,9 +112,13 @@ def test_mmd(mmd_params):
         kernel = GaussianRBF(sigma=cd.kernel.sigma)
         if isinstance(preprocess_fn, Callable):
             x_ref, x_h1 = cd.preprocess(x_h1)
-        x_ref = torch.from_numpy(x_ref).float()
-        x_h1 = torch.from_numpy(x_h1).float()
+        x_ref = torch.from_numpy(x_ref).float().to(cd.kernel.sigma.device)
+        x_h1 = torch.from_numpy(x_h1).float().to(cd.kernel.sigma.device)
         x_all = torch.cat([x_ref, x_h1], 0)
         kernel_mat = kernel(x_all, x_all)
         mmd2_torch = mmd2_from_kernel_matrix(kernel_mat, x_h1.shape[0])
+        if isinstance(mmd2, torch.Tensor):
+            mmd2 = mmd2.cpu().numpy()
+        if isinstance(mmd2_torch, torch.Tensor):
+            mmd2_torch = mmd2_torch.cpu().numpy()
         np.testing.assert_almost_equal(mmd2, mmd2_torch, decimal=6)

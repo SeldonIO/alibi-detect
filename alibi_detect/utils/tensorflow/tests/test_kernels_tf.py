@@ -66,11 +66,11 @@ def test_init_fn(init_fn_params):
     y = tf.convert_to_tensor(np.random.random(yshape).astype('float32'))
 
     if kernel_ref == 'GaussianRBF':
-        kernel = GaussianRBF(trainable=trainable, init_fn_sigma=init_fn)
+        kernel = GaussianRBF(trainable=trainable, init_sigma_fn=init_fn)
     elif kernel_ref == 'RationalQuadratic':
-        kernel = RationalQuadratic(trainable=trainable, init_fn_sigma=init_fn)
+        kernel = RationalQuadratic(trainable=trainable, init_sigma_fn=init_fn)
     elif kernel_ref == 'Periodic':
-        kernel = Periodic(trainable=trainable, init_fn_sigma=init_fn)
+        kernel = Periodic(trainable=trainable, init_sigma_fn=init_fn)
     else:
         raise NotImplementedError
     if trainable:

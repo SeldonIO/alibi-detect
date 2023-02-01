@@ -364,7 +364,7 @@ class GaussianRBF(BaseKernel):
     def __init__(
             self,
             sigma: Optional[tf.Tensor] = None,
-            init_fn_sigma: Optional[Callable] = None,
+            init_sigma_fn: Optional[Callable] = None,
             trainable: bool = False,
             active_dims: list = None
     ) -> None:
@@ -389,12 +389,12 @@ class GaussianRBF(BaseKernel):
             Indices of the dimensions of the feature to be used for the kernel. If None, all dimensions are used.
         """
         super().__init__(active_dims)
-        init_fn_sigma = log_sigma_median if init_fn_sigma is None else init_fn_sigma
-        self.config = {'sigma': sigma, 'trainable': trainable, 'init_sigma_fn': init_fn_sigma}
+        self.init_sigma_fn = log_sigma_median if init_sigma_fn is None else init_sigma_fn
+        self.config = {'sigma': sigma, 'trainable': trainable, 'init_sigma_fn': self.init_sigma_fn}
         self.parameter_dict['log-sigma'] = KernelParameter(
             value=tf.reshape(tf.math.log(
                 tf.cast(sigma, tf.keras.backend.floatx())), -1) if sigma is not None else tf.zeros(1),
-            init_fn=init_fn_sigma,
+            init_fn=self.init_sigma_fn,  # type: ignore
             requires_grad=trainable,
             requires_init=True if sigma is None else False
         )
@@ -412,6 +412,7 @@ class GaussianRBF(BaseKernel):
 
         if infer_parameter or self.init_required:
             infer_kernel_parameter(self, x, y, dist, infer_parameter)
+            self.init_required = any([param.requires_init for param in self.parameter_dict.values()])
 
         gamma = tf.constant(1. / (2. * self.sigma ** 2), dtype=x.dtype)   # [Ns,]
         # TODO: do matrix multiplication after all?
@@ -448,7 +449,7 @@ class RationalQuadratic(BaseKernel):
         alpha: tf.Tensor = None,
         init_fn_alpha: Callable = None,
         sigma: tf.Tensor = None,
-        init_fn_sigma: Callable = log_sigma_median,
+        init_sigma_fn: Callable = log_sigma_median,
         trainable: bool = False,
         active_dims: list = None
     ) -> None:
@@ -483,7 +484,7 @@ class RationalQuadratic(BaseKernel):
         self.parameter_dict['log-sigma'] = KernelParameter(
             value=tf.reshape(tf.math.log(
                 tf.cast(sigma, tf.keras.backend.floatx())), -1) if sigma is not None else tf.zeros(1),
-            init_fn=init_fn_sigma,
+            init_fn=init_sigma_fn,
             requires_grad=trainable,
             requires_init=True if sigma is None else False
         )
@@ -518,7 +519,7 @@ class Periodic(BaseKernel):
         tau: tf.Tensor = None,
         init_fn_tau: Callable = None,
         sigma: tf.Tensor = None,
-        init_fn_sigma: Callable = log_sigma_median,
+        init_sigma_fn: Callable = log_sigma_median,
         trainable: bool = False,
         active_dims: list = None
     ) -> None:
@@ -553,7 +554,7 @@ class Periodic(BaseKernel):
         self.parameter_dict['log-sigma'] = KernelParameter(
             value=tf.reshape(tf.math.log(
                 tf.cast(sigma, tf.keras.backend.floatx())), -1) if sigma is not None else tf.zeros(1),
-            init_fn=init_fn_sigma,
+            init_fn=init_sigma_fn,
             requires_grad=trainable,
             requires_init=True if sigma is None else False
         )
@@ -637,6 +638,9 @@ class DeepKernel(BaseKernel):
         eps: Union[float, str] = 'trainable'
     ) -> None:
         super().__init__()
+        self.proj = proj
+        self.kernel_a = kernel_a
+        self.kernel_b = kernel_b
         proj_kernel = ProjKernel(proj=proj, raw_kernel=kernel_a)
         if kernel_b is not None:
             self._init_eps(eps)

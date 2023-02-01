@@ -2,13 +2,12 @@ from copy import deepcopy
 from functools import partial
 from tqdm import tqdm
 import numpy as np
-from pykeops.torch import LazyTensor
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from typing import Callable, Dict, List, Optional, Union, Tuple
 from alibi_detect.cd.base import BaseLearnedKernelDrift
-from alibi_detect.utils.pytorch import get_device, predict_batch
+from alibi_detect.utils.pytorch import get_device
 from alibi_detect.utils.pytorch.data import TorchDataset
 from alibi_detect.utils.frameworks import Framework
 
@@ -137,6 +136,7 @@ class LearnedKernelDriftKeops(BaseLearnedKernelDrift):
         self.device = get_device(device)
         self.original_kernel = kernel
         self.kernel = deepcopy(kernel)
+        self.kernel = self.kernel.to(self.device)
 
         # Check kernel format
         self.has_proj = hasattr(self.kernel, 'proj') and isinstance(self.kernel.proj, nn.Module)
@@ -174,21 +174,10 @@ class LearnedKernelDriftKeops(BaseLearnedKernelDrift):
 
         def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
             n = len(x)
-            if self.has_proj and isinstance(self.kernel.proj, nn.Module):
-                x_proj, y_proj = self.kernel.proj(x), self.kernel.proj(y)
-            else:
-                x_proj, y_proj = x, y
-            x2_proj, x_proj = LazyTensor(x_proj[None, :, :]), LazyTensor(x_proj[:, None, :])
-            y2_proj, y_proj = LazyTensor(y_proj[None, :, :]), LazyTensor(y_proj[:, None, :])
-            if self.has_kernel_b:
-                x2, x = LazyTensor(x[None, :, :]), LazyTensor(x[:, None, :])
-                y2, y = LazyTensor(y[None, :, :]), LazyTensor(y[:, None, :])
-            else:
-                x, x2, y, y2 = None, None, None, None
 
-            k_xy = self.kernel(x_proj, y2_proj, x, y2)
-            k_xx = self.kernel(x_proj, x2_proj, x, x2)
-            k_yy = self.kernel(y_proj, y2_proj, y, y2)
+            k_xy = self.kernel(x, y)
+            k_xx = self.kernel(x, x)
+            k_yy = self.kernel(y, y)
             h_mat = k_xx + k_yy - k_xy - k_xy.t()
 
             h_i = h_mat.sum(1).squeeze(-1)
@@ -221,6 +210,7 @@ class LearnedKernelDriftKeops(BaseLearnedKernelDrift):
 
         self.kernel = deepcopy(self.original_kernel) if self.retrain_from_scratch else self.kernel
         self.kernel = self.kernel.to(self.device)
+
         train_args = [self.j_hat, (dl_ref_tr, dl_cur_tr), self.device]
         LearnedKernelDriftKeops.trainer(*train_args, **self.train_kwargs)  # type: ignore
 
@@ -263,42 +253,24 @@ class LearnedKernelDriftKeops(BaseLearnedKernelDrift):
         preprocess_batch_fn = self.train_kwargs['preprocess_fn']
         if isinstance(preprocess_batch_fn, Callable):  # type: ignore[arg-type]
             x_all = preprocess_batch_fn(x_all)  # type: ignore[operator]
-        if self.has_proj:
-            x_all_proj = predict_batch(x_all, self.kernel.proj, device=self.device, batch_size=self.batch_size_predict,
-                                       dtype=x_all.dtype if isinstance(x_all, torch.Tensor) else torch.float32)
-        else:
-            x_all_proj = x_all
 
-        x, x2, y, y2 = None, None, None, None
+        x, y = None, None
         k_xx, k_yy, k_xy = [], [], []
         for batch in range(self.n_batches):
             i, j = batch * self.batch_size_perms, (batch + 1) * self.batch_size_perms
             # Stack a batch of permuted reference and test tensors and their projections
-            x_proj = torch.cat([x_all_proj[perm[:m]][None, :, :] for perm in perms[i:j]], 0)
-            y_proj = torch.cat([x_all_proj[perm[m:]][None, :, :] for perm in perms[i:j]], 0)
-            if self.has_kernel_b:
-                x = torch.cat([x_all[perm[:m]][None, :, :] for perm in perms[i:j]], 0)
-                y = torch.cat([x_all[perm[m:]][None, :, :] for perm in perms[i:j]], 0)
+            x = torch.cat([x_all[perm[:m]][None, :, :] for perm in perms[i:j]], 0)
+            y = torch.cat([x_all[perm[m:]][None, :, :] for perm in perms[i:j]], 0)
             if batch == 0:
-                x_proj = torch.cat([x_all_proj[None, :m, :], x_proj], 0)
-                y_proj = torch.cat([x_all_proj[None, m:, :], y_proj], 0)
-                if self.has_kernel_b:
-                    x = torch.cat([x_all[None, :m, :], x], 0)  # type: ignore[call-overload]
-                    y = torch.cat([x_all[None, m:, :], y], 0)  # type: ignore[call-overload]
-            x_proj, y_proj = x_proj.to(self.device), y_proj.to(self.device)
-            if self.has_kernel_b:
-                x, y = x.to(self.device), y.to(self.device)
+                x = torch.cat([x_all[None, :m, :], x], 0)  # type: ignore[call-overload]
+                y = torch.cat([x_all[None, m:, :], y], 0)  # type: ignore[call-overload]
+            x, y = x.to(self.device), y.to(self.device)
 
             # Batch-wise kernel matrix computation over the permutations
             with torch.no_grad():
-                x2_proj, x_proj = LazyTensor(x_proj[:, None, :, :]), LazyTensor(x_proj[:, :, None, :])
-                y2_proj, y_proj = LazyTensor(y_proj[:, None, :, :]), LazyTensor(y_proj[:, :, None, :])
-                if self.has_kernel_b:
-                    x2, x = LazyTensor(x[:, None, :, :]), LazyTensor(x[:, :, None, :])
-                    y2, y = LazyTensor(y[:, None, :, :]), LazyTensor(y[:, :, None, :])
-                k_xy.append(self.kernel(x_proj, y2_proj, x, y2).sum(1).sum(1).squeeze(-1))
-                k_xx.append(self.kernel(x_proj, x2_proj, x, x2).sum(1).sum(1).squeeze(-1))
-                k_yy.append(self.kernel(y_proj, y2_proj, y, y2).sum(1).sum(1).squeeze(-1))
+                k_xy.append(self.kernel(x, y).sum(1).sum(1).squeeze(-1))
+                k_xx.append(self.kernel(x, x).sum(1).sum(1).squeeze(-1))
+                k_yy.append(self.kernel(y, y).sum(1).sum(1).squeeze(-1))
 
         c_xx, c_yy, c_xy = 1 / (m * (m - 1)), 1 / (n * (n - 1)), 2. / (m * n)
         # Note that the MMD^2 estimates assume that the diagonal of the kernel matrix consists of 1's

@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 if has_keops:
     from pykeops.torch import LazyTensor
-    from alibi_detect.utils.keops import DeepKernel, GaussianRBF
+    from alibi_detect.utils.keops import DeepKernel, GaussianRBF, BaseKernel
 
 sigma = [None, np.array([1.]), np.array([1., 2.])]
 n_features = [5, 10]
@@ -34,21 +34,15 @@ def test_gaussian_kernel(gaussian_kernel_params):
     sigma = sigma if sigma is None else torch.from_numpy(sigma).float()
     x = torch.from_numpy(np.random.random(xshape)).float()
     y = torch.from_numpy(np.random.random(yshape)).float()
-    if batch_size:
-        x_lazy, y_lazy = LazyTensor(x[:, :, None, :]), LazyTensor(y[:, None, :, :])
-        x_lazy2 = LazyTensor(x[:, None, :, :])
-    else:
-        x_lazy, y_lazy = LazyTensor(x[:, None, :]), LazyTensor(y[None, :, :])
-        x_lazy2 = LazyTensor(x[None, :, :])
 
     kernel = GaussianRBF(sigma=sigma, trainable=trainable)
-    infer_sigma = True if sigma is None else False
-    if trainable and infer_sigma:
+    infer_parameter = True if sigma is None else False
+    if trainable and infer_parameter:
         with pytest.raises(ValueError):
-            kernel(x_lazy, y_lazy, infer_sigma=infer_sigma)
+            kernel(x, y, infer_parameter=infer_parameter)
     else:
-        k_xy = kernel(x_lazy, y_lazy, infer_sigma=infer_sigma)
-        k_xx = kernel(x_lazy, x_lazy2, infer_sigma=infer_sigma)
+        k_xx = kernel(x, x, infer_parameter=infer_parameter)
+        k_xy = kernel(x, y, infer_parameter=infer_parameter)
         k_xy_shape = n_instances
         k_xx_shape = (n_instances[0], n_instances[0])
         axis = 1
@@ -66,11 +60,26 @@ def test_gaussian_kernel(gaussian_kernel_params):
 
 
 if has_keops:
-    class MyKernel(nn.Module):
+    class MyKernel(BaseKernel):
         def __init__(self):
             super().__init__()
 
-        def forward(self, x: LazyTensor, y: LazyTensor) -> LazyTensor:
+        def kernel_function(self, x: torch.Tensor, y: torch.Tensor,
+                            infer_parameter: bool = False) -> LazyTensor:
+            if len(x.shape) == 3:
+                x = LazyTensor(x[:, :, None, :])
+            elif len(x.shape) == 2:
+                x = LazyTensor(x[:, None, :])
+            else:
+                raise ValueError('x should be of shape [batch_size, n_instances, features] or [batch_size, features].')
+
+            if len(y.shape) == 3:
+                y = LazyTensor(y[:, None, :, :])
+            elif len(y.shape) == 2:
+                y = LazyTensor(y[None, :, :])
+            else:
+                raise ValueError('y should be of shape [batch_size, n_instances, features] or [batch_size, features].')
+
             return (- ((x - y) ** 2).sum(-1)).exp()
 
 
@@ -104,18 +113,10 @@ def test_deep_kernel(deep_kernel_params):
     xshape, yshape = (n_instances[0], n_features), (n_instances[1], n_features)
     x = torch.as_tensor(np.random.random(xshape).astype('float32'))
     y = torch.as_tensor(np.random.random(yshape).astype('float32'))
-    x_proj, y_proj = kernel.proj(x), kernel.proj(y)
-    x2_proj, x_proj = LazyTensor(x_proj[None, :, :]), LazyTensor(x_proj[:, None, :])
-    y2_proj, y_proj = LazyTensor(y_proj[None, :, :]), LazyTensor(y_proj[:, None, :])
-    if kernel_b:
-        x2, x = LazyTensor(x[None, :, :]), LazyTensor(x[:, None, :])
-        y2, y = LazyTensor(y[None, :, :]), LazyTensor(y[:, None, :])
-    else:
-        x, x2, y, y2 = None, None, None, None
 
-    k_xy = kernel(x_proj, y2_proj, x, y2)
-    k_yx = kernel(y_proj, x2_proj, y, x2)
-    k_xx = kernel(x_proj, x2_proj, x, x2)
+    k_xy = kernel(x, y)
+    k_yx = kernel(y, x)
+    k_xx = kernel(x, x)
     assert k_xy.shape == n_instances and k_xx.shape == (xshape[0], xshape[0])
     assert (k_xx.Kmin_argKmin(1, axis=1)[0] > 0.).all()
     assert (torch.abs(k_xy.sum(1).sum(1) - k_yx.t().sum(1).sum(1)) < 1e-5).all()

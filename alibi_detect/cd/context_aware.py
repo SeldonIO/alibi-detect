@@ -4,7 +4,8 @@ from typing import Callable, Dict, Optional, Union, Tuple
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, BackendValidator, Framework
 from alibi_detect.utils.warnings import deprecated_alias
 from alibi_detect.base import DriftConfigMixin
-from alibi_detect.utils.pytorch.kernels import BaseKernel
+from alibi_detect.utils.pytorch.kernels import BaseKernel as BaseKernel_pt
+from alibi_detect.utils.tensorflow.kernels import BaseKernel as BaseKernel_tf
 
 if has_pytorch:
     from alibi_detect.cd.pytorch.context_aware import ContextMMDDriftTorch
@@ -27,8 +28,8 @@ class ContextMMDDrift(DriftConfigMixin):
             preprocess_at_init: bool = True,
             update_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
-            x_kernel: BaseKernel = None,
-            c_kernel: BaseKernel = None,
+            x_kernel: Union[BaseKernel_pt, BaseKernel_tf] = None,
+            c_kernel: Union[BaseKernel_pt, BaseKernel_tf] = None,
             n_permutations: int = 1000,
             prop_c_held: float = 0.25,
             n_folds: int = 5,
@@ -110,9 +111,9 @@ class ContextMMDDrift(DriftConfigMixin):
             else:
                 from alibi_detect.utils.pytorch.kernels import GaussianRBF  # type: ignore[no-redef]
             if x_kernel is None:
-                kwargs.update({'x_kernel': GaussianRBF})
+                kwargs.update({'x_kernel': GaussianRBF()})
             if c_kernel is None:
-                kwargs.update({'c_kernel': GaussianRBF})
+                kwargs.update({'c_kernel': GaussianRBF()})
 
         if backend == Framework.TENSORFLOW:
             kwargs.pop('device', None)

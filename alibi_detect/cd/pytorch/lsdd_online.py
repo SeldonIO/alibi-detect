@@ -18,6 +18,7 @@ class LSDDDriftOnlineTorch(BaseMultiDriftOnline, DriftConfigMixin):
             window_size: int,
             preprocess_fn: Optional[Callable] = None,
             x_ref_preprocessed: bool = False,
+            sigma: Optional[Union[np.ndarray, float]] = None,
             n_bootstraps: int = 1000,
             n_kernel_centers: Optional[int] = None,
             lambda_rd_max: float = 0.2,
@@ -93,7 +94,7 @@ class LSDDDriftOnlineTorch(BaseMultiDriftOnline, DriftConfigMixin):
 
         self._configure_normalization()
 
-        self.kernel = GaussianRBF()
+        self.kernel = GaussianRBF(torch.tensor(sigma).to(self.device) if sigma is not None else None)
 
         if self.n_kernel_centers is None:
             self.n_kernel_centers = 2 * window_size
@@ -107,7 +108,8 @@ class LSDDDriftOnlineTorch(BaseMultiDriftOnline, DriftConfigMixin):
         x_ref_means = x_ref.mean(0)
         x_ref_stds = x_ref.std(0)
         self._normalize = lambda x: (x - x_ref_means) / (x_ref_stds + eps)
-        self._unnormalize = lambda x: (torch.as_tensor(x) * (x_ref_stds + eps) + x_ref_means).cpu().numpy()
+        self._unnormalize = lambda x: (torch.as_tensor(x, device=self.device) * (x_ref_stds + eps)
+                                       + x_ref_means).cpu().numpy()
         self.x_ref = self._normalize(x_ref).cpu().numpy()
 
     def _configure_kernel_centers(self):

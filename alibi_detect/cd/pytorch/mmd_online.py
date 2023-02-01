@@ -18,6 +18,7 @@ class MMDDriftOnlineTorch(BaseMultiDriftOnline):
             preprocess_fn: Optional[Callable] = None,
             x_ref_preprocessed: bool = False,
             kernel: BaseKernel = GaussianRBF(),
+            sigma: Optional[Union[np.ndarray, float]] = None,
             n_bootstraps: int = 1000,
             device: Optional[str] = None,
             verbose: bool = True,
@@ -81,6 +82,13 @@ class MMDDriftOnlineTorch(BaseMultiDriftOnline):
         self.device = get_device(device)
 
         self.kernel = kernel
+
+        if isinstance(self.kernel, GaussianRBF) & (sigma is not None):
+            self.kernel.parameter_dict['log-sigma'].value = torch.nn.Parameter(
+                torch.tensor(sigma).to(self.device).log(),
+                requires_grad=False)
+            self.kernel.parameter_dict['log-sigma'].requires_init = False
+            self.kernel.init_required = False
 
         # compute kernel matrix for the reference data
         self.x_ref = torch.from_numpy(self.x_ref).to(self.device)

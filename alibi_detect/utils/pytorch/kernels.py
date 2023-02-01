@@ -218,10 +218,11 @@ class SumKernel(BaseKernel):
                         infer_parameter: bool = False) -> torch.Tensor:
         value_list: List[torch.Tensor] = []
         for k in self.kernel_list:
+            k.to(x.device)
             if isinstance(k, (BaseKernel, SumKernel, ProductKernel)):
                 value_list.append(k(x, y, infer_parameter))
             elif isinstance(k, torch.Tensor):
-                value_list.append(k * torch.ones((x.shape[0], y.shape[0])))
+                value_list.append(k * torch.ones((x.shape[0], y.shape[0]), device=x.device))
             else:
                 raise ValueError(type(k) + 'is not supported by SumKernel.')
         return torch.sum(torch.stack(value_list), dim=0)
@@ -294,10 +295,11 @@ class ProductKernel(BaseKernel):
                         infer_parameter: bool = False) -> torch.Tensor:
         value_list: List[torch.Tensor] = []
         for k in self.kernel_factors:
+            k.to(x.device)
             if isinstance(k, BaseKernel) or isinstance(k, SumKernel) or isinstance(k, ProductKernel):
                 value_list.append(k(x, y, infer_parameter))
             elif isinstance(k, torch.Tensor):
-                value_list.append(k * torch.ones((x.shape[0], y.shape[0])))
+                value_list.append(k * torch.ones((x.shape[0], y.shape[0]), device=x.device))
             else:
                 raise ValueError(type(k) + 'is not supported by ProductKernel.')
         return torch.prod(torch.stack(value_list), dim=0)
@@ -368,7 +370,7 @@ class GaussianRBF(BaseKernel):
     def __init__(
        self,
        sigma: Optional[torch.Tensor] = None,
-       init_fn_sigma: Optional[Callable] = None,
+       init_sigma_fn: Optional[Callable] = None,
        trainable: bool = False,
        active_dims: list = None
     ) -> None:
@@ -395,11 +397,11 @@ class GaussianRBF(BaseKernel):
             Axis of the feature dimension.
         """
         super().__init__(active_dims)
-        init_fn_sigma = log_sigma_median if init_fn_sigma is None else init_fn_sigma
-        self.config = {'sigma': sigma, 'trainable': trainable, 'init_sigma_fn': init_fn_sigma}
+        self.init_sigma_fn = log_sigma_median if init_sigma_fn is None else init_sigma_fn
+        self.config = {'sigma': sigma, 'trainable': trainable, 'init_sigma_fn': self.init_sigma_fn}
         self.parameter_dict['log-sigma'] = KernelParameter(
                 value=sigma.log().reshape(-1) if sigma is not None else None,
-                init_fn=init_fn_sigma,
+                init_fn=self.init_sigma_fn,  # type: ignore
                 requires_grad=trainable,
                 requires_init=True if sigma is None else False,
                 )
@@ -417,6 +419,7 @@ class GaussianRBF(BaseKernel):
 
         if infer_parameter or self.init_required:
             infer_kernel_parameter(self, x, y, dist, infer_parameter)
+            self.init_required = any([param.requires_init for param in self.parameter_dict.values()])
 
         gamma = 1. / (2. * self.sigma ** 2)   # [Ns,]
         # TODO: do matrix multiplication after all?
@@ -453,7 +456,7 @@ class RationalQuadratic(BaseKernel):
         alpha: torch.Tensor = None,
         init_fn_alpha: Callable = None,
         sigma: torch.Tensor = None,
-        init_fn_sigma: Callable = log_sigma_median,
+        init_sigma_fn: Callable = log_sigma_median,
         trainable: bool = False,
         active_dims: list = None
     ) -> None:
@@ -486,7 +489,7 @@ class RationalQuadratic(BaseKernel):
         )
         self.parameter_dict['log-sigma'] = KernelParameter(
             value=sigma.log().reshape(-1) if sigma is not None else None,
-            init_fn=init_fn_sigma,
+            init_fn=init_sigma_fn,
             requires_grad=trainable,
             requires_init=True if sigma is None else False
         )
@@ -521,7 +524,7 @@ class Periodic(BaseKernel):
         tau: torch.Tensor = None,
         init_fn_tau: Callable = None,
         sigma: torch.Tensor = None,
-        init_fn_sigma: Callable = log_sigma_median,
+        init_sigma_fn: Callable = log_sigma_median,
         trainable: bool = False,
         active_dims: list = None
     ) -> None:
@@ -538,7 +541,7 @@ class Periodic(BaseKernel):
             Function used to compute the period `tau`. Used when `tau` is to be inferred.
         sigma
             Bandwidth used for the kernel.
-        init_fn_sigma
+        init_sigma_fn
             Function used to compute the bandwidth `sigma`. Used when `sigma` is to be inferred.
         trainable
             Whether or not to track gradients w.r.t. `sigma` to allow it to be trained.
@@ -556,7 +559,7 @@ class Periodic(BaseKernel):
         )
         self.parameter_dict['log-sigma'] = KernelParameter(
             value=sigma.log().reshape(-1) if sigma is not None else None,
-            init_fn=init_fn_sigma,
+            init_fn=init_sigma_fn,
             requires_grad=trainable,
             requires_init=True if sigma is None else False
         )
@@ -645,12 +648,23 @@ class DeepKernel(BaseKernel):
     ) -> None:
         super().__init__()
         self.config = {'proj': proj, 'kernel_a': kernel_a, 'kernel_b': kernel_b, 'eps': eps}
-        proj_kernel = ProjKernel(proj=proj, raw_kernel=kernel_a)
+        self.proj = proj
+        self.kernel_a = kernel_a
+        self.kernel_b = kernel_b
+
+        if hasattr(self.kernel_a, 'parameter_dict'):
+            for param in self.kernel_a.parameter_dict.keys():
+                setattr(self, param, self.kernel_a.parameter_dict[param].value)
+
+        self.proj_kernel = ProjKernel(proj=proj, raw_kernel=kernel_a)
         if kernel_b is not None:
             self._init_eps(eps)
-            self.comp_kernel = (1-self.logit_eps.sigmoid())*proj_kernel + self.logit_eps.sigmoid()*kernel_b
+            self.comp_kernel = (1-self.eps)*self.proj_kernel + self.eps*self.kernel_b
+            if hasattr(self.kernel_b, 'parameter_dict'):
+                for param in self.kernel_b.parameter_dict.keys():
+                    setattr(self, param, self.kernel_b.parameter_dict[param].value)
         else:
-            self.comp_kernel = proj_kernel
+            self.comp_kernel = self.proj_kernel
 
     def _init_eps(self, eps: Union[float, str]) -> None:
         if isinstance(eps, float):
@@ -661,6 +675,10 @@ class DeepKernel(BaseKernel):
             self.logit_eps = nn.Parameter(torch.tensor(0.))
         else:
             raise NotImplementedError("eps should be 'trainable' or a float in (0,1)")
+
+    @property
+    def eps(self) -> torch.Tensor:
+        return self.logit_eps.sigmoid() if self.kernel_b is not None else torch.tensor(0.)
 
     def kernel_function(
         self,

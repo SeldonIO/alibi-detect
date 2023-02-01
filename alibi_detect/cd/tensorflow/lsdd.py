@@ -18,6 +18,7 @@ class LSDDDriftTF(BaseLSDDDrift):
             preprocess_at_init: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
+            sigma: Optional[Union[np.ndarray, float]] = None,
             n_permutations: int = 100,
             n_kernel_centers: Optional[int] = None,
             lambda_rd_max: float = 0.2,
@@ -83,7 +84,7 @@ class LSDDDriftTF(BaseLSDDDrift):
             x_ref = tf.convert_to_tensor(self.x_ref)
             self._configure_normalization(x_ref)
             x_ref = self._normalize(x_ref)
-            self.kernel = GaussianRBF()
+            self.kernel = GaussianRBF(tf.cast(sigma) if sigma is not None else None)
             _ = self.kernel(x_ref, x_ref, infer_parameter=True)  # infer sigma
             self._configure_kernel_centers(x_ref)
             self.x_ref = x_ref.numpy()  # type: ignore[union-attr]

@@ -22,6 +22,7 @@ class LSDDDrift(DriftConfigMixin):
             preprocess_at_init: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
+            sigma: Optional[Union[np.ndarray, float]] = None,
             n_permutations: int = 100,
             n_kernel_centers: Optional[int] = None,
             lambda_rd_max: float = 0.2,

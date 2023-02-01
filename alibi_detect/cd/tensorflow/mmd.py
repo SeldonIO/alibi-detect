@@ -22,6 +22,7 @@ class MMDDriftTF(BaseMMDDrift):
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
             kernel: BaseKernel = GaussianRBF(),
+            sigma: Optional[Union[np.ndarray, float]] = None,
             configure_kernel_from_x_ref: bool = True,
             n_permutations: int = 100,
             input_shape: Optional[tuple] = None,
@@ -78,8 +79,28 @@ class MMDDriftTF(BaseMMDDrift):
         self.meta.update({'backend': Framework.TENSORFLOW.value})
 
         self.kernel = kernel
+
+        if isinstance(self.kernel, GaussianRBF) & (sigma is not None):
+            self.kernel.parameter_dict['log-sigma'].value.assign(tf.cast(np.log(sigma),
+                                                                         tf.keras.backend.floatx()))
+            self.kernel.parameter_dict['log-sigma'].requires_init = False
+            self.kernel.init_required = False
+
+        self.kernel_parameter_specified = True
+        if hasattr(kernel, 'parameter_dict'):
+            for param in self.kernel.parameter_dict.keys():
+                if kernel.parameter_dict[param].requires_init:
+                    self.given_kernel_parameter = False
+                    break
+
+        if self.kernel_parameter_specified and self.infer_parameter:
+            self.infer_parameter = False
+            logger.warning('parameters are specified for the kernel and `configure_kernel_from_x_ref` '
+                           'is set to True. Specified parameters take priority over '
+                           '`configure_kernel_from_x_ref` (set to False).')
+
         # compute kernel matrix for the reference data
-        if self.infer_parameter:
+        if self.infer_parameter or self.kernel_parameter_specified:
             self.k_xx = self.kernel(self.x_ref, self.x_ref, infer_parameter=self.infer_parameter)
             self.infer_sigma = False
         else:
