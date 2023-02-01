@@ -100,6 +100,23 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
             raise ThresholdNotInferredException((f'{self.__class__.__name__} has no threshold set, '
                                                  'call `infer_threshold` before predicting.'))
 
+    @staticmethod
+    def _to_numpy(arg: Union[torch.Tensor, TorchOutlierDetectorOutput]) -> Union[np.ndarray, Dict]:
+        """Converts any `torch` tensors found in input to `numpy` arrays.
+
+        Takes a `torch` tensor or `TorchOutlierDetectorOutput` and converts any `torch` tensors found to `numpy` arrays
+
+        Parameters
+        ----------
+        x
+            Data to convert.
+
+        Returns
+        -------
+        `np.ndarray` or dictionary of containing `numpy` arrays
+        """
+        return to_numpy(arg)
+
     def _to_tensor(self, x: Union[List, np.ndarray]) -> torch.Tensor:
         """Converts the data to a tensor.
 
