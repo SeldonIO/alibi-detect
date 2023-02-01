@@ -6,24 +6,34 @@
 ### Added
 - **New feature** The [MMD](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/mmddrift.html) and [learned-kernel MMD](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/learnedkerneldrift.html) drift detectors have been extended with [KeOps](https://www.kernel-operations.io/keops/index.html) backends to scale and speed up the detectors. See the [example notebook](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_mmd_keops.html) for more info ([#548](https://github.com/SeldonIO/alibi-detect/pull/548) and [#602](https://github.com/SeldonIO/alibi-detect/pull/602)).
 - **New feature** Added support for serializing detectors with PyTorch backends, and detectors containing PyTorch models in their proprocessing functions ([#656](https://github.com/SeldonIO/alibi-detect/pull/656)).
-- **New feature** Added support for serializing detectors with KeOps backends ([#681](https://github.com/SeldonIO/alibi-detect/pull/681)).
+- **New feature** Added support for serializing detectors with scikit-learn and KeOps backends ([#642](https://github.com/SeldonIO/alibi-detect/pull/642) and [#681](https://github.com/SeldonIO/alibi-detect/pull/681)).
 - **New feature** Added support for saving and loading online detectors' state. This allows a detector to be restarted from previously generated checkpoints ([#604](https://github.com/SeldonIO/alibi-detect/pull/604)).
-- **New feature** Added a PyTorch version of the `UAE` preprocessing utility function ([#656](https://github.com/SeldonIO/alibi-detect/pull/656)).
-- If a `categories_per_feature` dictionary is not passed to `TabularDrift`, a warning is now raised to inform the user that all features are assumed to be numerical ([#606](https://github.com/SeldonIO/alibi-detect/pull/606)).
-- For the `ClassifierDrift` and `SpotTheDiffDrift` detectors, we can also return the out-of-fold instances of the reference and test sets. When using `train_size` for training the detector, this allows to associate the returned prediction probabilities with the correct instances.
+- **New feature** Added a PyTorch version of the `UAE` preprocessing utility function ([#656](https://github.com/SeldonIO/alibi-detect/pull/656), ([#705](https://github.com/SeldonIO/alibi-detect/pull/705)).
+- For the `ClassifierDrift` and `SpotTheDiffDrift` detectors, we can also return the out-of-fold instances of the reference and test sets. When using `train_size` for training the detector, this allows to associate the returned prediction probabilities with the correct instances ([#665](https://github.com/SeldonIO/alibi-detect/pull/665)).
 
 ### Changed
 - Minimum `prophet` version bumped to `1.1.0` (used by `OutlierProphet`). This upgrade removes the dependency on `pystan` as `cmdstanpy` is used instead. This version also comes with pre-built wheels for all major platforms and Python versions, making both installation and testing easier ([#627](https://github.com/SeldonIO/alibi-detect/pull/627)).
 - **Breaking change** The configuration field `config_spec` has been removed. In order to load detectors serialized from previous Alibi Detect versions, the field will need to be deleted from the detector's `config.toml` file. However, in any case, serialization compatibility across Alibi Detect versions is not currently guranteed. ([#641](https://github.com/SeldonIO/alibi-detect/pull/641)).
 - Added support for serializing tensorflow optimizers. Previously, tensorflow optimizers were not serialized, which meant the default `optimizer` kwarg would also be set when a detector was loaded with `load_detector`, regardless of the `optimizer` given to the original detector ([#656](https://github.com/SeldonIO/alibi-detect/pull/656)).
 - Strengthened pydantic validation of detector configs. The `flavour` backend is now validated whilst taking into account the optional dependencies. For example, a `ValidationError` will be raised if `flavour='pytorch'` is given but PyTorch is not installed ([#656](https://github.com/SeldonIO/alibi-detect/pull/656)).
+- If a `categories_per_feature` dictionary is not passed to `TabularDrift`, a warning is now raised to inform the user that all features are assumed to be numerical ([#606](https://github.com/SeldonIO/alibi-detect/pull/606)).
+- For better clarity, the original error is now reraised when optional dependency errors are raised ([#783](https://github.com/SeldonIO/alibi-detect/pull/783)).
+- The maximum `tensorflow` version has been bumped from 2.9 to 2.10 ([#608](https://github.com/SeldonIO/alibi-detect/pull/608)).
+- The maximum `torch` version has been bumped from 1.12 to 1.13 ([#669](https://github.com/SeldonIO/alibi-detect/pull/669)).
 
 ### Fixed
 - Fixed an issue with the serialization of `kernel_a` and `kernel_b` in `DeepKernel`'s ([#656](https://github.com/SeldonIO/alibi-detect/pull/656)).
+- Fixed minor documentation issues ([#636](https://github.com/SeldonIO/alibi-detect/pull/636), [#640](https://github.com/SeldonIO/alibi-detect/pull/640), [#651](https://github.com/SeldonIO/alibi-detect/pull/651)).
+- Fixed an issue with a warning being incorrect raised when `device='cpu'` was passed to PyTorch based detectors ([#698](https://github.com/SeldonIO/alibi-detect/pull/698)).
+- Fixed a bug that could cause `IndexError`'s to be raised in the TensorFlow `MMDDriftOnline` detector when older `numpy` versions were installed ([#710](https://github.com/SeldonIO/alibi-detect/pull/710)).
 
 ### Development
 - UTF-8 decoding is enforced when `README.md` is opened by `setup.py`. This is to prevent pip install errors on systems with `PYTHONIOENCODING` set to use other encoders ([#605](https://github.com/SeldonIO/alibi-detect/pull/605)).
 - Skip specific save/load tests that require downloading remote artefacts if the relevant URI(s) is/are down ([#607](https://github.com/SeldonIO/alibi-detect/pull/607)).
+- CI `test/` directories are now ignored when measuring testing code coverage. This has a side-effect of lowering the reported test coverage ([#614](https://github.com/SeldonIO/alibi-detect/pull/614)).
+- Added codecov tags to measure to platform-specific code coverage ([#615](https://github.com/SeldonIO/alibi-detect/pull/615)).
+- Added option to ssh into CI runs for debugging ([#644](https://github.com/SeldonIO/alibi-detect/pull/644)).
+- Measure executation time of test runs in CI ([#712](https://github.com/SeldonIO/alibi-detect/pull/712)).
 
 ## v0.10.5
 ## [v0.10.5](https://github.com/SeldonIO/alibi-detect/tree/v0.10.5) (2023-01-26)
