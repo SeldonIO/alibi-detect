@@ -17,7 +17,7 @@ class GMMTorch(TorchOutlierDetector):
     ) -> None:
         """
         Fits a Gaussian mixture model to the training data and scores new data points
-        via the negative log-likhood under the corresponding density function.
+        via the negative log-liklihood under the corresponding density function.
         Parameters
         ----------
         n_components:
