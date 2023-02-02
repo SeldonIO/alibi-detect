@@ -6,7 +6,7 @@ import numpy as np
 from alibi_detect.utils._types import Literal
 from alibi_detect.base import outlier_prediction_dict
 from alibi_detect.od.base import OutlierDetector
-from alibi_detect.od.pytorch.mahalanobis import MahalanobisTorch
+from alibi_detect.od.pytorch import MahalanobisTorch
 from alibi_detect.utils.frameworks import BackendValidator
 from alibi_detect.version import __version__
 
