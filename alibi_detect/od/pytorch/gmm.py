@@ -38,7 +38,7 @@ class GMMTorch(TorchOutlierDetector):
             epochs: int = 10,
             verbose: int = 0,
             ) -> None:
-        self.model = GMMModel(self.n_components, X.shape[-1])
+        self.model = GMMModel(self.n_components, X.shape[-1]).to(self.device)
         X = X.to(torch.float32)
 
         dataset = TorchDataset(X)
