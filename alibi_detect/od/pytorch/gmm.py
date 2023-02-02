@@ -1,4 +1,4 @@
-from typing import Callable, Optional
+from typing import Callable, Optional, Union
 from tqdm import tqdm
 import torch
 from torch.utils.data import DataLoader
@@ -13,7 +13,7 @@ class GMMTorch(TorchOutlierDetector):
     def __init__(
         self,
         n_components: int,
-        device: Optional[str] = None,
+        device: Optional[Union[str, torch.device]] = None
     ) -> None:
         """
         Fits a Gaussian mixture model to the training data and scores new data points
@@ -41,13 +41,13 @@ class GMMTorch(TorchOutlierDetector):
         self.model = GMMModel(self.n_components, X.shape[-1])
         X = X.to(torch.float32)
 
-        ds = TorchDataset(X)
-        dl = DataLoader(ds, batch_size=batch_size, shuffle=True)
+        dataset = TorchDataset(X)
+        dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
         optimizer = optimizer(self.model.parameters(), lr=learning_rate)
         self.model.train()
 
         for epoch in range(epochs):
-            dl = tqdm(enumerate(dl), total=len(dl)) if verbose == 1 else enumerate(dl)
+            dl = tqdm(enumerate(dataloader), total=len(dataloader), disable=not verbose)
             loss_ma = 0
             for step, x in dl:
                 x = x.to(self.device)

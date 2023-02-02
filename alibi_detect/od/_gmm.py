@@ -56,12 +56,12 @@ class GMM(OutlierDetector):
         ).verify_backend(backend_str)
 
         backend_cls = backends[backend]
-        args = {'n_components': n_components}
+        args: Dict[str, Any] = {'n_components': n_components}
         if backend == 'pytorch':
             args['device'] = device
         self.backend = backend_cls(**args)
 
-    def fit(self, x_ref: np.ndarray, **kwargs) -> None:
+    def fit(self, x_ref: np.ndarray, **kwargs: Dict) -> None:
         """Fit the detector on reference data.
 
         Parameters

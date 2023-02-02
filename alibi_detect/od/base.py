@@ -18,7 +18,7 @@ class OutlierDetector(BaseDetector, ABC):
         self.meta['detector_type'] = 'outlier'
 
     @abstractmethod
-    def fit(self, x: np.ndarray) -> None:
+    def fit(self, x_ref: np.ndarray) -> None:
         """
         Fit outlier detector to data.
 
