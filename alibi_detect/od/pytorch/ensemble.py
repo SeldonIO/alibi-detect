@@ -31,6 +31,7 @@ class BaseTransformTorch(Module, ABC):
         """
         pass
 
+    @torch.no_grad()
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.transform(x=x)
 
