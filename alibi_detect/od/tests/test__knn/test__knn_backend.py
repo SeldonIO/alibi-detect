@@ -16,7 +16,7 @@ def ensembler(request):
 
 
 def test_knn_torch_backend():
-    # Test the knn torch backend can be correctly initialized, fit and used to 
+    # Test the knn torch backend can be correctly initialized, fit and used to
     # predict outliers.
 
     knn_torch = KNNTorch(k=5)
