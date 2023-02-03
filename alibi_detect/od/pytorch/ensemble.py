@@ -6,7 +6,7 @@ import torch
 import numpy as np
 from torch.nn import Module
 
-from alibi_detect.od.base import NotFitException
+from alibi_detect.base import NotFitException
 
 
 class BaseTransformTorch(Module, ABC):

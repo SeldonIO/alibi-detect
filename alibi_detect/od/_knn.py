@@ -5,7 +5,8 @@ import numpy as np
 
 from typing_extensions import Literal
 from alibi_detect.base import outlier_prediction_dict
-from alibi_detect.od.base import OutlierDetector, TransformProtocol, transform_protocols
+from alibi_detect.od.base import TransformProtocol, transform_protocols
+from alibi_detect.base import BaseDetector, FitMixin, ThresholdMixin
 from alibi_detect.od.pytorch import KNNTorch, Ensembler
 from alibi_detect.od import normalizer_literals, aggregator_literals, get_aggregator, get_normalizer
 from alibi_detect.utils.frameworks import BackendValidator
@@ -21,7 +22,7 @@ backends = {
 }
 
 
-class KNN(OutlierDetector):
+class KNN(BaseDetector, FitMixin, ThresholdMixin):
     def __init__(
         self,
         k: Union[int, np.ndarray, List[int], Tuple[int]],
@@ -97,6 +98,11 @@ class KNN(OutlierDetector):
 
         self.backend = backend_cls(k, kernel=kernel, ensembler=ensembler, device=device)
 
+        # set metadata
+        self.meta['detector_type'] = 'outlier'
+        self.meta['data_type'] = 'numeric'
+        self.meta['online'] = False
+
     def fit(self, x_ref: np.ndarray) -> None:
         """Fit the detector on reference data.
 
@@ -107,7 +113,7 @@ class KNN(OutlierDetector):
         """
         self.backend.fit(self.backend._to_tensor(x_ref))
 
-    def score(self, x: np.ndarray) -> np.ndarray:
+    def score(self, X: np.ndarray) -> np.ndarray:
         """Score `x` instances using the detector.
 
         Computes the k nearest neighbor distance/kernel similarity for each instance in `x`. If `k` is a single
@@ -124,10 +130,10 @@ class KNN(OutlierDetector):
         Outlier scores. The shape of the scores is `(n_instances,)`. The higher the score, the more anomalous the \
         instance.
         """
-        score = self.backend.score(self.backend._to_tensor(x))
+        score = self.backend.score(self.backend._to_tensor(X))
         return self.backend._to_numpy(score)
 
-    def infer_threshold(self, x_ref: np.ndarray, fpr: float) -> None:
+    def infer_threshold(self, X: np.ndarray, fpr: float) -> None:
         """Infer the threshold for the kNN detector.
 
         The threshold is computed so that the outlier detector would incorectly classify `fpr` proportion of the
@@ -142,7 +148,7 @@ class KNN(OutlierDetector):
             instances in `x_ref` that are incorrectly classified as outliers. The false positive rate should
             be in the range ``(0, 1)``.
         """
-        self.backend.infer_threshold(self.backend._to_tensor(x_ref), fpr)
+        self.backend.infer_threshold(self.backend._to_tensor(X), fpr)
 
     def predict(self, x: np.ndarray) -> Dict[str, Any]:
         """Predict whether the instances in `x` are outliers or not.
