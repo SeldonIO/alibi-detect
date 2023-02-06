@@ -19,7 +19,7 @@ backends = {
 }
 
 
-class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin,):
+class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
     def __init__(
         self,
         min_eigenvalue: float = 1e-6,
