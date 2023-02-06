@@ -87,14 +87,14 @@ class BaseDetector(ABC):
 
 class FitMixin(ABC):
     @abstractmethod
-    def fit(self, X: np.ndarray) -> None:
-        pass
+    def fit(self, *args, **kwargs) -> None:
+        ...
 
 
 class ThresholdMixin(ABC):
     @abstractmethod
-    def infer_threshold(self, X: np.ndarray) -> None:
-        pass
+    def infer_threshold(self, *args, **kwargs) -> None:
+        ...
 
 
 # "Large artefacts" - to save memory these are skipped in _set_config(), but added back in get_config()
@@ -264,3 +264,13 @@ class NumpyEncoder(json.JSONEncoder):
         elif isinstance(obj, (np.ndarray,)):
             return obj.tolist()
         return json.JSONEncoder.default(self, obj)
+
+
+class NotFitException(Exception):
+    """Exception raised when a transform is not fitted."""
+    pass
+
+
+class ThresholdNotInferredException(Exception):
+    """Exception raised when a threshold not inferred for an outlier detector."""
+    pass

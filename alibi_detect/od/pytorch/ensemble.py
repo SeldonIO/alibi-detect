@@ -6,7 +6,7 @@ import torch
 import numpy as np
 from torch.nn import Module
 
-from alibi_detect.od.base import NotFitException
+from alibi_detect.base import NotFitException
 
 
 class BaseTransformTorch(Module, ABC):
@@ -31,6 +31,7 @@ class BaseTransformTorch(Module, ABC):
         """
         pass
 
+    @torch.no_grad()
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.transform(x=x)
 

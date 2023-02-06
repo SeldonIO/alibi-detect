@@ -5,7 +5,7 @@ import numpy as np
 
 from alibi_detect.utils._types import Literal
 from alibi_detect.base import outlier_prediction_dict
-from alibi_detect.od.base import OutlierDetector
+from alibi_detect.base import BaseDetector, ThresholdMixin, FitMixin
 from alibi_detect.od.pytorch import KernelPCATorch, LinearPCATorch
 from alibi_detect.utils.frameworks import BackendValidator
 from alibi_detect.version import __version__
@@ -20,7 +20,7 @@ backends = {
 }
 
 
-class PCA(OutlierDetector):
+class PCA(BaseDetector, ThresholdMixin, FitMixin):
     def __init__(
         self,
         n_components: int,

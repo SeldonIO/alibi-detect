@@ -4,8 +4,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from alibi_detect.utils._types import Literal
-from alibi_detect.base import outlier_prediction_dict
-from alibi_detect.od.base import OutlierDetector
+from alibi_detect.base import BaseDetector, FitMixin, ThresholdMixin, outlier_prediction_dict
 from alibi_detect.od.pytorch import MahalanobisTorch
 from alibi_detect.utils.frameworks import BackendValidator
 from alibi_detect.version import __version__
@@ -20,7 +19,7 @@ backends = {
 }
 
 
-class Mahalanobis(OutlierDetector):
+class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
     def __init__(
         self,
         min_eigenvalue: float = 1e-6,
