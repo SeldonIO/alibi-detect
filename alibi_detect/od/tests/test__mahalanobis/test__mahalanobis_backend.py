@@ -3,7 +3,7 @@ import torch
 import numpy as np
 
 from alibi_detect.od.pytorch.mahalanobis import MahalanobisTorch
-from alibi_detect.od.base import NotFitException, ThresholdNotInferredException
+from alibi_detect.base import NotFitException, ThresholdNotInferredException
 
 
 def test_mahalanobis_torch_backend_fit_errors():
