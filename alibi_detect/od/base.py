@@ -3,6 +3,7 @@ from typing import Union
 
 from typing_extensions import Protocol, runtime_checkable
 
+
 # Use Protocols instead of base classes for the backend associated objects. This is a bit more flexible and allows us to
 # avoid the torch/tensorflow imports in the base class.
 @runtime_checkable
