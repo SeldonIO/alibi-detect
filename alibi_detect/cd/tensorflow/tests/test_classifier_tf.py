@@ -1,5 +1,6 @@
 from itertools import product
 import numpy as np
+from copy import deepcopy
 import pytest
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, Input
@@ -53,6 +54,7 @@ def test_clfdrift(clfdrift_params):
     tf.random.set_seed(0)
 
     model = mymodel((n_features,), softmax=(preds_type == 'probs'))
+    original_model_weights = deepcopy(model.get_weights())
     x_ref = np.random.randn(*(n, n_features))
     x_test1 = np.ones_like(x_ref)
     to_list = False
@@ -71,7 +73,8 @@ def test_clfdrift(clfdrift_params):
         preds_type=preds_type,
         binarize_preds=binarize_preds,
         preprocess_batch_fn=preprocess_batch,
-        batch_size=1
+        batch_size=1,
+        retrain_from_scratch=True
     )
 
     x_test0 = x_ref.copy()
@@ -90,3 +93,7 @@ def test_clfdrift(clfdrift_params):
     assert preds_0['data']['distance'] < preds_1['data']['distance']
     assert cd.meta['params']['preds_type'] == preds_type
     assert cd.meta['params']['binarize_preds '] == binarize_preds
+
+    # Check _original_model_state matches that of original model
+    for i, weights in enumerate(original_model_weights):
+        np.testing.assert_array_equal(weights, cd._original_model_state[i])

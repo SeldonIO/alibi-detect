@@ -1,5 +1,6 @@
 from itertools import product
 import numpy as np
+from copy import deepcopy
 import pytest
 import tensorflow as tf
 from tensorflow.keras.layers import Dense
@@ -56,6 +57,7 @@ def test_lkdrift(lkdrift_params):
     tf.random.set_seed(0)
 
     kernel = MyKernel(n_features)
+    original_kernel_weights = deepcopy(kernel.get_weights())
     x_ref = np.random.randn(*(n, n_features))
     x_test1 = np.ones_like(x_ref)
     to_list = False
@@ -87,3 +89,7 @@ def test_lkdrift(lkdrift_params):
     assert preds_1['data']['is_drift'] == 1
 
     assert preds_0['data']['distance'] < preds_1['data']['distance']
+
+    # Check _original_kernel_state matches that of original kernel
+    for i, weights in enumerate(original_kernel_weights):
+        np.testing.assert_array_equal(weights, cd._original_kernel_state[i])

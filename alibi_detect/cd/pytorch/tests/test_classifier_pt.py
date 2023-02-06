@@ -1,5 +1,6 @@
 from itertools import product
 import numpy as np
+from copy import deepcopy
 import pytest
 import torch
 import torch.nn as nn
@@ -59,6 +60,7 @@ def test_clfdrift(clfdrift_params):
     torch.manual_seed(0)
 
     model = MyModel(n_features, softmax=(preds_type == 'probs'))
+    original_model_state = deepcopy(model.state_dict())
     x_ref = np.random.randn(*(n, n_features)).astype(np.float32)
     x_test1 = np.ones_like(x_ref)
     to_list = False
@@ -96,3 +98,8 @@ def test_clfdrift(clfdrift_params):
     assert preds_0['data']['distance'] < preds_1['data']['distance']
     assert cd.meta['params']['preds_type'] == preds_type
     assert cd.meta['params']['binarize_preds '] == binarize_preds
+
+    # Check _original_model_state matches that of original model
+    for key, value in original_model_state.items():
+        assert key in cd._original_model_state
+        np.testing.assert_array_equal(value, cd._original_model_state[key])
