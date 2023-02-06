@@ -4,7 +4,7 @@ import torch
 
 from alibi_detect.utils.pytorch.kernels import GaussianRBF
 from alibi_detect.od._pca import PCA
-from alibi_detect.od.base import NotFitException
+from alibi_detect.base import NotFitException
 from sklearn.datasets import make_moons
 
 

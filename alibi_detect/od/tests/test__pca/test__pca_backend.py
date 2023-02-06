@@ -4,7 +4,7 @@ import numpy as np
 
 from alibi_detect.utils.pytorch.kernels import GaussianRBF
 from alibi_detect.od.pytorch.pca import LinearPCATorch, KernelPCATorch
-from alibi_detect.od.base import NotFitException, ThresholdNotInferredException
+from alibi_detect.base import NotFitException, ThresholdNotInferredException
 
 
 @pytest.mark.parametrize('backend_detector', [

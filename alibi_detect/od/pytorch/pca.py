@@ -44,7 +44,7 @@ class PCATorch(TorchOutlierDetector):
         """
         scores = self.score(x)
         if not torch.jit.is_scripting():
-            self.check_threshold_infered()
+            self.check_threshold_inferred()
         preds = scores > self.threshold
         return preds.cpu()
 
