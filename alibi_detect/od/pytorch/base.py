@@ -10,7 +10,7 @@ import torch
 
 from alibi_detect.od.pytorch.ensemble import FitMixinTorch
 from alibi_detect.utils.pytorch.misc import get_device
-from alibi_detect.od.base import ThresholdNotInferredException
+from alibi_detect.base import ThresholdNotInferredException
 
 
 @dataclass
@@ -88,7 +88,7 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
         pass
 
     @torch.jit.unused
-    def check_threshold_infered(self):
+    def check_threshold_inferred(self):
         """Check if threshold is inferred.
 
         Raises
