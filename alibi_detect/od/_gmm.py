@@ -5,7 +5,7 @@ import numpy as np
 
 from alibi_detect.utils._types import Literal
 from alibi_detect.base import outlier_prediction_dict
-from alibi_detect.od.base import OutlierDetector
+from alibi_detect.base import BaseDetector, ThresholdMixin, FitMixin
 from alibi_detect.od.pytorch import GMMTorch
 from alibi_detect.od.sklearn import GMMSklearn
 from alibi_detect.utils.frameworks import BackendValidator
@@ -22,7 +22,7 @@ backends = {
 }
 
 
-class GMM(OutlierDetector):
+class GMM(BaseDetector, ThresholdMixin, FitMixin):
     def __init__(
         self,
         n_components: int,

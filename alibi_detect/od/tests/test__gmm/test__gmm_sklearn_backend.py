@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 
 from alibi_detect.od.sklearn.gmm import GMMSklearn
-from alibi_detect.od.base import NotFitException, ThresholdNotInferredException
+from alibi_detect.base import NotFitException, ThresholdNotInferredException
 
 
 def test_gmm_sklearn_backend_fit_errors():

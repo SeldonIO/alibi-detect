@@ -80,7 +80,7 @@ class GMMTorch(TorchOutlierDetector):
         raw_scores = self.score(x)
         scores = self._ensembler(raw_scores)
         if not torch.jit.is_scripting():
-            self.check_threshold_infered()
+            self.check_threshold_inferred()
         preds = scores > self.threshold
         return preds.cpu()
 

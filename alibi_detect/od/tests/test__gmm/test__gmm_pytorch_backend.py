@@ -3,7 +3,7 @@ import numpy as np
 import torch
 
 from alibi_detect.od.pytorch.gmm import GMMTorch
-from alibi_detect.od.base import NotFitException, ThresholdNotInferredException
+from alibi_detect.base import NotFitException, ThresholdNotInferredException
 
 
 def test_gmm_pytorch_backend_fit_errors():

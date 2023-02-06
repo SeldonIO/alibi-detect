@@ -5,8 +5,7 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 
-from alibi_detect.od.base import NotFitException
-from alibi_detect.od.base import ThresholdNotInferredException
+from alibi_detect.base import NotFitException, ThresholdNotInferredException
 
 
 @dataclass
