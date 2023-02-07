@@ -139,7 +139,7 @@ class AdversarialAE(BaseDetector, FitMixin, ThresholdMixin):
             loss_fn: tf.keras.losses = loss_adv_ae,
             w_model: float = 1.,
             w_recon: float = 0.,
-            optimizer: tf.keras.optimizers = tf.keras.optimizers.Adam(learning_rate=1e-3),
+            optimizer: tf.keras.optimizers.Optimizer = tf.keras.optimizers.Adam,
             epochs: int = 20,
             batch_size: int = 128,
             verbose: bool = True,
@@ -177,6 +177,7 @@ class AdversarialAE(BaseDetector, FitMixin, ThresholdMixin):
         """
         # train arguments
         args = [self.ae, loss_fn, X]
+        optimizer = optimizer() if isinstance(optimizer, type) else optimizer
         kwargs = {
             'optimizer': optimizer,
             'epochs': epochs,

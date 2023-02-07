@@ -59,7 +59,7 @@ class OutlierAE(BaseDetector, FitMixin, ThresholdMixin):
     def fit(self,
             X: np.ndarray,
             loss_fn: tf.keras.losses = tf.keras.losses.MeanSquaredError(),
-            optimizer: tf.keras.optimizers = tf.keras.optimizers.Adam(learning_rate=1e-3),
+            optimizer: tf.keras.optimizers.Optimizer = tf.keras.optimizers.Adam,
             epochs: int = 20,
             batch_size: int = 64,
             verbose: bool = True,
@@ -90,6 +90,7 @@ class OutlierAE(BaseDetector, FitMixin, ThresholdMixin):
         """
         # train arguments
         args = [self.ae, loss_fn, X]
+        optimizer = optimizer() if isinstance(optimizer, type) else optimizer
         kwargs = {'optimizer': optimizer,
                   'epochs': epochs,
                   'batch_size': batch_size,

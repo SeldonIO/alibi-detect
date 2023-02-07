@@ -90,7 +90,7 @@ class OutlierSeq2Seq(BaseDetector, FitMixin, ThresholdMixin):
     def fit(self,
             X: np.ndarray,
             loss_fn: tf.keras.losses = tf.keras.losses.mse,
-            optimizer: tf.keras.optimizers = tf.keras.optimizers.Adam(learning_rate=1e-3),
+            optimizer: tf.keras.optimizers.Optimizer = tf.keras.optimizers.Adam,
             epochs: int = 20,
             batch_size: int = 64,
             verbose: bool = True,
@@ -129,6 +129,7 @@ class OutlierSeq2Seq(BaseDetector, FitMixin, ThresholdMixin):
 
         # train arguments
         args = [self.seq2seq, loss_fn, X]
+        optimizer = optimizer() if isinstance(optimizer, type) else optimizer
         kwargs = {'y_train': y,
                   'optimizer': optimizer,
                   'epochs': epochs,

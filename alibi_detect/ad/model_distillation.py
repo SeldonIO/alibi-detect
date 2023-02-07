@@ -67,7 +67,7 @@ class ModelDistillation(BaseDetector, FitMixin, ThresholdMixin):
     def fit(self,
             X: np.ndarray,
             loss_fn: tf.keras.losses = loss_distillation,
-            optimizer: tf.keras.optimizers = tf.keras.optimizers.Adam(learning_rate=1e-3),
+            optimizer: tf.keras.optimizers.Optimizer = tf.keras.optimizers.Adam,
             epochs: int = 20,
             batch_size: int = 128,
             verbose: bool = True,
@@ -101,6 +101,7 @@ class ModelDistillation(BaseDetector, FitMixin, ThresholdMixin):
         """
         # train arguments
         args = [self.distilled_model, loss_fn, X]
+        optimizer = optimizer() if isinstance(optimizer, type) else optimizer
         kwargs = {
             'optimizer': optimizer,
             'epochs': epochs,

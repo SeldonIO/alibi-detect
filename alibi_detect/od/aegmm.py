@@ -76,7 +76,7 @@ class OutlierAEGMM(BaseDetector, FitMixin, ThresholdMixin):
             loss_fn: tf.keras.losses = loss_aegmm,
             w_energy: float = .1,
             w_cov_diag: float = .005,
-            optimizer: tf.keras.optimizers = tf.keras.optimizers.Adam(learning_rate=1e-4),
+            optimizer: tf.keras.optimizers.Optimizer = tf.keras.optimizers.Adam,
             epochs: int = 20,
             batch_size: int = 64,
             verbose: bool = True,
@@ -111,6 +111,7 @@ class OutlierAEGMM(BaseDetector, FitMixin, ThresholdMixin):
         """
         # train arguments
         args = [self.aegmm, loss_fn, X]
+        optimizer = optimizer() if isinstance(optimizer, type) else optimizer
         kwargs = {'optimizer': optimizer,
                   'epochs': epochs,
                   'batch_size': batch_size,

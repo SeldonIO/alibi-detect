@@ -105,7 +105,7 @@ class LLR(BaseDetector, FitMixin, ThresholdMixin):
             mutate_batch_size: int = int(1e10),
             loss_fn: tf.keras.losses = None,
             loss_fn_kwargs: dict = None,
-            optimizer: tf.keras.optimizers = tf.keras.optimizers.Adam(learning_rate=1e-3),
+            optimizer: tf.keras.optimizers.Optimizer = tf.keras.optimizers.Adam,
             epochs: int = 20,
             batch_size: int = 64,
             verbose: bool = True,
@@ -168,6 +168,7 @@ class LLR(BaseDetector, FitMixin, ThresholdMixin):
         if use_build:
             # build and train semantic model
             self.model_s = build_model(self.dist_s, input_shape)[0]
+            optimizer = optimizer() if isinstance(optimizer, type) else optimizer
             self.model_s.compile(optimizer=optimizer)
             self.model_s.fit(X, **kwargs)
             # build and train background model
