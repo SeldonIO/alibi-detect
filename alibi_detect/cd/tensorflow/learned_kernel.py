@@ -119,9 +119,9 @@ class LearnedKernelDriftTF(BaseLearnedKernelDrift):
         self.meta.update({'backend': Framework.TENSORFLOW.value})
 
         # define and compile kernel
-        self.kernel = kernel
+        self.kernel: tf.keras.Model = kernel
         if self.retrain_from_scratch:
-            self._original_kernel_state = kernel.get_weights()
+            self._original_kernel_state = self.kernel.get_weights()
 
         self.dataset = partial(dataset, batch_size=batch_size, shuffle=True)
         self.kernel_mat_fn = partial(

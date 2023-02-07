@@ -132,9 +132,9 @@ class ClassifierDriftTF(BaseClassifierDrift):
         self.meta.update({'backend': Framework.TENSORFLOW.value})
 
         # define and compile classifier model
-        self.model = model
+        self.model: tf.keras.Model = model
         if self.retrain_from_scratch:
-            self._original_model_state = model.get_weights()
+            self._original_model_state = self.model.get_weights()
         self.loss_fn = BinaryCrossentropy(from_logits=(self.preds_type == 'logits'))
         self.dataset = partial(dataset, batch_size=batch_size, shuffle=True)
         self.predict_fn = partial(predict_batch, preprocess_fn=preprocess_batch_fn, batch_size=batch_size)
