@@ -1,5 +1,6 @@
 from itertools import product
 import numpy as np
+from copy import deepcopy
 import pytest
 import torch
 import torch.nn as nn
@@ -76,6 +77,7 @@ def test_lkdrift(lkdrift_params):
     torch.manual_seed(0)
 
     kernel = MyKernel(n_features, has_proj)
+    original_kernel_state = deepcopy(kernel.state_dict())
     x_ref = np.random.randn(*(n, n_features)).astype(np.float32)
     x_test1 = np.ones_like(x_ref)
     to_list = False
@@ -128,3 +130,8 @@ def test_lkdrift(lkdrift_params):
         kernel_mat = kernel(x_all, x_all)
         mmd2_torch = mmd2_from_kernel_matrix(kernel_mat, n_test)
         np.testing.assert_almost_equal(mmd2, mmd2_torch, decimal=6)
+
+    # Check _original_kernel_state matches that of original model
+    for key, value in original_kernel_state.items():
+        assert key in cd._original_kernel_state
+        np.testing.assert_array_equal(value, cd._original_kernel_state[key])

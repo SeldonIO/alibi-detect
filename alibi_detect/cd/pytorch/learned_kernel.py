@@ -129,8 +129,8 @@ class LearnedKernelDriftTorch(BaseLearnedKernelDrift):
 
         # set device, define model and training kwargs
         self.device = get_device(device)
-        self.original_kernel = kernel
-        self.kernel = deepcopy(kernel)
+        self.kernel = kernel
+        self._original_kernel_state = deepcopy(kernel.state_dict())
 
         # define kwargs for dataloader and trainer
         self.dataset = dataset
@@ -187,7 +187,8 @@ class LearnedKernelDriftTorch(BaseLearnedKernelDrift):
         (x_ref_tr, x_cur_tr), (x_ref_te, x_cur_te) = self.get_splits(x_ref, x_cur)
         dl_ref_tr, dl_cur_tr = self.dataloader(self.dataset(x_ref_tr)), self.dataloader(self.dataset(x_cur_tr))
 
-        self.kernel = deepcopy(self.original_kernel) if self.retrain_from_scratch else self.kernel
+        if self.retrain_from_scratch:
+            self.kernel.load_state_dict(self._original_kernel_state)
         self.kernel = self.kernel.to(self.device)
         train_args = [self.j_hat, (dl_ref_tr, dl_cur_tr), self.device]
         LearnedKernelDriftTorch.trainer(*train_args, **self.train_kwargs)  # type: ignore

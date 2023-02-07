@@ -114,7 +114,7 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
             raise ValueError("'preds_type' should be 'probs' or 'scores'")
 
         self.meta.update({'backend': Framework.SKLEARN.value})
-        self.original_model = model
+        self._original_model = model
         self.use_calibration = use_calibration
         self.calibration_kwargs = dict() if calibration_kwargs is None else calibration_kwargs
         self.use_oob = use_oob
@@ -132,7 +132,7 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
         return has_predict_proba
 
     def _clone_model(self):
-        model = clone(self.original_model)
+        model = clone(self._original_model)
 
         # equivalence between `retrain_from_scratch` and `warm_start`
         if not self.retrain_from_scratch:

@@ -52,20 +52,28 @@ def lkdrift_params(request):
 @pytest.mark.parametrize('lkdrift_params', list(range(n_tests)), indirect=True)
 def test_lkdrift(lkdrift_params):
     p_val, n_features, train_size, preprocess_batch, update_x_ref = lkdrift_params
-
     np.random.seed(0)
     tf.random.set_seed(0)
 
+    # Init kernel
     kernel = MyKernel(n_features)
-    original_kernel_weights = deepcopy(kernel.get_weights())
+
+    # Set data
     x_ref = np.random.randn(*(n, n_features))
     x_test1 = np.ones_like(x_ref)
+
+    # Call kernel on data to build
+    kernel(x_ref, x_ref)
+    original_kernel_weights = deepcopy(kernel.get_weights())  # save weights to compare later
+
+    # Optionally convert data to list
     to_list = False
     if preprocess_batch is not None:
         to_list = True
         x_ref = [_ for _ in x_ref]
         update_x_ref = None
 
+    # Init detector
     cd = LearnedKernelDriftTF(
         x_ref=x_ref,
         kernel=kernel,
@@ -77,6 +85,7 @@ def test_lkdrift(lkdrift_params):
         epochs=1
     )
 
+    # Check predictions
     x_test0 = x_ref.copy()
     preds_0 = cd.predict(x_test0)
     assert cd.n == len(x_test0) + len(x_ref)
