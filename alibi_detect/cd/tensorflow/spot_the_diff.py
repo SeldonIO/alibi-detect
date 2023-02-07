@@ -129,7 +129,12 @@ class SpotTheDiffDriftTF:
             if len(initial_diffs) != n_diffs:
                 raise ValueError("Should have initial_diffs.shape[0] == n_diffs")
 
+        # Init and build interpretable classifier model
         model = SpotTheDiffDriftTF.InterpretableClf(kernel, x_ref_proc, initial_diffs)
+        # TODO - preferable to build instead of call, but doesn't currently work when kernel=GaussianRBF due to
+        #  non-standard positional arg in `GaussianRBF.call` (`infer_sigma`)
+#        model.build(x_ref_proc.shape)
+        model(x_ref_proc)
         reg_loss_fn = (lambda model: tf.reduce_mean(tf.abs(model.diffs)) * l1_reg)
 
         self._detector = ClassifierDriftTF(
