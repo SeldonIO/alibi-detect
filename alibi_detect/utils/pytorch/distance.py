@@ -73,14 +73,14 @@ def batch_compute_kernel_matrix(
     n_x, n_y = len(x), len(y)
     n_batch_x, n_batch_y = int(np.ceil(n_x / batch_size)), int(np.ceil(n_y / batch_size))
     with torch.no_grad():
-        k_is = []  # type: List[torch.Tensor]
+        k_is: List[torch.Tensor] = []
         for i in range(n_batch_x):
             istart, istop = i * batch_size, min((i + 1) * batch_size, n_x)
             x_batch = x[istart:istop]
             if preprocess_fn is not None:
                 x_batch = preprocess_fn(x_batch)
             x_batch = x_batch.to(device)  # type: ignore
-            k_ijs = []  # type: List[torch.Tensor]
+            k_ijs: List[torch.Tensor] = []
             for j in range(n_batch_y):
                 jstart, jstop = j * batch_size, min((j + 1) * batch_size, n_y)
                 y_batch = y[jstart:jstop]

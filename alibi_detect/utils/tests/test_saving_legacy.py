@@ -1,6 +1,6 @@
 """
 Tests for saving/loading of detectors with legacy .dill state_dict. As legacy save/load functionality becomes
-deprecated, these tests will be removed, and more tests will be added to test_savin.py.
+deprecated, these tests will be removed, and more tests will be added to test_saving.py.
 """
 from alibi_detect.utils.missing_optional_dependency import MissingDependency
 from functools import partial

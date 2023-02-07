@@ -3,7 +3,7 @@ import os
 from functools import partial
 from importlib import import_module
 from pathlib import Path
-from typing import Any, Callable, Optional, Union, TYPE_CHECKING
+from typing import Any, Callable, Optional, Union, Type, TYPE_CHECKING
 
 import dill
 import numpy as np
@@ -13,14 +13,22 @@ from transformers import AutoTokenizer
 from alibi_detect.saving.registry import registry
 from alibi_detect.saving._tensorflow import load_detector_legacy, load_embedding_tf, load_kernel_config_tf, \
     load_model_tf, load_optimizer_tf, prep_model_and_emb_tf, get_tf_dtype
+from alibi_detect.saving._pytorch import load_embedding_pt, load_kernel_config_pt, load_model_pt, \
+    load_optimizer_pt, prep_model_and_emb_pt, get_pt_dtype
+from alibi_detect.saving._keops import load_kernel_config_ke
 from alibi_detect.saving._sklearn import load_model_sk
 from alibi_detect.saving.validate import validate_config
-from alibi_detect.base import Detector, ConfigurableDetector
+from alibi_detect.base import Detector, ConfigurableDetector, StatefulDetectorOnline
 from alibi_detect.utils.frameworks import has_tensorflow, has_pytorch, Framework
 from alibi_detect.saving.schemas import supported_models_tf, supported_models_torch
+from alibi_detect.utils.missing_optional_dependency import import_optional
+get_device = import_optional('alibi_detect.utils.pytorch.misc', names=['get_device'])
 
 if TYPE_CHECKING:
     import tensorflow as tf
+    import torch
+
+STATE_PATH = 'state/'  # directory (relative to detector directory) where state is saved (and loaded from)
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +54,9 @@ FIELDS_TO_RESOLVE = [
     ['kernel', 'proj'],
     ['kernel', 'init_sigma_fn'],
     ['kernel', 'kernel_a', 'src'],
+    ['kernel', 'kernel_a', 'init_sigma_fn'],
     ['kernel', 'kernel_b', 'src'],
+    ['kernel', 'kernel_b', 'init_sigma_fn'],
     ['kernel'],
     ['x_kernel', 'src'],
     ['x_kernel', 'init_sigma_fn'],
@@ -107,7 +117,7 @@ def _load_detector_config(filepath: Union[str, os.PathLike]) -> ConfigurableDete
     Parameters
     ----------
     filepath
-        Directory containing the `config.toml` file.
+        Filepath to the `config.toml` file.
 
     Returns
     -------
@@ -128,15 +138,19 @@ def _load_detector_config(filepath: Union[str, os.PathLike]) -> ConfigurableDete
     cfg = validate_config(cfg, resolved=True)
     logger.info('Validated resolved config.')
 
-    # Backend
-    backend = cfg.get('backend', None)
-    if backend is not None and backend.lower() not in (Framework.TENSORFLOW, Framework.SKLEARN):
-        raise NotImplementedError('Loading detectors with pytorch or keops backend is not yet supported.')
-
     # Init detector from config
     logger.info('Instantiating detector.')
     detector = _init_detector(cfg)
+
+    # Load state if it exists (and detector supports it)
+    # TODO - this will be removed in follow-up offline state PR, as loading to be moved to __init__ (w/ state_dir kwarg)
+    if isinstance(detector, StatefulDetectorOnline):
+        state_dir = config_dir.joinpath(STATE_PATH)
+        if state_dir.is_dir():
+            detector.load_state(state_dir)
+
     logger.info('Finished loading detector.')
+
     return detector
 
 
@@ -172,8 +186,6 @@ def _load_kernel_config(cfg: dict, backend: str = Framework.TENSORFLOW) -> Calla
         A kernel config dict. (see pydantic schema's).
     backend
         The backend.
-    device
-        The device (pytorch backend only).
 
     Returns
     -------
@@ -181,9 +193,10 @@ def _load_kernel_config(cfg: dict, backend: str = Framework.TENSORFLOW) -> Calla
     """
     if backend == Framework.TENSORFLOW:
         kernel = load_kernel_config_tf(cfg)
-    else:
-        kernel = None
-        # kernel = load_kernel_config_torch(cfg, device)
+    elif backend == Framework.PYTORCH:
+        kernel = load_kernel_config_pt(cfg)
+    else:  # backend=='keops'
+        kernel = load_kernel_config_ke(cfg)
     return kernel
 
 
@@ -217,19 +230,22 @@ def _load_preprocess_config(cfg: dict) -> Optional[Callable]:
             # Backend specifics
             if has_tensorflow and isinstance(model, supported_models_tf):
                 model = prep_model_and_emb_tf(model, emb)
-                kwargs.pop('device')
             elif has_pytorch and isinstance(model, supported_models_torch):
-                raise NotImplementedError('Loading preprocess_fn for PyTorch not yet supported.')
-#               device = cfg['device'] # TODO - device should be set already - check
-#               kwargs.update({'model': kwargs['model'].to(device)})  # TODO - need .to(device) here?
-#               kwargs.update({'device': device})
+                model = prep_model_and_emb_pt(model, emb)
             elif model is None:
-                kwargs.pop('device')
                 model = emb
             if model is None:
                 raise ValueError("A 'model'  and/or `embedding` must be specified when "
                                  "preprocess_fn='preprocess_drift'")
             kwargs.update({'model': model})
+            # Set`device` if a PyTorch model, otherwise remove from kwargs
+            if isinstance(model, supported_models_torch):
+                device = get_device(cfg['device'])
+                model = model.to(device).eval()
+                kwargs.update({'device': device})
+                kwargs.update({'model': model})
+            else:
+                kwargs.pop('device')
         else:
             kwargs = cfg['kwargs']  # If generic callable, kwargs is cfg['kwargs']
 
@@ -265,11 +281,11 @@ def _load_model_config(cfg: dict) -> Callable:
                                 "a compatible model.")
 
     if flavour == Framework.TENSORFLOW:
-        model = load_model_tf(src, load_dir='.', custom_objects=custom_obj, layer=layer)
+        model = load_model_tf(src, custom_objects=custom_obj, layer=layer)
+    elif flavour == Framework.PYTORCH:
+        model = load_model_pt(src, layer=layer)
     elif flavour == Framework.SKLEARN:
         model = load_model_sk(src)
-    else:
-        raise NotImplementedError('Loading of PyTorch models not currently supported')
 
     return model
 
@@ -294,7 +310,7 @@ def _load_embedding_config(cfg: dict) -> Callable:  # TODO: Could type return mo
     if flavour == Framework.TENSORFLOW:
         emb = load_embedding_tf(src, embedding_type=typ, layers=layers)
     else:
-        raise NotImplementedError('Loading of non-tensorflow embedding models not currently supported')
+        emb = load_embedding_pt(src, embedding_type=typ, layers=layers)
     return emb
 
 
@@ -318,11 +334,11 @@ def _load_tokenizer_config(cfg: dict) -> AutoTokenizer:
     return tokenizer
 
 
-def _load_optimizer_config(cfg: dict,
-                           backend: str) -> Union['tf.keras.optimizers.Optimizer', Callable]:
+def _load_optimizer_config(cfg: dict, backend: str) \
+        -> Union['tf.keras.optimizers.Optimizer', Type['tf.keras.optimizers.Optimizer'],
+                 Type['torch.optim.Optimizer']]:
     """
-    Loads an optimzier from an optimizer config dict. When backend='tensorflow', the config dict should be in
-    the format given by tf.keras.optimizers.serialize().
+    Loads an optimzier from an optimizer config dict.
 
     Parameters
     ----------
@@ -336,10 +352,9 @@ def _load_optimizer_config(cfg: dict,
     The loaded optimizer.
     """
     if backend == Framework.TENSORFLOW:
-        optimizer = load_optimizer_tf(cfg)
+        return load_optimizer_tf(cfg)
     else:
-        raise NotImplementedError('Loading of non-tensorflow optimizers not currently supported')
-    return optimizer
+        return load_optimizer_pt(cfg)
 
 
 def _get_nested_value(dic: dict, keys: list) -> Any:
@@ -405,6 +420,7 @@ def _set_dtypes(cfg: dict):
                 raise ValueError("`dtype` must be in format np.<dtype>, tf.<dtype> or torch.<dtype>.")
             {
                 'tf': lambda: _set_nested_value(cfg, key, get_tf_dtype(dtype)),
+                'torch': lambda: _set_nested_value(cfg, key, get_pt_dtype(dtype)),
                 'np': lambda: _set_nested_value(cfg, key, getattr(np, dtype)),
             }[lib]()
 
@@ -489,9 +505,7 @@ def resolve_config(cfg: dict, config_dir: Optional[Path]) -> dict:
                 if Path(src).suffix == '.npy':
                     obj = np.load(src)
 
-        # Resolve artefact dicts (dicts which have a resolved config schema, such as PreprocessConfig and KernelConfig,
-        # are not resolved into objects here, since they are yet to undergo a further validation step). Instead, only
-        # their components, such as `src`, are resolved above.
+        # Resolve artefact dicts
         elif isinstance(src, dict):
             backend = cfg.get('backend', Framework.TENSORFLOW)
             if key[-1] in ('model', 'proj'):

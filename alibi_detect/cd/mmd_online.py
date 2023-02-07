@@ -1,3 +1,4 @@
+import os
 import numpy as np
 from typing import Any, Callable, Dict, Optional, Union
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, BackendValidator, Framework
@@ -112,9 +113,11 @@ class MMDDriftOnline(DriftConfigMixin):
     def thresholds(self):
         return [self._detector.thresholds[min(s, self._detector.window_size-1)] for s in range(self.t)]
 
-    def reset(self):
-        "Resets the detector but does not reconfigure thresholds."
-        self._detector.reset()
+    def reset_state(self):
+        """
+        Resets the detector to its initial state (`t=0`). This does not include reconfiguring thresholds.
+        """
+        self._detector.reset_state()
 
     def predict(self, x_t: Union[np.ndarray, Any], return_test_stat: bool = True) \
             -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
@@ -150,3 +153,39 @@ class MMDDriftOnline(DriftConfigMixin):
         Squared MMD estimate between reference window and test window.
         """
         return self._detector.score(x_t)
+
+    def save_state(self, filepath: Union[str, os.PathLike]):
+        """
+        Save a detector's state to disk in order to generate a checkpoint.
+
+        Parameters
+        ----------
+        filepath
+            The directory to save state to.
+        """
+        self._detector.save_state(filepath)
+
+    def load_state(self, filepath: Union[str, os.PathLike]):
+        """
+        Load the detector's state from disk, in order to restart from a checkpoint previously generated with
+        `save_state`.
+
+        Parameters
+        ----------
+        filepath
+            The directory to load state from.
+        """
+        self._detector.load_state(filepath)
+
+    def get_config(self) -> dict:  # Needed due to self.x_ref being a torch.Tensor when backend='pytorch'
+        """
+        Get the detector's configuration dictionary.
+
+        Returns
+        -------
+        The detector's configuration dictionary.
+        """
+        cfg = super().get_config()
+        if cfg.get('backend') == 'pytorch':
+            cfg['x_ref'] = cfg['x_ref'].detach().cpu().numpy()
+        return cfg

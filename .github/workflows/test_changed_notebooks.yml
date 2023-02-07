@@ -36,7 +36,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
@@ -48,7 +48,7 @@ jobs:
             doc/source/examples/*.ipynb
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
@@ -65,4 +65,4 @@ jobs:
         # adding the `or` quantifier between the names and concatenating with the test name `test_notebook_execution`.
         run: |
           tests="test_notebook_execution[$(echo ${FILES} | sed 's|doc/source/examples/||g' | sed 's| | or |g')]" &&
-          pytest --suppress-no-test-exit-code --no-cov -rA --durations=0 -vv testing/test_notebooks.py -k "$tests"
+          pytest --suppress-no-test-exit-code --no-cov -rA --durations=0 -vv -p no:randomly testing/test_notebooks.py -k "$tests"

@@ -29,10 +29,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -45,4 +45,4 @@ jobs:
 
       - name: Run notebooks
         run: |
-          pytest --suppress-no-test-exit-code --no-cov -rA --durations=0 -vv testing/test_notebooks.py
+          pytest --suppress-no-test-exit-code --no-cov -rA --durations=0 -vv -p no:randomly testing/test_notebooks.py
