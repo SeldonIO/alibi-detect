@@ -190,8 +190,6 @@ class ClassifierDriftTorch(BaseClassifierDrift):
                 raise TypeError(f'x needs to be of type np.ndarray or list and not {type(x)}.')
             ds_tr = self.dataset(x_tr, y_tr)
             dl_tr = self.dataloader(ds_tr)
-            # TODO - for consistency w/ tf could do load_state_dict here, but currently GaussianRBF doesn't behave
-            #  properly w/ this due `init_required` logic. See commits <=ffa2e00 in #739.
             self.model = deepcopy(self.original_model) if self.retrain_from_scratch else self.model
             self.model = self.model.to(self.device)
             train_args = [self.model, self.loss_fn, dl_tr, self.device]

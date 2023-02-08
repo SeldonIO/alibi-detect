@@ -197,8 +197,6 @@ class LearnedKernelDriftTorch(BaseLearnedKernelDrift):
         (x_ref_tr, x_cur_tr), (x_ref_te, x_cur_te) = self.get_splits(x_ref, x_cur)
         dl_ref_tr, dl_cur_tr = self.dataloader(self.dataset(x_ref_tr)), self.dataloader(self.dataset(x_cur_tr))
 
-        # TODO - for consistency w/ tf could do load_state_dict here, but currently GaussianRBF doesn't behave
-        #  properly w/ this due `init_required` logic. See commits <=ffa2e00 in #739.
         self.kernel = deepcopy(self.original_kernel) if self.retrain_from_scratch else self.kernel
         self.kernel = self.kernel.to(self.device)
         train_args = [self.j_hat, (dl_ref_tr, dl_cur_tr), self.device]

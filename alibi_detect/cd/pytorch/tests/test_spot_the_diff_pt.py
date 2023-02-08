@@ -66,8 +66,7 @@ def test_stddrift(stddrift_params):
         train_size=train_size,
         preprocess_batch_fn=preprocess_batch,
         batch_size=3,
-        epochs=1,
-        verbose=True,
+        epochs=1
     )
 
     x_test0 = x_ref.copy()
