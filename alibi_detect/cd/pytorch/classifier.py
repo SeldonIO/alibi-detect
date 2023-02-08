@@ -1,6 +1,6 @@
+from copy import deepcopy
 from functools import partial
 import numpy as np
-from copy import deepcopy
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -143,8 +143,8 @@ class ClassifierDriftTorch(BaseClassifierDrift):
 
         # set device, define model and training kwargs
         self.device = get_device(device)
-        self.model = model
-        self._original_model_state = deepcopy(model.state_dict())
+        self.original_model = model
+        self.model = deepcopy(model)
 
         # define kwargs for dataloader and trainer
         self.loss_fn = nn.CrossEntropyLoss() if (self.preds_type == 'logits') else nn.NLLLoss()
@@ -190,8 +190,9 @@ class ClassifierDriftTorch(BaseClassifierDrift):
                 raise TypeError(f'x needs to be of type np.ndarray or list and not {type(x)}.')
             ds_tr = self.dataset(x_tr, y_tr)
             dl_tr = self.dataloader(ds_tr)
-            if self.retrain_from_scratch:
-                self.model.load_state_dict(self._original_model_state)
+            # TODO - for consistency w/ tf could do load_state_dict here, but currently GaussianRBF doesn't behave
+            #  properly w/ this due `init_required` logic. See commits <=ffa2e00 in #739.
+            self.model = deepcopy(self.original_model) if self.retrain_from_scratch else self.model
             self.model = self.model.to(self.device)
             train_args = [self.model, self.loss_fn, dl_tr, self.device]
             trainer(*train_args, **self.train_kwargs)  # type: ignore
