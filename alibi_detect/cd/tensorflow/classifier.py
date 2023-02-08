@@ -10,6 +10,7 @@ from alibi_detect.utils.tensorflow.data import TFDataset
 from alibi_detect.utils.tensorflow.prediction import predict_batch
 from alibi_detect.utils.warnings import deprecated_alias
 from alibi_detect.utils.frameworks import Framework
+from alibi_detect.utils.tensorflow.misc import check_model
 
 
 class ClassifierDriftTF(BaseClassifierDrift):
@@ -132,7 +133,7 @@ class ClassifierDriftTF(BaseClassifierDrift):
         self.meta.update({'backend': Framework.TENSORFLOW.value})
 
         # define and compile classifier model
-        self.model: tf.keras.Model = model
+        self.model: tf.keras.Model = check_model(model)
         if self.retrain_from_scratch:
             self._original_model_state = self.model.get_weights()
         self.loss_fn = BinaryCrossentropy(from_logits=(self.preds_type == 'logits'))

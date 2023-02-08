@@ -7,6 +7,7 @@ from alibi_detect.utils.tensorflow.data import TFDataset
 from alibi_detect.utils.tensorflow.distance import mmd2_from_kernel_matrix, batch_compute_kernel_matrix
 from alibi_detect.utils.warnings import deprecated_alias
 from alibi_detect.utils.frameworks import Framework
+from alibi_detect.utils.tensorflow.misc import check_model
 
 
 class LearnedKernelDriftTF(BaseLearnedKernelDrift):
@@ -119,7 +120,7 @@ class LearnedKernelDriftTF(BaseLearnedKernelDrift):
         self.meta.update({'backend': Framework.TENSORFLOW.value})
 
         # define and compile kernel
-        self.kernel: tf.keras.Model = kernel
+        self.kernel: tf.keras.Model = check_model(kernel)
         if self.retrain_from_scratch:
             self._original_kernel_state = self.kernel.get_weights()
 

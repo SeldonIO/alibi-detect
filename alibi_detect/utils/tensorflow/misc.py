@@ -95,3 +95,28 @@ def clone_model(model: tf.keras.Model) -> tf.keras.Model:
         except NotImplementedError:
             config = {}
         return model.__class__.from_config(config)
+
+
+def check_model(model: tf.keras.Model) -> tf.keras.Model:
+    """
+    Function to check a TensorFlow model. Currently, this checks that the model has been built/called.
+
+    Parameters
+    ----------
+    model
+        The model to be checked.
+
+    Returns
+    -------
+    The checked model.
+
+    Raises
+    ------
+    ValueError
+        Raised if the provided model isn't suitable.
+    """
+    if not model.built:
+        raise ValueError('The provided TensorFlow model does not appear to have been built/called yet. This must be '
+                         'done by running `model.build(input_shape)` or calling the model on sample data before '
+                         'passing it to the detector.')
+    return model

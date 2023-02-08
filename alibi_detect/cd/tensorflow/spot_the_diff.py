@@ -6,6 +6,7 @@ from alibi_detect.cd.tensorflow.classifier import ClassifierDriftTF
 from alibi_detect.utils.tensorflow.data import TFDataset
 from alibi_detect.utils.tensorflow import GaussianRBF
 from alibi_detect.utils.tensorflow.prediction import predict_batch
+from alibi_detect.utils.tensorflow.misc import check_model
 
 logger = logging.getLogger(__name__)
 
@@ -123,6 +124,8 @@ class SpotTheDiffDriftTF:
 
         if kernel is None:
             kernel = GaussianRBF(trainable=True)
+        else:
+            check_model(kernel)  # Must be built/called if user-provided kernel
         if initial_diffs is None:
             initial_diffs = np.random.normal(size=(n_diffs,) + x_ref_proc.shape[1:]) * x_ref_proc.std(0)
         else:
