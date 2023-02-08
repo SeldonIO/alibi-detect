@@ -35,8 +35,9 @@ n_folds = [None, 2]
 train_size = [.5]
 preprocess_batch = [None, identity_fn]
 update_x_ref = [None, {'last': 1000}, {'reservoir_sampling': 1000}]
+optimizer = [tf.keras.optimizers.Adam, tf.keras.optimizers.legacy.Adam]
 tests_clfdrift = list(product(p_val, n_features, preds_type, binarize_preds, n_folds,
-                              train_size, preprocess_batch, update_x_ref))
+                              train_size, preprocess_batch, update_x_ref, optimizer))
 n_tests = len(tests_clfdrift)
 
 
@@ -48,7 +49,7 @@ def clfdrift_params(request):
 @pytest.mark.parametrize('clfdrift_params', list(range(n_tests)), indirect=True)
 def test_clfdrift(clfdrift_params):
     p_val, n_features, preds_type, binarize_preds, n_folds, \
-        train_size, preprocess_batch, update_x_ref = clfdrift_params
+        train_size, preprocess_batch, update_x_ref, optimizer = clfdrift_params
 
     np.random.seed(0)
     tf.random.set_seed(0)
@@ -74,7 +75,7 @@ def test_clfdrift(clfdrift_params):
         binarize_preds=binarize_preds,
         preprocess_batch_fn=preprocess_batch,
         batch_size=1,
-        retrain_from_scratch=True
+        optimizer=optimizer
     )
 
     x_test0 = x_ref.copy()

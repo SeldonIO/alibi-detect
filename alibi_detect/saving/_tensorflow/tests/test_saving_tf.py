@@ -5,9 +5,10 @@ from alibi_detect.saving.tests.models import encoder_model
 
 from alibi_detect.cd.tensorflow import HiddenOutput as HiddenOutput_tf
 from alibi_detect.saving.loading import _load_model_config, _load_optimizer_config
-from alibi_detect.saving.saving import _path2str, _save_model_config
+from alibi_detect.saving.saving import _path2str, _save_model_config, _save_optimizer_config
 from alibi_detect.saving.schemas import ModelConfig
 import tensorflow as tf
+import numpy as np
 
 backend = param_fixture("backend", ['tensorflow'])
 
@@ -17,12 +18,12 @@ backend = param_fixture("backend", ['tensorflow'])
 def test_load_optimizer_object(legacy, backend):
     """
     Test the _load_optimizer_config with a tensorflow optimizer config. In this case, we expect the returned optimizer
-    to be an instantiated `tf.keras.optimizers.Optimizer` object.
+    to be an instantiated `tf.keras.optimizers.Optimizer` object. Also test that the loaded optimizer can be saved.
     """
     class_name = 'Adam'
     class_str = class_name if legacy else 'Custom>' + class_name  # Note: see discussion in #739 re 'Custom>'
-    learning_rate = 0.01
-    epsilon = 1e-7
+    learning_rate = np.float32(0.01)  # Set as float32 since this is what _save_optimizer_config returns
+    epsilon = np.float32(1e-7)
     amsgrad = False
 
     # Load
@@ -44,6 +45,12 @@ def test_load_optimizer_object(legacy, backend):
     assert optimizer.learning_rate == learning_rate
     assert optimizer.epsilon == epsilon
     assert optimizer.amsgrad == amsgrad
+
+    # Save
+    cfg_saved = _save_optimizer_config(optimizer)
+    # Compare to original config
+    for key, value in cfg_opt['config'].items():
+        assert value == cfg_saved['config'][key]
 
 
 def test_load_optimizer_type(backend):
