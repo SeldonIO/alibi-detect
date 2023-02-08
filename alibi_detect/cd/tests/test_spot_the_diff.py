@@ -51,13 +51,13 @@ def stddrift_params(request):
 @pytest.mark.parametrize('stddrift_params', list(range(n_tests)), indirect=True)
 def test_stddrift(stddrift_params):
     backend = stddrift_params
-    x_ref = np.random.randn(*(n, n_features)).astype(np.float32)
     if backend.lower() == 'pytorch':
         kernel = MyKernelTorch(n_features)
     elif backend.lower() == 'tensorflow':
         kernel = MyKernelTF((n_features,))
     else:
         kernel = None
+    x_ref = np.random.randn(*(n, n_features)).astype(np.float32)
 
     try:
         cd = SpotTheDiffDrift(x_ref=x_ref, kernel=kernel, backend=backend)
