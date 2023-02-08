@@ -56,22 +56,16 @@ def test_stddrift(stddrift_params):
     np.random.seed(0)
     tf.random.set_seed(0)
 
-    # Set data
-    x_ref = np.random.randn(*(n, n_features)).astype(np.float32)
-    x_test1 = np.ones_like(x_ref)
-
-    # Init and build kernel
     if kernel is not None:
         kernel = kernel(n_features)
-        kernel(x_ref, x_ref)
 
-    # Optionally convert data to list
+    x_ref = np.random.randn(*(n, n_features)).astype(np.float32)
+    x_test1 = np.ones_like(x_ref)
     to_list = False
     if preprocess_batch is not None:
         to_list = True
         x_ref = [_ for _ in x_ref]
 
-    # Init detector
     cd = SpotTheDiffDriftTF(
         x_ref=x_ref,
         kernel=kernel,
@@ -83,7 +77,6 @@ def test_stddrift(stddrift_params):
         epochs=1
     )
 
-    # Check predictions
     x_test0 = x_ref.copy()
     preds_0 = cd.predict(x_test0)
     assert cd._detector.n == len(x_test0) + len(x_ref)

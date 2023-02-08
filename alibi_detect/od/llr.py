@@ -145,6 +145,9 @@ class LLR(BaseDetector, FitMixin, ThresholdMixin):
         """
         input_shape = X.shape[1:]
         optimizer = optimizer() if isinstance(optimizer, type) else optimizer
+        # Separate into two separate optimizers, one for semantic model and one for background model
+        optimizer_s = optimizer
+        optimizer_b = optimizer.__class__.from_config(optimizer.get_config())
 
         # training arguments
         kwargs = {'epochs': epochs,
@@ -167,15 +170,13 @@ class LLR(BaseDetector, FitMixin, ThresholdMixin):
         use_build = True if self.has_log_prob and not isinstance(self.dist_s, tf.keras.Model) else False
 
         if use_build:
-            # build and train semantic model (optimizer cloned as tf >=2.11 optimizers don't like model being changed)
+            # build and train semantic model
             self.model_s = build_model(self.dist_s, input_shape)[0]
-            optimizer = optimizer.__class__.from_config(optimizer.get_config())
-            self.model_s.compile(optimizer=optimizer)
+            self.model_s.compile(optimizer=optimizer_s)
             self.model_s.fit(X, **kwargs)
-            # build and train background model (optimizer cloned as tf >=2.11 optimizers don't like model being changed)
+            # build and train background model
             self.model_b = build_model(self.dist_b, input_shape)[0]
-            optimizer = optimizer.__class__.from_config(optimizer.get_config())
-            self.model_b.compile(optimizer=optimizer)
+            self.model_b.compile(optimizer=optimizer_b)
             self.model_b.fit(X_back, **kwargs)
         else:
             # update training arguments
@@ -184,16 +185,14 @@ class LLR(BaseDetector, FitMixin, ThresholdMixin):
                 'log_metric': log_metric
             })
 
-            # train semantic model (optimizer cloned as tf >=2.11 optimizers don't like model being changed)
+            # train semantic model
             args = [self.dist_s, loss_fn, X]
-            optimizer = optimizer.__class__.from_config(optimizer.get_config())
-            kwargs.update({'y_train': y, 'optimizer': optimizer})
+            kwargs.update({'y_train': y, 'optimizer': optimizer_s})
             trainer(*args, **kwargs)  # type: ignore[arg-type]
 
-            # train background model (optimizer cloned as tf >=2.11 optimizers don't like model being changed)
+            # train background model
             args = [self.dist_b, loss_fn, X_back]
-            optimizer = optimizer.__class__.from_config(optimizer.get_config())
-            kwargs.update({'y_train': y_back, 'optimizer': optimizer})
+            kwargs.update({'y_train': y_back, 'optimizer': optimizer_b})
             trainer(*args, **kwargs)  # type: ignore[arg-type]
 
     def infer_threshold(self,
