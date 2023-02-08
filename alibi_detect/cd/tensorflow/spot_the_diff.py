@@ -133,9 +133,6 @@ class SpotTheDiffDriftTF:
         model = SpotTheDiffDriftTF.InterpretableClf(kernel, x_ref_proc, initial_diffs)
         # Build the model so that it can be passed to ClassifierDriftTF
         model(x_ref_proc)
-        # TODO - preferable to build instead of call, but doesn't currently work when kernel=GaussianRBF due to
-        #  non-standard positional arg in `GaussianRBF.call` (`infer_sigma`), and too limiting for custom kernels?
-        # model.build(x_ref_proc.shape)
         # Define regularisation term for loss function
         reg_loss_fn = (lambda model: tf.reduce_mean(tf.abs(model.diffs)) * l1_reg)
 
