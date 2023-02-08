@@ -1,6 +1,5 @@
 from itertools import product
 import numpy as np
-from copy import deepcopy
 import pytest
 import tensorflow as tf
 from tensorflow.keras.layers import Dense
@@ -52,28 +51,19 @@ def lkdrift_params(request):
 @pytest.mark.parametrize('lkdrift_params', list(range(n_tests)), indirect=True)
 def test_lkdrift(lkdrift_params):
     p_val, n_features, train_size, preprocess_batch, update_x_ref = lkdrift_params
+
     np.random.seed(0)
     tf.random.set_seed(0)
 
-    # Init kernel
     kernel = MyKernel(n_features)
-
-    # Set data
     x_ref = np.random.randn(*(n, n_features))
     x_test1 = np.ones_like(x_ref)
-
-    # Call kernel on data to build
-    kernel(x_ref, x_ref)
-    original_kernel_weights = deepcopy(kernel.get_weights())  # save weights to compare later
-
-    # Optionally convert data to list
     to_list = False
     if preprocess_batch is not None:
         to_list = True
         x_ref = [_ for _ in x_ref]
         update_x_ref = None
 
-    # Init detector
     cd = LearnedKernelDriftTF(
         x_ref=x_ref,
         kernel=kernel,
@@ -85,7 +75,6 @@ def test_lkdrift(lkdrift_params):
         epochs=1
     )
 
-    # Check predictions
     x_test0 = x_ref.copy()
     preds_0 = cd.predict(x_test0)
     assert cd.n == len(x_test0) + len(x_ref)
@@ -98,7 +87,3 @@ def test_lkdrift(lkdrift_params):
     assert preds_1['data']['is_drift'] == 1
 
     assert preds_0['data']['distance'] < preds_1['data']['distance']
-
-    # Check _original_kernel_state matches that of original kernel
-    for i, weights in enumerate(original_kernel_weights):
-        np.testing.assert_array_equal(weights, cd._original_kernel_state[i])

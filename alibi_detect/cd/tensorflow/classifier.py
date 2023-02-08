@@ -10,7 +10,6 @@ from alibi_detect.utils.tensorflow.data import TFDataset
 from alibi_detect.utils.tensorflow.prediction import predict_batch
 from alibi_detect.utils.warnings import deprecated_alias
 from alibi_detect.utils.frameworks import Framework
-from alibi_detect.utils.tensorflow.misc import check_model
 
 
 class ClassifierDriftTF(BaseClassifierDrift):
@@ -52,7 +51,8 @@ class ClassifierDriftTF(BaseClassifierDrift):
         x_ref
             Data used as reference distribution.
         model
-            TensorFlow classification model used for drift detection.
+            TensorFlow classification model used for drift detection. If this is a subclassed model, it should be
+            built/called before passing it to the detector.
         p_val
             p-value used for the significance of the test.
         x_ref_preprocessed
@@ -133,7 +133,11 @@ class ClassifierDriftTF(BaseClassifierDrift):
         self.meta.update({'backend': Framework.TENSORFLOW.value})
 
         # define and compile classifier model
-        self.model: tf.keras.Model = check_model(model)
+        self.model: tf.keras.Model = model
+        if not self.model.built:
+            raise ValueError('The provided TensorFlow model does not appear to have been built/called yet. This must '
+                             'be done by running `model.build(input_shape)` or calling the model on sample data '
+                             'before passing it to the detector.')
         if self.retrain_from_scratch:
             self._original_model_state = self.model.get_weights()
         self.loss_fn = BinaryCrossentropy(from_logits=(self.preds_type == 'logits'))

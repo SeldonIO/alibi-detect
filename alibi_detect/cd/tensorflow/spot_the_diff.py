@@ -6,7 +6,6 @@ from alibi_detect.cd.tensorflow.classifier import ClassifierDriftTF
 from alibi_detect.utils.tensorflow.data import TFDataset
 from alibi_detect.utils.tensorflow import GaussianRBF
 from alibi_detect.utils.tensorflow.prediction import predict_batch
-from alibi_detect.utils.tensorflow.misc import check_model
 
 logger = logging.getLogger(__name__)
 
@@ -124,20 +123,20 @@ class SpotTheDiffDriftTF:
 
         if kernel is None:
             kernel = GaussianRBF(trainable=True)
-        else:
-            check_model(kernel)  # Must be built/called if user-provided kernel
         if initial_diffs is None:
             initial_diffs = np.random.normal(size=(n_diffs,) + x_ref_proc.shape[1:]) * x_ref_proc.std(0)
         else:
             if len(initial_diffs) != n_diffs:
                 raise ValueError("Should have initial_diffs.shape[0] == n_diffs")
 
-        # Init and build interpretable classifier model
+        # Define interpretable classifier model
         model = SpotTheDiffDriftTF.InterpretableClf(kernel, x_ref_proc, initial_diffs)
-        # TODO - preferable to build instead of call, but doesn't currently work when kernel=GaussianRBF due to
-        #  non-standard positional arg in `GaussianRBF.call` (`infer_sigma`)
-#        model.build(x_ref_proc.shape)
+        # Build the model so that it can be passed to ClassifierDriftTF
         model(x_ref_proc)
+        # TODO - preferable to build instead of call, but doesn't currently work when kernel=GaussianRBF due to
+        #  non-standard positional arg in `GaussianRBF.call` (`infer_sigma`), and too limiting for custom kernels?
+        # model.build(x_ref_proc.shape)
+        # Define regularisation term for loss function
         reg_loss_fn = (lambda model: tf.reduce_mean(tf.abs(model.diffs)) * l1_reg)
 
         self._detector = ClassifierDriftTF(

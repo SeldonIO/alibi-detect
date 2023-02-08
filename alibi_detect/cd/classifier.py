@@ -62,7 +62,8 @@ class ClassifierDrift(DriftConfigMixin):
         x_ref
             Data used as reference distribution.
         model
-            PyTorch, TensorFlow or Sklearn classification model used for drift detection.
+            PyTorch, TensorFlow or Sklearn classification model used for drift detection. If this is a subclassed
+            TensorFlow model, it should be built/called before passing it to the detector.
         backend
             Backend used for the training loop implementation. Supported: 'tensorflow' | 'pytorch' | 'sklearn'.
         p_val

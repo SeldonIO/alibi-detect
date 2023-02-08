@@ -4,10 +4,10 @@ import tensorflow as tf
 from typing import Callable, Dict, Optional, Tuple, Union
 from alibi_detect.cd.base import BaseLearnedKernelDrift
 from alibi_detect.utils.tensorflow.data import TFDataset
+from alibi_detect.utils.tensorflow.misc import clone_model
 from alibi_detect.utils.tensorflow.distance import mmd2_from_kernel_matrix, batch_compute_kernel_matrix
 from alibi_detect.utils.warnings import deprecated_alias
 from alibi_detect.utils.frameworks import Framework
-from alibi_detect.utils.tensorflow.misc import check_model
 
 
 class LearnedKernelDriftTF(BaseLearnedKernelDrift):
@@ -120,9 +120,8 @@ class LearnedKernelDriftTF(BaseLearnedKernelDrift):
         self.meta.update({'backend': Framework.TENSORFLOW.value})
 
         # define and compile kernel
-        self.kernel: tf.keras.Model = check_model(kernel)
-        if self.retrain_from_scratch:
-            self._original_kernel_state = self.kernel.get_weights()
+        self.original_kernel = kernel
+        self.kernel = clone_model(kernel)
 
         self.dataset = partial(dataset, batch_size=batch_size, shuffle=True)
         self.kernel_mat_fn = partial(
@@ -179,8 +178,7 @@ class LearnedKernelDriftTF(BaseLearnedKernelDrift):
         (x_ref_tr, x_cur_tr), (x_ref_te, x_cur_te) = self.get_splits(x_ref, x_cur)
         ds_ref_tr, ds_cur_tr = self.dataset(x_ref_tr), self.dataset(x_cur_tr)
 
-        if self.retrain_from_scratch:
-            self.kernel.set_weights(self._original_kernel_state)
+        self.kernel = clone_model(self.original_kernel) if self.retrain_from_scratch else self.kernel
         train_args = [self.j_hat, (ds_ref_tr, ds_cur_tr)]
         LearnedKernelDriftTF.trainer(*train_args, **self.train_kwargs)  # type: ignore
 
