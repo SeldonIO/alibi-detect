@@ -13,19 +13,21 @@ backend = param_fixture("backend", ['tensorflow'])
 
 
 # Note: The full save/load functionality of optimizers (inc. validation) is tested in test_save_classifierdrift.
-def test_load_optimizer_object(backend):
+@parametrize('legacy', [True, False])
+def test_load_optimizer_object(legacy, backend):
     """
     Test the _load_optimizer_config with a tensorflow optimizer config. In this case, we expect the returned optimizer
     to be an instantiated `tf.keras.optimizers.Optimizer` object.
     """
     class_name = 'Adam'
+    class_str = class_name if legacy else 'Custom>' + class_name  # Note: see discussion in #739 re 'Custom>'
     learning_rate = 0.01
     epsilon = 1e-7
     amsgrad = False
 
     # Load
     cfg_opt = {
-        'class_name': class_name,
+        'class_name': class_str,
         'config': {
             'name': class_name,
             'learning_rate': learning_rate,
@@ -34,7 +36,10 @@ def test_load_optimizer_object(backend):
         }
     }
     optimizer = _load_optimizer_config(cfg_opt, backend=backend)
-    assert isinstance(optimizer, tf.keras.optimizers.Optimizer)
+    if legacy:
+        assert isinstance(optimizer, tf.keras.optimizers.legacy.Optimizer)
+    else:
+        assert isinstance(optimizer, tf.keras.optimizers.Optimizer)
     assert type(optimizer).__name__ == class_name
     assert optimizer.learning_rate == learning_rate
     assert optimizer.epsilon == epsilon
