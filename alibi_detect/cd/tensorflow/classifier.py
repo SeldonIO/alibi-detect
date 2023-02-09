@@ -7,6 +7,7 @@ from typing import Callable, Dict, Optional, Tuple, Union
 from alibi_detect.cd.base import BaseClassifierDrift
 from alibi_detect.models.tensorflow.trainer import trainer
 from alibi_detect.utils.tensorflow.data import TFDataset
+from alibi_detect.utils.tensorflow.misc import clone_model
 from alibi_detect.utils.tensorflow.prediction import predict_batch
 from alibi_detect.utils.warnings import deprecated_alias
 from alibi_detect.utils.frameworks import Framework
@@ -51,8 +52,7 @@ class ClassifierDriftTF(BaseClassifierDrift):
         x_ref
             Data used as reference distribution.
         model
-            TensorFlow classification model used for drift detection. If this is a subclassed model, it should be
-            built/called before passing it to the detector.
+            TensorFlow classification model used for drift detection.
         p_val
             p-value used for the significance of the test.
         x_ref_preprocessed
@@ -125,7 +125,7 @@ class ClassifierDriftTF(BaseClassifierDrift):
             retrain_from_scratch=retrain_from_scratch,
             seed=seed,
             input_shape=input_shape,
-            data_type=data_type,
+            data_type=data_type
         )
         if preds_type not in ['probs', 'logits']:
             raise ValueError("'preds_type' should be 'probs' or 'logits'")
@@ -133,13 +133,8 @@ class ClassifierDriftTF(BaseClassifierDrift):
         self.meta.update({'backend': Framework.TENSORFLOW.value})
 
         # define and compile classifier model
-        self.model: tf.keras.Model = model
-        if not self.model.built:
-            raise ValueError('The provided TensorFlow model does not appear to have been built/called yet. This must '
-                             'be done by running `model.build(input_shape)` or calling the model on sample data '
-                             'before passing it to the detector.')
-        if self.retrain_from_scratch:
-            self._original_model_state = self.model.get_weights()
+        self.original_model = model
+        self.model = clone_model(model)
         self.loss_fn = BinaryCrossentropy(from_logits=(self.preds_type == 'logits'))
         self.dataset = partial(dataset, batch_size=batch_size, shuffle=True)
         self.predict_fn = partial(predict_batch, preprocess_fn=preprocess_batch_fn, batch_size=batch_size)
@@ -182,7 +177,12 @@ class ClassifierDriftTF(BaseClassifierDrift):
                 raise TypeError(f'x needs to be of type np.ndarray or list and not {type(x)}.')
             ds_tr = self.dataset(x_tr, y_tr)
             if self.retrain_from_scratch:
-                self.model.set_weights(self._original_model_state)
+                # clone model to re-initialise
+                self.model = clone_model(self.original_model)
+                # If a new (tf>=2.11) optimizer, clone this too to prevent error due to cloned model
+                optimizer = self.train_kwargs['optimizer']
+                if isinstance(optimizer, tf.keras.optimizers.Optimizer):  # If not a legacy optimizer
+                    self.train_kwargs['optimizer'] = optimizer.__class__.from_config(optimizer.get_config())
             train_args = [self.model, self.loss_fn, None]
             self.train_kwargs.update({'dataset': ds_tr})
             trainer(*train_args, **self.train_kwargs)  # type: ignore

@@ -129,11 +129,7 @@ class SpotTheDiffDriftTF:
             if len(initial_diffs) != n_diffs:
                 raise ValueError("Should have initial_diffs.shape[0] == n_diffs")
 
-        # Define interpretable classifier model
         model = SpotTheDiffDriftTF.InterpretableClf(kernel, x_ref_proc, initial_diffs)
-        # Build the model so that it can be passed to ClassifierDriftTF
-        model(x_ref_proc)
-        # Define regularisation term for loss function
         reg_loss_fn = (lambda model: tf.reduce_mean(tf.abs(model.diffs)) * l1_reg)
 
         self._detector = ClassifierDriftTF(

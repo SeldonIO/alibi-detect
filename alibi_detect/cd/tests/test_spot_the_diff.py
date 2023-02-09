@@ -57,7 +57,7 @@ def test_stddrift(stddrift_params):
         kernel = MyKernelTF((n_features,))
     else:
         kernel = None
-    x_ref = np.random.randn(*(n, n_features)).astype(np.float32)
+    x_ref = np.random.randn(*(n, n_features))
 
     try:
         cd = SpotTheDiffDrift(x_ref=x_ref, kernel=kernel, backend=backend)

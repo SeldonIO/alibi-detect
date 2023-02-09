@@ -1,6 +1,5 @@
 from itertools import product
 import numpy as np
-from copy import deepcopy
 import pytest
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, Input
@@ -35,9 +34,8 @@ n_folds = [None, 2]
 train_size = [.5]
 preprocess_batch = [None, identity_fn]
 update_x_ref = [None, {'last': 1000}, {'reservoir_sampling': 1000}]
-optimizer = [tf.keras.optimizers.Adam, tf.keras.optimizers.legacy.Adam]
 tests_clfdrift = list(product(p_val, n_features, preds_type, binarize_preds, n_folds,
-                              train_size, preprocess_batch, update_x_ref, optimizer))
+                              train_size, preprocess_batch, update_x_ref))
 n_tests = len(tests_clfdrift)
 
 
@@ -49,13 +47,12 @@ def clfdrift_params(request):
 @pytest.mark.parametrize('clfdrift_params', list(range(n_tests)), indirect=True)
 def test_clfdrift(clfdrift_params):
     p_val, n_features, preds_type, binarize_preds, n_folds, \
-        train_size, preprocess_batch, update_x_ref, optimizer = clfdrift_params
+        train_size, preprocess_batch, update_x_ref = clfdrift_params
 
     np.random.seed(0)
     tf.random.set_seed(0)
 
     model = mymodel((n_features,), softmax=(preds_type == 'probs'))
-    original_model_weights = deepcopy(model.get_weights())
     x_ref = np.random.randn(*(n, n_features))
     x_test1 = np.ones_like(x_ref)
     to_list = False
@@ -74,8 +71,7 @@ def test_clfdrift(clfdrift_params):
         preds_type=preds_type,
         binarize_preds=binarize_preds,
         preprocess_batch_fn=preprocess_batch,
-        batch_size=1,
-        optimizer=optimizer
+        batch_size=1
     )
 
     x_test0 = x_ref.copy()
@@ -94,7 +90,3 @@ def test_clfdrift(clfdrift_params):
     assert preds_0['data']['distance'] < preds_1['data']['distance']
     assert cd.meta['params']['preds_type'] == preds_type
     assert cd.meta['params']['binarize_preds '] == binarize_preds
-
-    # Check _original_model_state matches that of original model
-    for i, weights in enumerate(original_model_weights):
-        np.testing.assert_array_equal(weights, cd._original_model_state[i])
