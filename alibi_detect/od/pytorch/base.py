@@ -222,9 +222,8 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
 
         Returns
         -------
-        `TorchOutlierDetectorOutput`
+        :py:obj:`alibi_detect.od.pytorch.base.TorchOutlierDetectorOutput`
             Output of the outlier detector.
-
         """
         self.check_fitted()  # type: ignore
         raw_scores = self.score(x)
