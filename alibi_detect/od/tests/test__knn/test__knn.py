@@ -61,11 +61,13 @@ def test_incorrect_knn_ensemble_init():
 
 
 def test_fitted_knn_predict():
+    """
+    test that a detector fitted on data and with threshold inferred correctly, will score
+    and label outliers, as well as return the p-values using the predict method.
+    """
+
     knn_detector = make_knn_detector(k=10)
     x_ref = np.random.randn(100, 2)
-
-    # test detector fitted on data and with threshold inferred correctly scores and
-    # labels outliers, as well as return the p-values using the predict method.
     knn_detector.infer_threshold(x_ref, 0.1)
     x = np.array([[0, 10], [0, 0.1]])
     y = knn_detector.predict(x)
