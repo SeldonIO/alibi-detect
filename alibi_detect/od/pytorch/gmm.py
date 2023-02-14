@@ -4,7 +4,6 @@ import torch
 from torch.utils.data import DataLoader
 
 from alibi_detect.utils.pytorch.data import TorchDataset
-from alibi_detect.utils.pytorch.prediction import predict_batch
 from alibi_detect.od.pytorch.base import TorchOutlierDetector
 from alibi_detect.models.pytorch.gmm import GMMModel
 from alibi_detect.utils.pytorch.misc import get_optimizer
