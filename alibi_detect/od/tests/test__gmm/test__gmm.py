@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-# import torch
+import torch
 
 from alibi_detect.od._gmm import GMM
 from alibi_detect.base import NotFitException
@@ -65,7 +65,15 @@ def test_gmm_integration(backend):
     result = result['data']['is_outlier'][0]
     assert result
 
-    # ts_gmm = torch.jit.script(gmm_detector.backend)
-    # x = torch.tensor([x_inlier[0], x_outlier[0]], dtype=torch.float32)
-    # y = ts_gmm(x)
-    # assert torch.all(y == torch.tensor([False, True]))
+
+def test_gmm_torchscript():
+    gmm_detector = GMM(n_components=8, backend='pytorch')
+    X_ref, _ = make_moons(1001, shuffle=True, noise=0.05, random_state=None)
+    X_ref, x_inlier = X_ref[0:1000], X_ref[1000][None]
+    gmm_detector.fit(X_ref)
+    gmm_detector.infer_threshold(X_ref, 0.1)
+    x_outlier = np.array([[-1, 1.5]])
+    ts_gmm = torch.jit.script(gmm_detector.backend)
+    x = torch.tensor([x_inlier[0], x_outlier[0]], dtype=torch.float32)
+    y = ts_gmm(x)
+    assert torch.all(y == torch.tensor([False, True]))

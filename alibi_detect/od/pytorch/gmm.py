@@ -11,6 +11,7 @@ from alibi_detect.utils.pytorch.misc import get_optimizer
 
 
 class GMMTorch(TorchOutlierDetector):
+
     def __init__(
         self,
         n_components: int,
@@ -26,6 +27,7 @@ class GMMTorch(TorchOutlierDetector):
             Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
             passing either ``'cuda'``, ``'gpu'`` or ``'cpu'``.
         """
+        self.ensembler = None
         self.n_components = n_components
         TorchOutlierDetector.__init__(self, device=device)
 
@@ -122,6 +124,7 @@ class GMMTorch(TorchOutlierDetector):
         preds = scores > self.threshold
         return preds.cpu()
 
+    @torch.no_grad()
     def score(self, X: torch.Tensor) -> torch.Tensor:
         """Score `X` using the GMM model.
 
@@ -130,12 +133,8 @@ class GMMTorch(TorchOutlierDetector):
         X
             `torch.Tensor` with leading batch dimension.
         """
-        self.check_fitted()
-        batch_size, *_ = X.shape
+        if not torch.jit.is_scripting():
+            self.check_fitted()
         X = X.to(torch.float32)
-        preds = predict_batch(
-            X, self.model.eval(),
-            device=self.device,
-            batch_size=batch_size
-        )
-        return torch.tensor(preds)
+        preds = self.model(X.to(self.device)).cpu()
+        return preds
