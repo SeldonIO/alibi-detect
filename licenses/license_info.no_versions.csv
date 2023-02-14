@@ -18,6 +18,7 @@
 "idna-ssl","MIT License"
 "imageio","BSD License"
 "importlib-metadata","Apache Software License"
+"importlib-resources","Apache Software License"
 "joblib","BSD License"
 "kiwisolver","BSD License"
 "llvmlite","BSD"
