@@ -28,9 +28,9 @@ class FitMixin(ABC):
         """
         super().__init__()
 
-    def fit(self, x: np.ndarray) -> FitMixin:
+    def fit(self, x: np.ndarray, **kwargs: dict) -> FitMixin:
         self._fitted = True
-        self._fit(x)
+        self._fit(x, **kwargs)
         return self
 
     @abstractmethod

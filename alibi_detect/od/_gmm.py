@@ -1,5 +1,4 @@
-from typing import Union, Optional, Dict, Any
-from typing import TYPE_CHECKING
+from typing import Union, Optional, Dict, Any, TYPE_CHECKING
 
 import numpy as np
 
@@ -25,17 +24,24 @@ backends = {
 class GMM(BaseDetector, ThresholdMixin, FitMixin):
     def __init__(
         self,
-        n_components: int,
+        n_components: int = 1,
         device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
         backend: Literal['pytorch', 'sklearn'] = 'pytorch',
     ) -> None:
         """Gaussian Mixture Model (GMM) outlier detector.
 
+        The guassian mixture model outlier detector fits a mixture of gaussian distributions to the reference data.
+        Test points are scored via the negative log-likhood under the corresponding density function.
+
+        We support two backends: ``'pytorch'`` and ``'sklearn'``. The ``'pytorch'`` backend allows for GPU acceleration
+        and uses gradient descent to fit the mixture of gaussians. We recommend using the ``'pytorch'`` backend for
+        for large datasets. The ``'sklearn'`` backend is a pure python implementation and is recommended for smaller
+        datasets.
+
         Parameters
         ----------
         n_components:
-            The number of dimensions in the principle subspace. For linear pca should have
-            ``1 <= n_components < dim(data)``. For kernel pca should have ``1 <= n_components < len(data)``.
+            The number of mixture components. Defaults to ``1``.
         backend
             Backend used for outlier detection. Defaults to ``'pytorch'``. Options are ``'pytorch'`` and ``'sklearn'``.
         device
@@ -61,15 +67,31 @@ class GMM(BaseDetector, ThresholdMixin, FitMixin):
             args['device'] = device
         self.backend = backend_cls(**args)
 
-    def fit(self, x_ref: np.ndarray, **kwargs: Dict) -> None:
+    def fit(
+        self,
+        x_ref: np.ndarray,
+        optimizer: Optional[str] = 'Adam',
+        learning_rate: float = 0.1,
+        batch_size: int = 32,
+        epochs: Optional[int] = None,
+        tol: float = 1e-3,
+        n_init: int = 1,
+        init_params: str = 'kmeans',
+        verbose: int = 0,
+    ) -> None:
         """Fit the detector on reference data.
+
+        If the ``'pytorch'`` backend is used, the detector is fitted using gradient descent.
 
         Parameters
         ----------
         x_ref
             Reference data used to fit the detector.
         """
-        self.backend.fit(self.backend._to_tensor(x_ref), **kwargs)
+        self.backend.fit(
+            self.backend._to_tensor(x_ref),
+            **self.backend.format_fit_kwargs(locals())
+        )
 
     def score(self, x: np.ndarray) -> np.ndarray:
         """Score `x` instances using the detector.
