@@ -9,7 +9,7 @@ class GMMSklearn(SklearnOutlierDetector):
         self,
         n_components: int,
     ):
-        """sklearn backend for GMM detector.
+        """sklearn backend for the Gaussian Mixture Model (GMM) outlier detector.
 
         Parameters
         ----------
@@ -64,12 +64,16 @@ class GMMSklearn(SklearnOutlierDetector):
         )
 
     def format_fit_kwargs(self, fit_kwargs: Dict) -> Dict:
-        """Format the kwargs for the fit method.
+        """Format kwargs for `fit` method.
 
         Parameters
         ----------
         kwargs
-            Keyword arguments for the fit method.
+            dictionary of Kwargs to format. See `fit` method for details.
+
+        Returns
+        -------
+        Formatted kwargs.
         """
         return dict(
             tol=fit_kwargs.get('tol', 1e-3),

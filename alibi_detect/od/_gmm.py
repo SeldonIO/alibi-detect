@@ -72,7 +72,7 @@ class GMM(BaseDetector, ThresholdMixin, FitMixin):
         x_ref: np.ndarray,
         optimizer: Optional[str] = 'Adam',
         learning_rate: float = 0.1,
-        batch_size: int = 32,
+        batch_size: Optional[int] = None,
         epochs: Optional[int] = None,
         tol: float = 1e-3,
         n_init: int = 1,
@@ -81,12 +81,44 @@ class GMM(BaseDetector, ThresholdMixin, FitMixin):
     ) -> None:
         """Fit the detector on reference data.
 
-        If the ``'pytorch'`` backend is used, the detector is fitted using gradient descent.
+        If the ``'pytorch'`` backend is used, the detector is fitted using gradient descent. This is the recommended
+        backend for larger datasets.
+
+        If the ``'sklearn'`` backend is used, the detector is fitted using the EM algorithm. The ``'sklearn'``
+        backend is recommended for smaller datasets. For more information on the EM algorithm and the sklearn Gaussian
+        Mixture Model, see `here <https://scikit-learn.org/stable/modules/generated/sklearn.mixture.GaussianMixture.html#sklearn.mixture.GaussianMixture>`_.  # noqa: E501
 
         Parameters
         ----------
         x_ref
             Reference data used to fit the detector.
+        optimizer
+            Optimizer used to fit the detector. Only used if the ``'pytorch'`` backend is used. Defaults to ``'Adam'``.
+        learning_rate
+            Learning rate used to fit the detector. Only used if the ``'pytorch'`` backend is used. Defaults to ``0.1``.
+        batch_size
+            Batch size used to fit the detector. Only used if the ``'pytorch'`` backend is used. Defaults to ``None``.
+            If ``None``, the entire dataset is used in each epoch.
+        epochs
+            Number of epochs used to fit the detector. Used for both the ``'pytorch'`` and ``'sklearn'`` backends.
+            If the backend is ``'sklearn'``, the detector is fitted using the EM algorithm and the number of epochs
+            defualts to ``10``. If the backend is ``'pytorch'``, the detector is fitted using gradient descent and
+            the number of epochs defaults to ``100``.
+        tol
+            Tolerance used to fit the detector. Only used if the ``'sklearn'`` backend is used. Defaults to ``1e-3``.
+        n_init
+            Number of initializations used to fit the detector. Only used if the ``'sklearn'`` backend is used.
+            Defaults to ``1``.
+        init_params
+            Initialization method used to fit the detector. Only used if the ``'sklearn'`` backend is used. Must be
+            one of:
+            'kmeans' : responsibilities are initialized using kmeans.
+            'kmeans++' : responsibilities are initialized using kmeans++.
+            'random' : responsibilities are initialized randomly.
+            'random_from_data' : responsibilities are initialized randomly from the data.
+            Defaults to ``'kmeans'``.
+        verbose
+            Verbosity level used to fit the detector. Only used if the ``'sklearn'`` backend is used. Defaults to ``0``.
         """
         self.backend.fit(
             self.backend._to_tensor(x_ref),
@@ -95,6 +127,9 @@ class GMM(BaseDetector, ThresholdMixin, FitMixin):
 
     def score(self, x: np.ndarray) -> np.ndarray:
         """Score `x` instances using the detector.
+
+        To score an instance, we compute the negative log-likelihood under the corresponding density function of
+        the fitted gaussian mixture model.
 
         Parameters
         ----------
@@ -112,6 +147,8 @@ class GMM(BaseDetector, ThresholdMixin, FitMixin):
     def infer_threshold(self, x_ref: np.ndarray, fpr: float) -> None:
         """Infer the threshold for the GMM detector.
 
+        The threshold is computed so that the outlier detector would incorectly classify `fpr` proportion of the
+        reference data as outliers.
 
         Parameters
         ----------
@@ -126,6 +163,8 @@ class GMM(BaseDetector, ThresholdMixin, FitMixin):
 
     def predict(self, x: np.ndarray) -> Dict[str, Any]:
         """Predict whether the instances in `x` are outliers or not.
+
+        Scores the instances in `x` and if the threshold was inferred, returns the outlier labels and p-values as well.
 
         Parameters
         ----------

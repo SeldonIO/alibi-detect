@@ -16,8 +16,7 @@ class GMMTorch(TorchOutlierDetector):
         n_components: int,
         device: Optional[Union[str, torch.device]] = None
     ) -> None:
-        """
-        Pytorch Backend for the Gaussian Mixture Model (GMM) outlier detector.
+        """Pytorch backend for the Gaussian Mixture Model (GMM) outlier detector.
 
         Parameters
         ----------
@@ -59,9 +58,10 @@ class GMMTorch(TorchOutlierDetector):
         self.model = GMMModel(self.n_components, x_ref.shape[-1]).to(self.device)
         x_ref = x_ref.to(torch.float32)
 
+        batch_size = len(x_ref) if batch_size is None else batch_size
         dataset = TorchDataset(x_ref)
         dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
-        optimizer = optimizer(self.model.parameters(), lr=learning_rate)
+        optimizer_instance: torch.optim.Optimizer = optimizer(self.model.parameters(), lr=learning_rate)
         self.model.train()
 
         for epoch in range(epochs):
@@ -70,9 +70,9 @@ class GMMTorch(TorchOutlierDetector):
             for step, x in dl:
                 x = x.to(self.device)
                 nll = self.model(x).mean()
-                optimizer.zero_grad()  # type: ignore
+                optimizer_instance.zero_grad()
                 nll.backward()
-                optimizer.step()  # type: ignore
+                optimizer_instance.step()
                 if verbose == 1 and isinstance(dl, tqdm):
                     loss_ma = loss_ma + (nll.item() - loss_ma) / (step + 1)
                     dl.set_description(f'Epoch {epoch + 1}/{epochs}')
@@ -84,7 +84,7 @@ class GMMTorch(TorchOutlierDetector):
         Parameters
         ----------
         kwargs
-            Kwargs to format.
+            dictionary of Kwargs to format. See `fit` method for details.
 
         Returns
         -------
@@ -93,7 +93,7 @@ class GMMTorch(TorchOutlierDetector):
         return dict(
             optimizer=get_optimizer(fit_kwargs.get('optimizer')),
             learning_rate=fit_kwargs.get('learning_rate', 0.1),
-            batch_size=fit_kwargs.get('batch_size', 32),
+            batch_size=fit_kwargs.get('batch_size', None),
             epochs=(lambda v: 10 if v is None else v)(fit_kwargs.get('epochs', None)),
             verbose=fit_kwargs.get('verbose', 0)
         )
