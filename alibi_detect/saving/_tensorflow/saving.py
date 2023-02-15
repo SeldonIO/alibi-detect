@@ -81,7 +81,7 @@ def save_model_config(model: Callable,
 
     if model is not None:
         filepath = base_path.joinpath(local_path)
-        save_model(model, filepath=filepath, save_dir='model')
+        save_model(model, filepath=filepath.joinpath('model'))
         cfg_model = {
             'flavour': Framework.TENSORFLOW.value,
             'src': local_path.joinpath('model')
@@ -91,7 +91,7 @@ def save_model_config(model: Callable,
 
 def save_model(model: tf.keras.Model,
                filepath: Union[str, os.PathLike],
-               save_dir: Union[str, os.PathLike] = 'model',
+               filename: str = 'model',
                save_format: Literal['tf', 'h5'] = 'h5') -> None:  # TODO - change to tf, later PR
     """
     Save TensorFlow model.
@@ -102,20 +102,20 @@ def save_model(model: tf.keras.Model,
         The tf.keras.Model to save.
     filepath
         Save directory.
-    save_dir
-        Name of folder to save to within the filepath directory.
+    filename
+        Name of file to save to within the filepath directory.
     save_format
         The format to save to. 'tf' to save to the newer SavedModel format, 'h5' to save to the lighter-weight
         legacy hdf5 format.
     """
     # create folder to save model in
-    model_path = Path(filepath).joinpath(save_dir)
+    model_path = Path(filepath)
     if not model_path.is_dir():
         logger.warning('Directory {} does not exist and is now created.'.format(model_path))
         model_path.mkdir(parents=True, exist_ok=True)
 
     # save model
-    model_path = model_path.joinpath('model.h5') if save_format == 'h5' else model_path
+    model_path = model_path.joinpath(filename + '.h5') if save_format == 'h5' else model_path
 
     if isinstance(model, tf.keras.Model):
         model.save(model_path, save_format=save_format)
@@ -254,30 +254,31 @@ def save_detector_legacy(detector, filepath):
         dill.dump(state_dict, f)
 
     # save detector specific TensorFlow models
+    model_dir = filepath.joinpath('model')
     if isinstance(detector, OutlierAE):
         save_tf_ae(detector, filepath)
     elif isinstance(detector, OutlierVAE):
         save_tf_vae(detector, filepath)
     elif isinstance(detector, (ChiSquareDrift, ClassifierDrift, KSDrift, MMDDrift, TabularDrift)):
         if model is not None:
-            save_model(model, filepath, save_dir='encoder')
+            save_model(model, model_dir, filename='encoder')
         if embed is not None:
             save_embedding_legacy(embed, embed_args, filepath)
         if tokenizer is not None:
             tokenizer.save_pretrained(filepath.joinpath('model'))
         if detector_name == 'ClassifierDriftTF':
-            save_model(clf_drift, filepath, save_dir='clf_drift')
+            save_model(clf_drift, model_dir, filename='clf_drift')
     elif isinstance(detector, OutlierAEGMM):
         save_tf_aegmm(detector, filepath)
     elif isinstance(detector, OutlierVAEGMM):
         save_tf_vaegmm(detector, filepath)
     elif isinstance(detector, AdversarialAE):
         save_tf_ae(detector, filepath)
-        save_model(detector.model, filepath)
+        save_model(detector.model, model_dir)
         save_tf_hl(detector.model_hl, filepath)
     elif isinstance(detector, ModelDistillation):
-        save_model(detector.distilled_model, filepath, save_dir='distilled_model')
-        save_model(detector.model, filepath, save_dir='model')
+        save_model(detector.distilled_model, model_dir, filename='distilled_model')
+        save_model(detector.model, model_dir, filename='model')
     elif isinstance(detector, OutlierSeq2Seq):
         save_tf_s2s(detector, filepath)
     elif isinstance(detector, LLR):

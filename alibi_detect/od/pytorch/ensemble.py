@@ -97,7 +97,7 @@ class BaseFittedTransformTorch(BaseTransformTorch, FitMixinTorch):
 
         Returns
         -------
-        transformed `torch.Tensor`.
+        the transformed `torch.Tensor`.
         """
         if not torch.jit.is_scripting():
             self.check_fitted()
@@ -122,10 +122,6 @@ class PValNormalizer(BaseFittedTransformTorch):
         ----------
         val_scores
             score outputs of ensemble of detectors applied to reference data.
-
-        Returns
-        -------
-        `self`
         """
         self.val_scores = val_scores
         return self
@@ -166,10 +162,6 @@ class ShiftAndScaleNormalizer(BaseFittedTransformTorch):
         ----------
         val_scores
             `Torch.Tensor` of scores from ensemble of detectors.
-
-        Returns
-        -------
-        `self`
         """
         self.val_means = val_scores.mean(0)[None, :]
         self.val_scales = val_scores.std(0)[None, :]
