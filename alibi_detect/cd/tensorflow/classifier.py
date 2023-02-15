@@ -179,10 +179,9 @@ class ClassifierDriftTF(BaseClassifierDrift):
             if self.retrain_from_scratch:
                 # clone model to re-initialise
                 self.model = clone_model(self.original_model)
-                # If a new (tf>=2.11) optimizer, clone this too to prevent error due to cloned model
+                # Clone optimizer to prevent error due to cloned model (with new tf>=2.11 optimizers)
                 optimizer = self.train_kwargs['optimizer']
-                if isinstance(optimizer, tf.keras.optimizers.Optimizer):  # If not a legacy optimizer
-                    self.train_kwargs['optimizer'] = optimizer.__class__.from_config(optimizer.get_config())
+                self.train_kwargs['optimizer'] = optimizer.__class__.from_config(optimizer.get_config())
             train_args = [self.model, self.loss_fn, None]
             self.train_kwargs.update({'dataset': ds_tr})
             trainer(*train_args, **self.train_kwargs)  # type: ignore
