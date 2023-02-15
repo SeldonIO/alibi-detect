@@ -16,8 +16,10 @@ def ensembler(request):
 
 
 def test_knn_torch_backend():
-    # Test the knn torch backend can be correctly initialized, fit and used to
-    # predict outliers.
+    """
+    Test the knn torch backend can be correctly initialized, fit and used to
+    predict outliers.
+    """
 
     knn_torch = KNNTorch(k=5)
     x = torch.randn((3, 10)) * torch.tensor([[1], [1], [100]])
@@ -37,8 +39,10 @@ def test_knn_torch_backend():
 
 
 def test_knn_torch_backend_ensemble(ensembler):
-    # Test the knn torch backend can be correctly initialized as an ensemble, fit
-    # on data and used to predict outliers.
+    """
+    Test the knn torch backend can be correctly initialized as an ensemble, fit
+    on data and used to predict outliers.
+    """
 
     knn_torch = KNNTorch(k=[4, 5], ensembler=ensembler)
     x_ref = torch.randn((1024, 10))
@@ -54,8 +58,10 @@ def test_knn_torch_backend_ensemble(ensembler):
 
 
 def test_knn_torch_backend_ensemble_ts(tmp_path, ensembler):
-    # Test the knn torch backend can be initalized as an ensemble and
-    # torchscripted, as well as saved and loaded to and from disk.
+    """
+    Test the knn torch backend can be initalized as an ensemble and
+    torchscripted, as well as saved and loaded to and from disk.
+    """
 
     knn_torch = KNNTorch(k=[4, 5], ensembler=ensembler)
     x = torch.randn((3, 10)) * torch.tensor([[1], [1], [100]])
@@ -83,8 +89,10 @@ def test_knn_torch_backend_ensemble_ts(tmp_path, ensembler):
 
 
 def test_knn_torch_backend_ts(tmp_path):
-    # Test the knn torch backend can be initalized and torchscripted, as well as
-    # saved and loaded to and from disk.
+    """
+    Test the knn torch backend can be initalized and torchscripted, as well as
+    saved and loaded to and from disk.
+    """
 
     knn_torch = KNNTorch(k=7)
     x = torch.randn((3, 10)) * torch.tensor([[1], [1], [100]])
@@ -103,8 +111,10 @@ def test_knn_torch_backend_ts(tmp_path):
 
 
 def test_knn_kernel(ensembler):
-    # Test the knn torch backend can be correctly initialized with a kernel, fit
-    # on data and used to predict outliers.
+    """
+    Test the knn torch backend can be correctly initialized with a kernel, fit
+    on data and used to predict outliers.
+    """
 
     kernel = GaussianRBF(sigma=torch.tensor((0.25)))
     knn_torch = KNNTorch(k=[4, 5], kernel=kernel, ensembler=ensembler)
@@ -122,8 +132,10 @@ def test_knn_kernel(ensembler):
 
 @pytest.mark.skip(reason="Can't convert GaussianRBF to torchscript due to torchscript type constraints")
 def test_knn_kernel_ts(ensembler):
-    # Test the knn torch backend can be correctly initialized with a kernel,
-    # and torchscripted, as well as saved and loaded to and from disk.
+    """
+    Test the knn torch backend can be correctly initialized with a kernel,
+    and torchscripted, as well as saved and loaded to and from disk.
+    """
 
     kernel = GaussianRBF(sigma=torch.tensor((0.25)))
     knn_torch = KNNTorch(k=[4, 5], kernel=kernel, ensembler=ensembler)
