@@ -97,7 +97,7 @@ class BaseFittedTransformTorch(BaseTransformTorch, FitMixinTorch):
 
         Returns
         -------
-        transformed `torch.Tensor`.
+        the transformed `torch.Tensor`.
         """
         if not torch.jit.is_scripting():
             self.check_fitted()
