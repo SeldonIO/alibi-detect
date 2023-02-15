@@ -37,7 +37,6 @@ def test_fitted_knn_single_score(k):
     x_ref = np.random.randn(100, 2)
     knn_detector.fit(x_ref)
     x = np.array([[0, 10], [0.1, 0]])
-
     # test fitted but not threshold inferred detectors
     # can still score data using the predict method.
     y = knn_detector.predict(x)
@@ -61,15 +60,21 @@ def test_incorrect_knn_ensemble_init():
 
 
 def test_fitted_knn_predict():
+    """
+    Test that a detector fitted on data and with threshold inferred correctly, will score
+    and label outliers, as well as return the p-values using the predict method. Also Check
+    that the score method gives the same results.
+    """
+
     knn_detector = make_knn_detector(k=10)
     x_ref = np.random.randn(100, 2)
-
-    # test detector fitted on data and with threshold inferred correctly scores and
-    # labels outliers, as well as return the p-values using the predict method.
     knn_detector.infer_threshold(x_ref, 0.1)
     x = np.array([[0, 10], [0, 0.1]])
+
     y = knn_detector.predict(x)
     y = y['data']
+    scores = knn_detector.score(x)
+    assert np.all(y['instance_score'] == scores)
     assert y['instance_score'][0] > 5
     assert y['instance_score'][1] < 1
     assert y['threshold_inferred']

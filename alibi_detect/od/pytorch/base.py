@@ -2,8 +2,6 @@ from __future__ import annotations
 from typing import List, Union, Optional, Dict
 from dataclasses import dataclass, asdict
 from abc import ABC, abstractmethod
-from functools import singledispatch
-
 
 import numpy as np
 import torch
@@ -22,9 +20,19 @@ class TorchOutlierDetectorOutput:
     is_outlier: Optional[torch.Tensor]
     p_value: Optional[torch.Tensor]
 
+    def to_numpy(self):
+        outputs = asdict(self)
+        for key, value in outputs.items():
+            if isinstance(value, torch.Tensor):
+                outputs[key] = value.cpu().detach().numpy()
+        return outputs
 
-@singledispatch
-def to_numpy(arg):
+
+def _raise_type_error(x):
+    raise TypeError(f'x is type={type(x)} but must be one of TorchOutlierDetectorOutput or a torch Tensor')
+
+
+def to_numpy(x: Union[torch.Tensor, TorchOutlierDetectorOutput]):
     """Converts any `torch` tensors found in input to `numpy` arrays.
 
     Takes a `torch` tensor or `TorchOutlierDetectorOutput` and converts any `torch` tensors found to `numpy` arrays
@@ -38,21 +46,14 @@ def to_numpy(arg):
     -------
     `np.ndarray` or dictionary of containing `numpy` arrays
     """
-    raise NotImplementedError(f"Cannot transform type {type(arg)} to numpy array.")
 
-
-@to_numpy.register
-def _(x: torch.Tensor) -> np.ndarray:
-    return x.cpu().detach().numpy()
-
-
-@to_numpy.register
-def _(x: TorchOutlierDetectorOutput) -> Dict:
-    outputs = asdict(x)
-    for key, value in outputs.items():
-        if isinstance(value, torch.Tensor):
-            outputs[key] = value.cpu().detach().numpy()
-    return outputs
+    return {
+        'TorchOutlierDetectorOutput': lambda x: x.to_numpy(),
+        'Tensor': lambda x: x.cpu().detach().numpy()
+    }.get(
+        x.__class__.__name__,
+        _raise_type_error
+    )(x)
 
 
 class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
@@ -124,10 +125,6 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
         ----------
         x
             Data to convert.
-
-        Returns
-        -------
-        `torch.Tensor`
         """
         return torch.as_tensor(x, dtype=torch.float32, device=self.device)
 
@@ -143,7 +140,7 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
 
         Returns
         -------
-        `torch.Tensor` or just returns original data
+        `torch.Tensor` or original data without alteration
         """
         if hasattr(self, 'ensembler') and self.ensembler is not None:
             # `type: ignore` here becuase self.ensembler here causes an error with mypy when using torch.jit.script.
@@ -222,9 +219,8 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
 
         Returns
         -------
-        `TorchOutlierDetectorOutput`
-            Output of the outlier detector.
-
+        Output of the outlier detector. Includes the p-values, outlier labels, instance scores and \
+            threshold.
         """
         self.check_fitted()  # type: ignore
         raw_scores = self.score(x)
