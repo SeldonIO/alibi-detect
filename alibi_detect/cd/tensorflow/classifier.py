@@ -11,7 +11,7 @@ from alibi_detect.utils.tensorflow.misc import clone_model
 from alibi_detect.utils.tensorflow.prediction import predict_batch
 from alibi_detect.utils.warnings import deprecated_alias
 from alibi_detect.utils.frameworks import Framework
-from alibi_detect.utils._types import Optimizer_tf
+from alibi_detect.utils._types import OptimizerTF
 
 
 class ClassifierDriftTF(BaseClassifierDrift):
@@ -32,7 +32,7 @@ class ClassifierDriftTF(BaseClassifierDrift):
             n_folds: Optional[int] = None,
             retrain_from_scratch: bool = True,
             seed: int = 0,
-            optimizer: Optimizer_tf = tf.keras.optimizers.Adam,
+            optimizer: OptimizerTF = tf.keras.optimizers.Adam,
             learning_rate: float = 1e-3,
             batch_size: int = 32,
             preprocess_batch_fn: Optional[Callable] = None,

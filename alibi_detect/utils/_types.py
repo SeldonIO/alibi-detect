@@ -35,5 +35,5 @@ supported_models_all = supported_models_tf + supported_models_torch + supported_
 supported_optimizers_all = supported_optimizers_tf + supported_optimizers_torch
 
 # type aliases, for use with mypy (must be FwdRef's if involving opt. deps.)
-Optimizer_tf: TypeAlias = Union['tf.keras.optimizers.Optimizer', 'tf.keras.optimizers.legacy.Optimizer',
-                                Type['tf.keras.optimizers.Optimizer'], Type['tf.keras.optimizers.legacy.Optimizer']]
+OptimizerTF: TypeAlias = Union['tf.keras.optimizers.Optimizer', 'tf.keras.optimizers.legacy.Optimizer',
+                               Type['tf.keras.optimizers.Optimizer'], Type['tf.keras.optimizers.legacy.Optimizer']]

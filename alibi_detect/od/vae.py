@@ -8,7 +8,7 @@ from alibi_detect.models.tensorflow.trainer import trainer
 from alibi_detect.models.tensorflow.losses import elbo
 from alibi_detect.base import BaseDetector, FitMixin, ThresholdMixin, outlier_prediction_dict
 from alibi_detect.utils.tensorflow.prediction import predict_batch
-from alibi_detect.utils._types import Optimizer_tf
+from alibi_detect.utils._types import OptimizerTF
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +77,7 @@ class OutlierVAE(BaseDetector, FitMixin, ThresholdMixin):
     def fit(self,
             X: np.ndarray,
             loss_fn: tf.keras.losses = elbo,
-            optimizer: Optimizer_tf = tf.keras.optimizers.Adam,
+            optimizer: OptimizerTF = tf.keras.optimizers.Adam,
             cov_elbo: dict = dict(sim=.05),
             epochs: int = 20,
             batch_size: int = 64,
