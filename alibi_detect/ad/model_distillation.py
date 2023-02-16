@@ -8,6 +8,7 @@ from alibi_detect.base import (BaseDetector, FitMixin, ThresholdMixin,
 from alibi_detect.models.tensorflow.losses import loss_distillation
 from alibi_detect.models.tensorflow.trainer import trainer
 from alibi_detect.utils.tensorflow.prediction import predict_batch
+from alibi_detect.utils._types import Optimizer_tf
 from tensorflow.keras.losses import categorical_crossentropy, kld
 
 logger = logging.getLogger(__name__)
@@ -67,7 +68,7 @@ class ModelDistillation(BaseDetector, FitMixin, ThresholdMixin):
     def fit(self,
             X: np.ndarray,
             loss_fn: tf.keras.losses = loss_distillation,
-            optimizer: tf.keras.optimizers.Optimizer = tf.keras.optimizers.Adam,
+            optimizer: Optimizer_tf = tf.keras.optimizers.Adam,
             epochs: int = 20,
             batch_size: int = 128,
             verbose: bool = True,

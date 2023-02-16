@@ -158,7 +158,7 @@ def save_embedding_config(embed: TransformerEmbedding,
     return cfg_embed
 
 
-def save_optimizer_config(optimizer: tf.keras.optimizers.Optimizer):
+def save_optimizer_config(optimizer: Union[tf.keras.optimizers.Optimizer]):
     """
 
     Parameters

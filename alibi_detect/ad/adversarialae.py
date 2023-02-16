@@ -10,6 +10,7 @@ from alibi_detect.models.tensorflow.autoencoder import AE
 from alibi_detect.models.tensorflow.losses import loss_adv_ae
 from alibi_detect.models.tensorflow.trainer import trainer
 from alibi_detect.utils.tensorflow.prediction import predict_batch
+from alibi_detect.utils._types import Optimizer_tf
 from tensorflow.keras.layers import Dense, Flatten
 from tensorflow.keras.losses import kld
 from tensorflow.keras.models import Model
@@ -139,7 +140,7 @@ class AdversarialAE(BaseDetector, FitMixin, ThresholdMixin):
             loss_fn: tf.keras.losses = loss_adv_ae,
             w_model: float = 1.,
             w_recon: float = 0.,
-            optimizer: tf.keras.optimizers.Optimizer = tf.keras.optimizers.Adam,
+            optimizer: Optimizer_tf = tf.keras.optimizers.Adam,
             epochs: int = 20,
             batch_size: int = 128,
             verbose: bool = True,
