@@ -66,9 +66,9 @@ class LOFTorch(TorchOutlierDetector):
         return preds
 
     def _make_mask(self, reachabilities: torch.Tensor):
-        mask = torch.zeros_like(reachabilities[0])
+        mask = torch.zeros_like(reachabilities[0], device=self.device)
         for i, k in enumerate(self.ks):
-            mask[:k, i] = torch.ones(k)/k
+            mask[:k, i] = torch.ones(k, device=self.device)/k
         return mask
 
     def _compute_K(self, x, y):
@@ -148,7 +148,7 @@ class LOFTorch(TorchOutlierDetector):
         """
         X = torch.as_tensor(x_ref)
         D = self._compute_K(X, X)
-        D += torch.eye(len(D)) * torch.max(D)
+        D += torch.eye(len(D), device=self.device) * torch.max(D)
         max_k = torch.max(self.ks)
         bot_k_items = torch.topk(D, max_k, dim=1, largest=False)
         bot_k_inds, bot_k_dists = bot_k_items.indices, bot_k_items.values
