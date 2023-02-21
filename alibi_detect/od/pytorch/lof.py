@@ -22,8 +22,8 @@ class LOFTorch(TorchOutlierDetector):
         Parameters
         ----------
         k
-            Number of nearest neighbors used to compute LOF. If `k` is a list or array, then an ensemble of LOF detectors
-            is created with one detector for each value of `k`.
+            Number of nearest neighbors used to compute LOF. If `k` is a list or array, then an ensemble of LOF
+            detectors is created with one detector for each value of `k`.
         kernel
             If a kernel is specified then instead of using `torch.cdist` the kernel defines the `k` nearest
             neighbor distance.
@@ -71,6 +71,9 @@ class LOFTorch(TorchOutlierDetector):
             mask[:k, i] = torch.ones(k)/k
         return mask
 
+    def _compute_K(self, x, y):
+        return torch.exp(-self.kernel(x, y)) if self.kernel is not None else torch.cdist(x, y)
+
     @torch.no_grad()
     def score(self, x: torch.Tensor) -> torch.Tensor:
         """Computes the score of `x`
@@ -101,10 +104,7 @@ class LOFTorch(TorchOutlierDetector):
             self.check_fitted()
 
         X = torch.as_tensor(x)
-        D = torch.cdist(X, self.x_ref)
-
-        # K = -self.kernel(x, self.x_ref) if self.kernel is not None else torch.cdist(x, self.x_ref)
-
+        D = self._compute_K(X, self.x_ref)
         max_k = torch.max(self.ks)
         bot_k_items = torch.topk(D, max_k, dim=1, largest=False)
         bot_k_inds, bot_k_dists = bot_k_items.indices, bot_k_items.values
@@ -147,7 +147,7 @@ class LOFTorch(TorchOutlierDetector):
             The Dataset tensor.
         """
         X = torch.as_tensor(x_ref)
-        D = torch.cdist(X, X)
+        D = self._compute_K(X, X)
         D += torch.eye(len(D)) * torch.max(D)
         max_k = torch.max(self.ks)
         bot_k_items = torch.topk(D, max_k, dim=1, largest=False)

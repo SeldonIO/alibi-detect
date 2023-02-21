@@ -116,7 +116,7 @@ def test_lof_kernel(ensembler):
     on data and used to predict outliers.
     """
 
-    kernel = GaussianRBF(sigma=torch.tensor((0.25)))
+    kernel = GaussianRBF(sigma=torch.tensor((1)))
     lof_torch = LOFTorch(k=[4, 5], kernel=kernel, ensembler=ensembler)
     x_ref = torch.randn((1024, 10))
     lof_torch.fit(x_ref)
