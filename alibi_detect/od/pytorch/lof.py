@@ -106,7 +106,7 @@ class LOFTorch(TorchOutlierDetector):
         X = torch.as_tensor(x)
         D = self._compute_K(X, self.x_ref)
         max_k = torch.max(self.ks)
-        bot_k_items = torch.topk(D, max_k, dim=1, largest=False)
+        bot_k_items = torch.topk(D, int(max_k), dim=1, largest=False)
         bot_k_inds, bot_k_dists = bot_k_items.indices, bot_k_items.values
         lower_bounds = self.knn_dists_ref[bot_k_inds]
         reachabilities = torch.max(bot_k_dists[:, :, None], lower_bounds)
@@ -150,7 +150,7 @@ class LOFTorch(TorchOutlierDetector):
         D = self._compute_K(X, X)
         D += torch.eye(len(D), device=self.device) * torch.max(D)
         max_k = torch.max(self.ks)
-        bot_k_items = torch.topk(D, max_k, dim=1, largest=False)
+        bot_k_items = torch.topk(D, int(max_k), dim=1, largest=False)
         bot_k_inds, bot_k_dists = bot_k_items.indices, bot_k_items.values
         self.knn_dists_ref = bot_k_dists[:, self.ks-1]
         lower_bounds = self.knn_dists_ref[bot_k_inds]
