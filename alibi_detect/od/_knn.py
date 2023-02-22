@@ -42,7 +42,13 @@ class KNN(BaseDetector, FitMixin, ThresholdMixin):
         The detector can be initialized with `k` a single value or an array of values. If `k` is a single value then
         the outlier score is the distance/kernel similarity to the k-th nearest neighbor. If `k` is an array of
         values then the outlier score is the distance/kernel similarity to each of the specified `k` neighbors.
-        In the latter case, an aggregator must be specified to aggregate the scores.
+        In the latter case, an `ensembler` must be specified to aggregate the scores.
+
+        Note that the `ensembler` is fit in the `infer_threshold` method and so if using an array of `k` values, the
+        `infer_threshold` method must be called before the `predict` method othewrise an exception is raised. If `k`
+        is a single value then the predict method can be called without first calling `infer_threshold` but only
+        scores will be returned and not outlier predictions.
+
 
         Parameters
         ----------
