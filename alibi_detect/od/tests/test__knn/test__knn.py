@@ -5,7 +5,7 @@ import torch
 from alibi_detect.od._knn import KNN
 from alibi_detect.od import AverageAggregator, TopKAggregator, MaxAggregator, \
     MinAggregator, ShiftAndScaleNormalizer, PValNormalizer
-from alibi_detect.base import NotFitException
+from alibi_detect.base import NotFitException, ThresholdNotInferredException
 
 from sklearn.datasets import make_moons
 
@@ -31,23 +31,37 @@ def test_unfitted_knn_single_score():
     assert str(err.value) == 'KNNTorch has not been fit!'
 
 
-@pytest.mark.parametrize('k', [10, [8, 9, 10]])
-def test_fitted_knn_single_score(k):
-    knn_detector = KNN(k=k)
+def test_fitted_knn_score():
+    """
+    Test fitted but not threshold inferred non-ensemble detectors can still score data using the predict method.
+    Unlike the ensemble detectors, the non-ensemble detectors do not require the ensembler to be fit in the
+    infer_threshold method. See the test_fitted_knn_ensemble_score test for the ensemble case.
+    """
+    knn_detector = KNN(k=10)
     x_ref = np.random.randn(100, 2)
     knn_detector.fit(x_ref)
     x = np.array([[0, 10], [0.1, 0]])
-    # test fitted but not threshold inferred detectors
-    # can still score data using the predict method.
     y = knn_detector.predict(x)
     y = y['data']
     assert y['instance_score'][0] > 5
     assert y['instance_score'][1] < 1
-
     assert not y['threshold_inferred']
     assert y['threshold'] is None
     assert y['is_outlier'] is None
     assert y['p_value'] is None
+
+
+def test_fitted_knn_ensemble_score():
+    """
+    Test fitted but not threshold inferred ensemble detectors correctly raise an error when calling
+    the predict method. This is becuase the ensembler is fit in the infer_threshold method.
+    """
+    knn_detector = KNN(k=[10, 14, 18])
+    x_ref = np.random.randn(100, 2)
+    knn_detector.fit(x_ref)
+    x = np.array([[0, 10], [0.1, 0]])
+    with pytest.raises(ThresholdNotInferredException):
+        knn_detector.predict(x)
 
 
 def test_incorrect_knn_ensemble_init():
@@ -113,14 +127,13 @@ def test_fitted_knn_ensemble(aggregator, normalizer):
     knn_detector.fit(x_ref)
     x = np.array([[0, 10], [0, 0.1]])
 
-    # test fitted but not threshold inferred detectors can still score data using the predict method.
-    y = knn_detector.predict(x)
-    y = y['data']
-    assert y['instance_score'].all()
-    assert not y['threshold_inferred']
-    assert y['threshold'] is None
-    assert y['is_outlier'] is None
-    assert y['p_value'] is None
+    # test ensemble raises ThresholdNotInferredException if only fit and not threshold inferred and
+    # the normalizer is not None.
+    if normalizer() is not None:
+        with pytest.raises(ThresholdNotInferredException):
+            knn_detector.predict(x)
+    else:
+        knn_detector.predict(x)
 
 
 @pytest.mark.parametrize("aggregator", [AverageAggregator, lambda: TopKAggregator(k=7),

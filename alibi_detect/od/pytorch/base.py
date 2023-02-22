@@ -141,10 +141,22 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
         Returns
         -------
         `torch.Tensor` or original data without alteration
+
+        Raises
+        ------
+        ThresholdNotInferredException
+            If the detector is an ensemble, and the ensembler used to aggregate the outlier scores has a fitable
+            component, then the detector threshold must be inferred before predictions can be made. This is because
+            while the scoring functionality of the detector is fit within the `.fit` method on the training data
+            the ensembler has to be fit on the validation data along with the threshold and this is done in the
+            `.infer_threshold` method.
         """
         if hasattr(self, 'ensembler') and self.ensembler is not None:
             # `type: ignore` here becuase self.ensembler here causes an error with mypy when using torch.jit.script.
             # For some reason it thinks self.ensembler is a torch.Tensor and therefore is not callable.
+            if not torch.jit.is_scripting():
+                if not self.ensembler.fitted:  # type: ignore
+                    self.check_threshold_inferred()
             return self.ensembler(x)  # type: ignore
         else:
             return x
@@ -196,7 +208,8 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
         if not 0 < fpr < 1:
             ValueError('`fpr` must be in `(0, 1)`.')
         self.val_scores = self.score(x)
-        self.val_scores = self._ensembler(self.val_scores)
+        if self.ensemble:
+            self.val_scores = self.ensembler.fit(self.val_scores).transform(self.val_scores)  # type: ignore
         self.threshold = torch.quantile(self.val_scores, 1-fpr)
         self.threshold_inferred = True
 

@@ -37,7 +37,7 @@ class BaseTransformTorch(Module, ABC):
 
 
 class FitMixinTorch(ABC):
-    _fitted = False
+    fitted = False
 
     def __init__(self):
         """Fit mixin
@@ -47,7 +47,7 @@ class FitMixinTorch(ABC):
         super().__init__()
 
     def fit(self, x: torch.Tensor) -> FitMixinTorch:
-        self._fitted = True
+        self.fitted = True
         self._fit(x)
         return self
 
@@ -73,7 +73,7 @@ class FitMixinTorch(ABC):
         NotFitException
             Raised if method called and object has not been fit.
         """
-        if not self._fitted:
+        if not self.fitted:
             raise NotFitException(f'{self.__class__.__name__} has not been fit!')
 
 
