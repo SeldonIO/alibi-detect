@@ -22,7 +22,6 @@ class MMDDriftOnline(DriftConfigMixin):
             preprocess_fn: Optional[Callable] = None,
             x_ref_preprocessed: bool = False,
             kernel: Optional[Union[BaseKernelTorch, BaseKernelTF]] = None,
-            sigma: Optional[Union[np.ndarray, float]] = None,
             n_bootstraps: int = 1000,
             device: Optional[str] = None,
             verbose: bool = True,
@@ -53,10 +52,6 @@ class MMDDriftOnline(DriftConfigMixin):
             data will also be preprocessed.
         kernel
             Kernel used for the MMD computation, defaults to Gaussian RBF kernel.
-        sigma
-            Optionally set the GaussianRBF kernel bandwidth. Can also pass multiple bandwidth values as an array.
-            The kernel evaluation is then averaged over those bandwidths. If `sigma` is not specified, the 'median
-            heuristic' is adopted whereby `sigma` is set as the median pairwise distance between reference samples.
         n_bootstraps
             The number of bootstrap simulations used to configure the thresholds. The larger this is the
             more accurately the desired ERT will be targeted. Should ideally be at least an order of magnitude
@@ -93,7 +88,7 @@ class MMDDriftOnline(DriftConfigMixin):
                 from alibi_detect.utils.tensorflow.kernels import GaussianRBF
             else:
                 from alibi_detect.utils.pytorch.kernels import GaussianRBF  # type: ignore
-            kwargs.update({'kernel': GaussianRBF()})
+            kwargs.update({'kernel': GaussianRBF})
 
         if backend == Framework.TENSORFLOW:
             kwargs.pop('device', None)

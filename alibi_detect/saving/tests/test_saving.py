@@ -42,7 +42,8 @@ from alibi_detect.saving.loading import (_get_nested_value, _replace,
 from alibi_detect.saving.saving import _serialize_object
 from alibi_detect.saving.saving import (_path2str, _int2str_keys, _save_kernel_config, _save_model_config,
                                         _save_preprocess_config)
-from alibi_detect.saving.schemas import DeepKernelConfig, KernelConfig, ModelConfig, PreprocessConfig
+from alibi_detect.saving.schemas import DeepKernelConfig, ModelConfig, PreprocessConfig, RBFKernelConfig,\
+    RationalQuadraticKernelConfig, PeriodicKernelConfig
 from alibi_detect.utils.pytorch.kernels import DeepKernel as DeepKernel_pt
 from alibi_detect.utils.tensorflow.kernels import DeepKernel as DeepKernel_tf
 
@@ -192,7 +193,9 @@ def test_save_cvmdrift(data, preprocess_custom, tmp_path):
 
 @parametrize('kernel', [
         None,  # Use default kernel
-        {'sigma': 0.5, 'trainable': False},  # pass kernel as object
+        {'kernel_name': 'GaussianRBF', 'kernel_config': {'sigma': 0.5, 'trainable': False}},  # pass kernel as object
+        {'kernel_name': 'RationalQuadratic', 'kernel_config': {'sigma': 0.5, 'alpha': 4.0, 'trainable': False}},
+        {'kernel_name': 'Periodic', 'kernel_config': {'sigma': 0.5, 'tau': 2.0, 'trainable': False}},
     ], indirect=True
 )
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
@@ -213,8 +216,7 @@ def test_save_mmddrift(data, kernel, preprocess_custom, backend, tmp_path, seed)
         'n_permutations': N_PERMUTATIONS,
         'preprocess_at_init': True,
         'kernel': kernel,
-        'configure_kernel_from_x_ref': False,
-        'sigma': np.array([0.5])
+        'configure_kernel_from_x_ref': False
     }
     if backend == 'pytorch':
         kwargs['device'] = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -501,7 +503,11 @@ def test_save_learnedkernel(data, deep_kernel, backend, tmp_path, seed):  # noqa
 
 @parametrize('kernel', [
         None,  # Default kernel
-        {'sigma': 0.5, 'trainable': False},  # pass kernels as GaussianRBF objects, with default sigma_median fn
+        {'kernel_name': 'GaussianRBF',
+         'kernel_config': {'sigma': 0.5, 'trainable': False}},
+        # pass kernels as GaussianRBF objects, with default sigma_median fn
+        {'kernel_name': 'RationalQuadratic', 'kernel_config': {'sigma': 0.5, 'alpha': 4.0, 'trainable': False}},
+        {'kernel_name': 'Periodic', 'kernel_config': {'sigma': 0.5, 'tau': 2.0, 'trainable': False}},
     ], indirect=True
 )
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
@@ -614,7 +620,9 @@ def test_save_regressoruncertaintydrift(data, regressor, backend, tmp_path, seed
 
 @parametrize('kernel', [
         None,  # Use default kernel
-        {'sigma': 0.5, 'trainable': False},  # pass kernel as object
+        {'kernel_name': 'GaussianRBF', 'kernel_config': {'sigma': 0.5, 'trainable': False}},  # pass kernel as object
+        {'kernel_name': 'RationalQuadratic', 'kernel_config': {'sigma': 0.5, 'alpha': 4.0, 'trainable': False}},
+        {'kernel_name': 'Periodic', 'kernel_config': {'sigma': 0.5, 'tau': 2.0, 'trainable': False}},
     ], indirect=True
 )
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
@@ -858,9 +866,22 @@ def test_version_warning(data, tmp_path):
 
 
 @parametrize('kernel', [
-        {'sigma': 0.5, 'trainable': False, 'init_sigma_fn': None},
-        {'sigma': [0.5, 0.8], 'trainable': False, 'init_sigma_fn': None},
-        {'sigma': None, 'trainable': True, 'init_sigma_fn': None},
+        {'kernel_name': 'GaussianRBF', 'kernel_config': {'sigma': 0.5, 'trainable': False, 'init_sigma_fn': None}},
+        {'kernel_name': 'GaussianRBF',
+         'kernel_config': {'sigma': [0.5, 0.8], 'trainable': False, 'init_sigma_fn': None}},
+        {'kernel_name': 'GaussianRBF', 'kernel_config': {'sigma': None, 'trainable': True, 'init_sigma_fn': None}},
+        {'kernel_name': 'RationalQuadratic',
+         'kernel_config': {'sigma': 0.5, 'alpha': 3.0, 'trainable': False, 'init_sigma_fn': None}},
+        {'kernel_name': 'RationalQuadratic',
+         'kernel_config': {'sigma': [0.5, 0.8], 'alpha': [2.0, 3.0], 'trainable': False, 'init_sigma_fn': None}},
+        {'kernel_name': 'RationalQuadratic',
+         'kernel_config': {'sigma': None, 'alpha': None, 'trainable': True, 'init_sigma_fn': None}},
+        {'kernel_name': 'Periodic',
+         'kernel_config': {'sigma': 0.5, 'tau': 2.0, 'trainable': False, 'init_sigma_fn': None}},
+        {'kernel_name': 'Periodic',
+         'kernel_config': {'sigma': [0.5, 0.8], 'tau': [2.0, 3.0], 'trainable': False, 'init_sigma_fn': None}},
+        {'kernel_name': 'Periodic',
+         'kernel_config': {'sigma': None, 'tau': None, 'trainable': True, 'init_sigma_fn': None}},
     ], indirect=True
 )
 def test_save_kernel(kernel, backend, tmp_path):  # noqa: F811
@@ -873,9 +894,15 @@ def test_save_kernel(kernel, backend, tmp_path):  # noqa: F811
     filepath = tmp_path
     filename = Path('mykernel')
     cfg_kernel = _save_kernel_config(kernel, filepath, filename)
-    cfg_kernel = KernelConfig(**cfg_kernel).dict()  # Pass through validator to test, and coerce sigma to Tensor
     if kernel.__class__.__name__ == 'GaussianRBF':
         assert cfg_kernel['src'] == '@utils.' + backend + '.kernels.GaussianRBF'
+        cfg_kernel = RBFKernelConfig(**cfg_kernel).dict()  # Pass through validator to test, and coerce sigma to Tensor
+    elif kernel.__class__.__name__ == 'RationalQuadratic':
+        assert cfg_kernel['src'] == '@utils.' + backend + '.kernels.RationalQuadratic'
+        cfg_kernel = RationalQuadraticKernelConfig(**cfg_kernel).dict()  # Pass through validator to test
+    elif kernel.__class__.__name__ == 'Periodic':
+        assert cfg_kernel['src'] == '@utils.' + backend + '.kernels.Periodic'
+        cfg_kernel = PeriodicKernelConfig(**cfg_kernel).dict()  # Pass through validator to test
     else:
         assert Path(cfg_kernel['src']).suffix == '.dill'
     assert cfg_kernel['trainable'] == kernel.trainable
@@ -907,7 +934,6 @@ def test_save_kernel(kernel, backend, tmp_path):  # noqa: F811
     assert kernel_loaded.trainable == kernel.trainable
     for tmp_key in kernel.parameter_dict.keys():
         assert kernel_loaded.parameter_dict[tmp_key].init_fn == kernel.parameter_dict[tmp_key].init_fn
-    # assert kernel_loaded.init_sigma_fn == kernel.init_sigma_fn
 
 
 # `data` passed below as needed in encoder_model, which is used in deep_kernel

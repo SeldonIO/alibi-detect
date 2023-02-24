@@ -29,7 +29,6 @@ class MMDDrift(DriftConfigMixin):
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
             kernel: Callable = None,
-            sigma: Optional[Union[np.ndarray, float]] = None,
             configure_kernel_from_x_ref: bool = True,
             n_permutations: int = 100,
             batch_size_permutations: int = 1000000,
@@ -63,9 +62,6 @@ class MMDDrift(DriftConfigMixin):
             Function to preprocess the data before computing the data drift metrics.
         kernel
             Kernel used for the MMD computation, defaults to Gaussian RBF kernel.
-        sigma
-            Optionally set the GaussianRBF kernel bandwidth. Can also pass multiple bandwidth values as an array.
-            The kernel evaluation is then averaged over those bandwidths.
         configure_kernel_from_x_ref
             Whether to already configure the kernel bandwidth from the reference data.
         n_permutations
@@ -114,7 +110,7 @@ class MMDDrift(DriftConfigMixin):
                 from alibi_detect.utils.pytorch.kernels import GaussianRBF  # type: ignore
             else:
                 from alibi_detect.utils.keops.kernels import GaussianRBF  # type: ignore
-            kwargs.update({'kernel': GaussianRBF()})
+            kwargs.update({'kernel': GaussianRBF})
 
         self._detector = detector(*args, **kwargs)  # type: ignore
         self.meta = self._detector.meta

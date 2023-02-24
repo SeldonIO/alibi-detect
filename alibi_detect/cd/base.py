@@ -535,9 +535,6 @@ class BaseMMDDrift(BaseDetector):
             for reservoir sampling {'reservoir_sampling': n} is passed.
         preprocess_fn
             Function to preprocess the data before computing the data drift metrics.
-        sigma
-            Optionally set the Gaussian RBF kernel bandwidth. Can also pass multiple bandwidth values as an array.
-            The kernel evaluation is then averaged over those bandwidths.
         configure_kernel_from_x_ref
             Whether to already configure the kernel bandwidth from the reference data.
         n_permutations

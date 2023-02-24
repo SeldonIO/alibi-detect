@@ -49,8 +49,8 @@ class ContextMMDDriftTF(BaseContextMMDDrift):
             preprocess_at_init: bool = True,
             update_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
-            x_kernel: BaseKernel = GaussianRBF(init_sigma_fn=_sigma_median_diag),
-            c_kernel: BaseKernel = GaussianRBF(init_sigma_fn=_sigma_median_diag),
+            x_kernel: Union[BaseKernel, Callable] = GaussianRBF,
+            c_kernel: Union[BaseKernel, Callable] = GaussianRBF,
             n_permutations: int = 1000,
             prop_c_held: float = 0.25,
             n_folds: int = 5,
@@ -123,8 +123,9 @@ class ContextMMDDriftTF(BaseContextMMDDrift):
         )
         self.meta.update({'backend': Framework.TENSORFLOW.value})
 
-        self.x_kernel = x_kernel
-        self.c_kernel = c_kernel
+        # initialize kernel
+        self.x_kernel = x_kernel(init_sigma_fn=_sigma_median_diag) if x_kernel == GaussianRBF else x_kernel
+        self.c_kernel = c_kernel(init_sigma_fn=_sigma_median_diag) if c_kernel == GaussianRBF else c_kernel
 
     def score(self,  # type: ignore[override]
               x: Union[np.ndarray, list], c: np.ndarray) -> Tuple[float, float, float, Tuple]:

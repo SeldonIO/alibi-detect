@@ -320,7 +320,7 @@ class PreprocessConfig(CustomBaseModel):
     """
 
 
-class KernelConfig(CustomBaseModelWithKwargs):
+class RBFKernelConfig(CustomBaseModelWithKwargs):
     """
     Unresolved schema for kernels, to be passed to a detector's `kernel` kwarg.
 
@@ -374,6 +374,136 @@ class KernelConfig(CustomBaseModelWithKwargs):
     _coerce_sigma2tensor = validator('sigma', allow_reuse=True, pre=False)(coerce_2_tensor)
 
 
+class RationalQuadraticKernelConfig(CustomBaseModelWithKwargs):
+    """
+    Unresolved schema for kernels, to be passed to a detector's `kernel` kwarg.
+
+    If `src` specifies a :class:`~alibi_detect.utils.tensorflow.GaussianRBF` kernel, the `sigma`, `trainable` and
+    `init_sigma_fn` fields are passed to it. Otherwise, all fields except `src` are passed as kwargs.
+
+    Examples
+    --------
+    A :class:`~alibi_detect.utils.tensorflow.GaussianRBF` kernel, with three different bandwidths:
+
+    .. code-block :: toml
+
+        [kernel]
+        src = "@alibi_detect.utils.tensorflow.GaussianRBF"
+        trainable = false
+        sigma = [0.1, 0.2, 0.3]
+
+    A serialized kernel with keyword arguments passed:
+
+    .. code-block :: toml
+
+        [kernel]
+        src = "mykernel.dill"
+        sigma = 0.42
+        custom_setting = "xyz"
+    """
+    src: str
+    "A string referencing a filepath to a serialized kernel in `.dill` format, or an object registry reference."
+
+    # Below kwargs are only passed if kernel == @GaussianRBF
+    flavour: Literal['tensorflow', 'pytorch']
+    """
+    Whether the kernel is a `tensorflow` or `pytorch` kernel.
+    """
+    sigma: Optional[Union[float, List[float]]] = None
+    """
+    Bandwidth used for the kernel. Needn’t be specified if being inferred or trained. Can pass multiple values to eval
+    kernel with and then average.
+    """
+    alpha: Optional[Union[float, List[float]]] = None
+    """
+    Exponent used for the kernel. Needn’t be specified if being inferred or trained. Can pass multiple values to eval
+    kernel with and then average.
+    """
+    trainable: bool = False
+    "Whether or not to track gradients w.r.t. sigma to allow it to be trained."
+
+    init_sigma_fn: Optional[str] = None
+    """
+    Function used to compute the bandwidth `sigma`. Used when `sigma` is to be inferred. The function's signature
+    should match :py:func:`~alibi_detect.utils.tensorflow.kernels.sigma_median`. If `None`, it is set to
+    :func:`~alibi_detect.utils.tensorflow.kernels.sigma_median`.
+    """
+    init_alpha_fn: Optional[str] = None
+    """
+    Function used to compute the exponent `alpha`. Used when `alpha` is to be inferred. The function's signature
+    should match :py:func:`~alibi_detect.utils.tensorflow.kernels.sigma_median`. Defaults to None.
+    """
+    # Validators
+    _validate_flavour = validator('flavour', allow_reuse=True, pre=False)(validate_framework)
+    _coerce_sigma2tensor = validator('sigma', allow_reuse=True, pre=False)(coerce_2_tensor)
+    _coerce_alpha2tensor = validator('alpha', allow_reuse=True, pre=False)(coerce_2_tensor)
+
+
+class PeriodicKernelConfig(CustomBaseModelWithKwargs):
+    """
+    Unresolved schema for kernels, to be passed to a detector's `kernel` kwarg.
+
+    If `src` specifies a :class:`~alibi_detect.utils.tensorflow.GaussianRBF` kernel, the `sigma`, `trainable` and
+    `init_sigma_fn` fields are passed to it. Otherwise, all fields except `src` are passed as kwargs.
+
+    Examples
+    --------
+    A :class:`~alibi_detect.utils.tensorflow.GaussianRBF` kernel, with three different bandwidths:
+
+    .. code-block :: toml
+
+        [kernel]
+        src = "@alibi_detect.utils.tensorflow.GaussianRBF"
+        trainable = false
+        sigma = [0.1, 0.2, 0.3]
+
+    A serialized kernel with keyword arguments passed:
+
+    .. code-block :: toml
+
+        [kernel]
+        src = "mykernel.dill"
+        sigma = 0.42
+        custom_setting = "xyz"
+    """
+    src: str
+    "A string referencing a filepath to a serialized kernel in `.dill` format, or an object registry reference."
+
+    # Below kwargs are only passed if kernel == @GaussianRBF
+    flavour: Literal['tensorflow', 'pytorch']
+    """
+    Whether the kernel is a `tensorflow` or `pytorch` kernel.
+    """
+    sigma: Optional[Union[float, List[float]]] = None
+    """
+    Bandwidth used for the kernel. Needn’t be specified if being inferred or trained. Can pass multiple values to eval
+    kernel with and then average.
+    """
+    tau: Optional[Union[float, List[float]]] = None
+    """
+    Period used for the kernel. Needn’t be specified if being inferred or trained. Can pass multiple values to eval
+    kernel with and then average.
+    """
+    trainable: bool = False
+    "Whether or not to track gradients w.r.t. sigma to allow it to be trained."
+
+    init_sigma_fn: Optional[str] = None
+    """
+    Function used to compute the bandwidth `sigma`. Used when `sigma` is to be inferred. The function's signature
+    should match :py:func:`~alibi_detect.utils.tensorflow.kernels.sigma_median`. If `None`, it is set to
+    :func:`~alibi_detect.utils.tensorflow.kernels.sigma_median`.
+    """
+    init_tau_fn: Optional[str] = None
+    """
+    Function used to compute the period `tau`. Used when `tau` is to be inferred. The function's signature
+    should match :py:func:`~alibi_detect.utils.tensorflow.kernels.sigma_median`. Defaults to None.
+    """
+    # Validators
+    _validate_flavour = validator('flavour', allow_reuse=True, pre=False)(validate_framework)
+    _coerce_sigma2tensor = validator('sigma', allow_reuse=True, pre=False)(coerce_2_tensor)
+    _coerce_tau2tensor = validator('tau', allow_reuse=True, pre=False)(coerce_2_tensor)
+
+
 class DeepKernelConfig(CustomBaseModel):
     """
     Unresolved schema for :class:`~alibi_detect.utils.tensorflow.kernels.DeepKernel`'s.
@@ -406,12 +536,14 @@ class DeepKernelConfig(CustomBaseModel):
     The projection to be applied to the inputs before applying `kernel_a`. This should be a Tensorflow or PyTorch
     model, specified as an object registry reference, or a :class:`~alibi_detect.utils.schemas.ModelConfig`.
     """
-    kernel_a: Union[str, KernelConfig] = "@utils.tensorflow.kernels.GaussianRBF"
+    kernel_a: Union[str, RBFKernelConfig, RationalQuadraticKernelConfig, PeriodicKernelConfig]\
+        = "@utils.tensorflow.kernels.GaussianRBF"
     """
     The kernel to apply to the projected inputs. Defaults to a
     :class:`~alibi_detect.utils.tensorflow.kernels.GaussianRBF` with trainable bandwidth.
     """
-    kernel_b: Optional[Union[str, KernelConfig]] = "@utils.tensorflow.kernels.GaussianRBF"
+    kernel_b: Optional[Union[str, RBFKernelConfig, RationalQuadraticKernelConfig, PeriodicKernelConfig]]\
+        = "@utils.tensorflow.kernels.GaussianRBF"
     """
     The kernel to apply to the raw inputs. Defaults to a :class:`~alibi_detect.utils.tensorflow.kernels.GaussianRBF`
     with trainable bandwidth. Set to `None` in order to use only the deep component (i.e. `eps=0`).
@@ -677,8 +809,7 @@ class MMDDriftConfig(DriftDetectorConfig):
     p_val: float = .05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
-    kernel: Optional[Union[str, KernelConfig]] = None
-    sigma: Optional[NDArray[np.float32]] = None
+    kernel: Optional[Union[str, RBFKernelConfig, RationalQuadraticKernelConfig, PeriodicKernelConfig]] = None
     configure_kernel_from_x_ref: bool = True
     n_permutations: int = 100
     batch_size_permutations: int = 1000000
@@ -698,7 +829,6 @@ class MMDDriftConfigResolved(DriftDetectorConfigResolved):
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
     kernel: Optional[Callable] = None
-    sigma: Optional[NDArray[np.float32]] = None
     configure_kernel_from_x_ref: bool = True
     n_permutations: int = 100
     batch_size_permutations: int = 1000000
@@ -839,7 +969,7 @@ class SpotTheDiffDriftConfig(DriftDetectorConfig):
     verbose: int = 0
     train_kwargs: Optional[dict] = None
     dataset: Optional[str] = None
-    kernel: Optional[Union[str, KernelConfig]] = None
+    kernel: Optional[Union[str, RBFKernelConfig, RationalQuadraticKernelConfig, PeriodicKernelConfig]] = None
     n_diffs: int = 1
     initial_diffs: Optional[str] = None
     l1_reg: float = 0.01
@@ -959,8 +1089,8 @@ class ContextMMDDriftConfig(DriftDetectorConfig):
     c_ref: str
     preprocess_at_init: bool = True
     update_ref: Optional[Dict[str, int]] = None
-    x_kernel: Optional[Union[str, KernelConfig]] = None
-    c_kernel: Optional[Union[str, KernelConfig]] = None
+    x_kernel: Optional[Union[str, RBFKernelConfig, RationalQuadraticKernelConfig, PeriodicKernelConfig]] = None
+    c_kernel: Optional[Union[str, RBFKernelConfig, RationalQuadraticKernelConfig, PeriodicKernelConfig]] = None
     n_permutations: int = 100
     prop_c_held: float = 0.25
     n_folds: int = 5
@@ -1004,8 +1134,7 @@ class MMDDriftOnlineConfig(DriftDetectorConfig):
     backend: Literal['tensorflow', 'pytorch'] = 'tensorflow'
     ert: float
     window_size: int
-    kernel: Optional[Union[str, KernelConfig]] = None
-    sigma: Optional[np.ndarray] = None
+    kernel: Optional[Union[str, RBFKernelConfig, RationalQuadraticKernelConfig, PeriodicKernelConfig]] = None
     n_bootstraps: int = 1000
     device: Optional[Literal['cpu', 'cuda']] = None
     verbose: bool = True
@@ -1024,7 +1153,6 @@ class MMDDriftOnlineConfigResolved(DriftDetectorConfigResolved):
     ert: float
     window_size: int
     kernel: Optional[Callable] = None
-    sigma: Optional[np.ndarray] = None
     n_bootstraps: int = 1000
     device: Optional[Literal['cpu', 'cuda']] = None
     verbose: bool = True

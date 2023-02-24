@@ -22,8 +22,7 @@ class MMDDriftTorch(BaseMMDDrift):
             preprocess_at_init: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
-            kernel: BaseKernel = GaussianRBF(),
-            sigma: Optional[Union[np.ndarray, float]] = None,
+            kernel: Union[BaseKernel, Callable] = GaussianRBF,
             configure_kernel_from_x_ref: bool = True,
             n_permutations: int = 100,
             device: Optional[str] = None,
@@ -54,9 +53,6 @@ class MMDDriftTorch(BaseMMDDrift):
             Function to preprocess the data before computing the data drift metrics.
         kernel
             Kernel used for the MMD computation, defaults to Gaussian RBF kernel.
-        sigma
-            Optionally set the GaussianRBF kernel bandwidth. Can also pass multiple bandwidth values as an array.
-            The kernel evaluation is then averaged over those bandwidths.
         configure_kernel_from_x_ref
             Whether to already configure the kernel bandwidth from the reference data.
         n_permutations
@@ -86,14 +82,13 @@ class MMDDriftTorch(BaseMMDDrift):
         # set device
         self.device = get_device(device)
 
-        self.kernel = kernel
-
-        if isinstance(self.kernel, GaussianRBF) & (sigma is not None):
-            self.kernel.parameter_dict['log-sigma'].value = torch.nn.Parameter(
-                torch.tensor(sigma).to(self.device).log(),
-                requires_grad=False)
-            self.kernel.parameter_dict['log-sigma'].requires_init = False
-            self.kernel.init_required = False
+        # initialise kernel
+        if isinstance(kernel, BaseKernel):
+            self.kernel = kernel
+        elif kernel == GaussianRBF:
+            self.kernel = kernel()
+        else:
+            raise ValueError("kernel must be an instance of alibi_detect.utils.pytorch.kernels.BaseKernel")
 
         self.kernel_parameter_specified = True
         if hasattr(kernel, 'parameter_dict'):

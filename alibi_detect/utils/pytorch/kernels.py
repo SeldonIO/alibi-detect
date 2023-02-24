@@ -205,6 +205,25 @@ class BaseKernel(nn.Module):
     def __rsub__(self, other):
         raise ValueError('Kernels do not support subtraction.')
 
+    @classmethod
+    def from_config(cls, config):
+        """
+        Instantiates a kernel from a config dictionary.
+
+        Parameters
+        ----------
+        config
+            A kernel config dictionary.
+        """
+        config.pop('flavour')
+        if 'sigma' in config and config['sigma'] is not None:
+            config['sigma'] = torch.tensor(np.array(config['sigma']))
+        if 'alpha' in config and config['alpha'] is not None:
+            config['alpha'] = torch.tensor(np.array(config['alpha']))
+        if 'tau' in config and config['tau'] is not None:
+            config['tau'] = torch.tensor(np.array(config['tau']))
+        return cls(**config)
+
 
 class SumKernel(BaseKernel):
     def __init__(self) -> None:
@@ -372,7 +391,7 @@ class GaussianRBF(BaseKernel):
        sigma: Optional[torch.Tensor] = None,
        init_sigma_fn: Optional[Callable] = None,
        trainable: bool = False,
-       active_dims: list = None
+       active_dims: Optional[list] = None
     ) -> None:
         """
         Gaussian RBF kernel: k(x,y) = exp(-(1/(2*sigma^2)||x-y||^2). A forward pass takes
@@ -398,9 +417,10 @@ class GaussianRBF(BaseKernel):
         """
         super().__init__(active_dims)
         self.init_sigma_fn = log_sigma_median if init_sigma_fn is None else init_sigma_fn
-        self.config = {'sigma': sigma, 'trainable': trainable, 'init_sigma_fn': self.init_sigma_fn}
+        self.config = {'sigma': sigma, 'trainable': trainable, 'init_sigma_fn': self.init_sigma_fn,
+                       'active_dims': active_dims}
         self.parameter_dict['log-sigma'] = KernelParameter(
-                value=sigma.log().reshape(-1) if sigma is not None else None,
+                value=sigma.log().reshape(-1) if sigma is not None else torch.zeros(1),
                 init_fn=self.init_sigma_fn,  # type: ignore
                 requires_grad=trainable,
                 requires_init=True if sigma is None else False,
@@ -428,7 +448,7 @@ class GaussianRBF(BaseKernel):
 
     def get_config(self) -> dict:
         """
-        Returns a serializable config dict (excluding the input_sigma_fn, which is serialized in alibi_detect.saving).
+        Returns a serializable config dict (excluding the infer_sigma_fn, which is serialized in alibi_detect.saving).
         """
         cfg = self.config.copy()
         if isinstance(cfg['sigma'], torch.Tensor):
@@ -436,29 +456,16 @@ class GaussianRBF(BaseKernel):
         cfg.update({'flavour': Framework.PYTORCH.value})
         return cfg
 
-    @classmethod
-    def from_config(cls, config):
-        """
-        Instantiates a kernel from a config dictionary.
-
-        Parameters
-        ----------
-        config
-            A kernel config dictionary.
-        """
-        config.pop('flavour')
-        return cls(**config)
-
 
 class RationalQuadratic(BaseKernel):
     def __init__(
         self,
-        alpha: torch.Tensor = None,
-        init_fn_alpha: Callable = None,
-        sigma: torch.Tensor = None,
-        init_sigma_fn: Callable = log_sigma_median,
+        alpha: Optional[torch.Tensor] = None,
+        init_alpha_fn: Optional[Callable] = None,
+        sigma: Optional[torch.Tensor] = None,
+        init_sigma_fn: Optional[Callable] = None,
         trainable: bool = False,
-        active_dims: list = None
+        active_dims: Optional[list] = None
     ) -> None:
         """
         Rational Quadratic kernel: k(x,y) = (1 + ||x-y||^2 / (2*sigma^2))^(-alpha).
@@ -481,15 +488,22 @@ class RationalQuadratic(BaseKernel):
             Indices of the dimensions of the feature to be used for the kernel. If None, all dimensions are used.
         """
         super().__init__(active_dims)
-        self.parameter_dict['alpha'] = KernelParameter(
-            value=alpha.reshape(-1) if alpha is not None else None,
-            init_fn=init_fn_alpha,
+        if alpha is not None and sigma is not None:
+            if alpha.shape != sigma.shape:
+                raise ValueError('alpha and sigma must have the same shape.')
+        self.init_sigma_fn = log_sigma_median if init_sigma_fn is None else init_sigma_fn
+        self.init_alpha_fn = init_alpha_fn
+        self.config = {'alpha': alpha, 'sigma': sigma, 'trainable': trainable, 'active_dims': active_dims,
+                       'init_alpha_fn': self.init_alpha_fn, 'init_sigma_fn': self.init_sigma_fn}
+        self.parameter_dict['log-alpha'] = KernelParameter(
+            value=alpha.log().reshape(-1) if alpha is not None else torch.zeros(1),
+            init_fn=self.init_alpha_fn,  # type: ignore
             requires_grad=trainable,
             requires_init=True if alpha is None else False
         )
         self.parameter_dict['log-sigma'] = KernelParameter(
-            value=sigma.log().reshape(-1) if sigma is not None else None,
-            init_fn=init_sigma_fn,
+            value=sigma.log().reshape(-1) if sigma is not None else torch.zeros(1),
+            init_fn=self.init_sigma_fn,  # type: ignore
             requires_grad=trainable,
             requires_init=True if sigma is None else False
         )
@@ -498,7 +512,7 @@ class RationalQuadratic(BaseKernel):
 
     @property
     def alpha(self) -> torch.Tensor:
-        return self.parameter_dict['alpha'].value
+        return self.parameter_dict['log-alpha'].value.exp()
 
     @property
     def sigma(self) -> torch.Tensor:
@@ -517,16 +531,29 @@ class RationalQuadratic(BaseKernel):
 
         return kernel_mat.mean(dim=0)
 
+    def get_config(self) -> dict:
+        """
+        Returns a serializable config dict (excluding the infer_sigma_fn and infer_alpha_fn,
+        which is serialized in alibi_detect.saving).
+        """
+        cfg = self.config.copy()
+        if isinstance(cfg['sigma'], torch.Tensor):
+            cfg['sigma'] = cfg['sigma'].detach().cpu().numpy().tolist()
+        if isinstance(cfg['alpha'], torch.Tensor):
+            cfg['alpha'] = cfg['alpha'].detach().cpu().numpy().tolist()
+        cfg.update({'flavour': Framework.PYTORCH.value})
+        return cfg
+
 
 class Periodic(BaseKernel):
     def __init__(
         self,
-        tau: torch.Tensor = None,
-        init_fn_tau: Callable = None,
-        sigma: torch.Tensor = None,
-        init_sigma_fn: Callable = log_sigma_median,
+        tau: Optional[torch.Tensor] = None,
+        init_tau_fn: Optional[Callable] = None,
+        sigma: Optional[torch.Tensor] = None,
+        init_sigma_fn: Optional[Callable] = None,
         trainable: bool = False,
-        active_dims: list = None
+        active_dims: Optional[list] = None
     ) -> None:
         """
         Periodic kernel: k(x,y) = exp(-2 * sin(pi * |x - y| / tau)^2 / (sigma^2)).
@@ -537,7 +564,7 @@ class Periodic(BaseKernel):
         ----------
         tau
             Period of the periodic kernel.
-        init_fn_tau
+        init_tau_fn
             Function used to compute the period `tau`. Used when `tau` is to be inferred.
         sigma
             Bandwidth used for the kernel.
@@ -551,15 +578,22 @@ class Periodic(BaseKernel):
             Axis of the feature dimension.
         """
         super().__init__(active_dims)
+        if tau is not None and sigma is not None:
+            if tau.shape != sigma.shape:
+                raise ValueError('tau and sigma must have the same shape.')
+        self.init_sigma_fn = log_sigma_median if init_sigma_fn is None else init_sigma_fn
+        self.init_tau_fn = init_tau_fn
+        self.config = {'tau': tau, 'sigma': sigma, 'trainable': trainable, 'active_dims': active_dims,
+                       'init_tau_fn': self.init_tau_fn, 'init_sigma_fn': self.init_sigma_fn}
         self.parameter_dict['log-tau'] = KernelParameter(
-            value=tau.log().reshape(-1) if tau is not None else None,
-            init_fn=init_fn_tau,
+            value=tau.log().reshape(-1) if tau is not None else torch.zeros(1),
+            init_fn=self.init_tau_fn,  # type: ignore
             requires_grad=trainable,
             requires_init=True if tau is None else False
         )
         self.parameter_dict['log-sigma'] = KernelParameter(
-            value=sigma.log().reshape(-1) if sigma is not None else None,
-            init_fn=init_sigma_fn,
+            value=sigma.log().reshape(-1) if sigma is not None else torch.zeros(1),
+            init_fn=self.init_sigma_fn,  # type: ignore
             requires_grad=trainable,
             requires_init=True if sigma is None else False
         )
@@ -585,6 +619,19 @@ class Periodic(BaseKernel):
             torch.sin(torch.as_tensor(np.pi) * dist / self.tau[i])) / (self.sigma[i] ** 2))
                                   for i in range(len(self.sigma))], dim=0)
         return kernel_mat.mean(dim=0)
+
+    def get_config(self) -> dict:
+        """
+        Returns a serializable config dict (excluding the infer_sigma_fn and infer_tau_fn,
+        which is serialized in alibi_detect.saving).
+        """
+        cfg = self.config.copy()
+        if isinstance(cfg['sigma'], torch.Tensor):
+            cfg['sigma'] = cfg['sigma'].detach().cpu().numpy().tolist()
+        if isinstance(cfg['tau'], torch.Tensor):
+            cfg['tau'] = cfg['tau'].detach().cpu().numpy().tolist()
+        cfg.update({'flavour': Framework.PYTORCH.value})
+        return cfg
 
 
 class ProjKernel(BaseKernel):

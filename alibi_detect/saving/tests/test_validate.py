@@ -3,7 +3,7 @@ import pytest
 from pydantic import ValidationError
 
 from alibi_detect.saving import validate_config
-from alibi_detect.saving.schemas import KernelConfig
+from alibi_detect.saving.schemas import RBFKernelConfig
 from alibi_detect.saving.saving import X_REF_FILENAME
 from alibi_detect.version import __version__
 from copy import deepcopy
@@ -105,7 +105,7 @@ def test_validate_kernel_and_coerce_2_tensor(flavour, sigma):
     }
 
     # Pass through validation and check results
-    kernel_cfg_val = KernelConfig(**kernel_cfg).dict()
+    kernel_cfg_val = RBFKernelConfig(**kernel_cfg).dict()
     assert kernel_cfg_val['src'] == kernel_cfg['src']
     assert kernel_cfg_val['flavour'] == flavour
     if sigma is None:

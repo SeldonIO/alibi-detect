@@ -21,8 +21,7 @@ class MMDDriftTF(BaseMMDDrift):
             preprocess_at_init: bool = True,
             update_x_ref: Optional[Dict[str, int]] = None,
             preprocess_fn: Optional[Callable] = None,
-            kernel: BaseKernel = GaussianRBF(),
-            sigma: Optional[Union[np.ndarray, float]] = None,
+            kernel: Union[BaseKernel, Callable] = GaussianRBF,
             configure_kernel_from_x_ref: bool = True,
             n_permutations: int = 100,
             input_shape: Optional[tuple] = None,
@@ -52,9 +51,6 @@ class MMDDriftTF(BaseMMDDrift):
             Function to preprocess the data before computing the data drift metrics.
         kernel
             Kernel used for the MMD computation, defaults to Gaussian RBF kernel.
-        sigma
-            Optionally set the GaussianRBF kernel bandwidth. Can also pass multiple bandwidth values as an array.
-            The kernel evaluation is then averaged over those bandwidths.
         configure_kernel_from_x_ref
             Whether to already configure the kernel bandwidth from the reference data.
         n_permutations
@@ -78,13 +74,13 @@ class MMDDriftTF(BaseMMDDrift):
         )
         self.meta.update({'backend': Framework.TENSORFLOW.value})
 
-        self.kernel = kernel
-
-        if isinstance(self.kernel, GaussianRBF) & (sigma is not None):
-            self.kernel.parameter_dict['log-sigma'].value.assign(tf.cast(np.log(sigma),
-                                                                         tf.keras.backend.floatx()))
-            self.kernel.parameter_dict['log-sigma'].requires_init = False
-            self.kernel.init_required = False
+        # initialise kernel
+        if isinstance(kernel, BaseKernel):
+            self.kernel = kernel
+        elif kernel == GaussianRBF:
+            self.kernel = kernel()
+        else:
+            raise ValueError("kernel must be an instance of alibi_detect.utils.tensorflow.kernels.BaseKernel")
 
         self.kernel_parameter_specified = True
         if hasattr(kernel, 'parameter_dict'):

@@ -16,8 +16,7 @@ class MMDDriftOnlineTF(BaseMultiDriftOnline):
             window_size: int,
             preprocess_fn: Optional[Callable] = None,
             x_ref_preprocessed: bool = False,
-            kernel: BaseKernel = GaussianRBF(),
-            sigma: Optional[Union[np.ndarray, float]] = None,
+            kernel: Union[BaseKernel, Callable] = GaussianRBF,
             n_bootstraps: int = 1000,
             verbose: bool = True,
             input_shape: Optional[tuple] = None,
@@ -73,13 +72,13 @@ class MMDDriftOnlineTF(BaseMultiDriftOnline):
         )
         self.meta.update({'backend': Framework.TENSORFLOW.value})
 
-        self.kernel = kernel
-
-        if isinstance(self.kernel, GaussianRBF) & (sigma is not None):
-            self.kernel.parameter_dict['log-sigma'].value.assign(tf.cast(np.log(sigma),
-                                                                         tf.keras.backend.floatx()))
-            self.kernel.parameter_dict['log-sigma'].requires_init = False
-            self.kernel.init_required = False
+        # initialise kernel
+        if isinstance(kernel, BaseKernel):
+            self.kernel = kernel
+        elif kernel == GaussianRBF:
+            self.kernel = kernel()
+        else:
+            raise ValueError("kernel must be an instance of alibi_detect.utils.tensorflow.kernels.BaseKernel")
 
         # compute kernel matrix for the reference data
         self.k_xx = self.kernel(self.x_ref, self.x_ref, infer_parameter=self.kernel.init_required)

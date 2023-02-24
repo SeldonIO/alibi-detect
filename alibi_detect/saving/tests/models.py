@@ -104,21 +104,18 @@ def preprocess_custom(encoder_model):
 @fixture
 def kernel(request, backend):
     """
-    Gaussian RBF kernel for given backend. Settings are parametrised in the test function.
+    Kernel for given backend. Settings are parametrised in the test function.
     """
     kernel = request.param
 
     if isinstance(kernel, dict):  # dict of kwargs
-        kernel_cfg = kernel.copy()
-        sigma = kernel_cfg.pop('sigma', None)
+        kernel_meta_cfg = kernel.copy()
+        kernel_name = kernel_meta_cfg['kernel_name']
+        kernel_cfg = kernel_meta_cfg['kernel_config']
         if backend == 'tensorflow':
-            if sigma is not None and not isinstance(sigma, tf.Tensor):
-                sigma = tf.convert_to_tensor(sigma)
-            kernel = GaussianRBF_tf(sigma=sigma, **kernel_cfg)
+            kernel = initial_kernel_tf(kernel_name, kernel_cfg)
         elif backend == 'pytorch':
-            if sigma is not None and not isinstance(sigma, torch.Tensor):
-                sigma = torch.tensor(sigma)
-            kernel = GaussianRBF_pt(sigma=sigma, **kernel_cfg)
+            kernel = initial_kernel_pt(kernel_name, kernel_cfg)
         else:
             pytest.skip('`kernel` only implemented for tensorflow and pytorch.')
     return kernel
@@ -173,8 +170,12 @@ def deep_kernel(request, backend, encoder_model):
 
 
 def initial_kernel_tf(kernel_name, kernel_config):
-    if 'sigma' in kernel_config:
-        kernel_config['sigma'] = tf.constant(kernel_config['sigma'])
+    if ('sigma' in kernel_config) and (kernel_config['sigma'] is not None):
+        kernel_config['sigma'] = tf.convert_to_tensor(np.array(kernel_config['sigma']))
+    if ('alpha' in kernel_config) and (kernel_config['alpha'] is not None):
+        kernel_config['alpha'] = tf.convert_to_tensor(np.array(kernel_config['alpha']))
+    if ('tau' in kernel_config) and (kernel_config['tau'] is not None):
+        kernel_config['tau'] = tf.convert_to_tensor(np.array(kernel_config['tau']))
     if kernel_name == 'GaussianRBF':
         kernel = GaussianRBF_tf(**kernel_config)
     elif kernel_name == 'RationalQuadratic':
@@ -187,8 +188,12 @@ def initial_kernel_tf(kernel_name, kernel_config):
 
 
 def initial_kernel_pt(kernel_name, kernel_config):
-    if 'sigma' in kernel_config:
-        kernel_config['sigma'] = torch.tensor(kernel_config['sigma'])
+    if ('sigma' in kernel_config) and (kernel_config['sigma'] is not None):
+        kernel_config['sigma'] = torch.tensor(np.array(kernel_config['sigma']))
+    if ('alpha' in kernel_config) and (kernel_config['alpha'] is not None):
+        kernel_config['alpha'] = torch.tensor(np.array(kernel_config['alpha']))
+    if ('tau' in kernel_config) and (kernel_config['tau'] is not None):
+        kernel_config['tau'] = torch.tensor(np.array(kernel_config['tau']))
     if kernel_name == 'GaussianRBF':
         kernel = GaussianRBF_pt(**kernel_config)
     elif kernel_name == 'RationalQuadratic':

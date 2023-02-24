@@ -17,8 +17,7 @@ class MMDDriftOnlineTorch(BaseMultiDriftOnline):
             window_size: int,
             preprocess_fn: Optional[Callable] = None,
             x_ref_preprocessed: bool = False,
-            kernel: BaseKernel = GaussianRBF(),
-            sigma: Optional[Union[np.ndarray, float]] = None,
+            kernel: Union[BaseKernel, Callable] = GaussianRBF,
             n_bootstraps: int = 1000,
             device: Optional[str] = None,
             verbose: bool = True,
@@ -47,10 +46,6 @@ class MMDDriftOnlineTorch(BaseMultiDriftOnline):
             data will also be preprocessed.
         kernel
             Kernel used for the MMD computation, defaults to Gaussian RBF kernel.
-        sigma
-            Optionally set the GaussianRBF kernel bandwidth. Can also pass multiple bandwidth values as an array.
-            The kernel evaluation is then averaged over those bandwidths. If `sigma` is not specified, the 'median
-            heuristic' is adopted whereby `sigma` is set as the median pairwise distance between reference samples.
         n_bootstraps
             The number of bootstrap simulations used to configure the thresholds. The larger this is the
             more accurately the desired ERT will be targeted. Should ideally be at least an order of magnitude
@@ -81,14 +76,13 @@ class MMDDriftOnlineTorch(BaseMultiDriftOnline):
         # set device
         self.device = get_device(device)
 
-        self.kernel = kernel
-
-        if isinstance(self.kernel, GaussianRBF) & (sigma is not None):
-            self.kernel.parameter_dict['log-sigma'].value = torch.nn.Parameter(
-                torch.tensor(sigma).to(self.device).log(),
-                requires_grad=False)
-            self.kernel.parameter_dict['log-sigma'].requires_init = False
-            self.kernel.init_required = False
+        # initialise kernel
+        if isinstance(kernel, BaseKernel):
+            self.kernel = kernel
+        elif kernel == GaussianRBF:
+            self.kernel = kernel()
+        else:
+            raise ValueError("kernel must be an instance of alibi_detect.utils.pytorch.kernels.BaseKernel")
 
         # compute kernel matrix for the reference data
         self.x_ref = torch.from_numpy(self.x_ref).to(self.device)

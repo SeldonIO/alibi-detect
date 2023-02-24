@@ -201,6 +201,25 @@ class BaseKernel(tf.keras.Model):
     def __rsub__(self, other):
         raise ValueError('Kernels do not support subtraction.')
 
+    @classmethod
+    def from_config(cls, config):
+        """
+        Instantiates a kernel from a config dictionary.
+
+        Parameters
+        ----------
+        config
+            A kernel config dictionary.
+        """
+        config.pop('flavour')
+        if 'sigma' in config and config['sigma'] is not None:
+            config['sigma'] = tf.convert_to_tensor(np.array(config['sigma']))
+        if 'alpha' in config and config['alpha'] is not None:
+            config['alpha'] = tf.convert_to_tensor(np.array(config['alpha']))
+        if 'tau' in config and config['tau'] is not None:
+            config['tau'] = tf.convert_to_tensor(np.array(config['tau']))
+        return cls(**config)
+
 
 class SumKernel(BaseKernel):
     def __init__(self) -> None:
@@ -366,7 +385,7 @@ class GaussianRBF(BaseKernel):
             sigma: Optional[tf.Tensor] = None,
             init_sigma_fn: Optional[Callable] = None,
             trainable: bool = False,
-            active_dims: list = None
+            active_dims: Optional[list] = None
     ) -> None:
         """
         Gaussian RBF kernel: k(x,y) = exp(-(1/(2*sigma^2)||x-y||^2). A forward pass takes
@@ -390,7 +409,8 @@ class GaussianRBF(BaseKernel):
         """
         super().__init__(active_dims)
         self.init_sigma_fn = log_sigma_median if init_sigma_fn is None else init_sigma_fn
-        self.config = {'sigma': sigma, 'trainable': trainable, 'init_sigma_fn': self.init_sigma_fn}
+        self.config = {'sigma': sigma, 'trainable': trainable, 'init_sigma_fn': self.init_sigma_fn,
+                       'active_dims': active_dims}
         self.parameter_dict['log-sigma'] = KernelParameter(
             value=tf.reshape(tf.math.log(
                 tf.cast(sigma, tf.keras.backend.floatx())), -1) if sigma is not None else tf.zeros(1),
@@ -421,7 +441,7 @@ class GaussianRBF(BaseKernel):
 
     def get_config(self) -> dict:
         """
-        Returns a serializable config dict (excluding the input_sigma_fn, which is serialized in alibi_detect.saving).
+        Returns a serializable config dict (excluding the infer_sigma_fn, which is serialized in alibi_detect.saving).
         """
         cfg = self.config.copy()
         if isinstance(cfg['sigma'], tf.Tensor):
@@ -429,29 +449,16 @@ class GaussianRBF(BaseKernel):
         cfg.update({'flavour': Framework.TENSORFLOW.value})
         return cfg
 
-    @classmethod
-    def from_config(cls, config):
-        """
-        Instantiates a kernel from a config dictionary.
-
-        Parameters
-        ----------
-        config
-            A kernel config dictionary.
-        """
-        config.pop('flavour')
-        return cls(**config)
-
 
 class RationalQuadratic(BaseKernel):
     def __init__(
         self,
-        alpha: tf.Tensor = None,
-        init_fn_alpha: Callable = None,
-        sigma: tf.Tensor = None,
-        init_sigma_fn: Callable = log_sigma_median,
+        alpha: Optional[tf.Tensor] = None,
+        init_alpha_fn: Optional[Callable] = None,
+        sigma: Optional[tf.Tensor] = None,
+        init_sigma_fn: Optional[Callable] = None,
         trainable: bool = False,
-        active_dims: list = None
+        active_dims: Optional[list] = None
     ) -> None:
         """
         Rational Quadratic kernel: k(x,y) = (1 + ||x-y||^2 / (2*sigma^2))^(-alpha).
@@ -474,17 +481,24 @@ class RationalQuadratic(BaseKernel):
             Indices of the dimensions of the feature to be used for the kernel. If None, all dimensions are used.
         """
         super().__init__(active_dims)
-        self.parameter_dict['alpha'] = KernelParameter(
-            value=tf.reshape(
-                tf.cast(alpha, tf.keras.backend.floatx()), -1) if alpha is not None else None,
-            init_fn=init_fn_alpha,
+        if alpha is not None and sigma is not None:
+            if alpha.shape != sigma.shape:
+                raise ValueError('alpha and sigma must have the same shape.')
+        self.init_sigma_fn = log_sigma_median if init_sigma_fn is None else init_sigma_fn
+        self.init_alpha_fn = init_alpha_fn
+        self.config = {'alpha': alpha, 'sigma': sigma, 'trainable': trainable, 'active_dims': active_dims,
+                       'init_sigma_fn': self.init_sigma_fn, 'init_alpha_fn': self.init_alpha_fn}
+        self.parameter_dict['log-alpha'] = KernelParameter(
+            value=tf.reshape(tf.math.log(
+                tf.cast(alpha, tf.keras.backend.floatx())), -1) if alpha is not None else tf.zeros(1),
+            init_fn=self.init_alpha_fn,  # type: ignore
             requires_grad=trainable,
             requires_init=True if alpha is None else False
         )
         self.parameter_dict['log-sigma'] = KernelParameter(
             value=tf.reshape(tf.math.log(
                 tf.cast(sigma, tf.keras.backend.floatx())), -1) if sigma is not None else tf.zeros(1),
-            init_fn=init_sigma_fn,
+            init_fn=self.init_sigma_fn,  # type: ignore
             requires_grad=trainable,
             requires_init=True if sigma is None else False
         )
@@ -497,7 +511,7 @@ class RationalQuadratic(BaseKernel):
 
     @property
     def alpha(self) -> tf.Tensor:
-        return self.parameter_dict['alpha'].value
+        return tf.math.exp(self.parameter_dict['log-alpha'].value)
 
     def kernel_function(self, x: tf.Tensor, y: tf.Tensor, infer_parameter: bool = False) -> tf.Tensor:
         y = tf.cast(y, x.dtype)
@@ -512,16 +526,29 @@ class RationalQuadratic(BaseKernel):
                                ** (-self.alpha[i]) for i in range(len(self.sigma))], axis=0)
         return tf.reduce_mean(kernel_mat, axis=0)
 
+    def get_config(self) -> dict:
+        """
+        Returns a serializable config dict (excluding the infer_sigma_fn and infer_alpha_fn,
+        which is serialized in alibi_detect.saving).
+        """
+        cfg = self.config.copy()
+        if isinstance(cfg['sigma'], tf.Tensor):
+            cfg['sigma'] = cfg['sigma'].numpy().tolist()
+        if isinstance(cfg['alpha'], tf.Tensor):
+            cfg['alpha'] = cfg['alpha'].numpy().tolist()
+        cfg.update({'flavour': Framework.TENSORFLOW.value})
+        return cfg
+
 
 class Periodic(BaseKernel):
     def __init__(
         self,
-        tau: tf.Tensor = None,
-        init_fn_tau: Callable = None,
-        sigma: tf.Tensor = None,
-        init_sigma_fn: Callable = log_sigma_median,
+        tau: Optional[tf.Tensor] = None,
+        init_tau_fn: Optional[Callable] = None,
+        sigma: Optional[tf.Tensor] = None,
+        init_sigma_fn: Optional[Callable] = None,
         trainable: bool = False,
-        active_dims: list = None
+        active_dims: Optional[list] = None
     ) -> None:
         """
         Periodic kernel: k(x,y) = exp(-2 * sin(pi * |x - y| / tau)^2 / (sigma^2)).
@@ -544,17 +571,24 @@ class Periodic(BaseKernel):
             Indices of the dimensions of the feature to be used for the kernel. If None, all dimensions are used.
         """
         super().__init__(active_dims)
+        if tau is not None and sigma is not None:
+            if tau.shape != sigma.shape:
+                raise ValueError('tau and sigma must have the same shape.')
+        self.init_sigma_fn = log_sigma_median if init_sigma_fn is None else init_sigma_fn
+        self.init_tau_fn = init_tau_fn
+        self.config = {'tau': tau, 'sigma': sigma, 'trainable': trainable, 'active_dims': active_dims,
+                       'init_tau_fn': self.init_tau_fn, 'init_sigma_fn': self.init_sigma_fn}
         self.parameter_dict['log-tau'] = KernelParameter(
             value=tf.reshape(tf.math.log(
                 tf.cast(tau, tf.keras.backend.floatx())), -1) if tau is not None else tf.zeros(1),
-            init_fn=init_fn_tau,
+            init_fn=self.init_tau_fn,  # type: ignore
             requires_grad=trainable,
             requires_init=True if tau is None else False
         )
         self.parameter_dict['log-sigma'] = KernelParameter(
             value=tf.reshape(tf.math.log(
                 tf.cast(sigma, tf.keras.backend.floatx())), -1) if sigma is not None else tf.zeros(1),
-            init_fn=init_sigma_fn,
+            init_fn=self.init_sigma_fn,  # type: ignore
             requires_grad=trainable,
             requires_init=True if sigma is None else False
         )
@@ -581,6 +615,19 @@ class Periodic(BaseKernel):
             tf.math.sin(tf.cast(np.pi, x.dtype) * dist / self.tau[i])) / (self.sigma[i] ** 2))
                                for i in range(len(self.sigma))], axis=0)
         return tf.reduce_mean(kernel_mat, axis=0)
+
+    def get_config(self) -> dict:
+        """
+        Returns a serializable config dict (excluding the infer_sigma_fn and infer_tau_fn,
+        which is serialized in alibi_detect.saving).
+        """
+        cfg = self.config.copy()
+        if isinstance(cfg['sigma'], tf.Tensor):
+            cfg['sigma'] = cfg['sigma'].numpy().tolist()
+        if isinstance(cfg['tau'], tf.Tensor):
+            cfg['tau'] = cfg['tau'].numpy().tolist()
+        cfg.update({'flavour': Framework.TENSORFLOW.value})
+        return cfg
 
 
 class ProjKernel(BaseKernel):
