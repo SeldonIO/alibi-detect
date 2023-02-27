@@ -21,7 +21,7 @@
 "networkx","BSD License"
 "numba","BSD License"
 "numpy","BSD License"
-"opencv-python","MIT License"
+"opencv-python","Apache Software License"
 "packaging","Apache Software License; BSD License"
 "pandas","BSD License"
 "pydantic","MIT License"
