@@ -90,8 +90,8 @@ class ChiSquareDrift(BaseUnivariateDrift):
                     f: list(np.arange(v)) for f, v in categories_per_feature.items()  # type: ignore
                 }
             elif not all(isinstance(val, list) for val in vals) and all(
-                isinstance(v, int_types) for val in vals for v in val
-            ):  # type: ignore
+                isinstance(v, int_types) for val in vals for v in val  # type: ignore
+            ):
                 raise ValueError(
                     "categories_per_feature needs to be None or one of " "Dict[int, int], Dict[int, List[int]]"
                 )

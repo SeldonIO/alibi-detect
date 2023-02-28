@@ -65,10 +65,8 @@ def predict_batch(
             elif isinstance(preds_tmp, (np.ndarray, torch.Tensor)):
                 if device.type == "cuda" and isinstance(preds_tmp, torch.Tensor):
                     preds_tmp = preds_tmp.cpu()
-                preds.append(
-                    preds_tmp
-                    if not return_np or isinstance(preds_tmp, np.ndarray)  # type: ignore
-                    else preds_tmp.numpy()
+                preds.append(  # type: ignore
+                    preds_tmp if not return_np or isinstance(preds_tmp, np.ndarray) else preds_tmp.numpy()
                 )
             else:
                 raise TypeError(

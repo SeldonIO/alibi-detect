@@ -114,8 +114,8 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
         # Initialize classifier (hardcoded for now)
         self.clf = _SVCDomainClf(self.c_kernel)
 
-    def score(
-        self, x: Union[np.ndarray, list], c: np.ndarray  # type: ignore[override]
+    def score(  # type: ignore[override]
+        self, x: Union[np.ndarray, list], c: np.ndarray
     ) -> Tuple[float, float, float, Tuple]:
         """
         Compute the MMD based conditional test statistic, and perform a conditional permutation test to obtain a

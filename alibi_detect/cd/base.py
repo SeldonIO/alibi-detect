@@ -1185,13 +1185,13 @@ class BaseContextMMDDrift(BaseDetector):
             return self.x_ref, x  # type: ignore[return-value]
 
     @abstractmethod
-    def score(
-        self, x: Union[np.ndarray, list], c: np.ndarray  # type: ignore[override]
+    def score(  # type: ignore[override]
+        self, x: Union[np.ndarray, list], c: np.ndarray
     ) -> Tuple[float, float, float, Tuple]:
         pass
 
-    def predict(
-        self,  # type: ignore[override]
+    def predict(  # type: ignore[override]
+        self,
         x: Union[np.ndarray, list],
         c: np.ndarray,
         return_p_val: bool = True,

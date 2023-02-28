@@ -51,8 +51,8 @@ def predict_batch(
             for j, p in enumerate(preds_tmp):
                 preds[j].append(p if not return_np or isinstance(p, np.ndarray) else p.numpy())
         elif isinstance(preds_tmp, (np.ndarray, tf.Tensor)):
-            preds.append(
-                preds_tmp if not return_np or isinstance(preds_tmp, np.ndarray) else preds_tmp.numpy()  # type: ignore
+            preds.append(  # type: ignore
+                preds_tmp if not return_np or isinstance(preds_tmp, np.ndarray) else preds_tmp.numpy()
             )
         else:
             raise TypeError(
