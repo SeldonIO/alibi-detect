@@ -8,7 +8,7 @@ import torch
 
 from alibi_detect.od.pytorch.ensemble import FitMixinTorch
 from alibi_detect.utils.pytorch.misc import get_device
-from alibi_detect.base import ThresholdNotInferredException
+from alibi_detect.exceptions import ThresholdNotInferredException
 
 
 @dataclass

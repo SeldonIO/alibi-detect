@@ -4,7 +4,7 @@ import torch
 from alibi_detect.od.pytorch.knn import KNNTorch
 from alibi_detect.utils.pytorch.kernels import GaussianRBF
 from alibi_detect.od.pytorch.ensemble import Ensembler, PValNormalizer, AverageAggregator
-from alibi_detect.base import NotFitException
+from alibi_detect.exceptions import NotFitException
 
 
 @pytest.fixture(scope='session')

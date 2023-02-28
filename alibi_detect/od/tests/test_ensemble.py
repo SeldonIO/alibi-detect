@@ -2,7 +2,7 @@ import pytest
 import torch
 
 from alibi_detect.od.pytorch import ensemble
-from alibi_detect.base import NotFitException
+from alibi_detect.exceptions import NotFitException
 
 
 def test_pval_normalizer():

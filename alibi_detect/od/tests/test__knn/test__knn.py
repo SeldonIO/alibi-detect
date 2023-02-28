@@ -5,7 +5,7 @@ import torch
 from alibi_detect.od._knn import KNN
 from alibi_detect.od import AverageAggregator, TopKAggregator, MaxAggregator, \
     MinAggregator, ShiftAndScaleNormalizer, PValNormalizer
-from alibi_detect.base import NotFitException, ThresholdNotInferredException
+from alibi_detect.exceptions import NotFitException, ThresholdNotInferredException
 
 from sklearn.datasets import make_moons
 
