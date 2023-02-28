@@ -107,7 +107,7 @@ class LSDDDriftTF(BaseLSDDDrift):
         self._unnormalize = lambda x: (x * (x_ref_stds + eps) + x_ref_means).numpy()  # type: ignore[assignment]
 
     def _configure_kernel_centers(self, x_ref: tf.Tensor):
-        "Set aside reference samples to act as kernel centers"
+        """Set aside reference samples to act as kernel centers."""
         perm = tf.random.shuffle(tf.range(self.x_ref.shape[0]))
         c_inds, non_c_inds = perm[:self.n_kernel_centers], perm[self.n_kernel_centers:]
         self.kernel_centers = tf.gather(x_ref, c_inds)

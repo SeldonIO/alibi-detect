@@ -56,7 +56,7 @@ def concept_drift_dict():
 
 
 class BaseDetector(ABC):
-    """ Base class for outlier, adversarial and drift detection algorithms. """
+    """Base class for outlier, adversarial and drift detection algorithms."""
 
     def __init__(self):
         self.meta = copy.deepcopy(DEFAULT_META)
@@ -104,9 +104,8 @@ LARGE_ARTEFACTS = ['x_ref', 'c_ref', 'preprocess_fn']
 
 
 class DriftConfigMixin:
-    """
-    A mixin class containing methods related to a drift detector's configuration dictionary.
-    """
+    """A mixin class containing methods related to a drift detector's configuration dictionary."""
+
     config: Optional[dict] = None
 
     def get_config(self) -> dict:  # TODO - move to BaseDetector once config save/load implemented for non-drift
@@ -190,9 +189,7 @@ class DriftConfigMixin:
 
     @property
     def _nested_detector(self):
-        """
-        The low-level nested detector.
-        """
+        """The low-level nested detector."""
         detector = self._detector if hasattr(self, '_detector') else self  # type: ignore[attr-defined]
         detector = detector._detector if hasattr(detector, '_detector') else detector  # type: ignore[attr-defined]
         return detector
@@ -204,10 +201,12 @@ class Detector(Protocol):
 
     Used for typing legacy save and load functionality in `alibi_detect.saving._tensorflow.saving.py`.
 
-    Note:
+    Note
+    ----
         This exists to distinguish between detectors with and without support for config saving and loading. Once all
         detector support this then this protocol will be removed.
     """
+
     meta: Dict
 
     def predict(self) -> Any: ...
@@ -219,6 +218,7 @@ class ConfigurableDetector(Detector, Protocol):
 
     Used for typing save and load functionality in `alibi_detect.saving.saving`.
     """
+
     def get_config(self) -> dict: ...
 
     @classmethod
@@ -233,6 +233,7 @@ class StatefulDetectorOnline(ConfigurableDetector, Protocol):
 
     Used for typing save and load functionality in `alibi_detect.saving.saving`.
     """
+
     t: int = 0
 
     def save_state(self, filepath: Union[str, os.PathLike]): ...

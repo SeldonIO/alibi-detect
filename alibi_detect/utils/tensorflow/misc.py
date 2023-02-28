@@ -3,7 +3,7 @@ import tensorflow as tf
 
 def zero_diag(mat: tf.Tensor) -> tf.Tensor:
     """
-    Set the diagonal of a matrix to 0
+    Set the diagonal of a matrix to 0.
 
     Parameters
     ----------
@@ -19,7 +19,7 @@ def zero_diag(mat: tf.Tensor) -> tf.Tensor:
 
 def quantile(sample: tf.Tensor, p: float, type: int = 7, sorted: bool = False) -> float:
     """
-    Estimate a desired quantile of a univariate distribution from a vector of samples
+    Estimate a desired quantile of a univariate distribution from a vector of samples.
 
     Parameters
     ----------
@@ -63,7 +63,7 @@ def quantile(sample: tf.Tensor, p: float, type: int = 7, sorted: bool = False) -
 
 def subset_matrix(mat: tf.Tensor, inds_0: tf.Tensor, inds_1: tf.Tensor) -> tf.Tensor:
     """
-    Take a matrix and return the submatrix correspond to provided row and column indices
+    Take a matrix and return the submatrix correspond to provided row and column indices.
 
     Parameters
     ----------
@@ -86,7 +86,7 @@ def subset_matrix(mat: tf.Tensor, inds_0: tf.Tensor, inds_1: tf.Tensor) -> tf.Te
 
 
 def clone_model(model: tf.keras.Model) -> tf.keras.Model:
-    """ Clone a sequential, functional or subclassed tf.keras.Model. """
+    """Clone a sequential, functional or subclassed tf.keras.Model."""
     try:  # sequential or functional model
         return tf.keras.models.clone_model(model)
     except ValueError:  # subclassed model

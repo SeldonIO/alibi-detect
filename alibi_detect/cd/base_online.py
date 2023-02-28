@@ -165,9 +165,7 @@ class BaseMultiDriftOnline(BaseDetector, StateMixin):
                       'to its initial state use `reset_state`.', DeprecationWarning)
 
     def reset_state(self) -> None:
-        """
-        Resets the detector to its initial state (`t=0`). This does not include reconfiguring thresholds.
-        """
+        """Resets the detector to its initial state (`t=0`). This does not include reconfiguring thresholds."""
         self._initialise_state()
 
     def predict(self, x_t: Union[np.ndarray, Any], return_test_stat: bool = True,
@@ -422,9 +420,7 @@ class BaseUniDriftOnline(BaseDetector, StateMixin):
                       'to its initial state use `reset_state`.', DeprecationWarning)
 
     def reset_state(self) -> None:
-        """
-        Resets the detector to its initial state (`t=0`). This does not include reconfiguring thresholds.
-        """
+        """Resets the detector to its initial state (`t=0`). This does not include reconfiguring thresholds."""
         self._initialise_state()
 
     def predict(self, x_t: Union[np.ndarray, Any], return_test_stat: bool = True,

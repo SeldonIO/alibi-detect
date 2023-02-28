@@ -90,8 +90,8 @@ class GaussianRBF(tf.keras.Model):
         return tf.reduce_mean(kernel_mat, axis=0)  # [Nx, Ny]
 
     def get_config(self) -> dict:
-        """
-        Returns a serializable config dict (excluding the input_sigma_fn, which is serialized in alibi_detect.saving).
+        """Returns a serializable config dict (excluding the input_sigma_fn, which is serialized in
+        alibi_detect.saving).
         """
         cfg = self.config.copy()
         if isinstance(cfg['sigma'], tf.Tensor):
@@ -133,6 +133,7 @@ class DeepKernel(tf.keras.Model):
         either specified or set to 'trainable'. Only relavent is kernel_b is not None.
 
     """
+
     def __init__(
         self,
         proj: tf.keras.Model,

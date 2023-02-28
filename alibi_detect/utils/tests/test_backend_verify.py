@@ -29,11 +29,10 @@ class TestBackendValidator:
         del ERROR_TYPES['backend_D']
 
     def test_backend_verifier_error_msg(self):
-        """Check correct error messages
+        """Check correct error messages.
 
         Check correct error messages are issued when detectors are initialized with incorrect or missing dependencies.
         """
-
         options = {
             'backend_1': ['backend_A', 'backend_B'],
             'backend_2': ['backend_C'],

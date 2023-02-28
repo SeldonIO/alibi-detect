@@ -1,5 +1,6 @@
-"""
-This registry allows Python objects to be registered and accessed by their string reference later on. The primary usage
+"""Alibi Detect registry.
+
+Implements a registry that allows Python objects to be registered and accessed by their string reference later on. The primary usage
 is to register objects so that they can be specified in a `config.toml` file. A number of Alibi Detect functions are
 also pre-registered in the registry for convenience. See the
 `Registering artefacts <https://docs.seldon.io/projects/alibi-detect/en/stable/overview/config_files.html#registering-artefacts>`_  # noqa: E501

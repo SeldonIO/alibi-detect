@@ -75,7 +75,7 @@ def mvdm(X: np.ndarray, y: np.ndarray, cat_vars: dict, alpha: int = 1) -> Dict[A
     """
     Calculate the pair-wise distances between categories of a categorical variable using
     the Modified Value Difference Measure based on Cost et al (1993).
-    https://link.springer.com/article/10.1023/A:1022664626993
+    https://link.springer.com/article/10.1023/A:1022664626993.
 
     Parameters
     ----------
@@ -126,7 +126,7 @@ def abdm(X: np.ndarray, cat_vars: dict, cat_vars_bin: dict = dict()) -> dict:
     """
     Calculate the pair-wise distances between categories of a categorical variable using
     the Association-Based Distance Metric based on Le et al (2005).
-    http://www.jaist.ac.jp/~bao/papers/N26.pdf
+    http://www.jaist.ac.jp/~bao/papers/N26.pdf.
 
     Parameters
     ----------

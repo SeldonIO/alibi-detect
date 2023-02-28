@@ -40,7 +40,7 @@ HAS_BACKEND = {
 
 
 def _iter_to_str(iterable: Iterable[str]) -> str:
-    """ Correctly format iterable of items to comma seperated sentence string."""
+    """Correctly format iterable of items to comma seperated sentence string."""
     items = [f'`{option}`' for option in iterable]
     last_item_str = f'{items[-1]}' if not items[:-1] else f' and {items[-1]}'
     return ', '.join(items[:-1]) + last_item_str
@@ -104,7 +104,6 @@ class BackendValidator:
 
     def _raise_import_error(self, missing_deps: List[str], backend: str):
         """Raises import error if backend choice has missing dependency."""
-
         optional_dependencies = list(ERROR_TYPES[missing_dep] for missing_dep in missing_deps)
         optional_dependencies.sort()
         missing_deps_str = _iter_to_str(missing_deps)
@@ -117,6 +116,5 @@ class BackendValidator:
 
     def _raise_implementation_error(self, backend: str):
         """Raises NotImplementedError error if backend choice is not implemented."""
-
         backend_list = _iter_to_str(self.backend_options.keys())
         raise NotImplementedError(f"{backend} backend not implemented. Use one of {backend_list} instead.")

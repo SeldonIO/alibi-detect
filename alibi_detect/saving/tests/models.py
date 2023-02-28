@@ -36,9 +36,7 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 @fixture
 def encoder_model(backend, current_cases):
-    """
-    An untrained encoder of given input dimension and backend (this is a "custom" model, NOT an Alibi Detect UAE).
-    """
+    """An untrained encoder of given input dimension and backend (this is a "custom" model, NOT an Alibi Detect UAE)."""
     _, _, data_params = current_cases["data"]
     _, input_dim = data_params['data_shape']
 
@@ -90,9 +88,7 @@ def encoder_dropout_model(backend, current_cases):
 
 @fixture
 def preprocess_custom(encoder_model):
-    """
-    Preprocess function with Untrained Autoencoder.
-    """
+    """Preprocess function with Untrained Autoencoder."""
     if isinstance(encoder_model, tf.keras.Model):
         preprocess_fn = partial(preprocess_drift_tf, model=encoder_model)
     else:
@@ -103,9 +99,7 @@ def preprocess_custom(encoder_model):
 
 @fixture
 def kernel(request, backend):
-    """
-    Gaussian RBF kernel for given backend. Settings are parametrised in the test function.
-    """
+    """Gaussian RBF kernel for given backend. Settings are parametrised in the test function."""
     kernel = request.param
 
     if isinstance(kernel, dict):  # dict of kwargs
@@ -182,9 +176,7 @@ def deep_kernel(request, backend, encoder_model):
 
 @fixture
 def classifier_model(backend, current_cases):
-    """
-    Classification model with given input dimension and backend.
-    """
+    """Classification model with given input dimension and backend."""
     _, _, data_params = current_cases["data"]
     _, input_dim = data_params['data_shape']
     if backend == 'tensorflow':
@@ -214,9 +206,7 @@ def xgb_classifier_model():
 @parametrize('model_name, max_len', [('bert-base-cased', 100)])
 @parametrize('uae', [True, False])
 def nlp_embedding_and_tokenizer(model_name, max_len, uae, backend):
-    """
-    A fixture to build nlp embedding and tokenizer models based on the HuggingFace pre-trained models.
-    """
+    """A fixture to build nlp embedding and tokenizer models based on the HuggingFace pre-trained models."""
     backend = 'tf' if backend == 'tensorflow' else 'pt'
 
     # Load tokenizer
@@ -257,17 +247,13 @@ def nlp_embedding_and_tokenizer(model_name, max_len, uae, backend):
 
 
 def preprocess_simple(x: np.ndarray):
-    """
-    Simple function to test serialization of generic Python function within preprocess_fn.
-    """
+    """Simple function to test serialization of generic Python function within preprocess_fn."""
     return x * 2.0
 
 
 @fixture
 def preprocess_nlp(embedding, tokenizer, max_len, backend):
-    """
-    Preprocess function with Untrained Autoencoder.
-    """
+    """Preprocess function with Untrained Autoencoder."""
     if backend == 'tensorflow':
         preprocess_fn = partial(preprocess_drift_tf, model=embedding, tokenizer=tokenizer,
                                 max_len=max_len, preprocess_batch_fn=preprocess_simple)
@@ -282,9 +268,7 @@ def preprocess_nlp(embedding, tokenizer, max_len, backend):
 
 @fixture
 def preprocess_hiddenoutput(classifier_model, current_cases, backend):
-    """
-    Preprocess function to extract the softmax layer of a classifier (with the HiddenOutput utility function).
-    """
+    """Preprocess function to extract the softmax layer of a classifier (with the HiddenOutput utility function)."""
     _, _, data_params = current_cases["data"]
     _, input_dim = data_params['data_shape']
 

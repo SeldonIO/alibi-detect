@@ -60,7 +60,6 @@ def encompass_batching(
     Takes a function that must be batch evaluated (on tokenized input) and returns a function
     that handles batching (and tokenization).
     """
-
     backend = backend.lower()
     kwargs = {'batch_size': batch_size, 'tokenizer': tokenizer, 'max_len': max_len,
               'preprocess_batch_fn': preprocess_batch_fn}
@@ -110,7 +109,7 @@ def encompass_shuffling_and_batch_filling(
 
 
 def get_input_shape(shape: Optional[Tuple], x_ref: Union[np.ndarray, list]) -> Optional[Tuple]:
-    """ Optionally infer shape from reference data. """
+    """Optionally infer shape from reference data."""
     if isinstance(shape, tuple):
         return shape
     elif hasattr(x_ref, 'shape'):

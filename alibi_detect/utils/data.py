@@ -27,7 +27,7 @@ class Bunch(dict):
 
 def sample_df(df: pd.DataFrame,
               n: int):
-    """ Sample n instances from the dataframe df. """
+    """Sample n instances from the dataframe df."""
     if n < df.shape[0] + 1:
         replace = False
     else:
@@ -39,8 +39,7 @@ def create_outlier_batch(data: np.ndarray,
                          target: np.ndarray,
                          n_samples: int,
                          perc_outlier: int) -> Union[Bunch, Tuple[np.ndarray, np.ndarray]]:
-    """ Create a batch with a defined percentage of outliers. """
-
+    """Create a batch with a defined percentage of outliers."""
     # create df
     data = pd.DataFrame(data=data)
     data['target'] = target

@@ -58,7 +58,6 @@ def fetch_kdd(target: list = ['dos', 'r2l', 'u2r', 'probe'],
     (data, target)
         Tuple if 'return_X_y' equals True.
     """
-
     # fetch raw data
     try:
         data_raw = fetch_kddcup99(subset=None, data_home=None, percent10=percent10)
@@ -129,6 +128,8 @@ def load_url_arff(url: str, dtype: Type[np.generic] = np.float32) -> np.ndarray:
     ----------
     url
         Address of arff file.
+    dtype
+        Data type of the returned array.
 
     Returns
     -------
@@ -245,7 +246,7 @@ def fetch_cifar10c(corruption: Union[str, List[str]], severity: int, return_X_y:
         return Bunch(data=X, target=y)
 
 
-def google_bucket_list(url: str, folder: str, filetype: str = None, full_path: bool = False) -> List[str]:
+def google_bucket_list(url: str, folder: str, filetype: str = None) -> List[str]:
     """
     Retrieve list with items in google bucket folder.
 
@@ -366,7 +367,7 @@ def fetch_nab(ts: str,
     Parameters
     ----------
     ts
-
+        Time series name.
     return_X_y
         Bool, whether to only return the data and target values or a Bunch object.
 

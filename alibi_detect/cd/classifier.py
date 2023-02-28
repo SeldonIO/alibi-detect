@@ -186,8 +186,7 @@ class ClassifierDrift(DriftConfigMixin):
     def predict(self, x: Union[np.ndarray, list],  return_p_val: bool = True,
                 return_distance: bool = True, return_probs: bool = True, return_model: bool = True) \
             -> Dict[str, Dict[str, Union[str, int, float, Callable]]]:
-        """
-        Predict whether a batch of data has drifted from the reference data.
+        """Predict whether a batch of data has drifted from the reference data.
 
         Parameters
         ----------
@@ -208,9 +207,9 @@ class ClassifierDrift(DriftConfigMixin):
         -------
         Dictionary containing 'meta' and 'data' dictionaries
 
-         - 'meta' - has the model's metadata.
+        - 'meta' - has the model's metadata.
 
-         - 'data' - contains the drift prediction and optionally the p-value, performance of the classifier \
+        - 'data' - contains the drift prediction and optionally the p-value, performance of the classifier \
         relative to its expectation under the no-change null, the out-of-fold classifier model \
         prediction probabilities on the reference and test data, and the trained model. \
         """

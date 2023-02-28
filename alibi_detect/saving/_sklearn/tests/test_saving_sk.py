@@ -13,9 +13,7 @@ backend = param_fixture("backend", ['sklearn'])
 @parametrize_with_cases("data", cases=ContinuousData.data_synthetic_nd, prefix='data_')
 @parametrize('model', [classifier_model, xgb_classifier_model])
 def test_save_model_sk(data, model, tmp_path):
-    """
-    Unit test for _save_model_config and _load_model_config with scikit-learn and xgboost model.
-    """
+    """Unit test for _save_model_config and _load_model_config with scikit-learn and xgboost model."""
     # Save model
     filepath = tmp_path
     cfg_model, _ = _save_model_config(model, base_path=filepath)

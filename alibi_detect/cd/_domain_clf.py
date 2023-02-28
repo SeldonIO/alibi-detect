@@ -15,6 +15,7 @@ class _DomainClf(ABC):
     test). They should predict propensity scores (probability of being test instances) as output.
     Classifiers should possess a calibrate method to calibrate the propensity scores.
     """
+
     @abstractmethod
     def __init__(self, *args, **kwargs: dict):
         raise NotImplementedError()

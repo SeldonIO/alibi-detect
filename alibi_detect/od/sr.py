@@ -38,7 +38,7 @@ class SpectralResidual(BaseDetector, ThresholdMixin):
         """
         Outlier detector for time-series data using the spectral residual algorithm.
         Based on "Time-Series Anomaly Detection Service at Microsoft" (Ren et al., 2019)
-        https://arxiv.org/abs/1906.03821
+        https://arxiv.org/abs/1906.03821.
 
         Parameters
         ----------

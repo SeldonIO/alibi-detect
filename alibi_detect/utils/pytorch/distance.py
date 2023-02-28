@@ -20,6 +20,7 @@ def squared_pairwise_distance(x: torch.Tensor, y: torch.Tensor, a_min: float = 1
         Batch of instances of shape [Ny, features].
     a_min
         Lower bound to clip distance values.
+
     Returns
     -------
     Pairwise squared Euclidean distance [Nx, Ny].
@@ -159,7 +160,7 @@ def permed_lsdds(
     return_unpermed: bool = False,
 ) -> Union[Tuple[torch.Tensor, torch.Tensor], Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]:
     """
-    Compute LSDD estimates from kernel matrix across various ref and test window samples
+    Compute LSDD estimates from kernel matrix across various ref and test window samples.
 
     Parameters
     ----------
@@ -185,7 +186,6 @@ def permed_lsdds(
     Vector of B LSDD estimates for each permutation, H_lam_inv which may have been inferred, and optionally
     the unpermed LSDD estimate.
     """
-
     # Compute (for each bootstrap) the average distance to each kernel center (Eqn 7)
     k_xc_perms = torch.stack([k_all_c[x_inds] for x_inds in x_perms], 0)
     k_yc_perms = torch.stack([k_all_c[y_inds] for y_inds in y_perms], 0)

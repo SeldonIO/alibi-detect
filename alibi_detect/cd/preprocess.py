@@ -32,7 +32,6 @@ def classifier_uncertainty(
     -------
     A scalar indication of uncertainty of the model on each instance in x.
     """
-
     preds = model_fn(x)
 
     if preds_type == 'probs':
@@ -82,7 +81,6 @@ def regressor_uncertainty(
     -------
     A scalar indication of uncertainty of the model on each instance in x.
     """
-
     if uncertainty_type == 'mc_dropout':
         preds = np.concatenate([model_fn(x) for _ in range(n_evals)], axis=-1)
     elif uncertainty_type == 'ensemble':

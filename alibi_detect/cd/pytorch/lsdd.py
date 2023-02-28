@@ -120,7 +120,7 @@ class LSDDDriftTorch(BaseLSDDDrift):
                                        + x_ref_means).cpu().numpy()
 
     def _configure_kernel_centers(self, x_ref: torch.Tensor):
-        "Set aside reference samples to act as kernel centers"
+        """Set aside reference samples to act as kernel centers."""
         perm = torch.randperm(self.x_ref.shape[0])
         c_inds, non_c_inds = perm[:self.n_kernel_centers], perm[self.n_kernel_centers:]
         self.kernel_centers = x_ref[c_inds]

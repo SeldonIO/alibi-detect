@@ -92,8 +92,8 @@ class GaussianRBF(nn.Module):
         return kernel_mat.mean(dim=0)  # [Nx, Ny]
 
     def get_config(self) -> dict:
-        """
-        Returns a serializable config dict (excluding the input_sigma_fn, which is serialized in alibi_detect.saving).
+        """Returns a serializable config dict (excluding the input_sigma_fn, which is serialized in
+        alibi_detect.saving).
         """
         cfg = self.config.copy()
         if isinstance(cfg['sigma'], torch.Tensor):
@@ -135,6 +135,7 @@ class DeepKernel(nn.Module):
         either specified or set to 'trainable'. Only relavent if kernel_b is not None.
 
     """
+
     def __init__(
         self,
         proj: nn.Module,

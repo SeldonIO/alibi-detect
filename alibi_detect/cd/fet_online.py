@@ -28,16 +28,16 @@ class FETDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
             input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None
     ) -> None:
-        """
+        r"""
         Online Fisher exact test (FET) data drift detector using preconfigured thresholds, which tests for a
         change in the mean of binary univariate data. This detector is an adaption of that proposed by
         :cite:t:`Ross2012b`.
 
         For multivariate data, the detector makes a correction similar to the Bonferroni correction used for
         the offline detector. Given :math:`d` features, the detector configures thresholds by
-        targeting the :math:`1-\\beta` quantile of test statistics over the simulated streams, where
-        :math:`\\beta = 1 - (1-(1/ERT))^{(1/d)}`. For the univariate case, this simplifies to
-        :math:`\\beta = 1/ERT`. At prediction time, drift is flagged if the test statistic of any feature stream
+        targeting the :math:`1-\beta` quantile of test statistics over the simulated streams, where
+        :math:`\beta = 1 - (1-(1/ERT))^{(1/d)}`. For the univariate case, this simplifies to
+        :math:`\beta = 1/ERT`. At prediction time, drift is flagged if the test statistic of any feature stream
         exceed the thresholds.
 
         Note
@@ -126,9 +126,7 @@ class FETDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
         self._configure_ref()
 
     def _configure_ref(self) -> None:
-        """
-        Configure the reference data.
-        """
+        """Configure the reference data."""
         self.sum_ref = np.sum(self.x_ref, axis=0)
 
     def _configure_thresholds(self) -> None:
@@ -225,7 +223,7 @@ class FETDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
     @staticmethod
     @nb.njit(cache=True)
     def _exp_moving_avg(arr: np.ndarray, lam: float) -> np.ndarray:
-        """ Apply exponential moving average over the final axis."""
+        """Apply exponential moving average over the final axis."""
         output = np.zeros_like(arr)
         output[..., 0] = arr[..., 0]
         for i in range(1, arr.shape[-1]):

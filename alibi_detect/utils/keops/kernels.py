@@ -120,8 +120,8 @@ class GaussianRBF(nn.Module):
         return kernel_mat
 
     def get_config(self) -> dict:
-        """
-        Returns a serializable config dict (excluding the input_sigma_fn, which is serialized in alibi_detect.saving).
+        """Returns a serializable config dict (excluding the input_sigma_fn, which is serialized in
+        alibi_detect.saving).
         """
         cfg = deepcopy(self.config)
         if isinstance(cfg['sigma'], torch.Tensor):

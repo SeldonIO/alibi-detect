@@ -1,5 +1,5 @@
-"""
-Submodule to handle saving and loading of detector state dictionaries when the dictionaries contain `torch.Tensor`'s.
+"""Submodule to handle saving and loading of detector state dictionaries when the dictionaries
+contain `torch.Tensor`'s.
 """
 from pathlib import Path
 import torch

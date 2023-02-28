@@ -131,7 +131,5 @@ class ChiSquareDrift(BaseUnivariateDrift):
         return p_val, dist
 
     def _get_counts(self, x: np.ndarray, categories: Dict[int, List[int]]) -> Dict[int, List[int]]:
-        """
-        Utility method for getting the counts of categories for each categorical variable.
-        """
+        """Utility method for getting the counts of categories for each categorical variable."""
         return {f: [(x[:, f] == v).sum() for v in vals] for f, vals in categories.items()}

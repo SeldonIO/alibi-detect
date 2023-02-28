@@ -54,7 +54,7 @@ class LLR(BaseDetector, FitMixin, ThresholdMixin):
                  ) -> None:
         """
         Likelihood Ratios for Out-of-Distribution Detection. Ren, J. et al. NeurIPS 2019.
-        https://arxiv.org/abs/1906.02845
+        https://arxiv.org/abs/1906.02845.
 
         Parameters
         ----------
@@ -305,11 +305,11 @@ class LLR(BaseDetector, FitMixin, ThresholdMixin):
         return logp_s - logp_b
 
     def feature_score(self, X: np.ndarray, batch_size: int = int(1e10)) -> np.ndarray:
-        """ Feature-level negative likelihood ratios. """
+        """Feature-level negative likelihood ratios."""
         return - self.llr(X, True, batch_size=batch_size)
 
     def instance_score(self, X: np.ndarray, batch_size: int = int(1e10)) -> np.ndarray:
-        """ Instance-level negative likelihood ratios. """
+        """Instance-level negative likelihood ratios."""
         return - self.llr(X, False, batch_size=batch_size)
 
     def score(self, X: np.ndarray, batch_size: int = int(1e10)) -> Tuple[np.ndarray, np.ndarray]:

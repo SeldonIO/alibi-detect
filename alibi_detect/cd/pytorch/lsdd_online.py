@@ -125,7 +125,7 @@ class LSDDDriftOnlineTorch(BaseMultiDriftOnline):
         self.x_ref = self._normalize(x_ref).cpu().numpy()
 
     def _configure_kernel_centers(self):
-        "Set aside reference samples to act as kernel centers"
+        """Set aside reference samples to act as kernel centers."""
         perm = torch.randperm(self.n)
         self.c_inds, self.non_c_inds = perm[:self.n_kernel_centers], perm[self.n_kernel_centers:]
         self.kernel_centers = torch.from_numpy(self.x_ref[self.c_inds]).to(self.device)
@@ -136,9 +136,7 @@ class LSDDDriftOnlineTorch(BaseMultiDriftOnline):
         self.k_xc = self.kernel(self.x_ref_eff, self.kernel_centers)
 
     def _configure_thresholds(self):
-        """
-        Configure the test statistic thresholds via bootstrapping.
-        """
+        """Configure the test statistic thresholds via bootstrapping."""
         # Each bootstrap sample splits the reference samples into a sub-reference sample (x)
         # and an extended test window (y). The extended test window will be treated as W overlapping
         # test windows of size W (so 2W-1 test samples in total)

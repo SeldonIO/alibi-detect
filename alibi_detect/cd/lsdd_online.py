@@ -114,9 +114,7 @@ class LSDDDriftOnline(DriftConfigMixin):
         return [self._detector.thresholds[min(s, self._detector.window_size - 1)] for s in range(self.t)]
 
     def reset_state(self):
-        """
-        Resets the detector to its initial state (`t=0`). This does not include reconfiguring thresholds.
-        """
+        """Resets the detector to its initial state (`t=0`). This does not include reconfiguring thresholds."""
         self._detector.reset_state()
 
     def predict(self, x_t: Union[np.ndarray, Any], return_test_stat: bool = True) \

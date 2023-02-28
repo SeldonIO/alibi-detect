@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 def zero_diag(mat: torch.Tensor) -> torch.Tensor:
     """
-    Set the diagonal of a matrix to 0
+    Set the diagonal of a matrix to 0.
 
     Parameters
     ----------
@@ -24,7 +24,7 @@ def zero_diag(mat: torch.Tensor) -> torch.Tensor:
 
 def quantile(sample: torch.Tensor, p: float, type: int = 7, sorted: bool = False) -> float:
     """
-    Estimate a desired quantile of a univariate distribution from a vector of samples
+    Estimate a desired quantile of a univariate distribution from a vector of samples.
 
     Parameters
     ----------

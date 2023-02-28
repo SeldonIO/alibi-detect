@@ -339,6 +339,7 @@ def state_chisquaredrift(cd: ChiSquareDrift) -> Tuple[
         ]:
     """
     Chi-Squared drift detector parameters to save.
+
     Parameters
     ----------
     cd
@@ -380,6 +381,7 @@ def state_classifierdrift(cd: ClassifierDrift) -> Tuple[
         ]:
     """
     Classifier-based drift detector parameters to save.
+
     Parameters
     ----------
     cd
@@ -422,6 +424,7 @@ def state_tabulardrift(cd: TabularDrift) -> Tuple[
         ]:
     """
     Tabular drift detector parameters to save.
+
     Parameters
     ----------
     cd
@@ -463,6 +466,7 @@ def state_ksdrift(cd: KSDrift) -> Tuple[
         ]:
     """
     K-S drift detector parameters to save.
+
     Parameters
     ----------
     cd
@@ -504,6 +508,7 @@ def state_mmddrift(cd: MMDDrift) -> Tuple[
     """
     MMD drift detector parameters to save.
     Note: only GaussianRBF kernel supported.
+
     Parameters
     ----------
     cd
@@ -758,7 +763,7 @@ def state_llr(od: LLR) -> Dict:
 def save_tf_ae(detector: Union[OutlierAE, AdversarialAE],
                filepath: Union[str, os.PathLike]) -> None:
     """
-    Save TensorFlow components of OutlierAE
+    Save TensorFlow components of OutlierAE.
 
     Parameters
     ----------

@@ -4,7 +4,7 @@ import numpy as np
 def quantile(sample: np.ndarray, p: float, type: int = 7,
              sorted: bool = False, interpolate: bool = True) -> float:
     """
-    Estimate a desired quantile of a univariate distribution from a vector of samples
+    Estimate a desired quantile of a univariate distribution from a vector of samples.
 
     Parameters
     ----------

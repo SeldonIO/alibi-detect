@@ -36,9 +36,8 @@ def validate_framework(framework: str, field: ModelField) -> str:
 T = TypeVar("T", bound=np.generic)
 if NumpyVersion(np.__version__) < "1.22.0" or sys.version_info < (3, 9):
     class NDArray(Generic[T], np.ndarray):
-        """
-        A Generic pydantic model to coerce to np.ndarray's.
-        """
+        """A Generic pydantic model to coerce to np.ndarray's."""
+
         @classmethod
         def __get_validators__(cls):
             yield cls.validate
@@ -49,9 +48,8 @@ if NumpyVersion(np.__version__) < "1.22.0" or sys.version_info < (3, 9):
 
 else:
     class NDArray(Generic[T], np.ndarray[Any, T]):  # type: ignore[no-redef, type-var]
-        """
-        A Generic pydantic model to coerce to np.ndarray's.
-        """
+        """A Generic pydantic model to coerce to np.ndarray's."""
+
         @classmethod
         def __get_validators__(cls):
             yield cls.validate

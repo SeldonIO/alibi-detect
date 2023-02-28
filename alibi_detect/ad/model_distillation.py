@@ -165,7 +165,6 @@ class ModelDistillation(BaseDetector, FitMixin, ThresholdMixin):
         -------
         Array with adversarial scores for each instance in the batch.
         """
-
         # model predictions
         y = predict_batch(X, self.model, batch_size=batch_size)
         y_distilled = predict_batch(X, self.distilled_model, batch_size=batch_size)

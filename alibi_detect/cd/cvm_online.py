@@ -25,16 +25,16 @@ class CVMDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
             input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None
     ) -> None:
-        """
+        r"""
         Online Cramer-von Mises (CVM) data drift detector using preconfigured thresholds, which tests for
         any change in the distribution of continuous univariate data. This detector is an adaption of that
         proposed by :cite:t:`Ross2012a`.
 
         For multivariate data, the detector makes a correction similar to the Bonferroni correction used for
         the offline detector. Given :math:`d` features, the detector configures thresholds by
-        targeting the :math:`1-\\beta` quantile of test statistics over the simulated streams, where
-        :math:`\\beta = 1 - (1-(1/ERT))^{(1/d)}`. For the univariate case, this simplifies to
-        :math:`\\beta = 1/ERT`. At prediction time, drift is flagged if the test statistic of any feature stream
+        targeting the :math:`1-\beta` quantile of test statistics over the simulated streams, where
+        :math:`\beta = 1 - (1-(1/ERT))^{(1/d)}`. For the univariate case, this simplifies to
+        :math:`\beta = 1/ERT`. At prediction time, drift is flagged if the test statistic of any feature stream
         exceed the thresholds.
 
         Note
@@ -99,9 +99,7 @@ class CVMDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
         self._configure_ref()
 
     def _configure_ref(self) -> None:
-        """
-        Configure the reference data.
-        """
+        """Configure the reference data."""
         ids_ref_ref = self.x_ref[None, :, :] >= self.x_ref[:, None, :]
         self.ref_cdf_ref = np.sum(ids_ref_ref, axis=0) / self.n
 
@@ -201,9 +199,7 @@ class CVMDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
             )
 
     def _initialise_state(self) -> None:
-        """
-        Initialise online state (the stateful attributes updated by `score` and `predict`).
-        """
+        """Initialise online state (the stateful attributes updated by `score` and `predict`)."""
         super()._initialise_state()
         self.ids_ref_wins = np.array([])
         self.ids_wins_ref = np.array([])
@@ -266,9 +262,7 @@ class CVMDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
 
 @nb.njit(parallel=False, cache=True)
 def _normalise_stats(stats: np.ndarray, n: int, ws: int) -> np.ndarray:
-    """
-    See Eqns 3 & 14 of https://www.projecteuclid.org/euclid.aoms/1177704477.
-    """
+    """See Eqns 3 & 14 of https://www.projecteuclid.org/euclid.aoms/1177704477."""
     mu = 1 / 6 + 1 / (6 * (n + ws))
     var_num = (n + ws + 1) * (4 * n * ws * (n + ws) - 3 * (n * n + ws * ws) - 2 * n * ws)
     var_denom = 45 * (n + ws) * (n + ws) * 4 * n * ws

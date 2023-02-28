@@ -164,8 +164,9 @@ class LearnedKernelDriftKeops(BaseLearnedKernelDrift):
         """
         A module that wraps around the kernel. When passed a batch of reference and batch of test
         instances it returns an estimate of a correlate of test power.
-        Equation 4 of https://arxiv.org/abs/2002.09116
+        Equation 4 of https://arxiv.org/abs/2002.09116.
         """
+
         def __init__(self, kernel: nn.Module, var_reg: float, has_proj: bool, has_kernel_b: bool):
             super().__init__()
             self.kernel = kernel
@@ -318,9 +319,7 @@ class LearnedKernelDriftKeops(BaseLearnedKernelDrift):
         reg_loss_fn: Callable = (lambda kernel: 0),
         verbose: int = 1,
     ) -> None:
-        """
-        Train the kernel to maximise an estimate of test power using minibatch gradient descent.
-        """
+        """Train the kernel to maximise an estimate of test power using minibatch gradient descent."""
         optimizer = optimizer(j_hat.parameters(), lr=learning_rate)
         j_hat.train()
         loss_ma = 0.

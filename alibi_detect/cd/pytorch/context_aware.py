@@ -180,9 +180,7 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
 
     def _cmmd(self, K: torch.Tensor, L: torch.Tensor, bools: torch.Tensor, L_held: torch.Tensor = None) \
             -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-        """
-        Private method to compute the MMD-ADiTT test statistic.
-        """
+        """Private method to compute the MMD-ADiTT test statistic."""
         # Get ref/test indices
         idx_0, idx_1 = torch.where(bools == 0)[0], torch.where(bools == 1)[0]
         n_ref, n_test = len(idx_0), len(idx_1)

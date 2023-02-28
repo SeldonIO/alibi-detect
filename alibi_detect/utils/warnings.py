@@ -1,15 +1,11 @@
-"""
-This module defines custom warnings and exceptions used across the Alibi Detect library.
-"""
+"""Defines custom warnings and exceptions used across the Alibi Detect library."""
 import functools
 import warnings
 from typing import Dict, Any, Callable
 
 
 def deprecated_alias(**aliases: str) -> Callable:
-    """
-    Function decorator to warn about deprecated kwargs (and replace them).
-    """
+    """Function decorator to warn about deprecated kwargs (and replace them)."""
     def deco(f):
         @functools.wraps(f)
         def wrapper(*args, **kwargs):
@@ -20,9 +16,7 @@ def deprecated_alias(**aliases: str) -> Callable:
 
 
 def _rename_kwargs(func_name: str, kwargs: Dict[str, Any], aliases: Dict[str, str]):
-    """
-    Private function to rename deprecated kwarg to new name, and raise DeprecationWarning.
-    """
+    """Private function to rename deprecated kwarg to new name, and raise DeprecationWarning."""
     for alias, new in aliases.items():
         if alias in kwargs:
             if new in kwargs:

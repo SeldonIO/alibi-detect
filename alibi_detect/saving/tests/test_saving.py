@@ -81,9 +81,7 @@ CFGS = [MMD_CFG]
 
 @parametrize('cfg', CFGS)
 def test_load_simple_config(cfg, tmp_path):
-    """
-    Test that a bare-bones `config.toml` without a [meta] field can be loaded by `load_detector`.
-    """
+    """Test that a bare-bones `config.toml` without a [meta] field can be loaded by `load_detector`."""
     save_dir = tmp_path
     x_ref_path = str(save_dir.joinpath('x_ref.npy'))
     cfg_path = save_dir.joinpath('config.toml')
@@ -383,9 +381,7 @@ def test_save_tabulardrift(data, tmp_path):
 @parametrize('optimizer', [None, "Adam"], indirect=True)
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
 def test_save_classifierdrift(data, optimizer, classifier_model, backend, tmp_path, seed):  # noqa: F811
-    """
-    Test ClassifierDrift on continuous datasets.
-    """
+    """Test ClassifierDrift on continuous datasets."""
     if backend not in ('tensorflow', 'pytorch', 'sklearn'):
         pytest.skip("Detector doesn't have this backend")
 
@@ -564,7 +560,7 @@ def test_save_contextmmddrift(data, kernel, backend, tmp_path, seed):  # noqa: F
 
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
 def test_save_classifieruncertaintydrift(data, classifier_model, backend, tmp_path, seed):  # noqa: F811
-    """ Test ClassifierDrift on continuous datasets."""
+    """Test ClassifierDrift on continuous datasets."""
     if backend not in ('tensorflow', 'pytorch'):
         pytest.skip("Detector doesn't have this backend")
 
@@ -595,7 +591,7 @@ def test_save_classifieruncertaintydrift(data, classifier_model, backend, tmp_pa
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
 @parametrize('regressor', [encoder_dropout_model])
 def test_save_regressoruncertaintydrift(data, regressor, backend, tmp_path, seed):
-    """ Test RegressorDrift on continuous datasets."""
+    """Test RegressorDrift on continuous datasets."""
     if backend not in ('tensorflow', 'pytorch'):
         pytest.skip("Detector doesn't have this backend")
 
@@ -812,9 +808,7 @@ def test_save_onlinefetdrift(data, tmp_path, seed):
 @parametrize("detector", [MMDDriftOnline, LSDDDriftOnline])
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
 def test_save_multivariate_online_state(detector, data, backend, seed, tmp_path):
-    """
-    Test the saving (and loading) of multivariate online detectors' state via `save_detector`.
-    """
+    """Test the saving (and loading) of multivariate online detectors' state via `save_detector`."""
     # Skip if backend not `tensorflow` or `pytorch`
     if backend not in ('tensorflow', 'pytorch'):
         pytest.skip("Detector doesn't have this backend")
@@ -856,9 +850,7 @@ def test_save_multivariate_online_state(detector, data, backend, seed, tmp_path)
 @parametrize("detector", [CVMDriftOnline])
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
 def test_save_cvm_online_state(detector, data, tmp_path):
-    """
-    Test the saving (and loading) of the CVM online detector's state via `save_detector`.
-    """
+    """Test the saving (and loading) of the CVM online detector's state via `save_detector`."""
     # Init detector and make prediction to update state
     X_ref, X_h0 = data
     dd = detector(X_ref, ert=100, window_sizes=[10])
@@ -891,9 +883,7 @@ def test_save_cvm_online_state(detector, data, tmp_path):
 @parametrize("detector", [FETDriftOnline])
 @parametrize_with_cases("data", cases=BinData, prefix='data_')
 def test_save_fet_online_state(detector, data, tmp_path):
-    """
-    Test the saving (and loading) of the FET online detector's state via `save_detector`.
-    """
+    """Test the saving (and loading) of the FET online detector's state via `save_detector`."""
     # Init detector and make prediction to update state
     X_ref, X_h0 = data
     dd = detector(X_ref, ert=100, window_sizes=[10])
@@ -925,9 +915,7 @@ def test_save_fet_online_state(detector, data, tmp_path):
 
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
 def test_save_online_state_t0(data, tmp_path):
-    """
-    Test that state is not saved when t=0.
-    """
+    """Test that state is not saved when t=0."""
     # Init detector
     X_ref, X_h0 = data
     dd = CVMDriftOnline(X_ref, ert=100, window_sizes=[10])
@@ -943,9 +931,7 @@ def test_save_online_state_t0(data, tmp_path):
 
 @parametrize_with_cases("data", cases=ContinuousData.data_synthetic_nd)
 def test_load_absolute(data, tmp_path):
-    """
-    Test that load_detector() works with absolute paths in config.
-    """
+    """Test that load_detector() works with absolute paths in config."""
     # Init detector and save
     X_ref, X_h0 = data
     cd = KSDrift(X_ref, p_val=P_VAL)
@@ -1179,9 +1165,7 @@ def test_save_preprocess_nlp(data, preprocess_fn, tmp_path, backend):
 
 
 def test_nested_value():
-    """
-    Unit test for _get_nested_value and _set_nested_value.
-    """
+    """Unit test for _get_nested_value and _set_nested_value."""
     dict1 = {'dict2': {'dict3': {}}}
     _set_nested_value(dict1, ['dict2', 'dict3', 'a string'], 'hello')
     _set_nested_value(dict1, ['a float'], 42.0)
@@ -1192,9 +1176,7 @@ def test_nested_value():
 
 
 def test_replace():
-    """
-    A unit test for _replace.
-    """
+    """A unit test for _replace."""
     dict1 = {
         'key1': 'key1',
         'key7': None,
@@ -1215,9 +1197,7 @@ def test_replace():
 
 
 def test_path2str(tmp_path):
-    """
-    A unit test for _path2str.
-    """
+    """A unit test for _path2str."""
     cfg = {
         'dict': {'a path': tmp_path}
     }
@@ -1233,9 +1213,7 @@ def test_path2str(tmp_path):
 
 
 def test_int2str_keys():
-    """
-    A unit test for _int2str_keys
-    """
+    """A unit test for _int2str_keys."""
     cfg = {
         'dict': {'0': 'A', '1': 3, 2: 'C'},
         3: 'D',
@@ -1262,9 +1240,7 @@ def generic_function(x: float, add: float = 0.0, invert: bool = True):
 
 @parametrize('function', [generic_function])
 def test_serialize_function_partial(function, tmp_path):
-    """
-    Unit tests for _serialize_function, with a functools.partial function.
-    """
+    """Unit tests for _serialize_function, with a functools.partial function."""
     partial_func = partial(function, invert=False, add=1.0)
     src, kwargs = _serialize_object(partial_func, base_path=tmp_path, local_path=Path('function'))
     filepath = tmp_path.joinpath('function.dill')
@@ -1276,9 +1252,7 @@ def test_serialize_function_partial(function, tmp_path):
 
 
 def test_serialize_function_registry(tmp_path):
-    """
-    Unit tests for _serialize_function, with a registered function.
-    """
+    """Unit tests for _serialize_function, with a registered function."""
     registry_ref = 'cd.tensorflow.preprocess.preprocess_drift'
     function = registry.get(registry_ref)
     src, kwargs = _serialize_object(function, base_path=tmp_path, local_path=Path('function'))
@@ -1297,9 +1271,7 @@ def test_registry_get():
 
 
 def test_set_dtypes(backend):
-    """
-    Unit test to test _set_dtypes.
-    """
+    """Unit test to test _set_dtypes."""
     if backend == 'tensorflow':
         dtype = 'tf.float32'
     elif backend == 'pytorch':

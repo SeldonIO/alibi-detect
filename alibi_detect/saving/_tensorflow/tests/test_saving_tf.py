@@ -57,9 +57,7 @@ def test_load_optimizer_type(backend):
 @parametrize('model', [encoder_model])
 @parametrize('layer', [None, -1])
 def test_save_model_tf(data, model, layer, tmp_path):
-    """
-    Unit test for _save_model_config and _load_model_config with tensorflow model.
-    """
+    """Unit test for _save_model_config and _load_model_config with tensorflow model."""
     # Save model
     filepath = tmp_path
     input_shape = (data[0].shape[1],)

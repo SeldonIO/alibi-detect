@@ -1,7 +1,7 @@
-"""
-This submodule contains utility functions to manage random number generator (RNG) seeds. It may change
-depending on how we decide to handle randomisation in tests (and elsewhere) going forwards. See
-https://github.com/SeldonIO/alibi-detect/issues/250.
+"""Contains utility functions to manage random number generator (RNG) seeds.
+
+May change depending on how we decide to handle randomization in tests (and elsewhere)
+going forwards. See https://github.com/SeldonIO/alibi-detect/issues/250.
 """
 from contextlib import contextmanager
 import random

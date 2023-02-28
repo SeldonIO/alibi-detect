@@ -121,9 +121,7 @@ class MMDDriftOnlineTF(BaseMultiDriftOnline):
             )
 
     def _configure_thresholds(self):
-        """
-        Configure the test statistic thresholds via bootstrapping.
-        """
+        """Configure the test statistic thresholds via bootstrapping."""
         # Each bootstrap sample splits the reference samples into a sub-reference sample (x)
         # and an extended test window (y). The extended test window will be treated as W overlapping
         # test windows of size W (so 2W-1 test samples in total)

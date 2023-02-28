@@ -40,15 +40,17 @@ ERROR_TYPES = {
 
 
 class MissingDependency:
-    """Missing Dependency Class
+    """Missing Dependency Class.
+
     Used to replace any object that requires unmet optional dependencies. Attribute access or calling the __call__
     method on this object will raise an error.
     """
+
     def __init__(self,
                  object_name: str,
                  err: Union[ModuleNotFoundError, ImportError],
                  missing_dependency: str = 'all',):
-        """ Metaclass for MissingDependency classes
+        """Metaclass for MissingDependency classes.
 
         Parameters
         ----------

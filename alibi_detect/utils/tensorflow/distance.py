@@ -175,7 +175,7 @@ def permed_lsdds(
     return_unpermed: bool = False,
 ) -> Union[Tuple[tf.Tensor, tf.Tensor], Tuple[tf.Tensor, tf.Tensor, tf.Tensor]]:
     """
-    Compute LSDD estimates from kernel matrix across various ref and test window samples
+    Compute LSDD estimates from kernel matrix across various ref and test window samples.
 
     Parameters
     ----------
@@ -201,7 +201,6 @@ def permed_lsdds(
     Vector of B LSDD estimates for each permutation, H_lam_inv which may have been inferred, and optionally
     the unpermed LSDD estimate.
     """
-
     # Compute (for each bootstrap) the average distance to each kernel center (Eqn 7)
     k_xc_perms = tf.stack([tf.gather(k_all_c, x_inds) for x_inds in x_perms], axis=0)
     k_yc_perms = tf.stack([tf.gather(k_all_c, y_inds) for y_inds in y_perms], axis=0)

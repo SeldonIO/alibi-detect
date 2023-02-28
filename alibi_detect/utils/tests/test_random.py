@@ -5,9 +5,7 @@ import torch
 
 
 def test_set_get_seed(seed):
-    """
-    Tests the set_seed and get_seed fuctions.
-    """
+    """Tests the set_seed and get_seed fuctions."""
     # Check initial seed within test is the one set by pytest-randomly
     current_seed = get_seed()
     assert current_seed == seed
@@ -20,9 +18,7 @@ def test_set_get_seed(seed):
 
 
 def test_fixed_seed(seed):
-    """
-    Tests the fixed_seed context manager.
-    """
+    """Tests the fixed_seed context manager."""
     n = 5  # Length of random number sequences
 
     nums0 = []

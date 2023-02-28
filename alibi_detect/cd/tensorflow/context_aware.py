@@ -170,9 +170,7 @@ class ContextMMDDriftTF(BaseContextMMDDrift):
 
     def _cmmd(self, K: tf.Tensor, L: tf.Tensor, bools: tf.Tensor, L_held: tf.Tensor = None) \
             -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
-        """
-        Private method to compute the MMD-ADiTT test statistic.
-        """
+        """Private method to compute the MMD-ADiTT test statistic."""
         # Get ref/test indices
         idx_0, idx_1 = np.where(bools == 0)[0], np.where(bools == 1)[0]
         n_ref, n_test = len(idx_0), len(idx_1)

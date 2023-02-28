@@ -12,9 +12,8 @@ logger = logging.getLogger(__name__)
 
 
 class StateMixin(ABC):
-    """
-    Utility class that provides methods to save and load stateful attributes to disk.
-    """
+    """Utility class that provides methods to save and load stateful attributes to disk."""
+
     t: int
     online_state_keys: Tuple[str, ...]
 
@@ -89,7 +88,7 @@ def _load_state_dict(detector: StateMixin, filepath: Path, raise_error: bool = T
 
     Parameters
     ----------
-     detector
+    detector
         The detector to update.
     filepath
         File to load state dictionary from.

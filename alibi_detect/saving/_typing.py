@@ -1,7 +1,8 @@
-"""Typing constructs for saving and loading functionality
+"""Typing constructs for saving and loading functionality.
 
 List of detectors that are valid for saving and loading either via the legacy methods or the new config driven
-functionality"""
+functionality.
+"""
 
 VALID_DETECTORS = [
     'AdversarialAE',

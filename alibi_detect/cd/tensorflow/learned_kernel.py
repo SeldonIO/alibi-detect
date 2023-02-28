@@ -138,8 +138,9 @@ class LearnedKernelDriftTF(BaseLearnedKernelDrift):
         """
         A module that wraps around the kernel. When passed a batch of reference and batch of test
         instances it returns an estimate of a correlate of test power.
-        Equation 4 of https://arxiv.org/abs/2002.09116
+        Equation 4 of https://arxiv.org/abs/2002.09116.
         """
+
         def __init__(self, kernel: tf.keras.Model, var_reg: float):
             super().__init__()
             self.config = {'kernel': kernel, 'var_reg': var_reg}
@@ -210,9 +211,7 @@ class LearnedKernelDriftTF(BaseLearnedKernelDrift):
         reg_loss_fn: Callable = (lambda kernel: 0),
         verbose: int = 1,
     ) -> None:
-        """
-        Train the kernel to maximise an estimate of test power using minibatch gradient descent.
-        """
+        """Train the kernel to maximise an estimate of test power using minibatch gradient descent."""
         ds_ref, ds_cur = datasets
         optimizer = optimizer(learning_rate=learning_rate) if isinstance(optimizer, type) else optimizer
         n_minibatch = min(len(ds_ref), len(ds_cur))

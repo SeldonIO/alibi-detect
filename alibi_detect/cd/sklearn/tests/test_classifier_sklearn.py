@@ -180,7 +180,8 @@ def test_clone2(model, preds_type, use_calibration, binarize_preds):
 @pytest.mark.parametrize('binarize_preds', [False, True])
 def test_clone3(model, preds_type, use_calibration, binarize_preds):
     """
-    Checks if NO error is raised because of the ``use_calibration=True`` which makes possible ``preds_types='probs'``.
+    Checks if NO error is raised because of the ``use_calibration=True`` which makes possible
+    ``preds_types='probs'``.
     """
     ClassifierDriftSklearn(x_ref=np.random.randn(100, 5),
                            model=model,
@@ -219,7 +220,8 @@ def test_clone4(model, preds_type, use_calibration, binarize_preds):
 @pytest.mark.parametrize('binarize_preds', [True])
 def test_clone5(model, preds_type, use_calibration, binarize_preds):
     """
-    Checks if `ValueError` is raised because of ``binarize_preds=True`` which conflicts with ``preds_types='scores'``.
+    Checks if `ValueError` is raised because of ``binarize_preds=True`` which conflicts
+    with ``preds_types='scores'``.
     """
     with pytest.raises(ValueError):
         ClassifierDriftSklearn(x_ref=np.random.randn(100, 5),

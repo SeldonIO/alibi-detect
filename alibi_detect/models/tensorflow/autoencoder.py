@@ -6,7 +6,7 @@ from alibi_detect.utils.tensorflow.distance import relative_euclidean_distance
 
 
 class Sampling(Layer):
-    """ Reparametrization trick. Uses (z_mean, z_log_var) to sample the latent vector z. """
+    """Reparametrization trick. Uses (z_mean, z_log_var) to sample the latent vector z."""
 
     def call(self, inputs: Tuple[tf.Tensor, tf.Tensor]) -> tf.Tensor:
         """
@@ -268,7 +268,7 @@ class Seq2Seq(tf.keras.Model):
         self.beta = beta
 
     def call(self, x: tf.Tensor) -> tf.Tensor:
-        """ Forward pass used for teacher-forcing training. """
+        """Forward pass used for teacher-forcing training."""
         # reconstruct input via encoder-decoder
         init_state = self.encoder(x)[1]
         x_recon, z, _ = self.decoder(x, init_state=init_state)
@@ -286,7 +286,7 @@ class Seq2Seq(tf.keras.Model):
         return x_recon
 
     def decode_seq(self, x: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-        """ Sequence decoding and threshold estimation used for inference. """
+        """Sequence decoding and threshold estimation used for inference."""
         seq_len = np.shape(x)[1]
         n_batch = x.shape[0]
 
