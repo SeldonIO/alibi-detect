@@ -56,7 +56,7 @@ class KNNTorch(TorchOutlierDetector):
 
         Raises
         ------
-        ThresholdNotInferredException
+        ThresholdNotInferredError
             If called before detector has had `infer_threshold` method called.
         """
         raw_scores = self.score(x)
@@ -81,7 +81,7 @@ class KNNTorch(TorchOutlierDetector):
 
         Raises
         ------
-        NotFitException
+        NotFittedError
             If called before detector has been fit.
         """
         if not torch.jit.is_scripting():

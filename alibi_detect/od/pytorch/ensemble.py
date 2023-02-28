@@ -6,7 +6,7 @@ import torch
 import numpy as np
 from torch.nn import Module
 
-from alibi_detect.exceptions import NotFitException
+from alibi_detect.exceptions import NotFittedError
 
 
 class BaseTransformTorch(Module, ABC):
@@ -70,11 +70,11 @@ class FitMixinTorch(ABC):
 
         Raises
         ------
-        NotFitException
+        NotFittedError
             Raised if method called and object has not been fit.
         """
         if not self.fitted:
-            raise NotFitException(f'{self.__class__.__name__} has not been fit!')
+            raise NotFittedError(f'{self.__class__.__name__} has not been fit!')
 
 
 class BaseFittedTransformTorch(BaseTransformTorch, FitMixinTorch):

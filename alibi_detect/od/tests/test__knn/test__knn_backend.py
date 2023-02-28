@@ -4,7 +4,7 @@ import torch
 from alibi_detect.od.pytorch.knn import KNNTorch
 from alibi_detect.utils.pytorch.kernels import GaussianRBF
 from alibi_detect.od.pytorch.ensemble import Ensembler, PValNormalizer, AverageAggregator
-from alibi_detect.exceptions import NotFitException
+from alibi_detect.exceptions import NotFittedError
 
 
 @pytest.fixture(scope='session')
@@ -63,11 +63,11 @@ def test_knn_torch_backend_ensemble_ts(tmp_path, ensembler):
     knn_torch = KNNTorch(k=[4, 5], ensembler=ensembler)
     x = torch.randn((3, 10)) * torch.tensor([[1], [1], [100]])
 
-    with pytest.raises(NotFitException) as err:
+    with pytest.raises(NotFittedError) as err:
         knn_torch(x)
     assert str(err.value) == 'KNNTorch has not been fit!'
 
-    with pytest.raises(NotFitException) as err:
+    with pytest.raises(NotFittedError) as err:
         knn_torch.predict(x)
     assert str(err.value) == 'KNNTorch has not been fit!'
 
@@ -151,13 +151,13 @@ def test_knn_kernel_ts(ensembler):
 #     # Test that the backend raises an error if it is not fitted before
 #     # calling forward method.
 #     x = torch.randn((1, 10))
-#     with pytest.raises(NotFitException) as err:
+#     with pytest.raises(NotFittedError) as err:
 #         knn_torch(x)
 #     assert str(err.value) == 'KNNTorch has not been fit!'
 
 #     # Test that the backend raises an error if it is not fitted before
 #     # predicting.
-#     with pytest.raises(NotFitException) as err:
+#     with pytest.raises(NotFittedError) as err:
 #         knn_torch.predict(x)
 #     assert str(err.value) == 'KNNTorch has not been fit!'
 
@@ -168,7 +168,7 @@ def test_knn_kernel_ts(ensembler):
 
 #     # Test that the backend raises an if the forward method is called without the
 #     # threshold being inferred.
-#     with pytest.raises(ThresholdNotInferredException) as err:
+#     with pytest.raises(ThresholdNotInferredError) as err:
 #         knn_torch(x)
 #     assert str(err.value) == 'KNNTorch has no threshold set, call `infer_threshold` before predicting.'
 

@@ -8,7 +8,7 @@ import torch
 
 from alibi_detect.od.pytorch.ensemble import FitMixinTorch
 from alibi_detect.utils.pytorch.misc import get_device
-from alibi_detect.exceptions import ThresholdNotInferredException
+from alibi_detect.exceptions import ThresholdNotInferredError
 
 
 @dataclass
@@ -94,11 +94,11 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
 
         Raises
         ------
-        ThresholdNotInferredException
+        ThresholdNotInferredError
             Raised if threshold is not inferred.
         """
         if not self.threshold_inferred:
-            raise ThresholdNotInferredException((f'{self.__class__.__name__} has no threshold set, '
+            raise ThresholdNotInferredError((f'{self.__class__.__name__} has no threshold set, '
                                                  'call `infer_threshold` before predicting.'))
 
     @staticmethod
@@ -144,7 +144,7 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
 
         Raises
         ------
-        ThresholdNotInferredException
+        ThresholdNotInferredError
             If the detector is an ensemble, and the ensembler used to aggregate the outlier scores has a fitable
             component, then the detector threshold must be inferred before predictions can be made. This is because
             while the scoring functionality of the detector is fit within the `.fit` method on the training data

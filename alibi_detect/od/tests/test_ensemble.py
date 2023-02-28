@@ -2,7 +2,7 @@ import pytest
 import torch
 
 from alibi_detect.od.pytorch import ensemble
-from alibi_detect.exceptions import NotFitException
+from alibi_detect.exceptions import NotFittedError
 
 
 def test_pval_normalizer():
@@ -10,7 +10,7 @@ def test_pval_normalizer():
     x = torch.randn(3, 10)
     x_ref = torch.randn(64, 10)
     # unfit normalizer raises exception
-    with pytest.raises(NotFitException) as err:
+    with pytest.raises(NotFittedError) as err:
         normalizer(x)
     assert err.value.args[0] == 'PValNormalizer has not been fit!'
 
@@ -40,7 +40,7 @@ def test_shift_and_scale_normalizer():
     x_ref = torch.randn(5000, 10) * 3 + 2
 
     # unfit normalizer raises exception
-    with pytest.raises(NotFitException) as err:
+    with pytest.raises(NotFittedError) as err:
         normalizer(x)
     assert err.value.args[0] == 'ShiftAndScaleNormalizer has not been fit!'
 

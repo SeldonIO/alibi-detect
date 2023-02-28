@@ -5,7 +5,7 @@ import torch
 from alibi_detect.od._knn import KNN
 from alibi_detect.od import AverageAggregator, TopKAggregator, MaxAggregator, \
     MinAggregator, ShiftAndScaleNormalizer, PValNormalizer
-from alibi_detect.exceptions import NotFitException, ThresholdNotInferredException
+from alibi_detect.exceptions import NotFittedError, ThresholdNotInferredError
 
 from sklearn.datasets import make_moons
 
@@ -26,7 +26,7 @@ def test_unfitted_knn_single_score():
     x = np.array([[0, 10], [0.1, 0]])
 
     # test predict raises exception when not fitted
-    with pytest.raises(NotFitException) as err:
+    with pytest.raises(NotFittedError) as err:
         _ = knn_detector.predict(x)
     assert str(err.value) == 'KNNTorch has not been fit!'
 
@@ -60,7 +60,7 @@ def test_fitted_knn_ensemble_score():
     x_ref = np.random.randn(100, 2)
     knn_detector.fit(x_ref)
     x = np.array([[0, 10], [0.1, 0]])
-    with pytest.raises(ThresholdNotInferredException):
+    with pytest.raises(ThresholdNotInferredError):
         knn_detector.predict(x)
 
 
@@ -109,7 +109,7 @@ def test_unfitted_knn_ensemble(aggregator, normalizer):
     x = np.array([[0, 10], [0.1, 0]])
 
     # Test unfit knn ensemble raises exception when calling predict method.
-    with pytest.raises(NotFitException) as err:
+    with pytest.raises(NotFittedError) as err:
         _ = knn_detector.predict(x)
     assert str(err.value) == 'KNNTorch has not been fit!'
 
@@ -127,10 +127,10 @@ def test_fitted_knn_ensemble(aggregator, normalizer):
     knn_detector.fit(x_ref)
     x = np.array([[0, 10], [0, 0.1]])
 
-    # test ensemble raises ThresholdNotInferredException if only fit and not threshold inferred and
+    # test ensemble raises ThresholdNotInferredError if only fit and not threshold inferred and
     # the normalizer is not None.
     if normalizer() is not None:
-        with pytest.raises(ThresholdNotInferredException):
+        with pytest.raises(ThresholdNotInferredError):
             knn_detector.predict(x)
     else:
         knn_detector.predict(x)

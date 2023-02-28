@@ -3,9 +3,9 @@
 from abc import ABC
 
 
-class AlibiDetectException(Exception, ABC):
+class AlibiDetectError(Exception, ABC):
     def __init__(self, message: str) -> None:
-        """Abstract base class of all alibi detect exceptions.
+        """Abstract base class of all alibi detect errors.
 
         Parameters
         ----------
@@ -15,13 +15,13 @@ class AlibiDetectException(Exception, ABC):
         super().__init__(message)
 
 
-class NotFitException(AlibiDetectException):
+class NotFittedError(AlibiDetectError):
     """Exception raised when a transform is not fitted."""
 
     pass
 
 
-class ThresholdNotInferredException(AlibiDetectException):
+class ThresholdNotInferredError(AlibiDetectError):
     """Exception raised when a threshold not inferred for an outlier detector."""
 
     pass
