@@ -42,21 +42,21 @@ def quantile(sample: tf.Tensor, p: float, type: int = 7, sorted: bool = False) -
 
     if len(sample.shape) != 1:
         raise ValueError("Quantile estimation only supports vectors of univariate samples.")
-    if not 1/N <= p <= (N-1)/N:
+    if not 1 / N <= p <= (N - 1) / N:
         raise ValueError(f"The {p}-quantile should not be estimated using only {N} samples.")
 
     sorted_sample = sample if sorted else tf.sort(sample)
 
     if type == 6:
-        h = (N+1)*p
+        h = (N + 1) * p
     elif type == 7:
-        h = (N-1)*p + 1
+        h = (N - 1) * p + 1
     elif type == 8:
-        h = (N+1/3)*p + 1/3
+        h = (N + 1 / 3) * p + 1 / 3
     h_floor = int(h)
-    quantile = sorted_sample[h_floor-1]
+    quantile = sorted_sample[h_floor - 1]
     if h_floor != h:
-        quantile += (h - h_floor)*(sorted_sample[h_floor]-sorted_sample[h_floor-1])
+        quantile += (h - h_floor) * (sorted_sample[h_floor] - sorted_sample[h_floor - 1])
 
     return float(quantile)
 

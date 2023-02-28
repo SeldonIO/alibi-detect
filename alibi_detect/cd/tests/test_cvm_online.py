@@ -9,7 +9,7 @@ ert = 50
 np.random.seed(0)
 
 window_sizes = [[10], [10, 20]]
-batch_size = [None, int(n_bootstraps/4)]
+batch_size = [None, int(n_bootstraps / 4)]
 n_features = [1, 3]
 
 
@@ -42,7 +42,7 @@ def test_cvmdriftonline(window_sizes, batch_size, n_feat, seed):
             cd.reset_state()
     art = np.array(detection_times_h0).mean() - np.min(window_sizes) + 1
     test_stats_h0 = [ts for ts in test_stats_h0 if ts is not None]
-    assert ert/3 < art < 3*ert
+    assert ert / 3 < art < 3 * ert
 
     # Drifted data
     cd.reset_state()
@@ -56,7 +56,7 @@ def test_cvmdriftonline(window_sizes, batch_size, n_feat, seed):
             cd.reset_state()
     add = np.array(detection_times_h1).mean() - np.min(window_sizes)
     test_stats_h1 = [ts for ts in test_stats_h1 if ts is not None]
-    assert add < ert/2
+    assert add < ert / 2
 
     assert np.nanmean(test_stats_h1) > np.nanmean(test_stats_h0)
 

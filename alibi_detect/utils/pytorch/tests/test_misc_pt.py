@@ -28,7 +28,7 @@ def quantile_params(request):
 def test_quantile(quantile_params):
     type, sorted = quantile_params
 
-    sample = (0.5+torch.arange(1e6))/1e6
+    sample = (0.5 + torch.arange(1e6)) / 1e6
     if not sorted:
         sample = sample[torch.randperm(len(sample))]
 

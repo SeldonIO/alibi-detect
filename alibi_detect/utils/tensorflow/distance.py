@@ -211,13 +211,13 @@ def permed_lsdds(
         # We perform the initialisation for multiple candidate lambda values and pick the largest
         # one for which the relative difference (RD) between two difference estimates is below lambda_rd_max.
         # See Appendix A
-        candidate_lambdas = [1/(4**i) for i in range(10)]  # TODO: More principled selection
-        H_plus_lams = tf.stack([H+tf.eye(H.shape[0], dtype=H.dtype)*can_lam for can_lam in candidate_lambdas], axis=0)
+        candidate_lambdas = [1 / (4**i) for i in range(10)]  # TODO: More principled selection
+        H_plus_lams = tf.stack([H + tf.eye(H.shape[0], dtype=H.dtype) * can_lam for can_lam in candidate_lambdas], axis=0)
         H_plus_lam_invs = tf.transpose(tf.linalg.inv(H_plus_lams), [1, 2, 0])  # lambdas last
         omegas = tf.einsum('jkl,bk->bjl', H_plus_lam_invs, h_perms)  # (Eqn 8)
         h_omegas = tf.einsum('bj,bjl->bl', h_perms, omegas)
         omega_H_omegas = tf.einsum('bkl,bkl->bl', tf.einsum('bjl,jk->bkl', omegas, H), omegas)
-        rds = tf.reduce_mean(1 - (omega_H_omegas/h_omegas), axis=0)
+        rds = tf.reduce_mean(1 - (omega_H_omegas / h_omegas), axis=0)
         less_than_rd_inds = tf.where(rds < lam_rd_max)
         if len(less_than_rd_inds) == 0:
             repeats = k_all_c.shape[0] - np.unique(k_all_c, axis=0).shape[0]
@@ -230,8 +230,8 @@ def permed_lsdds(
         lambda_index = int(less_than_rd_inds[0])
         lam = candidate_lambdas[lambda_index]
         logger.info(f"Using lambda value of {lam:.2g} with RD of {float(rds[lambda_index]):.2g}")
-        H_plus_lam_inv = tf.linalg.inv(H+lam*tf.eye(H.shape[0], dtype=H.dtype))
-        H_lam_inv = 2*H_plus_lam_inv - (tf.transpose(H_plus_lam_inv, [1, 0]) @ H @ H_plus_lam_inv)  # (blw Eqn 11)
+        H_plus_lam_inv = tf.linalg.inv(H + lam * tf.eye(H.shape[0], dtype=H.dtype))
+        H_lam_inv = 2 * H_plus_lam_inv - (tf.transpose(H_plus_lam_inv, [1, 0]) @ H @ H_plus_lam_inv)  # (blw Eqn 11)
 
     # Now to compute an LSDD estimate for each permutation
     lsdd_perms = tf.reduce_sum(

@@ -1255,7 +1255,7 @@ def test_int2str_keys():
 
 def generic_function(x: float, add: float = 0.0, invert: bool = True):
     if invert:
-        return 1/x + add
+        return 1 / x + add
     else:
         return x + add
 

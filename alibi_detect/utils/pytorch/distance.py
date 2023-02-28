@@ -195,9 +195,9 @@ def permed_lsdds(
         # We perform the initialisation for multiple candidate lambda values and pick the largest
         # one for which the relative difference (RD) between two difference estimates is below lambda_rd_max.
         # See Appendix A
-        candidate_lambdas = [1/(4**i) for i in range(10)]  # TODO: More principled selection
+        candidate_lambdas = [1 / (4**i) for i in range(10)]  # TODO: More principled selection
         H_plus_lams = torch.stack(
-            [H+torch.eye(H.shape[0], device=H.device)*can_lam for can_lam in candidate_lambdas], 0
+            [H + torch.eye(H.shape[0], device=H.device) * can_lam for can_lam in candidate_lambdas], 0
         )
         H_plus_lam_invs = torch.inverse(H_plus_lams)
         H_plus_lam_invs = H_plus_lam_invs.permute(1, 2, 0)  # put lambdas in final axis
@@ -205,7 +205,7 @@ def permed_lsdds(
         omegas = torch.einsum('jkl,bk->bjl', H_plus_lam_invs, h_perms)  # (Eqn 8)
         h_omegas = torch.einsum('bj,bjl->bl', h_perms, omegas)
         omega_H_omegas = torch.einsum('bkl,bkl->bl', torch.einsum('bjl,jk->bkl', omegas, H), omegas)
-        rds = (1 - (omega_H_omegas/h_omegas)).mean(0)
+        rds = (1 - (omega_H_omegas / h_omegas)).mean(0)
         less_than_rd_inds = (rds < lam_rd_max).nonzero()
         if len(less_than_rd_inds) == 0:
             repeats = k_all_c.shape[0] - torch.unique(k_all_c, dim=0).shape[0]
@@ -219,7 +219,7 @@ def permed_lsdds(
         lam = candidate_lambdas[lam_index]
         logger.info(f"Using lambda value of {lam:.2g} with RD of {float(rds[lam_index]):.2g}")
         H_plus_lam_inv = H_plus_lam_invs[:, :, lam_index.item()]
-        H_lam_inv = 2*H_plus_lam_inv - (H_plus_lam_inv.transpose(0, 1) @ H @ H_plus_lam_inv)  # (below Eqn 11)
+        H_lam_inv = 2 * H_plus_lam_inv - (H_plus_lam_inv.transpose(0, 1) @ H @ H_plus_lam_inv)  # (below Eqn 11)
 
     # Now to compute an LSDD estimate for each permutation
     lsdd_perms = (h_perms * (H_lam_inv @ h_perms.transpose(0, 1)).transpose(0, 1)).sum(-1)  # (Eqn 11)

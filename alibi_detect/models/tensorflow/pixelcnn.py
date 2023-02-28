@@ -768,7 +768,7 @@ class _PixelCNNNetwork(tf.keras.layers.Layer):
 
                     x = activation(x)
                     x = tf.keras.layers.Dropout(self._dropout_p, dtype=dtype)(x)
-                    x = Conv2D(filters=2*self._num_filters,
+                    x = Conv2D(filters=2 * self._num_filters,
                                kernel_size=kernel_sizes[stack],
                                kernel_constraint=kernel_constraints[stack])(x)
 
@@ -843,7 +843,7 @@ class _PixelCNNNetwork(tf.keras.layers.Layer):
 
                     x = activation(x)
                     x = tf.keras.layers.Dropout(self._dropout_p, dtype=dtype)(x)
-                    x = Conv2D(filters=2*self._num_filters,
+                    x = Conv2D(filters=2 * self._num_filters,
                                kernel_size=kernel_sizes[stack],
                                kernel_constraint=kernel_constraints[stack])(x)
 
@@ -953,7 +953,7 @@ def _make_kernel_constraint(kernel_size, valid_rows, valid_columns):
 def _build_and_apply_h_projection(h, num_filters, dtype):
     """Project the conditional input."""
     h = tf.keras.layers.Flatten(dtype=dtype)(h)
-    h_projection = tf.keras.layers.Dense(2*num_filters, kernel_initializer='random_normal', dtype=dtype)(h)
+    h_projection = tf.keras.layers.Dense(2 * num_filters, kernel_initializer='random_normal', dtype=dtype)(h)
     return h_projection[..., tf.newaxis, tf.newaxis, :]
 
 

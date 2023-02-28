@@ -133,7 +133,7 @@ class CVMDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
             max_stats = np.nanmax(stats, -1)
         # Now loop through each t and find threshold (at each t) that satisfies eqn. (2) in Ross et al.
         thresholds = np.full((t_max, 1), np.nan)
-        for t in range(np.min(self.window_sizes)-1, t_max):
+        for t in range(np.min(self.window_sizes) - 1, t_max):
             # Compute (1-beta) quantile of max_stats at a given t, over all streams
             threshold = quantile(max_stats[:, t], 1 - beta)
             # Remove streams for which a change point has already been detected
@@ -164,7 +164,7 @@ class CVMDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
 
         # Remove stats prior to windows being full
         for k, ws in enumerate(self.window_sizes):
-            stats[:, :ws-1, k] = np.nan
+            stats[:, :ws - 1, k] = np.nan
         return stats
 
     def _update_state(self, x_t: np.ndarray):
@@ -293,7 +293,7 @@ def _ids_to_stats(
     for b in nb.prange(n_bootstraps):
         ref_cdf_all = np.sum(ids_ref_all[b], axis=0) / n
 
-        cumsums = np.zeros((t_max+1, n_all))
+        cumsums = np.zeros((t_max + 1, n_all))
         for i in range(n_all):
             cumsums[1:, i] = np.cumsum(ids_stream_all[b, :, i])
 
@@ -303,8 +303,8 @@ def _ids_to_stats(
             cdf_diffs_on_ref = np.empty_like(win_cdf_ref)
             for j in range(win_cdf_ref.shape[0]):  # Need to loop through as can't broadcast in njit parallel
                 cdf_diffs_on_ref[j, :] = ref_cdf_all[:n] - win_cdf_ref[j, :]
-            stats[b, (ws-1):, k] = np.sum(cdf_diffs_on_ref * cdf_diffs_on_ref, axis=-1)
-            for t in range(ws-1, t_max):
+            stats[b, (ws - 1):, k] = np.sum(cdf_diffs_on_ref * cdf_diffs_on_ref, axis=-1)
+            for t in range(ws - 1, t_max):
                 win_cdf_win = (cumsums[t + 1, n + t - ws:n + t] -
                                cumsums[t + 1 - ws, n + t - ws:n + t]) / ws
                 cdf_diffs_on_win = ref_cdf_all[n + t - ws:n + t] - win_cdf_win

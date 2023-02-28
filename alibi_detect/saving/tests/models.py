@@ -260,7 +260,7 @@ def preprocess_simple(x: np.ndarray):
     """
     Simple function to test serialization of generic Python function within preprocess_fn.
     """
-    return x*2.0
+    return x * 2.0
 
 
 @fixture

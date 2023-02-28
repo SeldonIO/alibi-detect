@@ -198,7 +198,7 @@ class LearnedKernelDriftKeops(BaseLearnedKernelDrift):
             var_est = 4 * h_i.square().sum() / (n ** 3) - 4 * h.square() / (n ** 4)
             reg_var_est = var_est + self.var_reg
 
-            return mmd2_est/reg_var_est.sqrt()
+            return mmd2_est / reg_var_est.sqrt()
 
     def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, float]:
         """

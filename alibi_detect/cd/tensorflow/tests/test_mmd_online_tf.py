@@ -101,7 +101,7 @@ def test_mmd_online(mmd_online_params, seed):
             cd.reset_state()
     average_delay_h0 = np.array(detection_times_h0).mean()
     test_stats_h0 = [ts for ts in test_stats_h0 if ts is not None]
-    assert ert/3 < average_delay_h0 < 3*ert
+    assert ert / 3 < average_delay_h0 < 3 * ert
 
     cd.reset_state()
 
@@ -118,7 +118,7 @@ def test_mmd_online(mmd_online_params, seed):
     average_delay_h1 = np.array(detection_times_h1).mean()
     print(detection_times_h0, average_delay_h0)
     test_stats_h1 = [ts for ts in test_stats_h1 if ts is not None]
-    assert np.abs(average_delay_h1) < ert/2
+    assert np.abs(average_delay_h1) < ert / 2
 
     assert np.mean(test_stats_h1) > np.mean(test_stats_h0)
 

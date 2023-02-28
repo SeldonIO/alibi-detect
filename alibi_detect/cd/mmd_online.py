@@ -111,7 +111,7 @@ class MMDDriftOnline(DriftConfigMixin):
 
     @property
     def thresholds(self):
-        return [self._detector.thresholds[min(s, self._detector.window_size-1)] for s in range(self.t)]
+        return [self._detector.thresholds[min(s, self._detector.window_size - 1)] for s in range(self.t)]
 
     def reset_state(self):
         """

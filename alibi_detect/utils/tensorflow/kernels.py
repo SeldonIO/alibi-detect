@@ -170,7 +170,7 @@ class DeepKernel(tf.keras.Model):
     def call(self, x: tf.Tensor, y: tf.Tensor) -> tf.Tensor:
         similarity = self.kernel_a(self.proj(x), self.proj(y))  # type: ignore[operator]
         if self.kernel_b is not None:
-            similarity = (1-self.eps)*similarity + self.eps*self.kernel_b(x, y)  # type: ignore[operator]
+            similarity = (1 - self.eps) * similarity + self.eps * self.kernel_b(x, y)  # type: ignore[operator]
         return similarity
 
     def get_config(self) -> dict:

@@ -205,7 +205,7 @@ class DeepKernel(nn.Module):
                 y: Optional[LazyTensor] = None) -> LazyTensor:
         similarity = self.kernel_a(x_proj, y_proj)
         if self.kernel_b is not None:
-            similarity = (1-self.eps)*similarity + self.eps*self.kernel_b(x, y)
+            similarity = (1 - self.eps) * similarity + self.eps * self.kernel_b(x, y)
         return similarity
 
     def get_config(self) -> dict:

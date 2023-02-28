@@ -129,7 +129,7 @@ class ContextMMDDriftTF(BaseContextMMDDrift):
         x_ref, x = self.preprocess(x)
 
         # Hold out a portion of contexts for conditioning on
-        n, n_held = len(c), int(len(c)*self.prop_c_held)
+        n, n_held = len(c), int(len(c) * self.prop_c_held)
         inds_held = np.random.choice(n, n_held, replace=False)
         inds_test = np.setdiff1d(np.arange(n), inds_held)
         c_held = c[inds_held]
@@ -191,8 +191,8 @@ class ContextMMDDriftTF(BaseContextMMDDrift):
             self.lams = (lam_0, lam_1)
 
         # Compute stat
-        L_0_inv = tf.linalg.inv(L_0 + n_ref*self.lams[0]*tf.eye(int(n_ref)))
-        L_1_inv = tf.linalg.inv(L_1 + n_test*self.lams[1]*tf.eye(int(n_test)))
+        L_0_inv = tf.linalg.inv(L_0 + n_ref * self.lams[0] * tf.eye(int(n_ref)))
+        L_1_inv = tf.linalg.inv(L_1 + n_test * self.lams[1] * tf.eye(int(n_test)))
         A_0 = tf.gather(L_held, idx_0, axis=1) @ L_0_inv
         A_1 = tf.gather(L_held, idx_1, axis=1) @ L_1_inv
         # Allow batches of MMDs to be computed at a time (rather than all)
@@ -211,10 +211,10 @@ class ContextMMDDriftTF(BaseContextMMDDrift):
             coupling_xx = tf.reduce_mean(tf.einsum('ij,ik->ijk', A_0, A_0), axis=0)
             coupling_yy = tf.reduce_mean(tf.einsum('ij,ik->ijk', A_1, A_1), axis=0)
             coupling_xy = tf.reduce_mean(tf.einsum('ij,ik->ijk', A_0, A_1), axis=0)
-        sim_xx = tf.reduce_sum(tf.gather(tf.gather(K, idx_0), idx_0, axis=1)*coupling_xx)
-        sim_yy = tf.reduce_sum(tf.gather(tf.gather(K, idx_1), idx_1, axis=1)*coupling_yy)
-        sim_xy = tf.reduce_sum(tf.gather(tf.gather(K, idx_0), idx_1, axis=1)*coupling_xy)
-        stat = sim_xx + sim_yy - 2*sim_xy
+        sim_xx = tf.reduce_sum(tf.gather(tf.gather(K, idx_0), idx_0, axis=1) * coupling_xx)
+        sim_yy = tf.reduce_sum(tf.gather(tf.gather(K, idx_1), idx_1, axis=1) * coupling_yy)
+        sim_xy = tf.reduce_sum(tf.gather(tf.gather(K, idx_0), idx_1, axis=1) * coupling_xy)
+        stat = sim_xx + sim_yy - 2 * sim_xy
 
         return stat, coupling_xx, coupling_yy, coupling_xy
 
@@ -233,20 +233,20 @@ class ContextMMDDriftTF(BaseContextMMDDrift):
         K, L = tf.gather(tf.gather(K, perm), perm, axis=1), tf.gather(tf.gather(L, perm), perm, axis=1)
         losses = tf.zeros_like(lams, dtype=tf.float64)
         for fold in range(n_folds):
-            inds_oof = np.arange(n)[(fold*fold_size):((fold+1)*fold_size)]
+            inds_oof = np.arange(n)[(fold * fold_size):((fold + 1) * fold_size)]
             inds_if = np.setdiff1d(np.arange(n), inds_oof)
             K_if = tf.gather(tf.gather(K, inds_if), inds_if, axis=1)
             L_if = tf.gather(tf.gather(L, inds_if), inds_if, axis=1)
             n_if = len(K_if)
             L_inv_lams = tf.stack(
-                [tf.linalg.inv(L_if + n_if*lam*tf.eye(n_if, dtype=tf.float64)) for lam in lams])  # n_lam x n_if x n_if
+                [tf.linalg.inv(L_if + n_if * lam * tf.eye(n_if, dtype=tf.float64)) for lam in lams])  # n_lam x n_if x n_if
             KW = tf.einsum('ij,ljk->lik', K_if, L_inv_lams)
             lW = tf.einsum('ij,ljk->lik', tf.gather(tf.gather(L, inds_oof), inds_if, axis=1), L_inv_lams)
             lWKW = tf.einsum('lij,ljk->lik', lW, KW)
             lWKWl = tf.einsum('lkj,jk->lk', lWKW, tf.gather(tf.gather(L, inds_if), inds_oof, axis=1))  # n_lam x n_oof
             lWk = tf.einsum('lij,ji->li', lW, tf.gather(tf.gather(K, inds_if), inds_oof, axis=1))  # n_lam x n_oof
             kxx = tf.ones_like(lWk) * tf.reduce_max(K)
-            losses += tf.reduce_sum(lWKWl + kxx - 2*lWk, axis=-1)
+            losses += tf.reduce_sum(lWKWl + kxx - 2 * lWk, axis=-1)
         return tf.cast(lams[tf.argmin(losses)], tf.float32)
 
 

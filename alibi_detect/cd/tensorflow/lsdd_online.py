@@ -97,7 +97,7 @@ class LSDDDriftOnlineTF(BaseMultiDriftOnline):
             self.kernel = GaussianRBF(sigma)
 
         if self.n_kernel_centers is None:
-            self.n_kernel_centers = 2*window_size
+            self.n_kernel_centers = 2 * window_size
 
         self._configure_kernel_centers()
         self._configure_thresholds()
@@ -110,7 +110,7 @@ class LSDDDriftOnlineTF(BaseMultiDriftOnline):
         """
         x_ref_means = tf.reduce_mean(self.x_ref, axis=0)
         x_ref_stds = tf.math.reduce_std(self.x_ref, axis=0)
-        self._normalize = lambda x: (x - x_ref_means)/(x_ref_stds + eps)
+        self._normalize = lambda x: (x - x_ref_means) / (x_ref_stds + eps)
         self._unnormalize = lambda x: (x * (x_ref_stds + eps) + x_ref_means).numpy()
         self.x_ref = self._normalize(self.x_ref)
 
@@ -134,7 +134,7 @@ class LSDDDriftOnlineTF(BaseMultiDriftOnline):
         # test windows of size W (so 2W-1 test samples in total)
 
         w_size = self.window_size
-        etw_size = 2*w_size-1  # etw = extended test window
+        etw_size = 2 * w_size - 1  # etw = extended test window
         nkc_size = self.n - self.n_kernel_centers  # nkc = non-kernel-centers
         rw_size = nkc_size - etw_size  # rw = ref-window
 
@@ -144,7 +144,7 @@ class LSDDDriftOnlineTF(BaseMultiDriftOnline):
 
         # For stability in high dimensions we don't divide H by (pi*sigma^2)^(d/2)
         # Results in an alternative test-stat of LSDD*(pi*sigma^2)^(d/2). Same p-vals etc.
-        H = GaussianRBF(np.sqrt(2.)*self.kernel.sigma)(self.kernel_centers, self.kernel_centers)
+        H = GaussianRBF(np.sqrt(2.) * self.kernel.sigma)(self.kernel_centers, self.kernel_centers)
 
         # Compute lsdds for first test-window. We infer regularisation constant lambda here.
         y_inds_all_0 = [y_inds[:w_size] for y_inds in y_inds_all]
@@ -153,13 +153,13 @@ class LSDDDriftOnlineTF(BaseMultiDriftOnline):
         )
 
         # Can compute threshold for first window
-        thresholds = [quantile(lsdds_0, 1-self.fpr)]
+        thresholds = [quantile(lsdds_0, 1 - self.fpr)]
         # And now to iterate through the other W-1 overlapping windows
         p_bar = tqdm(range(1, w_size), "Computing thresholds") if self.verbose else range(1, w_size)
         for w in p_bar:
-            y_inds_all_w = [y_inds[w:(w+w_size)] for y_inds in y_inds_all]
+            y_inds_all_w = [y_inds[w:(w + w_size)] for y_inds in y_inds_all]
             lsdds_w, _ = permed_lsdds(self.k_xc, x_inds_all, y_inds_all_w, H, H_lam_inv=H_lam_inv)
-            thresholds.append(quantile(lsdds_w, 1-self.fpr))
+            thresholds.append(quantile(lsdds_w, 1 - self.fpr))
             x_inds_all = [x_inds_all[i] for i in range(len(x_inds_all)) if lsdds_w[i] < thresholds[-1]]
             y_inds_all = [y_inds_all[i] for i in range(len(y_inds_all)) if lsdds_w[i] < thresholds[-1]]
 
@@ -180,7 +180,7 @@ class LSDDDriftOnlineTF(BaseMultiDriftOnline):
         Configure the reference data split. If the randomly selected split causes an initial detection, further splits
         are attempted.
         """
-        etw_size = 2*self.window_size-1  # etw = extended test window
+        etw_size = 2 * self.window_size - 1  # etw = extended test window
         nkc_size = self.n - self.n_kernel_centers  # nkc = non-kernel-centers
         rw_size = nkc_size - etw_size  # rw = ref-window
         # Make split and ensure it doesn't cause an initial detection
@@ -206,8 +206,8 @@ class LSDDDriftOnlineTF(BaseMultiDriftOnline):
         """
         self.t += 1
         k_xtc = self.kernel(x_t, self.kernel_centers)
-        self.test_window = tf.concat([self.test_window[(1-self.window_size):], x_t], axis=0)
-        self.k_xtc = tf.concat([self.k_xtc[(1-self.window_size):], k_xtc], axis=0)
+        self.test_window = tf.concat([self.test_window[(1 - self.window_size):], x_t], axis=0)
+        self.k_xtc = tf.concat([self.k_xtc[(1 - self.window_size):], k_xtc], axis=0)
 
     def score(self, x_t: Union[np.ndarray, Any]) -> float:
         """

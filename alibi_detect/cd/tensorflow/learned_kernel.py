@@ -151,12 +151,12 @@ class LearnedKernelDriftTF(BaseLearnedKernelDrift):
             h_mat = k_xx + k_yy - k_xy - tf.transpose(k_xy)
 
             n = len(x)
-            mmd2_est = (tf.reduce_sum(h_mat)-tf.linalg.trace(h_mat))/(n*(n-1))
-            var_est = (4*tf.reduce_sum(tf.reduce_sum(h_mat, axis=-1)**2)/(n**3) -
-                       4*tf.reduce_sum(h_mat)**2/(n**4))
+            mmd2_est = (tf.reduce_sum(h_mat) - tf.linalg.trace(h_mat)) / (n * (n - 1))
+            var_est = (4 * tf.reduce_sum(tf.reduce_sum(h_mat, axis=-1)**2) / (n**3) -
+                       4 * tf.reduce_sum(h_mat)**2 / (n**4))
             reg_var_est = var_est + self.var_reg
 
-            return mmd2_est/tf.math.sqrt(reg_var_est)
+            return mmd2_est / tf.math.sqrt(reg_var_est)
 
     def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, float]:
         """

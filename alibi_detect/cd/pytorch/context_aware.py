@@ -138,7 +138,7 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
         c_ref = torch.from_numpy(self.c_ref).to(self.device)  # type: ignore[assignment]
 
         # Hold out a portion of contexts for conditioning on
-        n, n_held = len(c), int(len(c)*self.prop_c_held)
+        n, n_held = len(c), int(len(c) * self.prop_c_held)
         inds_held = np.random.choice(n, n_held, replace=False)
         inds_test = np.setdiff1d(np.arange(n), inds_held)
         c_held = torch.as_tensor(c[inds_held]).to(self.device)
@@ -200,8 +200,8 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
             self.lams = (lam_0, lam_1)
 
         # Compute stat
-        L_0_inv = torch.linalg.inv(L_0 + n_ref*self.lams[0]*torch.eye(int(n_ref)).to(L_0.device))
-        L_1_inv = torch.linalg.inv(L_1 + n_test*self.lams[1]*torch.eye(int(n_test)).to(L_1.device))
+        L_0_inv = torch.linalg.inv(L_0 + n_ref * self.lams[0] * torch.eye(int(n_ref)).to(L_0.device))
+        L_1_inv = torch.linalg.inv(L_1 + n_test * self.lams[1] * torch.eye(int(n_test)).to(L_1.device))
         A_0 = L_held[:, idx_0] @ L_0_inv
         A_1 = L_held[:, idx_1] @ L_1_inv
         # Allow batches of MMDs to be computed at a time (rather than all)
@@ -218,10 +218,10 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
             coupling_xx = torch.einsum('ij,ik->ijk', A_0, A_0).mean(0)
             coupling_yy = torch.einsum('ij,ik->ijk', A_1, A_1).mean(0)
             coupling_xy = torch.einsum('ij,ik->ijk', A_0, A_1).mean(0)
-        sim_xx = (K[idx_0][:, idx_0]*coupling_xx).sum()
-        sim_yy = (K[idx_1][:, idx_1]*coupling_yy).sum()
-        sim_xy = (K[idx_0][:, idx_1]*coupling_xy).sum()
-        stat = sim_xx + sim_yy - 2*sim_xy
+        sim_xx = (K[idx_0][:, idx_0] * coupling_xx).sum()
+        sim_yy = (K[idx_1][:, idx_1] * coupling_yy).sum()
+        sim_xy = (K[idx_0][:, idx_1] * coupling_xy).sum()
+        stat = sim_xx + sim_yy - 2 * sim_xy
 
         return stat.cpu(), coupling_xx.cpu(), coupling_yy.cpu(), coupling_xy.cpu()
 
@@ -240,19 +240,19 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
         K, L = K[perm][:, perm], L[perm][:, perm]
         losses = torch.zeros_like(lams, dtype=torch.float).to(K.device)
         for fold in range(n_folds):
-            inds_oof = list(np.arange(n)[(fold*fold_size):((fold+1)*fold_size)])
+            inds_oof = list(np.arange(n)[(fold * fold_size):((fold + 1) * fold_size)])
             inds_if = list(np.setdiff1d(np.arange(n), inds_oof))
             K_if, L_if = K[inds_if][:, inds_if], L[inds_if][:, inds_if]
             n_if = len(K_if)
             L_inv_lams = torch.stack(
-                [torch.linalg.inv(L_if + n_if*lam*torch.eye(n_if).to(L.device)) for lam in lams])  # n_lam x n_if x n_if
+                [torch.linalg.inv(L_if + n_if * lam * torch.eye(n_if).to(L.device)) for lam in lams])  # n_lam x n_if x n_if
             KW = torch.einsum('ij,ljk->lik', K_if, L_inv_lams)
             lW = torch.einsum('ij,ljk->lik', L[inds_oof][:, inds_if], L_inv_lams)
             lWKW = torch.einsum('lij,ljk->lik', lW, KW)
             lWKWl = torch.einsum('lkj,jk->lk', lWKW, L[inds_if][:, inds_oof])  # n_lam x n_oof
             lWk = torch.einsum('lij,ji->li', lW, K[inds_if][:, inds_oof])  # n_lam x n_oof
             kxx = torch.ones_like(lWk).to(lWk.device) * torch.max(K)
-            losses += (lWKWl + kxx - 2*lWk).sum(-1)
+            losses += (lWKWl + kxx - 2 * lWk).sum(-1)
         return lams[torch.argmin(losses)]
 
 

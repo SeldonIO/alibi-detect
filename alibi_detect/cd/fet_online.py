@@ -148,7 +148,7 @@ class FETDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
             print("Using %d bootstrap simulations to configure thresholds..." % self.n_bootstraps)
 
         # Assuming independent features, calibrate to beta = 1 - (1-FPR)^(1/n_features)
-        beta = 1 - (1-self.fpr)**(1/self.n_features)
+        beta = 1 - (1 - self.fpr)**(1 / self.n_features)
 
         # Init progress bar
         if self.verbose:
@@ -157,7 +157,7 @@ class FETDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
                       % (len(self.window_sizes), self.n_features)
             else:
                 msg = "Simulating streams for %d window(s)" % len(self.window_sizes)
-            pbar = tqdm(total=int(self.n_features*len(self.window_sizes)), desc=msg)
+            pbar = tqdm(total=int(self.n_features * len(self.window_sizes)), desc=msg)
         else:
             pbar = None
 
@@ -172,7 +172,7 @@ class FETDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
                 warnings.filterwarnings(action='ignore', message='All-NaN slice encountered')
                 max_stats = np.nanmax(stats, -1)
             # Find threshold (at each t) that satisfies eqn. (2) in Ross et al.
-            for t in range(np.min(self.window_sizes)-1, self.t_max):
+            for t in range(np.min(self.window_sizes) - 1, self.t_max):
                 # Compute (1-beta) quantile of max_stats at a given t, over all streams
                 threshold = np.float32(quantile(max_stats[:, t], 1 - beta, interpolate=False, type=6))
                 stats_below = max_stats[max_stats[:, t] < threshold]
@@ -215,9 +215,9 @@ class FETDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
 
             # Perform FET with hypergeom.cdf (this is vectorised over streams)
             if self.alternative == 'greater':
-                p_val = hypergeom.cdf(sum_ref, self.n+ws, sum_ref + cumsums_last_ws, self.n)
+                p_val = hypergeom.cdf(sum_ref, self.n + ws, sum_ref + cumsums_last_ws, self.n)
             else:
-                p_val = hypergeom.cdf(cumsums_last_ws, self.n+ws, sum_ref + cumsums_last_ws, ws)
+                p_val = hypergeom.cdf(cumsums_last_ws, self.n + ws, sum_ref + cumsums_last_ws, ws)
 
             stats[:, (ws - 1):, k] = self._exp_moving_avg(1 - p_val, self.lam)
         return stats
@@ -276,7 +276,7 @@ class FETDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
         # If still no drift, check if any stats equal to threshold. If so, flag drift with proba self.probs_when_equal
         equal_inds = np.where(max_stats == thresholds)[0]
         for equal_ind in equal_inds:
-            if np.random.uniform() > self.permit_probs[min(self.t-1, len(self.thresholds)-1), equal_ind]:
+            if np.random.uniform() > self.permit_probs[min(self.t - 1, len(self.thresholds) - 1), equal_ind]:
                 return 1
 
         return 0
@@ -310,9 +310,9 @@ class FETDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
 
                 # Perform FET with hypergeom.cdf (this is vectorised over features)
                 if self.alternative == 'greater':
-                    p_vals = hypergeom.cdf(self.sum_ref, self.n+ws, self.sum_ref + sum_last_ws, self.n)
+                    p_vals = hypergeom.cdf(self.sum_ref, self.n + ws, self.sum_ref + sum_last_ws, self.n)
                 else:
-                    p_vals = hypergeom.cdf(sum_last_ws, self.n+ws, self.sum_ref + sum_last_ws, ws)
+                    p_vals = hypergeom.cdf(sum_last_ws, self.n + ws, self.sum_ref + sum_last_ws, ws)
 
                 # Compute test stat and apply smoothing
                 stats_k = 1 - p_vals

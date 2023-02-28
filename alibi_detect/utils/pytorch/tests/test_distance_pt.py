@@ -134,13 +134,13 @@ def test_permed_lsdds(permed_lsdds_params):
 
     kcs = torch.randn(n_kcs, d)
     x_ref = torch.randn(n, d)
-    x_cur = 10 + 0.2*torch.randn(m, d)
+    x_cur = 10 + 0.2 * torch.randn(m, d)
     x_full = torch.cat([x_ref, x_cur], axis=0)
     sigma = torch.tensor((1.,))
     k_all_c = GaussianRBF(sigma)(x_full, kcs)
-    H = GaussianRBF(np.sqrt(2.)*sigma)(kcs, kcs)
+    H = GaussianRBF(np.sqrt(2.) * sigma)(kcs, kcs)
 
-    perms = [torch.randperm(n+m) for _ in range(B)]
+    perms = [torch.randperm(n + m) for _ in range(B)]
     x_perms = [perm[:n] for perm in perms]
     y_perms = [perm[n:] for perm in perms]
 

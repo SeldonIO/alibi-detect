@@ -306,11 +306,11 @@ class Seq2Seq(tf.keras.Model):
         while i < seq_len:
             # decode step in sequence
             decoder_output = self.decoder(decoder_input, init_state=init_state)
-            decoded_seq[:, i:i+1, :] = decoder_output[0].numpy()
+            decoded_seq[:, i:i + 1, :] = decoder_output[0].numpy()
             init_state = decoder_output[2]
 
             # update hidden state decoder used for outlier threshold
-            z[:, i:i+1, :] = decoder_output[1].numpy()
+            z[:, i:i + 1, :] = decoder_output[1].numpy()
 
             # update next decoder input
             decoder_input = np.zeros_like(decoder_input)

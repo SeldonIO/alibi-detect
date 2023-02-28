@@ -22,13 +22,13 @@ def test_fetdriftonline(alternative, n_feat, seed):
     with fixed_seed(seed):
         # squeeze to test vector input in 1D case
         x_ref = np.random.choice((0, 1), (n, n_feat), p=[1 - p_h0, p_h0]).squeeze()
-        x_h0 = partial(np.random.choice, (0, 1), size=n_feat, p=[1-p_h0, p_h0])
+        x_h0 = partial(np.random.choice, (0, 1), size=n_feat, p=[1 - p_h0, p_h0])
 
     detection_times_h0 = []
     detection_times_h1 = []
     for _ in range(n_inits):
         # Instantiate detector
-        with fixed_seed(seed+1):
+        with fixed_seed(seed + 1):
             cd = FETDriftOnline(x_ref=x_ref, ert=ert, window_sizes=window_sizes,
                                 n_bootstraps=n_bootstraps, alternative=alternative)
 
@@ -47,10 +47,10 @@ def test_fetdriftonline(alternative, n_feat, seed):
         # Drifted data
         if alternative == 'less':
             p_h1 = 0.1
-            x_h1 = partial(np.random.choice, (0, 1), size=n_feat, p=[1-p_h1, p_h1])
+            x_h1 = partial(np.random.choice, (0, 1), size=n_feat, p=[1 - p_h1, p_h1])
         else:
             p_h1 = 0.9
-            x_h1 = partial(np.random.choice, (0, 1), size=n_feat, p=[1-p_h1, p_h1])
+            x_h1 = partial(np.random.choice, (0, 1), size=n_feat, p=[1 - p_h1, p_h1])
 
         cd.reset_state()
         count = 0
@@ -66,7 +66,7 @@ def test_fetdriftonline(alternative, n_feat, seed):
     add = np.array(detection_times_h1).mean() - np.min(window_sizes)
 
     assert ert / 3 < art < 3 * ert
-    assert add + 1 < ert/2
+    assert add + 1 < ert / 2
 
 
 @pytest.mark.parametrize('n_feat', n_features)

@@ -30,7 +30,7 @@ def quantile_params(request):
 def test_quantile(quantile_params):
     type, sorted = quantile_params
 
-    sample = (0.5+tf.range(1e6))/1e6
+    sample = (0.5 + tf.range(1e6)) / 1e6
     if not sorted:
         sample = tf.random.shuffle(sample)
 

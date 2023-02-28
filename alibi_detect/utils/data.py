@@ -28,7 +28,7 @@ class Bunch(dict):
 def sample_df(df: pd.DataFrame,
               n: int):
     """ Sample n instances from the dataframe df. """
-    if n < df.shape[0]+1:
+    if n < df.shape[0] + 1:
         replace = False
     else:
         replace = True
