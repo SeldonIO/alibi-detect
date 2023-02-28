@@ -245,7 +245,8 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
             K_if, L_if = K[inds_if][:, inds_if], L[inds_if][:, inds_if]
             n_if = len(K_if)
             L_inv_lams = torch.stack(
-                [torch.linalg.inv(L_if + n_if * lam * torch.eye(n_if).to(L.device)) for lam in lams])  # n_lam x n_if x n_if
+                [torch.linalg.inv(L_if + n_if * lam * torch.eye(n_if).to(L.device))
+                 for lam in lams])  # n_lam x n_if x n_if
             KW = torch.einsum('ij,ljk->lik', K_if, L_inv_lams)
             lW = torch.einsum('ij,ljk->lik', L[inds_oof][:, inds_if], L_inv_lams)
             lWKW = torch.einsum('lij,ljk->lik', lW, KW)

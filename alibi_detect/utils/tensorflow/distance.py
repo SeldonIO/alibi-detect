@@ -212,7 +212,8 @@ def permed_lsdds(
         # one for which the relative difference (RD) between two difference estimates is below lambda_rd_max.
         # See Appendix A
         candidate_lambdas = [1 / (4**i) for i in range(10)]  # TODO: More principled selection
-        H_plus_lams = tf.stack([H + tf.eye(H.shape[0], dtype=H.dtype) * can_lam for can_lam in candidate_lambdas], axis=0)
+        H_plus_lams = tf.stack([H + tf.eye(H.shape[0], dtype=H.dtype) * can_lam
+                                for can_lam in candidate_lambdas], axis=0)
         H_plus_lam_invs = tf.transpose(tf.linalg.inv(H_plus_lams), [1, 2, 0])  # lambdas last
         omegas = tf.einsum('jkl,bk->bjl', H_plus_lam_invs, h_perms)  # (Eqn 8)
         h_omegas = tf.einsum('bj,bjl->bl', h_perms, omegas)

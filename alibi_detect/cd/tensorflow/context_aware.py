@@ -239,7 +239,8 @@ class ContextMMDDriftTF(BaseContextMMDDrift):
             L_if = tf.gather(tf.gather(L, inds_if), inds_if, axis=1)
             n_if = len(K_if)
             L_inv_lams = tf.stack(
-                [tf.linalg.inv(L_if + n_if * lam * tf.eye(n_if, dtype=tf.float64)) for lam in lams])  # n_lam x n_if x n_if
+                [tf.linalg.inv(L_if + n_if * lam * tf.eye(n_if, dtype=tf.float64))
+                 for lam in lams])  # n_lam x n_if x n_if
             KW = tf.einsum('ij,ljk->lik', K_if, L_inv_lams)
             lW = tf.einsum('ij,ljk->lik', tf.gather(tf.gather(L, inds_oof), inds_if, axis=1), L_inv_lams)
             lWKW = tf.einsum('lij,ljk->lik', lW, KW)
