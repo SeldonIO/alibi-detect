@@ -1,8 +1,11 @@
+from typing import Callable, Dict, Optional, Tuple, Union
+
 import numpy as np
-from typing import Callable, Dict, Optional, Union, Tuple
-from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, BackendValidator, Framework
-from alibi_detect.utils.warnings import deprecated_alias
+
 from alibi_detect.base import DriftConfigMixin
+from alibi_detect.utils.frameworks import (BackendValidator, Framework,
+                                           has_pytorch, has_tensorflow)
+from alibi_detect.utils.warnings import deprecated_alias
 
 if has_pytorch:
     from alibi_detect.cd.pytorch.lsdd import LSDDDriftTorch

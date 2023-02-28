@@ -1,8 +1,12 @@
-import numpy as np
-from scipy.spatial.distance import cityblock
 from itertools import product
+
+import numpy as np
 import pytest
-from alibi_detect.utils.distance import pairwise_distance, abdm, cityblock_batch, mvdm, multidim_scaling
+from scipy.spatial.distance import cityblock
+
+from alibi_detect.utils.distance import (abdm, cityblock_batch,
+                                         multidim_scaling, mvdm,
+                                         pairwise_distance)
 
 n_features = [2, 5]
 n_instances = [(100, 100), (100, 75)]

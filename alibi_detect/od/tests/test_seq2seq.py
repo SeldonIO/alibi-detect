@@ -1,6 +1,8 @@
 from itertools import product
+
 import numpy as np
 import pytest
+
 from alibi_detect.od import OutlierSeq2Seq
 from alibi_detect.utils.perturbation import inject_outlier_ts
 from alibi_detect.version import __version__

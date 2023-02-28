@@ -1,10 +1,12 @@
 from itertools import product
+
 import numpy as np
 import pytest
-from sklearn.datasets import load_iris
 import tensorflow as tf
+from sklearn.datasets import load_iris
 from tensorflow.keras.layers import Dense, InputLayer
 from tensorflow.keras.utils import to_categorical
+
 from alibi_detect.ad import AdversarialAE
 from alibi_detect.version import __version__
 

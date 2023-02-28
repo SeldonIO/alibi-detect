@@ -1,8 +1,10 @@
+from typing import Tuple, Union
+
 import numpy as np
 import pytest
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, InputLayer
-from typing import Tuple, Union
+
 from alibi_detect.utils.tensorflow import predict_batch
 
 n, n_features, n_classes, latent_dim = 100, 10, 5, 2

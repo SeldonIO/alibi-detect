@@ -1,8 +1,10 @@
+from typing import Tuple, Union
+
 import numpy as np
 import pytest
 import torch
 import torch.nn as nn
-from typing import Tuple, Union
+
 from alibi_detect.utils.pytorch import predict_batch
 
 n, n_features, n_classes, latent_dim = 100, 10, 5, 2

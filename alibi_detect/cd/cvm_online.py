@@ -1,11 +1,13 @@
-import numpy as np
+import warnings
 from typing import Any, Callable, List, Optional, Union
+
+import numba as nb
+import numpy as np
+from tqdm import tqdm
+
 from alibi_detect.base import DriftConfigMixin
 from alibi_detect.cd.base_online import BaseUniDriftOnline
 from alibi_detect.utils.misc import quantile
-import numba as nb
-from tqdm import tqdm
-import warnings
 
 
 class CVMDriftOnline(BaseUniDriftOnline, DriftConfigMixin):

@@ -1,12 +1,15 @@
 from functools import partial
 from itertools import product
+from typing import Callable, List
+
 import numpy as np
 import pytest
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, Input, InputLayer
-from typing import Callable, List
+
 from alibi_detect.cd.tensorflow.mmd_online import MMDDriftOnlineTF
-from alibi_detect.cd.tensorflow.preprocess import HiddenOutput, UAE, preprocess_drift
+from alibi_detect.cd.tensorflow.preprocess import (UAE, HiddenOutput,
+                                                   preprocess_drift)
 from alibi_detect.utils._random import fixed_seed
 
 n, n_hidden, n_classes = 400, 10, 5

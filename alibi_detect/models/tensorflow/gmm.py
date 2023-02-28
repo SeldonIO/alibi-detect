@@ -1,6 +1,7 @@
+from typing import Tuple
+
 import numpy as np
 import tensorflow as tf
-from typing import Tuple
 
 
 def gmm_params(z: tf.Tensor, gamma: tf.Tensor) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:

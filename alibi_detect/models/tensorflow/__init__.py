@@ -1,6 +1,5 @@
 from alibi_detect.utils.missing_optional_dependency import import_optional
 
-
 AE, AEGMM, VAE, VAEGMM, Seq2Seq, eucl_cosim_features = import_optional(
     "alibi_detect.models.tensorflow.autoencoder",
     names=["AE", "AEGMM", "VAE", "VAEGMM", "Seq2Seq", "eucl_cosim_features"],

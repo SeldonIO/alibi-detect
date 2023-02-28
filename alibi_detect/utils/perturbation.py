@@ -5,14 +5,15 @@ from typing import List, Tuple
 import cv2
 import numpy as np
 import skimage as sk
-from alibi_detect.utils.data import Bunch
-from alibi_detect.utils.discretizer import Discretizer
-from alibi_detect.utils.distance import abdm, multidim_scaling
-from alibi_detect.utils.mapping import ohe2ord
 from PIL import Image
 from scipy.ndimage import zoom
 from scipy.ndimage.interpolation import map_coordinates
 from skimage.filters import gaussian
+
+from alibi_detect.utils.data import Bunch
+from alibi_detect.utils.discretizer import Discretizer
+from alibi_detect.utils.distance import abdm, multidim_scaling
+from alibi_detect.utils.mapping import ohe2ord
 
 
 def apply_mask(

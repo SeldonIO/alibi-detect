@@ -1,14 +1,16 @@
 import logging
 from abc import abstractmethod
-from typing import Callable, Dict, List, Optional, Tuple, Union, Any
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
-from alibi_detect.base import BaseDetector, concept_drift_dict, DriftConfigMixin
+from scipy.stats import binom_test, ks_2samp
+from sklearn.model_selection import StratifiedKFold
+
+from alibi_detect.base import (BaseDetector, DriftConfigMixin,
+                               concept_drift_dict)
 from alibi_detect.cd.utils import get_input_shape, update_reference
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
 from alibi_detect.utils.statstest import fdr
-from scipy.stats import binom_test, ks_2samp
-from sklearn.model_selection import StratifiedKFold
 
 if has_pytorch:
     import torch

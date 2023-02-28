@@ -6,9 +6,9 @@ functionality independent of the missing dependency.
 """
 
 
-from typing import Union, List, Optional, Any
-from string import Template
 from importlib import import_module
+from string import Template
+from typing import Any, List, Optional, Union
 
 err_msg_template = Template(
     (

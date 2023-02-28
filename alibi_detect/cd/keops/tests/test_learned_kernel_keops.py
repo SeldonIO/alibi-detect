@@ -1,17 +1,20 @@
 from itertools import product
+from typing import Callable, Optional, Union
+
 import numpy as np
 import pytest
 import torch
 import torch.nn as nn
-from typing import Callable, Optional, Union
+
 from alibi_detect.utils.frameworks import has_keops
 from alibi_detect.utils.pytorch import GaussianRBF as GaussianRBFTorch
 from alibi_detect.utils.pytorch import mmd2_from_kernel_matrix
 
 if has_keops:
+    from pykeops.torch import LazyTensor
+
     from alibi_detect.cd.keops.learned_kernel import LearnedKernelDriftKeops
     from alibi_detect.utils.keops import GaussianRBF
-    from pykeops.torch import LazyTensor
 
 n = 50  # number of instances used for the reference and test data samples in the tests
 

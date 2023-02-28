@@ -1,6 +1,8 @@
 from itertools import product
+
 import numpy as np
 import pytest
+
 from alibi_detect.cd.utils import update_reference
 
 n = [3, 50]

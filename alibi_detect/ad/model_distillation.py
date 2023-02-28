@@ -3,11 +3,13 @@ from typing import Callable, Dict, Tuple, Union, cast
 
 import numpy as np
 import tensorflow as tf
-from alibi_detect.base import BaseDetector, FitMixin, ThresholdMixin, adversarial_prediction_dict
+from tensorflow.keras.losses import categorical_crossentropy, kld
+
+from alibi_detect.base import (BaseDetector, FitMixin, ThresholdMixin,
+                               adversarial_prediction_dict)
 from alibi_detect.models.tensorflow.losses import loss_distillation
 from alibi_detect.models.tensorflow.trainer import trainer
 from alibi_detect.utils.tensorflow.prediction import predict_batch
-from tensorflow.keras.losses import categorical_crossentropy, kld
 
 logger = logging.getLogger(__name__)
 

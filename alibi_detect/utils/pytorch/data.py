@@ -1,6 +1,7 @@
+from typing import Tuple, Union
+
 import numpy as np
 import torch
-from typing import Tuple, Union
 
 Indexable = Union[np.ndarray, torch.Tensor, list]
 

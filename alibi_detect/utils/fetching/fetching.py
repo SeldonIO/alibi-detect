@@ -2,13 +2,12 @@ import logging
 import os
 from io import BytesIO
 from pathlib import Path
-from typing import Union, TYPE_CHECKING, Tuple
+from typing import TYPE_CHECKING, Tuple, Union
+
 import dill
-
 import requests
-from requests import RequestException
-
 import tensorflow as tf
+from requests import RequestException
 from tensorflow.python.keras import backend
 
 from alibi_detect.models.tensorflow import PixelCNN

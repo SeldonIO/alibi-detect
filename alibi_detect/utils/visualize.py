@@ -1,8 +1,9 @@
+from typing import Dict, Union
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from sklearn.metrics import roc_curve, auc
-from typing import Dict, Union
+from sklearn.metrics import auc, roc_curve
 
 
 def plot_instance_score(

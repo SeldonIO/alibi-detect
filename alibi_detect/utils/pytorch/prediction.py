@@ -4,8 +4,9 @@ from typing import Callable, Optional, Type, Union
 import numpy as np
 import torch
 import torch.nn as nn
-from alibi_detect.utils.pytorch.misc import get_device
+
 from alibi_detect.utils.prediction import tokenize_transformer
+from alibi_detect.utils.pytorch.misc import get_device
 
 
 def predict_batch(

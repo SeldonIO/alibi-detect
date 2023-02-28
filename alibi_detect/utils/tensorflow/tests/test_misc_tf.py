@@ -1,9 +1,11 @@
 from itertools import product
+
+import numpy as np
 import pytest
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, Input, InputLayer
-import numpy as np
-from alibi_detect.utils.tensorflow import zero_diag, quantile, subset_matrix
+
+from alibi_detect.utils.tensorflow import quantile, subset_matrix, zero_diag
 from alibi_detect.utils.tensorflow.misc import clone_model
 
 

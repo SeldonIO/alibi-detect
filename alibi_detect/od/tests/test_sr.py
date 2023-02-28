@@ -1,5 +1,6 @@
-import pytest
 import numpy as np
+import pytest
+
 from alibi_detect.od import SpectralResidual
 from alibi_detect.version import __version__
 

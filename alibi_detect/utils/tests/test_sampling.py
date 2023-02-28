@@ -1,6 +1,8 @@
 from itertools import product
+
 import numpy as np
 import pytest
+
 from alibi_detect.utils.sampling import reservoir_sampling
 
 n_X_ref = [5, 10, 100]

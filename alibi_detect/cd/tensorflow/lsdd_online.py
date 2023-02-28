@@ -1,10 +1,12 @@
-from tqdm import tqdm
+from typing import Any, Callable, Optional, Union
+
 import numpy as np
 import tensorflow as tf
-from typing import Any, Callable, Optional, Union
+from tqdm import tqdm
+
 from alibi_detect.cd.base_online import BaseMultiDriftOnline
-from alibi_detect.utils.tensorflow import GaussianRBF, quantile, permed_lsdds
 from alibi_detect.utils.frameworks import Framework
+from alibi_detect.utils.tensorflow import GaussianRBF, permed_lsdds, quantile
 
 
 class LSDDDriftOnlineTF(BaseMultiDriftOnline):

@@ -1,9 +1,11 @@
 from functools import partial
 from itertools import product
+
 import numpy as np
 import pytest
 import tensorflow as tf
 from tensorflow.keras.losses import categorical_crossentropy
+
 from alibi_detect.models.tensorflow.trainer import trainer
 from alibi_detect.utils.tensorflow.data import TFDataset
 

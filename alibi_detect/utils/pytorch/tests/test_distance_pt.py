@@ -1,9 +1,13 @@
-import numpy as np
 from itertools import product
+
+import numpy as np
 import pytest
 import torch
-from alibi_detect.utils.pytorch import GaussianRBF, mmd2, mmd2_from_kernel_matrix, permed_lsdds
-from alibi_detect.utils.pytorch import squared_pairwise_distance, batch_compute_kernel_matrix
+
+from alibi_detect.utils.pytorch import (GaussianRBF,
+                                        batch_compute_kernel_matrix, mmd2,
+                                        mmd2_from_kernel_matrix, permed_lsdds,
+                                        squared_pairwise_distance)
 
 n_features = [2, 5]
 n_instances = [(100, 100), (100, 75)]

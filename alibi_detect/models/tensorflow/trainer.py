@@ -1,7 +1,8 @@
 from functools import partial
+from typing import Callable, Tuple
+
 import numpy as np
 import tensorflow as tf
-from typing import Callable, Tuple
 
 
 def trainer(

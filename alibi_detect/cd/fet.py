@@ -1,7 +1,9 @@
+from typing import Callable, Dict, Optional, Tuple, Union
+
 import numpy as np
-from typing import Callable, Dict, Tuple, Optional, Union
-from alibi_detect.cd.base import BaseUnivariateDrift
 from scipy.stats import fisher_exact
+
+from alibi_detect.cd.base import BaseUnivariateDrift
 
 
 class FETDrift(BaseUnivariateDrift):

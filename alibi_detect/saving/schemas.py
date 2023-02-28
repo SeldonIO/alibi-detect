@@ -14,23 +14,22 @@ The `resolved` kwarg of :func:`~alibi_detect.utils.validate.validate_config` det
     For detector pydantic models, the fields match the corresponding detector's args/kwargs. Refer to the
     detector's api docs for a full description of each arg/kwarg.
 """
-from typing import Callable, Dict, List, Optional, Type, Union, Any
+from typing import Any, Callable, Dict, List, Optional, Type, Union
 
 import numpy as np
 from pydantic import BaseModel, validator
 
+from alibi_detect.saving.validators import (NDArray, coerce_2_tensor,
+                                            coerce_int2list,
+                                            validate_framework)
+from alibi_detect.utils._types import (Literal, supported_models_all,
+                                       supported_models_sklearn,
+                                       supported_models_tf,
+                                       supported_models_torch,
+                                       supported_optimizers_all,
+                                       supported_optimizers_tf,
+                                       supported_optimizers_torch)
 from alibi_detect.utils.frameworks import Framework
-from alibi_detect.utils._types import (
-    Literal,
-    supported_models_all,
-    supported_models_tf,
-    supported_models_sklearn,
-    supported_models_torch,
-    supported_optimizers_tf,
-    supported_optimizers_torch,
-    supported_optimizers_all,
-)
-from alibi_detect.saving.validators import NDArray, validate_framework, coerce_int2list, coerce_2_tensor
 
 
 class SupportedModel:

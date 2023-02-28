@@ -1,6 +1,7 @@
+from typing import Tuple, Union
+
 import numpy as np
 import pandas as pd
-from typing import Tuple, Union
 
 
 class Bunch(dict):

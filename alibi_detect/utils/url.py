@@ -1,5 +1,5 @@
-from typing import Union, List
-from urllib.parse import urljoin, quote_plus
+from typing import List, Union
+from urllib.parse import quote_plus, urljoin
 
 
 def _join_url(base: str, parts: Union[str, List[str]]) -> str:

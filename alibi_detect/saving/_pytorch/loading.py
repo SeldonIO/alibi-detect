@@ -2,7 +2,7 @@ import logging
 import os
 from importlib import import_module
 from pathlib import Path
-from typing import Callable, Optional, Union, Type
+from typing import Callable, Optional, Type, Union
 
 import dill
 import torch

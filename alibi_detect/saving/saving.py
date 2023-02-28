@@ -4,25 +4,27 @@ import shutil
 import warnings
 from functools import partial
 from pathlib import Path
-from typing import Callable, Optional, Tuple, Union, Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Callable, Optional, Tuple, Union
+
 import dill
 import numpy as np
 import toml
 from transformers import PreTrainedTokenizerBase
 
-from alibi_detect.saving._typing import VALID_DETECTORS
-from alibi_detect.saving.loading import _replace, validate_config, STATE_PATH
-from alibi_detect.saving.registry import registry
-from alibi_detect.utils._types import (
-    supported_models_all,
-    supported_models_tf,
-    supported_models_torch,
-    supported_models_sklearn,
-)
-from alibi_detect.base import Detector, ConfigurableDetector, StatefulDetectorOnline
-from alibi_detect.saving._tensorflow import save_detector_legacy, save_model_config_tf, save_optimizer_config_tf
+from alibi_detect.base import (ConfigurableDetector, Detector,
+                               StatefulDetectorOnline)
 from alibi_detect.saving._pytorch import save_model_config_pt
 from alibi_detect.saving._sklearn import save_model_config_sk
+from alibi_detect.saving._tensorflow import (save_detector_legacy,
+                                             save_model_config_tf,
+                                             save_optimizer_config_tf)
+from alibi_detect.saving._typing import VALID_DETECTORS
+from alibi_detect.saving.loading import STATE_PATH, _replace, validate_config
+from alibi_detect.saving.registry import registry
+from alibi_detect.utils._types import (supported_models_all,
+                                       supported_models_sklearn,
+                                       supported_models_tf,
+                                       supported_models_torch)
 
 if TYPE_CHECKING:
     import tensorflow as tf

@@ -1,9 +1,11 @@
 from itertools import product
+from typing import Union
+
 import numpy as np
 import pytest
 import tensorflow as tf
 from tensorflow.keras.layers import Dense
-from typing import Union
+
 from alibi_detect.cd.tensorflow.spot_the_diff import SpotTheDiffDriftTF
 
 n = 100

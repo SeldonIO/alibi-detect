@@ -1,10 +1,13 @@
 from itertools import product
+
 import numpy as np
 import pytest
-import torch.nn as nn
 import torch
+import torch.nn as nn
 from sklearn.linear_model import LogisticRegression
-from alibi_detect.cd.preprocess import classifier_uncertainty, regressor_uncertainty
+
+from alibi_detect.cd.preprocess import (classifier_uncertainty,
+                                        regressor_uncertainty)
 
 n, n_features = 100, 10
 shape = (n_features,)

@@ -1,8 +1,10 @@
 import datetime
 from itertools import product
+
 import numpy as np
 import pandas as pd
 import pytest
+
 from alibi_detect.od import OutlierProphet
 from alibi_detect.version import __version__
 

@@ -1,9 +1,12 @@
+from typing import Callable, Optional, Union
+
 import numpy as np
 import torch
 from torch import nn
-from . import distance
-from typing import Optional, Union, Callable
+
 from alibi_detect.utils.frameworks import Framework
+
+from . import distance
 
 
 def sigma_median(x: torch.Tensor, y: torch.Tensor, dist: torch.Tensor) -> torch.Tensor:

@@ -3,7 +3,9 @@ from typing import Callable, Dict, Optional, Type, Union
 import numpy as np
 import torch
 import torch.nn as nn
-from alibi_detect.utils.pytorch.prediction import predict_batch, predict_batch_transformer
+
+from alibi_detect.utils.pytorch.prediction import (predict_batch,
+                                                   predict_batch_transformer)
 
 
 class _Encoder(nn.Module):

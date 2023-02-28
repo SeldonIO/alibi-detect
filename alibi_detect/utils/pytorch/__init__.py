@@ -1,6 +1,5 @@
 from alibi_detect.utils.missing_optional_dependency import import_optional
 
-
 TorchDataset = import_optional("alibi_detect.utils.pytorch.data", names=["TorchDataset"])
 
 mmd2, mmd2_from_kernel_matrix, squared_pairwise_distance, permed_lsdds, batch_compute_kernel_matrix = import_optional(

@@ -1,14 +1,16 @@
 import logging
+from typing import Callable, Dict, List, Optional, Tuple, Union
+
 import numpy as np
 import tensorflow as tf
 import tensorflow_probability as tfp
-from typing import Callable, Dict, Optional, Tuple, Union, List
+from tqdm import tqdm
+
+from alibi_detect.cd._domain_clf import _SVCDomainClf
 from alibi_detect.cd.base import BaseContextMMDDrift
+from alibi_detect.utils.frameworks import Framework
 from alibi_detect.utils.tensorflow.kernels import GaussianRBF
 from alibi_detect.utils.warnings import deprecated_alias
-from alibi_detect.utils.frameworks import Framework
-from alibi_detect.cd._domain_clf import _SVCDomainClf
-from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
 

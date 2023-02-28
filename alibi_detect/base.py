@@ -1,12 +1,13 @@
-from abc import ABC, abstractmethod
-import os
 import copy
 import json
-import numpy as np
-from typing import Dict, Any, Optional, Union
-from typing_extensions import Protocol, runtime_checkable
-from alibi_detect.version import __version__
+import os
+from abc import ABC, abstractmethod
+from typing import Any, Dict, Optional, Union
 
+import numpy as np
+from typing_extensions import Protocol, runtime_checkable
+
+from alibi_detect.version import __version__
 
 DEFAULT_META: Dict = {
     "name": None,

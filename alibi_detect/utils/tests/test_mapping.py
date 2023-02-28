@@ -1,4 +1,5 @@
 import numpy as np
+
 import alibi_detect.utils.mapping as mp
 
 X_ohe = np.array([[0, 1, 0.1, 1, 0, 0.2]]).astype(np.float32)

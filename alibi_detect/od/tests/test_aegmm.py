@@ -1,8 +1,10 @@
 from itertools import product
+
 import numpy as np
 import pytest
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, InputLayer
+
 from alibi_detect.od import OutlierAEGMM
 from alibi_detect.version import __version__
 

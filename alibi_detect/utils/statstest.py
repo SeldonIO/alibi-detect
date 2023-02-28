@@ -1,5 +1,6 @@
-import numpy as np
 from typing import Callable, Tuple, Union
+
+import numpy as np
 
 
 def permutation_test(

@@ -1,13 +1,17 @@
 import logging
-import numpy as np
-from typing import Callable, Dict, Optional, Union
 from functools import partial
-from alibi_detect.cd.ks import KSDrift
-from alibi_detect.cd.chisquare import ChiSquareDrift
-from alibi_detect.cd.preprocess import classifier_uncertainty, regressor_uncertainty
-from alibi_detect.cd.utils import encompass_batching, encompass_shuffling_and_batch_filling
-from alibi_detect.utils.frameworks import BackendValidator, Framework
+from typing import Callable, Dict, Optional, Union
+
+import numpy as np
+
 from alibi_detect.base import DriftConfigMixin
+from alibi_detect.cd.chisquare import ChiSquareDrift
+from alibi_detect.cd.ks import KSDrift
+from alibi_detect.cd.preprocess import (classifier_uncertainty,
+                                        regressor_uncertainty)
+from alibi_detect.cd.utils import (encompass_batching,
+                                   encompass_shuffling_and_batch_filling)
+from alibi_detect.utils.frameworks import BackendValidator, Framework
 
 logger = logging.getLogger(__name__)
 
@@ -257,7 +261,8 @@ class RegressorUncertaintyDrift(DriftConfigMixin):
         else:
             if uncertainty_type == "mc_dropout":
                 if backend == Framework.PYTORCH:
-                    from alibi_detect.cd.pytorch.utils import activate_train_mode_for_dropout_layers
+                    from alibi_detect.cd.pytorch.utils import \
+                        activate_train_mode_for_dropout_layers
 
                     model = activate_train_mode_for_dropout_layers(model)
                 elif backend == Framework.TENSORFLOW:
@@ -265,7 +270,8 @@ class RegressorUncertaintyDrift(DriftConfigMixin):
                         "MC dropout being applied to tensorflow model. May not be suitable if model contains"
                         "non-dropout layers with different train and inference time behaviour"
                     )
-                    from alibi_detect.cd.tensorflow.utils import activate_train_mode_for_all_layers
+                    from alibi_detect.cd.tensorflow.utils import \
+                        activate_train_mode_for_all_layers
 
                     model = activate_train_mode_for_all_layers(model)
 

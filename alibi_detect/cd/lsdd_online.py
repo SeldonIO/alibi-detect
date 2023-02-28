@@ -1,8 +1,11 @@
 import os
-import numpy as np
 from typing import Any, Callable, Dict, Optional, Union
-from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, BackendValidator, Framework
+
+import numpy as np
+
 from alibi_detect.base import DriftConfigMixin
+from alibi_detect.utils.frameworks import (BackendValidator, Framework,
+                                           has_pytorch, has_tensorflow)
 
 if has_pytorch:
     from alibi_detect.cd.pytorch.lsdd_online import LSDDDriftOnlineTorch

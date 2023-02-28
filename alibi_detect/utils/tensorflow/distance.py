@@ -1,7 +1,8 @@
 import logging
+from typing import Callable, List, Optional, Tuple, Union
+
 import numpy as np
 import tensorflow as tf
-from typing import Callable, Tuple, List, Optional, Union
 
 logger = logging.getLogger(__name__)
 

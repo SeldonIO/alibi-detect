@@ -1,8 +1,10 @@
 from functools import reduce
 from itertools import product
 from operator import mul
+
 import numpy as np
 import pytest
+
 from alibi_detect.utils.data import Bunch
 from alibi_detect.utils.perturbation import apply_mask, inject_outlier_ts
 from alibi_detect.utils.tensorflow.perturbation import mutate_categorical

@@ -1,6 +1,7 @@
-from .missing_optional_dependency import ERROR_TYPES
-from typing import Optional, List, Dict, Iterable
 from enum import Enum
+from typing import Dict, Iterable, List, Optional
+
+from .missing_optional_dependency import ERROR_TYPES
 
 
 class Framework(str, Enum):

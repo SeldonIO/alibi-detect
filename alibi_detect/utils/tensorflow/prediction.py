@@ -3,6 +3,7 @@ from typing import Callable, Type, Union
 
 import numpy as np
 import tensorflow as tf
+
 from alibi_detect.utils.prediction import tokenize_transformer
 
 

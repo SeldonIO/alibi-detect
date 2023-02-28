@@ -3,37 +3,33 @@ import os
 from functools import partial
 from importlib import import_module
 from pathlib import Path
-from typing import Any, Callable, Optional, Union, Type, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Callable, Optional, Type, Union
 
 import dill
 import numpy as np
 import toml
 from transformers import AutoTokenizer
 
-from alibi_detect.saving.registry import registry
-from alibi_detect.saving._tensorflow import (
-    load_detector_legacy,
-    load_embedding_tf,
-    load_kernel_config_tf,
-    load_model_tf,
-    load_optimizer_tf,
-    prep_model_and_emb_tf,
-    get_tf_dtype,
-)
-from alibi_detect.saving._pytorch import (
-    load_embedding_pt,
-    load_kernel_config_pt,
-    load_model_pt,
-    load_optimizer_pt,
-    prep_model_and_emb_pt,
-    get_pt_dtype,
-)
+from alibi_detect.base import (ConfigurableDetector, Detector,
+                               StatefulDetectorOnline)
 from alibi_detect.saving._keops import load_kernel_config_ke
+from alibi_detect.saving._pytorch import (get_pt_dtype, load_embedding_pt,
+                                          load_kernel_config_pt, load_model_pt,
+                                          load_optimizer_pt,
+                                          prep_model_and_emb_pt)
 from alibi_detect.saving._sklearn import load_model_sk
+from alibi_detect.saving._tensorflow import (get_tf_dtype,
+                                             load_detector_legacy,
+                                             load_embedding_tf,
+                                             load_kernel_config_tf,
+                                             load_model_tf, load_optimizer_tf,
+                                             prep_model_and_emb_tf)
+from alibi_detect.saving.registry import registry
+from alibi_detect.saving.schemas import (supported_models_tf,
+                                         supported_models_torch)
 from alibi_detect.saving.validate import validate_config
-from alibi_detect.base import Detector, ConfigurableDetector, StatefulDetectorOnline
-from alibi_detect.utils.frameworks import has_tensorflow, has_pytorch, Framework
-from alibi_detect.saving.schemas import supported_models_tf, supported_models_torch
+from alibi_detect.utils.frameworks import (Framework, has_pytorch,
+                                           has_tensorflow)
 from alibi_detect.utils.missing_optional_dependency import import_optional
 
 get_device = import_optional("alibi_detect.utils.pytorch.misc", names=["get_device"])

@@ -1,9 +1,10 @@
 import numpy as np
 import pytest
 import tensorflow as tf
-from tensorflow.keras.layers import Dense
 import torch
 import torch.nn as nn
+from tensorflow.keras.layers import Dense
+
 from alibi_detect.cd import SpotTheDiffDrift
 from alibi_detect.cd.pytorch.spot_the_diff import SpotTheDiffDriftTorch
 from alibi_detect.cd.tensorflow.spot_the_diff import SpotTheDiffDriftTF

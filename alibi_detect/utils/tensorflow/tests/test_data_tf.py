@@ -1,6 +1,8 @@
 from itertools import product
+
 import numpy as np
 import pytest
+
 from alibi_detect.utils.tensorflow.data import TFDataset
 
 # test on numpy array and list

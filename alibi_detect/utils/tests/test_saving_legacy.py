@@ -3,32 +3,26 @@
 As legacy save/load functionality becomes deprecated, these tests will be removed, and more tests
 will be added to test_saving.py.
 """
-from alibi_detect.utils.missing_optional_dependency import MissingDependency
 from functools import partial
+from tempfile import TemporaryDirectory
+from typing import Callable
+
 import numpy as np
 import pytest
-from sklearn.model_selection import StratifiedKFold
-from tempfile import TemporaryDirectory
 import tensorflow as tf
+from sklearn.model_selection import StratifiedKFold
 from tensorflow.keras.layers import Dense, InputLayer
-from typing import Callable
+
 from alibi_detect.ad import AdversarialAE, ModelDistillation
-from alibi_detect.cd import ChiSquareDrift, ClassifierDrift, KSDrift, MMDDrift, TabularDrift
+from alibi_detect.cd import (ChiSquareDrift, ClassifierDrift, KSDrift,
+                             MMDDrift, TabularDrift)
 from alibi_detect.cd.tensorflow import UAE, preprocess_drift
 from alibi_detect.models.tensorflow.autoencoder import DecoderLSTM, EncoderLSTM
-from alibi_detect.od import (
-    IForest,
-    LLR,
-    Mahalanobis,
-    OutlierAEGMM,
-    OutlierVAE,
-    OutlierVAEGMM,
-    OutlierProphet,
-    SpectralResidual,
-    OutlierSeq2Seq,
-    OutlierAE,
-)
-from alibi_detect.saving import save_detector, load_detector
+from alibi_detect.od import (LLR, IForest, Mahalanobis, OutlierAE,
+                             OutlierAEGMM, OutlierProphet, OutlierSeq2Seq,
+                             OutlierVAE, OutlierVAEGMM, SpectralResidual)
+from alibi_detect.saving import load_detector, save_detector
+from alibi_detect.utils.missing_optional_dependency import MissingDependency
 
 input_dim = 4
 latent_dim = 2

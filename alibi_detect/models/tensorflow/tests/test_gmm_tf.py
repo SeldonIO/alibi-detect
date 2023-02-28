@@ -1,4 +1,5 @@
 import numpy as np
+
 from alibi_detect.models.tensorflow.gmm import gmm_energy, gmm_params
 
 N, K, D = 10, 5, 1

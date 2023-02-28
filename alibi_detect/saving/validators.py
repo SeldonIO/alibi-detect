@@ -1,10 +1,12 @@
 import sys
-from typing import Any, Generic, Optional, Type, TypeVar, Union, List
+from typing import Any, Generic, List, Optional, Type, TypeVar, Union
+
 import numpy as np
 from numpy.lib import NumpyVersion
 from pydantic.fields import ModelField
 
-from alibi_detect.utils.frameworks import has_tensorflow, has_pytorch, has_keops, Framework
+from alibi_detect.utils.frameworks import (Framework, has_keops, has_pytorch,
+                                           has_tensorflow)
 
 if has_tensorflow:
     import tensorflow as tf

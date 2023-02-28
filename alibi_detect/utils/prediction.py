@@ -1,5 +1,6 @@
-import numpy as np
 from typing import Callable, Union
+
+import numpy as np
 
 
 def tokenize_transformer(x: Union[list, np.ndarray], tokenizer: Callable, max_len: int, backend: str) -> dict:

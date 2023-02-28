@@ -1,6 +1,7 @@
 import pytest
+
+from alibi_detect.utils.frameworks import HAS_BACKEND, BackendValidator
 from alibi_detect.utils.missing_optional_dependency import ERROR_TYPES
-from alibi_detect.utils.frameworks import BackendValidator, HAS_BACKEND
 
 
 class TestBackendValidator:

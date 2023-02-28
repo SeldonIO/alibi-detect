@@ -1,17 +1,20 @@
 from copy import deepcopy
 from functools import partial
-from tqdm import tqdm
+from typing import Callable, Dict, Optional, Tuple, Union
+
 import numpy as np
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
-from typing import Callable, Dict, Optional, Union, Tuple
+from tqdm import tqdm
+
 from alibi_detect.cd.base import BaseLearnedKernelDrift
-from alibi_detect.utils.pytorch import get_device
-from alibi_detect.utils.pytorch.distance import mmd2_from_kernel_matrix, batch_compute_kernel_matrix
-from alibi_detect.utils.pytorch.data import TorchDataset
-from alibi_detect.utils.warnings import deprecated_alias
 from alibi_detect.utils.frameworks import Framework
+from alibi_detect.utils.pytorch import get_device
+from alibi_detect.utils.pytorch.data import TorchDataset
+from alibi_detect.utils.pytorch.distance import (batch_compute_kernel_matrix,
+                                                 mmd2_from_kernel_matrix)
+from alibi_detect.utils.warnings import deprecated_alias
 
 
 class LearnedKernelDriftTorch(BaseLearnedKernelDrift):

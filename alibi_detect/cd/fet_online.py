@@ -1,12 +1,14 @@
-from tqdm import tqdm
-import numpy as np
+import warnings
 from typing import Any, Callable, List, Optional, Union
+
+import numba as nb
+import numpy as np
+from scipy.stats import hypergeom
+from tqdm import tqdm
+
 from alibi_detect.base import DriftConfigMixin
 from alibi_detect.cd.base_online import BaseUniDriftOnline
 from alibi_detect.utils.misc import quantile
-from scipy.stats import hypergeom
-import numba as nb
-import warnings
 
 
 class FETDriftOnline(BaseUniDriftOnline, DriftConfigMixin):

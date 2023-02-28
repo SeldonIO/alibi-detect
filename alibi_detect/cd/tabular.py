@@ -1,9 +1,11 @@
+import warnings
+from typing import Callable, Dict, List, Optional, Tuple, Union
+
 import numpy as np
 from scipy.stats import chi2_contingency, ks_2samp
-from typing import Callable, Dict, List, Optional, Tuple, Union
+
 from alibi_detect.cd.base import BaseUnivariateDrift
 from alibi_detect.utils.warnings import deprecated_alias
-import warnings
 
 
 class TabularDrift(BaseUnivariateDrift):

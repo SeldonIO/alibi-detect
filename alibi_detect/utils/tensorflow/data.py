@@ -1,6 +1,7 @@
+from typing import Tuple, Union
+
 import numpy as np
 import tensorflow as tf
-from typing import Tuple, Union
 
 Indexable = Union[np.ndarray, tf.Tensor, list]
 

@@ -36,21 +36,34 @@ Instead of using a decorator, objects can also be registered by directly using t
 
 import catalogue
 
-from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, has_keops
+from alibi_detect.utils.frameworks import (has_keops, has_pytorch,
+                                           has_tensorflow)
 
 if has_tensorflow:
-    from alibi_detect.cd.tensorflow import preprocess_drift as preprocess_drift_tf
+    from alibi_detect.cd.tensorflow import \
+        preprocess_drift as preprocess_drift_tf
+    from alibi_detect.cd.tensorflow.context_aware import \
+        _sigma_median_diag as _sigma_median_diag_tf
     from alibi_detect.utils.tensorflow.data import TFDataset as TFDataset_tf
-    from alibi_detect.utils.tensorflow.kernels import GaussianRBF as GaussianRBF_tf, sigma_median as sigma_median_tf
-    from alibi_detect.cd.tensorflow.context_aware import _sigma_median_diag as _sigma_median_diag_tf
+    from alibi_detect.utils.tensorflow.kernels import \
+        GaussianRBF as GaussianRBF_tf
+    from alibi_detect.utils.tensorflow.kernels import \
+        sigma_median as sigma_median_tf
 
 if has_pytorch:
-    from alibi_detect.cd.pytorch import preprocess_drift as preprocess_drift_torch
-    from alibi_detect.utils.pytorch.kernels import GaussianRBF as GaussianRBF_torch, sigma_median as sigma_median_torch
-    from alibi_detect.cd.pytorch.context_aware import _sigma_median_diag as _sigma_median_diag_torch
+    from alibi_detect.cd.pytorch import \
+        preprocess_drift as preprocess_drift_torch
+    from alibi_detect.cd.pytorch.context_aware import \
+        _sigma_median_diag as _sigma_median_diag_torch
+    from alibi_detect.utils.pytorch.kernels import \
+        GaussianRBF as GaussianRBF_torch
+    from alibi_detect.utils.pytorch.kernels import \
+        sigma_median as sigma_median_torch
 
 if has_keops:
-    from alibi_detect.utils.keops.kernels import GaussianRBF as GaussianRBF_keops, sigma_mean as sigma_mean_keops
+    from alibi_detect.utils.keops.kernels import \
+        GaussianRBF as GaussianRBF_keops
+    from alibi_detect.utils.keops.kernels import sigma_mean as sigma_mean_keops
 
 # Create registry
 registry = catalogue.create("alibi_detect", "registry")

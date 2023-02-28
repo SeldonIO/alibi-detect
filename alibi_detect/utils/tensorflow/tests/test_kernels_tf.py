@@ -1,9 +1,11 @@
 from itertools import product
+
 import numpy as np
 import pytest
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, Input
-from alibi_detect.utils.tensorflow import GaussianRBF, DeepKernel
+
+from alibi_detect.utils.tensorflow import DeepKernel, GaussianRBF
 
 sigma = [None, np.array([1.0]), np.array([1.0, 2.0])]
 n_features = [5, 10]

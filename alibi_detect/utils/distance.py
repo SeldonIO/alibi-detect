@@ -1,6 +1,7 @@
+from typing import Any, Dict, Tuple
+
 import numpy as np
 from sklearn.manifold import MDS
-from typing import Any, Dict, Tuple
 
 
 def norm(x: np.ndarray, p: int) -> np.ndarray:

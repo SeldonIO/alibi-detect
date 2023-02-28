@@ -1,6 +1,8 @@
 from itertools import product
+
 import numpy as np
 import pytest
+
 from alibi_detect.cd import ChiSquareDrift
 
 n_categories, n_features, n_tiles = 5, 6, 20
