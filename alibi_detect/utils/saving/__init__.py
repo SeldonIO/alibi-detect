@@ -1,2 +1,1 @@
-from alibi_detect.utils.saving.saving import (load_detector,  # noqa
-                                              save_detector)
+from alibi_detect.utils.saving.saving import load_detector, save_detector  # noqa

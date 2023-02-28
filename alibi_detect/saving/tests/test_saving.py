@@ -21,41 +21,81 @@ from packaging import version
 from pytest_cases import param_fixture, parametrize, parametrize_with_cases
 from sklearn.model_selection import StratifiedKFold
 
-from alibi_detect.cd import (ChiSquareDrift, ClassifierDrift,
-                             ClassifierUncertaintyDrift, ContextMMDDrift,
-                             CVMDriftOnline, FETDrift, FETDriftOnline, KSDrift,
-                             LearnedKernelDrift, LSDDDrift, LSDDDriftOnline,
-                             MMDDrift, MMDDriftOnline,
-                             RegressorUncertaintyDrift, SpotTheDiffDrift,
-                             TabularDrift)
-from alibi_detect.models.pytorch import \
-    TransformerEmbedding as TransformerEmbedding_pt
-from alibi_detect.models.tensorflow import \
-    TransformerEmbedding as TransformerEmbedding_tf
-from alibi_detect.saving import (load_detector, read_config, registry,
-                                 resolve_config, save_detector, write_config)
-from alibi_detect.saving.loading import (_get_nested_value,
-                                         _prepend_cfg_filepaths, _replace,
-                                         _set_dtypes, _set_nested_value)
-from alibi_detect.saving.saving import (_int2str_keys, _path2str,
-                                        _save_kernel_config,
-                                        _save_model_config,
-                                        _save_preprocess_config,
-                                        _serialize_object)
-from alibi_detect.saving.schemas import (DeepKernelConfig, KernelConfig,
-                                         ModelConfig, PreprocessConfig)
+from alibi_detect.cd import (
+    ChiSquareDrift,
+    ClassifierDrift,
+    ClassifierUncertaintyDrift,
+    ContextMMDDrift,
+    CVMDriftOnline,
+    FETDrift,
+    FETDriftOnline,
+    KSDrift,
+    LearnedKernelDrift,
+    LSDDDrift,
+    LSDDDriftOnline,
+    MMDDrift,
+    MMDDriftOnline,
+    RegressorUncertaintyDrift,
+    SpotTheDiffDrift,
+    TabularDrift,
+)
+from alibi_detect.models.pytorch import TransformerEmbedding as TransformerEmbedding_pt
+from alibi_detect.models.tensorflow import (
+    TransformerEmbedding as TransformerEmbedding_tf,
+)
+from alibi_detect.saving import (
+    load_detector,
+    read_config,
+    registry,
+    resolve_config,
+    save_detector,
+    write_config,
+)
+from alibi_detect.saving.loading import (
+    _get_nested_value,
+    _prepend_cfg_filepaths,
+    _replace,
+    _set_dtypes,
+    _set_nested_value,
+)
+from alibi_detect.saving.saving import (
+    _int2str_keys,
+    _path2str,
+    _save_kernel_config,
+    _save_model_config,
+    _save_preprocess_config,
+    _serialize_object,
+)
+from alibi_detect.saving.schemas import (
+    DeepKernelConfig,
+    KernelConfig,
+    ModelConfig,
+    PreprocessConfig,
+)
 from alibi_detect.utils._random import fixed_seed
 from alibi_detect.utils.frameworks import has_keops
 from alibi_detect.utils.pytorch.kernels import DeepKernel as DeepKernel_pt
 from alibi_detect.utils.tensorflow.kernels import DeepKernel as DeepKernel_tf
 
-from .datasets import (BinData, CategoricalData, ContinuousData, MixedData,
-                       TextData)
-from .models import (LATENT_DIM, classifier_model, deep_kernel,  # noqa: F401
-                     embedding, enc_dim, encoder_dropout_model, encoder_model,
-                     kernel, max_len, nlp_embedding_and_tokenizer, optimizer,
-                     preprocess_custom, preprocess_hiddenoutput,
-                     preprocess_nlp, preprocess_simple, tokenizer)
+from .datasets import BinData, CategoricalData, ContinuousData, MixedData, TextData
+from .models import deep_kernel  # noqa: F401
+from .models import (
+    LATENT_DIM,
+    classifier_model,
+    embedding,
+    enc_dim,
+    encoder_dropout_model,
+    encoder_model,
+    kernel,
+    max_len,
+    nlp_embedding_and_tokenizer,
+    optimizer,
+    preprocess_custom,
+    preprocess_hiddenoutput,
+    preprocess_nlp,
+    preprocess_simple,
+    tokenizer,
+)
 
 if has_keops:  # pykeops only installed in Linux CI
     from pykeops.torch import LazyTensor

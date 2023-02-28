@@ -7,12 +7,21 @@ import numpy as np
 import tensorflow.compat.v2 as tf
 from tensorflow_probability.python.bijectors import bijector
 from tensorflow_probability.python.distributions import (
-    categorical, distribution, independent, logistic, mixture_same_family,
-    quantized_distribution, transformed_distribution)
-from tensorflow_probability.python.internal import (dtype_util, prefer_static,
-                                                    reparameterization,
-                                                    tensor_util,
-                                                    tensorshape_util)
+    categorical,
+    distribution,
+    independent,
+    logistic,
+    mixture_same_family,
+    quantized_distribution,
+    transformed_distribution,
+)
+from tensorflow_probability.python.internal import (
+    dtype_util,
+    prefer_static,
+    reparameterization,
+    tensor_util,
+    tensorshape_util,
+)
 
 __all__ = [
     "Shift",

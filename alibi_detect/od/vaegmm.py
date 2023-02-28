@@ -5,10 +5,13 @@ import numpy as np
 import tensorflow as tf
 import tensorflow_probability as tfp
 
-from alibi_detect.base import (BaseDetector, FitMixin, ThresholdMixin,
-                               outlier_prediction_dict)
-from alibi_detect.models.tensorflow.autoencoder import (VAEGMM,
-                                                        eucl_cosim_features)
+from alibi_detect.base import (
+    BaseDetector,
+    FitMixin,
+    ThresholdMixin,
+    outlier_prediction_dict,
+)
+from alibi_detect.models.tensorflow.autoencoder import VAEGMM, eucl_cosim_features
 from alibi_detect.models.tensorflow.gmm import gmm_energy, gmm_params
 from alibi_detect.models.tensorflow.losses import loss_vaegmm
 from alibi_detect.models.tensorflow.trainer import trainer

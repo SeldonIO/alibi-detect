@@ -18,10 +18,10 @@ from alibi_detect.cd.pytorch import preprocess_drift as preprocess_drift_pt
 from alibi_detect.cd.tensorflow import UAE as UAE_tf
 from alibi_detect.cd.tensorflow import HiddenOutput as HiddenOutput_tf
 from alibi_detect.cd.tensorflow import preprocess_drift as preprocess_drift_tf
-from alibi_detect.models.pytorch import \
-    TransformerEmbedding as TransformerEmbedding_pt
-from alibi_detect.models.tensorflow import \
-    TransformerEmbedding as TransformerEmbedding_tf
+from alibi_detect.models.pytorch import TransformerEmbedding as TransformerEmbedding_pt
+from alibi_detect.models.tensorflow import (
+    TransformerEmbedding as TransformerEmbedding_tf,
+)
 from alibi_detect.utils.frameworks import has_keops
 from alibi_detect.utils.pytorch.kernels import DeepKernel as DeepKernel_pt
 from alibi_detect.utils.pytorch.kernels import GaussianRBF as GaussianRBF_pt

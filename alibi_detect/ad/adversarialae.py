@@ -7,9 +7,13 @@ from tensorflow.keras.layers import Dense, Flatten
 from tensorflow.keras.losses import kld
 from tensorflow.keras.models import Model
 
-from alibi_detect.base import (BaseDetector, FitMixin, ThresholdMixin,
-                               adversarial_correction_dict,
-                               adversarial_prediction_dict)
+from alibi_detect.base import (
+    BaseDetector,
+    FitMixin,
+    ThresholdMixin,
+    adversarial_correction_dict,
+    adversarial_prediction_dict,
+)
 from alibi_detect.models.tensorflow.autoencoder import AE
 from alibi_detect.models.tensorflow.losses import loss_adv_ae
 from alibi_detect.models.tensorflow.trainer import trainer

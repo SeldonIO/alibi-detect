@@ -5,8 +5,12 @@ import numpy as np
 import tensorflow as tf
 import tensorflow_probability as tfp
 
-from alibi_detect.base import (BaseDetector, FitMixin, ThresholdMixin,
-                               outlier_prediction_dict)
+from alibi_detect.base import (
+    BaseDetector,
+    FitMixin,
+    ThresholdMixin,
+    outlier_prediction_dict,
+)
 from alibi_detect.models.tensorflow.autoencoder import VAE
 from alibi_detect.models.tensorflow.losses import elbo
 from alibi_detect.models.tensorflow.trainer import trainer

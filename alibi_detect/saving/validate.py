@@ -1,7 +1,9 @@
 import warnings
 
 from alibi_detect.saving.schemas import (  # type: ignore[attr-defined]
-    DETECTOR_CONFIGS, DETECTOR_CONFIGS_RESOLVED)
+    DETECTOR_CONFIGS,
+    DETECTOR_CONFIGS_RESOLVED,
+)
 from alibi_detect.version import __version__
 
 

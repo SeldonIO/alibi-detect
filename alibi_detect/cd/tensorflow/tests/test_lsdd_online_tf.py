@@ -8,8 +8,7 @@ import tensorflow as tf
 from tensorflow.keras.layers import Dense, Input, InputLayer
 
 from alibi_detect.cd.tensorflow.lsdd_online import LSDDDriftOnlineTF
-from alibi_detect.cd.tensorflow.preprocess import (UAE, HiddenOutput,
-                                                   preprocess_drift)
+from alibi_detect.cd.tensorflow.preprocess import UAE, HiddenOutput, preprocess_drift
 from alibi_detect.utils._random import fixed_seed
 
 n, n_hidden, n_classes = 400, 10, 5

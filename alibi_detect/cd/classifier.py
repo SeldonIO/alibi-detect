@@ -5,8 +5,12 @@ from sklearn.base import ClassifierMixin
 
 from alibi_detect.base import DriftConfigMixin
 from alibi_detect.cd.sklearn.classifier import ClassifierDriftSklearn
-from alibi_detect.utils.frameworks import (BackendValidator, Framework,
-                                           has_pytorch, has_tensorflow)
+from alibi_detect.utils.frameworks import (
+    BackendValidator,
+    Framework,
+    has_pytorch,
+    has_tensorflow,
+)
 
 if has_pytorch:
     from torch.utils.data import DataLoader

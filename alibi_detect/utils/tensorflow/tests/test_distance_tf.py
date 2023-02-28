@@ -4,12 +4,15 @@ import numpy as np
 import pytest
 import tensorflow as tf
 
-from alibi_detect.utils.tensorflow import (GaussianRBF,
-                                           batch_compute_kernel_matrix, mmd2,
-                                           mmd2_from_kernel_matrix,
-                                           permed_lsdds,
-                                           relative_euclidean_distance,
-                                           squared_pairwise_distance)
+from alibi_detect.utils.tensorflow import (
+    GaussianRBF,
+    batch_compute_kernel_matrix,
+    mmd2,
+    mmd2_from_kernel_matrix,
+    permed_lsdds,
+    relative_euclidean_distance,
+    squared_pairwise_distance,
+)
 
 n_features = [2, 5]
 n_instances = [(100, 100), (100, 75)]

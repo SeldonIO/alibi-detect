@@ -14,13 +14,27 @@ from sklearn.model_selection import StratifiedKFold
 from tensorflow.keras.layers import Dense, InputLayer
 
 from alibi_detect.ad import AdversarialAE, ModelDistillation
-from alibi_detect.cd import (ChiSquareDrift, ClassifierDrift, KSDrift,
-                             MMDDrift, TabularDrift)
+from alibi_detect.cd import (
+    ChiSquareDrift,
+    ClassifierDrift,
+    KSDrift,
+    MMDDrift,
+    TabularDrift,
+)
 from alibi_detect.cd.tensorflow import UAE, preprocess_drift
 from alibi_detect.models.tensorflow.autoencoder import DecoderLSTM, EncoderLSTM
-from alibi_detect.od import (LLR, IForest, Mahalanobis, OutlierAE,
-                             OutlierAEGMM, OutlierProphet, OutlierSeq2Seq,
-                             OutlierVAE, OutlierVAEGMM, SpectralResidual)
+from alibi_detect.od import (
+    LLR,
+    IForest,
+    Mahalanobis,
+    OutlierAE,
+    OutlierAEGMM,
+    OutlierProphet,
+    OutlierSeq2Seq,
+    OutlierVAE,
+    OutlierVAEGMM,
+    SpectralResidual,
+)
 from alibi_detect.saving import load_detector, save_detector
 from alibi_detect.utils.missing_optional_dependency import MissingDependency
 

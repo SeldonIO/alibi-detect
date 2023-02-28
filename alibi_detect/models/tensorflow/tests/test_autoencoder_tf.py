@@ -3,9 +3,15 @@ import pytest
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, InputLayer
 
-from alibi_detect.models.tensorflow.autoencoder import (AE, AEGMM, VAE, VAEGMM,
-                                                        DecoderLSTM,
-                                                        EncoderLSTM, Seq2Seq)
+from alibi_detect.models.tensorflow.autoencoder import (
+    AE,
+    AEGMM,
+    VAE,
+    VAEGMM,
+    DecoderLSTM,
+    EncoderLSTM,
+    Seq2Seq,
+)
 from alibi_detect.models.tensorflow.losses import loss_aegmm, loss_vaegmm
 from alibi_detect.models.tensorflow.trainer import trainer
 

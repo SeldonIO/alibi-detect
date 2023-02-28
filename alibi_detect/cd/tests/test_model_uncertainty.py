@@ -10,8 +10,7 @@ import torch
 import torch.nn as nn
 from tensorflow.keras.layers import Dense, Dropout, Input, Softmax
 
-from alibi_detect.cd import (ClassifierUncertaintyDrift,
-                             RegressorUncertaintyDrift)
+from alibi_detect.cd import ClassifierUncertaintyDrift, RegressorUncertaintyDrift
 
 n = 500
 

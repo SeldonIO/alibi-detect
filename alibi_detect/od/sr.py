@@ -4,8 +4,7 @@ from typing import Dict
 
 import numpy as np
 
-from alibi_detect.base import (BaseDetector, ThresholdMixin,
-                               outlier_prediction_dict)
+from alibi_detect.base import BaseDetector, ThresholdMixin, outlier_prediction_dict
 from alibi_detect.utils._types import Literal
 
 logger = logging.getLogger(__name__)

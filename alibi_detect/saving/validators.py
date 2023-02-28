@@ -5,8 +5,12 @@ import numpy as np
 from numpy.lib import NumpyVersion
 from pydantic.fields import ModelField
 
-from alibi_detect.utils.frameworks import (Framework, has_keops, has_pytorch,
-                                           has_tensorflow)
+from alibi_detect.utils.frameworks import (
+    Framework,
+    has_keops,
+    has_pytorch,
+    has_tensorflow,
+)
 
 if has_tensorflow:
     import tensorflow as tf

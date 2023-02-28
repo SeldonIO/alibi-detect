@@ -4,9 +4,13 @@ from typing import Callable, Dict, Optional, Tuple, Union
 import numpy as np
 
 from alibi_detect.base import DriftConfigMixin
-from alibi_detect.utils.frameworks import (BackendValidator, Framework,
-                                           has_keops, has_pytorch,
-                                           has_tensorflow)
+from alibi_detect.utils.frameworks import (
+    BackendValidator,
+    Framework,
+    has_keops,
+    has_pytorch,
+    has_tensorflow,
+)
 from alibi_detect.utils.warnings import deprecated_alias
 
 if has_pytorch:
@@ -117,11 +121,11 @@ class MMDDrift(DriftConfigMixin):
             if backend == Framework.TENSORFLOW:
                 from alibi_detect.utils.tensorflow.kernels import GaussianRBF
             elif backend == Framework.PYTORCH:
-                from alibi_detect.utils.pytorch.kernels import \
-                    GaussianRBF  # type: ignore
+                from alibi_detect.utils.pytorch.kernels import (
+                    GaussianRBF,  # type: ignore
+                )
             else:
-                from alibi_detect.utils.keops.kernels import \
-                    GaussianRBF  # type: ignore
+                from alibi_detect.utils.keops.kernels import GaussianRBF  # type: ignore
             kwargs.update({"kernel": GaussianRBF})
 
         self._detector = detector(*args, **kwargs)  # type: ignore

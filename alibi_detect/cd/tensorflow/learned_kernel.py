@@ -8,7 +8,9 @@ from alibi_detect.cd.base import BaseLearnedKernelDrift
 from alibi_detect.utils.frameworks import Framework
 from alibi_detect.utils.tensorflow.data import TFDataset
 from alibi_detect.utils.tensorflow.distance import (
-    batch_compute_kernel_matrix, mmd2_from_kernel_matrix)
+    batch_compute_kernel_matrix,
+    mmd2_from_kernel_matrix,
+)
 from alibi_detect.utils.tensorflow.misc import clone_model
 from alibi_detect.utils.warnings import deprecated_alias
 

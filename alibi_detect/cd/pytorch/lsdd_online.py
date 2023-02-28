@@ -6,8 +6,7 @@ from tqdm import tqdm
 
 from alibi_detect.cd.base_online import BaseMultiDriftOnline
 from alibi_detect.utils.frameworks import Framework
-from alibi_detect.utils.pytorch import (GaussianRBF, get_device, permed_lsdds,
-                                        quantile)
+from alibi_detect.utils.pytorch import GaussianRBF, get_device, permed_lsdds, quantile
 
 
 class LSDDDriftOnlineTorch(BaseMultiDriftOnline):

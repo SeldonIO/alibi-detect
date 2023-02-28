@@ -9,8 +9,15 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.keras.callbacks import Callback, ModelCheckpoint
 from tensorflow.keras.initializers import RandomNormal
-from tensorflow.keras.layers import (Activation, Add, BatchNormalization,
-                                     Conv2D, Dense, Input, ZeroPadding2D)
+from tensorflow.keras.layers import (
+    Activation,
+    Add,
+    BatchNormalization,
+    Conv2D,
+    Dense,
+    Input,
+    ZeroPadding2D,
+)
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import SGD
 from tensorflow.keras.preprocessing.image import ImageDataGenerator

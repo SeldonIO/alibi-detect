@@ -4,10 +4,13 @@ from typing import Callable, Dict, Tuple
 import numpy as np
 import tensorflow as tf
 
-from alibi_detect.base import (BaseDetector, FitMixin, ThresholdMixin,
-                               outlier_prediction_dict)
-from alibi_detect.models.tensorflow.autoencoder import (AEGMM,
-                                                        eucl_cosim_features)
+from alibi_detect.base import (
+    BaseDetector,
+    FitMixin,
+    ThresholdMixin,
+    outlier_prediction_dict,
+)
+from alibi_detect.models.tensorflow.autoencoder import AEGMM, eucl_cosim_features
 from alibi_detect.models.tensorflow.gmm import gmm_energy, gmm_params
 from alibi_detect.models.tensorflow.losses import loss_aegmm
 from alibi_detect.models.tensorflow.trainer import trainer

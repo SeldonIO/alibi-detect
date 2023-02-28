@@ -12,8 +12,10 @@ from alibi_detect.cd.base import BaseLearnedKernelDrift
 from alibi_detect.utils.frameworks import Framework
 from alibi_detect.utils.pytorch import get_device
 from alibi_detect.utils.pytorch.data import TorchDataset
-from alibi_detect.utils.pytorch.distance import (batch_compute_kernel_matrix,
-                                                 mmd2_from_kernel_matrix)
+from alibi_detect.utils.pytorch.distance import (
+    batch_compute_kernel_matrix,
+    mmd2_from_kernel_matrix,
+)
 from alibi_detect.utils.warnings import deprecated_alias
 
 

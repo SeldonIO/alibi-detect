@@ -4,8 +4,12 @@ from typing import Dict, Tuple
 import numpy as np
 import tensorflow as tf
 
-from alibi_detect.base import (BaseDetector, FitMixin, ThresholdMixin,
-                               outlier_prediction_dict)
+from alibi_detect.base import (
+    BaseDetector,
+    FitMixin,
+    ThresholdMixin,
+    outlier_prediction_dict,
+)
 from alibi_detect.models.tensorflow.autoencoder import AE
 from alibi_detect.models.tensorflow.trainer import trainer
 from alibi_detect.utils.tensorflow.prediction import predict_batch

@@ -4,9 +4,13 @@ import numpy as np
 import pytest
 from scipy.spatial.distance import cityblock
 
-from alibi_detect.utils.distance import (abdm, cityblock_batch,
-                                         multidim_scaling, mvdm,
-                                         pairwise_distance)
+from alibi_detect.utils.distance import (
+    abdm,
+    cityblock_batch,
+    multidim_scaling,
+    mvdm,
+    pairwise_distance,
+)
 
 n_features = [2, 5]
 n_instances = [(100, 100), (100, 75)]

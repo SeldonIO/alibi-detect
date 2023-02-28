@@ -7,10 +7,8 @@ from typing import Tuple, Union
 import numpy as np
 
 from alibi_detect.utils.frameworks import Framework
-from alibi_detect.utils.state._pytorch import \
-    load_state_dict as _load_state_dict_pt
-from alibi_detect.utils.state._pytorch import \
-    save_state_dict as _save_state_dict_pt
+from alibi_detect.utils.state._pytorch import load_state_dict as _load_state_dict_pt
+from alibi_detect.utils.state._pytorch import save_state_dict as _save_state_dict_pt
 
 logger = logging.getLogger(__name__)
 

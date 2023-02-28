@@ -2,8 +2,14 @@ from typing import Callable, List, Tuple
 
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras.layers import (LSTM, Bidirectional, Concatenate, Dense,
-                                     Flatten, Layer)
+from tensorflow.keras.layers import (
+    LSTM,
+    Bidirectional,
+    Concatenate,
+    Dense,
+    Flatten,
+    Layer,
+)
 
 from alibi_detect.utils.tensorflow.distance import relative_euclidean_distance
 

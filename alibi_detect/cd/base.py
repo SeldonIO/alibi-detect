@@ -6,8 +6,7 @@ import numpy as np
 from scipy.stats import binom_test, ks_2samp
 from sklearn.model_selection import StratifiedKFold
 
-from alibi_detect.base import (BaseDetector, DriftConfigMixin,
-                               concept_drift_dict)
+from alibi_detect.base import BaseDetector, DriftConfigMixin, concept_drift_dict
 from alibi_detect.cd.utils import get_input_shape, update_reference
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
 from alibi_detect.utils.statstest import fdr

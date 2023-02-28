@@ -11,20 +11,23 @@ import numpy as np
 import toml
 from transformers import PreTrainedTokenizerBase
 
-from alibi_detect.base import (ConfigurableDetector, Detector,
-                               StatefulDetectorOnline)
+from alibi_detect.base import ConfigurableDetector, Detector, StatefulDetectorOnline
 from alibi_detect.saving._pytorch import save_model_config_pt
 from alibi_detect.saving._sklearn import save_model_config_sk
-from alibi_detect.saving._tensorflow import (save_detector_legacy,
-                                             save_model_config_tf,
-                                             save_optimizer_config_tf)
+from alibi_detect.saving._tensorflow import (
+    save_detector_legacy,
+    save_model_config_tf,
+    save_optimizer_config_tf,
+)
 from alibi_detect.saving._typing import VALID_DETECTORS
 from alibi_detect.saving.loading import STATE_PATH, _replace, validate_config
 from alibi_detect.saving.registry import registry
-from alibi_detect.utils._types import (supported_models_all,
-                                       supported_models_sklearn,
-                                       supported_models_tf,
-                                       supported_models_torch)
+from alibi_detect.utils._types import (
+    supported_models_all,
+    supported_models_sklearn,
+    supported_models_tf,
+    supported_models_torch,
+)
 
 if TYPE_CHECKING:
     import tensorflow as tf

@@ -19,16 +19,22 @@ from typing import Any, Callable, Dict, List, Optional, Type, Union
 import numpy as np
 from pydantic import BaseModel, validator
 
-from alibi_detect.saving.validators import (NDArray, coerce_2_tensor,
-                                            coerce_int2list,
-                                            validate_framework)
-from alibi_detect.utils._types import (Literal, supported_models_all,
-                                       supported_models_sklearn,
-                                       supported_models_tf,
-                                       supported_models_torch,
-                                       supported_optimizers_all,
-                                       supported_optimizers_tf,
-                                       supported_optimizers_torch)
+from alibi_detect.saving.validators import (
+    NDArray,
+    coerce_2_tensor,
+    coerce_int2list,
+    validate_framework,
+)
+from alibi_detect.utils._types import (
+    Literal,
+    supported_models_all,
+    supported_models_sklearn,
+    supported_models_tf,
+    supported_models_torch,
+    supported_optimizers_all,
+    supported_optimizers_tf,
+    supported_optimizers_torch,
+)
 from alibi_detect.utils.frameworks import Framework
 
 

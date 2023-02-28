@@ -6,7 +6,9 @@ from tensorflow.keras.layers import Dense, Flatten, Input, InputLayer
 from tensorflow.keras.models import Model
 
 from alibi_detect.utils.tensorflow.prediction import (
-    predict_batch, predict_batch_transformer)
+    predict_batch,
+    predict_batch_transformer,
+)
 
 
 class _Encoder(tf.keras.Model):

@@ -5,9 +5,15 @@ import pandas as pd
 import pytest
 from requests import RequestException
 
-from alibi_detect.datasets import (corruption_types_cifar10c, fetch_attack,
-                                   fetch_cifar10c, fetch_ecg, fetch_kdd,
-                                   fetch_nab, get_list_nab)
+from alibi_detect.datasets import (
+    corruption_types_cifar10c,
+    fetch_attack,
+    fetch_cifar10c,
+    fetch_ecg,
+    fetch_kdd,
+    fetch_nab,
+    get_list_nab,
+)
 from alibi_detect.utils.data import Bunch
 
 # KDD cup dataset

@@ -4,8 +4,12 @@ from typing import Dict, Optional
 import numpy as np
 from scipy.linalg import eigh
 
-from alibi_detect.base import (BaseDetector, FitMixin, ThresholdMixin,
-                               outlier_prediction_dict)
+from alibi_detect.base import (
+    BaseDetector,
+    FitMixin,
+    ThresholdMixin,
+    outlier_prediction_dict,
+)
 from alibi_detect.utils.discretizer import Discretizer
 from alibi_detect.utils.distance import abdm, multidim_scaling, mvdm
 from alibi_detect.utils.mapping import ohe2ord, ord2num

@@ -11,8 +11,7 @@ from .lsdd import LSDDDrift
 from .lsdd_online import LSDDDriftOnline
 from .mmd import MMDDrift
 from .mmd_online import MMDDriftOnline
-from .model_uncertainty import (ClassifierUncertaintyDrift,
-                                RegressorUncertaintyDrift)
+from .model_uncertainty import ClassifierUncertaintyDrift, RegressorUncertaintyDrift
 from .spot_the_diff import SpotTheDiffDrift
 from .tabular import TabularDrift
 

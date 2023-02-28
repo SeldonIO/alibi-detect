@@ -1,8 +1,10 @@
 import pytest
 
-from alibi_detect.utils.missing_optional_dependency import (ERROR_TYPES,
-                                                            MissingDependency,
-                                                            import_optional)
+from alibi_detect.utils.missing_optional_dependency import (
+    ERROR_TYPES,
+    MissingDependency,
+    import_optional,
+)
 
 
 class TestImportOptional:
