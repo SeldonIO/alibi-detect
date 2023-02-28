@@ -74,6 +74,10 @@ jobs:
         run: |
           black --check alibi_detect
 
+      - name: Check imports with isort
+        run: |
+          isort --check alibi_detect
+
       - name: Typecheck with mypy
         run: |
           mypy alibi_detect
