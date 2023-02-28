@@ -70,6 +70,10 @@ jobs:
         run: |
           flake8 alibi_detect
 
+      - name: Lint with black
+        run: |
+          black --check alibi_detect
+
       - name: Typecheck with mypy
         run: |
           mypy alibi_detect
