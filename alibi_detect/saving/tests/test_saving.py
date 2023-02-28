@@ -79,7 +79,7 @@ from alibi_detect.utils.tensorflow.kernels import DeepKernel as DeepKernel_tf
 
 from .datasets import BinData, CategoricalData, ContinuousData, MixedData, TextData
 from .models import deep_kernel  # noqa: F401
-from .models import (
+from .models import (  # noqa: F401
     LATENT_DIM,
     classifier_model,
     embedding,

@@ -121,8 +121,8 @@ class MMDDrift(DriftConfigMixin):
             if backend == Framework.TENSORFLOW:
                 from alibi_detect.utils.tensorflow.kernels import GaussianRBF
             elif backend == Framework.PYTORCH:
-                from alibi_detect.utils.pytorch.kernels import (
-                    GaussianRBF,  # type: ignore
+                from alibi_detect.utils.pytorch.kernels import (  # type: ignore
+                    GaussianRBF,
                 )
             else:
                 from alibi_detect.utils.keops.kernels import GaussianRBF  # type: ignore

@@ -72,8 +72,8 @@ def encompass_batching(
     if backend == Framework.TENSORFLOW:
         from alibi_detect.cd.tensorflow.preprocess import preprocess_drift
     elif backend == Framework.PYTORCH:
-        from alibi_detect.cd.pytorch.preprocess import (
-            preprocess_drift,  # type: ignore[assignment]
+        from alibi_detect.cd.pytorch.preprocess import (  # type: ignore[assignment]
+            preprocess_drift,
         )
 
         kwargs["device"] = device

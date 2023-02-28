@@ -113,8 +113,8 @@ class ContextMMDDrift(DriftConfigMixin):
             if backend == Framework.TENSORFLOW:
                 from alibi_detect.utils.tensorflow.kernels import GaussianRBF
             else:
-                from alibi_detect.utils.pytorch.kernels import (
-                    GaussianRBF,  # type: ignore[assignment]
+                from alibi_detect.utils.pytorch.kernels import (  # type: ignore[assignment]
+                    GaussianRBF,
                 )
             if x_kernel is None:
                 kwargs.update({"x_kernel": GaussianRBF})
