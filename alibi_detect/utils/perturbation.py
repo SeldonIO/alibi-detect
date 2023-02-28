@@ -15,16 +15,17 @@ from scipy.ndimage.interpolation import map_coordinates
 from skimage.filters import gaussian
 
 
-def apply_mask(X: np.ndarray,
-               mask_size: tuple = (4, 4),
-               n_masks: int = 1,
-               coord: tuple = None,
-               channels: list = [0, 1, 2],
-               mask_type: str = 'uniform',
-               noise_distr: tuple = (0, 1),
-               noise_rng: tuple = (0, 1),
-               clip_rng: tuple = (0, 1)
-               ) -> Tuple[np.ndarray, np.ndarray]:
+def apply_mask(
+    X: np.ndarray,
+    mask_size: tuple = (4, 4),
+    n_masks: int = 1,
+    coord: tuple = None,
+    channels: list = [0, 1, 2],
+    mask_type: str = "uniform",
+    noise_distr: tuple = (0, 1),
+    noise_rng: tuple = (0, 1),
+    clip_rng: tuple = (0, 1),
+) -> Tuple[np.ndarray, np.ndarray]:
     """
     Mask images. Can zero out image patches or add normal or uniformly distributed noise.
 
@@ -56,17 +57,17 @@ def apply_mask(X: np.ndarray,
     X_shape = X.shape
 
     # initialize mask
-    if mask_type != 'zero':
+    if mask_type != "zero":
         mask = np.zeros((n_masks,) + X_shape[1:])
-    elif mask_type == 'zero':
+    elif mask_type == "zero":
         mask = np.ones((n_masks,) + X_shape[1:])
     else:
-        raise ValueError('Only `normal`, `uniform` and `zero` masking available.')
+        raise ValueError("Only `normal`, `uniform` and `zero` masking available.")
 
     # create noise for mask
-    if mask_type == 'normal':
+    if mask_type == "normal":
         noise = np.random.normal(loc=noise_distr[0], scale=noise_distr[1], size=(n_masks,) + mask_size)
-    elif mask_type == 'uniform':
+    elif mask_type == "uniform":
         noise = np.random.uniform(low=noise_rng[0], high=noise_rng[1], size=(n_masks,) + mask_size)
 
     # find upper left coordinate for mask
@@ -78,24 +79,18 @@ def apply_mask(X: np.ndarray,
 
     # update masks
     for _ in range(x_start.shape[0]):
-
-        if mask_type == 'zero':
+        if mask_type == "zero":
             update_val = 0
         else:
             update_val = noise[_]
 
         for c in channels:
-            mask[
-                _,
-                x_start[_]:x_start[_] + mask_size[0],
-                y_start[_]:y_start[_] + mask_size[1],
-                c
-            ] = update_val
+            mask[_, x_start[_] : x_start[_] + mask_size[0], y_start[_] : y_start[_] + mask_size[1], c] = update_val
 
     # apply masks to instances
     X_masks = []
     for _ in range(X_shape[0]):
-        if mask_type == 'zero':
+        if mask_type == "zero":
             X_mask_ = X[_].reshape((1,) + X_shape[1:]) * mask
         else:
             X_mask_ = np.clip(X[_].reshape((1,) + X_shape[1:]) + mask, clip_rng[0], clip_rng[1])
@@ -105,12 +100,9 @@ def apply_mask(X: np.ndarray,
     return X_mask, mask
 
 
-def inject_outlier_ts(X: np.ndarray,
-                      perc_outlier: int,
-                      perc_window: int = 10,
-                      n_std: float = 2.,
-                      min_std: float = 1.
-                      ) -> Bunch:
+def inject_outlier_ts(
+    X: np.ndarray, perc_outlier: int, perc_window: int = 10, n_std: float = 2.0, min_std: float = 1.0
+) -> Bunch:
     """
     Inject outliers in both univariate and multivariate time series data.
 
@@ -140,33 +132,28 @@ def inject_outlier_ts(X: np.ndarray,
     X_outlier = X.copy()
     is_outlier = np.zeros(n_samples)
     # one sided window used to compute mean and stdev from
-    window = int(perc_window * n_samples * .5 / 100)
+    window = int(perc_window * n_samples * 0.5 / 100)
     # distribute outliers evenly over different time series
-    n_outlier = int(n_samples * perc_outlier * .01 / n_ts)
+    n_outlier = int(n_samples * perc_outlier * 0.01 / n_ts)
     if n_outlier == 0:
-        return Bunch(data=X_outlier, target=is_outlier, target_names=['normal', 'outlier'])
+        return Bunch(data=X_outlier, target=is_outlier, target_names=["normal", "outlier"])
     for s in range(n_ts):
         outlier_idx = np.sort(random.sample(range(n_samples), n_outlier))
-        window_idx = [
-            np.maximum(outlier_idx - window, 0),
-            np.minimum(outlier_idx + window, n_samples)
-        ]
-        stdev = np.array([X_outlier[window_idx[0][i]:window_idx[1][i], s].std() for i in range(len(outlier_idx))])
+        window_idx = [np.maximum(outlier_idx - window, 0), np.minimum(outlier_idx + window, n_samples)]
+        stdev = np.array([X_outlier[window_idx[0][i] : window_idx[1][i], s].std() for i in range(len(outlier_idx))])
         rnd = np.random.normal(size=n_outlier)
         X_outlier[outlier_idx, s] += np.sign(rnd) * np.maximum(np.abs(rnd * n_std), min_std) * stdev
         is_outlier[outlier_idx] = 1
     if n_dim == 1:
-        X_outlier = X_outlier.reshape(n_samples, )
-    return Bunch(data=X_outlier, target=is_outlier, target_names=['normal', 'outlier'])
+        X_outlier = X_outlier.reshape(
+            n_samples,
+        )
+    return Bunch(data=X_outlier, target=is_outlier, target_names=["normal", "outlier"])
 
 
-def inject_outlier_tabular(X: np.ndarray,
-                           cols: List[int],
-                           perc_outlier: int,
-                           y: np.ndarray = None,
-                           n_std: float = 2.,
-                           min_std: float = 1.
-                           ) -> Bunch:
+def inject_outlier_tabular(
+    X: np.ndarray, cols: List[int], perc_outlier: int, y: np.ndarray = None, n_std: float = 2.0, min_std: float = 1.0
+) -> Bunch:
     """
     Inject outliers in numerical tabular data.
 
@@ -203,9 +190,9 @@ def inject_outlier_tabular(X: np.ndarray,
     n_cols = len(cols)
 
     # distribute outliers evenly over different columns
-    n_outlier = int(n_samples * perc_outlier * .01 / n_cols)
+    n_outlier = int(n_samples * perc_outlier * 0.01 / n_cols)
     if n_outlier == 0:
-        return Bunch(data=X_outlier, target=is_outlier, target_names=['normal', 'outlier'])
+        return Bunch(data=X_outlier, target=is_outlier, target_names=["normal", "outlier"])
 
     # add perturbations
     stdev = X_outlier.std(axis=0)
@@ -215,19 +202,22 @@ def inject_outlier_tabular(X: np.ndarray,
         X_outlier[outlier_idx, col] += np.sign(rnd) * np.maximum(np.abs(rnd * n_std), min_std) * stdev[col]
         is_outlier[outlier_idx] = 1
     if n_dim == 1:
-        X_outlier = X_outlier.reshape(n_samples, )
-    return Bunch(data=X_outlier, target=is_outlier, target_names=['normal', 'outlier'])
+        X_outlier = X_outlier.reshape(
+            n_samples,
+        )
+    return Bunch(data=X_outlier, target=is_outlier, target_names=["normal", "outlier"])
 
 
-def inject_outlier_categorical(X: np.ndarray,
-                               cols: List[int],
-                               perc_outlier: int,
-                               y: np.ndarray = None,
-                               cat_perturb: dict = None,
-                               X_fit: np.ndarray = None,
-                               disc_perc: list = [25, 50, 75],
-                               smooth: float = 1.
-                               ) -> Bunch:
+def inject_outlier_categorical(
+    X: np.ndarray,
+    cols: List[int],
+    perc_outlier: int,
+    y: np.ndarray = None,
+    cat_perturb: dict = None,
+    X_fit: np.ndarray = None,
+    disc_perc: list = [25, 50, 75],
+    smooth: float = 1.0,
+) -> Bunch:
     """
     Inject outliers in categorical variables of tabular data.
 
@@ -290,13 +280,15 @@ def inject_outlier_categorical(X: np.ndarray,
 
         # multidim scaling
         feature_range = (np.ones((1, n_ord)) * -1e10, np.ones((1, n_ord)) * 1e10)
-        d_abs = multidim_scaling(d_pair,
-                                 n_components=2,
-                                 use_metric=True,
-                                 standardize_cat_vars=True,
-                                 smooth=smooth,
-                                 feature_range=feature_range,
-                                 update_feature_range=False)[0]
+        d_abs = multidim_scaling(
+            d_pair,
+            n_components=2,
+            use_metric=True,
+            standardize_cat_vars=True,
+            smooth=smooth,
+            feature_range=feature_range,
+            update_feature_range=False,
+        )[0]
 
         # find furthest category away for each category in the categorical variables
         cat_perturb = {k: np.zeros(len(v)) for k, v in d_abs.items()}
@@ -318,7 +310,7 @@ def inject_outlier_categorical(X: np.ndarray,
     n_cols = len(cols)
 
     # distribute outliers evenly over different columns
-    n_outlier = int(n_samples * perc_outlier * .01 / n_cols)
+    n_outlier = int(n_samples * perc_outlier * 0.01 / n_cols)
     for col in cols:
         outlier_idx = np.sort(random.sample(range(n_samples), n_outlier))
         col_cat = X_outlier[outlier_idx, col].astype(int)
@@ -326,12 +318,12 @@ def inject_outlier_categorical(X: np.ndarray,
         X_outlier[outlier_idx, col] = np.diag(col_map.T[col_cat])
         is_outlier[outlier_idx] = 1
     if n_dim == 1:
-        X_outlier = X_outlier.reshape(n_samples, )
-    return Bunch(data=X_outlier,
-                 target=is_outlier,
-                 cat_perturb=cat_perturb,
-                 d_abs=d_abs,
-                 target_names=['normal', 'outlier'])
+        X_outlier = X_outlier.reshape(
+            n_samples,
+        )
+    return Bunch(
+        data=X_outlier, target=is_outlier, cat_perturb=cat_perturb, d_abs=d_abs, target_names=["normal", "outlier"]
+    )
 
 
 # Note: the perturbation functions below are adopted from
@@ -467,7 +459,7 @@ def impulse_noise(x: np.ndarray, amount: float, xrange: tuple = None) -> np.ndar
     else:
         xmin, xmax = x.min(), x.max()
     x_sc = (x - xmin) / (xmax - xmin)  # scale to [0,1]
-    x_in = sk.util.random_noise(x_sc, mode='s&p', amount=amount)  # inject noise
+    x_in = sk.util.random_noise(x_sc, mode="s&p", amount=amount)  # inject noise
     x_in = x_in * (xmax - xmin) + xmin  # scale back
     if isinstance(xrange, tuple):
         return np.clip(x_in, xrange[0], xrange[1])
@@ -523,9 +515,9 @@ def clipped_zoom(x: np.ndarray, zoom_factor: float) -> np.ndarray:
     h = x.shape[0]
     ch = int(np.ceil(h / float(zoom_factor)))  # ceil crop height(= crop width)
     top = (h - ch) // 2
-    x = zoom(x[top:top + ch, top:top + ch], (zoom_factor, zoom_factor, 1), order=1)
+    x = zoom(x[top : top + ch, top : top + ch], (zoom_factor, zoom_factor, 1), order=1)
     trim_top = (x.shape[0] - h) // 2  # trim off any extra pixels
-    return x[trim_top:trim_top + h, trim_top:trim_top + h]
+    return x[trim_top : trim_top + h, trim_top : trim_top + h]
 
 
 def zoom_blur(x: np.ndarray, max_zoom: float, step_zoom: float, xrange: tuple = None) -> np.ndarray:
@@ -622,14 +614,14 @@ def disk(radius: float, alias_blur: float = 0.1, dtype=np.float32) -> np.ndarray
     -------
     Kernel used for Gaussian blurring.
     """
-    if radius <= 8.:
-        L = np.arange(-8., 8. + 1)
+    if radius <= 8.0:
+        L = np.arange(-8.0, 8.0 + 1)
         ksize = (3, 3)
     else:
         L = np.arange(-radius, radius + 1)
         ksize = (5, 5)
     X, Y = np.meshgrid(L, L)
-    aliased_disk = np.array((X ** 2 + Y ** 2) <= radius ** 2, dtype=dtype)
+    aliased_disk = np.array((X**2 + Y**2) <= radius**2, dtype=dtype)
     aliased_disk /= np.sum(aliased_disk)
 
     # supersample disk to antialias
@@ -669,18 +661,18 @@ def defocus_blur(x: np.ndarray, radius: int, alias_blur: float, xrange: tuple = 
         return x_db
 
 
-def plasma_fractal(mapsize: int = 256, wibbledecay: float = 3.) -> np.ndarray:
+def plasma_fractal(mapsize: int = 256, wibbledecay: float = 3.0) -> np.ndarray:
     """
     Helper function to apply fog to instance.
     Generates a heightmap using diamond-square algorithm.
     Returns a square 2d array, side length 'mapsize', of floats in range 0-255.
     'mapsize' must be a power of two.
     """
-    assert (mapsize & (mapsize - 1) == 0)
+    assert mapsize & (mapsize - 1) == 0
     maparray = np.empty((mapsize, mapsize), dtype=np.float_)
     maparray[0, 0] = 0
     stepsize = mapsize
-    wibble = 100.
+    wibble = 100.0
 
     def wibbledmean(array):
         return array / 4 + wibble * np.random.uniform(-wibble, wibble, array.shape)
@@ -690,21 +682,21 @@ def plasma_fractal(mapsize: int = 256, wibbledecay: float = 3.) -> np.ndarray:
         cornerref = maparray[0:mapsize:stepsize, 0:mapsize:stepsize]
         squareaccum = cornerref + np.roll(cornerref, shift=-1, axis=0)
         squareaccum += np.roll(squareaccum, shift=-1, axis=1)
-        maparray[stepsize // 2:mapsize:stepsize, stepsize // 2:mapsize:stepsize] = wibbledmean(squareaccum)
+        maparray[stepsize // 2 : mapsize : stepsize, stepsize // 2 : mapsize : stepsize] = wibbledmean(squareaccum)
 
     def filldiamonds():
         """For each diamond of points stepsize apart, calculate middle value as mean of points + wibble."""
         mapsize = maparray.shape[0]
-        drgrid = maparray[stepsize // 2:mapsize:stepsize, stepsize // 2:mapsize:stepsize]
+        drgrid = maparray[stepsize // 2 : mapsize : stepsize, stepsize // 2 : mapsize : stepsize]
         ulgrid = maparray[0:mapsize:stepsize, 0:mapsize:stepsize]
         ldrsum = drgrid + np.roll(drgrid, 1, axis=0)
         lulsum = ulgrid + np.roll(ulgrid, -1, axis=1)
         ltsum = ldrsum + lulsum
-        maparray[0:mapsize:stepsize, stepsize // 2:mapsize:stepsize] = wibbledmean(ltsum)
+        maparray[0:mapsize:stepsize, stepsize // 2 : mapsize : stepsize] = wibbledmean(ltsum)
         tdrsum = drgrid + np.roll(drgrid, 1, axis=1)
         tulsum = ulgrid + np.roll(ulgrid, -1, axis=0)
         ttsum = tdrsum + tulsum
-        maparray[stepsize // 2:mapsize:stepsize, 0:mapsize:stepsize] = wibbledmean(ttsum)
+        maparray[stepsize // 2 : mapsize : stepsize, 0:mapsize:stepsize] = wibbledmean(ttsum)
 
     while stepsize >= 2:
         fillsquares()
@@ -862,7 +854,7 @@ def pixelate(x: np.ndarray, strength: float, xrange: tuple = None) -> np.ndarray
     if xrange[0] != 0 or xrange[1] != 255:
         x = (x - xrange[0]) / (xrange[1] - xrange[0]) * 255
 
-    im = Image.fromarray(x.astype('uint8'), mode='RGB')
+    im = Image.fromarray(x.astype("uint8"), mode="RGB")
     im = im.resize((int(rows * strength), int(cols * strength)), Image.BOX)
     im = im.resize((rows, cols), Image.BOX)
     x_pi = np.array(im, dtype=np.float32) / 255
@@ -893,17 +885,18 @@ def jpeg_compression(x: np.ndarray, strength: float, xrange: tuple = None) -> np
     if xrange[0] != 0 or xrange[1] != 255:
         x = (x - xrange[0]) / (xrange[1] - xrange[0]) * 255
 
-    x = Image.fromarray(x.astype('uint8'), mode='RGB')
+    x = Image.fromarray(x.astype("uint8"), mode="RGB")
     output = BytesIO()
-    x.save(output, 'JPEG', quality=strength)  # type: ignore[attr-defined] # TODO: allow redefinition
+    x.save(output, "JPEG", quality=strength)  # type: ignore[attr-defined] # TODO: allow redefinition
     x = Image.open(output)
     x_jpeg = np.array(x, dtype=np.float32) / 255
     x_jpeg = x_jpeg * (xrange[1] - xrange[0]) + xrange[0]
     return x_jpeg
 
 
-def elastic_transform(x: np.ndarray, mult_dxdy: float, sigma: float,
-                      rnd_rng: float, xrange: tuple = None) -> np.ndarray:
+def elastic_transform(
+    x: np.ndarray, mult_dxdy: float, sigma: float, rnd_rng: float, xrange: tuple = None
+) -> np.ndarray:
     """
     Apply elastic transformation to instance.
 
@@ -935,20 +928,27 @@ def elastic_transform(x: np.ndarray, mult_dxdy: float, sigma: float,
     # random affine
     center_square = np.asarray(shape_size, dtype=np.float32) // 2
     square_size = min(shape_size) // 3
-    pts1 = np.asarray([center_square + square_size,
-                       [center_square[0] + square_size, center_square[1] - square_size],
-                       center_square - square_size], dtype=np.float32)
+    pts1 = np.asarray(
+        [
+            center_square + square_size,
+            [center_square[0] + square_size, center_square[1] - square_size],
+            center_square - square_size,
+        ],
+        dtype=np.float32,
+    )
     pts2 = pts1 + np.random.uniform(-rnd_rng, rnd_rng, size=pts1.shape).astype(np.float32)
     M = cv2.getAffineTransform(pts1, pts2)
     image = cv2.warpAffine(x, M, shape_size[::-1], borderMode=cv2.BORDER_REFLECT_101)
-    dx = (gaussian(np.random.uniform(-1, 1, size=shape_size),
-                   sigma, mode='reflect', truncate=3) * mult_dxdy).astype(np.float32)
-    dy = (gaussian(np.random.uniform(-1, 1, size=shape_size),
-                   sigma, mode='reflect', truncate=3) * mult_dxdy).astype(np.float32)
+    dx = (gaussian(np.random.uniform(-1, 1, size=shape_size), sigma, mode="reflect", truncate=3) * mult_dxdy).astype(
+        np.float32
+    )
+    dy = (gaussian(np.random.uniform(-1, 1, size=shape_size), sigma, mode="reflect", truncate=3) * mult_dxdy).astype(
+        np.float32
+    )
     dx, dy = dx[..., np.newaxis], dy[..., np.newaxis]
     x, y, z = np.meshgrid(np.arange(shape[1]), np.arange(shape[0]), np.arange(shape[2]))
     indices = np.reshape(y + dy, (-1, 1)), np.reshape(x + dx, (-1, 1)), np.reshape(z, (-1, 1))
-    x_et = map_coordinates(image, indices, order=1, mode='reflect').reshape(shape)
+    x_et = map_coordinates(image, indices, order=1, mode="reflect").reshape(shape)
     if scale_back:
         x_et = x_et * (xrange[1] - xrange[0]) + xrange[0]
     if isinstance(xrange, tuple):

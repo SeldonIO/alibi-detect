@@ -6,20 +6,20 @@ from alibi_detect.utils.warnings import deprecated_alias
 
 
 class ChiSquareDrift(BaseUnivariateDrift):
-    @deprecated_alias(preprocess_x_ref='preprocess_at_init')
+    @deprecated_alias(preprocess_x_ref="preprocess_at_init")
     def __init__(
-            self,
-            x_ref: Union[np.ndarray, list],
-            p_val: float = .05,
-            categories_per_feature: Optional[Dict[int, int]] = None,
-            x_ref_preprocessed: bool = False,
-            preprocess_at_init: bool = True,
-            update_x_ref: Optional[Dict[str, int]] = None,
-            preprocess_fn: Optional[Callable] = None,
-            correction: str = 'bonferroni',
-            n_features: Optional[int] = None,
-            input_shape: Optional[tuple] = None,
-            data_type: Optional[str] = None
+        self,
+        x_ref: Union[np.ndarray, list],
+        p_val: float = 0.05,
+        categories_per_feature: Optional[Dict[int, int]] = None,
+        x_ref_preprocessed: bool = False,
+        preprocess_at_init: bool = True,
+        update_x_ref: Optional[Dict[str, int]] = None,
+        preprocess_fn: Optional[Callable] = None,
+        correction: str = "bonferroni",
+        n_features: Optional[int] = None,
+        input_shape: Optional[tuple] = None,
+        data_type: Optional[str] = None,
     ) -> None:
         """
         Chi-Squared data drift detector with Bonferroni or False Discovery Rate (FDR)
@@ -75,7 +75,7 @@ class ChiSquareDrift(BaseUnivariateDrift):
             correction=correction,
             n_features=n_features,
             input_shape=input_shape,
-            data_type=data_type
+            data_type=data_type,
         )
         # Set config
         self._set_config(locals())
@@ -86,16 +86,18 @@ class ChiSquareDrift(BaseUnivariateDrift):
             int_types = (int, np.int16, np.int32, np.int64)
             if all(isinstance(v, int_types) for v in vals):
                 # categories_per_feature = Dict[int, int]
-                categories_per_feature = {f: list(np.arange(v))  # type: ignore
-                                          for f, v in categories_per_feature.items()}
-            elif not all(isinstance(val, list) for val in vals) and \
-                    all(isinstance(v, int_types) for val in vals for v in val):  # type: ignore
-                raise ValueError('categories_per_feature needs to be None or one of '
-                                 'Dict[int, int], Dict[int, List[int]]')
+                categories_per_feature = {
+                    f: list(np.arange(v)) for f, v in categories_per_feature.items()  # type: ignore
+                }
+            elif not all(isinstance(val, list) for val in vals) and all(
+                isinstance(v, int_types) for val in vals for v in val
+            ):  # type: ignore
+                raise ValueError(
+                    "categories_per_feature needs to be None or one of " "Dict[int, int], Dict[int, List[int]]"
+                )
         else:  # infer number of possible categories for each feature from reference data
             x_flat = self.x_ref.reshape(self.x_ref.shape[0], -1)
-            categories_per_feature = {f: list(np.unique(x_flat[:, f]))  # type: ignore
-                                      for f in range(self.n_features)}
+            categories_per_feature = {f: list(np.unique(x_flat[:, f])) for f in range(self.n_features)}  # type: ignore
         self.x_ref_categories = categories_per_feature
 
     def feature_score(self, x_ref: np.ndarray, x: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
@@ -118,8 +120,10 @@ class ChiSquareDrift(BaseUnivariateDrift):
 
         # apply counts on union of categories per variable in both the reference and test data
         x_categories = {f: list(np.unique(x[:, f])) for f in range(self.n_features)}
-        all_categories = {f: list(set().union(self.x_ref_categories[f], x_categories[f]))  # type: ignore
-                          for f in range(self.n_features)}
+        all_categories = {
+            f: list(set().union(self.x_ref_categories[f], x_categories[f]))  # type: ignore
+            for f in range(self.n_features)
+        }
         x_ref_count = self._get_counts(x_ref, all_categories)
         x_count = self._get_counts(x, all_categories)
 

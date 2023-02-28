@@ -17,7 +17,7 @@ def update_sampling(request):
     return tests_sampling[request.param]
 
 
-@pytest.mark.parametrize('update_sampling', list(range(n_tests)), indirect=True)
+@pytest.mark.parametrize("update_sampling", list(range(n_tests)), indirect=True)
 def test_reservoir_sampling(update_sampling):
     n_X_ref, n_X, reservoir_size, n = update_sampling
     if n_X_ref > reservoir_size:

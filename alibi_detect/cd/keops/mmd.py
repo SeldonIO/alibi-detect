@@ -13,21 +13,21 @@ logger = logging.getLogger(__name__)
 
 class MMDDriftKeops(BaseMMDDrift):
     def __init__(
-            self,
-            x_ref: Union[np.ndarray, list],
-            p_val: float = .05,
-            x_ref_preprocessed: bool = False,
-            preprocess_at_init: bool = True,
-            update_x_ref: Optional[Dict[str, int]] = None,
-            preprocess_fn: Optional[Callable] = None,
-            kernel: Callable = GaussianRBF,
-            sigma: Optional[np.ndarray] = None,
-            configure_kernel_from_x_ref: bool = True,
-            n_permutations: int = 100,
-            batch_size_permutations: int = 1000000,
-            device: Optional[str] = None,
-            input_shape: Optional[tuple] = None,
-            data_type: Optional[str] = None
+        self,
+        x_ref: Union[np.ndarray, list],
+        p_val: float = 0.05,
+        x_ref_preprocessed: bool = False,
+        preprocess_at_init: bool = True,
+        update_x_ref: Optional[Dict[str, int]] = None,
+        preprocess_fn: Optional[Callable] = None,
+        kernel: Callable = GaussianRBF,
+        sigma: Optional[np.ndarray] = None,
+        configure_kernel_from_x_ref: bool = True,
+        n_permutations: int = 100,
+        batch_size_permutations: int = 1000000,
+        device: Optional[str] = None,
+        input_shape: Optional[tuple] = None,
+        data_type: Optional[str] = None,
     ) -> None:
         """
         Maximum Mean Discrepancy (MMD) data drift detector using a permutation test.
@@ -81,16 +81,19 @@ class MMDDriftKeops(BaseMMDDrift):
             configure_kernel_from_x_ref=configure_kernel_from_x_ref,
             n_permutations=n_permutations,
             input_shape=input_shape,
-            data_type=data_type
+            data_type=data_type,
         )
-        self.meta.update({'backend': Framework.KEOPS.value})
+        self.meta.update({"backend": Framework.KEOPS.value})
 
         # set device
         self.device = get_device(device)
 
         # initialize kernel
-        sigma = torch.from_numpy(sigma).to(self.device) if isinstance(sigma,  # type: ignore[assignment]
-                                                                      np.ndarray) else None
+        sigma = (
+            torch.from_numpy(sigma).to(self.device)
+            if isinstance(sigma, np.ndarray)  # type: ignore[assignment]
+            else None
+        )
         self.kernel = kernel(sigma).to(self.device) if kernel == GaussianRBF else kernel
 
         # set the correct MMD^2 function based on the batch size for the permutations
@@ -107,8 +110,9 @@ class MMDDriftKeops(BaseMMDDrift):
         else:
             self.infer_sigma = True
 
-    def _mmd2(self, x_all: torch.Tensor, perms: List[torch.Tensor], m: int, n: int) \
-            -> Tuple[torch.Tensor, torch.Tensor]:
+    def _mmd2(
+        self, x_all: torch.Tensor, perms: List[torch.Tensor], m: int, n: int
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Batched (across the permutations) MMD^2 computation for the original test statistic and the permutations.
 
@@ -139,13 +143,19 @@ class MMDDriftKeops(BaseMMDDrift):
             x, y = x.to(self.device), y.to(self.device)
 
             # batch-wise kernel matrix computation over the permutations
-            k_xy.append(self.kernel(
-                LazyTensor(x[:, :, None, :]), LazyTensor(y[:, None, :, :]), self.infer_sigma).sum(1).sum(1).squeeze(-1))
-            k_xx.append(self.kernel(
-                LazyTensor(x[:, :, None, :]), LazyTensor(x[:, None, :, :])).sum(1).sum(1).squeeze(-1))
-            k_yy.append(self.kernel(
-                LazyTensor(y[:, :, None, :]), LazyTensor(y[:, None, :, :])).sum(1).sum(1).squeeze(-1))
-        c_xx, c_yy, c_xy = 1 / (m * (m - 1)), 1 / (n * (n - 1)), 2. / (m * n)
+            k_xy.append(
+                self.kernel(LazyTensor(x[:, :, None, :]), LazyTensor(y[:, None, :, :]), self.infer_sigma)
+                .sum(1)
+                .sum(1)
+                .squeeze(-1)
+            )
+            k_xx.append(
+                self.kernel(LazyTensor(x[:, :, None, :]), LazyTensor(x[:, None, :, :])).sum(1).sum(1).squeeze(-1)
+            )
+            k_yy.append(
+                self.kernel(LazyTensor(y[:, :, None, :]), LazyTensor(y[:, None, :, :])).sum(1).sum(1).squeeze(-1)
+            )
+        c_xx, c_yy, c_xy = 1 / (m * (m - 1)), 1 / (n * (n - 1)), 2.0 / (m * n)
         # Note that the MMD^2 estimates assume that the diagonal of the kernel matrix consists of 1's
         stats = c_xx * (torch.cat(k_xx) - m) + c_yy * (torch.cat(k_yy) - n) - c_xy * torch.cat(k_xy)
         return stats[0], stats[1:]
@@ -174,7 +184,7 @@ class MMDDriftKeops(BaseMMDDrift):
         # TODO - Rethink typings (related to https://github.com/SeldonIO/alibi-detect/issues/540)
         x_all = torch.cat([x_ref, x], 0)  # type: ignore[list-item]
         mmd2, mmd2_permuted = self._mmd2(x_all, perms, m, n)
-        if self.device.type == 'cuda':
+        if self.device.type == "cuda":
             mmd2, mmd2_permuted = mmd2.cpu(), mmd2_permuted.cpu()
         p_val = (mmd2 <= mmd2_permuted).float().mean()
         # compute distance threshold

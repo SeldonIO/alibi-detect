@@ -25,9 +25,9 @@ def squared_pairwise_distance(x: tf.Tensor, y: tf.Tensor, a_min: float = 1e-30, 
     -------
     Pairwise squared Euclidean distance [Nx, Ny].
     """
-    x2 = tf.reduce_sum(x ** 2, axis=-1, keepdims=True)
-    y2 = tf.reduce_sum(y ** 2, axis=-1, keepdims=True)
-    dist = x2 + tf.transpose(y2, (1, 0)) - 2. * x @ tf.transpose(y, (1, 0))
+    x2 = tf.reduce_sum(x**2, axis=-1, keepdims=True)
+    y2 = tf.reduce_sum(y**2, axis=-1, keepdims=True)
+    dist = x2 + tf.transpose(y2, (1, 0)) - 2.0 * x @ tf.transpose(y, (1, 0))
     return tf.clip_by_value(dist, a_min, a_max)
 
 
@@ -83,8 +83,7 @@ def batch_compute_kernel_matrix(
     return k_mat
 
 
-def mmd2_from_kernel_matrix(kernel_mat: tf.Tensor, m: int, permute: bool = False,
-                            zero_diag: bool = True) -> tf.Tensor:
+def mmd2_from_kernel_matrix(kernel_mat: tf.Tensor, m: int, permute: bool = False, zero_diag: bool = True) -> tf.Tensor:
     """
     Compute maximum mean discrepancy (MMD^2) between 2 samples x and y from the
     full kernel matrix between the samples.
@@ -112,7 +111,7 @@ def mmd2_from_kernel_matrix(kernel_mat: tf.Tensor, m: int, permute: bool = False
         kernel_mat = tf.gather(tf.gather(kernel_mat, indices=idx, axis=0), indices=idx, axis=1)
     k_xx, k_yy, k_xy = kernel_mat[:-m, :-m], kernel_mat[-m:, -m:], kernel_mat[-m:, :-m]
     c_xx, c_yy = 1 / (n * (n - 1)), 1 / (m * (m - 1))
-    mmd2 = c_xx * tf.reduce_sum(k_xx) + c_yy * tf.reduce_sum(k_yy) - 2. * tf.reduce_mean(k_xy)
+    mmd2 = c_xx * tf.reduce_sum(k_xx) + c_yy * tf.reduce_sum(k_yy) - 2.0 * tf.reduce_mean(k_xy)
     return mmd2
 
 
@@ -136,8 +135,11 @@ def mmd2(x: tf.Tensor, y: tf.Tensor, kernel: Callable) -> float:
     n, m = x.shape[0], y.shape[0]
     c_xx, c_yy = 1 / (n * (n - 1)), 1 / (m * (m - 1))
     k_xx, k_yy, k_xy = kernel(x, x), kernel(y, y), kernel(x, y)  # type: ignore
-    return (c_xx * (tf.reduce_sum(k_xx) - tf.linalg.trace(k_xx)) +
-            c_yy * (tf.reduce_sum(k_yy) - tf.linalg.trace(k_yy)) - 2. * tf.reduce_mean(k_xy))
+    return (
+        c_xx * (tf.reduce_sum(k_xx) - tf.linalg.trace(k_xx))
+        + c_yy * (tf.reduce_sum(k_yy) - tf.linalg.trace(k_yy))
+        - 2.0 * tf.reduce_mean(k_xy)
+    )
 
 
 def relative_euclidean_distance(x: tf.Tensor, y: tf.Tensor, eps: float = 1e-12, axis: int = -1) -> tf.Tensor:
@@ -159,8 +161,9 @@ def relative_euclidean_distance(x: tf.Tensor, y: tf.Tensor, eps: float = 1e-12, 
     -------
     Tensor with relative Euclidean distance across specified axis.
     """
-    denom = tf.concat([tf.reshape(tf.norm(x, ord=2, axis=axis), (-1, 1)),
-                       tf.reshape(tf.norm(y, ord=2, axis=axis), (-1, 1))], axis=1)
+    denom = tf.concat(
+        [tf.reshape(tf.norm(x, ord=2, axis=axis), (-1, 1)), tf.reshape(tf.norm(y, ord=2, axis=axis), (-1, 1))], axis=1
+    )
     dist = tf.norm(x - y, ord=2, axis=axis) / (tf.reduce_min(denom, axis=axis) + eps)
     return dist
 
@@ -211,12 +214,13 @@ def permed_lsdds(
         # one for which the relative difference (RD) between two difference estimates is below lambda_rd_max.
         # See Appendix A
         candidate_lambdas = [1 / (4**i) for i in range(10)]  # TODO: More principled selection
-        H_plus_lams = tf.stack([H + tf.eye(H.shape[0], dtype=H.dtype) * can_lam
-                                for can_lam in candidate_lambdas], axis=0)
+        H_plus_lams = tf.stack(
+            [H + tf.eye(H.shape[0], dtype=H.dtype) * can_lam for can_lam in candidate_lambdas], axis=0
+        )
         H_plus_lam_invs = tf.transpose(tf.linalg.inv(H_plus_lams), [1, 2, 0])  # lambdas last
-        omegas = tf.einsum('jkl,bk->bjl', H_plus_lam_invs, h_perms)  # (Eqn 8)
-        h_omegas = tf.einsum('bj,bjl->bl', h_perms, omegas)
-        omega_H_omegas = tf.einsum('bkl,bkl->bl', tf.einsum('bjl,jk->bkl', omegas, H), omegas)
+        omegas = tf.einsum("jkl,bk->bjl", H_plus_lam_invs, h_perms)  # (Eqn 8)
+        h_omegas = tf.einsum("bj,bjl->bl", h_perms, omegas)
+        omega_H_omegas = tf.einsum("bkl,bkl->bl", tf.einsum("bjl,jk->bkl", omegas, H), omegas)
         rds = tf.reduce_mean(1 - (omega_H_omegas / h_omegas), axis=0)
         less_than_rd_inds = tf.where(rds < lam_rd_max)
         if len(less_than_rd_inds) == 0:

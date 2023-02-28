@@ -13,22 +13,22 @@ logger = logging.getLogger(__name__)
 
 
 class MMDDriftTorch(BaseMMDDrift):
-    @deprecated_alias(preprocess_x_ref='preprocess_at_init')
+    @deprecated_alias(preprocess_x_ref="preprocess_at_init")
     def __init__(
-            self,
-            x_ref: Union[np.ndarray, list],
-            p_val: float = .05,
-            x_ref_preprocessed: bool = False,
-            preprocess_at_init: bool = True,
-            update_x_ref: Optional[Dict[str, int]] = None,
-            preprocess_fn: Optional[Callable] = None,
-            kernel: Callable = GaussianRBF,
-            sigma: Optional[np.ndarray] = None,
-            configure_kernel_from_x_ref: bool = True,
-            n_permutations: int = 100,
-            device: Optional[str] = None,
-            input_shape: Optional[tuple] = None,
-            data_type: Optional[str] = None
+        self,
+        x_ref: Union[np.ndarray, list],
+        p_val: float = 0.05,
+        x_ref_preprocessed: bool = False,
+        preprocess_at_init: bool = True,
+        update_x_ref: Optional[Dict[str, int]] = None,
+        preprocess_fn: Optional[Callable] = None,
+        kernel: Callable = GaussianRBF,
+        sigma: Optional[np.ndarray] = None,
+        configure_kernel_from_x_ref: bool = True,
+        n_permutations: int = 100,
+        device: Optional[str] = None,
+        input_shape: Optional[tuple] = None,
+        data_type: Optional[str] = None,
     ) -> None:
         """
         Maximum Mean Discrepancy (MMD) data drift detector using a permutation test.
@@ -80,16 +80,19 @@ class MMDDriftTorch(BaseMMDDrift):
             configure_kernel_from_x_ref=configure_kernel_from_x_ref,
             n_permutations=n_permutations,
             input_shape=input_shape,
-            data_type=data_type
+            data_type=data_type,
         )
-        self.meta.update({'backend': Framework.PYTORCH.value})
+        self.meta.update({"backend": Framework.PYTORCH.value})
 
         # set device
         self.device = get_device(device)
 
         # initialize kernel
-        sigma = torch.from_numpy(sigma).to(self.device) if isinstance(sigma,  # type: ignore[assignment]
-                                                                      np.ndarray) else None
+        sigma = (
+            torch.from_numpy(sigma).to(self.device)
+            if isinstance(sigma, np.ndarray)  # type: ignore[assignment]
+            else None
+        )
         self.kernel = kernel(sigma).to(self.device) if kernel == GaussianRBF else kernel
 
         # compute kernel matrix for the reference data
@@ -135,7 +138,7 @@ class MMDDriftTorch(BaseMMDDrift):
         mmd2_permuted = torch.Tensor(
             [mmd2_from_kernel_matrix(kernel_mat, n, permute=True, zero_diag=False) for _ in range(self.n_permutations)]
         )
-        if self.device.type == 'cuda':
+        if self.device.type == "cuda":
             mmd2, mmd2_permuted = mmd2.cpu(), mmd2_permuted.cpu()
         p_val = (mmd2 <= mmd2_permuted).float().mean()
         # compute distance threshold

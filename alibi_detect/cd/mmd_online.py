@@ -13,20 +13,20 @@ if has_tensorflow:
 
 class MMDDriftOnline(DriftConfigMixin):
     def __init__(
-            self,
-            x_ref: Union[np.ndarray, list],
-            ert: float,
-            window_size: int,
-            backend: str = 'tensorflow',
-            preprocess_fn: Optional[Callable] = None,
-            x_ref_preprocessed: bool = False,
-            kernel: Optional[Callable] = None,
-            sigma: Optional[np.ndarray] = None,
-            n_bootstraps: int = 1000,
-            device: Optional[str] = None,
-            verbose: bool = True,
-            input_shape: Optional[tuple] = None,
-            data_type: Optional[str] = None
+        self,
+        x_ref: Union[np.ndarray, list],
+        ert: float,
+        window_size: int,
+        backend: str = "tensorflow",
+        preprocess_fn: Optional[Callable] = None,
+        x_ref_preprocessed: bool = False,
+        kernel: Optional[Callable] = None,
+        sigma: Optional[np.ndarray] = None,
+        n_bootstraps: int = 1000,
+        device: Optional[str] = None,
+        verbose: bool = True,
+        input_shape: Optional[tuple] = None,
+        data_type: Optional[str] = None,
     ) -> None:
         """
         Online maximum Mean Discrepancy (MMD) data drift detector using preconfigured thresholds.
@@ -77,14 +77,13 @@ class MMDDriftOnline(DriftConfigMixin):
 
         backend = backend.lower()
         BackendValidator(
-            backend_options={Framework.TENSORFLOW: [Framework.TENSORFLOW],
-                             Framework.PYTORCH: [Framework.PYTORCH]},
-            construct_name=self.__class__.__name__
+            backend_options={Framework.TENSORFLOW: [Framework.TENSORFLOW], Framework.PYTORCH: [Framework.PYTORCH]},
+            construct_name=self.__class__.__name__,
         ).verify_backend(backend)
 
         kwargs = locals()
-        args = [kwargs['x_ref'], kwargs['ert'], kwargs['window_size']]
-        pop_kwargs = ['self', 'x_ref', 'ert', 'window_size', 'backend', '__class__']
+        args = [kwargs["x_ref"], kwargs["ert"], kwargs["window_size"]]
+        pop_kwargs = ["self", "x_ref", "ert", "window_size", "backend", "__class__"]
         [kwargs.pop(k, None) for k in pop_kwargs]
 
         if kernel is None:
@@ -92,10 +91,10 @@ class MMDDriftOnline(DriftConfigMixin):
                 from alibi_detect.utils.tensorflow.kernels import GaussianRBF
             else:
                 from alibi_detect.utils.pytorch.kernels import GaussianRBF  # type: ignore
-            kwargs.update({'kernel': GaussianRBF})
+            kwargs.update({"kernel": GaussianRBF})
 
         if backend == Framework.TENSORFLOW:
-            kwargs.pop('device', None)
+            kwargs.pop("device", None)
             self._detector = MMDDriftOnlineTF(*args, **kwargs)  # type: ignore
         else:
             self._detector = MMDDriftOnlineTorch(*args, **kwargs)  # type: ignore
@@ -117,8 +116,9 @@ class MMDDriftOnline(DriftConfigMixin):
         """Resets the detector to its initial state (`t=0`). This does not include reconfiguring thresholds."""
         self._detector.reset_state()
 
-    def predict(self, x_t: Union[np.ndarray, Any], return_test_stat: bool = True) \
-            -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
+    def predict(
+        self, x_t: Union[np.ndarray, Any], return_test_stat: bool = True
+    ) -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
         """
         Predict whether the most recent window of data has drifted from the reference data.
 
@@ -184,6 +184,6 @@ class MMDDriftOnline(DriftConfigMixin):
         The detector's configuration dictionary.
         """
         cfg = super().get_config()
-        if cfg.get('backend') == 'pytorch':
-            cfg['x_ref'] = cfg['x_ref'].detach().cpu().numpy()
+        if cfg.get("backend") == "pytorch":
+            cfg["x_ref"] = cfg["x_ref"].detach().cpu().numpy()
         return cfg

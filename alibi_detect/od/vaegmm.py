@@ -14,20 +14,20 @@ logger = logging.getLogger(__name__)
 
 
 class OutlierVAEGMM(BaseDetector, FitMixin, ThresholdMixin):
-
-    def __init__(self,
-                 threshold: float = None,
-                 vaegmm: tf.keras.Model = None,
-                 encoder_net: tf.keras.Model = None,
-                 decoder_net: tf.keras.Model = None,
-                 gmm_density_net: tf.keras.Model = None,
-                 n_gmm: int = None,
-                 latent_dim: int = None,
-                 samples: int = 10,
-                 beta: float = 1.,
-                 recon_features: Callable = eucl_cosim_features,
-                 data_type: str = None
-                 ) -> None:
+    def __init__(
+        self,
+        threshold: float = None,
+        vaegmm: tf.keras.Model = None,
+        encoder_net: tf.keras.Model = None,
+        decoder_net: tf.keras.Model = None,
+        gmm_density_net: tf.keras.Model = None,
+        n_gmm: int = None,
+        latent_dim: int = None,
+        samples: int = 10,
+        beta: float = 1.0,
+        recon_features: Callable = eucl_cosim_features,
+        data_type: str = None,
+    ) -> None:
         """
         VAEGMM-based outlier detector.
 
@@ -59,7 +59,7 @@ class OutlierVAEGMM(BaseDetector, FitMixin, ThresholdMixin):
         super().__init__()
 
         if threshold is None:
-            logger.warning('No threshold level set. Need to infer threshold using `infer_threshold`.')
+            logger.warning("No threshold level set. Need to infer threshold using `infer_threshold`.")
 
         self.threshold = threshold
         self.samples = samples
@@ -67,36 +67,42 @@ class OutlierVAEGMM(BaseDetector, FitMixin, ThresholdMixin):
         # check if model can be loaded, otherwise initialize VAEGMM model
         if isinstance(vaegmm, tf.keras.Model):
             self.vaegmm = vaegmm
-        elif (isinstance(encoder_net, tf.keras.Sequential) and
-              isinstance(decoder_net, tf.keras.Sequential) and
-              isinstance(gmm_density_net, tf.keras.Sequential)):
-            self.vaegmm = VAEGMM(encoder_net, decoder_net, gmm_density_net, n_gmm,
-                                 latent_dim, recon_features=recon_features, beta=beta)
+        elif (
+            isinstance(encoder_net, tf.keras.Sequential)
+            and isinstance(decoder_net, tf.keras.Sequential)
+            and isinstance(gmm_density_net, tf.keras.Sequential)
+        ):
+            self.vaegmm = VAEGMM(
+                encoder_net, decoder_net, gmm_density_net, n_gmm, latent_dim, recon_features=recon_features, beta=beta
+            )
         else:
-            raise TypeError('No valid format detected for `vaegmm` (tf.keras.Model) '
-                            'or `encoder_net`, `decoder_net` and `gmm_density_net` (tf.keras.Sequential).')
+            raise TypeError(
+                "No valid format detected for `vaegmm` (tf.keras.Model) "
+                "or `encoder_net`, `decoder_net` and `gmm_density_net` (tf.keras.Sequential)."
+            )
 
         # set metadata
-        self.meta['detector_type'] = 'outlier'
-        self.meta['data_type'] = data_type
-        self.meta['online'] = False
+        self.meta["detector_type"] = "outlier"
+        self.meta["data_type"] = data_type
+        self.meta["online"] = False
 
         self.phi, self.mu, self.cov, self.L, self.log_det_cov = None, None, None, None, None
 
-    def fit(self,
-            X: np.ndarray,
-            loss_fn: tf.keras.losses = loss_vaegmm,
-            w_recon: float = 1e-7,
-            w_energy: float = .1,
-            w_cov_diag: float = .005,
-            optimizer: tf.keras.optimizers = tf.keras.optimizers.Adam(learning_rate=1e-4),
-            cov_elbo: dict = dict(sim=.05),
-            epochs: int = 20,
-            batch_size: int = 64,
-            verbose: bool = True,
-            log_metric: Tuple[str, "tf.keras.metrics"] = None,
-            callbacks: tf.keras.callbacks = None,
-            ) -> None:
+    def fit(
+        self,
+        X: np.ndarray,
+        loss_fn: tf.keras.losses = loss_vaegmm,
+        w_recon: float = 1e-7,
+        w_energy: float = 0.1,
+        w_cov_diag: float = 0.005,
+        optimizer: tf.keras.optimizers = tf.keras.optimizers.Adam(learning_rate=1e-4),
+        cov_elbo: dict = dict(sim=0.05),
+        epochs: int = 20,
+        batch_size: int = 64,
+        verbose: bool = True,
+        log_metric: Tuple[str, "tf.keras.metrics"] = None,
+        callbacks: tf.keras.callbacks = None,
+    ) -> None:
         """
         Train VAEGMM model.
 
@@ -132,26 +138,25 @@ class OutlierVAEGMM(BaseDetector, FitMixin, ThresholdMixin):
         """
         # train arguments
         args = [self.vaegmm, loss_fn, X]
-        kwargs = {'optimizer': optimizer,
-                  'epochs': epochs,
-                  'batch_size': batch_size,
-                  'verbose': verbose,
-                  'log_metric': log_metric,
-                  'callbacks': callbacks,
-                  'loss_fn_kwargs': {'w_recon': w_recon,
-                                     'w_energy': w_energy,
-                                     'w_cov_diag': w_cov_diag}
-                  }
+        kwargs = {
+            "optimizer": optimizer,
+            "epochs": epochs,
+            "batch_size": batch_size,
+            "verbose": verbose,
+            "log_metric": log_metric,
+            "callbacks": callbacks,
+            "loss_fn_kwargs": {"w_recon": w_recon, "w_energy": w_energy, "w_cov_diag": w_cov_diag},
+        }
 
         # initialize covariance matrix if default vaegmm loss fn is used
-        use_elbo = loss_fn.__name__ == 'loss_vaegmm'
+        use_elbo = loss_fn.__name__ == "loss_vaegmm"
         cov_elbo_type, cov = [*cov_elbo][0], [*cov_elbo.values()][0]
-        if use_elbo and cov_elbo_type in ['cov_full', 'cov_diag']:
+        if use_elbo and cov_elbo_type in ["cov_full", "cov_diag"]:
             cov = tfp.stats.covariance(X.reshape(X.shape[0], -1))
-            if cov_elbo_type == 'cov_diag':  # infer standard deviation from covariance matrix
+            if cov_elbo_type == "cov_diag":  # infer standard deviation from covariance matrix
                 cov = tf.math.sqrt(tf.linalg.diag_part(cov))
         if use_elbo:
-            kwargs['loss_fn_kwargs'][cov_elbo_type] = tf.dtypes.cast(cov, tf.float32)
+            kwargs["loss_fn_kwargs"][cov_elbo_type] = tf.dtypes.cast(cov, tf.float32)
 
         # train
         trainer(*args, **kwargs)
@@ -160,11 +165,7 @@ class OutlierVAEGMM(BaseDetector, FitMixin, ThresholdMixin):
         x_recon, z, gamma = self.vaegmm(X)
         self.phi, self.mu, self.cov, self.L, self.log_det_cov = gmm_params(z, gamma)
 
-    def infer_threshold(self,
-                        X: np.ndarray,
-                        threshold_perc: float = 95.,
-                        batch_size: int = int(1e10)
-                        ) -> None:
+    def infer_threshold(self, X: np.ndarray, threshold_perc: float = 95.0, batch_size: int = int(1e10)) -> None:
         """
         Update threshold by a value inferred from the percentage of instances considered to be
         outliers in a sample of the dataset.
@@ -209,11 +210,9 @@ class OutlierVAEGMM(BaseDetector, FitMixin, ThresholdMixin):
         iscore = np.mean(energy_samples, axis=-1)
         return iscore
 
-    def predict(self,
-                X: np.ndarray,
-                batch_size: int = int(1e10),
-                return_instance_score: bool = True) \
-            -> Dict[Dict[str, str], Dict[np.ndarray, np.ndarray]]:
+    def predict(
+        self, X: np.ndarray, batch_size: int = int(1e10), return_instance_score: bool = True
+    ) -> Dict[Dict[str, str], Dict[np.ndarray, np.ndarray]]:
         """
         Compute outlier scores and transform into outlier predictions.
 
@@ -240,8 +239,8 @@ class OutlierVAEGMM(BaseDetector, FitMixin, ThresholdMixin):
 
         # populate output dict
         od = outlier_prediction_dict()
-        od['meta'] = self.meta
-        od['data']['is_outlier'] = outlier_pred
+        od["meta"] = self.meta
+        od["data"]["is_outlier"] = outlier_pred
         if return_instance_score:
-            od['data']['instance_score'] = iscore
+            od["data"]["instance_score"] = iscore
         return od

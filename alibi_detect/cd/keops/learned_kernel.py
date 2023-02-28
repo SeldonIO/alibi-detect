@@ -15,34 +15,34 @@ from alibi_detect.utils.frameworks import Framework
 
 class LearnedKernelDriftKeops(BaseLearnedKernelDrift):
     def __init__(
-            self,
-            x_ref: Union[np.ndarray, list],
-            kernel: Union[nn.Module, nn.Sequential],
-            p_val: float = .05,
-            x_ref_preprocessed: bool = False,
-            preprocess_at_init: bool = True,
-            update_x_ref: Optional[Dict[str, int]] = None,
-            preprocess_fn: Optional[Callable] = None,
-            n_permutations: int = 100,
-            batch_size_permutations: int = 1000000,
-            var_reg: float = 1e-5,
-            reg_loss_fn: Callable = (lambda kernel: 0),
-            train_size: Optional[float] = .75,
-            retrain_from_scratch: bool = True,
-            optimizer: torch.optim.Optimizer = torch.optim.Adam,  # type: ignore
-            learning_rate: float = 1e-3,
-            batch_size: int = 32,
-            batch_size_predict: int = 1000000,
-            preprocess_batch_fn: Optional[Callable] = None,
-            epochs: int = 3,
-            num_workers: int = 0,
-            verbose: int = 0,
-            train_kwargs: Optional[dict] = None,
-            device: Optional[str] = None,
-            dataset: Callable = TorchDataset,
-            dataloader: Callable = DataLoader,
-            input_shape: Optional[tuple] = None,
-            data_type: Optional[str] = None
+        self,
+        x_ref: Union[np.ndarray, list],
+        kernel: Union[nn.Module, nn.Sequential],
+        p_val: float = 0.05,
+        x_ref_preprocessed: bool = False,
+        preprocess_at_init: bool = True,
+        update_x_ref: Optional[Dict[str, int]] = None,
+        preprocess_fn: Optional[Callable] = None,
+        n_permutations: int = 100,
+        batch_size_permutations: int = 1000000,
+        var_reg: float = 1e-5,
+        reg_loss_fn: Callable = (lambda kernel: 0),
+        train_size: Optional[float] = 0.75,
+        retrain_from_scratch: bool = True,
+        optimizer: torch.optim.Optimizer = torch.optim.Adam,  # type: ignore
+        learning_rate: float = 1e-3,
+        batch_size: int = 32,
+        batch_size_predict: int = 1000000,
+        preprocess_batch_fn: Optional[Callable] = None,
+        epochs: int = 3,
+        num_workers: int = 0,
+        verbose: int = 0,
+        train_kwargs: Optional[dict] = None,
+        device: Optional[str] = None,
+        dataset: Callable = TorchDataset,
+        dataloader: Callable = DataLoader,
+        input_shape: Optional[tuple] = None,
+        data_type: Optional[str] = None,
     ) -> None:
         """
         Maximum Mean Discrepancy (MMD) data drift detector where the kernel is trained to maximise an
@@ -130,9 +130,9 @@ class LearnedKernelDriftKeops(BaseLearnedKernelDrift):
             train_size=train_size,
             retrain_from_scratch=retrain_from_scratch,
             input_shape=input_shape,
-            data_type=data_type
+            data_type=data_type,
         )
-        self.meta.update({'backend': Framework.KEOPS.value})
+        self.meta.update({"backend": Framework.KEOPS.value})
 
         # Set device, define model and training kwargs
         self.device = get_device(device)
@@ -140,20 +140,28 @@ class LearnedKernelDriftKeops(BaseLearnedKernelDrift):
         self.kernel = deepcopy(kernel)
 
         # Check kernel format
-        self.has_proj = hasattr(self.kernel, 'proj') and isinstance(self.kernel.proj, nn.Module)
-        self.has_kernel_b = hasattr(self.kernel, 'kernel_b') and isinstance(self.kernel.kernel_b, nn.Module)
+        self.has_proj = hasattr(self.kernel, "proj") and isinstance(self.kernel.proj, nn.Module)
+        self.has_kernel_b = hasattr(self.kernel, "kernel_b") and isinstance(self.kernel.kernel_b, nn.Module)
 
         # Define kwargs for dataloader and trainer
         self.dataset = dataset
-        self.dataloader = partial(dataloader, batch_size=batch_size, shuffle=True,
-                                  drop_last=True, num_workers=num_workers)
-        self.train_kwargs = {'optimizer': optimizer, 'epochs': epochs,  'preprocess_fn': preprocess_batch_fn,
-                             'reg_loss_fn': reg_loss_fn, 'learning_rate': learning_rate, 'verbose': verbose}
+        self.dataloader = partial(
+            dataloader, batch_size=batch_size, shuffle=True, drop_last=True, num_workers=num_workers
+        )
+        self.train_kwargs = {
+            "optimizer": optimizer,
+            "epochs": epochs,
+            "preprocess_fn": preprocess_batch_fn,
+            "reg_loss_fn": reg_loss_fn,
+            "learning_rate": learning_rate,
+            "verbose": verbose,
+        }
         if isinstance(train_kwargs, dict):
             self.train_kwargs.update(train_kwargs)
 
-        self.j_hat = LearnedKernelDriftKeops.JHat(
-            self.kernel, var_reg, self.has_proj, self.has_kernel_b).to(self.device)
+        self.j_hat = LearnedKernelDriftKeops.JHat(self.kernel, var_reg, self.has_proj, self.has_kernel_b).to(
+            self.device
+        )
 
         # Set prediction and permutation batch sizes
         self.batch_size_predict = batch_size_predict
@@ -196,7 +204,7 @@ class LearnedKernelDriftKeops(BaseLearnedKernelDrift):
             h_i = h_mat.sum(1).squeeze(-1)
             h = h_i.sum()
             mmd2_est = (h - n) / (n * (n - 1))
-            var_est = 4 * h_i.square().sum() / (n ** 3) - 4 * h.square() / (n ** 4)
+            var_est = 4 * h_i.square().sum() / (n**3) - 4 * h.square() / (n**4)
             reg_var_est = var_est + self.var_reg
 
             return mmd2_est / reg_var_est.sqrt()
@@ -234,7 +242,7 @@ class LearnedKernelDriftKeops(BaseLearnedKernelDrift):
 
         perms = [torch.randperm(m + n) for _ in range(self.n_permutations)]
         mmd2, mmd2_permuted = self._mmd2(x_all, perms, m, n)
-        if self.device.type == 'cuda':
+        if self.device.type == "cuda":
             mmd2, mmd2_permuted = mmd2.cpu(), mmd2_permuted.cpu()
         p_val = (mmd2 <= mmd2_permuted).float().mean()
 
@@ -242,8 +250,9 @@ class LearnedKernelDriftKeops(BaseLearnedKernelDrift):
         distance_threshold = torch.sort(mmd2_permuted, descending=True).values[idx_threshold]
         return p_val.numpy().item(), mmd2.numpy().item(), distance_threshold.numpy()
 
-    def _mmd2(self, x_all: Union[list, torch.Tensor], perms: List[torch.Tensor], m: int, n: int) \
-            -> Tuple[torch.Tensor, torch.Tensor]:
+    def _mmd2(
+        self, x_all: Union[list, torch.Tensor], perms: List[torch.Tensor], m: int, n: int
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Batched (across the permutations) MMD^2 computation for the original test statistic and the permutations.
 
@@ -262,12 +271,17 @@ class LearnedKernelDriftKeops(BaseLearnedKernelDrift):
         -------
         MMD^2 statistic for the original and permuted reference and test sets.
         """
-        preprocess_batch_fn = self.train_kwargs['preprocess_fn']
+        preprocess_batch_fn = self.train_kwargs["preprocess_fn"]
         if isinstance(preprocess_batch_fn, Callable):  # type: ignore[arg-type]
             x_all = preprocess_batch_fn(x_all)  # type: ignore[operator]
         if self.has_proj:
-            x_all_proj = predict_batch(x_all, self.kernel.proj, device=self.device, batch_size=self.batch_size_predict,
-                                       dtype=x_all.dtype if isinstance(x_all, torch.Tensor) else torch.float32)
+            x_all_proj = predict_batch(
+                x_all,
+                self.kernel.proj,
+                device=self.device,
+                batch_size=self.batch_size_predict,
+                dtype=x_all.dtype if isinstance(x_all, torch.Tensor) else torch.float32,
+            )
         else:
             x_all_proj = x_all
 
@@ -302,7 +316,7 @@ class LearnedKernelDriftKeops(BaseLearnedKernelDrift):
                 k_xx.append(self.kernel(x_proj, x2_proj, x, x2).sum(1).sum(1).squeeze(-1))
                 k_yy.append(self.kernel(y_proj, y2_proj, y, y2).sum(1).sum(1).squeeze(-1))
 
-        c_xx, c_yy, c_xy = 1 / (m * (m - 1)), 1 / (n * (n - 1)), 2. / (m * n)
+        c_xx, c_yy, c_xy = 1 / (m * (m - 1)), 1 / (n * (n - 1)), 2.0 / (m * n)
         # Note that the MMD^2 estimates assume that the diagonal of the kernel matrix consists of 1's
         stats = c_xx * (torch.cat(k_xx) - m) + c_yy * (torch.cat(k_yy) - n) - c_xy * torch.cat(k_xy)
         return stats[0], stats[1:]
@@ -322,11 +336,14 @@ class LearnedKernelDriftKeops(BaseLearnedKernelDrift):
         """Train the kernel to maximise an estimate of test power using minibatch gradient descent."""
         optimizer = optimizer(j_hat.parameters(), lr=learning_rate)
         j_hat.train()
-        loss_ma = 0.
+        loss_ma = 0.0
         for epoch in range(epochs):
             dl_ref, dl_cur = dataloaders
-            dl = tqdm(enumerate(zip(dl_ref, dl_cur)), total=min(len(dl_ref), len(dl_cur))) if verbose == 1 else \
-                enumerate(zip(dl_ref, dl_cur))
+            dl = (
+                tqdm(enumerate(zip(dl_ref, dl_cur)), total=min(len(dl_ref), len(dl_cur)))
+                if verbose == 1
+                else enumerate(zip(dl_ref, dl_cur))
+            )
             for step, (x_ref, x_cur) in dl:
                 if isinstance(preprocess_fn, Callable):  # type: ignore
                     x_ref, x_cur = preprocess_fn(x_ref), preprocess_fn(x_cur)
@@ -338,5 +355,5 @@ class LearnedKernelDriftKeops(BaseLearnedKernelDrift):
                 optimizer.step()  # type: ignore
                 if verbose == 1:
                     loss_ma = loss_ma + (loss.item() - loss_ma) / (step + 1)
-                    dl.set_description(f'Epoch {epoch + 1}/{epochs}')
+                    dl.set_description(f"Epoch {epoch + 1}/{epochs}")
                     dl.set_postfix(dict(loss=loss_ma))

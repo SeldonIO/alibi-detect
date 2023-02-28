@@ -6,8 +6,9 @@ import joblib
 from sklearn.base import BaseEstimator
 
 
-def load_model(filepath: Union[str, os.PathLike],
-               ) -> BaseEstimator:
+def load_model(
+    filepath: Union[str, os.PathLike],
+) -> BaseEstimator:
     """
     Load scikit-learn (or xgboost) model. Models are assumed to be a subclass of :class:`~sklearn.base.BaseEstimator`.
     This includes xgboost models following the scikit-learn API
@@ -23,4 +24,4 @@ def load_model(filepath: Union[str, os.PathLike],
     Loaded model.
     """
     model_dir = Path(filepath)
-    return joblib.load(model_dir.joinpath('model.joblib'))
+    return joblib.load(model_dir.joinpath("model.joblib"))

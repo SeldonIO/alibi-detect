@@ -16,9 +16,10 @@ from alibi_detect.utils.pytorch.kernels import DeepKernel
 logger = logging.getLogger(__name__)
 
 
-def load_model(filepath: Union[str, os.PathLike],
-               layer: Optional[int] = None,
-               ) -> nn.Module:
+def load_model(
+    filepath: Union[str, os.PathLike],
+    layer: Optional[int] = None,
+) -> nn.Module:
     """
     Load PyTorch model.
 
@@ -34,7 +35,7 @@ def load_model(filepath: Union[str, os.PathLike],
     -------
     Loaded model.
     """
-    filepath = Path(filepath).joinpath('model.pt')
+    filepath = Path(filepath).joinpath("model.pt")
     model = torch.load(filepath, pickle_module=dill)
     # Optionally extract hidden layer
     if isinstance(layer, int):
@@ -78,25 +79,27 @@ def load_kernel_config(cfg: dict) -> Callable:
     -------
     The kernel.
     """
-    if 'src' in cfg:  # Standard kernel config
-        kernel = cfg.pop('src')
-        if hasattr(kernel, 'from_config'):
+    if "src" in cfg:  # Standard kernel config
+        kernel = cfg.pop("src")
+        if hasattr(kernel, "from_config"):
             kernel = kernel.from_config(cfg)
 
-    elif 'proj' in cfg:  # DeepKernel config
+    elif "proj" in cfg:  # DeepKernel config
         # Kernel a
-        kernel_a = cfg['kernel_a']
-        kernel_b = cfg['kernel_b']
-        if kernel_a != 'rbf':
-            cfg['kernel_a'] = load_kernel_config(kernel_a)
-        if kernel_b != 'rbf':
-            cfg['kernel_b'] = load_kernel_config(kernel_b)
+        kernel_a = cfg["kernel_a"]
+        kernel_b = cfg["kernel_b"]
+        if kernel_a != "rbf":
+            cfg["kernel_a"] = load_kernel_config(kernel_a)
+        if kernel_b != "rbf":
+            cfg["kernel_b"] = load_kernel_config(kernel_b)
         # Assemble deep kernel
         kernel = DeepKernel.from_config(cfg)
 
     else:
-        raise ValueError('Unable to process kernel. The kernel config dict must either be a `KernelConfig` with a '
-                         '`src` field, or a `DeepkernelConfig` with a `proj` field.)')
+        raise ValueError(
+            "Unable to process kernel. The kernel config dict must either be a `KernelConfig` with a "
+            "`src` field, or a `DeepkernelConfig` with a `proj` field.)"
+        )
     return kernel
 
 
@@ -113,9 +116,9 @@ def load_optimizer(cfg: dict) -> Type[torch.optim.Optimizer]:
     -------
     The loaded optimizer class.
     """
-    class_name = cfg.get('class_name')
+    class_name = cfg.get("class_name")
     try:
-        return getattr(import_module('torch.optim'), class_name)
+        return getattr(import_module("torch.optim"), class_name)
     except AttributeError:
         raise ValueError(f"{class_name} is not a recognised optimizer in `torch.optim`.")
 

@@ -4,8 +4,9 @@ from transformers import TFAutoModel, AutoConfig
 from typing import Dict, List
 
 
-def hidden_state_embedding(hidden_states: tf.Tensor, layers: List[int],
-                           use_cls: bool, reduce_mean: bool = True) -> tf.Tensor:
+def hidden_state_embedding(
+    hidden_states: tf.Tensor, layers: List[int], use_cls: bool, reduce_mean: bool = True
+) -> tf.Tensor:
     """
     Extract embeddings from hidden attention state layers.
 
@@ -31,12 +32,7 @@ def hidden_state_embedding(hidden_states: tf.Tensor, layers: List[int],
 
 
 class TransformerEmbedding(tf.keras.Model):
-    def __init__(
-            self,
-            model_name_or_path: str,
-            embedding_type: str,
-            layers: List[int] = None
-    ) -> None:
+    def __init__(self, model_name_or_path: str, embedding_type: str, layers: List[int] = None) -> None:
         """
         Extract text embeddings from transformer models.
 
@@ -73,17 +69,19 @@ class TransformerEmbedding(tf.keras.Model):
         self.config = AutoConfig.from_pretrained(model_name_or_path, output_hidden_states=True)
         self.model = TFAutoModel.from_pretrained(model_name_or_path, config=self.config)
         self.emb_type = embedding_type
-        self.hs_emb = partial(hidden_state_embedding, layers=layers, use_cls=embedding_type.endswith('cls'))
+        self.hs_emb = partial(hidden_state_embedding, layers=layers, use_cls=embedding_type.endswith("cls"))
 
     def call(self, tokens: Dict[str, tf.Tensor]) -> tf.Tensor:
         output = self.model(tokens)
-        if self.emb_type == 'pooler_output':
+        if self.emb_type == "pooler_output":
             return output.pooler_output
-        elif self.emb_type == 'last_hidden_state':
+        elif self.emb_type == "last_hidden_state":
             return tf.reduce_mean(output.last_hidden_state, axis=1)
         attention_hidden_states = output.hidden_states[1:]
-        if self.emb_type.startswith('hidden_state'):
+        if self.emb_type.startswith("hidden_state"):
             return self.hs_emb(attention_hidden_states)
         else:
-            raise ValueError('embedding_type needs to be one of pooler_output, '
-                             'last_hidden_state, hidden_state, or hidden_state_cls.')
+            raise ValueError(
+                "embedding_type needs to be one of pooler_output, "
+                "last_hidden_state, hidden_state, or hidden_state_cls."
+            )

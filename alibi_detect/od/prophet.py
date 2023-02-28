@@ -8,25 +8,25 @@ logger = logging.getLogger(__name__)
 
 
 class OutlierProphet(BaseDetector, FitMixin):
-
-    def __init__(self,
-                 threshold: float = .8,
-                 growth: str = 'linear',
-                 cap: float = None,
-                 holidays: pd.DataFrame = None,
-                 holidays_prior_scale: float = 10.,
-                 country_holidays: str = None,
-                 changepoint_prior_scale: float = .05,
-                 changepoint_range: float = .8,
-                 seasonality_mode: str = 'additive',
-                 daily_seasonality: Union[str, bool, int] = 'auto',
-                 weekly_seasonality: Union[str, bool, int] = 'auto',
-                 yearly_seasonality: Union[str, bool, int] = 'auto',
-                 add_seasonality: List = None,
-                 seasonality_prior_scale: float = 10.,
-                 uncertainty_samples: int = 1000,
-                 mcmc_samples: int = 0
-                 ) -> None:
+    def __init__(
+        self,
+        threshold: float = 0.8,
+        growth: str = "linear",
+        cap: float = None,
+        holidays: pd.DataFrame = None,
+        holidays_prior_scale: float = 10.0,
+        country_holidays: str = None,
+        changepoint_prior_scale: float = 0.05,
+        changepoint_range: float = 0.8,
+        seasonality_mode: str = "additive",
+        daily_seasonality: Union[str, bool, int] = "auto",
+        weekly_seasonality: Union[str, bool, int] = "auto",
+        yearly_seasonality: Union[str, bool, int] = "auto",
+        add_seasonality: List = None,
+        seasonality_prior_scale: float = 10.0,
+        uncertainty_samples: int = 1000,
+        mcmc_samples: int = 0,
+    ) -> None:
         """
         Outlier detector for time series data using fbprophet.
         See https://facebook.github.io/prophet/ for more details.
@@ -88,19 +88,19 @@ class OutlierProphet(BaseDetector, FitMixin):
         # initialize Prophet model
         # TODO: add conditional seasonalities
         kwargs = {
-            'growth': growth,
-            'interval_width': threshold,
-            'holidays': holidays,
-            'holidays_prior_scale': holidays_prior_scale,
-            'changepoint_prior_scale': changepoint_prior_scale,
-            'changepoint_range': changepoint_range,
-            'seasonality_mode': seasonality_mode,
-            'daily_seasonality': daily_seasonality,
-            'weekly_seasonality': weekly_seasonality,
-            'yearly_seasonality': yearly_seasonality,
-            'seasonality_prior_scale': seasonality_prior_scale,
-            'uncertainty_samples': uncertainty_samples,
-            'mcmc_samples': mcmc_samples
+            "growth": growth,
+            "interval_width": threshold,
+            "holidays": holidays,
+            "holidays_prior_scale": holidays_prior_scale,
+            "changepoint_prior_scale": changepoint_prior_scale,
+            "changepoint_range": changepoint_range,
+            "seasonality_mode": seasonality_mode,
+            "daily_seasonality": daily_seasonality,
+            "weekly_seasonality": weekly_seasonality,
+            "yearly_seasonality": yearly_seasonality,
+            "seasonality_prior_scale": seasonality_prior_scale,
+            "uncertainty_samples": uncertainty_samples,
+            "mcmc_samples": mcmc_samples,
         }
         self.model = Prophet(**kwargs)
         if country_holidays:
@@ -111,9 +111,9 @@ class OutlierProphet(BaseDetector, FitMixin):
         self.cap = cap
 
         # set metadata
-        self.meta['detector_type'] = 'outlier'
-        self.meta['data_type'] = 'time-series'
-        self.meta['online'] = False
+        self.meta["detector_type"] = "outlier"
+        self.meta["data_type"] = "time-series"
+        self.meta["online"] = False
 
     def fit(self, df: pd.DataFrame) -> None:
         """
@@ -125,7 +125,7 @@ class OutlierProphet(BaseDetector, FitMixin):
             Dataframe with columns `ds` with timestamps and `y` with target values.
         """
         if self.cap:
-            df['cap'] = self.cap
+            df["cap"] = self.cap
         self.model.fit(df)
 
     def score(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -143,20 +143,17 @@ class OutlierProphet(BaseDetector, FitMixin):
         Array with outlier scores for each instance in the batch.
         """
         if self.cap:
-            df['cap'] = self.cap
+            df["cap"] = self.cap
         forecast = self.model.predict(df)
-        forecast['y'] = df['y'].values
-        forecast['score'] = (
-                (forecast['y'] - forecast['yhat_upper']) * (forecast['y'] >= forecast['yhat']) +
-                (forecast['yhat_lower'] - forecast['y']) * (forecast['y'] < forecast['yhat'])
-        )
+        forecast["y"] = df["y"].values
+        forecast["score"] = (forecast["y"] - forecast["yhat_upper"]) * (forecast["y"] >= forecast["yhat"]) + (
+            forecast["yhat_lower"] - forecast["y"]
+        ) * (forecast["y"] < forecast["yhat"])
         return forecast
 
-    def predict(self,
-                df: pd.DataFrame,
-                return_instance_score: bool = True,
-                return_forecast: bool = True
-                ) -> Dict[Dict[str, str], Dict[pd.DataFrame, pd.DataFrame]]:
+    def predict(
+        self, df: pd.DataFrame, return_instance_score: bool = True, return_forecast: bool = True
+    ) -> Dict[Dict[str, str], Dict[pd.DataFrame, pd.DataFrame]]:
         """
         Compute outlier scores and transform into outlier predictions.
 
@@ -178,23 +175,17 @@ class OutlierProphet(BaseDetector, FitMixin):
         """
         # compute outlier scores
         forecast = self.score(df)
-        iscore = pd.DataFrame(data={
-            'ds': df['ds'].values,
-            'instance_score': forecast['score']
-        })
+        iscore = pd.DataFrame(data={"ds": df["ds"].values, "instance_score": forecast["score"]})
 
         # values above threshold are outliers
-        outlier_pred = pd.DataFrame(data={
-            'ds': df['ds'].values,
-            'is_outlier': (forecast['score'] > 0.).astype(int)
-        })
+        outlier_pred = pd.DataFrame(data={"ds": df["ds"].values, "is_outlier": (forecast["score"] > 0.0).astype(int)})
 
         # populate output dict
         od = outlier_prediction_dict()
-        od['meta'] = self.meta
-        od['data']['is_outlier'] = outlier_pred
+        od["meta"] = self.meta
+        od["data"]["is_outlier"] = outlier_pred
         if return_instance_score:
-            od['data']['instance_score'] = iscore
+            od["data"]["instance_score"] = iscore
         if return_forecast:
-            od['data']['forecast'] = forecast
+            od["data"]["forecast"] = forecast
         return od

@@ -18,7 +18,7 @@ def norm(x: np.ndarray, p: int) -> np.ndarray:
     -------
     Array where p-norm is applied to the features.
     """
-    return (x ** p).sum(axis=1) ** (1 / p)
+    return (x**p).sum(axis=1) ** (1 / p)
 
 
 def pairwise_distance(x: np.ndarray, y: np.ndarray, p: int = 2) -> np.ndarray:
@@ -64,9 +64,9 @@ def cityblock_batch(X: np.ndarray, y: np.ndarray) -> np.ndarray:
     y_dim = len(y.shape)
 
     if X_dim == y_dim:
-        assert y.shape[0] == 1, 'y must have batch size equal to 1'
+        assert y.shape[0] == 1, "y must have batch size equal to 1"
     else:
-        assert X.shape[1:] == y.shape, 'X and y must have matching shapes'
+        assert X.shape[1:] == y.shape, "X and y must have matching shapes"
 
     return np.abs(X - y).sum(axis=tuple(np.arange(1, X_dim))).reshape(X.shape[0], -1)
 
@@ -195,14 +195,16 @@ def abdm(X: np.ndarray, cat_vars: dict, cat_vars_bin: dict = dict()) -> dict:
     return d_pair
 
 
-def multidim_scaling(d_pair: dict,
-                     n_components: int = 2,
-                     use_metric: bool = True,
-                     standardize_cat_vars: bool = True,
-                     feature_range: tuple = None,
-                     smooth: float = 1.,
-                     center: bool = True,
-                     update_feature_range: bool = True) -> Tuple[dict, tuple]:
+def multidim_scaling(
+    d_pair: dict,
+    n_components: int = 2,
+    use_metric: bool = True,
+    standardize_cat_vars: bool = True,
+    feature_range: tuple = None,
+    smooth: float = 1.0,
+    center: bool = True,
+    update_feature_range: bool = True,
+) -> Tuple[dict, tuple]:
     """
     Apply multidimensional scaling to pairwise distance matrices.
 
@@ -240,8 +242,15 @@ def multidim_scaling(d_pair: dict,
         # distance smoothening
         v **= smooth
         # fit multi-dimensional scaler
-        mds = MDS(n_components=n_components, max_iter=5000, eps=1e-9, random_state=0, n_init=4,
-                  dissimilarity="precomputed", metric=use_metric)
+        mds = MDS(
+            n_components=n_components,
+            max_iter=5000,
+            eps=1e-9,
+            random_state=0,
+            n_init=4,
+            dissimilarity="precomputed",
+            metric=use_metric,
+        )
         d_fit = mds.fit(v)
         emb = d_fit.embedding_  # coordinates in embedding space
         # use biggest single observation Frobenius norm as origin
@@ -264,10 +273,10 @@ def multidim_scaling(d_pair: dict,
             try:
                 rng = (feature_range[0][0, k], feature_range[1][0, k])
             except TypeError:
-                raise TypeError('Feature-wise min and max ranges need to be specified.')
+                raise TypeError("Feature-wise min and max ranges need to be specified.")
             d_scaled = (v - d_min) / (d_max - d_min) * (rng[1] - rng[0]) + rng[0]
             if center:  # center the numerical feature values between the min and max feature range
-                d_scaled -= .5 * (d_scaled.max() + d_scaled.min())
+                d_scaled -= 0.5 * (d_scaled.max() + d_scaled.min())
         if update_feature_range:
             new_feature_range[0][0, k] = d_scaled.min()
             new_feature_range[1][0, k] = d_scaled.max()

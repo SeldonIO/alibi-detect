@@ -10,5 +10,5 @@ __all__ = [
     "read_config",
     "resolve_config",
     "validate_config",
-    "registry"
+    "registry",
 ]

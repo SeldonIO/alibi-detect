@@ -8,12 +8,13 @@ n_categories, n_features = 5, 6
 
 n_cat = [0, 2, n_features]
 categories_per_feature = [None, int, list]
-correction = ['bonferroni', 'fdr']
-update_x_ref = [{'last': 1000}, {'reservoir_sampling': 1000}]
+correction = ["bonferroni", "fdr"]
+update_x_ref = [{"last": 1000}, {"reservoir_sampling": 1000}]
 preprocess_at_init = [True, False]
 new_categories = [True, False]
-tests_tabulardrift = list(product(n_cat, categories_per_feature, correction,
-                                  update_x_ref, preprocess_at_init, new_categories))
+tests_tabulardrift = list(
+    product(n_cat, categories_per_feature, correction, update_x_ref, preprocess_at_init, new_categories)
+)
 n_tests = len(tests_tabulardrift)
 
 
@@ -22,10 +23,9 @@ def tabulardrift_params(request):
     return tests_tabulardrift[request.param]
 
 
-@pytest.mark.parametrize('tabulardrift_params', list(range(n_tests)), indirect=True)
+@pytest.mark.parametrize("tabulardrift_params", list(range(n_tests)), indirect=True)
 def test_tabulardrift(tabulardrift_params):
-    n_cat, categories_per_feature, correction, \
-        update_x_ref, preprocess_at_init, new_categories = tabulardrift_params
+    n_cat, categories_per_feature, correction, update_x_ref, preprocess_at_init, new_categories = tabulardrift_params
     np.random.seed(0)
     # add categorical variables
     x_ref = np.random.randn(n * n_features).reshape(n, n_features).astype(np.float32)
@@ -43,7 +43,7 @@ def test_tabulardrift(tabulardrift_params):
 
     cd = TabularDrift(
         x_ref=x_ref,
-        p_val=.05,
+        p_val=0.05,
         categories_per_feature=categories_per_feature,
         preprocess_at_init=preprocess_at_init,
         update_x_ref=update_x_ref,
@@ -52,20 +52,20 @@ def test_tabulardrift(tabulardrift_params):
     x = x_ref.copy()
     if new_categories and n_cat > 0:
         x[:, cat_cols] = x[:, cat_cols] + 1
-    preds_batch = cd.predict(x, drift_type='batch', return_p_val=True)
+    preds_batch = cd.predict(x, drift_type="batch", return_p_val=True)
     if new_categories and n_cat > 0:
-        assert preds_batch['data']['is_drift'] == 1
+        assert preds_batch["data"]["is_drift"] == 1
     else:
-        assert preds_batch['data']['is_drift'] == 0
+        assert preds_batch["data"]["is_drift"] == 0
     k = list(update_x_ref.keys())[0]
     assert cd.n == x.shape[0] + x_ref.shape[0]
     assert cd.x_ref.shape[0] == min(update_x_ref[k], x.shape[0] + x_ref.shape[0])
-    assert preds_batch['data']['distance'].min() >= 0.
-    if correction == 'bonferroni':
-        assert preds_batch['data']['threshold'] == cd.p_val / cd.n_features
+    assert preds_batch["data"]["distance"].min() >= 0.0
+    if correction == "bonferroni":
+        assert preds_batch["data"]["threshold"] == cd.p_val / cd.n_features
 
-    preds_feature = cd.predict(x, drift_type='feature', return_p_val=True)
-    assert preds_feature['data']['is_drift'].shape[0] == cd.n_features
-    preds_by_feature = (preds_feature['data']['p_val'] < cd.p_val).astype(int)
-    assert (preds_feature['data']['is_drift'] == preds_by_feature).all()
-    assert preds_feature['data']['threshold'] == cd.p_val
+    preds_feature = cd.predict(x, drift_type="feature", return_p_val=True)
+    assert preds_feature["data"]["is_drift"].shape[0] == cd.n_features
+    preds_by_feature = (preds_feature["data"]["p_val"] < cd.p_val).astype(int)
+    assert (preds_feature["data"]["is_drift"] == preds_by_feature).all()
+    assert preds_feature["data"]["threshold"] == cd.p_val

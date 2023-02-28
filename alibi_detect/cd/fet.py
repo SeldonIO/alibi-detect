@@ -6,18 +6,18 @@ from scipy.stats import fisher_exact
 
 class FETDrift(BaseUnivariateDrift):
     def __init__(
-            self,
-            x_ref: Union[np.ndarray, list],
-            p_val: float = .05,
-            x_ref_preprocessed: bool = False,
-            preprocess_at_init: bool = True,
-            update_x_ref: Optional[Dict[str, int]] = None,
-            preprocess_fn: Optional[Callable] = None,
-            correction: str = 'bonferroni',
-            alternative: str = 'greater',
-            n_features: Optional[int] = None,
-            input_shape: Optional[tuple] = None,
-            data_type: Optional[str] = None
+        self,
+        x_ref: Union[np.ndarray, list],
+        p_val: float = 0.05,
+        x_ref_preprocessed: bool = False,
+        preprocess_at_init: bool = True,
+        update_x_ref: Optional[Dict[str, int]] = None,
+        preprocess_fn: Optional[Callable] = None,
+        correction: str = "bonferroni",
+        alternative: str = "greater",
+        n_features: Optional[int] = None,
+        input_shape: Optional[tuple] = None,
+        data_type: Optional[str] = None,
     ) -> None:
         """
         Fisher exact test (FET) data drift detector, which tests for a change in the mean of binary univariate data.
@@ -68,20 +68,21 @@ class FETDrift(BaseUnivariateDrift):
             correction=correction,
             n_features=n_features,
             input_shape=input_shape,
-            data_type=data_type
+            data_type=data_type,
         )
         # Set config
         self._set_config(locals())
 
-        if alternative.lower() not in ['greater', 'less', 'two-sided']:
+        if alternative.lower() not in ["greater", "less", "two-sided"]:
             raise ValueError("`alternative` must be either 'greater', 'less' or 'two-sided'.")
         self.alternative = alternative.lower()
 
         # Check data is only [False, True] or [0, 1]
         values = set(np.unique(x_ref))
-        if not set(values).issubset(['0', '1', True, False]):
-            raise ValueError("The `x_ref` data must consist of only (0,1)'s or (False,True)'s for the "
-                             "FETDrift detector.")
+        if not set(values).issubset(["0", "1", True, False]):
+            raise ValueError(
+                "The `x_ref` data must consist of only (0,1)'s or (False,True)'s for the " "FETDrift detector."
+            )
 
     def feature_score(self, x_ref: np.ndarray, x: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -103,7 +104,7 @@ class FETDrift(BaseUnivariateDrift):
 
         # Check data is only [False, True] or [0, 1]
         values = set(np.unique(x))
-        if not set(values).issubset(['0', '1', True, False]):
+        if not set(values).issubset(["0", "1", True, False]):
             raise ValueError("The `x` data must consist of only [0,1]'s or [False,True]'s for the FETDrift detector.")
 
         # Perform FET for each feature

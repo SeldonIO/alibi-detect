@@ -15,20 +15,20 @@ def pairwise_params(request):
     return tests_pairwise[request.param]
 
 
-@pytest.mark.parametrize('pairwise_params', list(range(n_tests_pairwise)), indirect=True)
+@pytest.mark.parametrize("pairwise_params", list(range(n_tests_pairwise)), indirect=True)
 def test_pairwise(pairwise_params):
     n_features, n_instances = pairwise_params
     xshape, yshape = (n_instances[0], n_features), (n_instances[1], n_features)
     np.random.seed(0)
-    x = np.random.random(xshape).astype('float32')
-    y = np.random.random(yshape).astype('float32')
+    x = np.random.random(xshape).astype("float32")
+    y = np.random.random(yshape).astype("float32")
 
     dist_xx = pairwise_distance(x, x)
     dist_xy = pairwise_distance(x, y)
 
     assert dist_xx.shape == (xshape[0], xshape[0])
     assert dist_xy.shape == n_instances
-    assert dist_xx.trace() == 0.
+    assert dist_xx.trace() == 0.0
 
 
 dims = np.array([1, 10, 50])
@@ -43,7 +43,7 @@ def random_matrix(request):
     return matrix
 
 
-@pytest.mark.parametrize('random_matrix', list(range(n_tests)), indirect=True)
+@pytest.mark.parametrize("random_matrix", list(range(n_tests)), indirect=True)
 def test_cityblock_batch(random_matrix):
     X = random_matrix
     y = X[np.random.choice(X.shape[0])]
@@ -68,7 +68,7 @@ def cats_and_labels(request):
     return cats, labels
 
 
-@pytest.mark.parametrize('cats_and_labels', list(range(n_tests)), indirect=True)
+@pytest.mark.parametrize("cats_and_labels", list(range(n_tests)), indirect=True)
 def test_abdm_mvdm(cats_and_labels):
     X, y = cats_and_labels
     n_cols = X.shape[1]
@@ -85,16 +85,19 @@ def test_abdm_mvdm(cats_and_labels):
 
 Xy = (4, 2, 100, 5)
 idx = np.where([t == Xy for t in tests])[0].item()
-feature_range = ((np.ones((1, 5)) * -1).astype(np.float32),
-                 (np.ones((1, 5))).astype(np.float32))
+feature_range = ((np.ones((1, 5)) * -1).astype(np.float32), (np.ones((1, 5))).astype(np.float32))
 
 
-@pytest.mark.parametrize('cats_and_labels,rng,update_rng,center',
-                         [(idx, feature_range, False, False),
-                          (idx, feature_range, True, False),
-                          (idx, feature_range, False, True),
-                          (idx, feature_range, True, True)],
-                         indirect=['cats_and_labels'])
+@pytest.mark.parametrize(
+    "cats_and_labels,rng,update_rng,center",
+    [
+        (idx, feature_range, False, False),
+        (idx, feature_range, True, False),
+        (idx, feature_range, False, True),
+        (idx, feature_range, True, True),
+    ],
+    indirect=["cats_and_labels"],
+)
 def test_multidim_scaling(cats_and_labels, rng, update_rng, center):
     # compute pairwise distance
     X, y = cats_and_labels
@@ -103,11 +106,7 @@ def test_multidim_scaling(cats_and_labels, rng, update_rng, center):
     d_pair = abdm(X, cat_vars)
 
     # apply multidimensional scaling
-    d_abs, new_rng = multidim_scaling(d_pair,
-                                      feature_range=rng,
-                                      update_feature_range=update_rng,
-                                      center=center
-                                      )
+    d_abs, new_rng = multidim_scaling(d_pair, feature_range=rng, update_feature_range=update_rng, center=center)
     assert list(d_abs.keys()) == list(cat_vars.keys())
     if update_rng:
         assert (new_rng[0] != rng[0]).any()

@@ -9,21 +9,21 @@ from alibi_detect.utils.frameworks import Framework
 
 
 class LSDDDriftTF(BaseLSDDDrift):
-    @deprecated_alias(preprocess_x_ref='preprocess_at_init')
+    @deprecated_alias(preprocess_x_ref="preprocess_at_init")
     def __init__(
-            self,
-            x_ref: Union[np.ndarray, list],
-            p_val: float = .05,
-            x_ref_preprocessed: bool = False,
-            preprocess_at_init: bool = True,
-            update_x_ref: Optional[Dict[str, int]] = None,
-            preprocess_fn: Optional[Callable] = None,
-            sigma: Optional[np.ndarray] = None,
-            n_permutations: int = 100,
-            n_kernel_centers: Optional[int] = None,
-            lambda_rd_max: float = 0.2,
-            input_shape: Optional[tuple] = None,
-            data_type: Optional[str] = None
+        self,
+        x_ref: Union[np.ndarray, list],
+        p_val: float = 0.05,
+        x_ref_preprocessed: bool = False,
+        preprocess_at_init: bool = True,
+        update_x_ref: Optional[Dict[str, int]] = None,
+        preprocess_fn: Optional[Callable] = None,
+        sigma: Optional[np.ndarray] = None,
+        n_permutations: int = 100,
+        n_kernel_centers: Optional[int] = None,
+        lambda_rd_max: float = 0.2,
+        input_shape: Optional[tuple] = None,
+        data_type: Optional[str] = None,
     ) -> None:
         """
         Least-squares density difference (LSDD) data drift detector using a permutation test.
@@ -77,9 +77,9 @@ class LSDDDriftTF(BaseLSDDDrift):
             n_kernel_centers=n_kernel_centers,
             lambda_rd_max=lambda_rd_max,
             input_shape=input_shape,
-            data_type=data_type
+            data_type=data_type,
         )
-        self.meta.update({'backend': Framework.TENSORFLOW.value})
+        self.meta.update({"backend": Framework.TENSORFLOW.value})
 
         if self.preprocess_at_init or self.preprocess_fn is None or self.x_ref_preprocessed:
             x_ref = tf.convert_to_tensor(self.x_ref)
@@ -90,7 +90,7 @@ class LSDDDriftTF(BaseLSDDDrift):
             self.x_ref = x_ref.numpy()  # type: ignore[union-attr]
             # For stability in high dimensions we don't divide H by (pi*sigma^2)^(d/2)
             # Results in an alternative test-stat of LSDD*(pi*sigma^2)^(d/2). Same p-vals etc.
-            self.H = GaussianRBF(np.sqrt(2.) * self.kernel.sigma)(self.kernel_centers, self.kernel_centers)
+            self.H = GaussianRBF(np.sqrt(2.0) * self.kernel.sigma)(self.kernel_centers, self.kernel_centers)
 
     def _initialize_kernel(self, x_ref: tf.Tensor):
         if self.sigma is None:
@@ -109,7 +109,7 @@ class LSDDDriftTF(BaseLSDDDrift):
     def _configure_kernel_centers(self, x_ref: tf.Tensor):
         """Set aside reference samples to act as kernel centers."""
         perm = tf.random.shuffle(tf.range(self.x_ref.shape[0]))
-        c_inds, non_c_inds = perm[:self.n_kernel_centers], perm[self.n_kernel_centers:]
+        c_inds, non_c_inds = perm[: self.n_kernel_centers], perm[self.n_kernel_centers :]
         self.kernel_centers = tf.gather(x_ref, c_inds)
         if np.unique(self.kernel_centers.numpy(), axis=0).shape[0] < self.n_kernel_centers:
             perturbation = tf.random.normal(self.kernel_centers.shape, mean=0, stddev=1e-6)
@@ -139,7 +139,7 @@ class LSDDDriftTF(BaseLSDDDrift):
             x_ref = self._normalize(x_ref)
             self._initialize_kernel(x_ref)
             self._configure_kernel_centers(x_ref)
-            self.H = GaussianRBF(np.sqrt(2.) * self.kernel.sigma)(self.kernel_centers, self.kernel_centers)
+            self.H = GaussianRBF(np.sqrt(2.0) * self.kernel.sigma)(self.kernel_centers, self.kernel_centers)
 
         x = self._normalize(x)
 

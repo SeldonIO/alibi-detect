@@ -20,24 +20,24 @@ logger = logging.getLogger(__name__)
 
 
 class BaseClassifierDrift(BaseDetector):
-    model: Union['tf.keras.Model', 'torch.nn.Module']
+    model: Union["tf.keras.Model", "torch.nn.Module"]
 
     def __init__(
-            self,
-            x_ref: Union[np.ndarray, list],
-            p_val: float = .05,
-            x_ref_preprocessed: bool = False,
-            preprocess_at_init: bool = True,
-            update_x_ref: Optional[Dict[str, int]] = None,
-            preprocess_fn: Optional[Callable] = None,
-            preds_type: str = 'probs',
-            binarize_preds: bool = False,
-            train_size: Optional[float] = .75,
-            n_folds: Optional[int] = None,
-            retrain_from_scratch: bool = True,
-            seed: int = 0,
-            input_shape: Optional[tuple] = None,
-            data_type: Optional[str] = None,
+        self,
+        x_ref: Union[np.ndarray, list],
+        p_val: float = 0.05,
+        x_ref_preprocessed: bool = False,
+        preprocess_at_init: bool = True,
+        update_x_ref: Optional[Dict[str, int]] = None,
+        preprocess_fn: Optional[Callable] = None,
+        preds_type: str = "probs",
+        binarize_preds: bool = False,
+        train_size: Optional[float] = 0.75,
+        n_folds: Optional[int] = None,
+        retrain_from_scratch: bool = True,
+        seed: int = 0,
+        input_shape: Optional[tuple] = None,
+        data_type: Optional[str] = None,
     ) -> None:
         """
         A context-aware drift detector based on a conditional analogue of the maximum mean discrepancy (MMD).
@@ -89,10 +89,10 @@ class BaseClassifierDrift(BaseDetector):
         super().__init__()
 
         if p_val is None:
-            logger.warning('No p-value set for the drift threshold. Need to set it to detect data drift.')
+            logger.warning("No p-value set for the drift threshold. Need to set it to detect data drift.")
 
         if isinstance(train_size, float) and isinstance(n_folds, int):
-            logger.warning('Both `n_folds` and `train_size` specified. By default `n_folds` is used.')
+            logger.warning("Both `n_folds` and `train_size` specified. By default `n_folds` is used.")
 
         if n_folds is not None and n_folds > 1 and not retrain_from_scratch:
             raise ValueError("If using multiple folds the model must be retrained from scratch for each fold.")
@@ -127,10 +127,10 @@ class BaseClassifierDrift(BaseDetector):
         self.input_shape = get_input_shape(input_shape, x_ref)
 
         # set metadata
-        self.meta['online'] = False
-        self.meta['data_type'] = data_type
-        self.meta['detector_type'] = 'drift'
-        self.meta['params'] = {'binarize_preds ': binarize_preds, 'preds_type': preds_type}
+        self.meta["online"] = False
+        self.meta["data_type"] = data_type
+        self.meta["detector_type"] = "drift"
+        self.meta["params"] = {"binarize_preds ": binarize_preds, "preds_type": preds_type}
 
     def preprocess(self, x: Union[np.ndarray, list]) -> Tuple[Union[np.ndarray, list], Union[np.ndarray, list]]:
         """
@@ -156,12 +156,11 @@ class BaseClassifierDrift(BaseDetector):
             return self.x_ref, x  # type: ignore[return-value]
 
     def get_splits(
-            self,
-            x_ref: Union[np.ndarray, list],
-            x: Union[np.ndarray, list],
-            return_splits: bool = True
-    ) -> Union[Tuple[Union[np.ndarray, list], np.ndarray],
-               Tuple[Union[np.ndarray, list], np.ndarray, Optional[List[Tuple[np.ndarray, np.ndarray]]]]]:
+        self, x_ref: Union[np.ndarray, list], x: Union[np.ndarray, list], return_splits: bool = True
+    ) -> Union[
+        Tuple[Union[np.ndarray, list], np.ndarray],
+        Tuple[Union[np.ndarray, list], np.ndarray, Optional[List[Tuple[np.ndarray, np.ndarray]]]],
+    ]:
         """
         Split reference and test data in train and test folds used by the classifier.
 
@@ -200,9 +199,7 @@ class BaseClassifierDrift(BaseDetector):
             splits = self.skf.split(np.zeros(n_tot), y)
         return x, y, splits
 
-    def test_probs(
-            self, y_oof: np.ndarray, probs_oof: np.ndarray, n_ref: int, n_cur: int
-    ) -> Tuple[float, float]:
+    def test_probs(self, y_oof: np.ndarray, probs_oof: np.ndarray, n_ref: int, n_cur: int) -> Tuple[float, float]:
         """
         Perform a statistical test of the probabilities predicted by the model against
         what we'd expect under the no-change null.
@@ -228,7 +225,7 @@ class BaseClassifierDrift(BaseDetector):
             baseline_accuracy = max(n_ref, n_cur) / (n_ref + n_cur)  # exp under null
             n_oof = y_oof.shape[0]
             n_correct = (y_oof == probs_oof.round()).sum()
-            p_val = binom_test(n_correct, n_oof, baseline_accuracy, alternative='greater')
+            p_val = binom_test(n_correct, n_oof, baseline_accuracy, alternative="greater")
             accuracy = n_correct / n_oof
             # relative error reduction, in [0,1]
             # e.g. (90% acc -> 99% acc) = 0.9, (50% acc -> 59% acc) = 0.18
@@ -237,18 +234,24 @@ class BaseClassifierDrift(BaseDetector):
         else:
             probs_ref = probs_oof[y_oof == 0]
             probs_cur = probs_oof[y_oof == 1]
-            dist, p_val = ks_2samp(probs_ref, probs_cur, alternative='greater')
+            dist, p_val = ks_2samp(probs_ref, probs_cur, alternative="greater")
 
         return p_val, dist
 
     @abstractmethod
-    def score(self, x: Union[np.ndarray, list]) \
-            -> Tuple[float, float, np.ndarray, np.ndarray, Union[np.ndarray, list], Union[np.ndarray, list]]:
+    def score(
+        self, x: Union[np.ndarray, list]
+    ) -> Tuple[float, float, np.ndarray, np.ndarray, Union[np.ndarray, list], Union[np.ndarray, list]]:
         pass
 
-    def predict(self, x: Union[np.ndarray, list], return_p_val: bool = True,
-                return_distance: bool = True, return_probs: bool = True, return_model: bool = True) \
-            -> Dict[str, Dict[str, Union[str, int, float, Callable]]]:
+    def predict(
+        self,
+        x: Union[np.ndarray, list],
+        return_p_val: bool = True,
+        return_distance: bool = True,
+        return_probs: bool = True,
+        return_model: bool = True,
+    ) -> Dict[str, Dict[str, Union[str, int, float, Callable]]]:
         """
         Predict whether a batch of data has drifted from the reference data.
 
@@ -292,39 +295,39 @@ class BaseClassifierDrift(BaseDetector):
 
         # populate drift dict
         cd = concept_drift_dict()
-        cd['meta'] = self.meta
-        cd['data']['is_drift'] = drift_pred
+        cd["meta"] = self.meta
+        cd["data"]["is_drift"] = drift_pred
         if return_p_val:
-            cd['data']['p_val'] = p_val
-            cd['data']['threshold'] = self.p_val
+            cd["data"]["p_val"] = p_val
+            cd["data"]["threshold"] = self.p_val
         if return_distance:
-            cd['data']['distance'] = dist
+            cd["data"]["distance"] = dist
         if return_probs:
-            cd['data']['probs_ref'] = probs_ref
-            cd['data']['probs_test'] = probs_test
-            cd['data']['x_ref_oof'] = x_ref_oof
-            cd['data']['x_test_oof'] = x_test_oof
+            cd["data"]["probs_ref"] = probs_ref
+            cd["data"]["probs_test"] = probs_test
+            cd["data"]["x_ref_oof"] = x_ref_oof
+            cd["data"]["x_test_oof"] = x_test_oof
         if return_model:
-            cd['data']['model'] = self.model
+            cd["data"]["model"] = self.model
         return cd
 
 
 class BaseLearnedKernelDrift(BaseDetector):
-    kernel: Union['tf.keras.Model', 'torch.nn.Module']
+    kernel: Union["tf.keras.Model", "torch.nn.Module"]
 
     def __init__(
-            self,
-            x_ref: Union[np.ndarray, list],
-            p_val: float = .05,
-            x_ref_preprocessed: bool = False,
-            preprocess_at_init: bool = True,
-            update_x_ref: Optional[Dict[str, int]] = None,
-            preprocess_fn: Optional[Callable] = None,
-            n_permutations: int = 100,
-            train_size: Optional[float] = .75,
-            retrain_from_scratch: bool = True,
-            input_shape: Optional[tuple] = None,
-            data_type: Optional[str] = None
+        self,
+        x_ref: Union[np.ndarray, list],
+        p_val: float = 0.05,
+        x_ref_preprocessed: bool = False,
+        preprocess_at_init: bool = True,
+        update_x_ref: Optional[Dict[str, int]] = None,
+        preprocess_fn: Optional[Callable] = None,
+        n_permutations: int = 100,
+        train_size: Optional[float] = 0.75,
+        retrain_from_scratch: bool = True,
+        input_shape: Optional[tuple] = None,
+        data_type: Optional[str] = None,
     ) -> None:
         """
         Base class for the learned kernel-based drift detector.
@@ -363,7 +366,7 @@ class BaseLearnedKernelDrift(BaseDetector):
         """
         super().__init__()
         if p_val is None:
-            logger.warning('No p-value set for the drift threshold. Need to set it to detect data drift.')
+            logger.warning("No p-value set for the drift threshold. Need to set it to detect data drift.")
 
         # x_ref preprocessing
         self.preprocess_at_init = preprocess_at_init
@@ -389,9 +392,9 @@ class BaseLearnedKernelDrift(BaseDetector):
         self.input_shape = get_input_shape(input_shape, x_ref)
 
         # set metadata
-        self.meta['detector_type'] = 'drift'
-        self.meta['data_type'] = data_type
-        self.meta['online'] = False
+        self.meta["detector_type"] = "drift"
+        self.meta["data_type"] = data_type
+        self.meta["online"] = False
 
     def preprocess(self, x: Union[np.ndarray, list]) -> Tuple[Union[np.ndarray, list], Union[np.ndarray, list]]:
         """
@@ -416,9 +419,11 @@ class BaseLearnedKernelDrift(BaseDetector):
         else:
             return self.x_ref, x  # type: ignore[return-value]
 
-    def get_splits(self, x_ref: Union[np.ndarray, list], x: Union[np.ndarray, list]) \
-            -> Tuple[Tuple[Union[np.ndarray, list], Union[np.ndarray, list]],
-                     Tuple[Union[np.ndarray, list], Union[np.ndarray, list]]]:
+    def get_splits(
+        self, x_ref: Union[np.ndarray, list], x: Union[np.ndarray, list]
+    ) -> Tuple[
+        Tuple[Union[np.ndarray, list], Union[np.ndarray, list]], Tuple[Union[np.ndarray, list], Union[np.ndarray, list]]
+    ]:
         """
         Split reference and test data into two splits -- one of which to learn test locations
         and parameters and one to use for tests.
@@ -436,8 +441,8 @@ class BaseLearnedKernelDrift(BaseDetector):
         """
         n_ref, n_cur = len(x_ref), len(x)
         perm_ref, perm_cur = np.random.permutation(n_ref), np.random.permutation(n_cur)
-        idx_ref_tr, idx_ref_te = perm_ref[:int(n_ref * self.train_size)], perm_ref[int(n_ref * self.train_size):]
-        idx_cur_tr, idx_cur_te = perm_cur[:int(n_cur * self.train_size)], perm_cur[int(n_cur * self.train_size):]
+        idx_ref_tr, idx_ref_te = perm_ref[: int(n_ref * self.train_size)], perm_ref[int(n_ref * self.train_size) :]
+        idx_cur_tr, idx_cur_te = perm_cur[: int(n_cur * self.train_size)], perm_cur[int(n_cur * self.train_size) :]
 
         if isinstance(x_ref, np.ndarray):
             x_ref_tr, x_ref_te = x_ref[idx_ref_tr], x_ref[idx_ref_te]
@@ -446,7 +451,7 @@ class BaseLearnedKernelDrift(BaseDetector):
             x_ref_tr, x_ref_te = [x_ref[_] for _ in idx_ref_tr], [x_ref[_] for _ in idx_ref_te]
             x_cur_tr, x_cur_te = [x[_] for _ in idx_cur_tr], [x[_] for _ in idx_cur_te]
         else:
-            raise TypeError(f'x needs to be of type np.ndarray or list and not {type(x)}.')
+            raise TypeError(f"x needs to be of type np.ndarray or list and not {type(x)}.")
 
         return (x_ref_tr, x_cur_tr), (x_ref_te, x_cur_te)
 
@@ -454,9 +459,13 @@ class BaseLearnedKernelDrift(BaseDetector):
     def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, float]:
         pass
 
-    def predict(self, x: Union[np.ndarray, list], return_p_val: bool = True,
-                return_distance: bool = True, return_kernel: bool = True) \
-            -> Dict[Dict[str, str], Dict[str, Union[int, float, Callable]]]:
+    def predict(
+        self,
+        x: Union[np.ndarray, list],
+        return_p_val: bool = True,
+        return_distance: bool = True,
+        return_kernel: bool = True,
+    ) -> Dict[Dict[str, str], Dict[str, Union[int, float, Callable]]]:
         """
         Predict whether a batch of data has drifted from the reference data.
 
@@ -491,33 +500,33 @@ class BaseLearnedKernelDrift(BaseDetector):
 
         # populate drift dict
         cd = concept_drift_dict()
-        cd['meta'] = self.meta
-        cd['data']['is_drift'] = drift_pred
+        cd["meta"] = self.meta
+        cd["data"]["is_drift"] = drift_pred
         if return_p_val:
-            cd['data']['p_val'] = p_val
-            cd['data']['threshold'] = self.p_val
+            cd["data"]["p_val"] = p_val
+            cd["data"]["threshold"] = self.p_val
         if return_distance:
-            cd['data']['distance'] = dist
-            cd['data']['distance_threshold'] = distance_threshold
+            cd["data"]["distance"] = dist
+            cd["data"]["distance_threshold"] = distance_threshold
         if return_kernel:
-            cd['data']['kernel'] = self.kernel
+            cd["data"]["kernel"] = self.kernel
         return cd
 
 
 class BaseMMDDrift(BaseDetector):
     def __init__(
-            self,
-            x_ref: Union[np.ndarray, list],
-            p_val: float = .05,
-            x_ref_preprocessed: bool = False,
-            preprocess_at_init: bool = True,
-            update_x_ref: Optional[Dict[str, int]] = None,
-            preprocess_fn: Optional[Callable] = None,
-            sigma: Optional[np.ndarray] = None,
-            configure_kernel_from_x_ref: bool = True,
-            n_permutations: int = 100,
-            input_shape: Optional[tuple] = None,
-            data_type: Optional[str] = None
+        self,
+        x_ref: Union[np.ndarray, list],
+        p_val: float = 0.05,
+        x_ref_preprocessed: bool = False,
+        preprocess_at_init: bool = True,
+        update_x_ref: Optional[Dict[str, int]] = None,
+        preprocess_fn: Optional[Callable] = None,
+        sigma: Optional[np.ndarray] = None,
+        configure_kernel_from_x_ref: bool = True,
+        n_permutations: int = 100,
+        input_shape: Optional[tuple] = None,
+        data_type: Optional[str] = None,
     ) -> None:
         """
         Maximum Mean Discrepancy (MMD) base data drift detector using a permutation test.
@@ -556,14 +565,16 @@ class BaseMMDDrift(BaseDetector):
         super().__init__()
 
         if p_val is None:
-            logger.warning('No p-value set for the drift threshold. Need to set it to detect data drift.')
+            logger.warning("No p-value set for the drift threshold. Need to set it to detect data drift.")
 
         self.infer_sigma = configure_kernel_from_x_ref
         if configure_kernel_from_x_ref and isinstance(sigma, np.ndarray):
             self.infer_sigma = False
-            logger.warning('`sigma` is specified for the kernel and `configure_kernel_from_x_ref` '
-                           'is set to True. `sigma` argument takes priority over '
-                           '`configure_kernel_from_x_ref` (set to False).')
+            logger.warning(
+                "`sigma` is specified for the kernel and `configure_kernel_from_x_ref` "
+                "is set to True. `sigma` argument takes priority over "
+                "`configure_kernel_from_x_ref` (set to False)."
+            )
 
         # x_ref preprocessing
         self.preprocess_at_init = preprocess_at_init
@@ -586,7 +597,7 @@ class BaseMMDDrift(BaseDetector):
         self.input_shape = get_input_shape(input_shape, x_ref)
 
         # set metadata
-        self.meta.update({'detector_type': 'drift', 'online': False, 'data_type': data_type})
+        self.meta.update({"detector_type": "drift", "online": False, "data_type": data_type})
 
     def preprocess(self, x: Union[np.ndarray, list]) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -617,8 +628,9 @@ class BaseMMDDrift(BaseDetector):
     def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, float]:
         pass
 
-    def predict(self, x: Union[np.ndarray, list], return_p_val: bool = True, return_distance: bool = True) \
-            -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
+    def predict(
+        self, x: Union[np.ndarray, list], return_p_val: bool = True, return_distance: bool = True
+    ) -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
         """
         Predict whether a batch of data has drifted from the reference data.
 
@@ -650,14 +662,14 @@ class BaseMMDDrift(BaseDetector):
 
         # populate drift dict
         cd = concept_drift_dict()
-        cd['meta'] = self.meta
-        cd['data']['is_drift'] = drift_pred
+        cd["meta"] = self.meta
+        cd["data"]["is_drift"] = drift_pred
         if return_p_val:
-            cd['data']['p_val'] = p_val
-            cd['data']['threshold'] = self.p_val
+            cd["data"]["p_val"] = p_val
+            cd["data"]["threshold"] = self.p_val
         if return_distance:
-            cd['data']['distance'] = dist
-            cd['data']['distance_threshold'] = distance_threshold
+            cd["data"]["distance"] = dist
+            cd["data"]["distance_threshold"] = distance_threshold
         return cd
 
 
@@ -668,19 +680,19 @@ class BaseLSDDDrift(BaseDetector):
     _unnormalize: Callable
 
     def __init__(
-            self,
-            x_ref: Union[np.ndarray, list],
-            p_val: float = .05,
-            x_ref_preprocessed: bool = False,
-            preprocess_at_init: bool = True,
-            update_x_ref: Optional[Dict[str, int]] = None,
-            preprocess_fn: Optional[Callable] = None,
-            sigma: Optional[np.ndarray] = None,
-            n_permutations: int = 100,
-            n_kernel_centers: Optional[int] = None,
-            lambda_rd_max: float = 0.2,
-            input_shape: Optional[tuple] = None,
-            data_type: Optional[str] = None
+        self,
+        x_ref: Union[np.ndarray, list],
+        p_val: float = 0.05,
+        x_ref_preprocessed: bool = False,
+        preprocess_at_init: bool = True,
+        update_x_ref: Optional[Dict[str, int]] = None,
+        preprocess_fn: Optional[Callable] = None,
+        sigma: Optional[np.ndarray] = None,
+        n_permutations: int = 100,
+        n_kernel_centers: Optional[int] = None,
+        lambda_rd_max: float = 0.2,
+        input_shape: Optional[tuple] = None,
+        data_type: Optional[str] = None,
     ) -> None:
         """
         Least-squares Density Difference (LSDD) base data drift detector using a permutation test.
@@ -724,7 +736,7 @@ class BaseLSDDDrift(BaseDetector):
         """
         super().__init__()
         if p_val is None:
-            logger.warning('No p-value set for the drift threshold. Need to set it to detect data drift.')
+            logger.warning("No p-value set for the drift threshold. Need to set it to detect data drift.")
 
         # x_ref preprocessing
         self.preprocess_at_init = preprocess_at_init
@@ -750,7 +762,7 @@ class BaseLSDDDrift(BaseDetector):
         self.input_shape = get_input_shape(input_shape, x_ref)
 
         # set metadata
-        self.meta.update({'detector_type': 'drift', 'online': False, 'data_type': data_type})
+        self.meta.update({"detector_type": "drift", "online": False, "data_type": data_type})
 
     def preprocess(self, x: Union[np.ndarray, list]) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -779,8 +791,9 @@ class BaseLSDDDrift(BaseDetector):
     def score(self, x: Union[np.ndarray, list]) -> Tuple[float, float, float]:
         pass
 
-    def predict(self, x: Union[np.ndarray, list], return_p_val: bool = True, return_distance: bool = True) \
-            -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
+    def predict(
+        self, x: Union[np.ndarray, list], return_p_val: bool = True, return_distance: bool = True
+    ) -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
         """
         Predict whether a batch of data has drifted from the reference data.
 
@@ -818,30 +831,30 @@ class BaseLSDDDrift(BaseDetector):
 
         # populate drift dict
         cd = concept_drift_dict()
-        cd['meta'] = self.meta
-        cd['data']['is_drift'] = drift_pred
+        cd["meta"] = self.meta
+        cd["data"]["is_drift"] = drift_pred
         if return_p_val:
-            cd['data']['p_val'] = p_val
-            cd['data']['threshold'] = self.p_val
+            cd["data"]["p_val"] = p_val
+            cd["data"]["threshold"] = self.p_val
         if return_distance:
-            cd['data']['distance'] = dist
-            cd['data']['distance_threshold'] = distance_threshold
+            cd["data"]["distance"] = dist
+            cd["data"]["distance_threshold"] = distance_threshold
         return cd
 
 
 class BaseUnivariateDrift(BaseDetector, DriftConfigMixin):
     def __init__(
-            self,
-            x_ref: Union[np.ndarray, list],
-            p_val: float = .05,
-            x_ref_preprocessed: bool = False,
-            preprocess_at_init: bool = True,
-            update_x_ref: Optional[Dict[str, int]] = None,
-            preprocess_fn: Optional[Callable] = None,
-            correction: str = 'bonferroni',
-            n_features: Optional[int] = None,
-            input_shape: Optional[tuple] = None,
-            data_type: Optional[str] = None
+        self,
+        x_ref: Union[np.ndarray, list],
+        p_val: float = 0.05,
+        x_ref_preprocessed: bool = False,
+        preprocess_at_init: bool = True,
+        update_x_ref: Optional[Dict[str, int]] = None,
+        preprocess_fn: Optional[Callable] = None,
+        correction: str = "bonferroni",
+        n_features: Optional[int] = None,
+        input_shape: Optional[tuple] = None,
+        data_type: Optional[str] = None,
     ) -> None:
         """
         Generic drift detector component which serves as a base class for methods using
@@ -883,7 +896,7 @@ class BaseUnivariateDrift(BaseDetector, DriftConfigMixin):
         """
         super().__init__()
         if p_val is None:
-            logger.warning('No p-value set for the drift threshold. Need to set it to detect data drift.')
+            logger.warning("No p-value set for the drift threshold. Need to set it to detect data drift.")
 
         # x_ref preprocessing
         self.preprocess_at_init = preprocess_at_init
@@ -915,13 +928,13 @@ class BaseUnivariateDrift(BaseDetector, DriftConfigMixin):
             x = self.preprocess_fn(x_ref[0:1])
             self.n_features = x.reshape(x.shape[0], -1).shape[-1]
 
-        if correction not in ['bonferroni', 'fdr'] and self.n_features > 1:
-            raise ValueError('Only `bonferroni` and `fdr` are acceptable for multivariate correction.')
+        if correction not in ["bonferroni", "fdr"] and self.n_features > 1:
+            raise ValueError("Only `bonferroni` and `fdr` are acceptable for multivariate correction.")
 
         # set metadata
-        self.meta['online'] = False  # offline refers to fitting the CDF for K-S
-        self.meta['data_type'] = data_type
-        self.meta['detector_type'] = 'drift'
+        self.meta["online"] = False  # offline refers to fitting the CDF for K-S
+        self.meta["data_type"] = data_type
+        self.meta["detector_type"] = "drift"
 
     def preprocess(self, x: Union[np.ndarray, list]) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -968,9 +981,13 @@ class BaseUnivariateDrift(BaseDetector, DriftConfigMixin):
         score, dist = self.feature_score(x_ref, x)  # feature-wise univariate test
         return score, dist
 
-    def predict(self, x: Union[np.ndarray, list], drift_type: str = 'batch',
-                return_p_val: bool = True, return_distance: bool = True) \
-            -> Dict[Dict[str, str], Dict[str, Union[np.ndarray, int, float]]]:
+    def predict(
+        self,
+        x: Union[np.ndarray, list],
+        drift_type: str = "batch",
+        return_p_val: bool = True,
+        return_distance: bool = True,
+    ) -> Dict[Dict[str, str], Dict[str, Union[np.ndarray, int, float]]]:
         """
         Predict whether a batch of data has drifted from the reference data.
 
@@ -998,15 +1015,15 @@ class BaseUnivariateDrift(BaseDetector, DriftConfigMixin):
 
         # TODO: return both feature-level and batch-level drift predictions by default
         # values below p-value threshold are drift
-        if drift_type == 'feature':
+        if drift_type == "feature":
             drift_pred = (p_vals < self.p_val).astype(int)
-        elif drift_type == 'batch' and self.correction == 'bonferroni':
+        elif drift_type == "batch" and self.correction == "bonferroni":
             threshold = self.p_val / self.n_features
             drift_pred = int((p_vals < threshold).any())  # type: ignore[assignment]
-        elif drift_type == 'batch' and self.correction == 'fdr':
+        elif drift_type == "batch" and self.correction == "fdr":
             drift_pred, threshold = fdr(p_vals, q_val=self.p_val)  # type: ignore[assignment]
         else:
-            raise ValueError('`drift_type` needs to be either `feature` or `batch`.')
+            raise ValueError("`drift_type` needs to be either `feature` or `batch`.")
 
         # update reference dataset
         if isinstance(self.update_x_ref, dict) and self.preprocess_fn is not None and self.preprocess_at_init:
@@ -1017,13 +1034,13 @@ class BaseUnivariateDrift(BaseDetector, DriftConfigMixin):
 
         # populate drift dict
         cd = concept_drift_dict()
-        cd['meta'] = self.meta
-        cd['data']['is_drift'] = drift_pred
+        cd["meta"] = self.meta
+        cd["data"]["is_drift"] = drift_pred
         if return_p_val:
-            cd['data']['p_val'] = p_vals
-            cd['data']['threshold'] = self.p_val if drift_type == 'feature' else threshold
+            cd["data"]["p_val"] = p_vals
+            cd["data"]["threshold"] = self.p_val if drift_type == "feature" else threshold
         if return_distance:
-            cd['data']['distance'] = dist
+            cd["data"]["distance"] = dist
         return cd
 
 
@@ -1031,23 +1048,23 @@ class BaseContextMMDDrift(BaseDetector):
     lams: Optional[Tuple[Any, Any]] = None
 
     def __init__(
-            self,
-            x_ref: Union[np.ndarray, list],
-            c_ref: np.ndarray,
-            p_val: float = .05,
-            x_ref_preprocessed: bool = False,
-            preprocess_at_init: bool = True,
-            update_ref: Optional[Dict[str, int]] = None,
-            preprocess_fn: Optional[Callable] = None,
-            x_kernel: Callable = None,
-            c_kernel: Callable = None,
-            n_permutations: int = 1000,
-            prop_c_held: float = 0.25,
-            n_folds: int = 5,
-            batch_size: Optional[int] = 256,
-            input_shape: Optional[tuple] = None,
-            data_type: Optional[str] = None,
-            verbose: bool = False,
+        self,
+        x_ref: Union[np.ndarray, list],
+        c_ref: np.ndarray,
+        p_val: float = 0.05,
+        x_ref_preprocessed: bool = False,
+        preprocess_at_init: bool = True,
+        update_ref: Optional[Dict[str, int]] = None,
+        preprocess_fn: Optional[Callable] = None,
+        x_kernel: Callable = None,
+        c_kernel: Callable = None,
+        n_permutations: int = 1000,
+        prop_c_held: float = 0.25,
+        n_folds: int = 5,
+        batch_size: Optional[int] = 256,
+        input_shape: Optional[tuple] = None,
+        data_type: Optional[str] = None,
+        verbose: bool = False,
     ) -> None:
         """
         Maximum Mean Discrepancy (MMD) based context aware drift detector.
@@ -1093,7 +1110,7 @@ class BaseContextMMDDrift(BaseDetector):
         """
         super().__init__()
         if p_val is None:
-            logger.warning('No p-value set for the drift threshold. Need to set it to detect data drift.')
+            logger.warning("No p-value set for the drift threshold. Need to set it to detect data drift.")
 
         # x_ref preprocessing
         self.preprocess_at_init = preprocess_at_init
@@ -1115,7 +1132,7 @@ class BaseContextMMDDrift(BaseDetector):
         if len(c_ref) == self.n:
             self.c_ref = c_ref
         else:
-            raise ValueError('x_ref and c_ref should contain the same number of instances.')
+            raise ValueError("x_ref and c_ref should contain the same number of instances.")
 
         # store input shape for save and load functionality
         self.input_shape = get_input_shape(input_shape, x_ref)
@@ -1124,15 +1141,17 @@ class BaseContextMMDDrift(BaseDetector):
         if n_folds > 1:
             self.n_folds = n_folds
         else:
-            raise ValueError('The `n_folds` parameter must be > 1.')
+            raise ValueError("The `n_folds` parameter must be > 1.")
         self.lams = None
 
         # Update ref attribute. Disallow res
         self.update_ref = update_ref
         if update_ref is not None:
-            if 'reservoir_sampling' in update_ref.keys():
-                raise ValueError("The BaseContextMMDDrift detector doesn't currently support the `reservoir_sampling` "
-                                 "option in `update_ref`.")
+            if "reservoir_sampling" in update_ref.keys():
+                raise ValueError(
+                    "The BaseContextMMDDrift detector doesn't currently support the `reservoir_sampling` "
+                    "option in `update_ref`."
+                )
 
         # Other attributes
         self.prop_c_held = prop_c_held
@@ -1140,7 +1159,7 @@ class BaseContextMMDDrift(BaseDetector):
         self.verbose = verbose
 
         # set metadata
-        self.meta.update({'detector_type': 'drift', 'online': False, 'data_type': data_type})
+        self.meta.update({"detector_type": "drift", "online": False, "data_type": data_type})
 
     def preprocess(self, x: Union[np.ndarray, list]) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -1166,14 +1185,19 @@ class BaseContextMMDDrift(BaseDetector):
             return self.x_ref, x  # type: ignore[return-value]
 
     @abstractmethod
-    def score(self,  # type: ignore[override]
-              x: Union[np.ndarray, list], c: np.ndarray) -> Tuple[float, float, float, Tuple]:
+    def score(
+        self, x: Union[np.ndarray, list], c: np.ndarray  # type: ignore[override]
+    ) -> Tuple[float, float, float, Tuple]:
         pass
 
-    def predict(self,  # type: ignore[override]
-                x: Union[np.ndarray, list], c: np.ndarray,
-                return_p_val: bool = True, return_distance: bool = True, return_coupling: bool = False) \
-            -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
+    def predict(
+        self,  # type: ignore[override]
+        x: Union[np.ndarray, list],
+        c: np.ndarray,
+        return_p_val: bool = True,
+        return_distance: bool = True,
+        return_coupling: bool = False,
+    ) -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
         """
         Predict whether a batch of data has drifted from the reference data, given the provided context.
 
@@ -1211,16 +1235,16 @@ class BaseContextMMDDrift(BaseDetector):
 
         # populate drift dict
         cd = concept_drift_dict()
-        cd['meta'] = self.meta
-        cd['data']['is_drift'] = drift_pred
+        cd["meta"] = self.meta
+        cd["data"]["is_drift"] = drift_pred
         if return_p_val:
-            cd['data']['p_val'] = p_val
-            cd['data']['threshold'] = self.p_val
+            cd["data"]["p_val"] = p_val
+            cd["data"]["threshold"] = self.p_val
         if return_distance:
-            cd['data']['distance'] = dist
-            cd['data']['distance_threshold'] = distance_threshold
+            cd["data"]["distance"] = dist
+            cd["data"]["distance_threshold"] = distance_threshold
         if return_coupling:
-            cd['data']['coupling_xx'] = coupling[0]
-            cd['data']['coupling_yy'] = coupling[1]
-            cd['data']['coupling_xy'] = coupling[2]
+            cd["data"]["coupling_xx"] = coupling[0]
+            cd["data"]["coupling_yy"] = coupling[1]
+            cd["data"]["coupling_xy"] = coupling[2]
         return cd

@@ -6,9 +6,13 @@ import tensorflow as tf
 from alibi_detect.utils.prediction import tokenize_transformer
 
 
-def predict_batch(x: Union[list, np.ndarray, tf.Tensor], model: Union[Callable, tf.keras.Model],
-                  batch_size: int = int(1e10), preprocess_fn: Callable = None,
-                  dtype: Union[Type[np.generic], tf.DType] = np.float32) -> Union[np.ndarray, tf.Tensor, tuple]:
+def predict_batch(
+    x: Union[list, np.ndarray, tf.Tensor],
+    model: Union[Callable, tf.keras.Model],
+    batch_size: int = int(1e10),
+    preprocess_fn: Callable = None,
+    dtype: Union[Type[np.generic], tf.DType] = np.float32,
+) -> Union[np.ndarray, tf.Tensor, tuple]:
     """
     Make batch predictions on a model.
 
@@ -47,11 +51,14 @@ def predict_batch(x: Union[list, np.ndarray, tf.Tensor], model: Union[Callable, 
             for j, p in enumerate(preds_tmp):
                 preds[j].append(p if not return_np or isinstance(p, np.ndarray) else p.numpy())
         elif isinstance(preds_tmp, (np.ndarray, tf.Tensor)):
-            preds.append(preds_tmp if not return_np or isinstance(preds_tmp, np.ndarray)  # type: ignore
-                         else preds_tmp.numpy())
+            preds.append(
+                preds_tmp if not return_np or isinstance(preds_tmp, np.ndarray) else preds_tmp.numpy()  # type: ignore
+            )
         else:
-            raise TypeError(f'Model output type {type(preds_tmp)} not supported. The model output '
-                            f'type needs to be one of list, tuple, np.ndarray or tf.Tensor.')
+            raise TypeError(
+                f"Model output type {type(preds_tmp)} not supported. The model output "
+                f"type needs to be one of list, tuple, np.ndarray or tf.Tensor."
+            )
     concat = np.concatenate if return_np else tf.concat
     out = tuple(concat(p, axis=0) for p in preds) if isinstance(preds, tuple) else concat(preds, axis=0)
     if return_list:
@@ -59,10 +66,14 @@ def predict_batch(x: Union[list, np.ndarray, tf.Tensor], model: Union[Callable, 
     return out
 
 
-def predict_batch_transformer(x: Union[list, np.ndarray], model: tf.keras.Model, tokenizer: Callable,
-                              max_len: int, batch_size: int = int(1e10),
-                              dtype: Union[Type[np.generic], tf.DType] = np.float32) \
-        -> Union[np.ndarray, tf.Tensor]:
+def predict_batch_transformer(
+    x: Union[list, np.ndarray],
+    model: tf.keras.Model,
+    tokenizer: Callable,
+    max_len: int,
+    batch_size: int = int(1e10),
+    dtype: Union[Type[np.generic], tf.DType] = np.float32,
+) -> Union[np.ndarray, tf.Tensor]:
     """
     Make batch predictions using a transformers tokenizer and model.
 
@@ -85,5 +96,5 @@ def predict_batch_transformer(x: Union[list, np.ndarray], model: tf.keras.Model,
     -------
     Numpy array or tensorflow tensor with model outputs.
     """
-    preprocess_fn = partial(tokenize_transformer, tokenizer=tokenizer, max_len=max_len, backend='tf')
+    preprocess_fn = partial(tokenize_transformer, tokenizer=tokenizer, max_len=max_len, backend="tf")
     return predict_batch(x, model, preprocess_fn=preprocess_fn, batch_size=batch_size, dtype=dtype)

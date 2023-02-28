@@ -9,23 +9,23 @@ from alibi_detect.utils.frameworks import Framework
 
 
 class LSDDDriftOnlineTorch(BaseMultiDriftOnline):
-    online_state_keys: tuple = ('t', 'test_stats', 'drift_preds', 'test_window', 'k_xtc')
+    online_state_keys: tuple = ("t", "test_stats", "drift_preds", "test_window", "k_xtc")
 
     def __init__(
-            self,
-            x_ref: Union[np.ndarray, list],
-            ert: float,
-            window_size: int,
-            preprocess_fn: Optional[Callable] = None,
-            x_ref_preprocessed: bool = False,
-            sigma: Optional[np.ndarray] = None,
-            n_bootstraps: int = 1000,
-            n_kernel_centers: Optional[int] = None,
-            lambda_rd_max: float = 0.2,
-            device: Optional[str] = None,
-            verbose: bool = True,
-            input_shape: Optional[tuple] = None,
-            data_type: Optional[str] = None
+        self,
+        x_ref: Union[np.ndarray, list],
+        ert: float,
+        window_size: int,
+        preprocess_fn: Optional[Callable] = None,
+        x_ref_preprocessed: bool = False,
+        sigma: Optional[np.ndarray] = None,
+        n_bootstraps: int = 1000,
+        n_kernel_centers: Optional[int] = None,
+        lambda_rd_max: float = 0.2,
+        device: Optional[str] = None,
+        verbose: bool = True,
+        input_shape: Optional[tuple] = None,
+        data_type: Optional[str] = None,
     ) -> None:
         """
         Online least squares density difference (LSDD) data drift detector using preconfigured thresholds.
@@ -83,10 +83,10 @@ class LSDDDriftOnlineTorch(BaseMultiDriftOnline):
             n_bootstraps=n_bootstraps,
             verbose=verbose,
             input_shape=input_shape,
-            data_type=data_type
+            data_type=data_type,
         )
         self.backend = Framework.PYTORCH.value
-        self.meta.update({'backend': self.backend})
+        self.meta.update({"backend": self.backend})
         self.n_kernel_centers = n_kernel_centers
         self.lambda_rd_max = lambda_rd_max
 
@@ -101,8 +101,11 @@ class LSDDDriftOnlineTorch(BaseMultiDriftOnline):
             self.kernel = GaussianRBF()
             _ = self.kernel(x_ref, x_ref, infer_sigma=True)
         else:
-            sigma = torch.from_numpy(sigma).to(self.device) if isinstance(sigma,  # type: ignore[assignment]
-                                                                          np.ndarray) else None
+            sigma = (
+                torch.from_numpy(sigma).to(self.device)
+                if isinstance(sigma, np.ndarray)  # type: ignore[assignment]
+                else None
+            )
             self.kernel = GaussianRBF(sigma)  # type: ignore[arg-type]
 
         if self.n_kernel_centers is None:
@@ -127,7 +130,7 @@ class LSDDDriftOnlineTorch(BaseMultiDriftOnline):
     def _configure_kernel_centers(self):
         """Set aside reference samples to act as kernel centers."""
         perm = torch.randperm(self.n)
-        self.c_inds, self.non_c_inds = perm[:self.n_kernel_centers], perm[self.n_kernel_centers:]
+        self.c_inds, self.non_c_inds = perm[: self.n_kernel_centers], perm[self.n_kernel_centers :]
         self.kernel_centers = torch.from_numpy(self.x_ref[self.c_inds]).to(self.device)
         if np.unique(self.kernel_centers.cpu().numpy(), axis=0).shape[0] < self.n_kernel_centers:
             perturbation = (torch.randn(self.kernel_centers.shape) * 1e-6).to(self.device)
@@ -152,12 +155,16 @@ class LSDDDriftOnlineTorch(BaseMultiDriftOnline):
 
         # For stability in high dimensions we don't divide H by (pi*sigma^2)^(d/2)
         # Results in an alternative test-stat of LSDD*(pi*sigma^2)^(d/2). Same p-vals etc.
-        H = GaussianRBF(np.sqrt(2.) * self.kernel.sigma)(self.kernel_centers, self.kernel_centers)
+        H = GaussianRBF(np.sqrt(2.0) * self.kernel.sigma)(self.kernel_centers, self.kernel_centers)
 
         # Compute lsdds for first test-window. We infer regularisation constant lambda here.
         y_inds_all_0 = [y_inds[:w_size] for y_inds in y_inds_all]
         lsdds_0, H_lam_inv = permed_lsdds(
-            self.k_xc, x_inds_all, y_inds_all_0, H, lam_rd_max=self.lambda_rd_max,
+            self.k_xc,
+            x_inds_all,
+            y_inds_all_0,
+            H,
+            lam_rd_max=self.lambda_rd_max,
         )
 
         # Can compute threshold for first window
@@ -165,7 +172,7 @@ class LSDDDriftOnlineTorch(BaseMultiDriftOnline):
         # And now to iterate through the other W-1 overlapping windows
         p_bar = tqdm(range(1, w_size), "Computing thresholds") if self.verbose else range(1, w_size)
         for w in p_bar:
-            y_inds_all_w = [y_inds[w:(w + w_size)] for y_inds in y_inds_all]
+            y_inds_all_w = [y_inds[w : (w + w_size)] for y_inds in y_inds_all]
             lsdds_w, _ = permed_lsdds(self.k_xc, x_inds_all, y_inds_all_w, H, H_lam_inv=H_lam_inv)
             thresholds.append(quantile(lsdds_w, 1 - self.fpr))
             x_inds_all = [x_inds_all[i] for i in range(len(x_inds_all)) if lsdds_w[i] < thresholds[-1]]
@@ -196,7 +203,7 @@ class LSDDDriftOnlineTorch(BaseMultiDriftOnline):
         while lsdd_init is None or lsdd_init >= self.get_threshold(0):
             # Make split
             perm = torch.randperm(nkc_size)
-            self.ref_inds, self.init_test_inds = perm[:rw_size], perm[-self.window_size:]
+            self.ref_inds, self.init_test_inds = perm[:rw_size], perm[-self.window_size :]
             # Compute initial lsdd to check for initial detection
             self._initialise_state()  # to set self.test_window and self.k_xtc
             self.c2s = self.k_xc[self.ref_inds].mean(0)  # (below Eqn 21)
@@ -214,8 +221,8 @@ class LSDDDriftOnlineTorch(BaseMultiDriftOnline):
         """
         self.t += 1
         k_xtc = self.kernel(x_t, self.kernel_centers)
-        self.test_window = torch.cat([self.test_window[(1 - self.window_size):], x_t], 0)
-        self.k_xtc = torch.cat([self.k_xtc[(1 - self.window_size):], k_xtc], 0)
+        self.test_window = torch.cat([self.test_window[(1 - self.window_size) :], x_t], 0)
+        self.k_xtc = torch.cat([self.k_xtc[(1 - self.window_size) :], k_xtc], 0)
 
     def score(self, x_t: Union[np.ndarray, Any]) -> float:
         """

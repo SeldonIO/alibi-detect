@@ -3,7 +3,6 @@ from typing import Callable
 
 
 def activate_train_mode_for_dropout_layers(model: Callable) -> Callable:
-
     model.eval()  # type: ignore
     n_dropout_layers = 0
     for module in model.modules():  # type: ignore

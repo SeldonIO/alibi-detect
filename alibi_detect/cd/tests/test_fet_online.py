@@ -10,12 +10,12 @@ n_bootstraps = 1000
 ert = 150
 window_sizes = [40]
 
-alternatives = ['less', 'greater']
+alternatives = ["less", "greater"]
 n_features = [1, 3]
 
 
-@pytest.mark.parametrize('alternative', alternatives)
-@pytest.mark.parametrize('n_feat', n_features)
+@pytest.mark.parametrize("alternative", alternatives)
+@pytest.mark.parametrize("n_feat", n_features)
 def test_fetdriftonline(alternative, n_feat, seed):
     # Reference data
     p_h0 = 0.5
@@ -29,8 +29,9 @@ def test_fetdriftonline(alternative, n_feat, seed):
     for _ in range(n_inits):
         # Instantiate detector
         with fixed_seed(seed + 1):
-            cd = FETDriftOnline(x_ref=x_ref, ert=ert, window_sizes=window_sizes,
-                                n_bootstraps=n_bootstraps, alternative=alternative)
+            cd = FETDriftOnline(
+                x_ref=x_ref, ert=ert, window_sizes=window_sizes, n_bootstraps=n_bootstraps, alternative=alternative
+            )
 
         # Reference data
         count = 0
@@ -40,12 +41,12 @@ def test_fetdriftonline(alternative, n_feat, seed):
             t0 = cd.t
             pred_t = cd.predict(x_t)
             assert cd.t - t0 == 1  # This checks state updated (self.t at least)
-            if pred_t['data']['is_drift']:
-                detection_times_h0.append(pred_t['data']['time'])
+            if pred_t["data"]["is_drift"]:
+                detection_times_h0.append(pred_t["data"]["time"])
                 cd.reset_state()
 
         # Drifted data
-        if alternative == 'less':
+        if alternative == "less":
             p_h1 = 0.1
             x_h1 = partial(np.random.choice, (0, 1), size=n_feat, p=[1 - p_h1, p_h1])
         else:
@@ -58,8 +59,8 @@ def test_fetdriftonline(alternative, n_feat, seed):
             count += 1
             x_t = x_h1().reshape(1, 1) if n_feat == 1 else x_h1()  # test shape (1,1) in 1D case here
             pred_t = cd.predict(x_t)
-            if pred_t['data']['is_drift']:
-                detection_times_h1.append(pred_t['data']['time'])
+            if pred_t["data"]["is_drift"]:
+                detection_times_h1.append(pred_t["data"]["time"])
                 cd.reset_state()
 
     art = np.array(detection_times_h0).mean() - np.min(window_sizes) + 1
@@ -69,7 +70,7 @@ def test_fetdriftonline(alternative, n_feat, seed):
     assert add + 1 < ert / 2
 
 
-@pytest.mark.parametrize('n_feat', n_features)
+@pytest.mark.parametrize("n_feat", n_features)
 def test_fet_online_state_online(n_feat, tmp_path, seed):
     """
     Test save/load/reset state methods for FETDriftOnline. State is saved, reset, and loaded, with
@@ -97,7 +98,7 @@ def test_fet_online_state_online(n_feat, tmp_path, seed):
             for key in dd.online_state_keys:
                 state_dict_t5[key] = getattr(dd, key)
         preds = dd.predict(x_t)
-        test_stats_1.append(preds['data']['test_stat'])
+        test_stats_1.append(preds["data"]["test_stat"])
 
     # Reset and check state cleared
     dd.reset_state()
@@ -108,7 +109,7 @@ def test_fet_online_state_online(n_feat, tmp_path, seed):
     test_stats_2 = []
     for t, x_t in enumerate(x):
         preds = dd.predict(x_t)
-        test_stats_2.append(preds['data']['test_stat'])
+        test_stats_2.append(preds["data"]["test_stat"])
     np.testing.assert_array_equal(test_stats_1, test_stats_2)
 
     # Load state from t=5 timestep
@@ -120,4 +121,4 @@ def test_fet_online_state_online(n_feat, tmp_path, seed):
 
     # Compare predictions to original at t=5
     new_pred = dd.predict(x[5])
-    np.testing.assert_array_equal(new_pred['data']['test_stat'], test_stats_1[5])
+    np.testing.assert_array_equal(new_pred["data"]["test_stat"], test_stats_1[5])

@@ -15,33 +15,33 @@ if has_tensorflow:
 
 class SpotTheDiffDrift(DriftConfigMixin):
     def __init__(
-            self,
-            x_ref: Union[np.ndarray, list],
-            backend: str = 'tensorflow',
-            p_val: float = .05,
-            x_ref_preprocessed: bool = False,
-            preprocess_fn: Optional[Callable] = None,
-            kernel: Callable = None,
-            n_diffs: int = 1,
-            initial_diffs: Optional[np.ndarray] = None,
-            l1_reg: float = 0.01,
-            binarize_preds: bool = False,
-            train_size: Optional[float] = .75,
-            n_folds: Optional[int] = None,
-            retrain_from_scratch: bool = True,
-            seed: int = 0,
-            optimizer: Optional[Callable] = None,
-            learning_rate: float = 1e-3,
-            batch_size: int = 32,
-            preprocess_batch_fn: Optional[Callable] = None,
-            epochs: int = 3,
-            verbose: int = 0,
-            train_kwargs: Optional[dict] = None,
-            device: Optional[str] = None,
-            dataset: Optional[Callable] = None,
-            dataloader: Optional[Callable] = None,
-            input_shape: Optional[tuple] = None,
-            data_type: Optional[str] = None
+        self,
+        x_ref: Union[np.ndarray, list],
+        backend: str = "tensorflow",
+        p_val: float = 0.05,
+        x_ref_preprocessed: bool = False,
+        preprocess_fn: Optional[Callable] = None,
+        kernel: Callable = None,
+        n_diffs: int = 1,
+        initial_diffs: Optional[np.ndarray] = None,
+        l1_reg: float = 0.01,
+        binarize_preds: bool = False,
+        train_size: Optional[float] = 0.75,
+        n_folds: Optional[int] = None,
+        retrain_from_scratch: bool = True,
+        seed: int = 0,
+        optimizer: Optional[Callable] = None,
+        learning_rate: float = 1e-3,
+        batch_size: int = 32,
+        preprocess_batch_fn: Optional[Callable] = None,
+        epochs: int = 3,
+        verbose: int = 0,
+        train_kwargs: Optional[dict] = None,
+        device: Optional[str] = None,
+        dataset: Optional[Callable] = None,
+        dataloader: Optional[Callable] = None,
+        input_shape: Optional[tuple] = None,
+        data_type: Optional[str] = None,
     ) -> None:
         """
         Classifier-based drift detector with a classifier of form y = a + b_1*k(x,w_1) + ... + b_J*k(x,w_J),
@@ -127,34 +127,37 @@ class SpotTheDiffDrift(DriftConfigMixin):
 
         backend = backend.lower()
         BackendValidator(
-            backend_options={Framework.TENSORFLOW: [Framework.TENSORFLOW],
-                             Framework.PYTORCH: [Framework.PYTORCH]},
-            construct_name=self.__class__.__name__
+            backend_options={Framework.TENSORFLOW: [Framework.TENSORFLOW], Framework.PYTORCH: [Framework.PYTORCH]},
+            construct_name=self.__class__.__name__,
         ).verify_backend(backend)
         kwargs = locals()
-        args = [kwargs['x_ref']]
-        pop_kwargs = ['self', 'x_ref',  'backend', '__class__']
-        if kwargs['optimizer'] is None:
-            pop_kwargs += ['optimizer']
+        args = [kwargs["x_ref"]]
+        pop_kwargs = ["self", "x_ref", "backend", "__class__"]
+        if kwargs["optimizer"] is None:
+            pop_kwargs += ["optimizer"]
         [kwargs.pop(k, None) for k in pop_kwargs]
 
         if backend == Framework.TENSORFLOW:
-            pop_kwargs = ['device', 'dataloader']
+            pop_kwargs = ["device", "dataloader"]
             [kwargs.pop(k, None) for k in pop_kwargs]
             if dataset is None:
-                kwargs.update({'dataset': TFDataset})
+                kwargs.update({"dataset": TFDataset})
             self._detector = SpotTheDiffDriftTF(*args, **kwargs)  # type: ignore
         else:
             if dataset is None:
-                kwargs.update({'dataset': TorchDataset})
+                kwargs.update({"dataset": TorchDataset})
             if dataloader is None:
-                kwargs.update({'dataloader': DataLoader})
+                kwargs.update({"dataloader": DataLoader})
             self._detector = SpotTheDiffDriftTorch(*args, **kwargs)  # type: ignore
         self.meta = self._detector.meta
 
     def predict(
-        self, x: np.ndarray,  return_p_val: bool = True, return_distance: bool = True,
-        return_probs: bool = True, return_model: bool = True
+        self,
+        x: np.ndarray,
+        return_p_val: bool = True,
+        return_distance: bool = True,
+        return_probs: bool = True,
+        return_model: bool = True,
     ) -> Dict[str, Dict[str, Union[int, str, float, Callable]]]:
         """
         Predict whether a batch of data has drifted from the reference data.

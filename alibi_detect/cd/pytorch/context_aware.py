@@ -16,26 +16,26 @@ logger = logging.getLogger(__name__)
 class ContextMMDDriftTorch(BaseContextMMDDrift):
     lams: Optional[Tuple[torch.Tensor, torch.Tensor]] = None
 
-    @deprecated_alias(preprocess_x_ref='preprocess_at_init')
+    @deprecated_alias(preprocess_x_ref="preprocess_at_init")
     def __init__(
-            self,
-            x_ref: Union[np.ndarray, list],
-            c_ref: np.ndarray,
-            p_val: float = .05,
-            x_ref_preprocessed: bool = False,
-            preprocess_at_init: bool = True,
-            update_ref: Optional[Dict[str, int]] = None,
-            preprocess_fn: Optional[Callable] = None,
-            x_kernel: Callable = GaussianRBF,
-            c_kernel: Callable = GaussianRBF,
-            n_permutations: int = 1000,
-            prop_c_held: float = 0.25,
-            n_folds: int = 5,
-            batch_size: Optional[int] = 256,
-            device: Optional[str] = None,
-            input_shape: Optional[tuple] = None,
-            data_type: Optional[str] = None,
-            verbose: bool = False,
+        self,
+        x_ref: Union[np.ndarray, list],
+        c_ref: np.ndarray,
+        p_val: float = 0.05,
+        x_ref_preprocessed: bool = False,
+        preprocess_at_init: bool = True,
+        update_ref: Optional[Dict[str, int]] = None,
+        preprocess_fn: Optional[Callable] = None,
+        x_kernel: Callable = GaussianRBF,
+        c_kernel: Callable = GaussianRBF,
+        n_permutations: int = 1000,
+        prop_c_held: float = 0.25,
+        n_folds: int = 5,
+        batch_size: Optional[int] = 256,
+        device: Optional[str] = None,
+        input_shape: Optional[tuple] = None,
+        data_type: Optional[str] = None,
+        verbose: bool = False,
     ) -> None:
         """
         A context-aware drift detector based on a conditional analogue of the maximum mean discrepancy (MMD).
@@ -102,7 +102,7 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
             data_type=data_type,
             verbose=verbose,
         )
-        self.meta.update({'backend': Framework.PYTORCH.value})
+        self.meta.update({"backend": Framework.PYTORCH.value})
 
         # set device
         self.device = get_device(device)
@@ -114,8 +114,9 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
         # Initialize classifier (hardcoded for now)
         self.clf = _SVCDomainClf(self.c_kernel)
 
-    def score(self,  # type: ignore[override]
-              x: Union[np.ndarray, list], c: np.ndarray) -> Tuple[float, float, float, Tuple]:
+    def score(
+        self, x: Union[np.ndarray, list], c: np.ndarray  # type: ignore[override]
+    ) -> Tuple[float, float, float, Tuple]:
         """
         Compute the MMD based conditional test statistic, and perform a conditional permutation test to obtain a
         p-value representing the test statistic's extremity under the null hypothesis.
@@ -178,8 +179,9 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
 
         return p_val.numpy().item(), stat.numpy().item(), distance_threshold.numpy(), coupling
 
-    def _cmmd(self, K: torch.Tensor, L: torch.Tensor, bools: torch.Tensor, L_held: torch.Tensor = None) \
-            -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    def _cmmd(
+        self, K: torch.Tensor, L: torch.Tensor, bools: torch.Tensor, L_held: torch.Tensor = None
+    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         """Private method to compute the MMD-ADiTT test statistic."""
         # Get ref/test indices
         idx_0, idx_1 = torch.where(bools == 0)[0], torch.where(bools == 1)[0]
@@ -192,7 +194,7 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
         # Initialise regularisation parameters
         # Implemented only for first _cmmd call which corresponds to original window assignment
         if self.lams is None:
-            possible_lams = torch.tensor([2**(-i) for i in range(20)]).to(K.device)
+            possible_lams = torch.tensor([2 ** (-i) for i in range(20)]).to(K.device)
             lam_0 = self._pick_lam(possible_lams, K_0, L_0, n_folds=self.n_folds)
             lam_1 = self._pick_lam(possible_lams, K_1, L_1, n_folds=self.n_folds)
             self.lams = (lam_0, lam_1)
@@ -205,17 +207,19 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
         # Allow batches of MMDs to be computed at a time (rather than all)
         if self.batch_size is not None:
             bs = self.batch_size
-            coupling_xx = torch.stack([torch.einsum('ij,ik->ijk', A_0_i, A_0_i).mean(0)
-                                       for A_0_i in A_0.split(bs)]).mean(0)
-            coupling_yy = torch.stack([torch.einsum('ij,ik->ijk', A_1_i, A_1_i).mean(0)
-                                       for A_1_i in A_1.split(bs)]).mean(0)
-            coupling_xy = torch.stack([
-                torch.einsum('ij,ik->ijk', A_0_i, A_1_i).mean(0) for A_0_i, A_1_i in zip(A_0.split(bs), A_1.split(bs))
-            ]).mean(0)
+            coupling_xx = torch.stack(
+                [torch.einsum("ij,ik->ijk", A_0_i, A_0_i).mean(0) for A_0_i in A_0.split(bs)]
+            ).mean(0)
+            coupling_yy = torch.stack(
+                [torch.einsum("ij,ik->ijk", A_1_i, A_1_i).mean(0) for A_1_i in A_1.split(bs)]
+            ).mean(0)
+            coupling_xy = torch.stack(
+                [torch.einsum("ij,ik->ijk", A_0_i, A_1_i).mean(0) for A_0_i, A_1_i in zip(A_0.split(bs), A_1.split(bs))]
+            ).mean(0)
         else:
-            coupling_xx = torch.einsum('ij,ik->ijk', A_0, A_0).mean(0)
-            coupling_yy = torch.einsum('ij,ik->ijk', A_1, A_1).mean(0)
-            coupling_xy = torch.einsum('ij,ik->ijk', A_0, A_1).mean(0)
+            coupling_xx = torch.einsum("ij,ik->ijk", A_0, A_0).mean(0)
+            coupling_yy = torch.einsum("ij,ik->ijk", A_1, A_1).mean(0)
+            coupling_xy = torch.einsum("ij,ik->ijk", A_0, A_1).mean(0)
         sim_xx = (K[idx_0][:, idx_0] * coupling_xx).sum()
         sim_yy = (K[idx_1][:, idx_1] * coupling_yy).sum()
         sim_xy = (K[idx_0][:, idx_1] * coupling_xy).sum()
@@ -238,18 +242,18 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
         K, L = K[perm][:, perm], L[perm][:, perm]
         losses = torch.zeros_like(lams, dtype=torch.float).to(K.device)
         for fold in range(n_folds):
-            inds_oof = list(np.arange(n)[(fold * fold_size):((fold + 1) * fold_size)])
+            inds_oof = list(np.arange(n)[(fold * fold_size) : ((fold + 1) * fold_size)])
             inds_if = list(np.setdiff1d(np.arange(n), inds_oof))
             K_if, L_if = K[inds_if][:, inds_if], L[inds_if][:, inds_if]
             n_if = len(K_if)
             L_inv_lams = torch.stack(
-                [torch.linalg.inv(L_if + n_if * lam * torch.eye(n_if).to(L.device))
-                 for lam in lams])  # n_lam x n_if x n_if
-            KW = torch.einsum('ij,ljk->lik', K_if, L_inv_lams)
-            lW = torch.einsum('ij,ljk->lik', L[inds_oof][:, inds_if], L_inv_lams)
-            lWKW = torch.einsum('lij,ljk->lik', lW, KW)
-            lWKWl = torch.einsum('lkj,jk->lk', lWKW, L[inds_if][:, inds_oof])  # n_lam x n_oof
-            lWk = torch.einsum('lij,ji->li', lW, K[inds_if][:, inds_oof])  # n_lam x n_oof
+                [torch.linalg.inv(L_if + n_if * lam * torch.eye(n_if).to(L.device)) for lam in lams]
+            )  # n_lam x n_if x n_if
+            KW = torch.einsum("ij,ljk->lik", K_if, L_inv_lams)
+            lW = torch.einsum("ij,ljk->lik", L[inds_oof][:, inds_if], L_inv_lams)
+            lWKW = torch.einsum("lij,ljk->lik", lW, KW)
+            lWKWl = torch.einsum("lkj,jk->lk", lWKW, L[inds_if][:, inds_oof])  # n_lam x n_oof
+            lWk = torch.einsum("lij,ji->li", lW, K[inds_if][:, inds_oof])  # n_lam x n_oof
             kxx = torch.ones_like(lWk).to(lWk.device) * torch.max(K)
             losses += (lWKWl + kxx - 2 * lWk).sum(-1)
         return lams[torch.argmin(losses)]
@@ -274,5 +278,5 @@ def _sigma_median_diag(x: torch.Tensor, y: torch.Tensor, dist: torch.Tensor) -> 
     The computed bandwidth, `sigma`.
     """
     n_median = np.prod(dist.shape) // 2
-    sigma = (.5 * dist.flatten().sort().values[int(n_median)].unsqueeze(dim=-1)) ** .5
+    sigma = (0.5 * dist.flatten().sort().values[int(n_median)].unsqueeze(dim=-1)) ** 0.5
     return sigma

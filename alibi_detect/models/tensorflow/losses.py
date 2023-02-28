@@ -5,12 +5,9 @@ import tensorflow_probability as tfp
 from alibi_detect.models.tensorflow.gmm import gmm_params, gmm_energy
 
 
-def elbo(y_true: tf.Tensor,
-         y_pred: tf.Tensor,
-         cov_full: tf.Tensor = None,
-         cov_diag: tf.Tensor = None,
-         sim: float = .05
-         ) -> tf.Tensor:
+def elbo(
+    y_true: tf.Tensor, y_pred: tf.Tensor, cov_full: tf.Tensor = None, cov_diag: tf.Tensor = None, sim: float = 0.05
+) -> tf.Tensor:
     """
     Compute ELBO loss.
 
@@ -35,23 +32,23 @@ def elbo(y_true: tf.Tensor,
         sim = None
 
     if isinstance(cov_full, tf.Tensor):
-        y_mn = tfp.distributions.MultivariateNormalFullCovariance(Flatten()(y_pred),
-                                                                  covariance_matrix=cov_full)
+        y_mn = tfp.distributions.MultivariateNormalFullCovariance(Flatten()(y_pred), covariance_matrix=cov_full)
     else:
-        y_mn = tfp.distributions.MultivariateNormalDiag(Flatten()(y_pred),
-                                                        scale_diag=cov_diag,
-                                                        scale_identity_multiplier=sim)
+        y_mn = tfp.distributions.MultivariateNormalDiag(
+            Flatten()(y_pred), scale_diag=cov_diag, scale_identity_multiplier=sim
+        )
     loss = -tf.reduce_mean(y_mn.log_prob(Flatten()(y_true)))
     return loss
 
 
-def loss_aegmm(x_true: tf.Tensor,
-               x_pred: tf.Tensor,
-               z: tf.Tensor,
-               gamma: tf.Tensor,
-               w_energy: float = .1,
-               w_cov_diag: float = .005
-               ) -> tf.Tensor:
+def loss_aegmm(
+    x_true: tf.Tensor,
+    x_pred: tf.Tensor,
+    z: tf.Tensor,
+    gamma: tf.Tensor,
+    w_energy: float = 0.1,
+    w_cov_diag: float = 0.005,
+) -> tf.Tensor:
     """
     Loss function used for OutlierAEGMM.
 
@@ -81,17 +78,18 @@ def loss_aegmm(x_true: tf.Tensor,
     return loss
 
 
-def loss_vaegmm(x_true: tf.Tensor,
-                x_pred: tf.Tensor,
-                z: tf.Tensor,
-                gamma: tf.Tensor,
-                w_recon: float = 1e-7,
-                w_energy: float = .1,
-                w_cov_diag: float = .005,
-                cov_full: tf.Tensor = None,
-                cov_diag: tf.Tensor = None,
-                sim: float = .05
-                ) -> tf.Tensor:
+def loss_vaegmm(
+    x_true: tf.Tensor,
+    x_pred: tf.Tensor,
+    z: tf.Tensor,
+    gamma: tf.Tensor,
+    w_recon: float = 1e-7,
+    w_energy: float = 0.1,
+    w_cov_diag: float = 0.005,
+    cov_full: tf.Tensor = None,
+    cov_diag: tf.Tensor = None,
+    sim: float = 0.05,
+) -> tf.Tensor:
     """
     Loss function used for OutlierVAEGMM.
 
@@ -129,15 +127,16 @@ def loss_vaegmm(x_true: tf.Tensor,
     return loss
 
 
-def loss_adv_ae(x_true: tf.Tensor,
-                x_pred: tf.Tensor,
-                model: tf.keras.Model = None,
-                model_hl: list = None,
-                w_model: float = 1.,
-                w_recon: float = 0.,
-                w_model_hl: list = None,
-                temperature: float = 1.
-                ) -> tf.Tensor:
+def loss_adv_ae(
+    x_true: tf.Tensor,
+    x_pred: tf.Tensor,
+    model: tf.keras.Model = None,
+    model_hl: list = None,
+    w_model: float = 1.0,
+    w_recon: float = 0.0,
+    w_model_hl: list = None,
+    temperature: float = 1.0,
+) -> tf.Tensor:
     """
     Loss function used for AdversarialAE.
 
@@ -169,7 +168,7 @@ def loss_adv_ae(x_true: tf.Tensor,
     y_pred = model(x_pred)
 
     # apply temperature scaling
-    if temperature != 1.:
+    if temperature != 1.0:
         y_true = y_true ** (1 / temperature)
         y_true = y_true / tf.reshape(tf.reduce_sum(y_true, axis=-1), (-1, 1))
 
@@ -190,7 +189,7 @@ def loss_adv_ae(x_true: tf.Tensor,
     loss *= w_model
 
     # add optional reconstruction loss
-    if w_recon > 0.:
+    if w_recon > 0.0:
         loss_recon = (x_true - x_pred) ** 2
         std_recon = tf.math.reduce_std(loss_recon)
         w_scale = std_kld / (std_recon + 1e-10)
@@ -201,12 +200,13 @@ def loss_adv_ae(x_true: tf.Tensor,
         return loss
 
 
-def loss_distillation(x_true: tf.Tensor,
-                      y_pred: tf.Tensor,
-                      model: tf.keras.Model = None,
-                      loss_type: str = 'kld',
-                      temperature: float = 1.,
-                      ) -> tf.Tensor:
+def loss_distillation(
+    x_true: tf.Tensor,
+    y_pred: tf.Tensor,
+    model: tf.keras.Model = None,
+    loss_type: str = "kld",
+    temperature: float = 1.0,
+) -> tf.Tensor:
     """
     Loss function used for Model Distillation.
 
@@ -230,13 +230,13 @@ def loss_distillation(x_true: tf.Tensor,
     """
     y_true = model(x_true)
     # apply temperature scaling
-    if temperature != 1.:
+    if temperature != 1.0:
         y_true = y_true ** (1 / temperature)
         y_true = y_true / tf.reshape(tf.reduce_sum(y_true, axis=-1), (-1, 1))
 
-    if loss_type == 'kld':
+    if loss_type == "kld":
         loss_dist = kld(y_true, y_pred)
-    elif loss_type == 'xent':
+    elif loss_type == "xent":
         loss_dist = categorical_crossentropy(y_true, y_pred, from_logits=False)
     else:
         raise NotImplementedError

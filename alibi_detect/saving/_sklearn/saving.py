@@ -10,9 +10,7 @@ from alibi_detect.utils.frameworks import Framework
 logger = logging.getLogger(__name__)
 
 
-def save_model_config(model: BaseEstimator,
-                      base_path: Path,
-                      local_path: Path = Path('.')) -> dict:
+def save_model_config(model: BaseEstimator, base_path: Path, local_path: Path = Path(".")) -> dict:
     """
     Save a scikit-learn (or xgboost) model to a config dictionary.
     Models are assumed to be a subclass of :class:`~sklearn.base.BaseEstimator`. This includes xgboost models
@@ -33,17 +31,14 @@ def save_model_config(model: BaseEstimator,
     The model config dict.
     """
     filepath = base_path.joinpath(local_path)
-    save_model(model, filepath=filepath, save_dir='model')
-    cfg_model = {
-        'flavour': Framework.SKLEARN.value,
-        'src': local_path.joinpath('model')
-    }
+    save_model(model, filepath=filepath, save_dir="model")
+    cfg_model = {"flavour": Framework.SKLEARN.value, "src": local_path.joinpath("model")}
     return cfg_model
 
 
-def save_model(model: BaseEstimator,
-               filepath: Union[str, os.PathLike],
-               save_dir: Union[str, os.PathLike] = 'model') -> None:
+def save_model(
+    model: BaseEstimator, filepath: Union[str, os.PathLike], save_dir: Union[str, os.PathLike] = "model"
+) -> None:
     """
     Save scikit-learn (and xgboost) models. Models are assumed to be a subclass of :class:`~sklearn.base.BaseEstimator`.
     This includes xgboost models following the scikit-learn API
@@ -61,9 +56,9 @@ def save_model(model: BaseEstimator,
     # create folder to save model in
     model_path = Path(filepath).joinpath(save_dir)
     if not model_path.is_dir():
-        logger.warning('Directory {} does not exist and is now created.'.format(model_path))
+        logger.warning("Directory {} does not exist and is now created.".format(model_path))
         model_path.mkdir(parents=True, exist_ok=True)
 
     # save model
-    model_path = model_path.joinpath('model.joblib')
+    model_path = model_path.joinpath("model.joblib")
     joblib.dump(model, model_path)

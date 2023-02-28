@@ -83,12 +83,12 @@ def get_device(device: Optional[Union[str, torch.device]] = None) -> torch.devic
     if isinstance(device, torch.device):  # Already a torch device
         return device
     else:  # Instantiate device
-        if device is None or device.lower() in ['gpu', 'cuda']:
-            torch_device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-            if torch_device.type == 'cpu':
-                logger.warning('No GPU detected, fall back on CPU.')
+        if device is None or device.lower() in ["gpu", "cuda"]:
+            torch_device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            if torch_device.type == "cpu":
+                logger.warning("No GPU detected, fall back on CPU.")
         else:
-            torch_device = torch.device('cpu')
-            if device.lower() != 'cpu':
-                logger.warning('Requested device not recognised, fall back on CPU.')
+            torch_device = torch.device("cpu")
+            if device.lower() != "cpu":
+                logger.warning("Requested device not recognised, fall back on CPU.")
     return torch_device

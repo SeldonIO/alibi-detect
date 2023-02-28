@@ -5,11 +5,9 @@ from sklearn.metrics import roc_curve, auc
 from typing import Dict, Union
 
 
-def plot_instance_score(preds: Dict,
-                        target: np.ndarray,
-                        labels: np.ndarray,
-                        threshold: float,
-                        ylim: tuple = (None, None)) -> None:
+def plot_instance_score(
+    preds: Dict, target: np.ndarray, labels: np.ndarray, threshold: float, ylim: tuple = (None, None)
+) -> None:
     """
     Scatter plot of a batch of outlier or adversarial scores compared to the threshold.
 
@@ -26,28 +24,30 @@ def plot_instance_score(preds: Dict,
     ylim
         Min and max y-axis values.
     """
-    scores = preds['data']['instance_score']
+    scores = preds["data"]["instance_score"]
     df = pd.DataFrame(dict(idx=np.arange(len(scores)), score=scores, label=target))
-    groups = df.groupby('label')
+    groups = df.groupby("label")
     fig, ax = plt.subplots()
     for name, group in groups:
-        ax.plot(group.idx, group.score, marker='o', linestyle='', ms=6, label=labels[name])
-    plt.plot(np.arange(len(scores)), np.ones(len(scores)) * threshold, color='g', label='Threshold')
+        ax.plot(group.idx, group.score, marker="o", linestyle="", ms=6, label=labels[name])
+    plt.plot(np.arange(len(scores)), np.ones(len(scores)) * threshold, color="g", label="Threshold")
     plt.ylim(ylim)
-    plt.xlabel('Number of Instances')
-    plt.ylabel('Instance Level Score')
+    plt.xlabel("Number of Instances")
+    plt.ylabel("Instance Level Score")
     ax.legend()
     plt.show()
 
 
-def plot_feature_outlier_image(od_preds: Dict,
-                               X: np.ndarray,
-                               X_recon: np.ndarray = None,
-                               instance_ids: list = None,
-                               max_instances: int = 5,
-                               outliers_only: bool = False,
-                               n_channels: int = 3,
-                               figsize: tuple = (20, 20)) -> None:
+def plot_feature_outlier_image(
+    od_preds: Dict,
+    X: np.ndarray,
+    X_recon: np.ndarray = None,
+    instance_ids: list = None,
+    max_instances: int = 5,
+    outliers_only: bool = False,
+    n_channels: int = 3,
+    figsize: tuple = (20, 20),
+) -> None:
     """
     Plot feature (pixel) wise outlier scores for images.
 
@@ -70,11 +70,11 @@ def plot_feature_outlier_image(od_preds: Dict,
     figsize
         Tuple for the figure size.
     """
-    scores = od_preds['data']['feature_score']
+    scores = od_preds["data"]["feature_score"]
     if outliers_only and instance_ids is None:
-        instance_ids = list(np.where(od_preds['data']['is_outlier'])[0])
+        instance_ids = list(np.where(od_preds["data"]["is_outlier"])[0])
     elif instance_ids is None:
-        instance_ids = list(range(len(od_preds['data']['is_outlier'])))
+        instance_ids = list(range(len(od_preds["data"]["is_outlier"])))
     n_instances = min(max_instances, len(instance_ids))
     instance_ids = instance_ids[:n_instances]
     n_cols = 2
@@ -89,61 +89,62 @@ def plot_feature_outlier_image(od_preds: Dict,
 
     n_subplot = 1
     for i in range(n_instances):
-
         idx = instance_ids[i]
 
         X_outlier = X[idx]
         plt.subplot(n_instances, n_cols, n_subplot)
-        plt.axis('off')
+        plt.axis("off")
         if i == 0:
-            plt.title('Original')
+            plt.title("Original")
         plt.imshow(X_outlier)
         n_subplot += 1
 
         if X_recon is not None:
             plt.subplot(n_instances, n_cols, n_subplot)
-            plt.axis('off')
+            plt.axis("off")
             if i == 0:
-                plt.title('Reconstruction')
+                plt.title("Reconstruction")
             plt.imshow(X_recon[idx])
             n_subplot += 1
 
         plt.subplot(n_instances, n_cols, n_subplot)
-        plt.axis('off')
+        plt.axis("off")
         if i == 0:
-            plt.title('Outlier Score Channel 0')
+            plt.title("Outlier Score Channel 0")
         plt.imshow(scores[idx][:, :, 0])
         n_subplot += 1
 
         if n_channels == 3:
             plt.subplot(n_instances, n_cols, n_subplot)
-            plt.axis('off')
+            plt.axis("off")
             if i == 0:
-                plt.title('Outlier Score Channel 1')
+                plt.title("Outlier Score Channel 1")
             plt.imshow(scores[idx][:, :, 1])
             n_subplot += 1
 
             plt.subplot(n_instances, n_cols, n_subplot)
-            plt.axis('off')
+            plt.axis("off")
             if i == 0:
-                plt.title('Outlier Score Channel 2')
+                plt.title("Outlier Score Channel 2")
             plt.imshow(scores[idx][:, :, 2])
             n_subplot += 1
 
     plt.show()
 
 
-def plot_feature_outlier_tabular(od_preds: Dict,
-                                 X: np.ndarray,
-                                 X_recon: np.ndarray = None,
-                                 threshold: float = None,
-                                 instance_ids: list = None,
-                                 max_instances: int = 5,
-                                 top_n: int = int(1e12),
-                                 outliers_only: bool = False,
-                                 feature_names: list = None,
-                                 width: float = .2,
-                                 figsize: tuple = (20, 10)) -> None:
+def plot_feature_outlier_tabular(
+    od_preds: Dict,
+    X: np.ndarray,
+    X_recon: np.ndarray = None,
+    threshold: float = None,
+    instance_ids: list = None,
+    max_instances: int = 5,
+    top_n: int = int(1e12),
+    outliers_only: bool = False,
+    feature_names: list = None,
+    width: float = 0.2,
+    figsize: tuple = (20, 10),
+) -> None:
     """
     Plot feature wise outlier scores for tabular data.
 
@@ -173,29 +174,28 @@ def plot_feature_outlier_tabular(od_preds: Dict,
         Tuple for the figure size.
     """
     if outliers_only and instance_ids is None:
-        instance_ids = list(np.where(od_preds['data']['is_outlier'])[0])
+        instance_ids = list(np.where(od_preds["data"]["is_outlier"])[0])
     elif instance_ids is None:
-        instance_ids = list(range(len(od_preds['data']['is_outlier'])))
+        instance_ids = list(range(len(od_preds["data"]["is_outlier"])))
     n_instances = min(max_instances, len(instance_ids))
     instance_ids = instance_ids[:n_instances]
     n_features = X.shape[1]
     n_cols = 2
 
-    labels_values = ['Original']
+    labels_values = ["Original"]
     if X_recon is not None:
-        labels_values += ['Reconstructed']
-    labels_scores = ['Outlier Score']
+        labels_values += ["Reconstructed"]
+    labels_scores = ["Outlier Score"]
     if threshold is not None:
-        labels_scores = ['Threshold'] + labels_scores
+        labels_scores = ["Threshold"] + labels_scores
 
     fig, axes = plt.subplots(nrows=n_instances, ncols=n_cols, figsize=figsize)
 
     n_subplot = 1
     for i in range(n_instances):
-
         idx = instance_ids[i]
 
-        fscore = od_preds['data']['feature_score'][idx]
+        fscore = od_preds["data"]["feature_score"][idx]
         if top_n >= n_features:
             keep_cols = np.arange(n_features)
         else:
@@ -207,27 +207,27 @@ def plot_feature_outlier_tabular(od_preds: Dict,
         plt.subplot(n_instances, n_cols, n_subplot)
         if X_recon is not None:
             X_recon_idx = X_recon[idx][keep_cols]
-            plt.bar(ticks - width, X_idx, width=width, color='b', align='center')
-            plt.bar(ticks, X_recon_idx, width=width, color='g', align='center')
+            plt.bar(ticks - width, X_idx, width=width, color="b", align="center")
+            plt.bar(ticks, X_recon_idx, width=width, color="g", align="center")
         else:
-            plt.bar(ticks, X_idx, width=width, color='b', align='center')
+            plt.bar(ticks, X_idx, width=width, color="b", align="center")
         if feature_names is not None:
             plt.xticks(ticks=ticks, labels=list(np.array(feature_names)[keep_cols]), rotation=45)
-        plt.title('Feature Values')
-        plt.xlabel('Features')
-        plt.ylabel('Feature Values')
+        plt.title("Feature Values")
+        plt.xlabel("Features")
+        plt.ylabel("Feature Values")
         plt.legend(labels_values)
         n_subplot += 1
 
         plt.subplot(n_instances, n_cols, n_subplot)
         plt.bar(ticks, fscore)
         if threshold is not None:
-            plt.plot(np.ones(len(ticks)) * threshold, 'r')
+            plt.plot(np.ones(len(ticks)) * threshold, "r")
         if feature_names is not None:
             plt.xticks(ticks=ticks, labels=list(np.array(feature_names)[keep_cols]), rotation=45)
-        plt.title('Feature Level Outlier Score')
-        plt.xlabel('Features')
-        plt.ylabel('Outlier Score')
+        plt.title("Feature Level Outlier Score")
+        plt.xlabel("Features")
+        plt.ylabel("Outlier Score")
         plt.legend(labels_scores)
         n_subplot += 1
 
@@ -235,16 +235,17 @@ def plot_feature_outlier_tabular(od_preds: Dict,
     plt.show()
 
 
-def plot_feature_outlier_ts(od_preds: Dict,
-                            X: np.ndarray,
-                            threshold: Union[float, int, list, np.ndarray],
-                            window: tuple = None,
-                            t: np.ndarray = None,
-                            X_orig: np.ndarray = None,
-                            width: float = .2,
-                            figsize: tuple = (20, 8),
-                            ylim: tuple = (None, None)
-                            ) -> None:
+def plot_feature_outlier_ts(
+    od_preds: Dict,
+    X: np.ndarray,
+    threshold: Union[float, int, list, np.ndarray],
+    window: tuple = None,
+    t: np.ndarray = None,
+    X_orig: np.ndarray = None,
+    width: float = 0.2,
+    figsize: tuple = (20, 8),
+    ylim: tuple = (None, None),
+) -> None:
     """
     Plot feature wise outlier scores for time series data.
 
@@ -284,10 +285,10 @@ def plot_feature_outlier_ts(od_preds: Dict,
     ticks = t[t_start:t_end]
 
     # check if feature level scores available
-    if isinstance(od_preds['data']['feature_score'], np.ndarray):
-        scores = od_preds['data']['feature_score']
+    if isinstance(od_preds["data"]["feature_score"], np.ndarray):
+        scores = od_preds["data"]["feature_score"]
     else:
-        scores = od_preds['data']['instance_score'].reshape(-1, 1)
+        scores = od_preds["data"]["instance_score"].reshape(-1, 1)
 
     n_cols = 2
 
@@ -297,31 +298,31 @@ def plot_feature_outlier_ts(od_preds: Dict,
     for i in range(n_features):
         plt.subplot(n_features, n_cols, n_subplot)
         if i == 0 and X_orig is not None:
-            plt.title('Original vs. perturbed data')
+            plt.title("Original vs. perturbed data")
         elif i == 0:
-            plt.title('Data')
+            plt.title("Data")
 
-        plt.plot(ticks, X[t_start:t_end, i], marker='*', markersize=4, label='Data with Outliers')
+        plt.plot(ticks, X[t_start:t_end, i], marker="*", markersize=4, label="Data with Outliers")
         if X_orig is not None:
-            plt.plot(ticks, X_orig[t_start:t_end, i], marker='o', markersize=4, label='Data without Outliers')
-        plt.xlabel('Time')
-        plt.ylabel('Observation')
+            plt.plot(ticks, X_orig[t_start:t_end, i], marker="o", markersize=4, label="Data without Outliers")
+        plt.xlabel("Time")
+        plt.ylabel("Observation")
         plt.legend()
 
         n_subplot += 1
 
         plt.subplot(n_features, n_cols, n_subplot)
         if i == 0:
-            plt.title('Outlier Score per Timestep')
+            plt.title("Outlier Score per Timestep")
 
-        plt.bar(ticks, scores[t_start:t_end, i], width=width, color='g', align='center', label='Outlier Score')
+        plt.bar(ticks, scores[t_start:t_end, i], width=width, color="g", align="center", label="Outlier Score")
         if isinstance(threshold, (float, int)):
             thr = threshold
         else:
             thr = threshold[i]
-        plt.plot(ticks, np.ones(len(ticks)) * thr, 'r', label='Threshold')
-        plt.xlabel('Time')
-        plt.ylabel('Outlier Score')
+        plt.plot(ticks, np.ones(len(ticks)) * thr, "r", label="Threshold")
+        plt.xlabel("Time")
+        plt.ylabel("Outlier Score")
         plt.legend()
         plt.ylim(ylim)
 
@@ -345,16 +346,16 @@ def plot_roc(roc_data: Dict[str, Dict[str, np.ndarray]], figsize: tuple = (10, 5
     fig, axes = plt.subplots(nrows=1, ncols=1, figsize=figsize)
 
     for k, v in roc_data.items():
-        fpr, tpr, thresholds = roc_curve(v['labels'], v['scores'])
+        fpr, tpr, thresholds = roc_curve(v["labels"], v["scores"])
         roc_auc = auc(fpr, tpr)
-        plt.plot(fpr, tpr, lw=1, label='{}: AUC={:.4f}'.format(k, roc_auc))
+        plt.plot(fpr, tpr, lw=1, label="{}: AUC={:.4f}".format(k, roc_auc))
 
-    plt.plot([0, 1], [0, 1], color='black', lw=1, linestyle='--')
+    plt.plot([0, 1], [0, 1], color="black", lw=1, linestyle="--")
     plt.xlim([0.0, 1.0])
     plt.ylim([0.0, 1.05])
-    plt.xlabel('False Positive Rate')
-    plt.ylabel('True Positive Rate')
-    plt.title('{}'.format('ROC curve'))
+    plt.xlabel("False Positive Rate")
+    plt.ylabel("True Positive Rate")
+    plt.title("{}".format("ROC curve"))
     plt.legend(loc="lower right", ncol=1)
     plt.grid()
     plt.show()

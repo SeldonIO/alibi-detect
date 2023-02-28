@@ -33,11 +33,7 @@ def preprocess_list(x: List[np.ndarray]) -> np.ndarray:
 n_features = [10]
 ert = [25]
 window_size = [5]
-preprocess = [
-    (None, None),
-    (preprocess_drift, {'model': HiddenOutput, 'layer': -1}),
-    (preprocess_list, None)
-]
+preprocess = [(None, None), (preprocess_drift, {"model": HiddenOutput, "layer": -1}), (preprocess_list, None)]
 n_bootstraps = [200]
 tests_mmddriftonline = list(product(n_features, ert, window_size, preprocess, n_bootstraps))
 n_tests = len(tests_mmddriftonline)
@@ -48,7 +44,7 @@ def mmd_online_params(request):
     return tests_mmddriftonline[request.param]
 
 
-@pytest.mark.parametrize('mmd_online_params', list(range(n_tests)), indirect=True)
+@pytest.mark.parametrize("mmd_online_params", list(range(n_tests)), indirect=True)
 def test_mmd_online(mmd_online_params, seed):
     n_features, ert, window_size, preprocess, n_bootstraps = mmd_online_params
 
@@ -56,24 +52,23 @@ def test_mmd_online(mmd_online_params, seed):
         x_ref = np.random.randn(n * n_features).reshape(n, n_features).astype(np.float32)
     preprocess_fn, preprocess_kwargs = preprocess
     to_list = False
-    if hasattr(preprocess_fn, '__name__') and preprocess_fn.__name__ == 'preprocess_list':
+    if hasattr(preprocess_fn, "__name__") and preprocess_fn.__name__ == "preprocess_list":
         to_list = True
         x_ref = [_[None, :] for _ in x_ref]
-    elif isinstance(preprocess_fn, Callable) and 'layer' in list(preprocess_kwargs.keys()) \
-            and preprocess_kwargs['model'].__name__ == 'HiddenOutput':
+    elif (
+        isinstance(preprocess_fn, Callable)
+        and "layer" in list(preprocess_kwargs.keys())
+        and preprocess_kwargs["model"].__name__ == "HiddenOutput"
+    ):
         model = MyModel(n_features)
-        layer = preprocess_kwargs['layer']
+        layer = preprocess_kwargs["layer"]
         preprocess_fn = partial(preprocess_fn, model=HiddenOutput(model=model, layer=layer))
     else:
         preprocess_fn = None
 
     with fixed_seed(seed):
         cd = MMDDriftOnlineTorch(
-            x_ref=x_ref,
-            ert=ert,
-            window_size=window_size,
-            preprocess_fn=preprocess_fn,
-            n_bootstraps=n_bootstraps
+            x_ref=x_ref, ert=ert, window_size=window_size, preprocess_fn=preprocess_fn, n_bootstraps=n_bootstraps
         )
         x_h0 = np.random.randn(n * n_features).reshape(n, n_features).astype(np.float32)
         x_h1 = np.random.randn(n * n_features).reshape(n, n_features).astype(np.float32) + 1
@@ -84,9 +79,9 @@ def test_mmd_online(mmd_online_params, seed):
         if to_list:
             x_t = [x_t]
         pred_t = cd.predict(x_t, return_test_stat=True)
-        test_stats_h0.append(pred_t['data']['test_stat'])
-        if pred_t['data']['is_drift']:
-            detection_times_h0.append(pred_t['data']['time'])
+        test_stats_h0.append(pred_t["data"]["test_stat"])
+        if pred_t["data"]["is_drift"]:
+            detection_times_h0.append(pred_t["data"]["time"])
             cd.reset_state()
     average_delay_h0 = np.array(detection_times_h0).mean()
     test_stats_h0 = [ts for ts in test_stats_h0 if ts is not None]
@@ -100,9 +95,9 @@ def test_mmd_online(mmd_online_params, seed):
         if to_list:
             x_t = [x_t]
         pred_t = cd.predict(x_t, return_test_stat=True)
-        test_stats_h1.append(pred_t['data']['test_stat'])
-        if pred_t['data']['is_drift']:
-            detection_times_h1.append(pred_t['data']['time'])
+        test_stats_h1.append(pred_t["data"]["test_stat"])
+        if pred_t["data"]["is_drift"]:
+            detection_times_h1.append(pred_t["data"]["time"])
             cd.reset_state()
     average_delay_h1 = np.array(detection_times_h1).mean()
     test_stats_h1 = [ts for ts in test_stats_h1 if ts is not None]
@@ -136,7 +131,7 @@ def test_mmd_online_state_online(tmp_path, seed):
             for key in dd.online_state_keys:
                 state_dict_t5[key] = getattr(dd, key)
         preds = dd.predict(x_t)
-        test_stats_1.append(preds['data']['test_stat'])
+        test_stats_1.append(preds["data"]["test_stat"])
 
     # Reset and check state cleared
     dd.reset_state()
@@ -147,7 +142,7 @@ def test_mmd_online_state_online(tmp_path, seed):
     test_stats_2 = []
     for t, x_t in enumerate(x):
         preds = dd.predict(x_t)
-        test_stats_2.append(preds['data']['test_stat'])
+        test_stats_2.append(preds["data"]["test_stat"])
     np.testing.assert_array_equal(test_stats_1, test_stats_2)
 
     # Load state from t=5 timestep
@@ -159,4 +154,4 @@ def test_mmd_online_state_online(tmp_path, seed):
 
     # Compare predictions to original at t=5
     new_pred = dd.predict(x[5])
-    assert new_pred['data']['test_stat'] == test_stats_1[5]
+    assert new_pred["data"]["test_stat"] == test_stats_1[5]

@@ -29,11 +29,7 @@ class Sampling(Layer):
 
 
 class EncoderVAE(Layer):
-
-    def __init__(self,
-                 encoder_net: tf.keras.Model,
-                 latent_dim: int,
-                 name: str = 'encoder_vae') -> None:
+    def __init__(self, encoder_net: tf.keras.Model, latent_dim: int, name: str = "encoder_vae") -> None:
         """
         Encoder of VAE.
 
@@ -63,10 +59,7 @@ class EncoderVAE(Layer):
 
 
 class Decoder(Layer):
-
-    def __init__(self,
-                 decoder_net: tf.keras.Model,
-                 name: str = 'decoder') -> None:
+    def __init__(self, decoder_net: tf.keras.Model, name: str = "decoder") -> None:
         """
         Decoder of (V)AE.
 
@@ -85,13 +78,14 @@ class Decoder(Layer):
 
 
 class VAE(tf.keras.Model):
-
-    def __init__(self,
-                 encoder_net: tf.keras.Model,
-                 decoder_net: tf.keras.Model,
-                 latent_dim: int,
-                 beta: float = 1.,
-                 name: str = 'vae') -> None:
+    def __init__(
+        self,
+        encoder_net: tf.keras.Model,
+        decoder_net: tf.keras.Model,
+        latent_dim: int,
+        beta: float = 1.0,
+        name: str = "vae",
+    ) -> None:
         """
         Combine encoder and decoder in VAE.
 
@@ -118,16 +112,13 @@ class VAE(tf.keras.Model):
         z_mean, z_log_var, z = self.encoder(x)
         x_recon = self.decoder(z)
         # add KL divergence loss term
-        kl_loss = -.5 * tf.reduce_mean(z_log_var - tf.square(z_mean) - tf.exp(z_log_var) + 1)
+        kl_loss = -0.5 * tf.reduce_mean(z_log_var - tf.square(z_mean) - tf.exp(z_log_var) + 1)
         self.add_loss(self.beta * kl_loss)
         return x_recon
 
 
 class EncoderAE(Layer):
-
-    def __init__(self,
-                 encoder_net: tf.keras.Model,
-                 name: str = 'encoder_ae') -> None:
+    def __init__(self, encoder_net: tf.keras.Model, name: str = "encoder_ae") -> None:
         """
         Encoder of AE.
 
@@ -146,11 +137,7 @@ class EncoderAE(Layer):
 
 
 class AE(tf.keras.Model):
-
-    def __init__(self,
-                 encoder_net: tf.keras.Model,
-                 decoder_net: tf.keras.Model,
-                 name: str = 'ae') -> None:
+    def __init__(self, encoder_net: tf.keras.Model, decoder_net: tf.keras.Model, name: str = "ae") -> None:
         """
         Combine encoder and decoder in AE.
 
@@ -174,10 +161,7 @@ class AE(tf.keras.Model):
 
 
 class EncoderLSTM(Layer):
-
-    def __init__(self,
-                 latent_dim: int,
-                 name: str = 'encoder_lstm') -> None:
+    def __init__(self, latent_dim: int, name: str = "encoder_lstm") -> None:
         """
         Bidirectional LSTM encoder.
 
@@ -199,12 +183,9 @@ class EncoderLSTM(Layer):
 
 
 class DecoderLSTM(Layer):
-
-    def __init__(self,
-                 latent_dim: int,
-                 output_dim: int,
-                 output_activation: str = None,
-                 name: str = 'decoder_lstm') -> None:
+    def __init__(
+        self, latent_dim: int, output_dim: int, output_activation: str = None, name: str = "decoder_lstm"
+    ) -> None:
         """
         LSTM decoder.
 
@@ -230,15 +211,16 @@ class DecoderLSTM(Layer):
 
 
 class Seq2Seq(tf.keras.Model):
-
-    def __init__(self,
-                 encoder_net: EncoderLSTM,
-                 decoder_net: DecoderLSTM,
-                 threshold_net: tf.keras.Model,
-                 n_features: int,
-                 score_fn: Callable = tf.math.squared_difference,
-                 beta: float = 1.,
-                 name: str = 'seq2seq') -> None:
+    def __init__(
+        self,
+        encoder_net: EncoderLSTM,
+        decoder_net: DecoderLSTM,
+        threshold_net: tf.keras.Model,
+        n_features: int,
+        score_fn: Callable = tf.math.squared_difference,
+        beta: float = 1.0,
+        name: str = "seq2seq",
+    ) -> None:
         """
         Sequence-to-sequence model.
 
@@ -306,11 +288,11 @@ class Seq2Seq(tf.keras.Model):
         while i < seq_len:
             # decode step in sequence
             decoder_output = self.decoder(decoder_input, init_state=init_state)
-            decoded_seq[:, i:i + 1, :] = decoder_output[0].numpy()
+            decoded_seq[:, i : i + 1, :] = decoder_output[0].numpy()
             init_state = decoder_output[2]
 
             # update hidden state decoder used for outlier threshold
-            z[:, i:i + 1, :] = decoder_output[1].numpy()
+            z[:, i : i + 1, :] = decoder_output[1].numpy()
 
             # update next decoder input
             decoder_input = np.zeros_like(decoder_input)
@@ -325,9 +307,7 @@ class Seq2Seq(tf.keras.Model):
         return decoded_seq, threshold_est
 
 
-def eucl_cosim_features(x: tf.Tensor,
-                        y: tf.Tensor,
-                        max_eucl: float = 1e2) -> tf.Tensor:
+def eucl_cosim_features(x: tf.Tensor, y: tf.Tensor, max_eucl: float = 1e2) -> tf.Tensor:
     """
     Compute features extracted from the reconstructed instance using the
     relative Euclidean distance and cosine similarity between 2 tensors.
@@ -357,14 +337,15 @@ def eucl_cosim_features(x: tf.Tensor,
 
 
 class AEGMM(tf.keras.Model):
-
-    def __init__(self,
-                 encoder_net: tf.keras.Model,
-                 decoder_net: tf.keras.Model,
-                 gmm_density_net: tf.keras.Model,
-                 n_gmm: int,
-                 recon_features: Callable = eucl_cosim_features,
-                 name: str = 'aegmm') -> None:
+    def __init__(
+        self,
+        encoder_net: tf.keras.Model,
+        decoder_net: tf.keras.Model,
+        gmm_density_net: tf.keras.Model,
+        n_gmm: int,
+        recon_features: Callable = eucl_cosim_features,
+        name: str = "aegmm",
+    ) -> None:
         """
         Deep Autoencoding Gaussian Mixture Model.
 
@@ -400,16 +381,17 @@ class AEGMM(tf.keras.Model):
 
 
 class VAEGMM(tf.keras.Model):
-
-    def __init__(self,
-                 encoder_net: tf.keras.Model,
-                 decoder_net: tf.keras.Model,
-                 gmm_density_net: tf.keras.Model,
-                 n_gmm: int,
-                 latent_dim: int,
-                 recon_features: Callable = eucl_cosim_features,
-                 beta: float = 1.,
-                 name: str = 'vaegmm') -> None:
+    def __init__(
+        self,
+        encoder_net: tf.keras.Model,
+        decoder_net: tf.keras.Model,
+        gmm_density_net: tf.keras.Model,
+        n_gmm: int,
+        latent_dim: int,
+        recon_features: Callable = eucl_cosim_features,
+        beta: float = 1.0,
+        name: str = "vaegmm",
+    ) -> None:
         """
         Variational Autoencoding Gaussian Mixture Model.
 
@@ -448,6 +430,6 @@ class VAEGMM(tf.keras.Model):
         z = tf.concat([enc, recon_features], -1)
         gamma = self.gmm_density(z)
         # add KL divergence loss term
-        kl_loss = -.5 * tf.reduce_mean(enc_log_var - tf.square(enc_mean) - tf.exp(enc_log_var) + 1)
+        kl_loss = -0.5 * tf.reduce_mean(enc_log_var - tf.square(enc_mean) - tf.exp(enc_log_var) + 1)
         self.add_loss(self.beta * kl_loss)
         return x_recon, z, gamma

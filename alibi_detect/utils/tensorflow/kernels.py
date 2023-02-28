@@ -26,16 +26,13 @@ def sigma_median(x: tf.Tensor, y: tf.Tensor, dist: tf.Tensor) -> tf.Tensor:
     n = min(x.shape[0], y.shape[0])
     n = n if tf.reduce_all(x[:n] == y[:n]) and x.shape == y.shape else 0
     n_median = n + (tf.math.reduce_prod(dist.shape) - n) // 2 - 1
-    sigma = tf.expand_dims((.5 * tf.sort(tf.reshape(dist, (-1,)))[n_median]) ** .5, axis=0)
+    sigma = tf.expand_dims((0.5 * tf.sort(tf.reshape(dist, (-1,)))[n_median]) ** 0.5, axis=0)
     return sigma
 
 
 class GaussianRBF(tf.keras.Model):
     def __init__(
-            self,
-            sigma: Optional[tf.Tensor] = None,
-            init_sigma_fn: Optional[Callable] = None,
-            trainable: bool = False
+        self, sigma: Optional[tf.Tensor] = None, init_sigma_fn: Optional[Callable] = None, trainable: bool = False
     ) -> None:
         """
         Gaussian RBF kernel: k(x,y) = exp(-(1/(2*sigma^2)||x-y||^2). A forward pass takes
@@ -57,7 +54,7 @@ class GaussianRBF(tf.keras.Model):
         """
         super().__init__()
         init_sigma_fn = sigma_median if init_sigma_fn is None else init_sigma_fn
-        self.config = {'sigma': sigma, 'trainable': trainable, 'init_sigma_fn': init_sigma_fn}
+        self.config = {"sigma": sigma, "trainable": trainable, "init_sigma_fn": init_sigma_fn}
         if sigma is None:
             self.log_sigma = tf.Variable(np.empty(1), dtype=tf.keras.backend.floatx(), trainable=trainable)
             self.init_required = True
@@ -84,9 +81,9 @@ class GaussianRBF(tf.keras.Model):
             self.log_sigma.assign(tf.math.log(sigma))
             self.init_required = False
 
-        gamma = tf.constant(1. / (2. * self.sigma ** 2), dtype=x.dtype)   # [Ns,]
+        gamma = tf.constant(1.0 / (2.0 * self.sigma**2), dtype=x.dtype)  # [Ns,]
         # TODO: do matrix multiplication after all?
-        kernel_mat = tf.exp(- tf.concat([(g * dist)[None, :, :] for g in gamma], axis=0))  # [Ns, Nx, Ny]
+        kernel_mat = tf.exp(-tf.concat([(g * dist)[None, :, :] for g in gamma], axis=0))  # [Ns, Nx, Ny]
         return tf.reduce_mean(kernel_mat, axis=0)  # [Nx, Ny]
 
     def get_config(self) -> dict:
@@ -94,9 +91,9 @@ class GaussianRBF(tf.keras.Model):
         alibi_detect.saving).
         """
         cfg = self.config.copy()
-        if isinstance(cfg['sigma'], tf.Tensor):
-            cfg['sigma'] = cfg['sigma'].numpy().tolist()
-        cfg.update({'flavour': Framework.TENSORFLOW.value})
+        if isinstance(cfg["sigma"], tf.Tensor):
+            cfg["sigma"] = cfg["sigma"].numpy().tolist()
+        cfg.update({"flavour": Framework.TENSORFLOW.value})
         return cfg
 
     @classmethod
@@ -109,7 +106,7 @@ class GaussianRBF(tf.keras.Model):
         config
             A kernel config dictionary.
         """
-        config.pop('flavour')
+        config.pop("flavour")
         return cls(**config)
 
 
@@ -137,15 +134,15 @@ class DeepKernel(tf.keras.Model):
     def __init__(
         self,
         proj: tf.keras.Model,
-        kernel_a: Union[tf.keras.Model, str] = 'rbf',
-        kernel_b: Optional[Union[tf.keras.Model, str]] = 'rbf',
-        eps: Union[float, str] = 'trainable'
+        kernel_a: Union[tf.keras.Model, str] = "rbf",
+        kernel_b: Optional[Union[tf.keras.Model, str]] = "rbf",
+        eps: Union[float, str] = "trainable",
     ) -> None:
         super().__init__()
-        self.config = {'proj': proj, 'kernel_a': kernel_a, 'kernel_b': kernel_b, 'eps': eps}
-        if kernel_a == 'rbf':
+        self.config = {"proj": proj, "kernel_a": kernel_a, "kernel_b": kernel_b, "eps": eps}
+        if kernel_a == "rbf":
             kernel_a = GaussianRBF(trainable=True)
-        if kernel_b == 'rbf':
+        if kernel_b == "rbf":
             kernel_b = GaussianRBF(trainable=True)
         self.kernel_a = kernel_a
         self.kernel_b = kernel_b
@@ -159,14 +156,14 @@ class DeepKernel(tf.keras.Model):
                 raise ValueError("eps should be in (0,1)")
             eps = tf.constant(eps)
             self.logit_eps = tf.Variable(tf.constant(logit(eps)), trainable=False)
-        elif eps == 'trainable':
-            self.logit_eps = tf.Variable(tf.constant(0.))
+        elif eps == "trainable":
+            self.logit_eps = tf.Variable(tf.constant(0.0))
         else:
             raise NotImplementedError("eps should be 'trainable' or a float in (0,1)")
 
     @property
     def eps(self) -> tf.Tensor:
-        return tf.math.sigmoid(self.logit_eps) if self.kernel_b is not None else tf.constant(0.)
+        return tf.math.sigmoid(self.logit_eps) if self.kernel_b is not None else tf.constant(0.0)
 
     def call(self, x: tf.Tensor, y: tf.Tensor) -> tf.Tensor:
         similarity = self.kernel_a(self.proj(x), self.proj(y))  # type: ignore[operator]

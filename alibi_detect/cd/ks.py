@@ -6,20 +6,20 @@ from alibi_detect.utils.warnings import deprecated_alias
 
 
 class KSDrift(BaseUnivariateDrift):
-    @deprecated_alias(preprocess_x_ref='preprocess_at_init')
+    @deprecated_alias(preprocess_x_ref="preprocess_at_init")
     def __init__(
-            self,
-            x_ref: Union[np.ndarray, list],
-            p_val: float = .05,
-            x_ref_preprocessed: bool = False,
-            preprocess_at_init: bool = True,
-            update_x_ref: Optional[Dict[str, int]] = None,
-            preprocess_fn: Optional[Callable] = None,
-            correction: str = 'bonferroni',
-            alternative: str = 'two-sided',
-            n_features: Optional[int] = None,
-            input_shape: Optional[tuple] = None,
-            data_type: Optional[str] = None
+        self,
+        x_ref: Union[np.ndarray, list],
+        p_val: float = 0.05,
+        x_ref_preprocessed: bool = False,
+        preprocess_at_init: bool = True,
+        update_x_ref: Optional[Dict[str, int]] = None,
+        preprocess_fn: Optional[Callable] = None,
+        correction: str = "bonferroni",
+        alternative: str = "two-sided",
+        n_features: Optional[int] = None,
+        input_shape: Optional[tuple] = None,
+        data_type: Optional[str] = None,
     ) -> None:
         """
         Kolmogorov-Smirnov (K-S) data drift detector with Bonferroni or False Discovery Rate (FDR)
@@ -69,7 +69,7 @@ class KSDrift(BaseUnivariateDrift):
             correction=correction,
             n_features=n_features,
             input_shape=input_shape,
-            data_type=data_type
+            data_type=data_type,
         )
         # Set config
         self._set_config(locals())
@@ -98,5 +98,5 @@ class KSDrift(BaseUnivariateDrift):
         dist = np.zeros_like(p_val)
         for f in range(self.n_features):
             # TODO: update to 'exact' when bug fix is released in scipy 1.5
-            dist[f], p_val[f] = ks_2samp(x_ref[:, f], x[:, f], alternative=self.alternative, mode='asymp')
+            dist[f], p_val[f] = ks_2samp(x_ref[:, f], x[:, f], alternative=self.alternative, mode="asymp")
         return p_val, dist

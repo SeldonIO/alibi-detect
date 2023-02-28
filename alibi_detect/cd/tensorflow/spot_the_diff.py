@@ -12,30 +12,30 @@ logger = logging.getLogger(__name__)
 
 class SpotTheDiffDriftTF:
     def __init__(
-            self,
-            x_ref: np.ndarray,
-            p_val: float = .05,
-            x_ref_preprocessed: bool = False,
-            preprocess_fn: Optional[Callable] = None,
-            kernel: Optional[tf.keras.Model] = None,
-            n_diffs: int = 1,
-            initial_diffs: Optional[np.ndarray] = None,
-            l1_reg: float = 0.01,
-            binarize_preds: bool = False,
-            train_size: Optional[float] = .75,
-            n_folds: Optional[int] = None,
-            retrain_from_scratch: bool = True,
-            seed: int = 0,
-            optimizer: tf.keras.optimizers = tf.keras.optimizers.Adam,
-            learning_rate: float = 1e-3,
-            batch_size: int = 32,
-            preprocess_batch_fn: Optional[Callable] = None,
-            epochs: int = 3,
-            verbose: int = 0,
-            train_kwargs: Optional[dict] = None,
-            dataset: Callable = TFDataset,
-            input_shape: Optional[tuple] = None,
-            data_type: Optional[str] = None
+        self,
+        x_ref: np.ndarray,
+        p_val: float = 0.05,
+        x_ref_preprocessed: bool = False,
+        preprocess_fn: Optional[Callable] = None,
+        kernel: Optional[tf.keras.Model] = None,
+        n_diffs: int = 1,
+        initial_diffs: Optional[np.ndarray] = None,
+        l1_reg: float = 0.01,
+        binarize_preds: bool = False,
+        train_size: Optional[float] = 0.75,
+        n_folds: Optional[int] = None,
+        retrain_from_scratch: bool = True,
+        seed: int = 0,
+        optimizer: tf.keras.optimizers = tf.keras.optimizers.Adam,
+        learning_rate: float = 1e-3,
+        batch_size: int = 32,
+        preprocess_batch_fn: Optional[Callable] = None,
+        epochs: int = 3,
+        verbose: int = 0,
+        train_kwargs: Optional[dict] = None,
+        dataset: Callable = TFDataset,
+        input_shape: Optional[tuple] = None,
+        data_type: Optional[str] = None,
     ) -> None:
         """
         Classifier-based drift detector with a classifier of form y = a + b_1*k(x,w_1) + ... + b_J*k(x,w_J),
@@ -115,9 +115,7 @@ class SpotTheDiffDriftTF:
         if not x_ref_preprocessed and preprocess_fn is not None:
             x_ref_proc = preprocess_fn(x_ref)
         elif not x_ref_preprocessed and preprocess_batch_fn is not None:
-            x_ref_proc = predict_batch(
-                x_ref, lambda x: x, preprocess_fn=preprocess_batch_fn, batch_size=batch_size
-            )
+            x_ref_proc = predict_batch(x_ref, lambda x: x, preprocess_fn=preprocess_batch_fn, batch_size=batch_size)
         else:
             x_ref_proc = x_ref
 
@@ -130,7 +128,7 @@ class SpotTheDiffDriftTF:
                 raise ValueError("Should have initial_diffs.shape[0] == n_diffs")
 
         model = SpotTheDiffDriftTF.InterpretableClf(kernel, x_ref_proc, initial_diffs)
-        reg_loss_fn = (lambda model: tf.reduce_mean(tf.abs(model.diffs)) * l1_reg)
+        reg_loss_fn = lambda model: tf.reduce_mean(tf.abs(model.diffs)) * l1_reg
 
         self._detector = ClassifierDriftTF(
             x_ref=x_ref,
@@ -140,7 +138,7 @@ class SpotTheDiffDriftTF:
             preprocess_at_init=True,
             update_x_ref=None,
             preprocess_fn=preprocess_fn,
-            preds_type='logits',
+            preds_type="logits",
             binarize_preds=binarize_preds,
             reg_loss_fn=reg_loss_fn,
             train_size=train_size,
@@ -156,18 +154,18 @@ class SpotTheDiffDriftTF:
             train_kwargs=train_kwargs,
             dataset=dataset,
             input_shape=input_shape,
-            data_type=data_type
+            data_type=data_type,
         )
         self.meta = self._detector.meta
-        self.meta['params']['name'] = 'SpotTheDiffDrift'
-        self.meta['params']['n_diffs'] = n_diffs
-        self.meta['params']['l1_reg'] = l1_reg
-        self.meta['params']['initial_diffs'] = initial_diffs
+        self.meta["params"]["name"] = "SpotTheDiffDrift"
+        self.meta["params"]["n_diffs"] = n_diffs
+        self.meta["params"]["l1_reg"] = l1_reg
+        self.meta["params"]["initial_diffs"] = initial_diffs
 
     class InterpretableClf(tf.keras.Model):
         def __init__(self, kernel: tf.keras.Model, x_ref: np.ndarray, initial_diffs: np.ndarray):
             super().__init__()
-            self.config = {'kernel': kernel, 'x_ref': x_ref, 'initial_diffs': initial_diffs}
+            self.config = {"kernel": kernel, "x_ref": x_ref, "initial_diffs": initial_diffs}
             self.kernel = kernel
             self.mean = tf.convert_to_tensor(x_ref.mean(0))
             self.diffs = tf.Variable(initial_diffs, dtype=np.float32)
@@ -187,8 +185,12 @@ class SpotTheDiffDriftTF:
             return cls(**config)
 
     def predict(
-        self, x: np.ndarray,  return_p_val: bool = True, return_distance: bool = True,
-        return_probs: bool = True, return_model: bool = False
+        self,
+        x: np.ndarray,
+        return_p_val: bool = True,
+        return_distance: bool = True,
+        return_probs: bool = True,
+        return_model: bool = False,
     ) -> Dict[str, Dict[str, Union[str, int, float, Callable]]]:
         """
         Predict whether a batch of data has drifted from the reference data.
@@ -219,8 +221,8 @@ class SpotTheDiffDriftTF:
         and the trained model.
         """
         preds = self._detector.predict(x, return_p_val, return_distance, return_probs, return_model=True)
-        preds['data']['diffs'] = preds['data']['model'].diffs.numpy()  # type: ignore
-        preds['data']['diff_coeffs'] = preds['data']['model'].coeffs.numpy()  # type: ignore
+        preds["data"]["diffs"] = preds["data"]["model"].diffs.numpy()  # type: ignore
+        preds["data"]["diff_coeffs"] = preds["data"]["model"].coeffs.numpy()  # type: ignore
         if not return_model:
-            del preds['data']['model']
+            del preds["data"]["model"]
         return preds

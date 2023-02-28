@@ -6,7 +6,7 @@ from alibi_detect.cd.tensorflow.mmd_online import MMDDriftOnlineTF
 
 n, n_features = 100, 5
 
-tests_mmddriftonline = ['tensorflow', 'pytorch', 'PyToRcH', 'mxnet']
+tests_mmddriftonline = ["tensorflow", "pytorch", "PyToRcH", "mxnet"]
 n_tests = len(tests_mmddriftonline)
 
 
@@ -15,7 +15,7 @@ def mmddriftonline_params(request):
     return tests_mmddriftonline[request.param]
 
 
-@pytest.mark.parametrize('mmddriftonline_params', list(range(n_tests)), indirect=True)
+@pytest.mark.parametrize("mmddriftonline_params", list(range(n_tests)), indirect=True)
 def test_mmddriftonline(mmddriftonline_params):
     backend = mmddriftonline_params
     x_ref = np.random.randn(*(n, n_features))
@@ -26,9 +26,9 @@ def test_mmddriftonline(mmddriftonline_params):
     except NotImplementedError:
         cd = None
 
-    if backend.lower() == 'pytorch':
+    if backend.lower() == "pytorch":
         assert isinstance(cd._detector, MMDDriftOnlineTorch)
-    elif backend.lower() == 'tensorflow':
+    elif backend.lower() == "tensorflow":
         assert isinstance(cd._detector, MMDDriftOnlineTF)
     else:
         assert cd is None

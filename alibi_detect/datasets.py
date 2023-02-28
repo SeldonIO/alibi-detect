@@ -26,17 +26,31 @@ logger = logging.getLogger(__name__)
 TIMEOUT = 10
 
 
-def fetch_kdd(target: list = ['dos', 'r2l', 'u2r', 'probe'],
-              keep_cols: list = ['srv_count', 'serror_rate', 'srv_serror_rate',
-                                 'rerror_rate', 'srv_rerror_rate', 'same_srv_rate',
-                                 'diff_srv_rate', 'srv_diff_host_rate', 'dst_host_count',
-                                 'dst_host_srv_count', 'dst_host_same_srv_rate',
-                                 'dst_host_diff_srv_rate', 'dst_host_same_src_port_rate',
-                                 'dst_host_srv_diff_host_rate', 'dst_host_serror_rate',
-                                 'dst_host_srv_serror_rate', 'dst_host_rerror_rate',
-                                 'dst_host_srv_rerror_rate'],
-              percent10: bool = True,
-              return_X_y: bool = False) -> Union[Bunch, Tuple[np.ndarray, np.ndarray]]:
+def fetch_kdd(
+    target: list = ["dos", "r2l", "u2r", "probe"],
+    keep_cols: list = [
+        "srv_count",
+        "serror_rate",
+        "srv_serror_rate",
+        "rerror_rate",
+        "srv_rerror_rate",
+        "same_srv_rate",
+        "diff_srv_rate",
+        "srv_diff_host_rate",
+        "dst_host_count",
+        "dst_host_srv_count",
+        "dst_host_same_srv_rate",
+        "dst_host_diff_srv_rate",
+        "dst_host_same_src_port_rate",
+        "dst_host_srv_diff_host_rate",
+        "dst_host_serror_rate",
+        "dst_host_srv_serror_rate",
+        "dst_host_rerror_rate",
+        "dst_host_srv_rerror_rate",
+    ],
+    percent10: bool = True,
+    return_X_y: bool = False,
+) -> Union[Bunch, Tuple[np.ndarray, np.ndarray]]:
     """
     KDD Cup '99 dataset. Detect computer network intrusions.
 
@@ -66,41 +80,97 @@ def fetch_kdd(target: list = ['dos', 'r2l', 'u2r', 'probe'],
         raise
 
     # specify columns
-    cols = ['duration', 'protocol_type', 'service', 'flag', 'src_bytes', 'dst_bytes',
-            'land', 'wrong_fragment', 'urgent', 'hot', 'num_failed_logins', 'logged_in',
-            'num_compromised', 'root_shell', 'su_attempted', 'num_root', 'num_file_creations',
-            'num_shells', 'num_access_files', 'num_outbound_cmds', 'is_host_login',
-            'is_guest_login', 'count', 'srv_count', 'serror_rate', 'srv_serror_rate',
-            'rerror_rate', 'srv_rerror_rate', 'same_srv_rate', 'diff_srv_rate',
-            'srv_diff_host_rate', 'dst_host_count', 'dst_host_srv_count', 'dst_host_same_srv_rate',
-            'dst_host_diff_srv_rate', 'dst_host_same_src_port_rate', 'dst_host_srv_diff_host_rate',
-            'dst_host_serror_rate', 'dst_host_srv_serror_rate', 'dst_host_rerror_rate', 'dst_host_srv_rerror_rate']
+    cols = [
+        "duration",
+        "protocol_type",
+        "service",
+        "flag",
+        "src_bytes",
+        "dst_bytes",
+        "land",
+        "wrong_fragment",
+        "urgent",
+        "hot",
+        "num_failed_logins",
+        "logged_in",
+        "num_compromised",
+        "root_shell",
+        "su_attempted",
+        "num_root",
+        "num_file_creations",
+        "num_shells",
+        "num_access_files",
+        "num_outbound_cmds",
+        "is_host_login",
+        "is_guest_login",
+        "count",
+        "srv_count",
+        "serror_rate",
+        "srv_serror_rate",
+        "rerror_rate",
+        "srv_rerror_rate",
+        "same_srv_rate",
+        "diff_srv_rate",
+        "srv_diff_host_rate",
+        "dst_host_count",
+        "dst_host_srv_count",
+        "dst_host_same_srv_rate",
+        "dst_host_diff_srv_rate",
+        "dst_host_same_src_port_rate",
+        "dst_host_srv_diff_host_rate",
+        "dst_host_serror_rate",
+        "dst_host_srv_serror_rate",
+        "dst_host_rerror_rate",
+        "dst_host_srv_rerror_rate",
+    ]
 
     # create dataframe
-    data = pd.DataFrame(data=data_raw['data'], columns=cols)
+    data = pd.DataFrame(data=data_raw["data"], columns=cols)
 
     # add target to dataframe
-    data['attack_type'] = data_raw['target']
+    data["attack_type"] = data_raw["target"]
 
     # specify and map attack types
-    attack_list = np.unique(data['attack_type'])
-    attack_category = ['dos', 'u2r', 'r2l', 'r2l', 'r2l', 'probe', 'dos', 'u2r',
-                       'r2l', 'dos', 'probe', 'normal', 'u2r', 'r2l', 'dos', 'probe',
-                       'u2r', 'probe', 'dos', 'r2l', 'dos', 'r2l', 'r2l']
+    attack_list = np.unique(data["attack_type"])
+    attack_category = [
+        "dos",
+        "u2r",
+        "r2l",
+        "r2l",
+        "r2l",
+        "probe",
+        "dos",
+        "u2r",
+        "r2l",
+        "dos",
+        "probe",
+        "normal",
+        "u2r",
+        "r2l",
+        "dos",
+        "probe",
+        "u2r",
+        "probe",
+        "dos",
+        "r2l",
+        "dos",
+        "r2l",
+        "r2l",
+    ]
 
     attack_types = {}
     for i, j in zip(attack_list, attack_category):
         attack_types[i] = j
 
-    data['attack_category'] = 'normal'
+    data["attack_category"] = "normal"
     for k, v in attack_types.items():
-        data['attack_category'][data['attack_type'] == k] = v
+        data["attack_category"][data["attack_type"] == k] = v
 
     # define target
-    data['target'] = 0
+    data["target"] = 0
     for t in target:
-        data['target'][data['attack_category'] == t] = 1
-    is_outlier = data['target'].values
+        data["target"][data["attack_category"] == t] = 1
+    is_outlier = data["target"].values
 
     # define columns to be dropped
     drop_cols = []
@@ -114,10 +184,7 @@ def fetch_kdd(target: list = ['dos', 'r2l', 'u2r', 'probe'],
     if return_X_y:
         return data.values, is_outlier
 
-    return Bunch(data=data.values,
-                 target=is_outlier,
-                 target_names=['normal', 'outlier'],
-                 feature_names=keep_cols)
+    return Bunch(data=data.values, target=is_outlier, target_names=["normal", "outlier"], feature_names=keep_cols)
 
 
 def load_url_arff(url: str, dtype: Type[np.generic] = np.float32) -> np.ndarray:
@@ -145,8 +212,9 @@ def load_url_arff(url: str, dtype: Type[np.generic] = np.float32) -> np.ndarray:
     return np.array(data.tolist(), dtype=dtype)
 
 
-def fetch_ecg(return_X_y: bool = False) \
-        -> Union[Bunch, Tuple[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray]]]:
+def fetch_ecg(
+    return_X_y: bool = False,
+) -> Union[Bunch, Tuple[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray]]]:
     """
     Fetch ECG5000 data. The dataset contains 5000 ECG's, originally obtained from
     Physionet (https://archive.physionet.org/cgi-bin/atm/ATM) under the name
@@ -164,21 +232,19 @@ def fetch_ecg(return_X_y: bool = False) \
     (train data, train target), (test data, test target)
         Tuple of tuples if 'return_X_y' equals True.
     """
-    Xy_train = load_url_arff('https://storage.googleapis.com/seldon-datasets/ecg/ECG5000_TRAIN.arff')
+    Xy_train = load_url_arff("https://storage.googleapis.com/seldon-datasets/ecg/ECG5000_TRAIN.arff")
     X_train, y_train = Xy_train[:, :-1], Xy_train[:, -1]
-    Xy_test = load_url_arff('https://storage.googleapis.com/seldon-datasets/ecg/ECG5000_TEST.arff')
+    Xy_test = load_url_arff("https://storage.googleapis.com/seldon-datasets/ecg/ECG5000_TEST.arff")
     X_test, y_test = Xy_test[:, :-1], Xy_test[:, -1]
     if return_X_y:
         return (X_train, y_train), (X_test, y_test)
     else:
-        return Bunch(data_train=X_train,
-                     data_test=X_test,
-                     target_train=y_train,
-                     target_test=y_test)
+        return Bunch(data_train=X_train, data_test=X_test, target_train=y_train, target_test=y_test)
 
 
-def fetch_cifar10c(corruption: Union[str, List[str]], severity: int, return_X_y: bool = False) \
-        -> Union[Bunch, Tuple[np.ndarray, np.ndarray]]:
+def fetch_cifar10c(
+    corruption: Union[str, List[str]], severity: int, return_X_y: bool = False
+) -> Union[Bunch, Tuple[np.ndarray, np.ndarray]]:
     """
     Fetch CIFAR-10-C data. Originally obtained from https://zenodo.org/record/2535967#.XkKh2XX7Qts and
     introduced in "Hendrycks, D and Dietterich, T.G. Benchmarking Neural Network Robustness to Common Corruptions
@@ -201,41 +267,41 @@ def fetch_cifar10c(corruption: Union[str, List[str]], severity: int, return_X_y:
     (corrupted data, target)
         Tuple if 'return_X_y' equals True.
     """
-    url = 'https://storage.googleapis.com/seldon-datasets/cifar10c/'
+    url = "https://storage.googleapis.com/seldon-datasets/cifar10c/"
     n = 10000  # instances per corrupted test set
     istart, iend = (severity - 1) * n, severity * n  # idx for the relevant severity level
     corruption_list = corruption_types_cifar10c()  # get all possible corruption types
     # convert input to list
-    if isinstance(corruption, str) and corruption != 'all':
+    if isinstance(corruption, str) and corruption != "all":
         corruption = [corruption]
-    elif corruption == 'all':
+    elif corruption == "all":
         corruption = corruption_list
     for corr in corruption:  # check values in corruptions
         if corr not in corruption_list:
-            raise ValueError(f'{corr} is not a valid corruption type.')
+            raise ValueError(f"{corr} is not a valid corruption type.")
     # get corrupted data
     shape = ((len(corruption)) * n, 32, 32, 3)
     X = np.zeros(shape)
     for i, corr in enumerate(corruption):
-        url_corruption = _join_url(url, corr + '.npy')
+        url_corruption = _join_url(url, corr + ".npy")
         try:
             resp = requests.get(url_corruption, timeout=TIMEOUT)
             resp.raise_for_status()
         except RequestException:
             logger.exception("Could not connect, URL may be out of service")
             raise
-        X_corr = np.load(BytesIO(resp.content))[istart:iend].astype('float32')
-        X[i * n:(i + 1) * n] = X_corr
+        X_corr = np.load(BytesIO(resp.content))[istart:iend].astype("float32")
+        X[i * n : (i + 1) * n] = X_corr
 
     # get labels
-    url_labels = _join_url(url, 'labels.npy')
+    url_labels = _join_url(url, "labels.npy")
     try:
         resp = requests.get(url_labels, timeout=TIMEOUT)
         resp.raise_for_status()
     except RequestException:
         logger.exception("Could not connect, URL may be out of service")
         raise
-    y = np.load(BytesIO(resp.content))[istart:iend].astype('int64')
+    y = np.load(BytesIO(resp.content))[istart:iend].astype("int64")
     if X.shape[0] != y.shape[0]:
         repeat = X.shape[0] // y.shape[0]
         y = np.tile(y, (repeat,))
@@ -276,11 +342,11 @@ def google_bucket_list(url: str, folder: str, filetype: str = None) -> List[str]
             filepath = r[0].text
             if filetype is not None:
                 if filepath.startswith(folder) and filepath.endswith(filetype):
-                    istart, istop = filepath.find('/') + 1, filepath.find('.')
+                    istart, istop = filepath.find("/") + 1, filepath.find(".")
                     bucket_list.append(filepath[istart:istop])
             else:
                 if filepath.startswith(folder):
-                    istart, istop = filepath.find('/') + 1, filepath.find('.')
+                    istart, istop = filepath.find("/") + 1, filepath.find(".")
                     bucket_list.append(filepath[istart:istop])
     return bucket_list
 
@@ -293,16 +359,17 @@ def corruption_types_cifar10c() -> List[str]:
     -------
     List with corruption types.
     """
-    url = 'https://storage.googleapis.com/seldon-datasets/'
-    folder = 'cifar10c'
-    filetype = 'npy'
+    url = "https://storage.googleapis.com/seldon-datasets/"
+    folder = "cifar10c"
+    filetype = "npy"
     corruption_types = google_bucket_list(url, folder, filetype)
-    corruption_types.remove('labels')
+    corruption_types.remove("labels")
     return corruption_types
 
 
-def fetch_attack(dataset: str, model: str, attack: str, return_X_y: bool = False) \
-        -> Union[Bunch, Tuple[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray]]]:
+def fetch_attack(
+    dataset: str, model: str, attack: str, return_X_y: bool = False
+) -> Union[Bunch, Tuple[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray]]]:
     """
     Load adversarial instances for a given dataset, model and attack type.
 
@@ -325,10 +392,10 @@ def fetch_attack(dataset: str, model: str, attack: str, return_X_y: bool = False
         Tuple of tuples if 'return_X_y' equals True.
     """
     # define paths
-    url = 'https://storage.googleapis.com/seldon-datasets/'
-    path_attack = _join_url(url, [dataset, 'attacks', model, attack])
-    path_data = path_attack + '.npz'
-    path_meta = path_attack + '_meta.pickle'
+    url = "https://storage.googleapis.com/seldon-datasets/"
+    path_attack = _join_url(url, [dataset, "attacks", model, attack])
+    path_data = path_attack + ".npz"
+    path_meta = path_attack + "_meta.pickle"
     # get adversarial instances and labels
     try:
         resp = requests.get(path_data, timeout=TIMEOUT)
@@ -337,8 +404,8 @@ def fetch_attack(dataset: str, model: str, attack: str, return_X_y: bool = False
         logger.exception("Could not connect, URL may be out of service")
         raise
     data = np.load(BytesIO(resp.content))
-    X_train, X_test = data['X_train_adv'], data['X_test_adv']
-    y_train, y_test = data['y_train'], data['y_test']
+    X_train, X_test = data["X_train_adv"], data["X_test_adv"]
+    y_train, y_test = data["y_train"], data["y_test"]
 
     if return_X_y:
         return (X_train, y_train), (X_test, y_test)
@@ -351,16 +418,10 @@ def fetch_attack(dataset: str, model: str, attack: str, return_X_y: bool = False
         logger.exception("Could not connect, URL may be out of service")
         raise
     meta = dill.load(BytesIO(resp.content))
-    return Bunch(data_train=X_train,
-                 data_test=X_test,
-                 target_train=y_train,
-                 target_test=y_test,
-                 meta=meta)
+    return Bunch(data_train=X_train, data_test=X_test, target_train=y_train, target_test=y_test, meta=meta)
 
 
-def fetch_nab(ts: str,
-              return_X_y: bool = False
-              ) -> Union[Bunch, Tuple[pd.DataFrame, pd.DataFrame]]:
+def fetch_nab(ts: str, return_X_y: bool = False) -> Union[Bunch, Tuple[pd.DataFrame, pd.DataFrame]]:
     """
     Get time series in a DataFrame from the Numenta Anomaly Benchmark: https://github.com/numenta/NAB.
 
@@ -378,7 +439,7 @@ def fetch_nab(ts: str,
     (data, target)
         Tuple if 'return_X_y' equals True.
     """
-    url_labels = 'https://raw.githubusercontent.com/numenta/NAB/master/labels/combined_labels.json'
+    url_labels = "https://raw.githubusercontent.com/numenta/NAB/master/labels/combined_labels.json"
     try:
         resp = requests.get(url_labels, timeout=TIMEOUT)
         resp.raise_for_status()
@@ -386,24 +447,22 @@ def fetch_nab(ts: str,
         logger.exception("Could not connect, URL may be out of service")
         raise
     labels_json = resp.json()
-    outliers = labels_json[ts + '.csv']
+    outliers = labels_json[ts + ".csv"]
     if not outliers:
-        logger.warning('The dataset does not contain any outliers.')
-    url = 'https://raw.githubusercontent.com/numenta/NAB/master/data/' + ts + '.csv'
+        logger.warning("The dataset does not contain any outliers.")
+    url = "https://raw.githubusercontent.com/numenta/NAB/master/data/" + ts + ".csv"
     df = pd.read_csv(url, header=0, index_col=0)
     labels = np.zeros(df.shape[0])
     for outlier in outliers:
         outlier_id = np.where(df.index == outlier)[0][0]
         labels[outlier_id] = 1
     df.index = pd.to_datetime(df.index)
-    df_labels = pd.DataFrame(data={'is_outlier': labels}, index=df.index)
+    df_labels = pd.DataFrame(data={"is_outlier": labels}, index=df.index)
 
     if return_X_y:
         return df, df_labels
 
-    return Bunch(data=df,
-                 target=df_labels,
-                 target_names=['normal', 'outlier'])
+    return Bunch(data=df, target=df_labels, target_names=["normal", "outlier"])
 
 
 def get_list_nab() -> list:
@@ -414,7 +473,7 @@ def get_list_nab() -> list:
     -------
     List with time series names.
     """
-    url_labels = 'https://raw.githubusercontent.com/numenta/NAB/master/labels/combined_labels.json'
+    url_labels = "https://raw.githubusercontent.com/numenta/NAB/master/labels/combined_labels.json"
     try:
         resp = requests.get(url_labels, timeout=TIMEOUT)
         resp.raise_for_status()
@@ -426,10 +485,11 @@ def get_list_nab() -> list:
     return files
 
 
-def load_genome_npz(fold: str, return_labels: bool = False) \
-        -> Union[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray, np.ndarray]]:
-    url = 'https://storage.googleapis.com/seldon-datasets/genome/'
-    path_data = _join_url(url, fold + '.npz')
+def load_genome_npz(
+    fold: str, return_labels: bool = False
+) -> Union[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray, np.ndarray]]:
+    url = "https://storage.googleapis.com/seldon-datasets/genome/"
+    path_data = _join_url(url, fold + ".npz")
     try:
         resp = requests.get(path_data, timeout=TIMEOUT)
         resp.raise_for_status()
@@ -438,9 +498,9 @@ def load_genome_npz(fold: str, return_labels: bool = False) \
         raise
     data = np.load(BytesIO(resp.content))
     if return_labels:
-        return data['x'], data['is_outlier'], data['y']
+        return data["x"], data["is_outlier"], data["y"]
     else:
-        return data['x'], data['is_outlier']
+        return data["x"], data["is_outlier"]
 
 
 def fetch_genome(return_X_y: bool = False, return_labels: bool = False) -> Union[Bunch, tuple]:
@@ -466,18 +526,15 @@ def fetch_genome(return_X_y: bool = False, return_labels: bool = False) -> Union
         Tuple for the train, validation and test set with either the data and whether they
         are outliers or the data, outlier flag and labels for the genomes if 'return_X_y' equals True.
     """
-    data_train = load_genome_npz('train_in', return_labels=return_labels)
-    data_val_in = load_genome_npz('val_in', return_labels=return_labels)
-    data_val_ood = load_genome_npz('val_ood', return_labels=return_labels)
-    data_val = (
-        np.concatenate([data_val_in[0], data_val_ood[0]]),
-        np.concatenate([data_val_in[1], data_val_ood[1]])
-    )
-    data_test_in = load_genome_npz('test_in', return_labels=return_labels)
-    data_test_ood = load_genome_npz('test_ood', return_labels=return_labels)
+    data_train = load_genome_npz("train_in", return_labels=return_labels)
+    data_val_in = load_genome_npz("val_in", return_labels=return_labels)
+    data_val_ood = load_genome_npz("val_ood", return_labels=return_labels)
+    data_val = (np.concatenate([data_val_in[0], data_val_ood[0]]), np.concatenate([data_val_in[1], data_val_ood[1]]))
+    data_test_in = load_genome_npz("test_in", return_labels=return_labels)
+    data_test_ood = load_genome_npz("test_ood", return_labels=return_labels)
     data_test = (
         np.concatenate([data_test_in[0], data_test_ood[0]]),
-        np.concatenate([data_test_in[1], data_test_ood[1]])
+        np.concatenate([data_test_in[1], data_test_ood[1]]),
     )
     if return_labels:
         data_val += (np.concatenate([data_val_in[2], data_val_ood[2]]),)  # type: ignore
@@ -485,7 +542,7 @@ def fetch_genome(return_X_y: bool = False, return_labels: bool = False) -> Union
     if return_X_y:
         return data_train, data_val, data_test
     try:
-        resp = requests.get('https://storage.googleapis.com/seldon-datasets/genome/label_dict.json', timeout=TIMEOUT)
+        resp = requests.get("https://storage.googleapis.com/seldon-datasets/genome/label_dict.json", timeout=TIMEOUT)
         resp.raise_for_status()
     except RequestException:
         logger.exception("Could not connect, URL may be out of service")
@@ -499,12 +556,12 @@ def fetch_genome(return_X_y: bool = False, return_labels: bool = False) -> Union
         outlier_train=data_train[1],
         outlier_val=data_val[1],
         outlier_test=data_test[1],
-        label_dict=label_dict
+        label_dict=label_dict,
     )
     if not return_labels:
         return bunch
     else:
-        bunch['target_train'] = data_train[2]  # type: ignore
-        bunch['target_val'] = data_val[2]  # type: ignore
-        bunch['target_test'] = data_test[2]  # type: ignore
+        bunch["target_train"] = data_train[2]  # type: ignore
+        bunch["target_val"] = data_val[2]  # type: ignore
+        bunch["target_test"] = data_test[2]  # type: ignore
         return bunch

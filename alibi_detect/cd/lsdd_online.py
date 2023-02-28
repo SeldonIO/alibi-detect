@@ -3,6 +3,7 @@ import numpy as np
 from typing import Any, Callable, Dict, Optional, Union
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, BackendValidator, Framework
 from alibi_detect.base import DriftConfigMixin
+
 if has_pytorch:
     from alibi_detect.cd.pytorch.lsdd_online import LSDDDriftOnlineTorch
 
@@ -12,21 +13,21 @@ if has_tensorflow:
 
 class LSDDDriftOnline(DriftConfigMixin):
     def __init__(
-            self,
-            x_ref: Union[np.ndarray, list],
-            ert: float,
-            window_size: int,
-            backend: str = 'tensorflow',
-            preprocess_fn: Optional[Callable] = None,
-            x_ref_preprocessed: bool = False,
-            sigma: Optional[np.ndarray] = None,
-            n_bootstraps: int = 1000,
-            n_kernel_centers: Optional[int] = None,
-            lambda_rd_max: float = 0.2,
-            device: Optional[str] = None,
-            verbose: bool = True,
-            input_shape: Optional[tuple] = None,
-            data_type: Optional[str] = None
+        self,
+        x_ref: Union[np.ndarray, list],
+        ert: float,
+        window_size: int,
+        backend: str = "tensorflow",
+        preprocess_fn: Optional[Callable] = None,
+        x_ref_preprocessed: bool = False,
+        sigma: Optional[np.ndarray] = None,
+        n_bootstraps: int = 1000,
+        n_kernel_centers: Optional[int] = None,
+        lambda_rd_max: float = 0.2,
+        device: Optional[str] = None,
+        verbose: bool = True,
+        input_shape: Optional[tuple] = None,
+        data_type: Optional[str] = None,
     ) -> None:
         """
         Online least squares density difference (LSDD) data drift detector using preconfigured thresholds.
@@ -84,18 +85,17 @@ class LSDDDriftOnline(DriftConfigMixin):
 
         backend = backend.lower()
         BackendValidator(
-            backend_options={Framework.TENSORFLOW: [Framework.TENSORFLOW],
-                             Framework.PYTORCH: [Framework.PYTORCH]},
-            construct_name=self.__class__.__name__
+            backend_options={Framework.TENSORFLOW: [Framework.TENSORFLOW], Framework.PYTORCH: [Framework.PYTORCH]},
+            construct_name=self.__class__.__name__,
         ).verify_backend(backend)
 
         kwargs = locals()
-        args = [kwargs['x_ref'], kwargs['ert'], kwargs['window_size']]
-        pop_kwargs = ['self', 'x_ref', 'ert', 'window_size', 'backend', '__class__']
+        args = [kwargs["x_ref"], kwargs["ert"], kwargs["window_size"]]
+        pop_kwargs = ["self", "x_ref", "ert", "window_size", "backend", "__class__"]
         [kwargs.pop(k, None) for k in pop_kwargs]
 
         if backend == Framework.TENSORFLOW:
-            kwargs.pop('device', None)
+            kwargs.pop("device", None)
             self._detector = LSDDDriftOnlineTF(*args, **kwargs)  # type: ignore
         else:
             self._detector = LSDDDriftOnlineTorch(*args, **kwargs)  # type: ignore
@@ -117,8 +117,9 @@ class LSDDDriftOnline(DriftConfigMixin):
         """Resets the detector to its initial state (`t=0`). This does not include reconfiguring thresholds."""
         self._detector.reset_state()
 
-    def predict(self, x_t: Union[np.ndarray, Any], return_test_stat: bool = True) \
-            -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
+    def predict(
+        self, x_t: Union[np.ndarray, Any], return_test_stat: bool = True
+    ) -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
         """
         Predict whether the most recent window of data has drifted from the reference data.
 
@@ -162,7 +163,7 @@ class LSDDDriftOnline(DriftConfigMixin):
         """
         cfg = super().get_config()
         # Unnormalize x_ref
-        cfg['x_ref'] = self._detector._unnormalize(cfg['x_ref'])
+        cfg["x_ref"] = self._detector._unnormalize(cfg["x_ref"])
         return cfg
 
     def save_state(self, filepath: Union[str, os.PathLike]):

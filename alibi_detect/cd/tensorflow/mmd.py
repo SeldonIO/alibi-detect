@@ -12,21 +12,21 @@ logger = logging.getLogger(__name__)
 
 
 class MMDDriftTF(BaseMMDDrift):
-    @deprecated_alias(preprocess_x_ref='preprocess_at_init')
+    @deprecated_alias(preprocess_x_ref="preprocess_at_init")
     def __init__(
-            self,
-            x_ref: Union[np.ndarray, list],
-            p_val: float = .05,
-            x_ref_preprocessed: bool = False,
-            preprocess_at_init: bool = True,
-            update_x_ref: Optional[Dict[str, int]] = None,
-            preprocess_fn: Optional[Callable] = None,
-            kernel: Callable = GaussianRBF,
-            sigma: Optional[np.ndarray] = None,
-            configure_kernel_from_x_ref: bool = True,
-            n_permutations: int = 100,
-            input_shape: Optional[tuple] = None,
-            data_type: Optional[str] = None
+        self,
+        x_ref: Union[np.ndarray, list],
+        p_val: float = 0.05,
+        x_ref_preprocessed: bool = False,
+        preprocess_at_init: bool = True,
+        update_x_ref: Optional[Dict[str, int]] = None,
+        preprocess_fn: Optional[Callable] = None,
+        kernel: Callable = GaussianRBF,
+        sigma: Optional[np.ndarray] = None,
+        configure_kernel_from_x_ref: bool = True,
+        n_permutations: int = 100,
+        input_shape: Optional[tuple] = None,
+        data_type: Optional[str] = None,
     ) -> None:
         """
         Maximum Mean Discrepancy (MMD) data drift detector using a permutation test.
@@ -75,9 +75,9 @@ class MMDDriftTF(BaseMMDDrift):
             configure_kernel_from_x_ref=configure_kernel_from_x_ref,
             n_permutations=n_permutations,
             input_shape=input_shape,
-            data_type=data_type
+            data_type=data_type,
         )
-        self.meta.update({'backend': Framework.TENSORFLOW.value})
+        self.meta.update({"backend": Framework.TENSORFLOW.value})
 
         # initialize kernel
         if isinstance(sigma, np.ndarray):
@@ -121,8 +121,10 @@ class MMDDriftTF(BaseMMDDrift):
         kernel_mat = kernel_mat - tf.linalg.diag(tf.linalg.diag_part(kernel_mat))  # zero diagonal
         mmd2 = mmd2_from_kernel_matrix(kernel_mat, n, permute=False, zero_diag=False).numpy()
         mmd2_permuted = np.array(
-            [mmd2_from_kernel_matrix(kernel_mat, n, permute=True, zero_diag=False).numpy()
-             for _ in range(self.n_permutations)]
+            [
+                mmd2_from_kernel_matrix(kernel_mat, n, permute=True, zero_diag=False).numpy()
+                for _ in range(self.n_permutations)
+            ]
         )
         p_val = (mmd2 <= mmd2_permuted).mean()
         # compute distance threshold

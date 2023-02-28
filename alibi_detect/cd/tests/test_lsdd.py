@@ -6,7 +6,7 @@ from alibi_detect.cd.tensorflow.lsdd import LSDDDriftTF
 
 n, n_features = 100, 5
 
-tests_lsdddrift = ['tensorflow', 'pytorch', 'PyToRcH', 'mxnet']
+tests_lsdddrift = ["tensorflow", "pytorch", "PyToRcH", "mxnet"]
 n_tests = len(tests_lsdddrift)
 
 
@@ -15,7 +15,7 @@ def lsdddrift_params(request):
     return tests_lsdddrift[request.param]
 
 
-@pytest.mark.parametrize('lsdddrift_params', list(range(n_tests)), indirect=True)
+@pytest.mark.parametrize("lsdddrift_params", list(range(n_tests)), indirect=True)
 def test_lsdddrift(lsdddrift_params):
     backend = lsdddrift_params
     x_ref = np.random.randn(*(n, n_features))
@@ -25,9 +25,9 @@ def test_lsdddrift(lsdddrift_params):
     except NotImplementedError:
         cd = None
 
-    if backend.lower() == 'pytorch':
+    if backend.lower() == "pytorch":
         assert isinstance(cd._detector, LSDDDriftTorch)
-    elif backend.lower() == 'tensorflow':
+    elif backend.lower() == "tensorflow":
         assert isinstance(cd._detector, LSDDDriftTF)
     else:
         assert cd is None

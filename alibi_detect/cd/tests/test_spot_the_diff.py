@@ -14,11 +14,11 @@ n, n_features = 100, 5
 class MyKernelTF(tf.keras.Model):  # TODO: Support then test models using keras functional API
     def __init__(self, n_features: int):
         super().__init__()
-        self.config = {'n_features': n_features}
+        self.config = {"n_features": n_features}
         self.dense = Dense(20)
 
     def call(self, x: tf.Tensor, y: tf.Tensor) -> tf.Tensor:
-        return tf.einsum('ji,ki->jk', self.dense(x), self.dense(y))
+        return tf.einsum("ji,ki->jk", self.dense(x), self.dense(y))
 
     def get_config(self) -> dict:
         return self.config
@@ -39,7 +39,7 @@ class MyKernelTorch(nn.Module):
         return self.dense2(x)
 
 
-tests_stddrift = ['tensorflow', 'pytorch', 'PyToRcH', 'mxnet']
+tests_stddrift = ["tensorflow", "pytorch", "PyToRcH", "mxnet"]
 n_tests = len(tests_stddrift)
 
 
@@ -48,12 +48,12 @@ def stddrift_params(request):
     return tests_stddrift[request.param]
 
 
-@pytest.mark.parametrize('stddrift_params', list(range(n_tests)), indirect=True)
+@pytest.mark.parametrize("stddrift_params", list(range(n_tests)), indirect=True)
 def test_stddrift(stddrift_params):
     backend = stddrift_params
-    if backend.lower() == 'pytorch':
+    if backend.lower() == "pytorch":
         kernel = MyKernelTorch(n_features)
-    elif backend.lower() == 'tensorflow':
+    elif backend.lower() == "tensorflow":
         kernel = MyKernelTF((n_features,))
     else:
         kernel = None
@@ -64,9 +64,9 @@ def test_stddrift(stddrift_params):
     except NotImplementedError:
         cd = None
 
-    if backend.lower() == 'pytorch':
+    if backend.lower() == "pytorch":
         assert isinstance(cd._detector, SpotTheDiffDriftTorch)
-    elif backend.lower() == 'tensorflow':
+    elif backend.lower() == "tensorflow":
         assert isinstance(cd._detector, SpotTheDiffDriftTF)
     else:
         assert cd is None

@@ -4,21 +4,23 @@ from enum import Enum
 
 
 class Framework(str, Enum):
-    PYTORCH = 'pytorch'
-    TENSORFLOW = 'tensorflow'
-    KEOPS = 'keops'
-    SKLEARN = 'sklearn'
+    PYTORCH = "pytorch"
+    TENSORFLOW = "tensorflow"
+    KEOPS = "keops"
+    SKLEARN = "sklearn"
 
 
 try:
     import tensorflow as tf  # noqa
     import tensorflow_probability as tfp  # noqa
+
     has_tensorflow = True
 except ImportError:
     has_tensorflow = False
 
 try:
     import torch  # noqa
+
     has_pytorch = True
 except ImportError:
     has_pytorch = False
@@ -26,24 +28,25 @@ except ImportError:
 try:
     import pykeops  # noqa
     import torch  # noqa
+
     has_keops = True
 except ImportError:
     has_keops = False
 
 # Map from backend name to boolean value indicating its presence
 HAS_BACKEND = {
-    'tensorflow': has_tensorflow,
-    'pytorch': has_pytorch,
-    'sklearn': True,
-    'keops': has_keops,
+    "tensorflow": has_tensorflow,
+    "pytorch": has_pytorch,
+    "sklearn": True,
+    "keops": has_keops,
 }
 
 
 def _iter_to_str(iterable: Iterable[str]) -> str:
     """Correctly format iterable of items to comma seperated sentence string."""
-    items = [f'`{option}`' for option in iterable]
-    last_item_str = f'{items[-1]}' if not items[:-1] else f' and {items[-1]}'
-    return ', '.join(items[:-1]) + last_item_str
+    items = [f"`{option}`" for option in iterable]
+    last_item_str = f"{items[-1]}" if not items[:-1] else f" and {items[-1]}"
+    return ", ".join(items[:-1]) + last_item_str
 
 
 class BackendValidator:
@@ -107,12 +110,19 @@ class BackendValidator:
         optional_dependencies = list(ERROR_TYPES[missing_dep] for missing_dep in missing_deps)
         optional_dependencies.sort()
         missing_deps_str = _iter_to_str(missing_deps)
-        error_msg = (f'{missing_deps_str} not installed. Cannot initialize and run {self.construct_name} '
-                     f'with {backend} backend.')
-        pip_msg = '' if not optional_dependencies else \
-            (f'The necessary missing dependencies can be installed using '
-             f'`pip install alibi-detect[{" ".join(optional_dependencies)}]`.')
-        raise ImportError(f'{error_msg} {pip_msg}')
+        error_msg = (
+            f"{missing_deps_str} not installed. Cannot initialize and run {self.construct_name} "
+            f"with {backend} backend."
+        )
+        pip_msg = (
+            ""
+            if not optional_dependencies
+            else (
+                f"The necessary missing dependencies can be installed using "
+                f'`pip install alibi-detect[{" ".join(optional_dependencies)}]`.'
+            )
+        )
+        raise ImportError(f"{error_msg} {pip_msg}")
 
     def _raise_implementation_error(self, backend: str):
         """Raises NotImplementedError error if backend choice is not implemented."""

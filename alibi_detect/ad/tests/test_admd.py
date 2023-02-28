@@ -7,9 +7,9 @@ from tensorflow.keras.utils import to_categorical
 from alibi_detect.ad import ModelDistillation
 from alibi_detect.version import __version__
 
-threshold = [None, 5.]
-loss_type = ['kld', 'xent']
-threshold_perc = [90.]
+threshold = [None, 5.0]
+loss_type = ["kld", "xent"]
+threshold_perc = [90.0]
 return_instance_score = [True, False]
 
 tests = list(product(threshold, loss_type, threshold_perc, return_instance_score))
@@ -27,7 +27,7 @@ latent_dim = 2
 inputs = tf.keras.Input(shape=(input_dim,))
 outputs = tf.keras.layers.Dense(y.shape[1], activation=tf.nn.softmax)(inputs)
 model = tf.keras.Model(inputs=inputs, outputs=outputs)
-model.compile(optimizer='adam', loss='categorical_crossentropy')
+model.compile(optimizer="adam", loss="categorical_crossentropy")
 model.fit(X, y, batch_size=150, epochs=10)
 
 
@@ -36,27 +36,29 @@ def adv_md_params(request):
     return tests[request.param]
 
 
-@pytest.mark.parametrize('adv_md_params', list(range(n_tests)), indirect=True)
+@pytest.mark.parametrize("adv_md_params", list(range(n_tests)), indirect=True)
 def test_adv_md(adv_md_params):
     # ModelDistillation parameters
     threshold, loss_type, threshold_perc, return_instance_score = adv_md_params
 
     # define ancillary model
-    layers = [tf.keras.layers.InputLayer(input_shape=(input_dim)),
-              tf.keras.layers.Dense(y.shape[1], activation=tf.nn.softmax)]
+    layers = [
+        tf.keras.layers.InputLayer(input_shape=(input_dim)),
+        tf.keras.layers.Dense(y.shape[1], activation=tf.nn.softmax),
+    ]
     distilled_model = tf.keras.Sequential(layers)
 
     # init ModelDistillation detector
-    admd = ModelDistillation(
-        threshold=threshold,
-        model=model,
-        distilled_model=distilled_model,
-        loss_type=loss_type
-    )
+    admd = ModelDistillation(threshold=threshold, model=model, distilled_model=distilled_model, loss_type=loss_type)
 
     assert admd.threshold == threshold
-    assert admd.meta == {'name': 'ModelDistillation', 'detector_type': 'adversarial', 'data_type': None,
-                         'online': False, 'version': __version__}
+    assert admd.meta == {
+        "name": "ModelDistillation",
+        "detector_type": "adversarial",
+        "data_type": None,
+        "online": False,
+        "version": __version__,
+    }
     for layer in admd.model.layers:
         assert not layer.trainable
 
@@ -70,9 +72,11 @@ def test_adv_md(adv_md_params):
     # make and check predictions
     ad_preds = admd.predict(X, return_instance_score=return_instance_score)
 
-    assert ad_preds['meta'] == admd.meta
+    assert ad_preds["meta"] == admd.meta
     if return_instance_score:
-        assert ad_preds['data']['is_adversarial'].sum() == (ad_preds['data']['instance_score']
-                                                            > admd.threshold).astype(int).sum()
+        assert (
+            ad_preds["data"]["is_adversarial"].sum()
+            == (ad_preds["data"]["instance_score"] > admd.threshold).astype(int).sum()
+        )
     else:
-        assert ad_preds['data']['instance_score'] is None
+        assert ad_preds["data"]["instance_score"] is None

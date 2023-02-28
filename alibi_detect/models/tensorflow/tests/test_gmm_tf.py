@@ -12,8 +12,8 @@ def test_gmm_params_energy():
     assert mu.numpy().shape == (K, D)
     assert cov.numpy().shape == L.numpy().shape == (K, D, D)
     for _ in range(cov.numpy().shape[0]):
-        assert (np.diag(cov[_].numpy()) >= 0.).all()
-        assert (np.diag(L[_].numpy()) >= 0.).all()
+        assert (np.diag(cov[_].numpy()) >= 0.0).all()
+        assert (np.diag(L[_].numpy()) >= 0.0).all()
 
     sample_energy, cov_diag = gmm_energy(z, phi, mu, cov, L, log_det_cov, return_mean=True)
     assert sample_energy.numpy().shape == cov_diag.numpy().shape == ()

@@ -22,7 +22,7 @@ from tensorflow_probability.python.internal import tensorshape_util
 
 
 __all__ = [
-    'Shift',
+    "Shift",
 ]
 
 
@@ -55,21 +55,22 @@ class WeightNorm(tf.keras.layers.Wrapper):
         """
         if not isinstance(layer, tf.keras.layers.Layer):
             raise ValueError(
-                'Please initialize `WeightNorm` layer with a `tf.keras.layers.Layer` '
-                'instance. You passed: {input}'.format(input=layer)
+                "Please initialize `WeightNorm` layer with a `tf.keras.layers.Layer` "
+                "instance. You passed: {input}".format(input=layer)
             )
 
         layer_type = type(layer).__name__
-        if layer_type not in ['Dense', 'Conv2D', 'Conv2DTranspose']:
-            warnings.warn('`WeightNorm` is tested only for `Dense`, `Conv2D`, and '
-                          '`Conv2DTranspose` layers. You passed a layer of type `{}`'
-                          .format(layer_type))
+        if layer_type not in ["Dense", "Conv2D", "Conv2DTranspose"]:
+            warnings.warn(
+                "`WeightNorm` is tested only for `Dense`, `Conv2D`, and "
+                "`Conv2DTranspose` layers. You passed a layer of type `{}`".format(layer_type)
+            )
 
         super(WeightNorm, self).__init__(layer, **kwargs)
 
         self.data_init = data_init
-        self._track_trackable(layer, name='layer')
-        self.filter_axis = -2 if layer_type == 'Conv2DTranspose' else -1
+        self._track_trackable(layer, name="layer")
+        self.filter_axis = -2 if layer_type == "Conv2DTranspose" else -1
 
     def _compute_weights(self):
         """Generate weights with normalization."""
@@ -104,7 +105,7 @@ class WeightNorm(tf.keras.layers.Wrapper):
         x_init = self.layer(inputs)
         norm_axes_out = list(range(x_init.shape.rank - 1))
         m_init, v_init = tf.nn.moments(x_init, norm_axes_out)
-        scale_init = 1. / tf.sqrt(v_init + 1e-10)
+        scale_init = 1.0 / tf.sqrt(v_init + 1e-10)
 
         self.g.assign(self.g * scale_init)
         if use_bias:
@@ -132,8 +133,8 @@ class WeightNorm(tf.keras.layers.Wrapper):
         if not self.layer.built:
             self.layer.build(input_shape)
 
-            if not hasattr(self.layer, 'kernel'):
-                raise ValueError('`WeightNorm` must wrap a layer that contains a `kernel` for weights')
+            if not hasattr(self.layer, "kernel"):
+                raise ValueError("`WeightNorm` must wrap a layer that contains a `kernel` for weights")
 
             self.kernel_norm_axes = list(range(self.layer.kernel.shape.ndims))
             self.kernel_norm_axes.pop(self.filter_axis)
@@ -143,17 +144,13 @@ class WeightNorm(tf.keras.layers.Wrapper):
             # to avoid a duplicate `kernel` variable after `build` is called
             self.layer.kernel = None
             self.g = self.add_weight(
-                name='g',
+                name="g",
                 shape=(int(self.v.shape[self.filter_axis]),),
-                initializer='ones',
+                initializer="ones",
                 dtype=self.v.dtype,
-                trainable=True
+                trainable=True,
             )
-            self.initialized = self.add_weight(
-                name='initialized',
-                dtype=tf.bool,
-                trainable=False
-            )
+            self.initialized = self.add_weight(name="initialized", dtype=tf.bool, trainable=False)
             self.initialized.assign(False)
 
         super(WeightNorm, self).build()
@@ -178,10 +175,7 @@ class WeightNorm(tf.keras.layers.Wrapper):
 
 
 class Shift(bijector.Bijector):
-    def __init__(self,
-                 shift,
-                 validate_args=False,
-                 name='shift'):
+    def __init__(self, shift, validate_args=False, name="shift"):
         """Instantiates the `Shift` bijector which computes `Y = g(X; shift) = X + shift`
         where `shift` is a numeric `Tensor`.
 
@@ -196,13 +190,13 @@ class Shift(bijector.Bijector):
         """
         with tf.name_scope(name) as name:
             dtype = dtype_util.common_dtype([shift], dtype_hint=tf.float32)
-            self._shift = tensor_util.convert_nonref_to_tensor(shift, dtype=dtype, name='shift')
+            self._shift = tensor_util.convert_nonref_to_tensor(shift, dtype=dtype, name="shift")
             super(Shift, self).__init__(
-              forward_min_event_ndims=0,
-              is_constant_jacobian=True,
-              dtype=dtype,
-              validate_args=validate_args,
-              name=name
+                forward_min_event_ndims=0,
+                is_constant_jacobian=True,
+                dtype=dtype,
+                validate_args=validate_args,
+                name=name,
             )
 
     @property
@@ -228,23 +222,25 @@ class Shift(bijector.Bijector):
 
 
 class PixelCNN(distribution.Distribution):
-    def __init__(self,
-                 image_shape: tuple,
-                 conditional_shape: tuple = None,
-                 num_resnet: int = 5,
-                 num_hierarchies: int = 3,
-                 num_filters: int = 160,
-                 num_logistic_mix: int = 10,
-                 receptive_field_dims: tuple = (3, 3),
-                 dropout_p: float = 0.5,
-                 resnet_activation: str = 'concat_elu',
-                 l2_weight: float = 0.,
-                 use_weight_norm: bool = True,
-                 use_data_init: bool = True,
-                 high: int = 255,
-                 low: int = 0,
-                 dtype=tf.float32,
-                 name: str = 'PixelCNN') -> None:
+    def __init__(
+        self,
+        image_shape: tuple,
+        conditional_shape: tuple = None,
+        num_resnet: int = 5,
+        num_hierarchies: int = 3,
+        num_filters: int = 160,
+        num_logistic_mix: int = 10,
+        receptive_field_dims: tuple = (3, 3),
+        dropout_p: float = 0.5,
+        resnet_activation: str = "concat_elu",
+        l2_weight: float = 0.0,
+        use_weight_norm: bool = True,
+        use_data_init: bool = True,
+        high: int = 255,
+        low: int = 0,
+        dtype=tf.float32,
+        name: str = "PixelCNN",
+    ) -> None:
         """
         Construct Pixel CNN++ distribution.
 
@@ -294,17 +290,17 @@ class PixelCNN(distribution.Distribution):
                 validate_args=False,
                 allow_nan_stats=True,
                 parameters=parameters,
-                name=name
+                name=name,
             )
 
             if not tensorshape_util.is_fully_defined(image_shape):
-                raise ValueError('`image_shape` must be fully defined.')
+                raise ValueError("`image_shape` must be fully defined.")
 
             if conditional_shape is not None and not tensorshape_util.is_fully_defined(conditional_shape):
-                raise ValueError('`conditional_shape` must be fully defined`')
+                raise ValueError("`conditional_shape` must be fully defined`")
 
             if tensorshape_util.rank(image_shape) != 3:
-                raise ValueError('`image_shape` must have length 3, representing [height, width, channels] dimensions.')
+                raise ValueError("`image_shape` must have length 3, representing [height, width, channels] dimensions.")
 
             self._high = tf.cast(high, self.dtype)
             self._low = tf.cast(low, self.dtype)
@@ -320,7 +316,7 @@ class PixelCNN(distribution.Distribution):
                 l2_weight=l2_weight,
                 use_weight_norm=use_weight_norm,
                 use_data_init=use_data_init,
-                dtype=dtype
+                dtype=dtype,
             )
 
             image_input_shape = tensorshape_util.concatenate([None], image_shape)
@@ -363,18 +359,21 @@ class PixelCNN(distribution.Distribution):
 
         # Convert distribution parameters for pixel values in
         # `[self._low, self._high]` for use with `QuantizedDistribution`
-        locs = self._low + 0.5 * (self._high - self._low) * (locs + 1.)
+        locs = self._low + 0.5 * (self._high - self._low) * (locs + 1.0)
         scales *= 0.5 * (self._high - self._low)
         logistic_dist = quantized_distribution.QuantizedDistribution(
             distribution=transformed_distribution.TransformedDistribution(
-                distribution=logistic.Logistic(loc=locs, scale=scales),
-                bijector=Shift(shift=tf.cast(-0.5, self.dtype))),
-            low=self._low, high=self._high)
+                distribution=logistic.Logistic(loc=locs, scale=scales), bijector=Shift(shift=tf.cast(-0.5, self.dtype))
+            ),
+            low=self._low,
+            high=self._high,
+        )
 
         # mixture with logistics for the loc and scale on each pixel for each component
         dist = mixture_same_family.MixtureSameFamily(
             mixture_distribution=mixture_distribution,
-            components_distribution=independent.Independent(logistic_dist, reinterpreted_batch_ndims=1))
+            components_distribution=independent.Independent(logistic_dist, reinterpreted_batch_ndims=1),
+        )
         if return_per_feature:
             return dist
         else:
@@ -417,26 +416,30 @@ class PixelCNN(distribution.Distribution):
         else:
             conditional_input = tf.convert_to_tensor(conditional_input)
             conditional_input_shape = prefer_static.shape(conditional_input)
-            conditional_batch_rank = (prefer_static.rank(conditional_input) -
-                                      tensorshape_util.rank(self.conditional_shape))
+            conditional_batch_rank = prefer_static.rank(conditional_input) - tensorshape_util.rank(
+                self.conditional_shape
+            )
             conditional_batch_shape = conditional_input_shape[:conditional_batch_rank]
 
             image_batch_and_conditional_shape = prefer_static.broadcast_shape(
-                image_batch_shape, conditional_batch_shape)
+                image_batch_shape, conditional_batch_shape
+            )
             conditional_input = tf.broadcast_to(
                 conditional_input,
-                prefer_static.concat([image_batch_and_conditional_shape, self.conditional_shape], axis=0))
-            value = tf.broadcast_to(value, prefer_static.concat(
-                [image_batch_and_conditional_shape, self.event_shape], axis=0))
+                prefer_static.concat([image_batch_and_conditional_shape, self.conditional_shape], axis=0),
+            )
+            value = tf.broadcast_to(
+                value, prefer_static.concat([image_batch_and_conditional_shape, self.event_shape], axis=0)
+            )
 
             # Flatten batch dimension for input to Keras model
             conditional_input = tf.reshape(
-                conditional_input,
-                prefer_static.concat([(-1,), self.conditional_shape], axis=0))
+                conditional_input, prefer_static.concat([(-1,), self.conditional_shape], axis=0)
+            )
 
         value = tf.reshape(value, prefer_static.concat([(-1,), self.event_shape], axis=0))
 
-        transformed_value = (2. * (value - self._low) / (self._high - self._low)) - 1.
+        transformed_value = (2.0 * (value - self._low) / (self._high - self._low)) - 1.0
         inputs = transformed_value if conditional_input is None else [transformed_value, conditional_input]
 
         params = self.network(inputs, training=training)
@@ -521,8 +524,8 @@ class PixelCNN(distribution.Distribution):
                 h = tf.tile(h, prefer_static.pad([repeat], paddings=[[0, conditional_event_rank]], constant_values=1))
 
         samples_0 = tf.random.uniform(
-            prefer_static.concat([(n,), self.event_shape], axis=0),
-            minval=-1., maxval=1., dtype=self.dtype, seed=seed)
+            prefer_static.concat([(n,), self.event_shape], axis=0), minval=-1.0, maxval=1.0, dtype=self.dtype, seed=seed
+        )
         inputs = samples_0 if conditional_input is None else [samples_0, h]
         params_0 = self.network(inputs, training=training)
         samples_0 = self._sample_channels(*params_0, seed=seed)
@@ -570,7 +573,7 @@ class PixelCNN(distribution.Distribution):
         init_vars = (index0, samples_0)
         _, samples = tf.while_loop(loop_cond, loop_body, init_vars, parallel_iterations=1)
 
-        transformed_samples = (self._low + 0.5 * (self._high - self._low) * (samples + 1.))
+        transformed_samples = self._low + 0.5 * (self._high - self._low) * (samples + 1.0)
         return tf.round(transformed_samples)
 
     def _sample_channels(self, component_logits, locs, scales, coeffs=None, seed=None):
@@ -631,7 +634,7 @@ class PixelCNN(distribution.Distribution):
                 coef_count += 1
 
             logistic_samp = logistic.Logistic(loc=loc, scale=scale_tensors[i]).sample(seed=seed)
-            logistic_samp = tf.clip_by_value(logistic_samp, -1., 1.)
+            logistic_samp = tf.clip_by_value(logistic_samp, -1.0, 1.0)
             channel_samples.append(logistic_samp)
 
         return tf.concat(channel_samples, axis=-1)
@@ -662,18 +665,20 @@ class _PixelCNNNetwork(tf.keras.layers.Layer):
        https://papers.nips.cc/paper/6527-conditional-image-generation-with-pixelcnn-decoders.pdf.
     """
 
-    def __init__(self,
-                 dropout_p: float = 0.5,
-                 num_resnet: int = 5,
-                 num_hierarchies: int = 3,
-                 num_filters: int = 160,
-                 num_logistic_mix: int = 10,
-                 receptive_field_dims: tuple = (3, 3),
-                 resnet_activation: str = 'concat_elu',
-                 l2_weight: float = 0.,
-                 use_weight_norm: bool = True,
-                 use_data_init: bool = True,
-                 dtype=tf.float32) -> None:
+    def __init__(
+        self,
+        dropout_p: float = 0.5,
+        num_resnet: int = 5,
+        num_hierarchies: int = 3,
+        num_filters: int = 160,
+        num_logistic_mix: int = 10,
+        receptive_field_dims: tuple = (3, 3),
+        resnet_activation: str = "concat_elu",
+        l2_weight: float = 0.0,
+        use_weight_norm: bool = True,
+        use_data_init: bool = True,
+        dtype=tf.float32,
+    ) -> None:
         """Initialize the neural network for the Pixel CNN++ distribution.
 
         Parameters
@@ -722,10 +727,13 @@ class _PixelCNNNetwork(tf.keras.layers.Layer):
         self._l2_weight = l2_weight
 
         if use_weight_norm:
+
             def layer_wrapper(layer):
                 def wrapped_layer(*args, **kwargs):
                     return WeightNorm(layer(*args, **kwargs), data_init=use_data_init)
+
                 return wrapped_layer
+
             self._layer_wrapper = layer_wrapper
         else:
             self._layer_wrapper = lambda layer: layer
@@ -742,7 +750,7 @@ class _PixelCNNNetwork(tf.keras.layers.Layer):
         image_shape = batch_image_shape[1:]
         image_input = tf.keras.layers.Input(shape=image_shape, dtype=dtype)
 
-        if self._resnet_activation == 'concat_elu':
+        if self._resnet_activation == "concat_elu":
             activation = tf.keras.layers.Lambda(lambda x: tf.nn.elu(tf.concat([x, -x], axis=-1)), dtype=dtype)
         else:
             activation = tf.keras.activations.get(self._resnet_activation)
@@ -751,46 +759,52 @@ class _PixelCNNNetwork(tf.keras.layers.Layer):
         Conv2D = functools.partial(  # pylint:disable=invalid-name
             self._layer_wrapper(tf.keras.layers.Convolution2D),
             filters=self._num_filters,
-            padding='same',
+            padding="same",
             kernel_regularizer=tf.keras.regularizers.l2(self._l2_weight),
-            dtype=dtype)
+            dtype=dtype,
+        )
 
         Dense = functools.partial(  # pylint:disable=invalid-name
             self._layer_wrapper(tf.keras.layers.Dense),
             kernel_regularizer=tf.keras.regularizers.l2(self._l2_weight),
-            dtype=dtype)
+            dtype=dtype,
+        )
 
         Conv2DTranspose = functools.partial(  # pylint:disable=invalid-name
             self._layer_wrapper(tf.keras.layers.Conv2DTranspose),
             filters=self._num_filters,
-            padding='same',
+            padding="same",
             strides=(2, 2),
             kernel_regularizer=tf.keras.regularizers.l2(self._l2_weight),
-            dtype=dtype)
+            dtype=dtype,
+        )
 
         rows, cols = self._receptive_field_dims
 
         # Define the dimensions of the valid (unmasked) areas of the layer kernels
         # for stride 1 convolutions in the internal layers.
-        kernel_valid_dims = {'vertical': (rows - 1, cols),  # vertical stack
-                             'horizontal': (2, cols // 2 + 1)}  # horizontal stack
+        kernel_valid_dims = {
+            "vertical": (rows - 1, cols),  # vertical stack
+            "horizontal": (2, cols // 2 + 1),
+        }  # horizontal stack
 
         # Define the size of the kernel necessary to center the current pixel
         # correctly for stride 1 convolutions in the internal layers.
-        kernel_sizes = {'vertical': (2 * rows - 3, cols), 'horizontal': (3, cols)}
+        kernel_sizes = {"vertical": (2 * rows - 3, cols), "horizontal": (3, cols)}
 
         # Make the kernel constraint functions for stride 1 convolutions in internal
         # layers.
         kernel_constraints = {
-            k: _make_kernel_constraint(kernel_sizes[k], (0, v[0]), (0, v[1]))
-            for k, v in kernel_valid_dims.items()}
+            k: _make_kernel_constraint(kernel_sizes[k], (0, v[0]), (0, v[1])) for k, v in kernel_valid_dims.items()
+        }
 
         # Build the initial vertical stack/horizontal stack convolutional layers,
         # as shown in Figure 1 of [2]. The receptive field of the initial vertical
         # stack layer is a rectangular area centered above the current pixel.
         vertical_stack_init = Conv2D(
             kernel_size=(2 * rows - 1, cols),
-            kernel_constraint=_make_kernel_constraint((2 * rows - 1, cols), (0, rows - 1), (0, cols)))(image_input)
+            kernel_constraint=_make_kernel_constraint((2 * rows - 1, cols), (0, rows - 1), (0, cols)),
+        )(image_input)
 
         # In Figure 1 [2], the receptive field of the horizontal stack is
         # illustrated as the pixels in the same row and to the left of the current
@@ -798,19 +812,16 @@ class _PixelCNNNetwork(tf.keras.layers.Layer):
         # two (`horizontal_stack_left`) and additionally includes a subset of the
         # row of pixels centered above the current pixel (`horizontal_stack_up`).
         horizontal_stack_up = Conv2D(
-            kernel_size=(3, cols),
-            kernel_constraint=_make_kernel_constraint((3, cols), (0, 1), (0, cols)))(image_input)
+            kernel_size=(3, cols), kernel_constraint=_make_kernel_constraint((3, cols), (0, 1), (0, cols))
+        )(image_input)
 
         horizontal_stack_left = Conv2D(
-            kernel_size=(3, cols),
-            kernel_constraint=_make_kernel_constraint((3, cols), (0, 2), (0, cols // 2)))(image_input)
+            kernel_size=(3, cols), kernel_constraint=_make_kernel_constraint((3, cols), (0, 2), (0, cols // 2))
+        )(image_input)
 
         horizontal_stack_init = tf.keras.layers.add([horizontal_stack_up, horizontal_stack_left], dtype=dtype)
 
-        layer_stacks = {
-            'vertical': [vertical_stack_init],
-            'horizontal': [horizontal_stack_init]
-        }
+        layer_stacks = {"vertical": [vertical_stack_init], "horizontal": [horizontal_stack_init]}
 
         # Build the downward pass of the U-net (left-hand half of Figure 2 of [1]).
         # Each `i` iteration builds one of the highest-level blocks (identified as
@@ -825,27 +836,27 @@ class _PixelCNNNetwork(tf.keras.layers.Layer):
                 # Build a layer shown in Figure 2 of [2]. The 'vertical' iteration
                 # builds the layers in the left half of the figure, and the 'horizontal'
                 # iteration builds the layers in the right half.
-                for stack in ['vertical', 'horizontal']:
+                for stack in ["vertical", "horizontal"]:
                     input_x = layer_stacks[stack][-1]
                     x = activation(input_x)
-                    x = Conv2D(kernel_size=kernel_sizes[stack],
-                               kernel_constraint=kernel_constraints[stack])(x)
+                    x = Conv2D(kernel_size=kernel_sizes[stack], kernel_constraint=kernel_constraints[stack])(x)
 
                     # Add the vertical-stack layer to the horizontal-stack layer
-                    if stack == 'horizontal':
-                        h = activation(layer_stacks['vertical'][-1])
+                    if stack == "horizontal":
+                        h = activation(layer_stacks["vertical"][-1])
                         h = Dense(self._num_filters)(h)
                         x = tf.keras.layers.add([h, x], dtype=dtype)
 
                     x = activation(x)
                     x = tf.keras.layers.Dropout(self._dropout_p, dtype=dtype)(x)
-                    x = Conv2D(filters=2 * self._num_filters,
-                               kernel_size=kernel_sizes[stack],
-                               kernel_constraint=kernel_constraints[stack])(x)
+                    x = Conv2D(
+                        filters=2 * self._num_filters,
+                        kernel_size=kernel_sizes[stack],
+                        kernel_constraint=kernel_constraints[stack],
+                    )(x)
 
                     if conditional_input is not None:
-                        h_projection = _build_and_apply_h_projection(conditional_input,
-                                                                     self._num_filters, dtype=dtype)
+                        h_projection = _build_and_apply_h_projection(conditional_input, self._num_filters, dtype=dtype)
                         x = tf.keras.layers.add([x, h_projection], dtype=dtype)
 
                     x = _apply_sigmoid_gating(x)
@@ -858,20 +869,19 @@ class _PixelCNNNetwork(tf.keras.layers.Layer):
                 # Build convolutional layers that contract the height/width dimensions
                 # on the downward pass between each set of layers (e.g. contracting from
                 # 32x32 to 16x16 in Figure 2 of [1]).
-                for stack in ['vertical', 'horizontal']:
+                for stack in ["vertical", "horizontal"]:
                     # Define kernel dimensions/masking to maintain the autoregressive property.
                     x = layer_stacks[stack][-1]
                     h, w = kernel_valid_dims[stack]
                     kernel_height = 2 * h
-                    if stack == 'vertical':
+                    if stack == "vertical":
                         kernel_width = w + 1
                     else:
                         kernel_width = 2 * w
 
                     kernel_size = (kernel_height, kernel_width)
                     kernel_constraint = _make_kernel_constraint(kernel_size, (0, h), (0, w))
-                    x = Conv2D(strides=(2, 2), kernel_size=kernel_size,
-                               kernel_constraint=kernel_constraint)(x)
+                    x = Conv2D(strides=(2, 2), kernel_size=kernel_size, kernel_constraint=kernel_constraint)(x)
                     layer_stacks[stack].append(x)
 
         # Upward pass of the U-net (right-hand half of Figure 2 of [1]). We stored
@@ -891,20 +901,19 @@ class _PixelCNNNetwork(tf.keras.layers.Layer):
             for _ in range(num_resnet):
                 # Build a layer as shown in Figure 2 of [2], with a skip-connection
                 # from the symmetric layer in the downward pass.
-                for stack in ['vertical', 'horizontal']:
+                for stack in ["vertical", "horizontal"]:
                     input_x = upward_pass[stack]
                     x_symmetric = layer_stacks[stack].pop()
 
                     x = activation(input_x)
-                    x = Conv2D(kernel_size=kernel_sizes[stack],
-                               kernel_constraint=kernel_constraints[stack])(x)
+                    x = Conv2D(kernel_size=kernel_sizes[stack], kernel_constraint=kernel_constraints[stack])(x)
 
                     # Include the vertical-stack layer of the upward pass in the layers
                     # to be added to the horizontal layer.
-                    if stack == 'horizontal':
-                        x_symmetric = tf.keras.layers.Concatenate(axis=-1,
-                                                                  dtype=dtype)([upward_pass['vertical'],
-                                                                                x_symmetric])
+                    if stack == "horizontal":
+                        x_symmetric = tf.keras.layers.Concatenate(axis=-1, dtype=dtype)(
+                            [upward_pass["vertical"], x_symmetric]
+                        )
 
                     # Add a skip-connection from the symmetric layer in the downward
                     # pass to the layer `x` in the upward pass.
@@ -914,9 +923,11 @@ class _PixelCNNNetwork(tf.keras.layers.Layer):
 
                     x = activation(x)
                     x = tf.keras.layers.Dropout(self._dropout_p, dtype=dtype)(x)
-                    x = Conv2D(filters=2 * self._num_filters,
-                               kernel_size=kernel_sizes[stack],
-                               kernel_constraint=kernel_constraints[stack])(x)
+                    x = Conv2D(
+                        filters=2 * self._num_filters,
+                        kernel_size=kernel_sizes[stack],
+                        kernel_constraint=kernel_constraints[stack],
+                    )(x)
 
                     if conditional_input is not None:
                         h_projection = _build_and_apply_h_projection(conditional_input, self._num_filters, dtype=dtype)
@@ -930,25 +941,27 @@ class _PixelCNNNetwork(tf.keras.layers.Layer):
             # the correct kernel dimensions/masking to maintain the autoregressive
             # property.
             if i < self._num_hierarchies - 1:
-                for stack in ['vertical', 'horizontal']:
+                for stack in ["vertical", "horizontal"]:
                     h, w = kernel_valid_dims[stack]
                     kernel_height = 2 * h - 2
-                    if stack == 'vertical':
+                    if stack == "vertical":
                         kernel_width = w + 1
                         kernel_constraint = _make_kernel_constraint(
-                            (kernel_height, kernel_width), (h - 2, kernel_height), (0, w))
+                            (kernel_height, kernel_width), (h - 2, kernel_height), (0, w)
+                        )
                     else:
                         kernel_width = 2 * w - 2
                         kernel_constraint = _make_kernel_constraint(
-                            (kernel_height, kernel_width), (h - 2, kernel_height),
-                            (w - 2, kernel_width))
+                            (kernel_height, kernel_width), (h - 2, kernel_height), (w - 2, kernel_width)
+                        )
 
                     x = upward_pass[stack]
-                    x = Conv2DTranspose(kernel_size=(kernel_height, kernel_width),
-                                        kernel_constraint=kernel_constraint)(x)
+                    x = Conv2DTranspose(kernel_size=(kernel_height, kernel_width), kernel_constraint=kernel_constraint)(
+                        x
+                    )
                     upward_pass[stack] = x
 
-        x_out = tf.keras.layers.ELU(dtype=dtype)(upward_pass['horizontal'])
+        x_out = tf.keras.layers.ELU(dtype=dtype)(upward_pass["horizontal"])
 
         # Build final Dense/Reshape layers to output the correct number of
         # parameters per pixel.
@@ -957,8 +970,12 @@ class _PixelCNNNetwork(tf.keras.layers.Layer):
         num_out = num_channels * 2 + num_coeffs + 1  # mu, s + alpha, beta, gamma + 1 (mixture weight)
         num_out_total = num_out * self._num_logistic_mix
         params = Dense(num_out_total)(x_out)
-        params = tf.reshape(params, prefer_static.concat(  # [-1,H,W,nb mixtures, params per mixture]
-            [[-1], image_shape[:-1], [self._num_logistic_mix, num_out]], axis=0))
+        params = tf.reshape(
+            params,
+            prefer_static.concat(  # [-1,H,W,nb mixtures, params per mixture]
+                [[-1], image_shape[:-1], [self._num_logistic_mix, num_out]], axis=0
+            ),
+        )
 
         # If there is one color channel, split the parameters into a list of three
         # output `Tensor`s: (1) component logits for the Quantized Logistic mixture
@@ -974,7 +991,7 @@ class _PixelCNNNetwork(tf.keras.layers.Layer):
         outputs[0] = tf.squeeze(outputs[0], axis=-1)
 
         # Ensure scales are positive and do not collapse to near-zero
-        outputs[2] = tf.nn.softplus(outputs[2]) + tf.cast(tf.exp(-7.), self.dtype)
+        outputs[2] = tf.nn.softplus(outputs[2]) + tf.cast(tf.exp(-7.0), self.dtype)
 
         inputs = image_input if conditional_input is None else [image_input, conditional_input]
         self._network = tf.keras.Model(inputs=inputs, outputs=outputs)
@@ -1025,7 +1042,7 @@ def _make_kernel_constraint(kernel_size, valid_rows, valid_columns):
     mask = np.zeros(kernel_size)
     lower, upper = valid_rows
     left, right = valid_columns
-    mask[lower:upper, left:right] = 1.
+    mask[lower:upper, left:right] = 1.0
     mask = mask[:, :, np.newaxis, np.newaxis]
     return lambda x: x * mask
 
@@ -1033,7 +1050,7 @@ def _make_kernel_constraint(kernel_size, valid_rows, valid_columns):
 def _build_and_apply_h_projection(h, num_filters, dtype):
     """Project the conditional input."""
     h = tf.keras.layers.Flatten(dtype=dtype)(h)
-    h_projection = tf.keras.layers.Dense(2 * num_filters, kernel_initializer='random_normal', dtype=dtype)(h)
+    h_projection = tf.keras.layers.Dense(2 * num_filters, kernel_initializer="random_normal", dtype=dtype)(h)
     return h_projection[..., tf.newaxis, tf.newaxis, :]
 
 

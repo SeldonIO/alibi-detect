@@ -5,7 +5,7 @@ def pytest_addoption(parser):
     parser.addoption("--opt-dep", action="store")
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def opt_dep(request):
     """Optional dependency fixture.
     Tests that use this fixture must be run with the --opt-dep option via terminal. If not they will skip. This fixture

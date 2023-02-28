@@ -1,7 +1,6 @@
 import numpy as np
 from typing import Callable, Dict, Optional, Union
-from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, \
-    BackendValidator, Framework
+from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, BackendValidator, Framework
 from alibi_detect.base import DriftConfigMixin
 
 
@@ -20,37 +19,37 @@ if has_tensorflow:
 
 class ClassifierDrift(DriftConfigMixin):
     def __init__(
-            self,
-            x_ref: Union[np.ndarray, list],
-            model: Union[ClassifierMixin, Callable],
-            backend: str = 'tensorflow',
-            p_val: float = .05,
-            x_ref_preprocessed: bool = False,
-            preprocess_at_init: bool = True,
-            update_x_ref: Optional[Dict[str, int]] = None,
-            preprocess_fn: Optional[Callable] = None,
-            preds_type: str = 'probs',
-            binarize_preds: bool = False,
-            reg_loss_fn: Callable = (lambda model: 0),
-            train_size: Optional[float] = .75,
-            n_folds: Optional[int] = None,
-            retrain_from_scratch: bool = True,
-            seed: int = 0,
-            optimizer: Optional[Callable] = None,
-            learning_rate: float = 1e-3,
-            batch_size: int = 32,
-            preprocess_batch_fn: Optional[Callable] = None,
-            epochs: int = 3,
-            verbose: int = 0,
-            train_kwargs: Optional[dict] = None,
-            device: Optional[str] = None,
-            dataset: Optional[Callable] = None,
-            dataloader: Optional[Callable] = None,
-            input_shape: Optional[tuple] = None,
-            use_calibration: bool = False,
-            calibration_kwargs: Optional[dict] = None,
-            use_oob: bool = False,
-            data_type: Optional[str] = None
+        self,
+        x_ref: Union[np.ndarray, list],
+        model: Union[ClassifierMixin, Callable],
+        backend: str = "tensorflow",
+        p_val: float = 0.05,
+        x_ref_preprocessed: bool = False,
+        preprocess_at_init: bool = True,
+        update_x_ref: Optional[Dict[str, int]] = None,
+        preprocess_fn: Optional[Callable] = None,
+        preds_type: str = "probs",
+        binarize_preds: bool = False,
+        reg_loss_fn: Callable = (lambda model: 0),
+        train_size: Optional[float] = 0.75,
+        n_folds: Optional[int] = None,
+        retrain_from_scratch: bool = True,
+        seed: int = 0,
+        optimizer: Optional[Callable] = None,
+        learning_rate: float = 1e-3,
+        batch_size: int = 32,
+        preprocess_batch_fn: Optional[Callable] = None,
+        epochs: int = 3,
+        verbose: int = 0,
+        train_kwargs: Optional[dict] = None,
+        device: Optional[str] = None,
+        dataset: Optional[Callable] = None,
+        dataloader: Optional[Callable] = None,
+        input_shape: Optional[tuple] = None,
+        use_calibration: bool = False,
+        calibration_kwargs: Optional[dict] = None,
+        use_oob: bool = False,
+        data_type: Optional[str] = None,
     ) -> None:
         """
         Classifier-based drift detector. The classifier is trained on a fraction of the combined
@@ -149,43 +148,61 @@ class ClassifierDrift(DriftConfigMixin):
 
         backend = backend.lower()
         BackendValidator(
-            backend_options={Framework.TENSORFLOW: [Framework.TENSORFLOW],
-                             Framework.PYTORCH: [Framework.PYTORCH],
-                             Framework.SKLEARN: [Framework.SKLEARN]},
-            construct_name=self.__class__.__name__
+            backend_options={
+                Framework.TENSORFLOW: [Framework.TENSORFLOW],
+                Framework.PYTORCH: [Framework.PYTORCH],
+                Framework.SKLEARN: [Framework.SKLEARN],
+            },
+            construct_name=self.__class__.__name__,
         ).verify_backend(backend)
 
         kwargs = locals()
-        args = [kwargs['x_ref'], kwargs['model']]
-        pop_kwargs = ['self', 'x_ref', 'model', 'backend', '__class__']
-        if kwargs['optimizer'] is None:
-            pop_kwargs += ['optimizer']
+        args = [kwargs["x_ref"], kwargs["model"]]
+        pop_kwargs = ["self", "x_ref", "model", "backend", "__class__"]
+        if kwargs["optimizer"] is None:
+            pop_kwargs += ["optimizer"]
         [kwargs.pop(k, None) for k in pop_kwargs]
 
         if backend == Framework.TENSORFLOW:
-            pop_kwargs = ['device', 'dataloader', 'use_calibration', 'calibration_kwargs', 'use_oob']
+            pop_kwargs = ["device", "dataloader", "use_calibration", "calibration_kwargs", "use_oob"]
             [kwargs.pop(k, None) for k in pop_kwargs]
             if dataset is None:
-                kwargs.update({'dataset': TFDataset})
+                kwargs.update({"dataset": TFDataset})
             self._detector = ClassifierDriftTF(*args, **kwargs)  # type: ignore
         elif backend == Framework.PYTORCH:
-            pop_kwargs = ['use_calibration', 'calibration_kwargs', 'use_oob']
+            pop_kwargs = ["use_calibration", "calibration_kwargs", "use_oob"]
             [kwargs.pop(k, None) for k in pop_kwargs]
             if dataset is None:
-                kwargs.update({'dataset': TorchDataset})
+                kwargs.update({"dataset": TorchDataset})
             if dataloader is None:
-                kwargs.update({'dataloader': DataLoader})
+                kwargs.update({"dataloader": DataLoader})
             self._detector = ClassifierDriftTorch(*args, **kwargs)  # type: ignore
         else:
-            pop_kwargs = ['reg_loss_fn', 'optimizer', 'learning_rate', 'batch_size', 'preprocess_batch_fn',
-                          'epochs', 'train_kwargs', 'device',  'dataset', 'dataloader', 'verbose']
+            pop_kwargs = [
+                "reg_loss_fn",
+                "optimizer",
+                "learning_rate",
+                "batch_size",
+                "preprocess_batch_fn",
+                "epochs",
+                "train_kwargs",
+                "device",
+                "dataset",
+                "dataloader",
+                "verbose",
+            ]
             [kwargs.pop(k, None) for k in pop_kwargs]
             self._detector = ClassifierDriftSklearn(*args, **kwargs)  # type: ignore
         self.meta = self._detector.meta
 
-    def predict(self, x: Union[np.ndarray, list],  return_p_val: bool = True,
-                return_distance: bool = True, return_probs: bool = True, return_model: bool = True) \
-            -> Dict[str, Dict[str, Union[str, int, float, Callable]]]:
+    def predict(
+        self,
+        x: Union[np.ndarray, list],
+        return_p_val: bool = True,
+        return_distance: bool = True,
+        return_probs: bool = True,
+        return_model: bool = True,
+    ) -> Dict[str, Dict[str, Union[str, int, float, Callable]]]:
         """Predict whether a batch of data has drifted from the reference data.
 
         Parameters

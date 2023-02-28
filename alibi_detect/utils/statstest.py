@@ -2,8 +2,9 @@ import numpy as np
 from typing import Callable, Tuple, Union
 
 
-def permutation_test(x: np.ndarray, y: np.ndarray, metric: Callable, n_permutations: int = 100,
-                     **kwargs) -> Tuple[float, float, np.ndarray]:
+def permutation_test(
+    x: np.ndarray, y: np.ndarray, metric: Callable, n_permutations: int = 100, **kwargs
+) -> Tuple[float, float, np.ndarray]:
     """
     Apply a permutation test to samples x and y.
 

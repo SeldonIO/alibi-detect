@@ -5,7 +5,7 @@ import torch
 from torch import nn
 from alibi_detect.utils.pytorch import GaussianRBF, DeepKernel
 
-sigma = [None, np.array([1.]), np.array([1., 2.])]
+sigma = [None, np.array([1.0]), np.array([1.0, 2.0])]
 n_features = [5, 10]
 n_instances = [(100, 100), (100, 75)]
 trainable = [True, False]
@@ -18,7 +18,7 @@ def gaussian_kernel_params(request):
     return tests_gk[request.param]
 
 
-@pytest.mark.parametrize('gaussian_kernel_params', list(range(n_tests_gk)), indirect=True)
+@pytest.mark.parametrize("gaussian_kernel_params", list(range(n_tests_gk)), indirect=True)
 def test_gaussian_kernel(gaussian_kernel_params):
     sigma, n_features, n_instances, trainable = gaussian_kernel_params
     xshape, yshape = (n_instances[0], n_features), (n_instances[1], n_features)
@@ -36,7 +36,7 @@ def test_gaussian_kernel(gaussian_kernel_params):
         k_xx = kernel(x, x, infer_sigma=infer_sigma).detach().numpy()
         assert k_xy.shape == n_instances and k_xx.shape == (xshape[0], xshape[0])
         np.testing.assert_almost_equal(k_xx.trace(), xshape[0], decimal=4)
-        assert (k_xx > 0.).all() and (k_xy > 0.).all()
+        assert (k_xx > 0.0).all() and (k_xy > 0.0).all()
 
 
 class MyKernel(nn.Module):  # TODO: Support then test models using keras functional API
@@ -45,14 +45,14 @@ class MyKernel(nn.Module):  # TODO: Support then test models using keras functio
         self.linear = nn.Linear(n_features, 20)
 
     def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-        return torch.einsum('ji,ki->jk', self.linear(x), self.linear(y))
+        return torch.einsum("ji,ki->jk", self.linear(x), self.linear(y))
 
 
 n_features = [5, 10]
 n_instances = [(100, 100), (100, 75)]
 kernel_a = [GaussianRBF(trainable=True), MyKernel]
 kernel_b = [GaussianRBF(trainable=True), MyKernel, None]
-eps = [0.5, 'trainable']
+eps = [0.5, "trainable"]
 tests_dk = list(product(n_features, n_instances, kernel_a, kernel_b, eps))
 n_tests_dk = len(tests_dk)
 
@@ -62,12 +62,12 @@ def deep_kernel_params(request):
     return tests_dk[request.param]
 
 
-@pytest.mark.parametrize('deep_kernel_params', list(range(n_tests_dk)), indirect=True)
+@pytest.mark.parametrize("deep_kernel_params", list(range(n_tests_dk)), indirect=True)
 def test_deep_kernel(deep_kernel_params):
     n_features, n_instances, kernel_a, kernel_b, eps = deep_kernel_params
     xshape, yshape = (n_instances[0], n_features), (n_instances[1], n_features)
-    x = torch.as_tensor(np.random.random(xshape).astype('float32'))
-    y = torch.as_tensor(np.random.random(yshape).astype('float32'))
+    x = torch.as_tensor(np.random.random(xshape).astype("float32"))
+    y = torch.as_tensor(np.random.random(yshape).astype("float32"))
 
     proj = nn.Linear(n_features, n_features)
     kernel_a = kernel_a(n_features) if kernel_a == MyKernel else kernel_a
@@ -79,5 +79,5 @@ def test_deep_kernel(deep_kernel_params):
     k_yx = kernel(y, x).detach().numpy()
     k_xx = kernel(x, x).detach().numpy()
     assert k_xy.shape == n_instances and k_xx.shape == (xshape[0], xshape[0])
-    assert (np.diag(k_xx) > 0.).all()
+    assert (np.diag(k_xx) > 0.0).all()
     np.testing.assert_almost_equal(k_xy, np.transpose(k_yx), decimal=5)

@@ -13,8 +13,12 @@ from transformers import PreTrainedTokenizerBase
 from alibi_detect.saving._typing import VALID_DETECTORS
 from alibi_detect.saving.loading import _replace, validate_config, STATE_PATH
 from alibi_detect.saving.registry import registry
-from alibi_detect.utils._types import supported_models_all, supported_models_tf, supported_models_torch, \
-    supported_models_sklearn
+from alibi_detect.utils._types import (
+    supported_models_all,
+    supported_models_tf,
+    supported_models_torch,
+    supported_models_sklearn,
+)
 from alibi_detect.base import Detector, ConfigurableDetector, StatefulDetectorOnline
 from alibi_detect.saving._tensorflow import save_detector_legacy, save_model_config_tf, save_optimizer_config_tf
 from alibi_detect.saving._pytorch import save_model_config_pt
@@ -28,15 +32,15 @@ dill.extend(use_dill=False)
 
 logger = logging.getLogger(__name__)
 
-X_REF_FILENAME = 'x_ref.npy'
-C_REF_FILENAME = 'c_ref.npy'
+X_REF_FILENAME = "x_ref.npy"
+C_REF_FILENAME = "c_ref.npy"
 
 
 def save_detector(
-        detector: Union[Detector, ConfigurableDetector],
-        filepath: Union[str, os.PathLike],
-        legacy: bool = False,
-        ) -> None:
+    detector: Union[Detector, ConfigurableDetector],
+    filepath: Union[str, os.PathLike],
+    legacy: bool = False,
+) -> None:
     """
     Save outlier, drift or adversarial detector.
 
@@ -51,19 +55,19 @@ def save_detector(
         This option will be removed in a future version.
     """
     if legacy:
-        warnings.warn('The `legacy` option will be removed in a future version.', DeprecationWarning)
+        warnings.warn("The `legacy` option will be removed in a future version.", DeprecationWarning)
 
     # TODO: Replace .__args__ w/ typing.get_args() once Python 3.7 dropped (and remove type ignore below)
     detector_name = detector.__class__.__name__
     if detector_name not in [detector for detector in VALID_DETECTORS]:
-        raise NotImplementedError(f'{detector_name} is not supported by `save_detector`.')
+        raise NotImplementedError(f"{detector_name} is not supported by `save_detector`.")
 
     # Saving is wrapped in a try, with cleanup in except. To prevent a half-saved detector remaining upon error.
     filepath = Path(filepath)
     try:
         # Create directory if it doesn't exist
         if not filepath.is_dir():
-            logger.warning('Directory {} does not exist and is now created.'.format(filepath))
+            logger.warning("Directory {} does not exist and is now created.".format(filepath))
             filepath.mkdir(parents=True, exist_ok=True)
 
         # If a drift detector, wrap drift detector save method
@@ -78,9 +82,9 @@ def save_detector(
         # Get a list of all existing files in `filepath` (so we know what not to cleanup if an error occurs)
         orig_files = set(filepath.iterdir())
         _cleanup_filepath(orig_files, filepath)
-        raise RuntimeError(f'Saving failed. The save directory {filepath} has been cleaned.') from error
+        raise RuntimeError(f"Saving failed. The save directory {filepath} has been cleaned.") from error
 
-    logger.info('finished saving.')
+    logger.info("finished saving.")
 
 
 def _cleanup_filepath(orig_files: set, filepath: Path):
@@ -111,8 +115,7 @@ def _cleanup_filepath(orig_files: set, filepath: Path):
 
 
 # TODO - eventually this will become save_detector (once outlier and adversarial updated to save via config.toml)
-def _save_detector_config(detector: ConfigurableDetector,
-                          filepath: Union[str, os.PathLike]):
+def _save_detector_config(detector: ConfigurableDetector, filepath: Union[str, os.PathLike]):
     """
     Save a drift detector. The detector is saved as a yaml config file. Artefacts such as
     `preprocess_fn`, models, embeddings, tokenizers etc are serialized, and their filepaths are
@@ -133,15 +136,15 @@ def _save_detector_config(detector: ConfigurableDetector,
     # Process file paths
     filepath = Path(filepath)
     if not filepath.is_dir():
-        logger.warning('Directory {} does not exist and is now created.'.format(filepath))
+        logger.warning("Directory {} does not exist and is now created.".format(filepath))
         filepath.mkdir(parents=True, exist_ok=True)
 
     # Get the detector config (with artefacts still within it)
-    if hasattr(detector, 'get_config'):
+    if hasattr(detector, "get_config"):
         cfg = detector.get_config()  # type: ignore[union-attr]  # TODO - remove once all detectors have get_config
         cfg = validate_config(cfg, resolved=True)
     else:
-        raise NotImplementedError(f'{detector_name} does not yet support config.toml based saving.')
+        raise NotImplementedError(f"{detector_name} does not yet support config.toml based saving.")
 
     # Save state if an online detector and online state exists (self.t > 0)
     if isinstance(detector, StatefulDetectorOnline):
@@ -150,64 +153,65 @@ def _save_detector_config(detector: ConfigurableDetector,
 
     # Save x_ref
     save_path = filepath.joinpath(X_REF_FILENAME)
-    np.save(str(save_path), cfg['x_ref'])
-    cfg.update({'x_ref': X_REF_FILENAME})
+    np.save(str(save_path), cfg["x_ref"])
+    cfg.update({"x_ref": X_REF_FILENAME})
 
     # Save c_ref
-    c_ref = cfg.get('c_ref')
+    c_ref = cfg.get("c_ref")
     if c_ref is not None:
         save_path = filepath.joinpath(C_REF_FILENAME)
-        np.save(str(save_path), cfg['c_ref'])
-        cfg.update({'c_ref': C_REF_FILENAME})
+        np.save(str(save_path), cfg["c_ref"])
+        cfg.update({"c_ref": C_REF_FILENAME})
 
     # Save preprocess_fn
-    preprocess_fn = cfg.get('preprocess_fn')
+    preprocess_fn = cfg.get("preprocess_fn")
     if preprocess_fn is not None:
-        logger.info('Saving the preprocess_fn function.')
-        preprocess_cfg = _save_preprocess_config(preprocess_fn, cfg['input_shape'], filepath)
-        cfg['preprocess_fn'] = preprocess_cfg
+        logger.info("Saving the preprocess_fn function.")
+        preprocess_cfg = _save_preprocess_config(preprocess_fn, cfg["input_shape"], filepath)
+        cfg["preprocess_fn"] = preprocess_cfg
 
     # Serialize kernels
-    for kernel_str in ('kernel', 'x_kernel', 'c_kernel'):
+    for kernel_str in ("kernel", "x_kernel", "c_kernel"):
         kernel = cfg.get(kernel_str)
         if kernel is not None:
             cfg[kernel_str] = _save_kernel_config(kernel, filepath, Path(kernel_str))
-            if 'proj' in cfg[kernel_str]:  # serialise proj from DeepKernel - do here as need input_shape
-                cfg[kernel_str]['proj'], _ = _save_model_config(cfg[kernel_str]['proj'], base_path=filepath,
-                                                                input_shape=cfg['input_shape'])
+            if "proj" in cfg[kernel_str]:  # serialise proj from DeepKernel - do here as need input_shape
+                cfg[kernel_str]["proj"], _ = _save_model_config(
+                    cfg[kernel_str]["proj"], base_path=filepath, input_shape=cfg["input_shape"]
+                )
 
     # ClassifierDrift and SpotTheDiffDrift specific artefacts.
     # Serialize detector model
-    model = cfg.get('model')
+    model = cfg.get("model")
     if model is not None:
-        model_cfg, _ = _save_model_config(model, base_path=filepath, input_shape=cfg['input_shape'])
-        cfg['model'] = model_cfg
+        model_cfg, _ = _save_model_config(model, base_path=filepath, input_shape=cfg["input_shape"])
+        cfg["model"] = model_cfg
 
     # Serialize optimizer
-    optimizer = cfg.get('optimizer')
+    optimizer = cfg.get("optimizer")
     if optimizer is not None:
-        cfg['optimizer'] = _save_optimizer_config(optimizer)
+        cfg["optimizer"] = _save_optimizer_config(optimizer)
 
     # Serialize dataset
-    dataset = cfg.get('dataset')
+    dataset = cfg.get("dataset")
     if dataset is not None:
-        dataset_cfg, dataset_kwargs = _serialize_object(dataset, filepath, Path('dataset'))
-        cfg.update({'dataset': dataset_cfg})
+        dataset_cfg, dataset_kwargs = _serialize_object(dataset, filepath, Path("dataset"))
+        cfg.update({"dataset": dataset_cfg})
         if len(dataset_kwargs) != 0:
-            cfg['dataset']['kwargs'] = dataset_kwargs
+            cfg["dataset"]["kwargs"] = dataset_kwargs
 
     # Serialize reg_loss_fn
-    reg_loss_fn = cfg.get('reg_loss_fn')
+    reg_loss_fn = cfg.get("reg_loss_fn")
     if reg_loss_fn is not None:
-        reg_loss_fn_cfg, _ = _serialize_object(reg_loss_fn, filepath, Path('reg_loss_fn'))
-        cfg['reg_loss_fn'] = reg_loss_fn_cfg
+        reg_loss_fn_cfg, _ = _serialize_object(reg_loss_fn, filepath, Path("reg_loss_fn"))
+        cfg["reg_loss_fn"] = reg_loss_fn_cfg
 
     # Save initial_diffs
-    initial_diffs = cfg.get('initial_diffs')
+    initial_diffs = cfg.get("initial_diffs")
     if initial_diffs is not None:
-        save_path = filepath.joinpath('initial_diffs.npy')
+        save_path = filepath.joinpath("initial_diffs.npy")
         np.save(str(save_path), initial_diffs)
-        cfg.update({'initial_diffs': 'initial_diffs.npy'})
+        cfg.update({"initial_diffs": "initial_diffs.npy"})
 
     # Save config
     write_config(cfg, filepath)
@@ -227,7 +231,7 @@ def write_config(cfg: dict, filepath: Union[str, os.PathLike]):
     # Create directory if it doesn't exist
     filepath = Path(filepath)
     if not filepath.is_dir():
-        logger.warning('Directory {} does not exist and is now created.'.format(filepath))
+        logger.warning("Directory {} does not exist and is now created.".format(filepath))
         filepath.mkdir(parents=True, exist_ok=True)
     # Convert pathlib.Path's to str's
     cfg = _path2str(cfg)
@@ -238,14 +242,12 @@ def write_config(cfg: dict, filepath: Union[str, os.PathLike]):
     cfg = _replace(cfg, None, "None")  # Note: None replaced with "None" as None/null not valid TOML
     cfg = _int2str_keys(cfg)
     # Write to TOML file
-    logger.info('Writing config to {}'.format(filepath.joinpath('config.toml')))
-    with open(filepath.joinpath('config.toml'), 'w') as f:
+    logger.info("Writing config to {}".format(filepath.joinpath("config.toml")))
+    with open(filepath.joinpath("config.toml"), "w") as f:
         toml.dump(cfg, f, encoder=toml.TomlNumpyEncoder())  # type: ignore[misc]
 
 
-def _save_preprocess_config(preprocess_fn: Callable,
-                            input_shape: Optional[tuple],
-                            filepath: Path) -> dict:
+def _save_preprocess_config(preprocess_fn: Callable, input_shape: Optional[tuple], filepath: Path) -> dict:
     """
     Serializes a drift detectors preprocess_fn. Artefacts are saved to disk, and a config dict containing filepaths
     to the saved artefacts is returned.
@@ -265,11 +267,11 @@ def _save_preprocess_config(preprocess_fn: Callable,
     of the `preprocess` field in the drift detector specification.
     """
     preprocess_cfg = {}
-    local_path = Path('preprocess_fn')
+    local_path = Path("preprocess_fn")
 
     # Serialize function
-    func, func_kwargs = _serialize_object(preprocess_fn, filepath, local_path.joinpath('function'))
-    preprocess_cfg.update({'src': func})
+    func, func_kwargs = _serialize_object(preprocess_fn, filepath, local_path.joinpath("function"))
+    preprocess_cfg.update({"src": func})
 
     # Process partial function kwargs (if they exist)
     kwargs = {}
@@ -279,7 +281,7 @@ def _save_preprocess_config(preprocess_fn: Callable,
             cfg_model, cfg_embed = _save_model_config(v, filepath, input_shape, local_path)
             kwargs.update({k: cfg_model})
             if cfg_embed is not None:
-                kwargs.update({'embedding': cfg_embed})
+                kwargs.update({"embedding": cfg_embed})
 
         # Tokenizer
         elif isinstance(v, PreTrainedTokenizerBase):
@@ -287,7 +289,7 @@ def _save_preprocess_config(preprocess_fn: Callable,
             kwargs.update({k: cfg_token})
 
         # torch device
-        elif v.__class__.__name__ == 'device':  # avoiding torch import in case not installed
+        elif v.__class__.__name__ == "device":  # avoiding torch import in case not installed
             kwargs.update({k: v.type})
 
         # Arbitrary function
@@ -299,16 +301,15 @@ def _save_preprocess_config(preprocess_fn: Callable,
         else:
             kwargs.update({k: v})
 
-    if 'preprocess_drift' in func:
+    if "preprocess_drift" in func:
         preprocess_cfg.update(kwargs)
     else:
-        kwargs.update({'kwargs': kwargs})
+        kwargs.update({"kwargs": kwargs})
 
     return preprocess_cfg
 
 
-def _serialize_object(obj: Callable, base_path: Path,
-                      local_path: Path = Path('.')) -> Tuple[str, dict]:
+def _serialize_object(obj: Callable, base_path: Path, local_path: Path = Path(".")) -> Tuple[str, dict]:
     """
     Serializes a python object. If the object is in the object registry, the registry str is returned. If not,
     the object is saved to dill, and if wrapped in a functools.partial, the kwargs are returned.
@@ -337,19 +338,19 @@ def _serialize_object(obj: Callable, base_path: Path,
     keys = [k for k, v in registry.get_all().items() if obj == v]
     registry_str = keys[0] if len(keys) == 1 else None
     if registry_str is not None:  # alibi-detect registered object
-        src = '@' + registry_str
+        src = "@" + registry_str
 
     # Otherwise, save as dill
     else:
         # create folder to save object in
         filepath = base_path.joinpath(local_path)
         if not filepath.parent.is_dir():
-            logger.warning('Directory {} does not exist and is now created.'.format(filepath.parent))
+            logger.warning("Directory {} does not exist and is now created.".format(filepath.parent))
             filepath.parent.mkdir(parents=True, exist_ok=True)
-        logger.info('Saving object to {}.'.format(filepath.with_suffix('.dill')))
-        with open(filepath.with_suffix('.dill'), 'wb') as f:
+        logger.info("Saving object to {}.".format(filepath.with_suffix(".dill")))
+        with open(filepath.with_suffix(".dill"), "wb") as f:
             dill.dump(obj, f)
-        src = str(local_path.with_suffix('.dill'))
+        src = str(local_path.with_suffix(".dill"))
 
     return src, kwargs
 
@@ -403,10 +404,9 @@ def _int2str_keys(dikt: dict) -> dict:
     return dikt_copy
 
 
-def _save_model_config(model: Any,
-                       base_path: Path,
-                       input_shape: Optional[tuple] = None,
-                       path: Path = Path('.')) -> Tuple[dict, Optional[dict]]:
+def _save_model_config(
+    model: Any, base_path: Path, input_shape: Optional[tuple] = None, path: Path = Path(".")
+) -> Tuple[dict, Optional[dict]]:
     """
     Save a model to a config dictionary. When a model has a text embedding model contained within it,
     this is extracted and saved separately.
@@ -436,9 +436,7 @@ def _save_model_config(model: Any,
         raise NotImplementedError("Support for saving the given model is not yet implemented")
 
 
-def _save_tokenizer_config(tokenizer: PreTrainedTokenizerBase,
-                           base_path: Path,
-                           path: Path = Path('.')) -> dict:
+def _save_tokenizer_config(tokenizer: PreTrainedTokenizerBase, base_path: Path, path: Path = Path(".")) -> dict:
     """
     Saves HuggingFace tokenizers.
 
@@ -456,21 +454,19 @@ def _save_tokenizer_config(tokenizer: PreTrainedTokenizerBase,
     The tokenizer config dict.
     """
     # create folder to save model in
-    filepath = base_path.joinpath(path).joinpath('tokenizer')
+    filepath = base_path.joinpath(path).joinpath("tokenizer")
     if not filepath.is_dir():
-        logger.warning('Directory {} does not exist and is now created.'.format(filepath))
+        logger.warning("Directory {} does not exist and is now created.".format(filepath))
         filepath.mkdir(parents=True, exist_ok=True)
 
     cfg_token = {}
-    logger.info('Saving tokenizer to {}.'.format(filepath))
+    logger.info("Saving tokenizer to {}.".format(filepath))
     tokenizer.save_pretrained(filepath)
-    cfg_token.update({'src': path.joinpath('tokenizer')})
+    cfg_token.update({"src": path.joinpath("tokenizer")})
     return cfg_token
 
 
-def _save_kernel_config(kernel: Callable,
-                        base_path: Path,
-                        local_path: Path = Path('.')) -> dict:
+def _save_kernel_config(kernel: Callable, base_path: Path, local_path: Path = Path(".")) -> dict:
     """Function to save kernel.
 
     If the kernel is stored in the artefact registry, the registry key (and kwargs) are written
@@ -490,18 +486,18 @@ def _save_kernel_config(kernel: Callable,
     The kernel config dictionary.
     """
     # if a DeepKernel
-    if hasattr(kernel, 'proj'):
-        if hasattr(kernel, 'get_config'):
+    if hasattr(kernel, "proj"):
+        if hasattr(kernel, "get_config"):
             cfg_kernel = kernel.get_config()  # type: ignore[attr-defined]
         else:
             raise AttributeError("The detector's `kernel` must have a .get_config() method for it to be saved.")
         # Serialize the kernels (if needed)
-        kernel_a = cfg_kernel.get('kernel_a')
-        kernel_b = cfg_kernel.get('kernel_b')
+        kernel_a = cfg_kernel.get("kernel_a")
+        kernel_b = cfg_kernel.get("kernel_b")
         if not isinstance(kernel_a, str):
-            cfg_kernel['kernel_a'] = _save_kernel_config(cfg_kernel['kernel_a'], base_path, Path('kernel_a'))
+            cfg_kernel["kernel_a"] = _save_kernel_config(cfg_kernel["kernel_a"], base_path, Path("kernel_a"))
         if not isinstance(kernel_b, str) and kernel_b is not None:
-            cfg_kernel['kernel_b'] = _save_kernel_config(cfg_kernel['kernel_b'], base_path, Path('kernel_b'))
+            cfg_kernel["kernel_b"] = _save_kernel_config(cfg_kernel["kernel_b"], base_path, Path("kernel_b"))
 
     # If any other kernel, serialize the class to disk and get config
     else:
@@ -510,19 +506,20 @@ def _save_kernel_config(kernel: Callable,
             cfg_kernel = {}
         else:  # if an object
             kernel_class = kernel.__class__
-            if hasattr(kernel, 'get_config'):
+            if hasattr(kernel, "get_config"):
                 cfg_kernel = kernel.get_config()  # type: ignore[attr-defined]
-                cfg_kernel['init_sigma_fn'], _ = _serialize_object(cfg_kernel['init_sigma_fn'], base_path,
-                                                                   local_path.joinpath('init_sigma_fn'))
+                cfg_kernel["init_sigma_fn"], _ = _serialize_object(
+                    cfg_kernel["init_sigma_fn"], base_path, local_path.joinpath("init_sigma_fn")
+                )
             else:
                 raise AttributeError("The detector's `kernel` must have a .get_config() method for it to be saved.")
         # Serialize the kernel class
-        cfg_kernel['src'], _ = _serialize_object(kernel_class, base_path, local_path.joinpath('kernel'))
+        cfg_kernel["src"], _ = _serialize_object(kernel_class, base_path, local_path.joinpath("kernel"))
 
     return cfg_kernel
 
 
-def _save_optimizer_config(optimizer: Union['tf.keras.optimizers.Optimizer', type]) -> dict:
+def _save_optimizer_config(optimizer: Union["tf.keras.optimizers.Optimizer", type]) -> dict:
     """
     Function to save tensorflow or pytorch optimizers.
 
@@ -536,6 +533,6 @@ def _save_optimizer_config(optimizer: Union['tf.keras.optimizers.Optimizer', typ
     Optimizer config dict.
     """
     if isinstance(optimizer, type):
-        return {'class_name': optimizer.__name__}
+        return {"class_name": optimizer.__name__}
     else:
         return save_optimizer_config_tf(optimizer)

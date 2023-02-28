@@ -5,8 +5,10 @@ from abc import ABC
 from typing import Union, Tuple
 import numpy as np
 from alibi_detect.utils.frameworks import Framework
-from alibi_detect.utils.state._pytorch import save_state_dict as _save_state_dict_pt,\
-    load_state_dict as _load_state_dict_pt
+from alibi_detect.utils.state._pytorch import (
+    save_state_dict as _save_state_dict_pt,
+    load_state_dict as _load_state_dict_pt,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -39,9 +41,9 @@ class StateMixin(ABC):
             The directory to save state to.
         """
         self._set_state_dir(filepath)
-        suffix = '.pt' if hasattr(self, 'backend') and self.backend == Framework.PYTORCH else '.npz'
-        _save_state_dict(self, self.online_state_keys, self.state_dir.joinpath('state' + suffix))
-        logger.info('Saved state for t={} to {}'.format(self.t, self.state_dir))
+        suffix = ".pt" if hasattr(self, "backend") and self.backend == Framework.PYTORCH else ".npz"
+        _save_state_dict(self, self.online_state_keys, self.state_dir.joinpath("state" + suffix))
+        logger.info("Saved state for t={} to {}".format(self.t, self.state_dir))
 
     def load_state(self, filepath: Union[str, os.PathLike]):
         """
@@ -54,9 +56,9 @@ class StateMixin(ABC):
             The directory to load state from.
         """
         self._set_state_dir(filepath)
-        suffix = '.pt' if hasattr(self, 'backend') and self.backend == Framework.PYTORCH else '.npz'
-        _load_state_dict(self, self.state_dir.joinpath('state' + suffix), raise_error=True)
-        logger.info('State loaded for t={} from {}'.format(self.t, self.state_dir))
+        suffix = ".pt" if hasattr(self, "backend") and self.backend == Framework.PYTORCH else ".npz"
+        _load_state_dict(self, self.state_dir.joinpath("state" + suffix), raise_error=True)
+        logger.info("State loaded for t={} from {}".format(self.t, self.state_dir))
 
 
 def _save_state_dict(detector: StateMixin, keys: tuple, filepath: Path):
@@ -75,7 +77,7 @@ def _save_state_dict(detector: StateMixin, keys: tuple, filepath: Path):
     # Construct state dictionary
     state_dict = {key: getattr(detector, key, None) for key in keys}
     # Save to disk
-    if filepath.suffix == '.pt':
+    if filepath.suffix == ".pt":
         _save_state_dict_pt(state_dict, filepath)
     else:
         np.savez(filepath, **state_dict)
@@ -100,7 +102,7 @@ def _load_state_dict(detector: StateMixin, filepath: Path, raise_error: bool = T
     None. The detector is updated inplace.
     """
     if filepath.is_file():
-        if filepath.suffix == '.pt':
+        if filepath.suffix == ".pt":
             state_dict = _load_state_dict_pt(filepath)
         else:
             state_dict = np.load(str(filepath))
@@ -108,6 +110,6 @@ def _load_state_dict(detector: StateMixin, filepath: Path, raise_error: bool = T
             setattr(detector, key, value)
     else:
         if raise_error:
-            raise FileNotFoundError('State file not found at {}.'.format(filepath))
+            raise FileNotFoundError("State file not found at {}.".format(filepath))
         else:
-            logger.warning('State file not found at {}. Skipping loading of state.'.format(filepath))
+            logger.warning("State file not found at {}. Skipping loading of state.".format(filepath))

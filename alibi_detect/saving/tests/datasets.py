@@ -68,4 +68,4 @@ class TextData:
         try:
             return get_movie_sentiment_data()
         except RequestException:
-            pytest.skip('Movie sentiment dataset URL down')
+            pytest.skip("Movie sentiment dataset URL down")

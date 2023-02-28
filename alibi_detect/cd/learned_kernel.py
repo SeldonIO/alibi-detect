@@ -18,37 +18,37 @@ if has_keops:
 
 
 class LearnedKernelDrift(DriftConfigMixin):
-    @deprecated_alias(preprocess_x_ref='preprocess_at_init')
+    @deprecated_alias(preprocess_x_ref="preprocess_at_init")
     def __init__(
-            self,
-            x_ref: Union[np.ndarray, list],
-            kernel: Callable,
-            backend: str = 'tensorflow',
-            p_val: float = .05,
-            x_ref_preprocessed: bool = False,
-            preprocess_at_init: bool = True,
-            update_x_ref: Optional[Dict[str, int]] = None,
-            preprocess_fn: Optional[Callable] = None,
-            n_permutations: int = 100,
-            batch_size_permutations: int = 1000000,
-            var_reg: float = 1e-5,
-            reg_loss_fn: Callable = (lambda kernel: 0),
-            train_size: Optional[float] = .75,
-            retrain_from_scratch: bool = True,
-            optimizer: Optional[Callable] = None,
-            learning_rate: float = 1e-3,
-            batch_size: int = 32,
-            batch_size_predict: int = 32,
-            preprocess_batch_fn: Optional[Callable] = None,
-            epochs: int = 3,
-            num_workers: int = 0,
-            verbose: int = 0,
-            train_kwargs: Optional[dict] = None,
-            device: Optional[str] = None,
-            dataset: Optional[Callable] = None,
-            dataloader: Optional[Callable] = None,
-            input_shape: Optional[tuple] = None,
-            data_type: Optional[str] = None
+        self,
+        x_ref: Union[np.ndarray, list],
+        kernel: Callable,
+        backend: str = "tensorflow",
+        p_val: float = 0.05,
+        x_ref_preprocessed: bool = False,
+        preprocess_at_init: bool = True,
+        update_x_ref: Optional[Dict[str, int]] = None,
+        preprocess_fn: Optional[Callable] = None,
+        n_permutations: int = 100,
+        batch_size_permutations: int = 1000000,
+        var_reg: float = 1e-5,
+        reg_loss_fn: Callable = (lambda kernel: 0),
+        train_size: Optional[float] = 0.75,
+        retrain_from_scratch: bool = True,
+        optimizer: Optional[Callable] = None,
+        learning_rate: float = 1e-3,
+        batch_size: int = 32,
+        batch_size_predict: int = 32,
+        preprocess_batch_fn: Optional[Callable] = None,
+        epochs: int = 3,
+        num_workers: int = 0,
+        verbose: int = 0,
+        train_kwargs: Optional[dict] = None,
+        device: Optional[str] = None,
+        dataset: Optional[Callable] = None,
+        dataloader: Optional[Callable] = None,
+        input_shape: Optional[tuple] = None,
+        data_type: Optional[str] = None,
     ) -> None:
         """
         Maximum Mean Discrepancy (MMD) data drift detector where the kernel is trained to maximise an
@@ -135,32 +135,34 @@ class LearnedKernelDrift(DriftConfigMixin):
 
         backend = backend.lower()
         BackendValidator(
-            backend_options={Framework.TENSORFLOW: [Framework.TENSORFLOW],
-                             Framework.PYTORCH: [Framework.PYTORCH],
-                             Framework.KEOPS: [Framework.KEOPS]},
-            construct_name=self.__class__.__name__
+            backend_options={
+                Framework.TENSORFLOW: [Framework.TENSORFLOW],
+                Framework.PYTORCH: [Framework.PYTORCH],
+                Framework.KEOPS: [Framework.KEOPS],
+            },
+            construct_name=self.__class__.__name__,
         ).verify_backend(backend)
 
         kwargs = locals()
-        args = [kwargs['x_ref'], kwargs['kernel']]
-        pop_kwargs = ['self', 'x_ref', 'kernel', 'backend', '__class__']
-        if kwargs['optimizer'] is None:
-            pop_kwargs += ['optimizer']
+        args = [kwargs["x_ref"], kwargs["kernel"]]
+        pop_kwargs = ["self", "x_ref", "kernel", "backend", "__class__"]
+        if kwargs["optimizer"] is None:
+            pop_kwargs += ["optimizer"]
         [kwargs.pop(k, None) for k in pop_kwargs]
 
         if backend == Framework.TENSORFLOW:
-            pop_kwargs = ['device', 'dataloader', 'batch_size_permutations', 'num_workers']
+            pop_kwargs = ["device", "dataloader", "batch_size_permutations", "num_workers"]
             [kwargs.pop(k, None) for k in pop_kwargs]
             if dataset is None:
-                kwargs.update({'dataset': TFDataset})
+                kwargs.update({"dataset": TFDataset})
             detector = LearnedKernelDriftTF
         else:
             if dataset is None:
-                kwargs.update({'dataset': TorchDataset})
+                kwargs.update({"dataset": TorchDataset})
             if dataloader is None:
-                kwargs.update({'dataloader': DataLoader})
+                kwargs.update({"dataloader": DataLoader})
             if backend == Framework.PYTORCH:
-                pop_kwargs = ['batch_size_permutations']
+                pop_kwargs = ["batch_size_permutations"]
                 [kwargs.pop(k, None) for k in pop_kwargs]
                 detector = LearnedKernelDriftTorch
             else:
@@ -169,9 +171,13 @@ class LearnedKernelDrift(DriftConfigMixin):
         self._detector = detector(*args, **kwargs)  # type: ignore
         self.meta = self._detector.meta
 
-    def predict(self, x: Union[np.ndarray, list],  return_p_val: bool = True,
-                return_distance: bool = True, return_kernel: bool = True) \
-            -> Dict[Dict[str, str], Dict[str, Union[int, float, Callable]]]:
+    def predict(
+        self,
+        x: Union[np.ndarray, list],
+        return_p_val: bool = True,
+        return_distance: bool = True,
+        return_kernel: bool = True,
+    ) -> Dict[Dict[str, str], Dict[str, Union[int, float, Callable]]]:
         """
         Predict whether a batch of data has drifted from the reference data.
 

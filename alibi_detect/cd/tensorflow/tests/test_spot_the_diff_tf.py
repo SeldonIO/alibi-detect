@@ -12,11 +12,11 @@ n = 100
 class MyKernel(tf.keras.Model):  # TODO: Support then test models using keras functional API
     def __init__(self, n_features: int):
         super().__init__()
-        self.config = {'n_features': n_features}
+        self.config = {"n_features": n_features}
         self.dense = Dense(20)
 
     def call(self, x: tf.Tensor, y: tf.Tensor) -> tf.Tensor:
-        return tf.einsum('ji,ki->jk', self.dense(x), self.dense(y))
+        return tf.einsum("ji,ki->jk", self.dense(x), self.dense(y))
 
     def get_config(self) -> dict:
         return self.config
@@ -34,9 +34,9 @@ def identity_fn(x: Union[np.ndarray, list]) -> np.ndarray:
         return x
 
 
-p_val = [.05]
+p_val = [0.05]
 n_features = [4]
-train_size = [.5]
+train_size = [0.5]
 preprocess_batch = [None, identity_fn]
 kernel = [None, MyKernel]
 n_diffs = [1, 5]
@@ -49,7 +49,7 @@ def stddrift_params(request):
     return tests_stddrift[request.param]
 
 
-@pytest.mark.parametrize('stddrift_params', list(range(n_tests)), indirect=True)
+@pytest.mark.parametrize("stddrift_params", list(range(n_tests)), indirect=True)
 def test_stddrift(stddrift_params):
     p_val, n_features, train_size, preprocess_batch, kernel, n_diffs = stddrift_params
 
@@ -74,21 +74,21 @@ def test_stddrift(stddrift_params):
         train_size=train_size,
         preprocess_batch_fn=preprocess_batch,
         batch_size=3,
-        epochs=1
+        epochs=1,
     )
 
     x_test0 = x_ref.copy()
     preds_0 = cd.predict(x_test0)
     assert cd._detector.n == len(x_test0) + len(x_ref)
-    assert preds_0['data']['is_drift'] == 0
-    assert preds_0['data']['diffs'].shape == (n_diffs, n_features)
-    assert preds_0['data']['diff_coeffs'].shape == (n_diffs,)
+    assert preds_0["data"]["is_drift"] == 0
+    assert preds_0["data"]["diffs"].shape == (n_diffs, n_features)
+    assert preds_0["data"]["diff_coeffs"].shape == (n_diffs,)
 
     if to_list:
         x_test1 = [_ for _ in x_test1]
     preds_1 = cd.predict(x_test1)
     assert cd._detector.n == len(x_test1) + len(x_test0) + len(x_ref)
-    assert preds_1['data']['is_drift'] == 1
+    assert preds_1["data"]["is_drift"] == 1
 
-    assert preds_0['data']['distance'] < preds_1['data']['distance']
-    assert cd.meta['params']['n_diffs'] == n_diffs
+    assert preds_0["data"]["distance"] < preds_1["data"]["distance"]
+    assert cd.meta["params"]["n_diffs"] == n_diffs

@@ -12,17 +12,17 @@ logger = logging.getLogger(__name__)
 
 
 class OutlierSeq2Seq(BaseDetector, FitMixin, ThresholdMixin):
-
-    def __init__(self,
-                 n_features: int,
-                 seq_len: int,
-                 threshold: Union[float, np.ndarray] = None,
-                 seq2seq: tf.keras.Model = None,
-                 threshold_net: tf.keras.Model = None,
-                 latent_dim: int = None,
-                 output_activation: str = None,
-                 beta: float = 1.
-                 ) -> None:
+    def __init__(
+        self,
+        n_features: int,
+        seq_len: int,
+        threshold: Union[float, np.ndarray] = None,
+        seq2seq: tf.keras.Model = None,
+        threshold_net: tf.keras.Model = None,
+        latent_dim: int = None,
+        output_activation: str = None,
+        beta: float = 1.0,
+    ) -> None:
         """
         Seq2Seq-based outlier detector.
 
@@ -49,17 +49,21 @@ class OutlierSeq2Seq(BaseDetector, FitMixin, ThresholdMixin):
         super().__init__()
 
         if threshold is None:
-            threshold = 0.
-            logger.warning('No explicit threshold level set. Threshold defaults to 0. '
-                           'A threshold can be inferred using `infer_threshold`.')
+            threshold = 0.0
+            logger.warning(
+                "No explicit threshold level set. Threshold defaults to 0. "
+                "A threshold can be inferred using `infer_threshold`."
+            )
 
         self.threshold = threshold
         self.shape = (-1, seq_len, n_features)
         self.latent_dim = (latent_dim // 2) * 2
         if self.latent_dim != latent_dim:
-            logger.warning('Odd values for `latent_dim` are not supported, because '
-                           'of Bidirectional(LSTM(latent_dim // 2,...) in the encoder. '
-                           f'{self.latent_dim} is used instead of {latent_dim}.)')
+            logger.warning(
+                "Odd values for `latent_dim` are not supported, because "
+                "of Bidirectional(LSTM(latent_dim // 2,...) in the encoder. "
+                f"{self.latent_dim} is used instead of {latent_dim}.)"
+            )
 
         self.output_activation = output_activation
 
@@ -69,7 +73,8 @@ class OutlierSeq2Seq(BaseDetector, FitMixin, ThresholdMixin):
                     InputLayer(input_shape=(seq_len, self.latent_dim)),
                     Dense(64, activation=tf.nn.relu),
                     Dense(64, activation=tf.nn.relu),
-                ])
+                ]
+            )
 
         # check if model can be loaded, otherwise initialize a Seq2Seq model
         if isinstance(seq2seq, tf.keras.Model):
@@ -79,24 +84,27 @@ class OutlierSeq2Seq(BaseDetector, FitMixin, ThresholdMixin):
             decoder_net = DecoderLSTM(self.latent_dim, n_features, output_activation)
             self.seq2seq = Seq2Seq(encoder_net, decoder_net, threshold_net, n_features, beta=beta)
         else:
-            raise TypeError('No valid format detected for `seq2seq` (tf.keras.Model), '
-                            '`latent_dim` (int) or `threshold_net` (tf.keras.Sequential)')
+            raise TypeError(
+                "No valid format detected for `seq2seq` (tf.keras.Model), "
+                "`latent_dim` (int) or `threshold_net` (tf.keras.Sequential)"
+            )
 
         # set metadata
-        self.meta['detector_type'] = 'outlier'
-        self.meta['data_type'] = 'time-series'
-        self.meta['online'] = False
+        self.meta["detector_type"] = "outlier"
+        self.meta["data_type"] = "time-series"
+        self.meta["online"] = False
 
-    def fit(self,
-            X: np.ndarray,
-            loss_fn: tf.keras.losses = tf.keras.losses.mse,
-            optimizer: tf.keras.optimizers = tf.keras.optimizers.Adam(learning_rate=1e-3),
-            epochs: int = 20,
-            batch_size: int = 64,
-            verbose: bool = True,
-            log_metric: Tuple[str, "tf.keras.metrics"] = None,
-            callbacks: tf.keras.callbacks = None,
-            ) -> None:
+    def fit(
+        self,
+        X: np.ndarray,
+        loss_fn: tf.keras.losses = tf.keras.losses.mse,
+        optimizer: tf.keras.optimizers = tf.keras.optimizers.Adam(learning_rate=1e-3),
+        epochs: int = 20,
+        batch_size: int = 64,
+        verbose: bool = True,
+        log_metric: Tuple[str, "tf.keras.metrics"] = None,
+        callbacks: tf.keras.callbacks = None,
+    ) -> None:
         """
         Train Seq2Seq model.
 
@@ -129,23 +137,26 @@ class OutlierSeq2Seq(BaseDetector, FitMixin, ThresholdMixin):
 
         # train arguments
         args = [self.seq2seq, loss_fn, X]
-        kwargs = {'y_train': y,
-                  'optimizer': optimizer,
-                  'epochs': epochs,
-                  'batch_size': batch_size,
-                  'verbose': verbose,
-                  'log_metric': log_metric,
-                  'callbacks': callbacks}
+        kwargs = {
+            "y_train": y,
+            "optimizer": optimizer,
+            "epochs": epochs,
+            "batch_size": batch_size,
+            "verbose": verbose,
+            "log_metric": log_metric,
+            "callbacks": callbacks,
+        }
 
         # train
         trainer(*args, **kwargs)
 
-    def infer_threshold(self,
-                        X: np.ndarray,
-                        outlier_perc: Union[int, float] = 100.,
-                        threshold_perc: Union[int, float, np.ndarray, list] = 95.,
-                        batch_size: int = int(1e10)
-                        ) -> None:
+    def infer_threshold(
+        self,
+        X: np.ndarray,
+        outlier_perc: Union[int, float] = 100.0,
+        threshold_perc: Union[int, float, np.ndarray, list] = 95.0,
+        batch_size: int = int(1e10),
+    ) -> None:
         """
         Update the outlier threshold by using a sequence of instances from the dataset
         of which the fraction of features which are outliers are known. This fraction can be across
@@ -170,19 +181,19 @@ class OutlierSeq2Seq(BaseDetector, FitMixin, ThresholdMixin):
 
         # compute outlier scores
         fscore, iscore = self.score(X, outlier_perc=outlier_perc, batch_size=batch_size)
-        if outlier_perc == 100.:
+        if outlier_perc == 100.0:
             fscore = fscore.reshape((-1, self.shape[-1]))
 
         # update threshold
-        if isinstance(threshold_perc, (int, float)) and outlier_perc == 100.:
+        if isinstance(threshold_perc, (int, float)) and outlier_perc == 100.0:
             self.threshold += np.percentile(fscore, threshold_perc)
-        elif isinstance(threshold_perc, (int, float)) and outlier_perc < 100.:
+        elif isinstance(threshold_perc, (int, float)) and outlier_perc < 100.0:
             self.threshold += np.percentile(iscore, threshold_perc)
-        elif isinstance(threshold_perc, (list, np.ndarray)) and outlier_perc == 100.:
+        elif isinstance(threshold_perc, (list, np.ndarray)) and outlier_perc == 100.0:
             self.threshold += np.diag(np.percentile(fscore, threshold_perc, axis=0)).reshape(threshold_shape)
-        elif isinstance(threshold_perc, (list, np.ndarray)) and outlier_perc < 100.:
+        elif isinstance(threshold_perc, (list, np.ndarray)) and outlier_perc < 100.0:
             # number feature scores used for outlier score
-            n_score = int(np.ceil(.01 * outlier_perc * fscore.shape[1]))
+            n_score = int(np.ceil(0.01 * outlier_perc * fscore.shape[1]))
             # compute threshold level by feature
             sorted_fscore = np.sort(fscore, axis=1)
             if len(orig_shape) == 3:  # (batch_size, seq_len, n_features)
@@ -192,7 +203,7 @@ class OutlierSeq2Seq(BaseDetector, FitMixin, ThresholdMixin):
                 sorted_fscore_perc = sorted_fscore[:, -n_score:]  # (batch_size, n_score)
                 self.threshold += np.mean(sorted_fscore_perc, axis=0)  # float
         else:
-            raise TypeError('Incorrect type for `threshold` and/or `threshold_perc`.')
+            raise TypeError("Incorrect type for `threshold` and/or `threshold_perc`.")
 
     def feature_score(self, X_orig: np.ndarray, X_recon: np.ndarray, threshold_est: np.ndarray) -> np.ndarray:
         """
@@ -216,7 +227,7 @@ class OutlierSeq2Seq(BaseDetector, FitMixin, ThresholdMixin):
         fscore_adj = fscore - threshold_est - self.threshold
         return fscore_adj
 
-    def instance_score(self, fscore: np.ndarray, outlier_perc: float = 100.) -> np.ndarray:
+    def instance_score(self, fscore: np.ndarray, outlier_perc: float = 100.0) -> np.ndarray:
         """
         Compute instance level outlier scores. `instance` in this case means the data along the
         first axis of the original time series passed to the predictor.
@@ -233,14 +244,15 @@ class OutlierSeq2Seq(BaseDetector, FitMixin, ThresholdMixin):
         Instance level outlier scores.
         """
         fscore_flat = fscore.reshape(fscore.shape[0], -1).copy()
-        n_score_features = int(np.ceil(.01 * outlier_perc * fscore_flat.shape[1]))
+        n_score_features = int(np.ceil(0.01 * outlier_perc * fscore_flat.shape[1]))
         sorted_fscore = np.sort(fscore_flat, axis=1)
         sorted_fscore_perc = sorted_fscore[:, -n_score_features:]
         iscore = np.mean(sorted_fscore_perc, axis=1)
         return iscore
 
-    def score(self, X: np.ndarray, outlier_perc: float = 100., batch_size: int = int(1e10)) \
-            -> Tuple[np.ndarray, np.ndarray]:
+    def score(
+        self, X: np.ndarray, outlier_perc: float = 100.0, batch_size: int = int(1e10)
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Compute feature and instance level outlier scores.
 
@@ -273,14 +285,15 @@ class OutlierSeq2Seq(BaseDetector, FitMixin, ThresholdMixin):
         iscore = self.instance_score(fscore, outlier_perc=outlier_perc)
         return fscore, iscore
 
-    def predict(self,
-                X: np.ndarray,
-                outlier_type: str = 'instance',
-                outlier_perc: float = 100.,
-                batch_size: int = int(1e10),
-                return_feature_score: bool = True,
-                return_instance_score: bool = True) \
-            -> Dict[Dict[str, str], Dict[np.ndarray, np.ndarray]]:
+    def predict(
+        self,
+        X: np.ndarray,
+        outlier_type: str = "instance",
+        outlier_perc: float = 100.0,
+        batch_size: int = int(1e10),
+        return_feature_score: bool = True,
+        return_instance_score: bool = True,
+    ) -> Dict[Dict[str, str], Dict[np.ndarray, np.ndarray]]:
         """
         Compute outlier scores and transform into outlier predictions.
 
@@ -307,22 +320,22 @@ class OutlierSeq2Seq(BaseDetector, FitMixin, ThresholdMixin):
         """
         # compute outlier scores
         fscore, iscore = self.score(X, outlier_perc=outlier_perc, batch_size=batch_size)
-        if outlier_type == 'feature':
+        if outlier_type == "feature":
             outlier_score = fscore
-        elif outlier_type == 'instance':
+        elif outlier_type == "instance":
             outlier_score = iscore
         else:
-            raise ValueError('`outlier_score` needs to be either `feature` or `instance`.')
+            raise ValueError("`outlier_score` needs to be either `feature` or `instance`.")
 
         # values above threshold are outliers
         outlier_pred = (outlier_score > 0).astype(int)
 
         # populate output dict
         od = outlier_prediction_dict()
-        od['meta'] = self.meta
-        od['data']['is_outlier'] = outlier_pred
+        od["meta"] = self.meta
+        od["data"]["is_outlier"] = outlier_pred
         if return_feature_score:
-            od['data']['feature_score'] = fscore
+            od["data"]["feature_score"] = fscore
         if return_instance_score:
-            od['data']['instance_score'] = iscore
+            od["data"]["instance_score"] = iscore
         return od

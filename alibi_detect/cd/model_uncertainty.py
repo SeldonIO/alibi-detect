@@ -14,23 +14,23 @@ logger = logging.getLogger(__name__)
 
 class ClassifierUncertaintyDrift(DriftConfigMixin):
     def __init__(
-            self,
-            x_ref: Union[np.ndarray, list],
-            model: Callable,
-            p_val: float = .05,
-            x_ref_preprocessed: bool = False,
-            backend: Optional[str] = None,
-            update_x_ref: Optional[Dict[str, int]] = None,
-            preds_type: str = 'probs',
-            uncertainty_type: str = 'entropy',
-            margin_width: float = 0.1,
-            batch_size: int = 32,
-            preprocess_batch_fn: Optional[Callable] = None,
-            device: Optional[str] = None,
-            tokenizer: Optional[Callable] = None,
-            max_len: Optional[int] = None,
-            input_shape: Optional[tuple] = None,
-            data_type: Optional[str] = None,
+        self,
+        x_ref: Union[np.ndarray, list],
+        model: Callable,
+        p_val: float = 0.05,
+        x_ref_preprocessed: bool = False,
+        backend: Optional[str] = None,
+        update_x_ref: Optional[Dict[str, int]] = None,
+        preds_type: str = "probs",
+        uncertainty_type: str = "entropy",
+        margin_width: float = 0.1,
+        batch_size: int = 32,
+        preprocess_batch_fn: Optional[Callable] = None,
+        device: Optional[str] = None,
+        tokenizer: Optional[Callable] = None,
+        max_len: Optional[int] = None,
+        input_shape: Optional[tuple] = None,
+        data_type: Optional[str] = None,
     ) -> None:
         """
         Test for a change in the number of instances falling into regions on which the model is uncertain.
@@ -85,14 +85,18 @@ class ClassifierUncertaintyDrift(DriftConfigMixin):
 
         if backend:
             backend = backend.lower()
-        BackendValidator(backend_options={Framework.TENSORFLOW: [Framework.TENSORFLOW],
-                                          Framework.PYTORCH: [Framework.PYTORCH],
-                                          None: []},
-                         construct_name=self.__class__.__name__).verify_backend(backend)
+        BackendValidator(
+            backend_options={
+                Framework.TENSORFLOW: [Framework.TENSORFLOW],
+                Framework.PYTORCH: [Framework.PYTORCH],
+                None: [],
+            },
+            construct_name=self.__class__.__name__,
+        ).verify_backend(backend)
 
         if backend is None:
-            if device not in [None, 'cpu']:
-                raise NotImplementedError('Non-pytorch/tensorflow models must run on cpu')
+            if device not in [None, "cpu"]:
+                raise NotImplementedError("Non-pytorch/tensorflow models must run on cpu")
             model_fn = model
         else:
             model_fn = encompass_batching(
@@ -102,7 +106,7 @@ class ClassifierUncertaintyDrift(DriftConfigMixin):
                 device=device,
                 preprocess_batch_fn=preprocess_batch_fn,
                 tokenizer=tokenizer,
-                max_len=max_len
+                max_len=max_len,
             )
 
         preprocess_fn = partial(
@@ -115,7 +119,7 @@ class ClassifierUncertaintyDrift(DriftConfigMixin):
 
         self._detector: Union[KSDrift, ChiSquareDrift]
 
-        if uncertainty_type == 'entropy':
+        if uncertainty_type == "entropy":
             self._detector = KSDrift(
                 x_ref=x_ref,
                 p_val=p_val,
@@ -124,9 +128,9 @@ class ClassifierUncertaintyDrift(DriftConfigMixin):
                 update_x_ref=update_x_ref,
                 preprocess_fn=preprocess_fn,
                 input_shape=input_shape,
-                data_type=data_type
+                data_type=data_type,
             )
-        elif uncertainty_type == 'margin':
+        elif uncertainty_type == "margin":
             self._detector = ChiSquareDrift(
                 x_ref=x_ref,
                 p_val=p_val,
@@ -135,16 +139,17 @@ class ClassifierUncertaintyDrift(DriftConfigMixin):
                 update_x_ref=update_x_ref,
                 preprocess_fn=preprocess_fn,
                 input_shape=input_shape,
-                data_type=data_type
+                data_type=data_type,
             )
         else:
             raise NotImplementedError("Only uncertainty types 'entropy' or 'margin' supported.")
 
         self.meta = self._detector.meta
-        self.meta['name'] = 'ClassifierUncertaintyDrift'
+        self.meta["name"] = "ClassifierUncertaintyDrift"
 
-    def predict(self, x: Union[np.ndarray, list], return_p_val: bool = True,
-                return_distance: bool = True) -> Dict[Dict[str, str], Dict[str, Union[np.ndarray, int, float]]]:
+    def predict(
+        self, x: Union[np.ndarray, list], return_p_val: bool = True, return_distance: bool = True
+    ) -> Dict[Dict[str, str], Dict[str, Union[np.ndarray, int, float]]]:
         """
         Predict whether a batch of data has drifted from the reference data.
 
@@ -168,22 +173,22 @@ class ClassifierUncertaintyDrift(DriftConfigMixin):
 
 class RegressorUncertaintyDrift(DriftConfigMixin):
     def __init__(
-            self,
-            x_ref: Union[np.ndarray, list],
-            model: Callable,
-            p_val: float = .05,
-            x_ref_preprocessed: bool = False,
-            backend: Optional[str] = None,
-            update_x_ref: Optional[Dict[str, int]] = None,
-            uncertainty_type: str = 'mc_dropout',
-            n_evals: int = 25,
-            batch_size: int = 32,
-            preprocess_batch_fn: Optional[Callable] = None,
-            device: Optional[str] = None,
-            tokenizer: Optional[Callable] = None,
-            max_len: Optional[int] = None,
-            input_shape: Optional[tuple] = None,
-            data_type: Optional[str] = None,
+        self,
+        x_ref: Union[np.ndarray, list],
+        model: Callable,
+        p_val: float = 0.05,
+        x_ref_preprocessed: bool = False,
+        backend: Optional[str] = None,
+        update_x_ref: Optional[Dict[str, int]] = None,
+        uncertainty_type: str = "mc_dropout",
+        n_evals: int = 25,
+        batch_size: int = 32,
+        preprocess_batch_fn: Optional[Callable] = None,
+        device: Optional[str] = None,
+        tokenizer: Optional[Callable] = None,
+        max_len: Optional[int] = None,
+        input_shape: Optional[tuple] = None,
+        data_type: Optional[str] = None,
     ) -> None:
         """
         Test for a change in the number of instances falling into regions on which the model is uncertain.
@@ -238,17 +243,22 @@ class RegressorUncertaintyDrift(DriftConfigMixin):
 
         if backend:
             backend = backend.lower()
-        BackendValidator(backend_options={Framework.TENSORFLOW: [Framework.TENSORFLOW],
-                                          Framework.PYTORCH: [Framework.PYTORCH],
-                                          None: []},
-                         construct_name=self.__class__.__name__).verify_backend(backend)
+        BackendValidator(
+            backend_options={
+                Framework.TENSORFLOW: [Framework.TENSORFLOW],
+                Framework.PYTORCH: [Framework.PYTORCH],
+                None: [],
+            },
+            construct_name=self.__class__.__name__,
+        ).verify_backend(backend)
 
         if backend is None:
             model_fn = model
         else:
-            if uncertainty_type == 'mc_dropout':
+            if uncertainty_type == "mc_dropout":
                 if backend == Framework.PYTORCH:
                     from alibi_detect.cd.pytorch.utils import activate_train_mode_for_dropout_layers
+
                     model = activate_train_mode_for_dropout_layers(model)
                 elif backend == Framework.TENSORFLOW:
                     logger.warning(
@@ -256,6 +266,7 @@ class RegressorUncertaintyDrift(DriftConfigMixin):
                         "non-dropout layers with different train and inference time behaviour"
                     )
                     from alibi_detect.cd.tensorflow.utils import activate_train_mode_for_all_layers
+
                     model = activate_train_mode_for_all_layers(model)
 
             model_fn = encompass_batching(
@@ -265,18 +276,15 @@ class RegressorUncertaintyDrift(DriftConfigMixin):
                 device=device,
                 preprocess_batch_fn=preprocess_batch_fn,
                 tokenizer=tokenizer,
-                max_len=max_len
+                max_len=max_len,
             )
 
-            if uncertainty_type == 'mc_dropout' and backend == Framework.TENSORFLOW:
+            if uncertainty_type == "mc_dropout" and backend == Framework.TENSORFLOW:
                 # To average over possible batchnorm effects as all layers evaluated in training mode.
                 model_fn = encompass_shuffling_and_batch_filling(model_fn, batch_size=batch_size)
 
         preprocess_fn = partial(
-            regressor_uncertainty,
-            model_fn=model_fn,
-            uncertainty_type=uncertainty_type,
-            n_evals=n_evals
+            regressor_uncertainty, model_fn=model_fn, uncertainty_type=uncertainty_type, n_evals=n_evals
         )
 
         self._detector = KSDrift(
@@ -287,14 +295,15 @@ class RegressorUncertaintyDrift(DriftConfigMixin):
             update_x_ref=update_x_ref,
             preprocess_fn=preprocess_fn,
             input_shape=input_shape,
-            data_type=data_type
+            data_type=data_type,
         )
 
         self.meta = self._detector.meta
-        self.meta['name'] = 'RegressorUncertaintyDrift'
+        self.meta["name"] = "RegressorUncertaintyDrift"
 
-    def predict(self, x: Union[np.ndarray, list], return_p_val: bool = True,
-                return_distance: bool = True) -> Dict[Dict[str, str], Dict[str, Union[np.ndarray, int, float]]]:
+    def predict(
+        self, x: Union[np.ndarray, list], return_p_val: bool = True, return_distance: bool = True
+    ) -> Dict[Dict[str, str], Dict[str, Union[np.ndarray, int, float]]]:
         """
         Predict whether a batch of data has drifted from the reference data.
 

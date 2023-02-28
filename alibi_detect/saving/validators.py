@@ -22,8 +22,11 @@ def coerce_int2list(value: int) -> List[int]:
 
 # Framework validator (validates `flavour` and `backend` fields)
 def validate_framework(framework: str, field: ModelField) -> str:
-    if (framework == Framework.TENSORFLOW and has_tensorflow) or (framework == Framework.PYTORCH and has_pytorch) or \
-            (framework == Framework.KEOPS and has_keops):
+    if (
+        (framework == Framework.TENSORFLOW and has_tensorflow)
+        or (framework == Framework.PYTORCH and has_pytorch)
+        or (framework == Framework.KEOPS and has_keops)
+    ):
         return framework
     elif framework == Framework.SKLEARN:  # sklearn is a core dep
         return framework
@@ -35,6 +38,7 @@ def validate_framework(framework: str, field: ModelField) -> str:
 # The code below is adapted from https://github.com/cheind/pydantic-numpy.
 T = TypeVar("T", bound=np.generic)
 if NumpyVersion(np.__version__) < "1.22.0" or sys.version_info < (3, 9):
+
     class NDArray(Generic[T], np.ndarray):
         """A Generic pydantic model to coerce to np.ndarray's."""
 
@@ -47,6 +51,7 @@ if NumpyVersion(np.__version__) < "1.22.0" or sys.version_info < (3, 9):
             return _coerce_2_ndarray(cls, val, field)
 
 else:
+
     class NDArray(Generic[T], np.ndarray[Any, T]):  # type: ignore[no-redef, type-var]
         """A Generic pydantic model to coerce to np.ndarray's."""
 
@@ -70,13 +75,13 @@ def _coerce_2_ndarray(cls: Type, val: Any, field: ModelField) -> np.ndarray:
 def coerce_2_tensor(value: Union[float, List[float]], values: dict):
     if value is None:
         return value
-    framework = values.get('backend') or values.get('flavour')
+    framework = values.get("backend") or values.get("flavour")
     if framework is None:
-        raise ValueError('`coerce_2tensor` failed since no framework identified.')
+        raise ValueError("`coerce_2tensor` failed since no framework identified.")
     elif framework == Framework.TENSORFLOW and has_tensorflow:
         return tf.convert_to_tensor(value)
     elif (framework == Framework.PYTORCH and has_pytorch) or (framework == Framework.KEOPS and has_keops):
         return torch.tensor(value)
     else:
         # Error should not be raised since `flavour` should have already been validated.
-        raise ImportError(f'Cannot coerce to {framework} Tensor since {framework} is not installed.')
+        raise ImportError(f"Cannot coerce to {framework} Tensor since {framework} is not installed.")

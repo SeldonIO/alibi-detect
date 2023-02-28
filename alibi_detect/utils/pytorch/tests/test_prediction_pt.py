@@ -23,10 +23,7 @@ class MyModel(nn.Module):
             return out, out
 
 
-AutoEncoder = nn.Sequential(
-    nn.Linear(n_features, latent_dim),
-    nn.Linear(latent_dim, n_features)
-)
+AutoEncoder = nn.Sequential(nn.Linear(n_features, latent_dim), nn.Linear(latent_dim, n_features))
 
 
 def id_fn(x: Union[np.ndarray, torch.Tensor, list]) -> Union[np.ndarray, torch.Tensor]:
@@ -58,7 +55,7 @@ def predict_batch_params(request):
     return tests_predict[request.param]
 
 
-@pytest.mark.parametrize('predict_batch_params', list(range(n_tests)), indirect=True)
+@pytest.mark.parametrize("predict_batch_params", list(range(n_tests)), indirect=True)
 def test_predict_batch(predict_batch_params):
     model, batch_size, dtype, preprocess_fn, to_list = predict_batch_params
     x_batch = [x] if to_list else x
@@ -66,7 +63,7 @@ def test_predict_batch(predict_batch_params):
     if isinstance(preds, tuple):
         preds = preds[0]
     assert preds.dtype == dtype
-    if isinstance(model, nn.Sequential) or hasattr(model, '__name__') and model.__name__ == 'id_fn':
+    if isinstance(model, nn.Sequential) or hasattr(model, "__name__") and model.__name__ == "id_fn":
         assert preds.shape == x.shape
     elif isinstance(model, nn.Module):
         assert preds.shape == (n, n_classes)

@@ -10,23 +10,23 @@ import warnings
 
 
 class FETDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
-    online_state_keys = ('t', 'test_stats', 'drift_preds', 'xs')
+    online_state_keys = ("t", "test_stats", "drift_preds", "xs")
 
     def __init__(
-            self,
-            x_ref: Union[np.ndarray, list],
-            ert: float,
-            window_sizes: List[int],
-            preprocess_fn: Optional[Callable] = None,
-            x_ref_preprocessed: bool = False,
-            n_bootstraps: int = 10000,
-            t_max: Optional[int] = None,
-            alternative: str = 'greater',
-            lam: float = 0.99,
-            n_features: Optional[int] = None,
-            verbose: bool = True,
-            input_shape: Optional[tuple] = None,
-            data_type: Optional[str] = None
+        self,
+        x_ref: Union[np.ndarray, list],
+        ert: float,
+        window_sizes: List[int],
+        preprocess_fn: Optional[Callable] = None,
+        x_ref_preprocessed: bool = False,
+        n_bootstraps: int = 10000,
+        t_max: Optional[int] = None,
+        alternative: str = "greater",
+        lam: float = 0.99,
+        n_features: Optional[int] = None,
+        verbose: bool = True,
+        input_shape: Optional[tuple] = None,
+        data_type: Optional[str] = None,
     ) -> None:
         r"""
         Online Fisher exact test (FET) data drift detector using preconfigured thresholds, which tests for a
@@ -94,13 +94,13 @@ class FETDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
             n_features=n_features,
             verbose=verbose,
             input_shape=input_shape,
-            data_type=data_type
+            data_type=data_type,
         )
         # Set config
         self._set_config(locals())
 
         self.lam = lam
-        if alternative.lower() not in ['greater', 'less']:
+        if alternative.lower() not in ["greater", "less"]:
             raise ValueError("`alternative` must be either 'greater' or 'less'.")
         self.alternative = alternative.lower()
 
@@ -114,10 +114,11 @@ class FETDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
 
         # Check data is only [False, True] or [0, 1]
         values = set(np.unique(self.x_ref))
-        if not set(values).issubset(['0', '1', True, False]):
-            raise ValueError("The `x_ref` data must consist of only (0,1)'s or (False,True)'s for the "
-                             "FETDriftOnline detector.")
-        if len(np.unique(self.x_ref.astype('int'))) == 1:
+        if not set(values).issubset(["0", "1", True, False]):
+            raise ValueError(
+                "The `x_ref` data must consist of only (0,1)'s or (False,True)'s for the " "FETDriftOnline detector."
+            )
+        if len(np.unique(self.x_ref.astype("int"))) == 1:
             raise ValueError("The `x_ref` data consists of all 0's or all 1's. Thresholds cannot be configured.")
 
         # Configure thresholds and initialise detector
@@ -146,13 +147,15 @@ class FETDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
             print("Using %d bootstrap simulations to configure thresholds..." % self.n_bootstraps)
 
         # Assuming independent features, calibrate to beta = 1 - (1-FPR)^(1/n_features)
-        beta = 1 - (1 - self.fpr)**(1 / self.n_features)
+        beta = 1 - (1 - self.fpr) ** (1 / self.n_features)
 
         # Init progress bar
         if self.verbose:
             if self.n_features > 1:
-                msg = "Simulating streams for %d window(s) and %d features(s)" \
-                      % (len(self.window_sizes), self.n_features)
+                msg = "Simulating streams for %d window(s) and %d features(s)" % (
+                    len(self.window_sizes),
+                    self.n_features,
+                )
             else:
                 msg = "Simulating streams for %d window(s)" % len(self.window_sizes)
             pbar = tqdm(total=int(self.n_features * len(self.window_sizes)), desc=msg)
@@ -167,7 +170,7 @@ class FETDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
             stats = self._simulate_streams(self.x_ref[:, f], pbar)
             # At each t for each stream, find max stats. over window sizes
             with warnings.catch_warnings():
-                warnings.filterwarnings(action='ignore', message='All-NaN slice encountered')
+                warnings.filterwarnings(action="ignore", message="All-NaN slice encountered")
                 max_stats = np.nanmax(stats, -1)
             # Find threshold (at each t) that satisfies eqn. (2) in Ross et al.
             for t in range(np.min(self.window_sizes) - 1, self.t_max):
@@ -212,12 +215,12 @@ class FETDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
             cumsums_last_ws = cumsums_stream[:, ws:] - cumsums_stream[:, :-ws]
 
             # Perform FET with hypergeom.cdf (this is vectorised over streams)
-            if self.alternative == 'greater':
+            if self.alternative == "greater":
                 p_val = hypergeom.cdf(sum_ref, self.n + ws, sum_ref + cumsums_last_ws, self.n)
             else:
                 p_val = hypergeom.cdf(cumsums_last_ws, self.n + ws, sum_ref + cumsums_last_ws, ws)
 
-            stats[:, (ws - 1):, k] = self._exp_moving_avg(1 - p_val, self.lam)
+            stats[:, (ws - 1) :, k] = self._exp_moving_avg(1 - p_val, self.lam)
         return stats
 
     @staticmethod
@@ -264,7 +267,7 @@ class FETDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
         An int equal to 1 if drift, 0 otherwise.
         """
         with warnings.catch_warnings():
-            warnings.filterwarnings(action='ignore', message='All-NaN slice encountered')
+            warnings.filterwarnings(action="ignore", message="All-NaN slice encountered")
             max_stats = np.nanmax(test_stats, axis=0)
 
         # If any stats greater than thresholds, flag drift and return
@@ -294,9 +297,10 @@ class FETDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
         Estimated FET test statistics (1-p_val) between reference window and test windows.
         """
         values = set(np.unique(x_t))
-        if not set(values).issubset(['0', '1', True, False]):
-            raise ValueError("The `x_t` data must consist of only (0,1)'s or (False,True)'s for the "
-                             "FETDriftOnline detector.")
+        if not set(values).issubset(["0", "1", True, False]):
+            raise ValueError(
+                "The `x_t` data must consist of only (0,1)'s or (False,True)'s for the " "FETDriftOnline detector."
+            )
 
         x_t = super()._preprocess_xt(x_t)
         self._update_state(x_t)
@@ -307,7 +311,7 @@ class FETDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
                 sum_last_ws = np.sum(self.xs[-ws:, :], axis=0)
 
                 # Perform FET with hypergeom.cdf (this is vectorised over features)
-                if self.alternative == 'greater':
+                if self.alternative == "greater":
                     p_vals = hypergeom.cdf(self.sum_ref, self.n + ws, self.sum_ref + sum_last_ws, self.n)
                 else:
                     p_vals = hypergeom.cdf(sum_last_ws, self.n + ws, self.sum_ref + sum_last_ws, ws)

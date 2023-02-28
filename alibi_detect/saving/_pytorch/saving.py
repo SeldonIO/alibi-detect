@@ -14,9 +14,7 @@ from alibi_detect.utils.frameworks import Framework
 logger = logging.getLogger(__name__)
 
 
-def save_model_config(model: Callable,
-                      base_path: Path,
-                      local_path: Path = Path('.')) -> Tuple[dict, Optional[dict]]:
+def save_model_config(model: Callable, base_path: Path, local_path: Path = Path(".")) -> Tuple[dict, Optional[dict]]:
     """
     Save a PyTorch model to a config dictionary. When a model has a text embedding model contained within it,
     this is extracted and saved separately.
@@ -41,34 +39,31 @@ def save_model_config(model: Callable,
         if isinstance(layers[0], TransformerEmbedding):  # if UAE contains embedding and encoder
             # embedding
             embed = layers[0]
-            cfg_embed = save_embedding_config(embed, base_path, local_path.joinpath('embedding'))
+            cfg_embed = save_embedding_config(embed, base_path, local_path.joinpath("embedding"))
             # preprocessing encoder
             model = layers[1]
         else:  # If UAE is simply an encoder
             model = model.encoder
     elif isinstance(model, TransformerEmbedding):
-        cfg_embed = save_embedding_config(model, base_path, local_path.joinpath('embedding'))
+        cfg_embed = save_embedding_config(model, base_path, local_path.joinpath("embedding"))
         model = None
     elif isinstance(model, HiddenOutput):
         model = model.model
     elif isinstance(model, nn.Module):  # Last as TransformerEmbedding and UAE are nn.Module's
         model = model
     else:
-        raise ValueError('Model not recognised, cannot save.')
+        raise ValueError("Model not recognised, cannot save.")
 
     if model is not None:
         filepath = base_path.joinpath(local_path)
         save_model(model, filepath=filepath)
-        cfg_model = {
-            'flavour': Framework.PYTORCH.value,
-            'src': local_path.joinpath('model')
-        }
+        cfg_model = {"flavour": Framework.PYTORCH.value, "src": local_path.joinpath("model")}
     return cfg_model, cfg_embed
 
 
-def save_model(model: nn.Module,
-               filepath: Union[str, os.PathLike],
-               save_dir: Union[str, os.PathLike] = 'model') -> None:
+def save_model(
+    model: nn.Module, filepath: Union[str, os.PathLike], save_dir: Union[str, os.PathLike] = "model"
+) -> None:
     """
     Save PyTorch model.
 
@@ -84,21 +79,19 @@ def save_model(model: nn.Module,
     # create folder to save model in
     model_path = Path(filepath).joinpath(save_dir)
     if not model_path.is_dir():
-        logger.warning('Directory {} does not exist and is now created.'.format(model_path))
+        logger.warning("Directory {} does not exist and is now created.".format(model_path))
         model_path.mkdir(parents=True, exist_ok=True)
 
     # save model
-    model_path = model_path.joinpath('model.pt')
+    model_path = model_path.joinpath("model.pt")
 
     if isinstance(model, nn.Module):
         torch.save(model, model_path, pickle_module=dill)
     else:
-        raise ValueError('The extracted model to save is not a `nn.Module`. Cannot save.')
+        raise ValueError("The extracted model to save is not a `nn.Module`. Cannot save.")
 
 
-def save_embedding_config(embed: TransformerEmbedding,
-                          base_path: Path,
-                          local_path: Path = Path('.')) -> dict:
+def save_embedding_config(embed: TransformerEmbedding, base_path: Path, local_path: Path = Path(".")) -> dict:
     """
     Save embeddings for text drift models.
 
@@ -114,18 +107,18 @@ def save_embedding_config(embed: TransformerEmbedding,
     # create folder to save model in
     filepath = base_path.joinpath(local_path)
     if not filepath.is_dir():
-        logger.warning('Directory {} does not exist and is now created.'.format(filepath))
+        logger.warning("Directory {} does not exist and is now created.".format(filepath))
         filepath.mkdir(parents=True, exist_ok=True)
 
     # Populate config dict
     cfg_embed: Dict[str, Any] = {}
-    cfg_embed.update({'type': embed.emb_type})
-    cfg_embed.update({'layers': embed.hs_emb.keywords['layers']})
-    cfg_embed.update({'src': local_path})
-    cfg_embed.update({'flavour': Framework.PYTORCH.value})
+    cfg_embed.update({"type": embed.emb_type})
+    cfg_embed.update({"layers": embed.hs_emb.keywords["layers"]})
+    cfg_embed.update({"src": local_path})
+    cfg_embed.update({"flavour": Framework.PYTORCH.value})
 
     # Save embedding model
-    logger.info('Saving embedding model to {}.'.format(filepath))
+    logger.info("Saving embedding model to {}.".format(filepath))
     embed.model.save_pretrained(filepath)
 
     return cfg_embed

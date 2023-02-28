@@ -32,5 +32,5 @@ __all__ = [
     "CVMDriftOnline",
     "FETDrift",
     "FETDriftOnline",
-    "ContextMMDDrift"
+    "ContextMMDDrift",
 ]

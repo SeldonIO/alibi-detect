@@ -16,35 +16,35 @@ from alibi_detect.utils.frameworks import Framework
 
 
 class ClassifierDriftTorch(BaseClassifierDrift):
-    @deprecated_alias(preprocess_x_ref='preprocess_at_init')
+    @deprecated_alias(preprocess_x_ref="preprocess_at_init")
     def __init__(
-            self,
-            x_ref: Union[np.ndarray, list],
-            model: Union[nn.Module, nn.Sequential],
-            p_val: float = .05,
-            x_ref_preprocessed: bool = False,
-            preprocess_at_init: bool = True,
-            update_x_ref: Optional[Dict[str, int]] = None,
-            preprocess_fn: Optional[Callable] = None,
-            preds_type: str = 'probs',
-            binarize_preds: bool = False,
-            reg_loss_fn: Callable = (lambda model: 0),
-            train_size: Optional[float] = .75,
-            n_folds: Optional[int] = None,
-            retrain_from_scratch: bool = True,
-            seed: int = 0,
-            optimizer: Callable = torch.optim.Adam,
-            learning_rate: float = 1e-3,
-            batch_size: int = 32,
-            preprocess_batch_fn: Optional[Callable] = None,
-            epochs: int = 3,
-            verbose: int = 0,
-            train_kwargs: Optional[dict] = None,
-            device: Optional[str] = None,
-            dataset: Callable = TorchDataset,
-            dataloader: Callable = DataLoader,
-            input_shape: Optional[tuple] = None,
-            data_type: Optional[str] = None
+        self,
+        x_ref: Union[np.ndarray, list],
+        model: Union[nn.Module, nn.Sequential],
+        p_val: float = 0.05,
+        x_ref_preprocessed: bool = False,
+        preprocess_at_init: bool = True,
+        update_x_ref: Optional[Dict[str, int]] = None,
+        preprocess_fn: Optional[Callable] = None,
+        preds_type: str = "probs",
+        binarize_preds: bool = False,
+        reg_loss_fn: Callable = (lambda model: 0),
+        train_size: Optional[float] = 0.75,
+        n_folds: Optional[int] = None,
+        retrain_from_scratch: bool = True,
+        seed: int = 0,
+        optimizer: Callable = torch.optim.Adam,
+        learning_rate: float = 1e-3,
+        batch_size: int = 32,
+        preprocess_batch_fn: Optional[Callable] = None,
+        epochs: int = 3,
+        verbose: int = 0,
+        train_kwargs: Optional[dict] = None,
+        device: Optional[str] = None,
+        dataset: Callable = TorchDataset,
+        dataloader: Callable = DataLoader,
+        input_shape: Optional[tuple] = None,
+        data_type: Optional[str] = None,
     ) -> None:
         """
         Classifier-based drift detector. The classifier is trained on a fraction of the combined
@@ -133,13 +133,13 @@ class ClassifierDriftTorch(BaseClassifierDrift):
             retrain_from_scratch=retrain_from_scratch,
             seed=seed,
             input_shape=input_shape,
-            data_type=data_type
+            data_type=data_type,
         )
 
-        if preds_type not in ['probs', 'logits']:
+        if preds_type not in ["probs", "logits"]:
             raise ValueError("'preds_type' should be 'probs' or 'logits'")
 
-        self.meta.update({'backend': Framework.PYTORCH.value})
+        self.meta.update({"backend": Framework.PYTORCH.value})
 
         # set device, define model and training kwargs
         self.device = get_device(device)
@@ -147,18 +147,26 @@ class ClassifierDriftTorch(BaseClassifierDrift):
         self.model = deepcopy(model)
 
         # define kwargs for dataloader and trainer
-        self.loss_fn = nn.CrossEntropyLoss() if (self.preds_type == 'logits') else nn.NLLLoss()
+        self.loss_fn = nn.CrossEntropyLoss() if (self.preds_type == "logits") else nn.NLLLoss()
         self.dataset = dataset
         self.dataloader = partial(dataloader, batch_size=batch_size, shuffle=True)
-        self.predict_fn = partial(predict_batch, device=self.device,
-                                  preprocess_fn=preprocess_batch_fn, batch_size=batch_size)
-        self.train_kwargs = {'optimizer': optimizer, 'epochs': epochs,  'preprocess_fn': preprocess_batch_fn,
-                             'reg_loss_fn': reg_loss_fn, 'learning_rate': learning_rate, 'verbose': verbose}
+        self.predict_fn = partial(
+            predict_batch, device=self.device, preprocess_fn=preprocess_batch_fn, batch_size=batch_size
+        )
+        self.train_kwargs = {
+            "optimizer": optimizer,
+            "epochs": epochs,
+            "preprocess_fn": preprocess_batch_fn,
+            "reg_loss_fn": reg_loss_fn,
+            "learning_rate": learning_rate,
+            "verbose": verbose,
+        }
         if isinstance(train_kwargs, dict):
             self.train_kwargs.update(train_kwargs)
 
-    def score(self, x: Union[np.ndarray, list]) \
-            -> Tuple[float, float, np.ndarray, np.ndarray, Union[np.ndarray, list], Union[np.ndarray, list]]:
+    def score(
+        self, x: Union[np.ndarray, list]
+    ) -> Tuple[float, float, np.ndarray, np.ndarray, Union[np.ndarray, list], Union[np.ndarray, list]]:
         """
         Compute the out-of-fold drift metric such as the accuracy from a classifier
         trained to distinguish the reference data from the data to be tested.
@@ -187,7 +195,7 @@ class ClassifierDriftTorch(BaseClassifierDrift):
             elif isinstance(x, list):
                 x_tr, x_te = [x[_] for _ in idx_tr], [x[_] for _ in idx_te]
             else:
-                raise TypeError(f'x needs to be of type np.ndarray or list and not {type(x)}.')
+                raise TypeError(f"x needs to be of type np.ndarray or list and not {type(x)}.")
             ds_tr = self.dataset(x_tr, y_tr)
             dl_tr = self.dataloader(ds_tr)
             self.model = deepcopy(self.original_model) if self.retrain_from_scratch else self.model
@@ -198,7 +206,7 @@ class ClassifierDriftTorch(BaseClassifierDrift):
             preds_oof_list.append(preds)
             idx_oof_list.append(idx_te)
         preds_oof = np.concatenate(preds_oof_list, axis=0)
-        probs_oof = softmax(preds_oof, axis=-1) if self.preds_type == 'logits' else preds_oof
+        probs_oof = softmax(preds_oof, axis=-1) if self.preds_type == "logits" else preds_oof
         idx_oof = np.concatenate(idx_oof_list, axis=0)
         y_oof = y[idx_oof]
         n_cur = y_oof.sum()

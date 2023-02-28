@@ -14,33 +14,33 @@ from alibi_detect.utils.frameworks import Framework
 
 
 class ClassifierDriftTF(BaseClassifierDrift):
-    @deprecated_alias(preprocess_x_ref='preprocess_at_init')
+    @deprecated_alias(preprocess_x_ref="preprocess_at_init")
     def __init__(
-            self,
-            x_ref: np.ndarray,
-            model: tf.keras.Model,
-            p_val: float = .05,
-            x_ref_preprocessed: bool = False,
-            preprocess_at_init: bool = True,
-            update_x_ref: Optional[Dict[str, int]] = None,
-            preprocess_fn: Optional[Callable] = None,
-            preds_type: str = 'probs',
-            binarize_preds: bool = False,
-            reg_loss_fn: Callable = (lambda model: 0),
-            train_size: Optional[float] = .75,
-            n_folds: Optional[int] = None,
-            retrain_from_scratch: bool = True,
-            seed: int = 0,
-            optimizer: tf.keras.optimizers.Optimizer = tf.keras.optimizers.Adam,
-            learning_rate: float = 1e-3,
-            batch_size: int = 32,
-            preprocess_batch_fn: Optional[Callable] = None,
-            epochs: int = 3,
-            verbose: int = 0,
-            train_kwargs: Optional[dict] = None,
-            dataset: Callable = TFDataset,
-            input_shape: Optional[tuple] = None,
-            data_type: Optional[str] = None
+        self,
+        x_ref: np.ndarray,
+        model: tf.keras.Model,
+        p_val: float = 0.05,
+        x_ref_preprocessed: bool = False,
+        preprocess_at_init: bool = True,
+        update_x_ref: Optional[Dict[str, int]] = None,
+        preprocess_fn: Optional[Callable] = None,
+        preds_type: str = "probs",
+        binarize_preds: bool = False,
+        reg_loss_fn: Callable = (lambda model: 0),
+        train_size: Optional[float] = 0.75,
+        n_folds: Optional[int] = None,
+        retrain_from_scratch: bool = True,
+        seed: int = 0,
+        optimizer: tf.keras.optimizers.Optimizer = tf.keras.optimizers.Adam,
+        learning_rate: float = 1e-3,
+        batch_size: int = 32,
+        preprocess_batch_fn: Optional[Callable] = None,
+        epochs: int = 3,
+        verbose: int = 0,
+        train_kwargs: Optional[dict] = None,
+        dataset: Callable = TFDataset,
+        input_shape: Optional[tuple] = None,
+        data_type: Optional[str] = None,
     ) -> None:
         """
         Classifier-based drift detector. The classifier is trained on a fraction of the combined
@@ -125,27 +125,35 @@ class ClassifierDriftTF(BaseClassifierDrift):
             retrain_from_scratch=retrain_from_scratch,
             seed=seed,
             input_shape=input_shape,
-            data_type=data_type
+            data_type=data_type,
         )
-        if preds_type not in ['probs', 'logits']:
+        if preds_type not in ["probs", "logits"]:
             raise ValueError("'preds_type' should be 'probs' or 'logits'")
 
-        self.meta.update({'backend': Framework.TENSORFLOW.value})
+        self.meta.update({"backend": Framework.TENSORFLOW.value})
 
         # define and compile classifier model
         self.original_model = model
         self.model = clone_model(model)
-        self.loss_fn = BinaryCrossentropy(from_logits=(self.preds_type == 'logits'))
+        self.loss_fn = BinaryCrossentropy(from_logits=(self.preds_type == "logits"))
         self.dataset = partial(dataset, batch_size=batch_size, shuffle=True)
         self.predict_fn = partial(predict_batch, preprocess_fn=preprocess_batch_fn, batch_size=batch_size)
         optimizer = optimizer(learning_rate=learning_rate) if isinstance(optimizer, type) else optimizer
-        self.train_kwargs = {'optimizer': optimizer, 'epochs': epochs,
-                             'reg_loss_fn': reg_loss_fn, 'preprocess_fn': preprocess_batch_fn, 'verbose': verbose}
+        self.train_kwargs = {
+            "optimizer": optimizer,
+            "epochs": epochs,
+            "reg_loss_fn": reg_loss_fn,
+            "preprocess_fn": preprocess_batch_fn,
+            "verbose": verbose,
+        }
         if isinstance(train_kwargs, dict):
             self.train_kwargs.update(train_kwargs)
 
-    def score(self, x: np.ndarray) -> Tuple[float, float, np.ndarray, np.ndarray,  # type: ignore[override]
-                                            Union[np.ndarray, list], Union[np.ndarray, list]]:
+    def score(
+        self, x: np.ndarray
+    ) -> Tuple[
+        float, float, np.ndarray, np.ndarray, Union[np.ndarray, list], Union[np.ndarray, list]  # type: ignore[override]
+    ]:
         """
         Compute the out-of-fold drift metric such as the accuracy from a classifier
         trained to distinguish the reference data from the data to be tested.
@@ -174,18 +182,17 @@ class ClassifierDriftTF(BaseClassifierDrift):
             elif isinstance(x, list):
                 x_tr, x_te = [x[_] for _ in idx_tr], [x[_] for _ in idx_te]
             else:
-                raise TypeError(f'x needs to be of type np.ndarray or list and not {type(x)}.')
+                raise TypeError(f"x needs to be of type np.ndarray or list and not {type(x)}.")
             ds_tr = self.dataset(x_tr, y_tr)
-            self.model = clone_model(self.original_model) if self.retrain_from_scratch \
-                else self.model
+            self.model = clone_model(self.original_model) if self.retrain_from_scratch else self.model
             train_args = [self.model, self.loss_fn, None]
-            self.train_kwargs.update({'dataset': ds_tr})
+            self.train_kwargs.update({"dataset": ds_tr})
             trainer(*train_args, **self.train_kwargs)  # type: ignore
             preds = self.predict_fn(x_te, self.model)
             preds_oof_list.append(preds)
             idx_oof_list.append(idx_te)
         preds_oof = np.concatenate(preds_oof_list, axis=0)
-        probs_oof = softmax(preds_oof, axis=-1) if self.preds_type == 'logits' else preds_oof
+        probs_oof = softmax(preds_oof, axis=-1) if self.preds_type == "logits" else preds_oof
         idx_oof = np.concatenate(idx_oof_list, axis=0)
         y_oof = y[idx_oof]
         n_cur = y_oof.sum()

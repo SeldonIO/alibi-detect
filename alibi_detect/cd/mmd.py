@@ -18,24 +18,24 @@ logger = logging.getLogger(__name__)
 
 
 class MMDDrift(DriftConfigMixin):
-    @deprecated_alias(preprocess_x_ref='preprocess_at_init')
+    @deprecated_alias(preprocess_x_ref="preprocess_at_init")
     def __init__(
-            self,
-            x_ref: Union[np.ndarray, list],
-            backend: str = 'tensorflow',
-            p_val: float = .05,
-            x_ref_preprocessed: bool = False,
-            preprocess_at_init: bool = True,
-            update_x_ref: Optional[Dict[str, int]] = None,
-            preprocess_fn: Optional[Callable] = None,
-            kernel: Callable = None,
-            sigma: Optional[np.ndarray] = None,
-            configure_kernel_from_x_ref: bool = True,
-            n_permutations: int = 100,
-            batch_size_permutations: int = 1000000,
-            device: Optional[str] = None,
-            input_shape: Optional[tuple] = None,
-            data_type: Optional[str] = None
+        self,
+        x_ref: Union[np.ndarray, list],
+        backend: str = "tensorflow",
+        p_val: float = 0.05,
+        x_ref_preprocessed: bool = False,
+        preprocess_at_init: bool = True,
+        update_x_ref: Optional[Dict[str, int]] = None,
+        preprocess_fn: Optional[Callable] = None,
+        kernel: Callable = None,
+        sigma: Optional[np.ndarray] = None,
+        configure_kernel_from_x_ref: bool = True,
+        n_permutations: int = 100,
+        batch_size_permutations: int = 1000000,
+        device: Optional[str] = None,
+        input_shape: Optional[tuple] = None,
+        data_type: Optional[str] = None,
     ) -> None:
         """
         Maximum Mean Discrepancy (MMD) data drift detector using a permutation test.
@@ -88,20 +88,22 @@ class MMDDrift(DriftConfigMixin):
 
         backend = backend.lower()
         BackendValidator(
-            backend_options={Framework.TENSORFLOW: [Framework.TENSORFLOW],
-                             Framework.PYTORCH: [Framework.PYTORCH],
-                             Framework.KEOPS: [Framework.KEOPS]},
-            construct_name=self.__class__.__name__
+            backend_options={
+                Framework.TENSORFLOW: [Framework.TENSORFLOW],
+                Framework.PYTORCH: [Framework.PYTORCH],
+                Framework.KEOPS: [Framework.KEOPS],
+            },
+            construct_name=self.__class__.__name__,
         ).verify_backend(backend)
 
         kwargs = locals()
-        args = [kwargs['x_ref']]
-        pop_kwargs = ['self', 'x_ref', 'backend', '__class__']
+        args = [kwargs["x_ref"]]
+        pop_kwargs = ["self", "x_ref", "backend", "__class__"]
         if backend == Framework.TENSORFLOW:
-            pop_kwargs += ['device', 'batch_size_permutations']
+            pop_kwargs += ["device", "batch_size_permutations"]
             detector = MMDDriftTF
         elif backend == Framework.PYTORCH:
-            pop_kwargs += ['batch_size_permutations']
+            pop_kwargs += ["batch_size_permutations"]
             detector = MMDDriftTorch
         else:
             detector = MMDDriftKeops
@@ -114,13 +116,14 @@ class MMDDrift(DriftConfigMixin):
                 from alibi_detect.utils.pytorch.kernels import GaussianRBF  # type: ignore
             else:
                 from alibi_detect.utils.keops.kernels import GaussianRBF  # type: ignore
-            kwargs.update({'kernel': GaussianRBF})
+            kwargs.update({"kernel": GaussianRBF})
 
         self._detector = detector(*args, **kwargs)  # type: ignore
         self.meta = self._detector.meta
 
-    def predict(self, x: Union[np.ndarray, list], return_p_val: bool = True, return_distance: bool = True) \
-            -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
+    def predict(
+        self, x: Union[np.ndarray, list], return_p_val: bool = True, return_distance: bool = True
+    ) -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
         """
         Predict whether a batch of data has drifted from the reference data.
 

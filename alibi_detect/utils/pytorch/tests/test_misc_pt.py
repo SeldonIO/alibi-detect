@@ -24,7 +24,7 @@ def quantile_params(request):
     return tests_quantile[request.param]
 
 
-@pytest.mark.parametrize('quantile_params', list(range(n_tests_quantile)), indirect=True)
+@pytest.mark.parametrize("quantile_params", list(range(n_tests_quantile)), indirect=True)
 def test_quantile(quantile_params):
     type, sorted = quantile_params
 

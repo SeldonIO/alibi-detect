@@ -15,8 +15,9 @@ from alibi_detect.utils.tensorflow.perturbation import mutate_categorical
 logger = logging.getLogger(__name__)
 
 
-def build_model(dist: Union[Distribution, PixelCNN], input_shape: tuple = None, filepath: str = None) \
-        -> Tuple[tf.keras.Model, Union[Distribution, PixelCNN]]:
+def build_model(
+    dist: Union[Distribution, PixelCNN], input_shape: tuple = None, filepath: str = None
+) -> Tuple[tf.keras.Model, Union[Distribution, PixelCNN]]:
     """
     Create tf.keras.Model from TF distribution.
 
@@ -43,15 +44,15 @@ def build_model(dist: Union[Distribution, PixelCNN], input_shape: tuple = None, 
 
 
 class LLR(BaseDetector, FitMixin, ThresholdMixin):
-
-    def __init__(self,
-                 threshold: float = None,
-                 model: Union[tf.keras.Model, Distribution, PixelCNN] = None,
-                 model_background: Union[tf.keras.Model, Distribution, PixelCNN] = None,
-                 log_prob: Callable = None,
-                 sequential: bool = False,
-                 data_type: str = None
-                 ) -> None:
+    def __init__(
+        self,
+        threshold: float = None,
+        model: Union[tf.keras.Model, Distribution, PixelCNN] = None,
+        model_background: Union[tf.keras.Model, Distribution, PixelCNN] = None,
+        log_prob: Callable = None,
+        sequential: bool = False,
+        data_type: str = None,
+    ) -> None:
         """
         Likelihood Ratios for Out-of-Distribution Detection. Ren, J. et al. NeurIPS 2019.
         https://arxiv.org/abs/1906.02845.
@@ -75,9 +76,9 @@ class LLR(BaseDetector, FitMixin, ThresholdMixin):
         super().__init__()
 
         if threshold is None:
-            logger.warning('No threshold level set. Need to infer threshold using `infer_threshold`.')
+            logger.warning("No threshold level set. Need to infer threshold using `infer_threshold`.")
 
-        self.has_log_prob = True if hasattr(model, 'log_prob') else False
+        self.has_log_prob = True if hasattr(model, "log_prob") else False
         self.sequential = sequential
         self.log_prob = log_prob
         self.threshold = threshold
@@ -94,24 +95,25 @@ class LLR(BaseDetector, FitMixin, ThresholdMixin):
             self.dist_b = model_background
 
         # set metadata
-        self.meta['detector_type'] = 'outlier'
-        self.meta['data_type'] = data_type
-        self.meta['online'] = False
+        self.meta["detector_type"] = "outlier"
+        self.meta["data_type"] = data_type
+        self.meta["online"] = False
 
-    def fit(self,
-            X: np.ndarray,
-            mutate_fn: Callable = mutate_categorical,
-            mutate_fn_kwargs: dict = {'rate': .2, 'seed': 0, 'feature_range': (0, 255)},
-            mutate_batch_size: int = int(1e10),
-            loss_fn: tf.keras.losses = None,
-            loss_fn_kwargs: dict = None,
-            optimizer: tf.keras.optimizers = tf.keras.optimizers.Adam(learning_rate=1e-3),
-            epochs: int = 20,
-            batch_size: int = 64,
-            verbose: bool = True,
-            log_metric: Tuple[str, "tf.keras.metrics"] = None,
-            callbacks: tf.keras.callbacks = None
-            ) -> None:
+    def fit(
+        self,
+        X: np.ndarray,
+        mutate_fn: Callable = mutate_categorical,
+        mutate_fn_kwargs: dict = {"rate": 0.2, "seed": 0, "feature_range": (0, 255)},
+        mutate_batch_size: int = int(1e10),
+        loss_fn: tf.keras.losses = None,
+        loss_fn_kwargs: dict = None,
+        optimizer: tf.keras.optimizers = tf.keras.optimizers.Adam(learning_rate=1e-3),
+        epochs: int = 20,
+        batch_size: int = 64,
+        verbose: bool = True,
+        log_metric: Tuple[str, "tf.keras.metrics"] = None,
+        callbacks: tf.keras.callbacks = None,
+    ) -> None:
         """
         Train semantic and background generative models.
 
@@ -146,10 +148,7 @@ class LLR(BaseDetector, FitMixin, ThresholdMixin):
         input_shape = X.shape[1:]
 
         # training arguments
-        kwargs = {'epochs': epochs,
-                  'batch_size': batch_size,
-                  'verbose': verbose,
-                  'callbacks': callbacks}
+        kwargs = {"epochs": epochs, "batch_size": batch_size, "verbose": verbose, "callbacks": callbacks}
 
         # create background data
         mutate_fn = partial(mutate_fn, **mutate_fn_kwargs)
@@ -176,28 +175,21 @@ class LLR(BaseDetector, FitMixin, ThresholdMixin):
             self.model_b.fit(X_back, **kwargs)
         else:
             # update training arguments
-            kwargs.update({
-                'optimizer': optimizer,
-                'loss_fn_kwargs': loss_fn_kwargs,
-                'log_metric': log_metric
-            })
+            kwargs.update({"optimizer": optimizer, "loss_fn_kwargs": loss_fn_kwargs, "log_metric": log_metric})
 
             # train semantic model
             args = [self.dist_s, loss_fn, X]
-            kwargs.update({'y_train': y})
+            kwargs.update({"y_train": y})
             trainer(*args, **kwargs)  # type: ignore[arg-type]
 
             # train background model
             args = [self.dist_b, loss_fn, X_back]
-            kwargs.update({'y_train': y_back})
+            kwargs.update({"y_train": y_back})
             trainer(*args, **kwargs)  # type: ignore[arg-type]
 
-    def infer_threshold(self,
-                        X: np.ndarray,
-                        outlier_type: str = 'instance',
-                        threshold_perc: float = 95.,
-                        batch_size: int = int(1e10)
-                        ) -> None:
+    def infer_threshold(
+        self, X: np.ndarray, outlier_type: str = "instance", threshold_perc: float = 95.0, batch_size: int = int(1e10)
+    ) -> None:
         """
         Update LLR threshold by a value inferred from the percentage of instances
         considered to be outliers in a sample of the dataset.
@@ -215,18 +207,17 @@ class LLR(BaseDetector, FitMixin, ThresholdMixin):
         """
         # compute outlier scores
         fscore, iscore = self.score(X, batch_size=batch_size)
-        if outlier_type == 'feature':
+        if outlier_type == "feature":
             outlier_score = fscore
-        elif outlier_type == 'instance':
+        elif outlier_type == "instance":
             outlier_score = iscore
         else:
-            raise ValueError('`outlier_score` needs to be either `feature` or `instance`.')
+            raise ValueError("`outlier_score` needs to be either `feature` or `instance`.")
 
         # update threshold
         self.threshold = np.percentile(outlier_score, threshold_perc)
 
-    def logp(self, dist, X: np.ndarray, return_per_feature: bool = False, batch_size: int = int(1e10)) \
-            -> np.ndarray:
+    def logp(self, dist, X: np.ndarray, return_per_feature: bool = False, batch_size: int = int(1e10)) -> np.ndarray:
         """
         Compute log probability of a batch of instances under the generative model.
 
@@ -249,8 +240,9 @@ class LLR(BaseDetector, FitMixin, ThresholdMixin):
         # TODO: TBD: can this be any of the other types from predict_batch? i.e. tf.Tensor or tuple
         return predict_batch(X, logp_fn, batch_size=batch_size)  # type: ignore[return-value]
 
-    def logp_alt(self, model: tf.keras.Model, X: np.ndarray, return_per_feature: bool = False,
-                 batch_size: int = int(1e10)) -> np.ndarray:
+    def logp_alt(
+        self, model: tf.keras.Model, X: np.ndarray, return_per_feature: bool = False, batch_size: int = int(1e10)
+    ) -> np.ndarray:
         """
         Compute log probability of a batch of instances using the log_prob function
         defined by the user.
@@ -306,11 +298,11 @@ class LLR(BaseDetector, FitMixin, ThresholdMixin):
 
     def feature_score(self, X: np.ndarray, batch_size: int = int(1e10)) -> np.ndarray:
         """Feature-level negative likelihood ratios."""
-        return - self.llr(X, True, batch_size=batch_size)
+        return -self.llr(X, True, batch_size=batch_size)
 
     def instance_score(self, X: np.ndarray, batch_size: int = int(1e10)) -> np.ndarray:
         """Instance-level negative likelihood ratios."""
-        return - self.llr(X, False, batch_size=batch_size)
+        return -self.llr(X, False, batch_size=batch_size)
 
     def score(self, X: np.ndarray, batch_size: int = int(1e10)) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -321,13 +313,14 @@ class LLR(BaseDetector, FitMixin, ThresholdMixin):
         iscore = self.instance_score(X, batch_size=batch_size)
         return fscore, iscore
 
-    def predict(self,
-                X: np.ndarray,
-                outlier_type: str = 'instance',
-                batch_size: int = int(1e10),
-                return_feature_score: bool = True,
-                return_instance_score: bool = True) \
-            -> Dict[Dict[str, str], Dict[np.ndarray, np.ndarray]]:
+    def predict(
+        self,
+        X: np.ndarray,
+        outlier_type: str = "instance",
+        batch_size: int = int(1e10),
+        return_feature_score: bool = True,
+        return_instance_score: bool = True,
+    ) -> Dict[Dict[str, str], Dict[np.ndarray, np.ndarray]]:
         """
         Predict whether instances are outliers or not.
 
@@ -352,22 +345,22 @@ class LLR(BaseDetector, FitMixin, ThresholdMixin):
         """
         # compute outlier scores
         fscore, iscore = self.score(X, batch_size=batch_size)
-        if outlier_type == 'feature':
+        if outlier_type == "feature":
             outlier_score = fscore
-        elif outlier_type == 'instance':
+        elif outlier_type == "instance":
             outlier_score = iscore
         else:
-            raise ValueError('`outlier_score` needs to be either `feature` or `instance`.')
+            raise ValueError("`outlier_score` needs to be either `feature` or `instance`.")
 
         # values above threshold are outliers
         outlier_pred = (outlier_score > self.threshold).astype(int)
 
         # populate output dict
         od = outlier_prediction_dict()
-        od['meta'] = self.meta
-        od['data']['is_outlier'] = outlier_pred
+        od["meta"] = self.meta
+        od["data"]["is_outlier"] = outlier_pred
         if return_feature_score:
-            od['data']['feature_score'] = fscore
+            od["data"]["feature_score"] = fscore
         if return_instance_score:
-            od['data']['instance_score'] = iscore
+            od["data"]["instance_score"] = iscore
         return od

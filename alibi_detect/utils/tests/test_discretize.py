@@ -19,7 +19,7 @@ def cats_and_percentiles(request):
     return cat, perc
 
 
-@pytest.mark.parametrize('cats_and_percentiles', list(range(n_tests)), indirect=True)
+@pytest.mark.parametrize("cats_and_percentiles", list(range(n_tests)), indirect=True)
 def test_discretizer(cats_and_percentiles):
     cat, perc = cats_and_percentiles
     disc = Discretizer(x, cat, feature_names, perc)

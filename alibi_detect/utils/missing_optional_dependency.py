@@ -10,12 +10,14 @@ from typing import Union, List, Optional, Any
 from string import Template
 from importlib import import_module
 
-err_msg_template = Template((
-    "Attempted to use $object_name without the correct optional dependencies installed. To install "
-    + "the correct optional dependencies, run `pip install alibi-detect[$missing_dependency]` "
-    + "from the command line. For more information, check the Installation documentation "
-    + "at https://docs.seldon.io/projects/alibi-detect/en/stable/overview/getting_started.html."
-))
+err_msg_template = Template(
+    (
+        "Attempted to use $object_name without the correct optional dependencies installed. To install "
+        + "the correct optional dependencies, run `pip install alibi-detect[$missing_dependency]` "
+        + "from the command line. For more information, check the Installation documentation "
+        + "at https://docs.seldon.io/projects/alibi-detect/en/stable/overview/getting_started.html."
+    )
+)
 
 
 """Mapping used to ensure correct pip install message is generated if a missing optional dependency is detected. This
@@ -29,13 +31,13 @@ dict is used to control two behaviours:
     before the pip install message is issued as this is the most robust place to capture these differences.
 """
 ERROR_TYPES = {
-    "prophet": 'prophet',
-    "tensorflow_probability": 'tensorflow',
-    "tensorflow": 'tensorflow',
-    "torch": 'torch',
-    "pytorch": 'torch',
-    "keops": 'keops',
-    "pykeops": 'keops',
+    "prophet": "prophet",
+    "tensorflow_probability": "tensorflow",
+    "tensorflow": "tensorflow",
+    "torch": "torch",
+    "pytorch": "torch",
+    "keops": "keops",
+    "pykeops": "keops",
 }
 
 
@@ -46,10 +48,12 @@ class MissingDependency:
     method on this object will raise an error.
     """
 
-    def __init__(self,
-                 object_name: str,
-                 err: Union[ModuleNotFoundError, ImportError],
-                 missing_dependency: str = 'all',):
+    def __init__(
+        self,
+        object_name: str,
+        err: Union[ModuleNotFoundError, ImportError],
+        missing_dependency: str = "all",
+    ):
         """Metaclass for MissingDependency classes.
 
         Parameters
@@ -68,9 +72,7 @@ class MissingDependency:
     @property
     def err_msg(self) -> str:
         """Generate error message informing user to install missing dependencies."""
-        return err_msg_template.substitute(
-            object_name=self.object_name,
-            missing_dependency=self.missing_dependency)
+        return err_msg_template.substitute(object_name=self.object_name, missing_dependency=self.missing_dependency)
 
     def __getattr__(self, key):
         """Raise an error when attributes are accessed."""
@@ -109,18 +111,13 @@ def import_optional(module_name: str, names: Optional[List[str]] = None) -> Any:
     except (ImportError, ModuleNotFoundError) as err:
         if err.name is None:
             raise err
-        dep_name, *_ = err.name.split('.')
+        dep_name, *_ = err.name.split(".")
         if str(dep_name) not in ERROR_TYPES:
             raise err
         missing_dependency = ERROR_TYPES[dep_name]
         if names is not None:
-            missing_dependencies = \
-                tuple(MissingDependency(
-                    missing_dependency=missing_dependency,
-                    object_name=name,
-                    err=err) for name in names)
+            missing_dependencies = tuple(
+                MissingDependency(missing_dependency=missing_dependency, object_name=name, err=err) for name in names
+            )
             return missing_dependencies if len(missing_dependencies) > 1 else missing_dependencies[0]
-        return MissingDependency(
-            missing_dependency=missing_dependency,
-            object_name=module_name,
-            err=err)
+        return MissingDependency(missing_dependency=missing_dependency, object_name=module_name, err=err)

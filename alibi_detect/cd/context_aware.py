@@ -15,27 +15,27 @@ logger = logging.getLogger(__name__)
 
 
 class ContextMMDDrift(DriftConfigMixin):
-    @deprecated_alias(preprocess_x_ref='preprocess_at_init')
+    @deprecated_alias(preprocess_x_ref="preprocess_at_init")
     def __init__(
-            self,
-            x_ref: Union[np.ndarray, list],
-            c_ref: np.ndarray,
-            backend: str = 'tensorflow',
-            p_val: float = .05,
-            x_ref_preprocessed: bool = False,
-            preprocess_at_init: bool = True,
-            update_ref: Optional[Dict[str, int]] = None,
-            preprocess_fn: Optional[Callable] = None,
-            x_kernel: Callable = None,
-            c_kernel: Callable = None,
-            n_permutations: int = 1000,
-            prop_c_held: float = 0.25,
-            n_folds: int = 5,
-            batch_size: Optional[int] = 256,
-            device: Optional[str] = None,
-            input_shape: Optional[tuple] = None,
-            data_type: Optional[str] = None,
-            verbose: bool = False
+        self,
+        x_ref: Union[np.ndarray, list],
+        c_ref: np.ndarray,
+        backend: str = "tensorflow",
+        p_val: float = 0.05,
+        x_ref_preprocessed: bool = False,
+        preprocess_at_init: bool = True,
+        update_ref: Optional[Dict[str, int]] = None,
+        preprocess_fn: Optional[Callable] = None,
+        x_kernel: Callable = None,
+        c_kernel: Callable = None,
+        n_permutations: int = 1000,
+        prop_c_held: float = 0.25,
+        n_folds: int = 5,
+        batch_size: Optional[int] = 256,
+        device: Optional[str] = None,
+        input_shape: Optional[tuple] = None,
+        data_type: Optional[str] = None,
+        verbose: bool = False,
     ) -> None:
         """
         A context-aware drift detector based on a conditional analogue of the maximum mean discrepancy (MMD).
@@ -93,14 +93,13 @@ class ContextMMDDrift(DriftConfigMixin):
 
         backend = backend.lower()
         BackendValidator(
-            backend_options={Framework.TENSORFLOW: [Framework.TENSORFLOW],
-                             Framework.PYTORCH: [Framework.PYTORCH]},
-            construct_name=self.__class__.__name__
+            backend_options={Framework.TENSORFLOW: [Framework.TENSORFLOW], Framework.PYTORCH: [Framework.PYTORCH]},
+            construct_name=self.__class__.__name__,
         ).verify_backend(backend)
 
         kwargs = locals()
-        args = [kwargs['x_ref'], kwargs['c_ref']]
-        pop_kwargs = ['self', 'x_ref', 'c_ref', 'backend', '__class__']
+        args = [kwargs["x_ref"], kwargs["c_ref"]]
+        pop_kwargs = ["self", "x_ref", "c_ref", "backend", "__class__"]
         [kwargs.pop(k, None) for k in pop_kwargs]
 
         if x_kernel is None or c_kernel is None:
@@ -109,20 +108,25 @@ class ContextMMDDrift(DriftConfigMixin):
             else:
                 from alibi_detect.utils.pytorch.kernels import GaussianRBF  # type: ignore[assignment]
             if x_kernel is None:
-                kwargs.update({'x_kernel': GaussianRBF})
+                kwargs.update({"x_kernel": GaussianRBF})
             if c_kernel is None:
-                kwargs.update({'c_kernel': GaussianRBF})
+                kwargs.update({"c_kernel": GaussianRBF})
 
         if backend == Framework.TENSORFLOW:
-            kwargs.pop('device', None)
+            kwargs.pop("device", None)
             self._detector = ContextMMDDriftTF(*args, **kwargs)  # type: ignore
         else:
             self._detector = ContextMMDDriftTorch(*args, **kwargs)  # type: ignore
         self.meta = self._detector.meta
 
-    def predict(self, x: Union[np.ndarray, list], c: np.ndarray,
-                return_p_val: bool = True, return_distance: bool = True, return_coupling: bool = False) \
-            -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
+    def predict(
+        self,
+        x: Union[np.ndarray, list],
+        c: np.ndarray,
+        return_p_val: bool = True,
+        return_distance: bool = True,
+        return_coupling: bool = False,
+    ) -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
         """
         Predict whether a batch of data has drifted from the reference data, given the provided context.
 

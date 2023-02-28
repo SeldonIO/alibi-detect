@@ -8,7 +8,7 @@ from alibi_detect.saving.loading import _load_model_config, _load_optimizer_conf
 from alibi_detect.saving.saving import _path2str, _save_model_config
 from alibi_detect.saving.schemas import ModelConfig
 
-backend = param_fixture("backend", ['pytorch'])
+backend = param_fixture("backend", ["pytorch"])
 
 
 # Note: The full save/load functionality of optimizers (inc. validation) is tested in test_save_classifierdrift.
@@ -17,16 +17,16 @@ def test_load_optimizer(backend):
     Test _load_optimizer_config with a pytorch optimizer, when the `torch.optim.Optimizer` class name is specified.
     For pytorch, we expect a `torch.optim` class to be returned.
     """
-    class_name = 'Adam'
-    cfg_opt = {'class_name': class_name}
+    class_name = "Adam"
+    cfg_opt = {"class_name": class_name}
     optimizer = _load_optimizer_config(cfg_opt, backend=backend)
     assert optimizer.__name__ == class_name
     assert isinstance(optimizer, type)
 
 
-@parametrize_with_cases("data", cases=ContinuousData.data_synthetic_nd, prefix='data_')
-@parametrize('model', [encoder_model])
-@parametrize('layer', [None, -1])
+@parametrize_with_cases("data", cases=ContinuousData.data_synthetic_nd, prefix="data_")
+@parametrize("model", [encoder_model])
+@parametrize("layer", [None, -1])
 def test_save_model_pt(data, model, layer, tmp_path):
     """Unit test for _save_model_config and _load_model_config with pytorch model."""
     # Save model
@@ -35,13 +35,13 @@ def test_save_model_pt(data, model, layer, tmp_path):
     cfg_model, _ = _save_model_config(model, base_path=filepath, input_shape=input_shape)
     cfg_model = _path2str(cfg_model)
     cfg_model = ModelConfig(**cfg_model).dict()
-    assert tmp_path.joinpath('model').is_dir()
-    assert tmp_path.joinpath('model/model.pt').is_file()
+    assert tmp_path.joinpath("model").is_dir()
+    assert tmp_path.joinpath("model/model.pt").is_file()
 
     # Adjust config
-    cfg_model['src'] = tmp_path.joinpath('model')  # Need to manually set to absolute path here
+    cfg_model["src"] = tmp_path.joinpath("model")  # Need to manually set to absolute path here
     if layer is not None:
-        cfg_model['layer'] = layer
+        cfg_model["layer"] = layer
 
     # Load model
     model_load = _load_model_config(cfg_model)

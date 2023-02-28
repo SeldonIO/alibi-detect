@@ -26,16 +26,13 @@ def sigma_median(x: torch.Tensor, y: torch.Tensor, dist: torch.Tensor) -> torch.
     n = min(x.shape[0], y.shape[0])
     n = n if (x[:n] == y[:n]).all() and x.shape == y.shape else 0
     n_median = n + (np.prod(dist.shape) - n) // 2 - 1
-    sigma = (.5 * dist.flatten().sort().values[int(n_median)].unsqueeze(dim=-1)) ** .5
+    sigma = (0.5 * dist.flatten().sort().values[int(n_median)].unsqueeze(dim=-1)) ** 0.5
     return sigma
 
 
 class GaussianRBF(nn.Module):
     def __init__(
-        self,
-        sigma: Optional[torch.Tensor] = None,
-        init_sigma_fn: Optional[Callable] = None,
-        trainable: bool = False
+        self, sigma: Optional[torch.Tensor] = None, init_sigma_fn: Optional[Callable] = None, trainable: bool = False
     ) -> None:
         """
         Gaussian RBF kernel: k(x,y) = exp(-(1/(2*sigma^2)||x-y||^2). A forward pass takes
@@ -57,7 +54,7 @@ class GaussianRBF(nn.Module):
         """
         super().__init__()
         init_sigma_fn = sigma_median if init_sigma_fn is None else init_sigma_fn
-        self.config = {'sigma': sigma, 'trainable': trainable, 'init_sigma_fn': init_sigma_fn}
+        self.config = {"sigma": sigma, "trainable": trainable, "init_sigma_fn": init_sigma_fn}
         if sigma is None:
             self.log_sigma = nn.Parameter(torch.empty(1), requires_grad=trainable)
             self.init_required = True
@@ -72,9 +69,9 @@ class GaussianRBF(nn.Module):
     def sigma(self) -> torch.Tensor:
         return self.log_sigma.exp()
 
-    def forward(self, x: Union[np.ndarray, torch.Tensor], y: Union[np.ndarray, torch.Tensor],
-                infer_sigma: bool = False) -> torch.Tensor:
-
+    def forward(
+        self, x: Union[np.ndarray, torch.Tensor], y: Union[np.ndarray, torch.Tensor], infer_sigma: bool = False
+    ) -> torch.Tensor:
         x, y = torch.as_tensor(x), torch.as_tensor(y)
         dist = distance.squared_pairwise_distance(x.flatten(1), y.flatten(1))  # [Nx, Ny]
 
@@ -86,9 +83,9 @@ class GaussianRBF(nn.Module):
                 self.log_sigma.copy_(sigma.log().clone())
             self.init_required = False
 
-        gamma = 1. / (2. * self.sigma ** 2)   # [Ns,]
+        gamma = 1.0 / (2.0 * self.sigma**2)  # [Ns,]
         # TODO: do matrix multiplication after all?
-        kernel_mat = torch.exp(- torch.cat([(g * dist)[None, :, :] for g in gamma], dim=0))  # [Ns, Nx, Ny]
+        kernel_mat = torch.exp(-torch.cat([(g * dist)[None, :, :] for g in gamma], dim=0))  # [Ns, Nx, Ny]
         return kernel_mat.mean(dim=0)  # [Nx, Ny]
 
     def get_config(self) -> dict:
@@ -96,9 +93,9 @@ class GaussianRBF(nn.Module):
         alibi_detect.saving).
         """
         cfg = self.config.copy()
-        if isinstance(cfg['sigma'], torch.Tensor):
-            cfg['sigma'] = cfg['sigma'].detach().cpu().numpy().tolist()
-        cfg.update({'flavour': Framework.PYTORCH.value})
+        if isinstance(cfg["sigma"], torch.Tensor):
+            cfg["sigma"] = cfg["sigma"].detach().cpu().numpy().tolist()
+        cfg.update({"flavour": Framework.PYTORCH.value})
         return cfg
 
     @classmethod
@@ -111,7 +108,7 @@ class GaussianRBF(nn.Module):
         config
             A kernel config dictionary.
         """
-        config.pop('flavour')
+        config.pop("flavour")
         return cls(**config)
 
 
@@ -139,15 +136,15 @@ class DeepKernel(nn.Module):
     def __init__(
         self,
         proj: nn.Module,
-        kernel_a: Union[nn.Module, str] = 'rbf',
-        kernel_b: Optional[Union[nn.Module, str]] = 'rbf',
-        eps: Union[float, str] = 'trainable'
+        kernel_a: Union[nn.Module, str] = "rbf",
+        kernel_b: Optional[Union[nn.Module, str]] = "rbf",
+        eps: Union[float, str] = "trainable",
     ) -> None:
         super().__init__()
-        self.config = {'proj': proj, 'kernel_a': kernel_a, 'kernel_b': kernel_b, 'eps': eps}
-        if kernel_a == 'rbf':
+        self.config = {"proj": proj, "kernel_a": kernel_a, "kernel_b": kernel_b, "eps": eps}
+        if kernel_a == "rbf":
             kernel_a = GaussianRBF(trainable=True)
-        if kernel_b == 'rbf':
+        if kernel_b == "rbf":
             kernel_b = GaussianRBF(trainable=True)
         self.kernel_a = kernel_a
         self.kernel_b = kernel_b
@@ -160,14 +157,14 @@ class DeepKernel(nn.Module):
             if not 0 < eps < 1:
                 raise ValueError("eps should be in (0,1)")
             self.logit_eps = nn.Parameter(torch.tensor(eps).logit(), requires_grad=False)
-        elif eps == 'trainable':
-            self.logit_eps = nn.Parameter(torch.tensor(0.))
+        elif eps == "trainable":
+            self.logit_eps = nn.Parameter(torch.tensor(0.0))
         else:
             raise NotImplementedError("eps should be 'trainable' or a float in (0,1)")
 
     @property
     def eps(self) -> torch.Tensor:
-        return self.logit_eps.sigmoid() if self.kernel_b is not None else torch.tensor(0.)
+        return self.logit_eps.sigmoid() if self.kernel_b is not None else torch.tensor(0.0)
 
     def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         similarity = self.kernel_a(self.proj(x), self.proj(y))  # type: ignore[operator]

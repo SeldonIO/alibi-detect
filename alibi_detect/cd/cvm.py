@@ -1,6 +1,7 @@
 import numpy as np
 from typing import Callable, Dict, Tuple, Optional, Union
 from alibi_detect.cd.base import BaseUnivariateDrift
+
 try:
     from scipy.stats import cramervonmises_2samp
 except ImportError:
@@ -9,17 +10,17 @@ except ImportError:
 
 class CVMDrift(BaseUnivariateDrift):
     def __init__(
-            self,
-            x_ref: Union[np.ndarray, list],
-            p_val: float = .05,
-            x_ref_preprocessed: bool = False,
-            preprocess_at_init: bool = True,
-            update_x_ref: Optional[Dict[str, int]] = None,
-            preprocess_fn: Optional[Callable] = None,
-            correction: str = 'bonferroni',
-            n_features: Optional[int] = None,
-            input_shape: Optional[tuple] = None,
-            data_type: Optional[str] = None
+        self,
+        x_ref: Union[np.ndarray, list],
+        p_val: float = 0.05,
+        x_ref_preprocessed: bool = False,
+        preprocess_at_init: bool = True,
+        update_x_ref: Optional[Dict[str, int]] = None,
+        preprocess_fn: Optional[Callable] = None,
+        correction: str = "bonferroni",
+        n_features: Optional[int] = None,
+        input_shape: Optional[tuple] = None,
+        data_type: Optional[str] = None,
     ) -> None:
         """
         Cramer-von Mises (CVM) data drift detector, which tests for any change in the distribution of continuous
@@ -69,7 +70,7 @@ class CVMDrift(BaseUnivariateDrift):
             correction=correction,
             n_features=n_features,
             input_shape=input_shape,
-            data_type=data_type
+            data_type=data_type,
         )
         # Set config
         self._set_config(locals())
@@ -94,6 +95,6 @@ class CVMDrift(BaseUnivariateDrift):
         p_val = np.zeros(self.n_features, dtype=np.float32)
         dist = np.zeros_like(p_val)
         for f in range(self.n_features):
-            result = cramervonmises_2samp(x_ref[:, f], x[:, f], method='auto')
+            result = cramervonmises_2samp(x_ref[:, f], x[:, f], method="auto")
             p_val[f], dist[f] = result.pvalue, result.statistic
         return p_val, dist

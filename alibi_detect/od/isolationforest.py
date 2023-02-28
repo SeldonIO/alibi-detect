@@ -8,16 +8,16 @@ logger = logging.getLogger(__name__)
 
 
 class IForest(BaseDetector, FitMixin, ThresholdMixin):
-
-    def __init__(self,
-                 threshold: float = None,
-                 n_estimators: int = 100,
-                 max_samples: Union[str, int, float] = 'auto',
-                 max_features: Union[int, float] = 1.,
-                 bootstrap: bool = False,
-                 n_jobs: int = 1,
-                 data_type: str = 'tabular'
-                 ) -> None:
+    def __init__(
+        self,
+        threshold: float = None,
+        n_estimators: int = 100,
+        max_samples: Union[str, int, float] = "auto",
+        max_features: Union[int, float] = 1.0,
+        bootstrap: bool = False,
+        n_jobs: int = 1,
+        data_type: str = "tabular",
+    ) -> None:
         """
         Outlier detector for tabular data using isolation forests.
 
@@ -46,24 +46,23 @@ class IForest(BaseDetector, FitMixin, ThresholdMixin):
         super().__init__()
 
         if threshold is None:
-            logger.warning('No threshold level set. Need to infer threshold using `infer_threshold`.')
+            logger.warning("No threshold level set. Need to infer threshold using `infer_threshold`.")
 
         self.threshold = threshold
-        self.isolationforest = IsolationForest(n_estimators=n_estimators,
-                                               max_samples=max_samples,
-                                               max_features=max_features,
-                                               bootstrap=bootstrap,
-                                               n_jobs=n_jobs)
+        self.isolationforest = IsolationForest(
+            n_estimators=n_estimators,
+            max_samples=max_samples,
+            max_features=max_features,
+            bootstrap=bootstrap,
+            n_jobs=n_jobs,
+        )
 
         # set metadata
-        self.meta['detector_type'] = 'outlier'
-        self.meta['data_type'] = data_type
-        self.meta['online'] = False
+        self.meta["detector_type"] = "outlier"
+        self.meta["data_type"] = data_type
+        self.meta["online"] = False
 
-    def fit(self,
-            X: np.ndarray,
-            sample_weight: np.ndarray = None
-            ) -> None:
+    def fit(self, X: np.ndarray, sample_weight: np.ndarray = None) -> None:
         """
         Fit isolation forest.
 
@@ -76,10 +75,7 @@ class IForest(BaseDetector, FitMixin, ThresholdMixin):
         """
         self.isolationforest.fit(X, sample_weight=sample_weight)
 
-    def infer_threshold(self,
-                        X: np.ndarray,
-                        threshold_perc: float = 95.
-                        ) -> None:
+    def infer_threshold(self, X: np.ndarray, threshold_perc: float = 95.0) -> None:
         """
         Update threshold by a value inferred from the percentage of instances considered to be
         outliers in a sample of the dataset.
@@ -110,12 +106,11 @@ class IForest(BaseDetector, FitMixin, ThresholdMixin):
         -------
         Array with outlier scores for each instance in the batch.
         """
-        return - self.isolationforest.decision_function(X)
+        return -self.isolationforest.decision_function(X)
 
-    def predict(self,
-                X: np.ndarray,
-                return_instance_score: bool = True) \
-            -> Dict[Dict[str, str], Dict[np.ndarray, np.ndarray]]:
+    def predict(
+        self, X: np.ndarray, return_instance_score: bool = True
+    ) -> Dict[Dict[str, str], Dict[np.ndarray, np.ndarray]]:
         """
         Compute outlier scores and transform into outlier predictions.
 
@@ -140,8 +135,8 @@ class IForest(BaseDetector, FitMixin, ThresholdMixin):
 
         # populate output dict
         od = outlier_prediction_dict()
-        od['meta'] = self.meta
-        od['data']['is_outlier'] = outlier_pred
+        od["meta"] = self.meta
+        od["data"]["is_outlier"] = outlier_pred
         if return_instance_score:
-            od['data']['instance_score'] = iscore
+            od["data"]["instance_score"] = iscore
         return od

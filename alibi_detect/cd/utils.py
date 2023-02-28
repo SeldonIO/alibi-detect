@@ -9,11 +9,12 @@ from alibi_detect.utils.frameworks import Framework
 logger = logging.getLogger(__name__)
 
 
-def update_reference(X_ref: np.ndarray,
-                     X: np.ndarray,
-                     n: int,
-                     update_method: Dict[str, int] = None,
-                     ) -> np.ndarray:
+def update_reference(
+    X_ref: np.ndarray,
+    X: np.ndarray,
+    n: int,
+    update_method: Dict[str, int] = None,
+) -> np.ndarray:
     """
     Update reference dataset for drift detectors.
 
@@ -36,40 +37,45 @@ def update_reference(X_ref: np.ndarray,
     if isinstance(update_method, dict):
         update_type = list(update_method.keys())[0]
         size = update_method[update_type]
-        if update_type == 'reservoir_sampling':
+        if update_type == "reservoir_sampling":
             return reservoir_sampling(X_ref, X, size, n)
-        elif update_type == 'last':
+        elif update_type == "last":
             X_update = np.concatenate([X_ref, X], axis=0)
             return X_update[-size:]
         else:
-            raise KeyError('Only `reservoir_sampling` and `last` are valid update options for X_ref.')
+            raise KeyError("Only `reservoir_sampling` and `last` are valid update options for X_ref.")
     else:
         return X_ref
 
 
 def encompass_batching(
-        model: Callable,
-        backend: str,
-        batch_size: int,
-        device: Optional[str] = None,
-        preprocess_batch_fn: Optional[Callable] = None,
-        tokenizer: Optional[Callable] = None,
-        max_len: Optional[int] = None,
+    model: Callable,
+    backend: str,
+    batch_size: int,
+    device: Optional[str] = None,
+    preprocess_batch_fn: Optional[Callable] = None,
+    tokenizer: Optional[Callable] = None,
+    max_len: Optional[int] = None,
 ) -> Callable:
     """
     Takes a function that must be batch evaluated (on tokenized input) and returns a function
     that handles batching (and tokenization).
     """
     backend = backend.lower()
-    kwargs = {'batch_size': batch_size, 'tokenizer': tokenizer, 'max_len': max_len,
-              'preprocess_batch_fn': preprocess_batch_fn}
+    kwargs = {
+        "batch_size": batch_size,
+        "tokenizer": tokenizer,
+        "max_len": max_len,
+        "preprocess_batch_fn": preprocess_batch_fn,
+    }
     if backend == Framework.TENSORFLOW:
         from alibi_detect.cd.tensorflow.preprocess import preprocess_drift
     elif backend == Framework.PYTORCH:
         from alibi_detect.cd.pytorch.preprocess import preprocess_drift  # type: ignore[assignment]
-        kwargs['device'] = device
+
+        kwargs["device"] = device
     else:
-        raise NotImplementedError(f'{backend} not implemented. Use tensorflow or pytorch instead.')
+        raise NotImplementedError(f"{backend} not implemented. Use tensorflow or pytorch instead.")
 
     def model_fn(x: Union[np.ndarray, list]) -> np.ndarray:
         return preprocess_drift(x, model, **kwargs)  # type: ignore[arg-type]
@@ -77,10 +83,7 @@ def encompass_batching(
     return model_fn
 
 
-def encompass_shuffling_and_batch_filling(
-        model_fn: Callable,
-        batch_size: int
-) -> Callable:
+def encompass_shuffling_and_batch_filling(model_fn: Callable, batch_size: int) -> Callable:
     """
     Takes a function that already handles batching but additionally performing shuffling
     and ensures instances are evaluated as part of full batches.
@@ -112,10 +115,12 @@ def get_input_shape(shape: Optional[Tuple], x_ref: Union[np.ndarray, list]) -> O
     """Optionally infer shape from reference data."""
     if isinstance(shape, tuple):
         return shape
-    elif hasattr(x_ref, 'shape'):
+    elif hasattr(x_ref, "shape"):
         return x_ref.shape[1:]
     else:
-        logger.warning('Input shape could not be inferred. '
-                       'If alibi_detect.models.tensorflow.embedding.TransformerEmbedding '
-                       'is used as preprocessing step, a saved detector cannot be reinitialized.')
+        logger.warning(
+            "Input shape could not be inferred. "
+            "If alibi_detect.models.tensorflow.embedding.TransformerEmbedding "
+            "is used as preprocessing step, a saved detector cannot be reinitialized."
+        )
         return None

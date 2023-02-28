@@ -3,8 +3,7 @@ from typing import Callable, Dict, Tuple, Union, cast
 
 import numpy as np
 import tensorflow as tf
-from alibi_detect.base import (BaseDetector, FitMixin, ThresholdMixin,
-                               adversarial_prediction_dict)
+from alibi_detect.base import BaseDetector, FitMixin, ThresholdMixin, adversarial_prediction_dict
 from alibi_detect.models.tensorflow.losses import loss_distillation
 from alibi_detect.models.tensorflow.trainer import trainer
 from alibi_detect.utils.tensorflow.prediction import predict_batch
@@ -14,15 +13,15 @@ logger = logging.getLogger(__name__)
 
 
 class ModelDistillation(BaseDetector, FitMixin, ThresholdMixin):
-
-    def __init__(self,
-                 threshold: float = None,
-                 distilled_model: tf.keras.Model = None,
-                 model: tf.keras.Model = None,
-                 loss_type: str = 'kld',
-                 temperature: float = 1.,
-                 data_type: str = None
-                 ) -> None:
+    def __init__(
+        self,
+        threshold: float = None,
+        distilled_model: tf.keras.Model = None,
+        model: tf.keras.Model = None,
+        loss_type: str = "kld",
+        temperature: float = 1.0,
+        data_type: str = None,
+    ) -> None:
         """
         Model distillation concept drift and adversarial detector.
 
@@ -45,7 +44,7 @@ class ModelDistillation(BaseDetector, FitMixin, ThresholdMixin):
         super().__init__()
 
         if threshold is None:
-            logger.warning('No threshold level set. Need to infer threshold using `infer_threshold`.')
+            logger.warning("No threshold level set. Need to infer threshold using `infer_threshold`.")
 
         self.threshold = threshold
         self.model = model
@@ -55,26 +54,27 @@ class ModelDistillation(BaseDetector, FitMixin, ThresholdMixin):
         if isinstance(distilled_model, tf.keras.Model):
             self.distilled_model = distilled_model
         else:
-            raise TypeError('No valid format detected for `distilled_model` (tf.keras.Model) ')
+            raise TypeError("No valid format detected for `distilled_model` (tf.keras.Model) ")
         self.loss_type = loss_type
         self.temperature = temperature
 
         # set metadata
-        self.meta['detector_type'] = 'adversarial'
-        self.meta['data_type'] = data_type
-        self.meta['online'] = False
+        self.meta["detector_type"] = "adversarial"
+        self.meta["data_type"] = data_type
+        self.meta["online"] = False
 
-    def fit(self,
-            X: np.ndarray,
-            loss_fn: tf.keras.losses = loss_distillation,
-            optimizer: tf.keras.optimizers = tf.keras.optimizers.Adam(learning_rate=1e-3),
-            epochs: int = 20,
-            batch_size: int = 128,
-            verbose: bool = True,
-            log_metric: Tuple[str, "tf.keras.metrics"] = None,
-            callbacks: tf.keras.callbacks = None,
-            preprocess_fn: Callable = None
-            ) -> None:
+    def fit(
+        self,
+        X: np.ndarray,
+        loss_fn: tf.keras.losses = loss_distillation,
+        optimizer: tf.keras.optimizers = tf.keras.optimizers.Adam(learning_rate=1e-3),
+        epochs: int = 20,
+        batch_size: int = 128,
+        verbose: bool = True,
+        log_metric: Tuple[str, "tf.keras.metrics"] = None,
+        callbacks: tf.keras.callbacks = None,
+        preprocess_fn: Callable = None,
+    ) -> None:
         """
         Train ModelDistillation detector.
 
@@ -102,29 +102,22 @@ class ModelDistillation(BaseDetector, FitMixin, ThresholdMixin):
         # train arguments
         args = [self.distilled_model, loss_fn, X]
         kwargs = {
-            'optimizer': optimizer,
-            'epochs': epochs,
-            'batch_size': batch_size,
-            'verbose': verbose,
-            'log_metric': log_metric,
-            'callbacks': callbacks,
-            'preprocess_fn': preprocess_fn,
-            'loss_fn_kwargs': {
-                'model': self.model,
-                'loss_type': self.loss_type,
-                'temperature': self.temperature
-            }
+            "optimizer": optimizer,
+            "epochs": epochs,
+            "batch_size": batch_size,
+            "verbose": verbose,
+            "log_metric": log_metric,
+            "callbacks": callbacks,
+            "preprocess_fn": preprocess_fn,
+            "loss_fn_kwargs": {"model": self.model, "loss_type": self.loss_type, "temperature": self.temperature},
         }
 
         # train
         trainer(*args, **kwargs)
 
-    def infer_threshold(self,
-                        X: np.ndarray,
-                        threshold_perc: float = 99.,
-                        margin: float = 0.,
-                        batch_size: int = int(1e10)
-                        ) -> None:
+    def infer_threshold(
+        self, X: np.ndarray, threshold_perc: float = 99.0, margin: float = 0.0, batch_size: int = int(1e10)
+    ) -> None:
         """
         Update threshold by a value inferred from the percentage of instances considered to be
         adversarial in a sample of the dataset.
@@ -147,8 +140,9 @@ class ModelDistillation(BaseDetector, FitMixin, ThresholdMixin):
         # update threshold
         self.threshold = np.percentile(adv_score, threshold_perc) + margin
 
-    def score(self, X: np.ndarray, batch_size: int = int(1e10), return_predictions: bool = False) \
-            -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray, np.ndarray]]:
+    def score(
+        self, X: np.ndarray, batch_size: int = int(1e10), return_predictions: bool = False
+    ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray, np.ndarray]]:
         """
         Compute adversarial scores.
 
@@ -172,13 +166,13 @@ class ModelDistillation(BaseDetector, FitMixin, ThresholdMixin):
         y_distilled = cast(np.ndarray, y_distilled)  # help mypy out
 
         # scale predictions
-        if self.temperature != 1.:
+        if self.temperature != 1.0:
             y = y ** (1 / self.temperature)  # type: ignore
             y = (y / tf.reshape(tf.reduce_sum(y, axis=-1), (-1, 1))).numpy()
 
-        if self.loss_type == 'kld':
+        if self.loss_type == "kld":
             score = kld(y, y_distilled).numpy()
-        elif self.loss_type == 'xent':
+        elif self.loss_type == "xent":
             score = categorical_crossentropy(y, y_distilled).numpy()
         else:
             raise NotImplementedError
@@ -188,8 +182,9 @@ class ModelDistillation(BaseDetector, FitMixin, ThresholdMixin):
         else:
             return score
 
-    def predict(self, X: np.ndarray, batch_size: int = int(1e10), return_instance_score: bool = True) \
-            -> Dict[Dict[str, str], Dict[str, np.ndarray]]:
+    def predict(
+        self, X: np.ndarray, batch_size: int = int(1e10), return_instance_score: bool = True
+    ) -> Dict[Dict[str, str], Dict[str, np.ndarray]]:
         """
         Predict whether instances are adversarial instances or not.
 
@@ -215,8 +210,8 @@ class ModelDistillation(BaseDetector, FitMixin, ThresholdMixin):
 
         # populate output dict
         ad = adversarial_prediction_dict()
-        ad['meta'] = self.meta
-        ad['data']['is_adversarial'] = pred
+        ad["meta"] = self.meta
+        ad["data"]["is_adversarial"] = pred
         if return_instance_score:
-            ad['data']['instance_score'] = score
+            ad["data"]["instance_score"] = score
         return ad

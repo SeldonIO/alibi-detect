@@ -12,23 +12,23 @@ if has_tensorflow:
 
 
 class LSDDDrift(DriftConfigMixin):
-    @deprecated_alias(preprocess_x_ref='preprocess_at_init')
+    @deprecated_alias(preprocess_x_ref="preprocess_at_init")
     def __init__(
-            self,
-            x_ref: Union[np.ndarray, list],
-            backend: str = 'tensorflow',
-            p_val: float = .05,
-            x_ref_preprocessed: bool = False,
-            preprocess_at_init: bool = True,
-            update_x_ref: Optional[Dict[str, int]] = None,
-            preprocess_fn: Optional[Callable] = None,
-            sigma: Optional[np.ndarray] = None,
-            n_permutations: int = 100,
-            n_kernel_centers: Optional[int] = None,
-            lambda_rd_max: float = 0.2,
-            device: Optional[str] = None,
-            input_shape: Optional[tuple] = None,
-            data_type: Optional[str] = None
+        self,
+        x_ref: Union[np.ndarray, list],
+        backend: str = "tensorflow",
+        p_val: float = 0.05,
+        x_ref_preprocessed: bool = False,
+        preprocess_at_init: bool = True,
+        update_x_ref: Optional[Dict[str, int]] = None,
+        preprocess_fn: Optional[Callable] = None,
+        sigma: Optional[np.ndarray] = None,
+        n_permutations: int = 100,
+        n_kernel_centers: Optional[int] = None,
+        lambda_rd_max: float = 0.2,
+        device: Optional[str] = None,
+        input_shape: Optional[tuple] = None,
+        data_type: Optional[str] = None,
     ) -> None:
         """
         Least-squares density difference (LSDD) data drift detector using a permutation test.
@@ -82,25 +82,25 @@ class LSDDDrift(DriftConfigMixin):
 
         backend = backend.lower()
         BackendValidator(
-            backend_options={Framework.TENSORFLOW: [Framework.TENSORFLOW],
-                             Framework.PYTORCH: [Framework.PYTORCH]},
-            construct_name=self.__class__.__name__
+            backend_options={Framework.TENSORFLOW: [Framework.TENSORFLOW], Framework.PYTORCH: [Framework.PYTORCH]},
+            construct_name=self.__class__.__name__,
         ).verify_backend(backend)
 
         kwargs = locals()
-        args = [kwargs['x_ref']]
-        pop_kwargs = ['self', 'x_ref', 'backend', '__class__']
+        args = [kwargs["x_ref"]]
+        pop_kwargs = ["self", "x_ref", "backend", "__class__"]
         [kwargs.pop(k, None) for k in pop_kwargs]
 
         if backend == Framework.TENSORFLOW:
-            kwargs.pop('device', None)
+            kwargs.pop("device", None)
             self._detector = LSDDDriftTF(*args, **kwargs)  # type: ignore
         else:
             self._detector = LSDDDriftTorch(*args, **kwargs)  # type: ignore
         self.meta = self._detector.meta
 
-    def predict(self, x: Union[np.ndarray, list], return_p_val: bool = True, return_distance: bool = True) \
-            -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
+    def predict(
+        self, x: Union[np.ndarray, list], return_p_val: bool = True, return_distance: bool = True
+    ) -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
         """
         Predict whether a batch of data has drifted from the reference data.
 
@@ -148,7 +148,10 @@ class LSDDDrift(DriftConfigMixin):
         """
         cfg = super().get_config()
         # Unnormalize x_ref
-        if self._detector.preprocess_at_init or self._detector.preprocess_fn is None \
-                or self._detector.x_ref_preprocessed:
-            cfg['x_ref'] = self._detector._unnormalize(cfg['x_ref'])
+        if (
+            self._detector.preprocess_at_init
+            or self._detector.preprocess_fn is None
+            or self._detector.x_ref_preprocessed
+        ):
+            cfg["x_ref"] = self._detector._unnormalize(cfg["x_ref"])
         return cfg

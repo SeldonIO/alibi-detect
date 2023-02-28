@@ -20,9 +20,16 @@ import numpy as np
 from pydantic import BaseModel, validator
 
 from alibi_detect.utils.frameworks import Framework
-from alibi_detect.utils._types import (Literal, supported_models_all, supported_models_tf,
-                                       supported_models_sklearn, supported_models_torch, supported_optimizers_tf,
-                                       supported_optimizers_torch, supported_optimizers_all)
+from alibi_detect.utils._types import (
+    Literal,
+    supported_models_all,
+    supported_models_tf,
+    supported_models_sklearn,
+    supported_models_torch,
+    supported_optimizers_tf,
+    supported_optimizers_torch,
+    supported_optimizers_all,
+)
 from alibi_detect.saving.validators import NDArray, validate_framework, coerce_int2list, coerce_2_tensor
 
 
@@ -38,9 +45,11 @@ class SupportedModel:
 
     @classmethod
     def validate_model(cls, model: Any, values: dict) -> Any:
-        backend = values['backend']
-        err_msg = f"`backend={backend}` but the `model` doesn't appear to be a {backend} supported model, "\
-                  f"or {backend} is not installed. Model: {model}"
+        backend = values["backend"]
+        err_msg = (
+            f"`backend={backend}` but the `model` doesn't appear to be a {backend} supported model, "
+            f"or {backend} is not installed. Model: {model}"
+        )
         if backend == Framework.TENSORFLOW and not isinstance(model, supported_models_tf):
             raise TypeError(err_msg)
         elif backend == Framework.PYTORCH and not isinstance(model, supported_models_torch):
@@ -50,7 +59,7 @@ class SupportedModel:
         elif isinstance(model, supported_models_all):  # If model supported and no `backend` incompatibility
             return model
         else:  # Catch any other unexpected issues
-            raise TypeError('The model is not recognised as a supported type.')
+            raise TypeError("The model is not recognised as a supported type.")
 
 
 class SupportedOptimizer:
@@ -65,9 +74,11 @@ class SupportedOptimizer:
 
     @classmethod
     def validate_optimizer(cls, optimizer: Any, values: dict) -> Any:
-        backend = values['backend']
-        err_msg = f"`backend={backend}` but the `optimizer` doesn't appear to be a {backend} supported optimizer, "\
-                  f"or {backend} is not installed. Optimizer: {optimizer}"
+        backend = values["backend"]
+        err_msg = (
+            f"`backend={backend}` but the `optimizer` doesn't appear to be a {backend} supported optimizer, "
+            f"or {backend} is not installed. Optimizer: {optimizer}"
+        )
         if backend == Framework.TENSORFLOW and not isinstance(optimizer, supported_optimizers_tf):
             raise TypeError(err_msg)
         elif backend == Framework.PYTORCH and not isinstance(optimizer, supported_optimizers_torch):
@@ -75,7 +86,7 @@ class SupportedOptimizer:
         elif isinstance(optimizer, supported_optimizers_all):  # If optimizer supported and no `backend` incompatibility
             return optimizer
         else:  # Catch any other unexpected issues
-            raise TypeError('The model is not recognised as a supported type.')
+            raise TypeError("The model is not recognised as a supported type.")
 
 
 # TODO - We could add validator to check `model` and `embedding` type when chained together. Leave this until refactor
@@ -88,7 +99,7 @@ class CustomBaseModel(BaseModel):
 
     class Config:
         arbitrary_types_allowed = True  # since we have np.ndarray's etc
-        extra = 'forbid'  # Forbid extra fields so that we catch misspelled fields
+        extra = "forbid"  # Forbid extra fields so that we catch misspelled fields
 
 
 # Custom BaseModel with additional kwarg's allowed
@@ -97,7 +108,7 @@ class CustomBaseModelWithKwargs(BaseModel):
 
     class Config:
         arbitrary_types_allowed = True  # since we have np.ndarray's etc
-        extra = 'allow'  # Allow extra fields
+        extra = "allow"  # Allow extra fields
 
 
 class MetaData(CustomBaseModel):
@@ -115,7 +126,7 @@ class DetectorConfig(CustomBaseModel):
     # Note: Although not all detectors have a backend, we define in base class as `backend` also determines
     #  whether tf or torch models used for preprocess_fn.
     # backend validation (only applied if the detector config has a `backend` field
-    _validate_backend = validator('backend', allow_reuse=True, pre=False, check_fields=False)(validate_framework)
+    _validate_backend = validator("backend", allow_reuse=True, pre=False, check_fields=False)(validate_framework)
 
 
 class ModelConfig(CustomBaseModel):
@@ -135,7 +146,7 @@ class ModelConfig(CustomBaseModel):
         layer = -1
     """
 
-    flavour: Literal['tensorflow', 'pytorch', 'sklearn']
+    flavour: Literal["tensorflow", "pytorch", "sklearn"]
     """
     Whether the model is a `tensorflow`, `pytorch` or `sklearn` model. XGBoost models following the scikit-learn API
     are also included under `sklearn`.
@@ -160,7 +171,7 @@ class ModelConfig(CustomBaseModel):
     Only applies to 'tensorflow' and 'pytorch' models.
     """
     # Validators
-    _validate_flavour = validator('flavour', allow_reuse=True, pre=False)(validate_framework)
+    _validate_flavour = validator("flavour", allow_reuse=True, pre=False)(validate_framework)
 
 
 class EmbeddingConfig(CustomBaseModel):
@@ -182,11 +193,11 @@ class EmbeddingConfig(CustomBaseModel):
         layers = [-1, -2, -3, -4, -5, -6, -7, -8]
     """
 
-    flavour: Literal['tensorflow', 'pytorch'] = 'tensorflow'
+    flavour: Literal["tensorflow", "pytorch"] = "tensorflow"
     """
     Whether the embedding model is a `tensorflow` or `pytorch` model.
     """
-    type: Literal['pooler_output', 'last_hidden_state', 'hidden_state', 'hidden_state_cls']
+    type: Literal["pooler_output", "last_hidden_state", "hidden_state", "hidden_state_cls"]
     """
     The type of embedding to be loaded. See `embedding_type` in
     :class:`~alibi_detect.models.tensorflow.embedding.TransformerEmbedding`.
@@ -200,7 +211,7 @@ class EmbeddingConfig(CustomBaseModel):
     (relative to the `config.toml` file, or absolute).
     """
     # Validators
-    _validate_flavour = validator('flavour', allow_reuse=True, pre=False)(validate_framework)
+    _validate_flavour = validator("flavour", allow_reuse=True, pre=False)(validate_framework)
 
 
 class TokenizerConfig(CustomBaseModel):
@@ -299,7 +310,7 @@ class PreprocessConfig(CustomBaseModel):
     Optional tokenizer for text drift. Either a string referencing a HuggingFace tokenizer model name, or a
     :class:`~alibi_detect.utils.schemas.TokenizerConfig`.
     """
-    device: Optional[Literal['cpu', 'cuda']] = None
+    device: Optional[Literal["cpu", "cuda"]] = None
     """
     Device type used. The default `None` tries to use the GPU and falls back on CPU if needed. Only relevant if
     `src='@cd.torch.preprocess.preprocess_drift'`
@@ -313,7 +324,7 @@ class PreprocessConfig(CustomBaseModel):
     "Optional max token length for text drift."
     batch_size: Optional[int] = int(1e10)
     "Batch size used during prediction."
-    dtype: str = 'np.float32'
+    dtype: str = "np.float32"
     "Model output type, e.g. `'tf.float32'`"
 
     # Additional kwargs
@@ -356,7 +367,7 @@ class KernelConfig(CustomBaseModelWithKwargs):
     "A string referencing a filepath to a serialized kernel in `.dill` format, or an object registry reference."
 
     # Below kwargs are only passed if kernel == @GaussianRBF
-    flavour: Literal['tensorflow', 'pytorch', 'keops']
+    flavour: Literal["tensorflow", "pytorch", "keops"]
     """
     Whether the kernel is a `tensorflow` or `pytorch` kernel.
     """
@@ -375,8 +386,8 @@ class KernelConfig(CustomBaseModelWithKwargs):
     :func:`~alibi_detect.utils.tensorflow.kernels.sigma_median`.
     """
     # Validators
-    _validate_flavour = validator('flavour', allow_reuse=True, pre=False)(validate_framework)
-    _coerce_sigma2tensor = validator('sigma', allow_reuse=True, pre=False)(coerce_2_tensor)
+    _validate_flavour = validator("flavour", allow_reuse=True, pre=False)(validate_framework)
+    _coerce_sigma2tensor = validator("sigma", allow_reuse=True, pre=False)(coerce_2_tensor)
 
 
 class DeepKernelConfig(CustomBaseModel):
@@ -422,7 +433,7 @@ class DeepKernelConfig(CustomBaseModel):
     The kernel to apply to the raw inputs. Defaults to a :class:`~alibi_detect.utils.tensorflow.kernels.GaussianRBF`
     with trainable bandwidth. Set to `None` in order to use only the deep component (i.e. `eps=0`).
     """
-    eps: Union[float, str] = 'trainable'
+    eps: Union[float, str] = "trainable"
     """
     The proportion (in [0,1]) of weight to assign to the kernel applied to raw inputs. This can be either specified or
     set to `'trainable'`. Only relevant is `kernel_b` is not `None`.
@@ -519,11 +530,11 @@ class KSDriftConfig(DriftDetectorConfig):
     :class:`~alibi_detect.cd.KSDrift` documentation for a description of each field.
     """
 
-    p_val: float = .05
+    p_val: float = 0.05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
-    correction: Literal['bonferroni', 'fdr'] = 'bonferroni'
-    alternative: Literal['two-sided', 'greater', 'less'] = 'two-sided'
+    correction: Literal["bonferroni", "fdr"] = "bonferroni"
+    alternative: Literal["two-sided", "greater", "less"] = "two-sided"
     n_features: Optional[int] = None
 
 
@@ -537,11 +548,11 @@ class KSDriftConfigResolved(DriftDetectorConfigResolved):
     Resolved schema for the :class:`~alibi_detect.cd.KSDrift` detector.
     """
 
-    p_val: float = .05
+    p_val: float = 0.05
     preprocess_at_init: bool = True  # Note: Duplication needed to avoid mypy error (unless we allow reassignment)
     update_x_ref: Optional[Dict[str, int]] = None
-    correction: Literal['bonferroni', 'fdr'] = 'bonferroni'
-    alternative: Literal['two-sided', 'greater', 'less'] = 'two-sided'
+    correction: Literal["bonferroni", "fdr"] = "bonferroni"
+    alternative: Literal["two-sided", "greater", "less"] = "two-sided"
     n_features: Optional[int] = None
 
 
@@ -554,10 +565,10 @@ class ChiSquareDriftConfig(DriftDetectorConfig):
     :class:`~alibi_detect.cd.ChiSquareDrift` documentation for a description of each field.
     """
 
-    p_val: float = .05
+    p_val: float = 0.05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
-    correction: Literal['bonferroni', 'fdr'] = 'bonferroni'
+    correction: Literal["bonferroni", "fdr"] = "bonferroni"
     categories_per_feature: Dict[int, Union[int, List[int]]] = None
     n_features: Optional[int] = None
 
@@ -571,10 +582,10 @@ class ChiSquareDriftConfigResolved(DriftDetectorConfigResolved):
     :class:`~alibi_detect.cd.ChiSquareDrift` documentation for a description of each field.
     """
 
-    p_val: float = .05
+    p_val: float = 0.05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
-    correction: str = 'bonferroni'
+    correction: str = "bonferroni"
     categories_per_feature: Dict[int, Union[int, List[int]]] = None
     n_features: Optional[int] = None
 
@@ -588,12 +599,12 @@ class TabularDriftConfig(DriftDetectorConfig):
     :class:`~alibi_detect.cd.TabularDrift` documentation for a description of each field.
     """
 
-    p_val: float = .05
+    p_val: float = 0.05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
-    correction: Literal['bonferroni', 'fdr'] = 'bonferroni'
+    correction: Literal["bonferroni", "fdr"] = "bonferroni"
     categories_per_feature: Dict[int, Optional[Union[int, List[int]]]] = None
-    alternative: Literal['two-sided', 'greater', 'less'] = 'two-sided'
+    alternative: Literal["two-sided", "greater", "less"] = "two-sided"
     n_features: Optional[int] = None
 
 
@@ -606,12 +617,12 @@ class TabularDriftConfigResolved(DriftDetectorConfigResolved):
     :class:`~alibi_detect.cd.TabularDrift` documentation for a description of each field.
     """
 
-    p_val: float = .05
+    p_val: float = 0.05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
-    correction: Literal['bonferroni', 'fdr'] = 'bonferroni'
+    correction: Literal["bonferroni", "fdr"] = "bonferroni"
     categories_per_feature: Dict[int, Optional[Union[int, List[int]]]] = None
-    alternative: Literal['two-sided', 'greater', 'less'] = 'two-sided'
+    alternative: Literal["two-sided", "greater", "less"] = "two-sided"
     n_features: Optional[int] = None
 
 
@@ -624,10 +635,10 @@ class CVMDriftConfig(DriftDetectorConfig):
     :class:`~alibi_detect.cd.CVMDrift` documentation for a description of each field.
     """
 
-    p_val: float = .05
+    p_val: float = 0.05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
-    correction: Literal['bonferroni', 'fdr'] = 'bonferroni'
+    correction: Literal["bonferroni", "fdr"] = "bonferroni"
     n_features: Optional[int] = None
 
 
@@ -640,10 +651,10 @@ class CVMDriftConfigResolved(DriftDetectorConfigResolved):
     :class:`~alibi_detect.cd.CVMDrift` documentation for a description of each field.
     """
 
-    p_val: float = .05
+    p_val: float = 0.05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
-    correction: str = 'bonferroni'
+    correction: str = "bonferroni"
     n_features: Optional[int] = None
 
 
@@ -656,11 +667,11 @@ class FETDriftConfig(DriftDetectorConfig):
     :class:`~alibi_detect.cd.FETDrift` documentation for a description of each field.
     """
 
-    p_val: float = .05
+    p_val: float = 0.05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
-    correction: Literal['bonferroni', 'fdr'] = 'bonferroni'
-    alternative: Literal['two-sided', 'greater', 'less'] = 'two-sided'
+    correction: Literal["bonferroni", "fdr"] = "bonferroni"
+    alternative: Literal["two-sided", "greater", "less"] = "two-sided"
     n_features: Optional[int] = None
 
 
@@ -673,11 +684,11 @@ class FETDriftConfigResolved(DriftDetectorConfigResolved):
     :class:`~alibi_detect.cd.FETDrift` documentation for a description of each field.
     """
 
-    p_val: float = .05
+    p_val: float = 0.05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
-    correction: Literal['bonferroni', 'fdr'] = 'bonferroni'
-    alternative: Literal['two-sided', 'greater', 'less'] = 'two-sided'
+    correction: Literal["bonferroni", "fdr"] = "bonferroni"
+    alternative: Literal["two-sided", "greater", "less"] = "two-sided"
     n_features: Optional[int] = None
 
 
@@ -690,8 +701,8 @@ class MMDDriftConfig(DriftDetectorConfig):
     :class:`~alibi_detect.cd.MMDDrift` documentation for a description of each field.
     """
 
-    backend: Literal['tensorflow', 'pytorch', 'keops'] = 'tensorflow'
-    p_val: float = .05
+    backend: Literal["tensorflow", "pytorch", "keops"] = "tensorflow"
+    p_val: float = 0.05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
     kernel: Optional[Union[str, KernelConfig]] = None
@@ -699,7 +710,7 @@ class MMDDriftConfig(DriftDetectorConfig):
     configure_kernel_from_x_ref: bool = True
     n_permutations: int = 100
     batch_size_permutations: int = 1000000
-    device: Optional[Literal['cpu', 'cuda']] = None
+    device: Optional[Literal["cpu", "cuda"]] = None
 
 
 class MMDDriftConfigResolved(DriftDetectorConfigResolved):
@@ -711,8 +722,8 @@ class MMDDriftConfigResolved(DriftDetectorConfigResolved):
     :class:`~alibi_detect.cd.MMDDrift` documentation for a description of each field.
     """
 
-    backend: Literal['tensorflow', 'pytorch', 'keops'] = 'tensorflow'
-    p_val: float = .05
+    backend: Literal["tensorflow", "pytorch", "keops"] = "tensorflow"
+    p_val: float = 0.05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
     kernel: Optional[Callable] = None
@@ -720,7 +731,7 @@ class MMDDriftConfigResolved(DriftDetectorConfigResolved):
     configure_kernel_from_x_ref: bool = True
     n_permutations: int = 100
     batch_size_permutations: int = 1000000
-    device: Optional[Literal['cpu', 'cuda']] = None
+    device: Optional[Literal["cpu", "cuda"]] = None
 
 
 class LSDDDriftConfig(DriftDetectorConfig):
@@ -732,15 +743,15 @@ class LSDDDriftConfig(DriftDetectorConfig):
     :class:`~alibi_detect.cd.LSDDDrift` documentation for a description of each field.
     """
 
-    backend: Literal['tensorflow', 'pytorch'] = 'tensorflow'
-    p_val: float = .05
+    backend: Literal["tensorflow", "pytorch"] = "tensorflow"
+    p_val: float = 0.05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
     sigma: Optional[NDArray[np.float32]] = None
     n_permutations: int = 100
     n_kernel_centers: Optional[int] = None
     lambda_rd_max: float = 0.2
-    device: Optional[Literal['cpu', 'cuda']] = None
+    device: Optional[Literal["cpu", "cuda"]] = None
 
 
 class LSDDDriftConfigResolved(DriftDetectorConfigResolved):
@@ -752,15 +763,15 @@ class LSDDDriftConfigResolved(DriftDetectorConfigResolved):
     :class:`~alibi_detect.cd.LSDDDrift` documentation for a description of each field.
     """
 
-    backend: Literal['tensorflow', 'pytorch'] = 'tensorflow'
-    p_val: float = .05
+    backend: Literal["tensorflow", "pytorch"] = "tensorflow"
+    p_val: float = 0.05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
     sigma: Optional[NDArray[np.float32]] = None
     n_permutations: int = 100
     n_kernel_centers: Optional[int] = None
     lambda_rd_max: float = 0.2
-    device: Optional[Literal['cpu', 'cuda']] = None
+    device: Optional[Literal["cpu", "cuda"]] = None
 
 
 class ClassifierDriftConfig(DriftDetectorConfig):
@@ -773,15 +784,15 @@ class ClassifierDriftConfig(DriftDetectorConfig):
     :class:`~alibi_detect.cd.ClassifierDrift` documentation for a description of each field.
     """
 
-    backend: Literal['tensorflow', 'pytorch', 'sklearn'] = 'tensorflow'
-    p_val: float = .05
+    backend: Literal["tensorflow", "pytorch", "sklearn"] = "tensorflow"
+    p_val: float = 0.05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
     model: Union[str, ModelConfig]
-    preds_type: Literal['probs', 'logits'] = 'probs'
+    preds_type: Literal["probs", "logits"] = "probs"
     binarize_preds: bool = False
     reg_loss_fn: Optional[str] = None
-    train_size: Optional[float] = .75
+    train_size: Optional[float] = 0.75
     n_folds: Optional[int] = None
     retrain_from_scratch: bool = True
     seed: int = 0
@@ -793,7 +804,7 @@ class ClassifierDriftConfig(DriftDetectorConfig):
     verbose: int = 0
     train_kwargs: Optional[dict] = None
     dataset: Optional[str] = None
-    device: Optional[Literal['cpu', 'cuda']] = None
+    device: Optional[Literal["cpu", "cuda"]] = None
     dataloader: Optional[str] = None  # TODO: placeholder, will need to be updated for pytorch implementation
     use_calibration: bool = False
     calibration_kwargs: Optional[dict] = None
@@ -810,15 +821,15 @@ class ClassifierDriftConfigResolved(DriftDetectorConfigResolved):
     :class:`~alibi_detect.cd.ClassifierDrift` documentation for a description of each field.
     """
 
-    backend: Literal['tensorflow', 'pytorch', 'sklearn'] = 'tensorflow'
-    p_val: float = .05
+    backend: Literal["tensorflow", "pytorch", "sklearn"] = "tensorflow"
+    p_val: float = 0.05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
     model: Optional[SupportedModel] = None
-    preds_type: Literal['probs', 'logits'] = 'probs'
+    preds_type: Literal["probs", "logits"] = "probs"
     binarize_preds: bool = False
     reg_loss_fn: Optional[Callable] = None
-    train_size: Optional[float] = .75
+    train_size: Optional[float] = 0.75
     n_folds: Optional[int] = None
     retrain_from_scratch: bool = True
     seed: int = 0
@@ -830,7 +841,7 @@ class ClassifierDriftConfigResolved(DriftDetectorConfigResolved):
     verbose: int = 0
     train_kwargs: Optional[dict] = None
     dataset: Optional[Callable] = None
-    device: Optional[Literal['cpu', 'cuda']] = None
+    device: Optional[Literal["cpu", "cuda"]] = None
     dataloader: Optional[Callable] = None  # TODO: placeholder, will need to be updated for pytorch implementation
     use_calibration: bool = False
     calibration_kwargs: Optional[dict] = None
@@ -847,10 +858,10 @@ class SpotTheDiffDriftConfig(DriftDetectorConfig):
     :class:`~alibi_detect.cd.SpotTheDiffDrift` documentation for a description of each field.
     """
 
-    backend: Literal['tensorflow', 'pytorch'] = 'tensorflow'
-    p_val: float = .05
+    backend: Literal["tensorflow", "pytorch"] = "tensorflow"
+    p_val: float = 0.05
     binarize_preds: bool = False
-    train_size: Optional[float] = .75
+    train_size: Optional[float] = 0.75
     n_folds: Optional[int] = None
     retrain_from_scratch: bool = True
     seed: int = 0
@@ -866,7 +877,7 @@ class SpotTheDiffDriftConfig(DriftDetectorConfig):
     n_diffs: int = 1
     initial_diffs: Optional[str] = None
     l1_reg: float = 0.01
-    device: Optional[Literal['cpu', 'cuda']] = None
+    device: Optional[Literal["cpu", "cuda"]] = None
     dataloader: Optional[str] = None  # TODO: placeholder, will need to be updated for pytorch implementation
 
 
@@ -880,10 +891,10 @@ class SpotTheDiffDriftConfigResolved(DriftDetectorConfigResolved):
     :class:`~alibi_detect.cd.SpotTheDiffDrift` documentation for a description of each field.
     """
 
-    backend: Literal['tensorflow', 'pytorch'] = 'tensorflow'
-    p_val: float = .05
+    backend: Literal["tensorflow", "pytorch"] = "tensorflow"
+    p_val: float = 0.05
     binarize_preds: bool = False
-    train_size: Optional[float] = .75
+    train_size: Optional[float] = 0.75
     n_folds: Optional[int] = None
     retrain_from_scratch: bool = True
     seed: int = 0
@@ -899,7 +910,7 @@ class SpotTheDiffDriftConfigResolved(DriftDetectorConfigResolved):
     n_diffs: int = 1
     initial_diffs: Optional[np.ndarray] = None
     l1_reg: float = 0.01
-    device: Optional[Literal['cpu', 'cuda']] = None
+    device: Optional[Literal["cpu", "cuda"]] = None
     dataloader: Optional[Callable] = None  # TODO: placeholder, will need to be updated for pytorch implementation
 
 
@@ -913,8 +924,8 @@ class LearnedKernelDriftConfig(DriftDetectorConfig):
     :class:`~alibi_detect.cd.LearnedKernelDrift` documentation for a description of each field.
     """
 
-    backend: Literal['tensorflow', 'pytorch', 'keops'] = 'tensorflow'
-    p_val: float = .05
+    backend: Literal["tensorflow", "pytorch", "keops"] = "tensorflow"
+    p_val: float = 0.05
     kernel: Union[str, DeepKernelConfig]
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
@@ -922,7 +933,7 @@ class LearnedKernelDriftConfig(DriftDetectorConfig):
     batch_size_permutations: int = 1000000
     var_reg: float = 1e-5
     reg_loss_fn: Optional[str] = None
-    train_size: Optional[float] = .75
+    train_size: Optional[float] = 0.75
     retrain_from_scratch: bool = True
     optimizer: Optional[Union[str, OptimizerConfig]] = None
     learning_rate: float = 1e-3
@@ -934,7 +945,7 @@ class LearnedKernelDriftConfig(DriftDetectorConfig):
     verbose: int = 0
     train_kwargs: Optional[dict] = None
     dataset: Optional[str] = None
-    device: Optional[Literal['cpu', 'cuda']] = None
+    device: Optional[Literal["cpu", "cuda"]] = None
     dataloader: Optional[str] = None  # TODO: placeholder, will need to be updated for pytorch implementation
 
 
@@ -948,8 +959,8 @@ class LearnedKernelDriftConfigResolved(DriftDetectorConfigResolved):
     :class:`~alibi_detect.cd.LearnedKernelDrift` documentation for a description of each field.
     """
 
-    backend: Literal['tensorflow', 'pytorch', 'keops'] = 'tensorflow'
-    p_val: float = .05
+    backend: Literal["tensorflow", "pytorch", "keops"] = "tensorflow"
+    p_val: float = 0.05
     kernel: Optional[Callable] = None
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
@@ -957,7 +968,7 @@ class LearnedKernelDriftConfigResolved(DriftDetectorConfigResolved):
     batch_size_permutations: int = 1000000
     var_reg: float = 1e-5
     reg_loss_fn: Optional[Callable] = None
-    train_size: Optional[float] = .75
+    train_size: Optional[float] = 0.75
     retrain_from_scratch: bool = True
     optimizer: Optional[SupportedOptimizer] = None
     learning_rate: float = 1e-3
@@ -969,7 +980,7 @@ class LearnedKernelDriftConfigResolved(DriftDetectorConfigResolved):
     verbose: int = 0
     train_kwargs: Optional[dict] = None
     dataset: Optional[Callable] = None
-    device: Optional[Literal['cpu', 'cuda']] = None
+    device: Optional[Literal["cpu", "cuda"]] = None
     dataloader: Optional[Callable] = None  # TODO: placeholder, will need to be updated for pytorch implementation
 
 
@@ -983,8 +994,8 @@ class ContextMMDDriftConfig(DriftDetectorConfig):
     :class:`~alibi_detect.cd.ContextMMDDrift` documentation for a description of each field.
     """
 
-    backend: Literal['tensorflow', 'pytorch'] = 'tensorflow'
-    p_val: float = .05
+    backend: Literal["tensorflow", "pytorch"] = "tensorflow"
+    p_val: float = 0.05
     c_ref: str
     preprocess_at_init: bool = True
     update_ref: Optional[Dict[str, int]] = None
@@ -995,7 +1006,7 @@ class ContextMMDDriftConfig(DriftDetectorConfig):
     n_folds: int = 5
     batch_size: Optional[int] = 256
     verbose: bool = False
-    device: Optional[Literal['cpu', 'cuda']] = None
+    device: Optional[Literal["cpu", "cuda"]] = None
 
 
 class ContextMMDDriftConfigResolved(DriftDetectorConfigResolved):
@@ -1007,8 +1018,8 @@ class ContextMMDDriftConfigResolved(DriftDetectorConfigResolved):
     :class:`~alibi_detect.cd.MMDDrift` documentation for a description of each field.
     """
 
-    backend: Literal['tensorflow', 'pytorch'] = 'tensorflow'
-    p_val: float = .05
+    backend: Literal["tensorflow", "pytorch"] = "tensorflow"
+    p_val: float = 0.05
     c_ref: np.ndarray
     preprocess_at_init: bool = True
     update_ref: Optional[Dict[str, int]] = None
@@ -1019,7 +1030,7 @@ class ContextMMDDriftConfigResolved(DriftDetectorConfigResolved):
     n_folds: int = 5
     batch_size: Optional[int] = 256
     verbose: bool = False
-    device: Optional[Literal['cpu', 'cuda']] = None
+    device: Optional[Literal["cpu", "cuda"]] = None
 
 
 class MMDDriftOnlineConfig(DriftDetectorConfig):
@@ -1032,13 +1043,13 @@ class MMDDriftOnlineConfig(DriftDetectorConfig):
     :class:`~alibi_detect.cd.MMDDriftOnline` documentation for a description of each field.
     """
 
-    backend: Literal['tensorflow', 'pytorch'] = 'tensorflow'
+    backend: Literal["tensorflow", "pytorch"] = "tensorflow"
     ert: float
     window_size: int
     kernel: Optional[Union[str, KernelConfig]] = None
     sigma: Optional[np.ndarray] = None
     n_bootstraps: int = 1000
-    device: Optional[Literal['cpu', 'cuda']] = None
+    device: Optional[Literal["cpu", "cuda"]] = None
     verbose: bool = True
 
 
@@ -1052,13 +1063,13 @@ class MMDDriftOnlineConfigResolved(DriftDetectorConfigResolved):
     :class:`~alibi_detect.cd.MMDDriftOnline` documentation for a description of each field.
     """
 
-    backend: Literal['tensorflow', 'pytorch'] = 'tensorflow'
+    backend: Literal["tensorflow", "pytorch"] = "tensorflow"
     ert: float
     window_size: int
     kernel: Optional[Callable] = None
     sigma: Optional[np.ndarray] = None
     n_bootstraps: int = 1000
-    device: Optional[Literal['cpu', 'cuda']] = None
+    device: Optional[Literal["cpu", "cuda"]] = None
     verbose: bool = True
 
 
@@ -1072,14 +1083,14 @@ class LSDDDriftOnlineConfig(DriftDetectorConfig):
     :class:`~alibi_detect.cd.LSDDDriftOnline` documentation for a description of each field.
     """
 
-    backend: Literal['tensorflow', 'pytorch'] = 'tensorflow'
+    backend: Literal["tensorflow", "pytorch"] = "tensorflow"
     ert: float
     window_size: int
     sigma: Optional[np.ndarray] = None
     n_bootstraps: int = 1000
     n_kernel_centers: Optional[int] = None
     lambda_rd_max: float = 0.2
-    device: Optional[Literal['cpu', 'cuda']] = None
+    device: Optional[Literal["cpu", "cuda"]] = None
     verbose: bool = True
 
 
@@ -1093,14 +1104,14 @@ class LSDDDriftOnlineConfigResolved(DriftDetectorConfigResolved):
     :class:`~alibi_detect.cd.LSDDDriftOnline` documentation for a description of each field.
     """
 
-    backend: Literal['tensorflow', 'pytorch'] = 'tensorflow'
+    backend: Literal["tensorflow", "pytorch"] = "tensorflow"
     ert: float
     window_size: int
     sigma: Optional[np.ndarray] = None
     n_bootstraps: int = 1000
     n_kernel_centers: Optional[int] = None
     lambda_rd_max: float = 0.2
-    device: Optional[Literal['cpu', 'cuda']] = None
+    device: Optional[Literal["cpu", "cuda"]] = None
     verbose: bool = True
 
 
@@ -1122,7 +1133,7 @@ class CVMDriftOnlineConfig(DriftDetectorConfig):
     verbose: bool = True
 
     # validators
-    _coerce_int2list = validator('window_sizes', allow_reuse=True, pre=True)(coerce_int2list)
+    _coerce_int2list = validator("window_sizes", allow_reuse=True, pre=True)(coerce_int2list)
 
 
 class CVMDriftOnlineConfigResolved(DriftDetectorConfigResolved):
@@ -1143,7 +1154,7 @@ class CVMDriftOnlineConfigResolved(DriftDetectorConfigResolved):
     verbose: bool = True
 
     # validators
-    _coerce_int2list = validator('window_sizes', allow_reuse=True, pre=True)(coerce_int2list)
+    _coerce_int2list = validator("window_sizes", allow_reuse=True, pre=True)(coerce_int2list)
 
 
 class FETDriftOnlineConfig(DriftDetectorConfig):
@@ -1160,13 +1171,13 @@ class FETDriftOnlineConfig(DriftDetectorConfig):
     window_sizes: List[int]
     n_bootstraps: int = 10000
     t_max: Optional[int] = None
-    alternative: Literal['greater', 'less'] = 'greater'
+    alternative: Literal["greater", "less"] = "greater"
     lam: float = 0.99
     n_features: Optional[int] = None
     verbose: bool = True
 
     # validators
-    _coerce_int2list = validator('window_sizes', allow_reuse=True, pre=True)(coerce_int2list)
+    _coerce_int2list = validator("window_sizes", allow_reuse=True, pre=True)(coerce_int2list)
 
 
 class FETDriftOnlineConfigResolved(DriftDetectorConfigResolved):
@@ -1183,13 +1194,13 @@ class FETDriftOnlineConfigResolved(DriftDetectorConfigResolved):
     window_sizes: List[int]
     n_bootstraps: int = 10000
     t_max: Optional[int] = None
-    alternative: Literal['greater', 'less'] = 'greater'
+    alternative: Literal["greater", "less"] = "greater"
     lam: float = 0.99
     n_features: Optional[int] = None
     verbose: bool = True
 
     # validators
-    _coerce_int2list = validator('window_sizes', allow_reuse=True, pre=True)(coerce_int2list)
+    _coerce_int2list = validator("window_sizes", allow_reuse=True, pre=True)(coerce_int2list)
 
 
 # The uncertainty detectors don't inherit from DriftDetectorConfig since their kwargs are a little different from the
@@ -1204,14 +1215,14 @@ class ClassifierUncertaintyDriftConfig(DetectorConfig):
     :class:`~alibi_detect.cd.ClassifierUncertaintyDrift` documentation for a description of each field.
     """
 
-    backend: Literal['tensorflow', 'pytorch'] = 'tensorflow'
+    backend: Literal["tensorflow", "pytorch"] = "tensorflow"
     x_ref: str
     model: Union[str, ModelConfig]
-    p_val: float = .05
+    p_val: float = 0.05
     x_ref_preprocessed: bool = False
     update_x_ref: Optional[Dict[str, int]] = None
-    preds_type: Literal['probs', 'logits'] = 'probs'
-    uncertainty_type: Literal['entropy', 'margin'] = 'entropy'
+    preds_type: Literal["probs", "logits"] = "probs"
+    uncertainty_type: Literal["entropy", "margin"] = "entropy"
     margin_width: float = 0.1
     batch_size: int = 32
     preprocess_batch_fn: Optional[str] = None
@@ -1232,14 +1243,14 @@ class ClassifierUncertaintyDriftConfigResolved(DetectorConfig):
     :class:`~alibi_detect.cd.ClassifierUncertaintyDrift` documentation for a description of each field.
     """
 
-    backend: Literal['tensorflow', 'pytorch'] = 'tensorflow'
+    backend: Literal["tensorflow", "pytorch"] = "tensorflow"
     x_ref: Union[np.ndarray, list]
     model: Optional[SupportedModel] = None
-    p_val: float = .05
+    p_val: float = 0.05
     x_ref_preprocessed: bool = False
     update_x_ref: Optional[Dict[str, int]] = None
-    preds_type: Literal['probs', 'logits'] = 'probs'
-    uncertainty_type: Literal['entropy', 'margin'] = 'entropy'
+    preds_type: Literal["probs", "logits"] = "probs"
+    uncertainty_type: Literal["entropy", "margin"] = "entropy"
     margin_width: float = 0.1
     batch_size: int = 32
     preprocess_batch_fn: Optional[Callable] = None
@@ -1260,13 +1271,13 @@ class RegressorUncertaintyDriftConfig(DetectorConfig):
     :class:`~alibi_detect.cd.RegressorUncertaintyDrift` documentation for a description of each field.
     """
 
-    backend: Literal['tensorflow', 'pytorch'] = 'tensorflow'
+    backend: Literal["tensorflow", "pytorch"] = "tensorflow"
     x_ref: str
     model: Union[str, ModelConfig]
-    p_val: float = .05
+    p_val: float = 0.05
     x_ref_preprocessed: bool = False
     update_x_ref: Optional[Dict[str, int]] = None
-    uncertainty_type: Literal['mc_dropout', 'ensemble'] = 'mc_dropout'
+    uncertainty_type: Literal["mc_dropout", "ensemble"] = "mc_dropout"
     n_evals: int = 25
     batch_size: int = 32
     preprocess_batch_fn: Optional[str] = None
@@ -1287,13 +1298,13 @@ class RegressorUncertaintyDriftConfigResolved(DetectorConfig):
     :class:`~alibi_detect.cd.RegressorUncertaintyDrift` documentation for a description of each field.
     """
 
-    backend: Literal['tensorflow', 'pytorch'] = 'tensorflow'
+    backend: Literal["tensorflow", "pytorch"] = "tensorflow"
     x_ref: Union[np.ndarray, list]
     model: Optional[SupportedModel] = None
-    p_val: float = .05
+    p_val: float = 0.05
     x_ref_preprocessed: bool = False
     update_x_ref: Optional[Dict[str, int]] = None
-    uncertainty_type: Literal['mc_dropout', 'ensemble'] = 'mc_dropout'
+    uncertainty_type: Literal["mc_dropout", "ensemble"] = "mc_dropout"
     n_evals: int = 25
     batch_size: int = 32
     preprocess_batch_fn: Optional[Callable] = None
@@ -1306,43 +1317,43 @@ class RegressorUncertaintyDriftConfigResolved(DetectorConfig):
 
 # Unresolved schema dictionary (used in alibi_detect.utils.loading)
 DETECTOR_CONFIGS: Dict[str, Type[DetectorConfig]] = {
-    'KSDrift': KSDriftConfig,
-    'ChiSquareDrift': ChiSquareDriftConfig,
-    'TabularDrift': TabularDriftConfig,
-    'CVMDrift': CVMDriftConfig,
-    'FETDrift': FETDriftConfig,
-    'MMDDrift': MMDDriftConfig,
-    'LSDDDrift': LSDDDriftConfig,
-    'ClassifierDrift': ClassifierDriftConfig,
-    'SpotTheDiffDrift': SpotTheDiffDriftConfig,
-    'LearnedKernelDrift': LearnedKernelDriftConfig,
-    'ContextMMDDrift': ContextMMDDriftConfig,
-    'MMDDriftOnline': MMDDriftOnlineConfig,
-    'LSDDDriftOnline': LSDDDriftOnlineConfig,
-    'CVMDriftOnline': CVMDriftOnlineConfig,
-    'FETDriftOnline': FETDriftOnlineConfig,
-    'ClassifierUncertaintyDrift': ClassifierUncertaintyDriftConfig,
-    'RegressorUncertaintyDrift': RegressorUncertaintyDriftConfig,
+    "KSDrift": KSDriftConfig,
+    "ChiSquareDrift": ChiSquareDriftConfig,
+    "TabularDrift": TabularDriftConfig,
+    "CVMDrift": CVMDriftConfig,
+    "FETDrift": FETDriftConfig,
+    "MMDDrift": MMDDriftConfig,
+    "LSDDDrift": LSDDDriftConfig,
+    "ClassifierDrift": ClassifierDriftConfig,
+    "SpotTheDiffDrift": SpotTheDiffDriftConfig,
+    "LearnedKernelDrift": LearnedKernelDriftConfig,
+    "ContextMMDDrift": ContextMMDDriftConfig,
+    "MMDDriftOnline": MMDDriftOnlineConfig,
+    "LSDDDriftOnline": LSDDDriftOnlineConfig,
+    "CVMDriftOnline": CVMDriftOnlineConfig,
+    "FETDriftOnline": FETDriftOnlineConfig,
+    "ClassifierUncertaintyDrift": ClassifierUncertaintyDriftConfig,
+    "RegressorUncertaintyDrift": RegressorUncertaintyDriftConfig,
 }
 
 
 # Resolved schema dictionary (used in alibi_detect.utils.loading)
 DETECTOR_CONFIGS_RESOLVED: Dict[str, Type[DetectorConfig]] = {
-    'KSDrift': KSDriftConfigResolved,
-    'ChiSquareDrift': ChiSquareDriftConfigResolved,
-    'TabularDrift': TabularDriftConfigResolved,
-    'CVMDrift': CVMDriftConfigResolved,
-    'FETDrift': FETDriftConfigResolved,
-    'MMDDrift': MMDDriftConfigResolved,
-    'LSDDDrift': LSDDDriftConfigResolved,
-    'ClassifierDrift': ClassifierDriftConfigResolved,
-    'SpotTheDiffDrift': SpotTheDiffDriftConfigResolved,
-    'LearnedKernelDrift': LearnedKernelDriftConfigResolved,
-    'ContextMMDDrift': ContextMMDDriftConfigResolved,
-    'MMDDriftOnline': MMDDriftOnlineConfigResolved,
-    'LSDDDriftOnline': LSDDDriftOnlineConfigResolved,
-    'CVMDriftOnline': CVMDriftOnlineConfigResolved,
-    'FETDriftOnline': FETDriftOnlineConfigResolved,
-    'ClassifierUncertaintyDrift': ClassifierUncertaintyDriftConfigResolved,
-    'RegressorUncertaintyDrift': RegressorUncertaintyDriftConfigResolved,
+    "KSDrift": KSDriftConfigResolved,
+    "ChiSquareDrift": ChiSquareDriftConfigResolved,
+    "TabularDrift": TabularDriftConfigResolved,
+    "CVMDrift": CVMDriftConfigResolved,
+    "FETDrift": FETDriftConfigResolved,
+    "MMDDrift": MMDDriftConfigResolved,
+    "LSDDDrift": LSDDDriftConfigResolved,
+    "ClassifierDrift": ClassifierDriftConfigResolved,
+    "SpotTheDiffDrift": SpotTheDiffDriftConfigResolved,
+    "LearnedKernelDrift": LearnedKernelDriftConfigResolved,
+    "ContextMMDDrift": ContextMMDDriftConfigResolved,
+    "MMDDriftOnline": MMDDriftOnlineConfigResolved,
+    "LSDDDriftOnline": LSDDDriftOnlineConfigResolved,
+    "CVMDriftOnline": CVMDriftOnlineConfigResolved,
+    "FETDriftOnline": FETDriftOnlineConfigResolved,
+    "ClassifierUncertaintyDrift": ClassifierUncertaintyDriftConfigResolved,
+    "RegressorUncertaintyDrift": RegressorUncertaintyDriftConfigResolved,
 }

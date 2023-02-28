@@ -19,20 +19,20 @@ logger = logging.getLogger(__name__)
 class BaseMultiDriftOnline(BaseDetector, StateMixin):
     t: int = 0
     thresholds: np.ndarray
-    backend: Literal['pytorch', 'tensorflow']
+    backend: Literal["pytorch", "tensorflow"]
     online_state_keys: Tuple[str, ...]
 
     def __init__(
-            self,
-            x_ref: Union[np.ndarray, list],
-            ert: float,
-            window_size: int,
-            preprocess_fn: Optional[Callable] = None,
-            x_ref_preprocessed: bool = False,
-            n_bootstraps: int = 1000,
-            verbose: bool = True,
-            input_shape: Optional[tuple] = None,
-            data_type: Optional[str] = None,
+        self,
+        x_ref: Union[np.ndarray, list],
+        ert: float,
+        window_size: int,
+        preprocess_fn: Optional[Callable] = None,
+        x_ref_preprocessed: bool = False,
+        n_bootstraps: int = 1000,
+        verbose: bool = True,
+        input_shape: Optional[tuple] = None,
+        data_type: Optional[str] = None,
     ) -> None:
         """
         Base class for multivariate online drift detectors.
@@ -68,7 +68,7 @@ class BaseMultiDriftOnline(BaseDetector, StateMixin):
         super().__init__()
 
         if ert is None:
-            logger.warning('No expected run-time set for the drift threshold. Need to set it to detect data drift.')
+            logger.warning("No expected run-time set for the drift threshold. Need to set it to detect data drift.")
 
         self.ert = ert
         self.fpr = 1 / ert
@@ -93,9 +93,9 @@ class BaseMultiDriftOnline(BaseDetector, StateMixin):
         self.input_shape = get_input_shape(input_shape, x_ref)
 
         # set metadata
-        self.meta['detector_type'] = 'drift'
-        self.meta['data_type'] = data_type
-        self.meta['online'] = True
+        self.meta["detector_type"] = "drift"
+        self.meta["data_type"] = data_type
+        self.meta["online"] = True
 
     @abstractmethod
     def _configure_thresholds(self):
@@ -106,7 +106,7 @@ class BaseMultiDriftOnline(BaseDetector, StateMixin):
         pass
 
     @abstractmethod
-    def _update_state(self, x_t: Union[np.ndarray, 'tf.Tensor', 'torch.Tensor']):
+    def _update_state(self, x_t: Union[np.ndarray, "tf.Tensor", "torch.Tensor"]):
         pass
 
     def _preprocess_xt(self, x_t: Union[np.ndarray, Any]) -> np.ndarray:
@@ -161,15 +161,21 @@ class BaseMultiDriftOnline(BaseDetector, StateMixin):
         its initial state (`t=0`) use :meth:`reset_state`.
         """
         self.reset_state()
-        warnings.warn('This method is deprecated and will be removed/repurposed in the future. To reset the detector '
-                      'to its initial state use `reset_state`.', DeprecationWarning)
+        warnings.warn(
+            "This method is deprecated and will be removed/repurposed in the future. To reset the detector "
+            "to its initial state use `reset_state`.",
+            DeprecationWarning,
+        )
 
     def reset_state(self) -> None:
         """Resets the detector to its initial state (`t=0`). This does not include reconfiguring thresholds."""
         self._initialise_state()
 
-    def predict(self, x_t: Union[np.ndarray, Any], return_test_stat: bool = True,
-                ) -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
+    def predict(
+        self,
+        x_t: Union[np.ndarray, Any],
+        return_test_stat: bool = True,
+    ) -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
         """
         Predict whether the most recent window of data has drifted from the reference data.
 
@@ -196,13 +202,13 @@ class BaseMultiDriftOnline(BaseDetector, StateMixin):
 
         # populate drift dict
         cd = concept_drift_dict()
-        cd['meta'] = self.meta
-        cd['data']['is_drift'] = drift_pred
-        cd['data']['time'] = self.t
-        cd['data']['ert'] = self.ert
+        cd["meta"] = self.meta
+        cd["data"]["is_drift"] = drift_pred
+        cd["data"]["time"] = self.t
+        cd["data"]["ert"] = self.ert
         if return_test_stat:
-            cd['data']['test_stat'] = test_stat
-            cd['data']['threshold'] = threshold
+            cd["data"]["test_stat"] = test_stat
+            cd["data"]["threshold"] = threshold
 
         return cd
 
@@ -213,17 +219,17 @@ class BaseUniDriftOnline(BaseDetector, StateMixin):
     online_state_keys: Tuple[str, ...]
 
     def __init__(
-            self,
-            x_ref: Union[np.ndarray, list],
-            ert: float,
-            window_sizes: List[int],
-            preprocess_fn: Optional[Callable] = None,
-            x_ref_preprocessed: bool = False,
-            n_bootstraps: int = 1000,
-            n_features: Optional[int] = None,
-            verbose: bool = True,
-            input_shape: Optional[tuple] = None,
-            data_type: Optional[str] = None,
+        self,
+        x_ref: Union[np.ndarray, list],
+        ert: float,
+        window_sizes: List[int],
+        preprocess_fn: Optional[Callable] = None,
+        x_ref_preprocessed: bool = False,
+        n_bootstraps: int = 1000,
+        n_features: Optional[int] = None,
+        verbose: bool = True,
+        input_shape: Optional[tuple] = None,
+        data_type: Optional[str] = None,
     ) -> None:
         """
         Base class for univariate online drift detectors. If n_features > 1, a multivariate correction is
@@ -265,7 +271,7 @@ class BaseUniDriftOnline(BaseDetector, StateMixin):
         super().__init__()
 
         if ert is None:
-            logger.warning('No expected run-time set for the drift threshold. Need to set it to detect data drift.')
+            logger.warning("No expected run-time set for the drift threshold. Need to set it to detect data drift.")
 
         self.ert = ert
         self.fpr = 1 / ert
@@ -306,9 +312,9 @@ class BaseUniDriftOnline(BaseDetector, StateMixin):
         self.input_shape = get_input_shape(input_shape, x_ref)
 
         # set metadata
-        self.meta['detector_type'] = 'drift'
-        self.meta['data_type'] = data_type
-        self.meta['online'] = True
+        self.meta["detector_type"] = "drift"
+        self.meta["data_type"] = data_type
+        self.meta["online"] = True
 
     @abstractmethod
     def _configure_thresholds(self):
@@ -344,8 +350,10 @@ class BaseUniDriftOnline(BaseDetector, StateMixin):
         elif isinstance(x, (int, float, np.int, np.float)):  # type: ignore[attr-defined]
             x = np.array([x])
         else:
-            raise TypeError("Detectors expect data to be 2D np.ndarray's. If data is passed as another type, a "
-                            "`preprocess_fn` should be given to convert this data to 2D np.ndarray's.")
+            raise TypeError(
+                "Detectors expect data to be 2D np.ndarray's. If data is passed as another type, a "
+                "`preprocess_fn` should be given to convert this data to 2D np.ndarray's."
+            )
 
         # Check the shape of x
         if x_ref:
@@ -353,8 +361,10 @@ class BaseUniDriftOnline(BaseDetector, StateMixin):
         else:
             x = x.reshape(1, -1)
             if x.shape[1] != self.x_ref.shape[1]:
-                raise ValueError("Dimensions do not match. `x` has shape (%d,%d) and `x_ref` has shape (%d,%d)."
-                                 % (x.shape[0], x.shape[1], self.x_ref.shape[0], self.x_ref.shape[1]))
+                raise ValueError(
+                    "Dimensions do not match. `x` has shape (%d,%d) and `x_ref` has shape (%d,%d)."
+                    % (x.shape[0], x.shape[1], self.x_ref.shape[0], self.x_ref.shape[1])
+                )
         return x
 
     def _preprocess_xt(self, x_t: Union[np.ndarray, Any]) -> np.ndarray:
@@ -416,15 +426,21 @@ class BaseUniDriftOnline(BaseDetector, StateMixin):
         its initial state (`t=0`) use :meth:`reset_state`.
         """
         self.reset_state()
-        warnings.warn('This method is deprecated and will be removed/repurposed in the future. To reset the detector '
-                      'to its initial state use `reset_state`.', DeprecationWarning)
+        warnings.warn(
+            "This method is deprecated and will be removed/repurposed in the future. To reset the detector "
+            "to its initial state use `reset_state`.",
+            DeprecationWarning,
+        )
 
     def reset_state(self) -> None:
         """Resets the detector to its initial state (`t=0`). This does not include reconfiguring thresholds."""
         self._initialise_state()
 
-    def predict(self, x_t: Union[np.ndarray, Any], return_test_stat: bool = True,
-                ) -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
+    def predict(
+        self,
+        x_t: Union[np.ndarray, Any],
+        return_test_stat: bool = True,
+    ) -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
         """
         Predict whether the most recent window(s) of data have drifted from the reference data.
 
@@ -452,12 +468,12 @@ class BaseUniDriftOnline(BaseDetector, StateMixin):
 
         # populate drift dict
         cd = concept_drift_dict()
-        cd['meta'] = self.meta
-        cd['data']['is_drift'] = drift_pred
-        cd['data']['time'] = self.t
-        cd['data']['ert'] = self.ert
+        cd["meta"] = self.meta
+        cd["data"]["is_drift"] = drift_pred
+        cd["data"]["time"] = self.t
+        cd["data"]["ert"] = self.ert
         if return_test_stat:
-            cd['data']['test_stat'] = test_stats
-            cd['data']['threshold'] = thresholds
+            cd["data"]["test_stat"] = test_stats
+            cd["data"]["threshold"] = thresholds
 
         return cd

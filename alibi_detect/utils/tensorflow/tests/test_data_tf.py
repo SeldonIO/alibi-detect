@@ -18,7 +18,7 @@ def ds_params(request):
     return tests_ds[request.param]
 
 
-@pytest.mark.parametrize('ds_params', list(range(n_tests_ds)), indirect=True)
+@pytest.mark.parametrize("ds_params", list(range(n_tests_ds)), indirect=True)
 def test_torchdataset(ds_params):
     xtype, batch_size, shuffle = ds_params
     x = np.random.randn(*shape)

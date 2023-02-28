@@ -11,32 +11,32 @@ from alibi_detect.utils.frameworks import Framework
 
 
 class LearnedKernelDriftTF(BaseLearnedKernelDrift):
-    @deprecated_alias(preprocess_x_ref='preprocess_at_init')
+    @deprecated_alias(preprocess_x_ref="preprocess_at_init")
     def __init__(
-            self,
-            x_ref: Union[np.ndarray, list],
-            kernel: tf.keras.Model,
-            p_val: float = .05,
-            x_ref_preprocessed: bool = False,
-            preprocess_at_init: bool = True,
-            update_x_ref: Optional[Dict[str, int]] = None,
-            preprocess_fn: Optional[Callable] = None,
-            n_permutations: int = 100,
-            var_reg: float = 1e-5,
-            reg_loss_fn: Callable = (lambda kernel: 0),
-            train_size: Optional[float] = .75,
-            retrain_from_scratch: bool = True,
-            optimizer: tf.keras.optimizers.Optimizer = tf.keras.optimizers.Adam,
-            learning_rate: float = 1e-3,
-            batch_size: int = 32,
-            batch_size_predict: int = 32,
-            preprocess_batch_fn: Optional[Callable] = None,
-            epochs: int = 3,
-            verbose: int = 0,
-            train_kwargs: Optional[dict] = None,
-            dataset: Callable = TFDataset,
-            input_shape: Optional[tuple] = None,
-            data_type: Optional[str] = None
+        self,
+        x_ref: Union[np.ndarray, list],
+        kernel: tf.keras.Model,
+        p_val: float = 0.05,
+        x_ref_preprocessed: bool = False,
+        preprocess_at_init: bool = True,
+        update_x_ref: Optional[Dict[str, int]] = None,
+        preprocess_fn: Optional[Callable] = None,
+        n_permutations: int = 100,
+        var_reg: float = 1e-5,
+        reg_loss_fn: Callable = (lambda kernel: 0),
+        train_size: Optional[float] = 0.75,
+        retrain_from_scratch: bool = True,
+        optimizer: tf.keras.optimizers.Optimizer = tf.keras.optimizers.Adam,
+        learning_rate: float = 1e-3,
+        batch_size: int = 32,
+        batch_size_predict: int = 32,
+        preprocess_batch_fn: Optional[Callable] = None,
+        epochs: int = 3,
+        verbose: int = 0,
+        train_kwargs: Optional[dict] = None,
+        dataset: Callable = TFDataset,
+        input_shape: Optional[tuple] = None,
+        data_type: Optional[str] = None,
     ) -> None:
         """
         Maximum Mean Discrepancy (MMD) data drift detector where the kernel is trained to maximise an
@@ -115,9 +115,9 @@ class LearnedKernelDriftTF(BaseLearnedKernelDrift):
             train_size=train_size,
             retrain_from_scratch=retrain_from_scratch,
             input_shape=input_shape,
-            data_type=data_type
+            data_type=data_type,
         )
-        self.meta.update({'backend': Framework.TENSORFLOW.value})
+        self.meta.update({"backend": Framework.TENSORFLOW.value})
 
         # define and compile kernel
         self.original_kernel = kernel
@@ -127,8 +127,14 @@ class LearnedKernelDriftTF(BaseLearnedKernelDrift):
         self.kernel_mat_fn = partial(
             batch_compute_kernel_matrix, preprocess_fn=preprocess_batch_fn, batch_size=batch_size_predict
         )
-        self.train_kwargs = {'optimizer': optimizer, 'epochs': epochs, 'learning_rate': learning_rate,
-                             'reg_loss_fn': reg_loss_fn, 'preprocess_fn': preprocess_batch_fn, 'verbose': verbose}
+        self.train_kwargs = {
+            "optimizer": optimizer,
+            "epochs": epochs,
+            "learning_rate": learning_rate,
+            "reg_loss_fn": reg_loss_fn,
+            "preprocess_fn": preprocess_batch_fn,
+            "verbose": verbose,
+        }
         if isinstance(train_kwargs, dict):
             self.train_kwargs.update(train_kwargs)
 
@@ -143,7 +149,7 @@ class LearnedKernelDriftTF(BaseLearnedKernelDrift):
 
         def __init__(self, kernel: tf.keras.Model, var_reg: float):
             super().__init__()
-            self.config = {'kernel': kernel, 'var_reg': var_reg}
+            self.config = {"kernel": kernel, "var_reg": var_reg}
             self.kernel = kernel
             self.var_reg = var_reg
 
@@ -153,8 +159,9 @@ class LearnedKernelDriftTF(BaseLearnedKernelDrift):
 
             n = len(x)
             mmd2_est = (tf.reduce_sum(h_mat) - tf.linalg.trace(h_mat)) / (n * (n - 1))
-            var_est = (4 * tf.reduce_sum(tf.reduce_sum(h_mat, axis=-1)**2) / (n**3) -
-                       4 * tf.reduce_sum(h_mat)**2 / (n**4))
+            var_est = 4 * tf.reduce_sum(tf.reduce_sum(h_mat, axis=-1) ** 2) / (n**3) - 4 * tf.reduce_sum(
+                h_mat
+            ) ** 2 / (n**4)
             reg_var_est = var_est + self.var_reg
 
             return mmd2_est / tf.math.sqrt(reg_var_est)
@@ -191,8 +198,10 @@ class LearnedKernelDriftTF(BaseLearnedKernelDrift):
         kernel_mat = kernel_mat - tf.linalg.diag(tf.linalg.diag_part(kernel_mat))  # zero diagonal
         mmd2 = mmd2_from_kernel_matrix(kernel_mat, len(x_cur_te), permute=False, zero_diag=False).numpy()
         mmd2_permuted = np.array(
-            [mmd2_from_kernel_matrix(kernel_mat, len(x_cur_te), permute=True, zero_diag=False).numpy()
-                for _ in range(self.n_permutations)]
+            [
+                mmd2_from_kernel_matrix(kernel_mat, len(x_cur_te), permute=True, zero_diag=False).numpy()
+                for _ in range(self.n_permutations)
+            ]
         )
         p_val = (mmd2 <= mmd2_permuted).mean()
 
@@ -216,7 +225,7 @@ class LearnedKernelDriftTF(BaseLearnedKernelDrift):
         optimizer = optimizer(learning_rate=learning_rate) if isinstance(optimizer, type) else optimizer
         n_minibatch = min(len(ds_ref), len(ds_cur))
         # iterate over epochs
-        loss_ma = 0.
+        loss_ma = 0.0
         for epoch in range(epochs):
             if verbose:
                 pbar = tf.keras.utils.Progbar(n_minibatch, 1)
@@ -230,5 +239,5 @@ class LearnedKernelDriftTF(BaseLearnedKernelDrift):
                 optimizer.apply_gradients(zip(grads, j_hat.trainable_weights))
                 if verbose == 1:
                     loss_ma = loss_ma + (loss - loss_ma) / (step + 1)
-                    pbar_values = [('loss', loss_ma)]
+                    pbar_values = [("loss", loss_ma)]
                     pbar.add(1, values=pbar_values)

@@ -12,29 +12,29 @@ EPSILON = 1e-8
 
 
 class Padding(str, enum.Enum):
-    CONSTANT = 'constant'
-    REPLICATE = 'replicate'
-    REFLECT = 'reflect'
+    CONSTANT = "constant"
+    REPLICATE = "replicate"
+    REFLECT = "reflect"
 
 
 class Side(str, enum.Enum):
-    BILATERAL = 'bilateral'
-    LEFT = 'left'
-    RIGHT = 'right'
+    BILATERAL = "bilateral"
+    LEFT = "left"
+    RIGHT = "right"
 
 
 class SpectralResidual(BaseDetector, ThresholdMixin):
-
-    def __init__(self,
-                 threshold: float = None,
-                 window_amp: int = None,
-                 window_local: int = None,
-                 padding_amp_method: Literal['constant', 'replicate', 'reflect'] = 'reflect',
-                 padding_local_method: Literal['constant', 'replicate', 'reflect'] = 'reflect',
-                 padding_amp_side: Literal['bilateral', 'left', 'right'] = 'bilateral',
-                 n_est_points: int = None,
-                 n_grad_points: int = 5,
-                 ) -> None:
+    def __init__(
+        self,
+        threshold: float = None,
+        window_amp: int = None,
+        window_local: int = None,
+        padding_amp_method: Literal["constant", "replicate", "reflect"] = "reflect",
+        padding_local_method: Literal["constant", "replicate", "reflect"] = "reflect",
+        padding_amp_side: Literal["bilateral", "left", "right"] = "bilateral",
+        n_est_points: int = None,
+        n_grad_points: int = 5,
+    ) -> None:
         """
         Outlier detector for time-series data using the spectral residual algorithm.
         Based on "Time-Series Anomaly Detection Service at Microsoft" (Ren et al., 2019)
@@ -87,7 +87,12 @@ class SpectralResidual(BaseDetector, ThresholdMixin):
         self.threshold = threshold
         self.window_amp = window_amp
         self.window_local = window_local
-        self.conv_amp = np.ones((1, window_amp)).reshape(-1,) / window_amp
+        self.conv_amp = (
+            np.ones((1, window_amp)).reshape(
+                -1,
+            )
+            / window_amp
+        )
 
         # conv_local needs a special treatment since the paper says that:
         # \bar{S}(xi) is the local average of the preceding z points of S(xi).
@@ -95,7 +100,12 @@ class SpectralResidual(BaseDetector, ThresholdMixin):
         # filter given by: [0, 1, 1, 1,  ... ,1] / window_local of size `window_local + 1`. In this way
         # the current value is multiplied by 0 and thus neglected. Note that the 0 goes first since before the
         # element-wise multiplication, the filter is flipped. We only do this since the filter is asymmetric.
-        self.conv_local = np.ones((1, window_local + 1)).reshape(-1,) / window_local
+        self.conv_local = (
+            np.ones((1, window_local + 1)).reshape(
+                -1,
+            )
+            / window_local
+        )
         self.conv_local[0] = 0
 
         self.n_est_points = n_est_points
@@ -105,15 +115,11 @@ class SpectralResidual(BaseDetector, ThresholdMixin):
         self.padding_amp_side = padding_amp_side
 
         # set metadata
-        self.meta['detector_type'] = 'outlier'
-        self.meta['data_type'] = 'time-series'
-        self.meta['online'] = True
+        self.meta["detector_type"] = "outlier"
+        self.meta["data_type"] = "time-series"
+        self.meta["online"] = True
 
-    def infer_threshold(self,
-                        X: np.ndarray,
-                        t: np.ndarray = None,
-                        threshold_perc: float = 95.
-                        ) -> None:
+    def infer_threshold(self, X: np.ndarray, t: np.ndarray = None, threshold_perc: float = 95.0) -> None:
         """
         Update threshold by a value inferred from the percentage of instances considered to be
         outliers in a sample of the dataset.
@@ -139,10 +145,7 @@ class SpectralResidual(BaseDetector, ThresholdMixin):
         self.threshold = np.percentile(iscore, threshold_perc)
 
     @staticmethod
-    def pad_same(X: np.ndarray,
-                 W: np.ndarray,
-                 method: str = 'replicate',
-                 side: str = 'bilateral') -> np.ndarray:
+    def pad_same(X: np.ndarray, W: np.ndarray, method: str = "replicate", side: str = "bilateral") -> np.ndarray:
         """
         Adds padding to the time series `X` such that after applying a valid convolution with a kernel/filter
         `w`, the resulting time series has the same shape as the input `X`.
@@ -188,8 +191,9 @@ class SpectralResidual(BaseDetector, ThresholdMixin):
             raise ValueError(f"Only 1D time series supported. Received a times series with {len(X.shape)} dimensions.")
 
         if len(W.shape) != 1:
-            raise ValueError("Only 1D kernel/filter supported. Received a kernel/filter "
-                             f"with {len(W.shape)} dimensions.")
+            raise ValueError(
+                "Only 1D kernel/filter supported. Received a kernel/filter " f"with {len(W.shape)} dimensions."
+            )
 
         pad_size = W.shape[0] - 1
 
@@ -207,26 +211,20 @@ class SpectralResidual(BaseDetector, ThresholdMixin):
 
         # replicate padding
         if method == Padding.REPLICATE:
-            return np.concatenate([
-                np.tile(X[0], pad_size_left),
-                X,
-                np.tile(X[-1], pad_size_right)
-            ])
+            return np.concatenate([np.tile(X[0], pad_size_left), X, np.tile(X[-1], pad_size_right)])
 
         # reflection padding
         if method == Padding.REFLECT:
-            return np.concatenate([
-                X[1:pad_size_left + 1][::-1],
-                X,
-                X[-pad_size_right - 1: -1][::-1] if pad_size_right > 0 else np.array([])
-            ])
+            return np.concatenate(
+                [
+                    X[1 : pad_size_left + 1][::-1],
+                    X,
+                    X[-pad_size_right - 1 : -1][::-1] if pad_size_right > 0 else np.array([]),
+                ]
+            )
 
         # zero padding
-        return np.concatenate([
-            np.tile(0, pad_size_left),
-            X,
-            np.tile(0, pad_size_right)
-        ])
+        return np.concatenate([np.tile(0, pad_size_left), X, np.tile(0, pad_size_right)])
 
     def saliency_map(self, X: np.ndarray) -> np.ndarray:
         """
@@ -242,9 +240,11 @@ class SpectralResidual(BaseDetector, ThresholdMixin):
         Array with saliency map values.
         """
         if X.shape[0] <= self.window_amp:
-            raise ValueError("The length of the input time series should be greater than the amplitude window. "
-                             f"Received an input times series of length {X.shape[0]} and an amplitude "
-                             f"window of {self.window_amp}.")
+            raise ValueError(
+                "The length of the input time series should be greater than the amplitude window. "
+                f"Received an input times series of length {X.shape[0]} and an amplitude "
+                f"window of {self.window_amp}."
+            )
 
         fft = np.fft.fft(X)
         amp = np.abs(fft)
@@ -253,19 +253,14 @@ class SpectralResidual(BaseDetector, ThresholdMixin):
         # split spectrum into bias term and symmetric frequencies
         bias, sym_freq = log_amp[:1], log_amp[1:]
         # select just the first half of the sym_freq
-        freq = sym_freq[:(len(sym_freq) + 1) // 2]
+        freq = sym_freq[: (len(sym_freq) + 1) // 2]
         # apply filter/moving average, but first pad the `freq` array
-        padded_freq = SpectralResidual.pad_same(X=freq,
-                                                W=self.conv_amp,
-                                                method=self.padding_amp_method,
-                                                side=self.padding_amp_side)
-        ma_freq = np.convolve(padded_freq, self.conv_amp, 'valid')
+        padded_freq = SpectralResidual.pad_same(
+            X=freq, W=self.conv_amp, method=self.padding_amp_method, side=self.padding_amp_side
+        )
+        ma_freq = np.convolve(padded_freq, self.conv_amp, "valid")
         # construct moving average log amplitude spectrum
-        ma_log_amp = np.concatenate([
-            bias,
-            ma_freq,
-            (ma_freq[:-1] if len(sym_freq) % 2 == 1 else ma_freq)[::-1]
-        ])
+        ma_log_amp = np.concatenate([bias, ma_freq, (ma_freq[:-1] if len(sym_freq) % 2 == 1 else ma_freq)[::-1]])
         assert ma_log_amp.shape[0] == log_amp.shape[0], "`ma_log_amp` size does not match `log_amp` size."
         # compute residual spectrum and transform back to time domain
         res_amp = log_amp - ma_log_amp
@@ -289,8 +284,8 @@ class SpectralResidual(BaseDetector, ThresholdMixin):
         -------
         Array with slope values.
         """
-        dX = X[-1] - X[-self.n_grad_points - 1:-1]
-        dt = t[-1] - t[-self.n_grad_points - 1:-1]
+        dX = X[-1] - X[-self.n_grad_points - 1 : -1]
+        dt = t[-1] - t[-self.n_grad_points - 1 : -1]
         mean_grads = np.mean(dX / dt) * np.mean(dt)
         return mean_grads
 
@@ -338,39 +333,40 @@ class SpectralResidual(BaseDetector, ThresholdMixin):
 
         if len(X.shape) == 2:
             n_samples, n_dim = X.shape
-            X = X.reshape(-1, )
+            X = X.reshape(
+                -1,
+            )
             if X.shape[0] != n_samples:
-                raise ValueError("Only uni-variate time series allowed for SR method. Received a time "
-                                 f"series with {n_dim} features.")
+                raise ValueError(
+                    "Only uni-variate time series allowed for SR method. Received a time "
+                    f"series with {n_dim} features."
+                )
 
         X_pad = self.add_est_points(X, t)  # add padding
-        sr = self.saliency_map(X_pad)      # compute saliency map
-        sr = sr[:-self.n_est_points]       # remove padding again
+        sr = self.saliency_map(X_pad)  # compute saliency map
+        sr = sr[: -self.n_est_points]  # remove padding again
 
         if X.shape[0] <= self.window_local:
-            raise ValueError("The length of the time series should be greater than the local window. "
-                             f"Received an input time series of length {X.shape[0]} and a local "
-                             f"window of {self.window_local}.")
+            raise ValueError(
+                "The length of the time series should be greater than the local window. "
+                f"Received an input time series of length {X.shape[0]} and a local "
+                f"window of {self.window_local}."
+            )
 
         # pad the spectral residual before convolving. By applying `replicate` or `reflect` padding we can
         # remove some of the bias/outliers introduced at the beginning of the saliency map by a naive zero padding
         # performed by numpy. The reason for left padding is explained in a comment in the constructor.
-        padded_sr = SpectralResidual.pad_same(X=sr,
-                                              W=self.conv_local,
-                                              method=self.padding_local_method,
-                                              side=Side.LEFT)
-        ma_sr = np.convolve(padded_sr, self.conv_local, 'valid')
+        padded_sr = SpectralResidual.pad_same(X=sr, W=self.conv_local, method=self.padding_local_method, side=Side.LEFT)
+        ma_sr = np.convolve(padded_sr, self.conv_local, "valid")
         assert sr.shape[0] == ma_sr.shape[0], "`ma_sr` size does not match `sr` size."
 
         # compute the outlier score
         iscore = (sr - ma_sr) / (ma_sr + EPSILON)
         return iscore
 
-    def predict(self,
-                X: np.ndarray,
-                t: np.ndarray = None,
-                return_instance_score: bool = True) \
-            -> Dict[Dict[str, str], Dict[np.ndarray, np.ndarray]]:
+    def predict(
+        self, X: np.ndarray, t: np.ndarray = None, return_instance_score: bool = True
+    ) -> Dict[Dict[str, str], Dict[np.ndarray, np.ndarray]]:
         """
         Compute outlier scores and transform into outlier predictions.
 
@@ -402,8 +398,8 @@ class SpectralResidual(BaseDetector, ThresholdMixin):
 
         # populate output dict
         od = outlier_prediction_dict()
-        od['meta'] = self.meta
-        od['data']['is_outlier'] = outlier_pred
+        od["meta"] = self.meta
+        od["data"]["is_outlier"] = outlier_pred
         if return_instance_score:
-            od['data']['instance_score'] = iscore
+            od["data"]["instance_score"] = iscore
         return od

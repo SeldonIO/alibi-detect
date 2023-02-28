@@ -13,17 +13,17 @@ EPSILON = 1e-8
 
 
 class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
-
-    def __init__(self,
-                 threshold: float = None,
-                 n_components: int = 3,
-                 std_clip: int = 3,
-                 start_clip: int = 100,
-                 max_n: int = None,
-                 cat_vars: dict = None,
-                 ohe: bool = False,
-                 data_type: str = 'tabular'
-                 ) -> None:
+    def __init__(
+        self,
+        threshold: float = None,
+        n_components: int = 3,
+        std_clip: int = 3,
+        start_clip: int = 100,
+        max_n: int = None,
+        cat_vars: dict = None,
+        ohe: bool = False,
+        data_type: str = "tabular",
+    ) -> None:
         """
         Outlier detector for tabular data using the Mahalanobis distance.
 
@@ -51,7 +51,7 @@ class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
         super().__init__()
 
         if threshold is None:
-            logger.warning('No threshold level set. Need to infer threshold using `infer_threshold`.')
+            logger.warning("No threshold level set. Need to infer threshold using `infer_threshold`.")
 
         self.threshold = threshold
         self.n_components = n_components
@@ -72,21 +72,22 @@ class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
         self.n = 0
 
         # set metadata
-        self.meta['detector_type'] = 'outlier'
-        self.meta['data_type'] = data_type
-        self.meta['online'] = True
+        self.meta["detector_type"] = "outlier"
+        self.meta["data_type"] = data_type
+        self.meta["online"] = True
 
-    def fit(self,
-            X: np.ndarray,
-            y: np.ndarray = None,
-            d_type: str = 'abdm',
-            w: float = None,
-            disc_perc: list = [25, 50, 75],
-            standardize_cat_vars: bool = True,
-            feature_range: tuple = (-1e10, 1e10),
-            smooth: float = 1.,
-            center: bool = True
-            ) -> None:
+    def fit(
+        self,
+        X: np.ndarray,
+        y: np.ndarray = None,
+        d_type: str = "abdm",
+        w: float = None,
+        disc_perc: list = [25, 50, 75],
+        standardize_cat_vars: bool = True,
+        feature_range: tuple = (-1e10, 1e10),
+        smooth: float = 1.0,
+        center: bool = True,
+    ) -> None:
         """
         If categorical variables are present, then transform those to numerical values.
         This step is not necessary in the absence of categorical variables.
@@ -125,9 +126,8 @@ class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
         if self.cat_vars is None:
             raise TypeError('No categorical variables specified in the "cat_vars" argument.')
 
-        if d_type not in ['abdm', 'mvdm', 'abdm-mvdm']:
-            raise ValueError('d_type needs to be "abdm", "mvdm" or "abdm-mvdm". '
-                             '{} is not supported.'.format(d_type))
+        if d_type not in ["abdm", "mvdm", "abdm-mvdm"]:
+            raise ValueError('d_type needs to be "abdm", "mvdm" or "abdm-mvdm". ' "{} is not supported.".format(d_type))
 
         if self.ohe:
             X_ord, cat_vars_ord = ohe2ord(X, self.cat_vars)
@@ -137,7 +137,7 @@ class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
         # bin numerical features to compute the pairwise distance matrices
         cat_keys = list(cat_vars_ord.keys())
         n_ord = X_ord.shape[1]
-        if d_type in ['abdm', 'abdm-mvdm'] and len(cat_keys) != n_ord:
+        if d_type in ["abdm", "abdm-mvdm"] and len(cat_keys) != n_ord:
             fnames = [str(_) for _ in range(n_ord)]
             disc = Discretizer(X_ord, cat_keys, fnames, percentiles=disc_perc)
             X_bin = disc.discretize(X_ord)
@@ -147,50 +147,60 @@ class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
             cat_vars_bin = {}
 
         # pairwise distances for categorical variables
-        if d_type == 'abdm':
+        if d_type == "abdm":
             d_pair = abdm(X_bin, cat_vars_ord, cat_vars_bin)
-        elif d_type == 'mvdm':
+        elif d_type == "mvdm":
             d_pair = mvdm(X_ord, y, cat_vars_ord, alpha=1)
 
-        if (type(feature_range[0]) == type(feature_range[1]) and  # noqa
-                type(feature_range[0]) in [int, float]):
-            feature_range = (np.ones((1, n_ord)) * feature_range[0],
-                             np.ones((1, n_ord)) * feature_range[1])
+        if type(feature_range[0]) == type(feature_range[1]) and type(feature_range[0]) in [int, float]:  # noqa
+            feature_range = (np.ones((1, n_ord)) * feature_range[0], np.ones((1, n_ord)) * feature_range[1])
 
-        if d_type == 'abdm-mvdm':
+        if d_type == "abdm-mvdm":
             # pairwise distances
             d_abdm = abdm(X_bin, cat_vars_ord, cat_vars_bin)
             d_mvdm = mvdm(X_ord, y, cat_vars_ord, alpha=1)
 
             # multidim scaled distances
-            d_abs_abdm = multidim_scaling(d_abdm, n_components=2, use_metric=True,
-                                          feature_range=feature_range,
-                                          standardize_cat_vars=standardize_cat_vars,
-                                          smooth=smooth, center=center,
-                                          update_feature_range=False)[0]
+            d_abs_abdm = multidim_scaling(
+                d_abdm,
+                n_components=2,
+                use_metric=True,
+                feature_range=feature_range,
+                standardize_cat_vars=standardize_cat_vars,
+                smooth=smooth,
+                center=center,
+                update_feature_range=False,
+            )[0]
 
-            d_abs_mvdm = multidim_scaling(d_mvdm, n_components=2, use_metric=True,
-                                          feature_range=feature_range,
-                                          standardize_cat_vars=standardize_cat_vars,
-                                          smooth=smooth, center=center,
-                                          update_feature_range=False)[0]
+            d_abs_mvdm = multidim_scaling(
+                d_mvdm,
+                n_components=2,
+                use_metric=True,
+                feature_range=feature_range,
+                standardize_cat_vars=standardize_cat_vars,
+                smooth=smooth,
+                center=center,
+                update_feature_range=False,
+            )[0]
 
             # combine abdm and mvdm
             for k, v in d_abs_abdm.items():
                 self.d_abs[k] = v * w + d_abs_mvdm[k] * (1 - w)
                 if center:  # center the numerical feature values
-                    self.d_abs[k] -= .5 * (self.d_abs[k].max() + self.d_abs[k].min())
+                    self.d_abs[k] -= 0.5 * (self.d_abs[k].max() + self.d_abs[k].min())
         else:
-            self.d_abs = multidim_scaling(d_pair, n_components=2, use_metric=True,
-                                          feature_range=feature_range,
-                                          standardize_cat_vars=standardize_cat_vars,
-                                          smooth=smooth, center=center,
-                                          update_feature_range=False)[0]
+            self.d_abs = multidim_scaling(
+                d_pair,
+                n_components=2,
+                use_metric=True,
+                feature_range=feature_range,
+                standardize_cat_vars=standardize_cat_vars,
+                smooth=smooth,
+                center=center,
+                update_feature_range=False,
+            )[0]
 
-    def infer_threshold(self,
-                        X: np.ndarray,
-                        threshold_perc: float = 95.
-                        ) -> None:
+    def infer_threshold(self, X: np.ndarray, threshold_perc: float = 95.0) -> None:
         """
         Update threshold by a value inferred from the percentage of instances considered to be
         outliers in a sample of the dataset.
@@ -258,15 +268,15 @@ class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
 
         # track mean and covariance matrix
         roll_partial_means = X_clip.cumsum(axis=0) / (np.arange(n_batch) + 1).reshape((n_batch, 1))
-        coefs = (np.arange(n_batch) + 1.) / (np.arange(n_batch) + n + 1.)
+        coefs = (np.arange(n_batch) + 1.0) / (np.arange(n_batch) + n + 1.0)
         new_means = self.mean + coefs.reshape((n_batch, 1)) * (roll_partial_means - self.mean)
         new_means_offset = np.empty_like(new_means)
         new_means_offset[0] = self.mean
         new_means_offset[1:] = new_means[:-1]
 
-        coefs = ((n + np.arange(n_batch)) / (n + np.arange(n_batch) + 1.)).reshape((n_batch, 1, 1))
+        coefs = ((n + np.arange(n_batch)) / (n + np.arange(n_batch) + 1.0)).reshape((n_batch, 1, 1))
         B = coefs * np.matmul((X_clip - new_means_offset)[:, :, None], (X_clip - new_means_offset)[:, None, :])
-        cov_batch = (n - 1.) / (n + max(1, n_batch - 1.)) * self.C + 1. / (n + max(1, n_batch - 1.)) * B.sum(axis=0)
+        cov_batch = (n - 1.0) / (n + max(1, n_batch - 1.0)) * self.C + 1.0 / (n + max(1, n_batch - 1.0)) * B.sum(axis=0)
 
         # PCA
         eigvals, eigvects = eigh(cov_batch, eigvals=(n_params - n_components, n_params - 1))
@@ -281,7 +291,7 @@ class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
             proj_cov = np.matmul(eigvects.transpose(), np.matmul(self.C, eigvects))
 
         # outlier scores are computed in the principal component space
-        coefs = (1. / (n + np.arange(n_batch) + 1.)).reshape((n_batch, 1, 1))
+        coefs = (1.0 / (n + np.arange(n_batch) + 1.0)).reshape((n_batch, 1, 1))
         B = coefs * np.matmul((proj_x_clip - proj_means)[:, :, None], (proj_x_clip - proj_means)[:, None, :])
         all_C_inv = np.zeros_like(B)
         c_inv = None
@@ -294,12 +304,12 @@ class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
                 else:
                     if n + i == 0:
                         continue
-                    proj_cov = (n + i - 1.) / (n + i) * proj_cov + b
+                    proj_cov = (n + i - 1.0) / (n + i) * proj_cov + b
                     continue
             else:
-                c_inv = (n + i - 1.) / float(n + i - 2.) * all_C_inv[i - 1]
+                c_inv = (n + i - 1.0) / float(n + i - 2.0) * all_C_inv[i - 1]
             BC1 = np.matmul(B[i - 1], c_inv)
-            all_C_inv[i] = c_inv - 1. / (1. + np.trace(BC1)) * np.matmul(c_inv, BC1)
+            all_C_inv[i] = c_inv - 1.0 / (1.0 + np.trace(BC1)) * np.matmul(c_inv, BC1)
 
         # update parameters
         self.mean = new_means[-1]
@@ -314,10 +324,9 @@ class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
         outlier_score = np.matmul(x_diff[:, None, :], np.matmul(all_C_inv, x_diff[:, :, None])).reshape(n_batch)
         return outlier_score
 
-    def predict(self,
-                X: np.ndarray,
-                return_instance_score: bool = True) \
-            -> Dict[Dict[str, str], Dict[np.ndarray, np.ndarray]]:
+    def predict(
+        self, X: np.ndarray, return_instance_score: bool = True
+    ) -> Dict[Dict[str, str], Dict[np.ndarray, np.ndarray]]:
         """
         Compute outlier scores and transform into outlier predictions.
 
@@ -345,8 +354,8 @@ class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
 
         # populate output dict
         od = outlier_prediction_dict()
-        od['meta'] = self.meta
-        od['data']['is_outlier'] = outlier_pred
+        od["meta"] = self.meta
+        od["data"]["is_outlier"] = outlier_pred
         if return_instance_score:
-            od['data']['instance_score'] = iscore
+            od["data"]["instance_score"] = iscore
         return od

@@ -15,35 +15,35 @@ from alibi_detect.utils.frameworks import Framework
 
 
 class LearnedKernelDriftTorch(BaseLearnedKernelDrift):
-    @deprecated_alias(preprocess_x_ref='preprocess_at_init')
+    @deprecated_alias(preprocess_x_ref="preprocess_at_init")
     def __init__(
-            self,
-            x_ref: Union[np.ndarray, list],
-            kernel: Union[nn.Module, nn.Sequential],
-            p_val: float = .05,
-            x_ref_preprocessed: bool = False,
-            preprocess_at_init: bool = True,
-            update_x_ref: Optional[Dict[str, int]] = None,
-            preprocess_fn: Optional[Callable] = None,
-            n_permutations: int = 100,
-            var_reg: float = 1e-5,
-            reg_loss_fn: Callable = (lambda kernel: 0),
-            train_size: Optional[float] = .75,
-            retrain_from_scratch: bool = True,
-            optimizer: torch.optim.Optimizer = torch.optim.Adam,  # type: ignore
-            learning_rate: float = 1e-3,
-            batch_size: int = 32,
-            batch_size_predict: int = 32,
-            preprocess_batch_fn: Optional[Callable] = None,
-            epochs: int = 3,
-            num_workers: int = 0,
-            verbose: int = 0,
-            train_kwargs: Optional[dict] = None,
-            device: Optional[str] = None,
-            dataset: Callable = TorchDataset,
-            dataloader: Callable = DataLoader,
-            input_shape: Optional[tuple] = None,
-            data_type: Optional[str] = None
+        self,
+        x_ref: Union[np.ndarray, list],
+        kernel: Union[nn.Module, nn.Sequential],
+        p_val: float = 0.05,
+        x_ref_preprocessed: bool = False,
+        preprocess_at_init: bool = True,
+        update_x_ref: Optional[Dict[str, int]] = None,
+        preprocess_fn: Optional[Callable] = None,
+        n_permutations: int = 100,
+        var_reg: float = 1e-5,
+        reg_loss_fn: Callable = (lambda kernel: 0),
+        train_size: Optional[float] = 0.75,
+        retrain_from_scratch: bool = True,
+        optimizer: torch.optim.Optimizer = torch.optim.Adam,  # type: ignore
+        learning_rate: float = 1e-3,
+        batch_size: int = 32,
+        batch_size_predict: int = 32,
+        preprocess_batch_fn: Optional[Callable] = None,
+        epochs: int = 3,
+        num_workers: int = 0,
+        verbose: int = 0,
+        train_kwargs: Optional[dict] = None,
+        device: Optional[str] = None,
+        dataset: Callable = TorchDataset,
+        dataloader: Callable = DataLoader,
+        input_shape: Optional[tuple] = None,
+        data_type: Optional[str] = None,
     ) -> None:
         """
         Maximum Mean Discrepancy (MMD) data drift detector where the kernel is trained to maximise an
@@ -130,9 +130,9 @@ class LearnedKernelDriftTorch(BaseLearnedKernelDrift):
             train_size=train_size,
             retrain_from_scratch=retrain_from_scratch,
             input_shape=input_shape,
-            data_type=data_type
+            data_type=data_type,
         )
-        self.meta.update({'backend': Framework.PYTORCH.value})
+        self.meta.update({"backend": Framework.PYTORCH.value})
 
         # set device, define model and training kwargs
         self.device = get_device(device)
@@ -141,15 +141,24 @@ class LearnedKernelDriftTorch(BaseLearnedKernelDrift):
 
         # define kwargs for dataloader and trainer
         self.dataset = dataset
-        self.dataloader = partial(dataloader, batch_size=batch_size, shuffle=True,
-                                  drop_last=True, num_workers=num_workers)
+        self.dataloader = partial(
+            dataloader, batch_size=batch_size, shuffle=True, drop_last=True, num_workers=num_workers
+        )
 
         self.kernel_mat_fn = partial(
-            batch_compute_kernel_matrix, device=self.device, preprocess_fn=preprocess_batch_fn,
-            batch_size=batch_size_predict
+            batch_compute_kernel_matrix,
+            device=self.device,
+            preprocess_fn=preprocess_batch_fn,
+            batch_size=batch_size_predict,
         )
-        self.train_kwargs = {'optimizer': optimizer, 'epochs': epochs,  'preprocess_fn': preprocess_batch_fn,
-                             'reg_loss_fn': reg_loss_fn, 'learning_rate': learning_rate, 'verbose': verbose}
+        self.train_kwargs = {
+            "optimizer": optimizer,
+            "epochs": epochs,
+            "preprocess_fn": preprocess_batch_fn,
+            "reg_loss_fn": reg_loss_fn,
+            "learning_rate": learning_rate,
+            "verbose": verbose,
+        }
         if isinstance(train_kwargs, dict):
             self.train_kwargs.update(train_kwargs)
 
@@ -211,10 +220,12 @@ class LearnedKernelDriftTorch(BaseLearnedKernelDrift):
         kernel_mat = kernel_mat - torch.diag(kernel_mat.diag())  # zero diagonal
         mmd2 = mmd2_from_kernel_matrix(kernel_mat, len(x_cur_te), permute=False, zero_diag=False)
         mmd2_permuted = torch.Tensor(
-            [mmd2_from_kernel_matrix(kernel_mat, len(x_cur_te), permute=True, zero_diag=False)
-                for _ in range(self.n_permutations)]
+            [
+                mmd2_from_kernel_matrix(kernel_mat, len(x_cur_te), permute=True, zero_diag=False)
+                for _ in range(self.n_permutations)
+            ]
         )
-        if self.device.type == 'cuda':
+        if self.device.type == "cuda":
             mmd2, mmd2_permuted = mmd2.cpu(), mmd2_permuted.cpu()
         p_val = (mmd2 <= mmd2_permuted).float().mean()
 
@@ -237,11 +248,14 @@ class LearnedKernelDriftTorch(BaseLearnedKernelDrift):
         """Train the kernel to maximise an estimate of test power using minibatch gradient descent."""
         optimizer = optimizer(j_hat.parameters(), lr=learning_rate)
         j_hat.train()
-        loss_ma = 0.
+        loss_ma = 0.0
         for epoch in range(epochs):
             dl_ref, dl_cur = dataloaders
-            dl = tqdm(enumerate(zip(dl_ref, dl_cur)), total=min(len(dl_ref), len(dl_cur))) if verbose == 1 else \
-                enumerate(zip(dl_ref, dl_cur))
+            dl = (
+                tqdm(enumerate(zip(dl_ref, dl_cur)), total=min(len(dl_ref), len(dl_cur)))
+                if verbose == 1
+                else enumerate(zip(dl_ref, dl_cur))
+            )
             for step, (x_ref, x_cur) in dl:
                 if isinstance(preprocess_fn, Callable):  # type: ignore
                     x_ref, x_cur = preprocess_fn(x_ref), preprocess_fn(x_cur)
@@ -253,5 +267,5 @@ class LearnedKernelDriftTorch(BaseLearnedKernelDrift):
                 optimizer.step()  # type: ignore
                 if verbose == 1:
                     loss_ma = loss_ma + (loss.item() - loss_ma) / (step + 1)
-                    dl.set_description(f'Epoch {epoch + 1}/{epochs}')
+                    dl.set_description(f"Epoch {epoch + 1}/{epochs}")
                     dl.set_postfix(dict(loss=loss_ma))

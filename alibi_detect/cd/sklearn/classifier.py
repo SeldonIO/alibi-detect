@@ -14,27 +14,27 @@ logger = logging.getLogger(__name__)
 
 
 class ClassifierDriftSklearn(BaseClassifierDrift):
-    @deprecated_alias(preprocess_x_ref='preprocess_at_init')
+    @deprecated_alias(preprocess_x_ref="preprocess_at_init")
     def __init__(
-            self,
-            x_ref: np.ndarray,
-            model: ClassifierMixin,
-            p_val: float = .05,
-            x_ref_preprocessed: bool = False,
-            preprocess_at_init: bool = True,
-            update_x_ref: Optional[Dict[str, int]] = None,
-            preprocess_fn: Optional[Callable] = None,
-            preds_type: str = 'probs',
-            binarize_preds: bool = False,
-            train_size: Optional[float] = .75,
-            n_folds: Optional[int] = None,
-            retrain_from_scratch: bool = True,
-            seed: int = 0,
-            use_calibration: bool = False,
-            calibration_kwargs: Optional[dict] = None,
-            use_oob: bool = False,
-            input_shape: Optional[tuple] = None,
-            data_type: Optional[str] = None,
+        self,
+        x_ref: np.ndarray,
+        model: ClassifierMixin,
+        p_val: float = 0.05,
+        x_ref_preprocessed: bool = False,
+        preprocess_at_init: bool = True,
+        update_x_ref: Optional[Dict[str, int]] = None,
+        preprocess_fn: Optional[Callable] = None,
+        preds_type: str = "probs",
+        binarize_preds: bool = False,
+        train_size: Optional[float] = 0.75,
+        n_folds: Optional[int] = None,
+        retrain_from_scratch: bool = True,
+        seed: int = 0,
+        use_calibration: bool = False,
+        calibration_kwargs: Optional[dict] = None,
+        use_oob: bool = False,
+        input_shape: Optional[tuple] = None,
+        data_type: Optional[str] = None,
     ) -> None:
         """
         Classifier-based drift detector. The classifier is trained on a fraction of the combined
@@ -107,13 +107,13 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
             retrain_from_scratch=retrain_from_scratch,
             seed=seed,
             input_shape=input_shape,
-            data_type=data_type
+            data_type=data_type,
         )
 
-        if preds_type not in ['probs', 'scores']:
+        if preds_type not in ["probs", "scores"]:
             raise ValueError("'preds_type' should be 'probs' or 'scores'")
 
-        self.meta.update({'backend': Framework.SKLEARN.value})
+        self.meta.update({"backend": Framework.SKLEARN.value})
         self.original_model = model
         self.use_calibration = use_calibration
         self.calibration_kwargs = dict() if calibration_kwargs is None else calibration_kwargs
@@ -123,7 +123,7 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
     def _has_predict_proba(self, model) -> bool:
         try:
             # taking self.x_ref[0].shape to overcome bot cases when self.x_ref is np.ndarray or list
-            model.predict_proba(np.zeros((1, ) + self.x_ref[0].shape))
+            model.predict_proba(np.zeros((1,) + self.x_ref[0].shape))
             has_predict_proba = True
         except NotFittedError:
             has_predict_proba = True
@@ -136,50 +136,56 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
 
         # equivalence between `retrain_from_scratch` and `warm_start`
         if not self.retrain_from_scratch:
-            if hasattr(model, 'warm_start'):
+            if hasattr(model, "warm_start"):
                 model.warm_start = True
-                logger.warning('`retrain_from_scratch=False` sets automatically the parameter `warm_start=True` '
-                               'for the given classifier. Please consult the documentation to ensure that the '
-                               '`warm_start=True` is applicable in the current context (i.e., for tree-based '
-                               'models such as RandomForest, setting `warm_start=True` is not applicable since the '
-                               'fit function expects the same dataset and an update/increase in the number of '
-                               'estimators - previous fitted estimators will be kept frozen while the new ones '
-                               'will be fitted).')
+                logger.warning(
+                    "`retrain_from_scratch=False` sets automatically the parameter `warm_start=True` "
+                    "for the given classifier. Please consult the documentation to ensure that the "
+                    "`warm_start=True` is applicable in the current context (i.e., for tree-based "
+                    "models such as RandomForest, setting `warm_start=True` is not applicable since the "
+                    "fit function expects the same dataset and an update/increase in the number of "
+                    "estimators - previous fitted estimators will be kept frozen while the new ones "
+                    "will be fitted)."
+                )
             else:
-                logger.warning('Current classifier does not support `warm_start`. The model will be retrained '
-                               'from scratch every iteration.')
+                logger.warning(
+                    "Current classifier does not support `warm_start`. The model will be retrained "
+                    "from scratch every iteration."
+                )
         else:
-            if hasattr(model, 'warm_start'):
+            if hasattr(model, "warm_start"):
                 model.warm_start = False
-                logger.warning('`retrain_from_scratch=True` sets automatically the parameter `warm_start=False`.')
+                logger.warning("`retrain_from_scratch=True` sets automatically the parameter `warm_start=False`.")
 
         # oob checks
         if self.use_oob:
             if not isinstance(model, RandomForestClassifier):
-                raise ValueError('OOB supported only for RandomForestClassifier. '
-                                 f'Received a model of type {model.__class__.__name__}')
+                raise ValueError(
+                    "OOB supported only for RandomForestClassifier. "
+                    f"Received a model of type {model.__class__.__name__}"
+                )
 
             if self.use_calibration:
                 self.use_calibration = False
-                logger.warning('Calibration cannot be used when `use_oob=True`. Setting `use_calibration=False`.')
+                logger.warning("Calibration cannot be used when `use_oob=True`. Setting `use_calibration=False`.")
 
             model.oob_score = True
             model.bootstrap = True
             logger.warning(
-                '`use_oob=True` sets automatically the classifier parameters `boostrap=True` and `oob_score=True`. '
-                '`train_size` and `n_folds` are ignored when `use_oob=True`.'
+                "`use_oob=True` sets automatically the classifier parameters `boostrap=True` and `oob_score=True`. "
+                "`train_size` and `n_folds` are ignored when `use_oob=True`."
             )
         else:
             if isinstance(model, RandomForestClassifier):
                 model.oob_score = False
-                logger.warning('`use_oob=False` sets automatically the classifier parameters `oob_score=False`.')
+                logger.warning("`use_oob=False` sets automatically the classifier parameters `oob_score=False`.")
 
         # preds_type checks
-        if self.preds_type == 'probs':
+        if self.preds_type == "probs":
             # calibrate the model if user specified.
             if self.use_calibration:
                 model = CalibratedClassifierCV(base_estimator=model, **self.calibration_kwargs)
-                logger.warning('Using calibration to obtain the prediction probabilities.')
+                logger.warning("Using calibration to obtain the prediction probabilities.")
 
             # check if it has predict proba. Cannot be checked via `hasattr` due to the same issue in SVC (see below)
             has_predict_proba = self._has_predict_proba(model)
@@ -188,8 +194,8 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
             # to the closest integer (i.e., to 0 or 1) according to the predicted probability. Thus, we can define
             # a hard label predict_proba based on the predict method
             if self.binarize_preds and (not has_predict_proba):
-                if not hasattr(model, 'predict'):
-                    raise AttributeError('Trying to use a model which does not support `predict`.')
+                if not hasattr(model, "predict"):
+                    raise AttributeError("Trying to use a model which does not support `predict`.")
 
                 def predict_proba(self, X):
                     return np.eye(2)[self.predict(X).astype(np.int32)]
@@ -197,15 +203,17 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
                 # add predict_proba method. Overwriting predict_proba is not possible for SVC due
                 # to @available_if(_check_proba)
                 # Check link: https://github.com/scikit-learn/scikit-learn/blob/7e1e6d09b/sklearn/svm/_base.py#L807
-                setattr(model, 'aux_predict_proba', partial(predict_proba, model))
+                setattr(model, "aux_predict_proba", partial(predict_proba, model))
             elif has_predict_proba:
-                setattr(model, 'aux_predict_proba', model.predict_proba)
+                setattr(model, "aux_predict_proba", model.predict_proba)
 
             # at this point the model does not have any predict_proba, thus the test can not be performed.
-            if not hasattr(model, 'aux_predict_proba'):
-                raise AttributeError("Trying to use a model which does not support `predict_proba` with "
-                                     "`preds_type='probs'`. Set (`use_calibration=True`, `calibration_kwargs`) or "
-                                     "(`binarize_preds=True`).")
+            if not hasattr(model, "aux_predict_proba"):
+                raise AttributeError(
+                    "Trying to use a model which does not support `predict_proba` with "
+                    "`preds_type='probs'`. Set (`use_calibration=True`, `calibration_kwargs`) or "
+                    "(`binarize_preds=True`)."
+                )
 
         else:
             if self.use_calibration:
@@ -214,9 +222,10 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
             if self.binarize_preds:
                 raise ValueError("`binarize_preds` must be `False` when `preds_type='scores'`.")
 
-            if not hasattr(model, 'decision_function'):
-                raise AttributeError("Trying to use a model which does not support `decision_function` with "
-                                     "`preds_type='scores'`.")
+            if not hasattr(model, "decision_function"):
+                raise AttributeError(
+                    "Trying to use a model which does not support `decision_function` with " "`preds_type='scores'`."
+                )
 
             # need to put the scores in the format expected by test function, which requires to duplicate the
             # scores along axis=1
@@ -225,12 +234,13 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
                 return np.tile(scores, reps=2)
 
             # add predict_proba method
-            setattr(model, 'aux_predict_proba', partial(predict_proba, model))
+            setattr(model, "aux_predict_proba", partial(predict_proba, model))
 
         return model
 
-    def score(self, x: Union[np.ndarray, list]) \
-            -> Tuple[float, float, np.ndarray, np.ndarray, Union[np.ndarray, list], Union[np.ndarray, list]]:
+    def score(
+        self, x: Union[np.ndarray, list]
+    ) -> Tuple[float, float, np.ndarray, np.ndarray, Union[np.ndarray, list], Union[np.ndarray, list]]:
         """
         Compute the out-of-fold drift metric such as the accuracy from a classifier
         trained to distinguish the reference data from the data to be tested.
@@ -252,8 +262,9 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
 
         return self._score(x)
 
-    def _score(self, x: Union[np.ndarray, list]) \
-            -> Tuple[float, float, np.ndarray, np.ndarray, Union[np.ndarray, list], Union[np.ndarray, list]]:
+    def _score(
+        self, x: Union[np.ndarray, list]
+    ) -> Tuple[float, float, np.ndarray, np.ndarray, Union[np.ndarray, list], Union[np.ndarray, list]]:
         x_ref, x = self.preprocess(x)
         x, y, splits = self.get_splits(x_ref, x, return_splits=True)  # type: ignore
 
@@ -266,7 +277,7 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
             elif isinstance(x, list):
                 x_tr, x_te = [x[_] for _ in idx_tr], [x[_] for _ in idx_te]
             else:
-                raise TypeError(f'x needs to be of type np.ndarray or list and not {type(x)}.')
+                raise TypeError(f"x needs to be of type np.ndarray or list and not {type(x)}.")
             self.model.fit(x_tr, y_tr)
             probs = self.model.aux_predict_proba(x_te)
             probs_oof_list.append(probs)
@@ -287,8 +298,9 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
             x_sort = [x_oof[_] for _ in idx_sort]
         return p_val, dist, probs_sort[:n_ref, 1], probs_sort[n_ref:, 1], x_sort[:n_ref], x_sort[n_ref:]
 
-    def _score_rf(self, x: Union[np.ndarray, list]) \
-            -> Tuple[float, float, np.ndarray, np.ndarray, Union[np.ndarray, list], Union[np.ndarray, list]]:
+    def _score_rf(
+        self, x: Union[np.ndarray, list]
+    ) -> Tuple[float, float, np.ndarray, np.ndarray, Union[np.ndarray, list], Union[np.ndarray, list]]:
         x_ref, x = self.preprocess(x)
         x, y = self.get_splits(x_ref, x, return_splits=False)  # type: ignore
         self.model.fit(x, y)
@@ -302,7 +314,7 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
         elif isinstance(x, list):
             x_oob = [x[_] for _ in idx_oob]
         else:
-            raise TypeError(f'x needs to be of type np.ndarray or list and not {type(x)}.')
+            raise TypeError(f"x needs to be of type np.ndarray or list and not {type(x)}.")
         # comparison due to ordering in get_split (i.e, x = [x_ref, x])
         n_ref = np.sum(idx_oob < len(x_ref)).item()
         n_cur = np.sum(idx_oob >= len(x_ref)).item()

@@ -9,8 +9,8 @@ import os
 
 
 def save_detector(
-        detector: Union[Detector, ConfigurableDetector],
-        filepath: Union[str, os.PathLike], legacy: bool = False) -> None:
+    detector: Union[Detector, ConfigurableDetector], filepath: Union[str, os.PathLike], legacy: bool = False
+) -> None:
     """
     Save outlier, drift or adversarial detector.
 
@@ -23,8 +23,11 @@ def save_detector(
     legacy
         Whether to save in the legacy .dill format instead of via a config.toml file. Default is `False`.
     """
-    warnings.warn("This function has been moved to alibi_detect.saving.save_detector()."
-                  "This legacy link will be removed in a future version", DeprecationWarning)
+    warnings.warn(
+        "This function has been moved to alibi_detect.saving.save_detector()."
+        "This legacy link will be removed in a future version",
+        DeprecationWarning,
+    )
     return _save_detector(detector, filepath, legacy)
 
 
@@ -41,6 +44,9 @@ def load_detector(filepath: Union[str, os.PathLike], **kwargs) -> Union[Detector
     -------
     Loaded outlier or adversarial detector object.
     """
-    warnings.warn("This function has been moved to alibi_detect.saving.load_detector()."
-                  "This legacy link will be removed in a future version", DeprecationWarning)
+    warnings.warn(
+        "This function has been moved to alibi_detect.saving.load_detector()."
+        "This legacy link will be removed in a future version",
+        DeprecationWarning,
+    )
     return _load_detector(filepath, **kwargs)

@@ -64,7 +64,7 @@ def batch_compute_kernel_matrix(
     Kernel matrix in the form of a torch tensor
     """
     if device is None:
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if type(x) != type(y):
         raise ValueError("x and y should be of the same type")
 
@@ -94,8 +94,9 @@ def batch_compute_kernel_matrix(
     return k_mat
 
 
-def mmd2_from_kernel_matrix(kernel_mat: torch.Tensor, m: int, permute: bool = False,
-                            zero_diag: bool = True) -> torch.Tensor:
+def mmd2_from_kernel_matrix(
+    kernel_mat: torch.Tensor, m: int, permute: bool = False, zero_diag: bool = True
+) -> torch.Tensor:
     """
     Compute maximum mean discrepancy (MMD^2) between 2 samples x and y from the
     full kernel matrix between the samples.
@@ -123,7 +124,7 @@ def mmd2_from_kernel_matrix(kernel_mat: torch.Tensor, m: int, permute: bool = Fa
         kernel_mat = kernel_mat[idx][:, idx]
     k_xx, k_yy, k_xy = kernel_mat[:-m, :-m], kernel_mat[-m:, -m:], kernel_mat[-m:, :-m]
     c_xx, c_yy = 1 / (n * (n - 1)), 1 / (m * (m - 1))
-    mmd2 = c_xx * k_xx.sum() + c_yy * k_yy.sum() - 2. * k_xy.mean()
+    mmd2 = c_xx * k_xx.sum() + c_yy * k_yy.sum() - 2.0 * k_xy.mean()
     return mmd2
 
 
@@ -147,7 +148,7 @@ def mmd2(x: torch.Tensor, y: torch.Tensor, kernel: Callable) -> float:
     n, m = x.shape[0], y.shape[0]
     c_xx, c_yy = 1 / (n * (n - 1)), 1 / (m * (m - 1))
     k_xx, k_yy, k_xy = kernel(x, x), kernel(y, y), kernel(x, y)  # type: ignore
-    return c_xx * (k_xx.sum() - k_xx.trace()) + c_yy * (k_yy.sum() - k_yy.trace()) - 2. * k_xy.mean()
+    return c_xx * (k_xx.sum() - k_xx.trace()) + c_yy * (k_yy.sum() - k_yy.trace()) - 2.0 * k_xy.mean()
 
 
 def permed_lsdds(
@@ -202,9 +203,9 @@ def permed_lsdds(
         H_plus_lam_invs = torch.inverse(H_plus_lams)
         H_plus_lam_invs = H_plus_lam_invs.permute(1, 2, 0)  # put lambdas in final axis
 
-        omegas = torch.einsum('jkl,bk->bjl', H_plus_lam_invs, h_perms)  # (Eqn 8)
-        h_omegas = torch.einsum('bj,bjl->bl', h_perms, omegas)
-        omega_H_omegas = torch.einsum('bkl,bkl->bl', torch.einsum('bjl,jk->bkl', omegas, H), omegas)
+        omegas = torch.einsum("jkl,bk->bjl", H_plus_lam_invs, h_perms)  # (Eqn 8)
+        h_omegas = torch.einsum("bj,bjl->bl", h_perms, omegas)
+        omega_H_omegas = torch.einsum("bkl,bkl->bl", torch.einsum("bjl,jk->bkl", omegas, H), omegas)
         rds = (1 - (omega_H_omegas / h_omegas)).mean(0)
         less_than_rd_inds = (rds < lam_rd_max).nonzero()
         if len(less_than_rd_inds) == 0:

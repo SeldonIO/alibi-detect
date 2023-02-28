@@ -8,7 +8,7 @@ from alibi_detect.cd.pytorch import HiddenOutput
 n, dim1, dim2, n_classes, latent_dim, n_hidden = 100, 2, 3, 5, 2, 7
 n_features = dim1 * dim2
 shape = (n, dim1, dim2)
-X = np.random.rand(n * n_features).reshape(shape).astype('float32')
+X = np.random.rand(n * n_features).reshape(shape).astype("float32")
 
 
 class Model1(nn.Module):
@@ -22,10 +22,7 @@ class Model1(nn.Module):
         return self.dense2(x)
 
 
-model2 = nn.Sequential(
-    nn.Linear(dim2, n_hidden),
-    nn.Linear(n_hidden, n_classes)
-)
+model2 = nn.Sequential(nn.Linear(dim2, n_hidden), nn.Linear(n_hidden, n_classes))
 
 model = [1, 2]
 layer = [0, 1, 2]
@@ -39,7 +36,7 @@ def hidden_output_params(request):
     return tests_hidden_output[request.param]
 
 
-@pytest.mark.parametrize('hidden_output_params', list(range(n_tests_hidden_output)), indirect=True)
+@pytest.mark.parametrize("hidden_output_params", list(range(n_tests_hidden_output)), indirect=True)
 def test_hidden_output(hidden_output_params):
     model, layer, flatten = hidden_output_params
     model = Model1() if model == 1 else model2

@@ -9,21 +9,21 @@ import warnings
 
 
 class CVMDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
-    online_state_keys = ('t', 'test_stats', 'drift_preds', 'xs', 'ids_ref_wins', 'ids_wins_ref', 'ids_wins_wins')
+    online_state_keys = ("t", "test_stats", "drift_preds", "xs", "ids_ref_wins", "ids_wins_ref", "ids_wins_wins")
 
     def __init__(
-            self,
-            x_ref: Union[np.ndarray, list],
-            ert: float,
-            window_sizes: List[int],
-            preprocess_fn: Optional[Callable] = None,
-            x_ref_preprocessed: bool = False,
-            n_bootstraps: int = 10000,
-            batch_size: int = 64,
-            n_features: Optional[int] = None,
-            verbose: bool = True,
-            input_shape: Optional[tuple] = None,
-            data_type: Optional[str] = None
+        self,
+        x_ref: Union[np.ndarray, list],
+        ert: float,
+        window_sizes: List[int],
+        preprocess_fn: Optional[Callable] = None,
+        x_ref_preprocessed: bool = False,
+        n_bootstraps: int = 10000,
+        batch_size: int = 64,
+        n_features: Optional[int] = None,
+        verbose: bool = True,
+        input_shape: Optional[tuple] = None,
+        data_type: Optional[str] = None,
     ) -> None:
         r"""
         Online Cramer-von Mises (CVM) data drift detector using preconfigured thresholds, which tests for
@@ -86,7 +86,7 @@ class CVMDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
             n_features=n_features,
             verbose=verbose,
             input_shape=input_shape,
-            data_type=data_type
+            data_type=data_type,
         )
         # Set config
         self._set_config(locals())
@@ -127,7 +127,7 @@ class CVMDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
         stats = self._simulate_streams(t_max)
         # At each t for each stream, find max stats. over window sizes
         with warnings.catch_warnings():
-            warnings.filterwarnings(action='ignore', message='All-NaN slice encountered')
+            warnings.filterwarnings(action="ignore", message="All-NaN slice encountered")
             max_stats = np.nanmax(stats, -1)
         # Now loop through each t and find threshold (at each t) that satisfies eqn. (2) in Ross et al.
         thresholds = np.full((t_max, 1), np.nan)
@@ -153,16 +153,19 @@ class CVMDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
         stats = np.zeros((self.n_bootstraps, t_max, n_windows))
         n_batches = int(np.ceil(self.n_bootstraps / self.batch_size))
         idxs = np.array_split(np.arange(self.n_bootstraps), n_batches)
-        batches = enumerate(tqdm(idxs, "Computing thresholds over %d batches" % n_batches)) if self.verbose \
+        batches = (
+            enumerate(tqdm(idxs, "Computing thresholds over %d batches" % n_batches))
+            if self.verbose
             else enumerate(idxs)
+        )
         for b, idx in batches:
             xs = np.random.randn(len(idx), self.n + t_max)
             ids = xs[:, None, :] >= xs[:, :, None]
-            stats[idx, :, :] = _ids_to_stats(ids[:, :self.n, :], ids[:, self.n:, :], np.asarray(self.window_sizes))
+            stats[idx, :, :] = _ids_to_stats(ids[:, : self.n, :], ids[:, self.n :, :], np.asarray(self.window_sizes))
 
         # Remove stats prior to windows being full
         for k, ws in enumerate(self.window_sizes):
-            stats[:, :ws - 1, k] = np.nan
+            stats[:, : ws - 1, k] = np.nan
         return stats
 
     def _update_state(self, x_t: np.ndarray):
@@ -185,17 +188,20 @@ class CVMDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
             # Update stream
             self.xs = np.concatenate([self.xs, x_t])
             self.ids_ref_wins = np.concatenate(
-                [self.ids_ref_wins[:, -(self.max_ws - 1):, :], (x_t >= self.x_ref)[:, None, :]], 1
+                [self.ids_ref_wins[:, -(self.max_ws - 1) :, :], (x_t >= self.x_ref)[:, None, :]], 1
             )
             self.ids_wins_ref = np.concatenate(
-                [self.ids_wins_ref[-(self.max_ws - 1):, :, :], (x_t <= self.x_ref)[None, :, :]], 0
+                [self.ids_wins_ref[-(self.max_ws - 1) :, :, :], (x_t <= self.x_ref)[None, :, :]], 0
             )
             self.ids_wins_wins = np.concatenate(
-                [self.ids_wins_wins[-(self.max_ws - 1):, -(self.max_ws - 1):, :],
-                 (x_t >= self.xs[-self.max_ws:-1, :])[:, None, :]], 1
+                [
+                    self.ids_wins_wins[-(self.max_ws - 1) :, -(self.max_ws - 1) :, :],
+                    (x_t >= self.xs[-self.max_ws : -1, :])[:, None, :],
+                ],
+                1,
             )
             self.ids_wins_wins = np.concatenate(
-                [self.ids_wins_wins, (x_t <= self.xs[-self.max_ws:, :])[None, :, :]], 0
+                [self.ids_wins_wins, (x_t <= self.xs[-self.max_ws :, :])[None, :, :]], 0
             )
 
     def _initialise_state(self) -> None:
@@ -230,8 +236,9 @@ class CVMDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
                 win_cdf_win = np.sum(self.ids_wins_wins[-ws:, -ws:], axis=0) / ws
                 ref_cdf_diffs = self.ref_cdf_ref - win_cdf_ref
                 win_cdf_diffs = ref_cdf_win - win_cdf_win
-                sum_diffs_2 = np.sum(ref_cdf_diffs * ref_cdf_diffs, axis=0) \
-                    + np.sum(win_cdf_diffs * win_cdf_diffs, axis=0)
+                sum_diffs_2 = np.sum(ref_cdf_diffs * ref_cdf_diffs, axis=0) + np.sum(
+                    win_cdf_diffs * win_cdf_diffs, axis=0
+                )
                 stats[k, :] = _normalise_stats(sum_diffs_2, self.n, ws)
             else:
                 stats[k, :] = np.nan
@@ -254,7 +261,7 @@ class CVMDriftOnline(BaseUniDriftOnline, DriftConfigMixin):
         An int equal to 1 if drift, 0 otherwise.
         """
         with warnings.catch_warnings():
-            warnings.filterwarnings(action='ignore', message='All-NaN slice encountered')
+            warnings.filterwarnings(action="ignore", message="All-NaN slice encountered")
             max_stats = np.nanmax(test_stats, axis=0)
         drift_pred = int((max_stats > thresholds).any())
         return drift_pred
@@ -271,11 +278,7 @@ def _normalise_stats(stats: np.ndarray, n: int, ws: int) -> np.ndarray:
 
 
 @nb.njit(parallel=True, cache=True)
-def _ids_to_stats(
-        ids_ref_all: np.ndarray,
-        ids_stream_all: np.ndarray,
-        window_sizes: np.ndarray
-) -> np.ndarray:
+def _ids_to_stats(ids_ref_all: np.ndarray, ids_stream_all: np.ndarray, window_sizes: np.ndarray) -> np.ndarray:
     n_bootstraps = ids_ref_all.shape[0]
     n = ids_ref_all.shape[1]
     t_max = ids_stream_all.shape[1]
@@ -297,11 +300,10 @@ def _ids_to_stats(
             cdf_diffs_on_ref = np.empty_like(win_cdf_ref)
             for j in range(win_cdf_ref.shape[0]):  # Need to loop through as can't broadcast in njit parallel
                 cdf_diffs_on_ref[j, :] = ref_cdf_all[:n] - win_cdf_ref[j, :]
-            stats[b, (ws - 1):, k] = np.sum(cdf_diffs_on_ref * cdf_diffs_on_ref, axis=-1)
+            stats[b, (ws - 1) :, k] = np.sum(cdf_diffs_on_ref * cdf_diffs_on_ref, axis=-1)
             for t in range(ws - 1, t_max):
-                win_cdf_win = (cumsums[t + 1, n + t - ws:n + t] -
-                               cumsums[t + 1 - ws, n + t - ws:n + t]) / ws
-                cdf_diffs_on_win = ref_cdf_all[n + t - ws:n + t] - win_cdf_win
+                win_cdf_win = (cumsums[t + 1, n + t - ws : n + t] - cumsums[t + 1 - ws, n + t - ws : n + t]) / ws
+                cdf_diffs_on_win = ref_cdf_all[n + t - ws : n + t] - win_cdf_win
                 stats[b, t, k] += np.sum(cdf_diffs_on_win * cdf_diffs_on_win)
             stats[b, :, k] = _normalise_stats(stats[b, :, k], n, ws)
     return stats

@@ -34,10 +34,7 @@ class _DomainClf(ABC):
 
 
 class _SVCDomainClf(_DomainClf):
-    def __init__(self,
-                 kernel: Callable,
-                 cal_method: str = 'sigmoid',
-                 clf_kwargs: dict = None):
+    def __init__(self, kernel: Callable, cal_method: str = "sigmoid", clf_kwargs: dict = None):
         """
         A domain classifier using the scikit-learn Support Vector Classifier
         (:py:class:`~sklearn.svm.SVC`). An SVC is fitted on all the
@@ -84,11 +81,11 @@ class _SVCDomainClf(_DomainClf):
         y
             Boolean array marking the domain each instance belongs to (`0` for reference, `1` for test).
         """
-        clf = CalibratedClassifierCV(self.clf, method=self.cal_method, cv='prefit')
+        clf = CalibratedClassifierCV(self.clf, method=self.cal_method, cv="prefit")
         clf.fit(x, y)
         self.clf = clf
 
-    def predict(self,  x: np.ndarray) -> np.ndarray:
+    def predict(self, x: np.ndarray) -> np.ndarray:
         """
         The classifier's predict method.
 

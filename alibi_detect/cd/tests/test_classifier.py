@@ -17,23 +17,19 @@ n, n_features = 100, 5
 def tensorflow_model(input_shape: Tuple[int]):
     x_in = Input(shape=input_shape)
     x = Dense(20, activation=tf.nn.relu)(x_in)
-    x_out = Dense(2, activation='softmax')(x)
+    x_out = Dense(2, activation="softmax")(x)
     return tf.keras.models.Model(inputs=x_in, outputs=x_out)
 
 
 def pytorch_model(input_shape: int):
-    return torch.nn.Sequential(
-        nn.Linear(input_shape, 20),
-        nn.ReLU(),
-        nn.Linear(20, 2)
-    )
+    return torch.nn.Sequential(nn.Linear(input_shape, 20), nn.ReLU(), nn.Linear(20, 2))
 
 
 def sklearn_model():
-    return MLPClassifier(hidden_layer_sizes=(20, ))
+    return MLPClassifier(hidden_layer_sizes=(20,))
 
 
-tests_clfdrift = ['tensorflow', 'pytorch', 'PyToRcH', 'sklearn', 'mxnet']
+tests_clfdrift = ["tensorflow", "pytorch", "PyToRcH", "sklearn", "mxnet"]
 n_tests = len(tests_clfdrift)
 
 
@@ -42,14 +38,14 @@ def clfdrift_params(request):
     return tests_clfdrift[request.param]
 
 
-@pytest.mark.parametrize('clfdrift_params', list(range(n_tests)), indirect=True)
+@pytest.mark.parametrize("clfdrift_params", list(range(n_tests)), indirect=True)
 def test_clfdrift(clfdrift_params):
     backend = clfdrift_params
-    if backend.lower() == 'pytorch':
+    if backend.lower() == "pytorch":
         model = pytorch_model(n_features)
-    elif backend.lower() == 'tensorflow':
+    elif backend.lower() == "tensorflow":
         model = tensorflow_model((n_features,))
-    elif backend.lower() == 'sklearn':
+    elif backend.lower() == "sklearn":
         model = sklearn_model()
     else:
         model = None
@@ -60,11 +56,11 @@ def test_clfdrift(clfdrift_params):
     except NotImplementedError:
         cd = None
 
-    if backend.lower() == 'pytorch':
+    if backend.lower() == "pytorch":
         assert isinstance(cd._detector, ClassifierDriftTorch)
-    elif backend.lower() == 'tensorflow':
+    elif backend.lower() == "tensorflow":
         assert isinstance(cd._detector, ClassifierDriftTF)
-    elif backend.lower() == 'sklearn':
+    elif backend.lower() == "sklearn":
         assert isinstance(cd._detector, ClassifierDriftSklearn)
     else:
         assert cd is None

@@ -6,12 +6,12 @@ from tensorflow.keras.layers import Dense, InputLayer
 from alibi_detect.od import OutlierVAEGMM
 from alibi_detect.version import __version__
 
-threshold = [None, 5.]
+threshold = [None, 5.0]
 n_gmm = [1, 2]
-w_energy = [.1, .5]
-w_recon = [0., 1e-7]
+w_energy = [0.1, 0.5]
+w_recon = [0.0, 1e-7]
 samples = [1, 10]
-threshold_perc = [90.]
+threshold_perc = [90.0]
 return_instance_score = [True, False]
 
 tests = list(product(threshold, n_gmm, w_energy, w_recon, samples, threshold_perc, return_instance_score))
@@ -32,25 +32,21 @@ def vaegmm_params(request):
     return tests[request.param]
 
 
-@pytest.mark.parametrize('vaegmm_params', list(range(n_tests)), indirect=True)
+@pytest.mark.parametrize("vaegmm_params", list(range(n_tests)), indirect=True)
 def test_vaegmm(vaegmm_params):
     # OutlierVAEGMM parameters
     threshold, n_gmm, w_energy, w_recon, samples, threshold_perc, return_instance_score = vaegmm_params
 
     # define encoder, decoder and GMM density net
     encoder_net = tf.keras.Sequential(
-        [
-            InputLayer(input_shape=(input_dim,)),
-            Dense(128, activation=tf.nn.relu),
-            Dense(latent_dim, activation=None)
-        ]
+        [InputLayer(input_shape=(input_dim,)), Dense(128, activation=tf.nn.relu), Dense(latent_dim, activation=None)]
     )
 
     decoder_net = tf.keras.Sequential(
         [
             InputLayer(input_shape=(latent_dim,)),
             Dense(128, activation=tf.nn.relu),
-            Dense(input_dim, activation=tf.nn.sigmoid)
+            Dense(input_dim, activation=tf.nn.sigmoid),
         ]
     )
 
@@ -58,7 +54,7 @@ def test_vaegmm(vaegmm_params):
         [
             InputLayer(input_shape=(latent_dim + 2,)),
             Dense(10, activation=tf.nn.relu),
-            Dense(n_gmm, activation=tf.nn.softmax)
+            Dense(n_gmm, activation=tf.nn.softmax),
         ]
     )
 
@@ -70,12 +66,17 @@ def test_vaegmm(vaegmm_params):
         gmm_density_net=gmm_density_net,
         n_gmm=n_gmm,
         latent_dim=latent_dim,
-        samples=samples
+        samples=samples,
     )
 
     assert vaegmm.threshold == threshold
-    assert vaegmm.meta == {'name': 'OutlierVAEGMM', 'detector_type': 'outlier', 'data_type': None,
-                           'online': False, 'version': __version__}
+    assert vaegmm.meta == {
+        "name": "OutlierVAEGMM",
+        "detector_type": "outlier",
+        "data_type": None,
+        "online": False,
+        "version": __version__,
+    }
 
     # fit OutlierAEGMM, infer threshold and compute scores
     vaegmm.fit(X, w_recon=w_recon, w_energy=w_energy, epochs=5, batch_size=1000, verbose=False)
@@ -86,10 +87,12 @@ def test_vaegmm(vaegmm_params):
 
     # make and check predictions
     od_preds = vaegmm.predict(X, return_instance_score=return_instance_score)
-    assert od_preds['meta'] == vaegmm.meta
-    assert od_preds['data']['is_outlier'].shape == (X.shape[0],)
+    assert od_preds["meta"] == vaegmm.meta
+    assert od_preds["data"]["is_outlier"].shape == (X.shape[0],)
     if return_instance_score:
-        assert od_preds['data']['is_outlier'].sum() == (od_preds['data']['instance_score']
-                                                        > vaegmm.threshold).astype(int).sum()
+        assert (
+            od_preds["data"]["is_outlier"].sum()
+            == (od_preds["data"]["instance_score"] > vaegmm.threshold).astype(int).sum()
+        )
     else:
-        assert od_preds['data']['instance_score'] is None
+        assert od_preds["data"]["instance_score"] is None

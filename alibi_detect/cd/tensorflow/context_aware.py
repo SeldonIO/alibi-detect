@@ -16,25 +16,25 @@ logger = logging.getLogger(__name__)
 class ContextMMDDriftTF(BaseContextMMDDrift):
     lams: Optional[Tuple[tf.Tensor, tf.Tensor]]
 
-    @deprecated_alias(preprocess_x_ref='preprocess_at_init')
+    @deprecated_alias(preprocess_x_ref="preprocess_at_init")
     def __init__(
-            self,
-            x_ref: Union[np.ndarray, list],
-            c_ref: np.ndarray,
-            p_val: float = .05,
-            x_ref_preprocessed: bool = False,
-            preprocess_at_init: bool = True,
-            update_ref: Optional[Dict[str, int]] = None,
-            preprocess_fn: Optional[Callable] = None,
-            x_kernel: Callable = GaussianRBF,
-            c_kernel: Callable = GaussianRBF,
-            n_permutations: int = 1000,
-            prop_c_held: float = 0.25,
-            n_folds: int = 5,
-            batch_size: Optional[int] = 256,
-            input_shape: Optional[tuple] = None,
-            data_type: Optional[str] = None,
-            verbose: bool = False,
+        self,
+        x_ref: Union[np.ndarray, list],
+        c_ref: np.ndarray,
+        p_val: float = 0.05,
+        x_ref_preprocessed: bool = False,
+        preprocess_at_init: bool = True,
+        update_ref: Optional[Dict[str, int]] = None,
+        preprocess_fn: Optional[Callable] = None,
+        x_kernel: Callable = GaussianRBF,
+        c_kernel: Callable = GaussianRBF,
+        n_permutations: int = 1000,
+        prop_c_held: float = 0.25,
+        n_folds: int = 5,
+        batch_size: Optional[int] = 256,
+        input_shape: Optional[tuple] = None,
+        data_type: Optional[str] = None,
+        verbose: bool = False,
     ) -> None:
         """
         A context-aware drift detector based on a conditional analogue of the maximum mean discrepancy (MMD).
@@ -96,9 +96,9 @@ class ContextMMDDriftTF(BaseContextMMDDrift):
             batch_size=batch_size,
             input_shape=input_shape,
             data_type=data_type,
-            verbose=verbose
+            verbose=verbose,
         )
-        self.meta.update({'backend': Framework.TENSORFLOW.value})
+        self.meta.update({"backend": Framework.TENSORFLOW.value})
 
         # initialize kernel
         self.x_kernel = x_kernel(init_sigma_fn=_sigma_median_diag) if x_kernel == GaussianRBF else x_kernel
@@ -107,8 +107,9 @@ class ContextMMDDriftTF(BaseContextMMDDrift):
         # Initialize classifier (hardcoded for now)
         self.clf = _SVCDomainClf(self.c_kernel)
 
-    def score(self,  # type: ignore[override]
-              x: Union[np.ndarray, list], c: np.ndarray) -> Tuple[float, float, float, Tuple]:
+    def score(
+        self, x: Union[np.ndarray, list], c: np.ndarray  # type: ignore[override]
+    ) -> Tuple[float, float, float, Tuple]:
         """
         Compute the MMD based conditional test statistic, and perform a conditional permutation test to obtain a
         p-value representing the test statistic's extremity under the null hypothesis.
@@ -151,8 +152,9 @@ class ContextMMDDriftTF(BaseContextMMDDrift):
 
         # Obtain n_permutations conditional reassignments
         prop_scores = self.clf.predict(c_all_np)
-        self.redrawn_bools = [tfp.distributions.Bernoulli(probs=prop_scores).sample()
-                              for _ in range(self.n_permutations)]
+        self.redrawn_bools = [
+            tfp.distributions.Bernoulli(probs=prop_scores).sample() for _ in range(self.n_permutations)
+        ]
         iters = tqdm(self.redrawn_bools, total=self.n_permutations) if self.verbose else self.redrawn_bools
 
         # Compute test stat on original and reassigned data
@@ -168,8 +170,9 @@ class ContextMMDDriftTF(BaseContextMMDDrift):
         distance_threshold = np.sort(permuted_stats)[::-1][idx_threshold]
         return p_val.numpy().item(), stat.numpy().item(), distance_threshold, coupling
 
-    def _cmmd(self, K: tf.Tensor, L: tf.Tensor, bools: tf.Tensor, L_held: tf.Tensor = None) \
-            -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
+    def _cmmd(
+        self, K: tf.Tensor, L: tf.Tensor, bools: tf.Tensor, L_held: tf.Tensor = None
+    ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
         """Private method to compute the MMD-ADiTT test statistic."""
         # Get ref/test indices
         idx_0, idx_1 = np.where(bools == 0)[0], np.where(bools == 1)[0]
@@ -183,7 +186,7 @@ class ContextMMDDriftTF(BaseContextMMDDrift):
         # Initialise regularisation parameters
         # Implemented only for first _cmmd call which corresponds to original window assignment
         if self.lams is None:
-            possible_lams = tf.convert_to_tensor([2**(-i) for i in range(20)], dtype=tf.float64)
+            possible_lams = tf.convert_to_tensor([2 ** (-i) for i in range(20)], dtype=tf.float64)
             lam_0 = self._pick_lam(possible_lams, K_0, L_0, n_folds=self.n_folds)
             lam_1 = self._pick_lam(possible_lams, K_1, L_1, n_folds=self.n_folds)
             self.lams = (lam_0, lam_1)
@@ -196,19 +199,39 @@ class ContextMMDDriftTF(BaseContextMMDDrift):
         # Allow batches of MMDs to be computed at a time (rather than all)
         if self.batch_size is not None:
             bs = self.batch_size
-            coupling_xx = tf.reduce_mean(tf.stack([tf.reduce_mean(tf.einsum('ij,ik->ijk', A_0_i, A_0_i), axis=0)
-                                                   for A_0_i in tf.split(A_0, _split_chunks(len(A_0), bs))]), axis=0)
-            coupling_yy = tf.reduce_mean(tf.stack([tf.reduce_mean(tf.einsum('ij,ik->ijk', A_1_i, A_1_i), axis=0)
-                                                   for A_1_i in tf.split(A_1, _split_chunks(len(A_1), bs))]), axis=0)
-            coupling_xy = tf.reduce_mean(tf.stack([
-                tf.reduce_mean(tf.einsum('ij,ik->ijk', A_0_i, A_1_i), axis=0)
-                for A_0_i, A_1_i in zip(tf.split(A_0, _split_chunks(len(A_0), bs)),
-                                        tf.split(A_1, _split_chunks(len(A_1), bs)))
-            ]), axis=0)
+            coupling_xx = tf.reduce_mean(
+                tf.stack(
+                    [
+                        tf.reduce_mean(tf.einsum("ij,ik->ijk", A_0_i, A_0_i), axis=0)
+                        for A_0_i in tf.split(A_0, _split_chunks(len(A_0), bs))
+                    ]
+                ),
+                axis=0,
+            )
+            coupling_yy = tf.reduce_mean(
+                tf.stack(
+                    [
+                        tf.reduce_mean(tf.einsum("ij,ik->ijk", A_1_i, A_1_i), axis=0)
+                        for A_1_i in tf.split(A_1, _split_chunks(len(A_1), bs))
+                    ]
+                ),
+                axis=0,
+            )
+            coupling_xy = tf.reduce_mean(
+                tf.stack(
+                    [
+                        tf.reduce_mean(tf.einsum("ij,ik->ijk", A_0_i, A_1_i), axis=0)
+                        for A_0_i, A_1_i in zip(
+                            tf.split(A_0, _split_chunks(len(A_0), bs)), tf.split(A_1, _split_chunks(len(A_1), bs))
+                        )
+                    ]
+                ),
+                axis=0,
+            )
         else:
-            coupling_xx = tf.reduce_mean(tf.einsum('ij,ik->ijk', A_0, A_0), axis=0)
-            coupling_yy = tf.reduce_mean(tf.einsum('ij,ik->ijk', A_1, A_1), axis=0)
-            coupling_xy = tf.reduce_mean(tf.einsum('ij,ik->ijk', A_0, A_1), axis=0)
+            coupling_xx = tf.reduce_mean(tf.einsum("ij,ik->ijk", A_0, A_0), axis=0)
+            coupling_yy = tf.reduce_mean(tf.einsum("ij,ik->ijk", A_1, A_1), axis=0)
+            coupling_xy = tf.reduce_mean(tf.einsum("ij,ik->ijk", A_0, A_1), axis=0)
         sim_xx = tf.reduce_sum(tf.gather(tf.gather(K, idx_0), idx_0, axis=1) * coupling_xx)
         sim_yy = tf.reduce_sum(tf.gather(tf.gather(K, idx_1), idx_1, axis=1) * coupling_yy)
         sim_xy = tf.reduce_sum(tf.gather(tf.gather(K, idx_0), idx_1, axis=1) * coupling_xy)
@@ -231,19 +254,19 @@ class ContextMMDDriftTF(BaseContextMMDDrift):
         K, L = tf.gather(tf.gather(K, perm), perm, axis=1), tf.gather(tf.gather(L, perm), perm, axis=1)
         losses = tf.zeros_like(lams, dtype=tf.float64)
         for fold in range(n_folds):
-            inds_oof = np.arange(n)[(fold * fold_size):((fold + 1) * fold_size)]
+            inds_oof = np.arange(n)[(fold * fold_size) : ((fold + 1) * fold_size)]
             inds_if = np.setdiff1d(np.arange(n), inds_oof)
             K_if = tf.gather(tf.gather(K, inds_if), inds_if, axis=1)
             L_if = tf.gather(tf.gather(L, inds_if), inds_if, axis=1)
             n_if = len(K_if)
             L_inv_lams = tf.stack(
-                [tf.linalg.inv(L_if + n_if * lam * tf.eye(n_if, dtype=tf.float64))
-                 for lam in lams])  # n_lam x n_if x n_if
-            KW = tf.einsum('ij,ljk->lik', K_if, L_inv_lams)
-            lW = tf.einsum('ij,ljk->lik', tf.gather(tf.gather(L, inds_oof), inds_if, axis=1), L_inv_lams)
-            lWKW = tf.einsum('lij,ljk->lik', lW, KW)
-            lWKWl = tf.einsum('lkj,jk->lk', lWKW, tf.gather(tf.gather(L, inds_if), inds_oof, axis=1))  # n_lam x n_oof
-            lWk = tf.einsum('lij,ji->li', lW, tf.gather(tf.gather(K, inds_if), inds_oof, axis=1))  # n_lam x n_oof
+                [tf.linalg.inv(L_if + n_if * lam * tf.eye(n_if, dtype=tf.float64)) for lam in lams]
+            )  # n_lam x n_if x n_if
+            KW = tf.einsum("ij,ljk->lik", K_if, L_inv_lams)
+            lW = tf.einsum("ij,ljk->lik", tf.gather(tf.gather(L, inds_oof), inds_if, axis=1), L_inv_lams)
+            lWKW = tf.einsum("lij,ljk->lik", lW, KW)
+            lWKWl = tf.einsum("lkj,jk->lk", lWKW, tf.gather(tf.gather(L, inds_if), inds_oof, axis=1))  # n_lam x n_oof
+            lWk = tf.einsum("lij,ji->li", lW, tf.gather(tf.gather(K, inds_if), inds_oof, axis=1))  # n_lam x n_oof
             kxx = tf.ones_like(lWk) * tf.reduce_max(K)
             losses += tf.reduce_sum(lWKWl + kxx - 2 * lWk, axis=-1)
         return tf.cast(lams[tf.argmin(losses)], tf.float32)
@@ -291,5 +314,5 @@ def _sigma_median_diag(x: tf.Tensor, y: tf.Tensor, dist: tf.Tensor) -> tf.Tensor
     The computed bandwidth, `sigma`.
     """
     n_median = tf.math.reduce_prod(dist.shape) // 2
-    sigma = tf.expand_dims((.5 * tf.sort(tf.reshape(dist, (-1,)))[n_median]) ** .5, axis=0)
+    sigma = tf.expand_dims((0.5 * tf.sort(tf.reshape(dist, (-1,)))[n_median]) ** 0.5, axis=0)
     return sigma

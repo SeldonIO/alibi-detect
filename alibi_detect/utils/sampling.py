@@ -2,10 +2,7 @@ import numpy as np
 import random
 
 
-def reservoir_sampling(X_ref: np.ndarray,
-                       X: np.ndarray,
-                       reservoir_size: int,
-                       n: int) -> np.ndarray:
+def reservoir_sampling(X_ref: np.ndarray, X: np.ndarray, reservoir_size: int, n: int) -> np.ndarray:
     """
     Apply reservoir sampling.
 

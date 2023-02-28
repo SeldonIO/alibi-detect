@@ -7,7 +7,10 @@ Indexable = Union[np.ndarray, tf.Tensor, list]
 
 class TFDataset(tf.keras.utils.Sequence):
     def __init__(
-            self, *indexables: Indexable, batch_size: int = int(1e10), shuffle: bool = True,
+        self,
+        *indexables: Indexable,
+        batch_size: int = int(1e10),
+        shuffle: bool = True,
     ) -> None:
         self.indexables = indexables
         self.batch_size = batch_size

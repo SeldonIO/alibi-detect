@@ -7,21 +7,21 @@ import warnings
 
 
 class TabularDrift(BaseUnivariateDrift):
-    @deprecated_alias(preprocess_x_ref='preprocess_at_init')
+    @deprecated_alias(preprocess_x_ref="preprocess_at_init")
     def __init__(
-            self,
-            x_ref: Union[np.ndarray, list],
-            p_val: float = .05,
-            categories_per_feature: Dict[int, Optional[int]] = None,
-            x_ref_preprocessed: bool = False,
-            preprocess_at_init: bool = True,
-            update_x_ref: Optional[Dict[str, int]] = None,
-            preprocess_fn: Optional[Callable] = None,
-            correction: str = 'bonferroni',
-            alternative: str = 'two-sided',
-            n_features: Optional[int] = None,
-            input_shape: Optional[tuple] = None,
-            data_type: Optional[str] = None
+        self,
+        x_ref: Union[np.ndarray, list],
+        p_val: float = 0.05,
+        categories_per_feature: Dict[int, Optional[int]] = None,
+        x_ref_preprocessed: bool = False,
+        preprocess_at_init: bool = True,
+        update_x_ref: Optional[Dict[str, int]] = None,
+        preprocess_fn: Optional[Callable] = None,
+        correction: str = "bonferroni",
+        alternative: str = "two-sided",
+        n_features: Optional[int] = None,
+        input_shape: Optional[tuple] = None,
+        data_type: Optional[str] = None,
     ) -> None:
         """
         Mixed-type tabular data drift detector with Bonferroni or False Discovery Rate (FDR)
@@ -83,7 +83,7 @@ class TabularDrift(BaseUnivariateDrift):
             correction=correction,
             n_features=n_features,
             input_shape=input_shape,
-            data_type=data_type
+            data_type=data_type,
         )
         # Set config
         self._set_config(locals())
@@ -95,23 +95,30 @@ class TabularDrift(BaseUnivariateDrift):
             int_types = (int, np.int16, np.int32, np.int64)
             if all(v is None for v in vals):  # categories_per_feature = Dict[int, NoneType]
                 x_flat = self.x_ref.reshape(self.x_ref.shape[0], -1)
-                categories_per_feature = {f: list(np.unique(x_flat[:, f]))  # type: ignore
-                                          for f in categories_per_feature.keys()}
+                categories_per_feature = {
+                    f: list(np.unique(x_flat[:, f])) for f in categories_per_feature.keys()  # type: ignore
+                }
             elif all(isinstance(v, int_types) for v in vals):
                 # categories_per_feature = Dict[int, int]
-                categories_per_feature = {f: list(np.arange(v))  # type: ignore
-                                          for f, v in categories_per_feature.items()}
-            elif not all(isinstance(v, list) for v in vals) and \
-                    all(isinstance(v, int_types) for val in vals for v in val):  # type: ignore
-                raise ValueError('categories_per_feature needs to be None or one of '
-                                 'Dict[int, NoneType], Dict[int, int], Dict[int, List[int]]')
+                categories_per_feature = {
+                    f: list(np.arange(v)) for f, v in categories_per_feature.items()  # type: ignore
+                }
+            elif not all(isinstance(v, list) for v in vals) and all(
+                isinstance(v, int_types) for val in vals for v in val
+            ):  # type: ignore
+                raise ValueError(
+                    "categories_per_feature needs to be None or one of "
+                    "Dict[int, NoneType], Dict[int, int], Dict[int, List[int]]"
+                )
             self.x_ref_categories = categories_per_feature
             self.cat_vars = list(self.x_ref_categories.keys())
         # No categories_per_feature dict so assume no categorical features present
         else:
             self.x_ref_categories, self.cat_vars = {}, []
-            warnings.warn('No `categories_per_feature` dict provided so all features are assumed to be numerical. '
-                          '`KSDrift` will be applied to all features.')
+            warnings.warn(
+                "No `categories_per_feature` dict provided so all features are assumed to be numerical. "
+                "`KSDrift` will be applied to all features."
+            )
 
     def feature_score(self, x_ref: np.ndarray, x: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -134,8 +141,9 @@ class TabularDrift(BaseUnivariateDrift):
         # apply counts on union of categories per variable in both the reference and test data
         if self.cat_vars:
             x_categories = {f: list(np.unique(x[:, f])) for f in self.cat_vars}
-            all_categories = {f: list(set().union(self.x_ref_categories[f], x_categories[f]))  # type: ignore
-                              for f in self.cat_vars}
+            all_categories = {
+                f: list(set().union(self.x_ref_categories[f], x_categories[f])) for f in self.cat_vars  # type: ignore
+            }
             x_ref_count = self._get_counts(x_ref, all_categories)
             x_count = self._get_counts(x, all_categories)
 
@@ -146,7 +154,7 @@ class TabularDrift(BaseUnivariateDrift):
                 contingency_table = np.vstack((x_ref_count[f], x_count[f]))
                 dist[f], p_val[f], _, _ = chi2_contingency(contingency_table)
             else:
-                dist[f], p_val[f] = ks_2samp(x_ref[:, f], x[:, f], alternative=self.alternative, mode='asymp')
+                dist[f], p_val[f] = ks_2samp(x_ref[:, f], x[:, f], alternative=self.alternative, mode="asymp")
         return p_val, dist
 
     def _get_counts(self, x: np.ndarray, categories: Dict[int, List[int]]) -> Dict[int, List[int]]:

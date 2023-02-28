@@ -26,7 +26,7 @@ def quantile_params(request):
     return tests_quantile[request.param]
 
 
-@pytest.mark.parametrize('quantile_params', list(range(n_tests_quantile)), indirect=True)
+@pytest.mark.parametrize("quantile_params", list(range(n_tests_quantile)), indirect=True)
 def test_quantile(quantile_params):
     type, sorted = quantile_params
 
@@ -45,7 +45,6 @@ def test_quantile(quantile_params):
 
 
 def test_subset_matrix():
-
     mat = tf.range(5)[None, :] * tf.range(5)[:, None]
     inds_0 = [2, 3]
     inds_1 = [2, 1, 4]
@@ -64,10 +63,19 @@ def test_subset_matrix():
 
 n_in, n_out = 10, 5
 # sequential model
-model_seq = tf.keras.Sequential([InputLayer(n_in, ), Dense(n_out)])
+model_seq = tf.keras.Sequential(
+    [
+        InputLayer(
+            n_in,
+        ),
+        Dense(n_out),
+    ]
+)
 
 # functional model
-inputs = Input(n_in, )
+inputs = Input(
+    n_in,
+)
 outputs = Dense(n_out)(inputs)
 model_func = tf.keras.Model(inputs=inputs, outputs=outputs)
 

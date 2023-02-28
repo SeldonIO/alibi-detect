@@ -30,7 +30,7 @@ def set_seed(seed: int):
     global _ALIBI_SEED
     seed = max(seed, 0)  # TODO: This is a fix to allow --randomly-seed=0 in setup.cfg. To be removed in future
     _ALIBI_SEED = seed
-    os.environ['PYTHONHASHSEED'] = str(seed)
+    os.environ["PYTHONHASHSEED"] = str(seed)
     random.seed(seed)
     np.random.seed(seed)
     if has_tensorflow:
@@ -53,7 +53,7 @@ def get_seed() -> int:
     if _ALIBI_SEED is not None:
         return _ALIBI_SEED
     else:
-        raise RuntimeError('`set_seed` must be called before `get_seed` can be called.')
+        raise RuntimeError("`set_seed` must be called before `get_seed` can be called.")
 
 
 @contextmanager
