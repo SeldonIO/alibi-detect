@@ -103,8 +103,8 @@ class LSDDDriftOnlineTorch(BaseMultiDriftOnline):
             _ = self.kernel(x_ref, x_ref, infer_sigma=True)
         else:
             sigma = (
-                torch.from_numpy(sigma).to(self.device)
-                if isinstance(sigma, np.ndarray)  # type: ignore[assignment]
+                torch.from_numpy(sigma).to(self.device)  # type: ignore[assignment]
+                if isinstance(sigma, np.ndarray)
                 else None
             )
             self.kernel = GaussianRBF(sigma)  # type: ignore[arg-type]

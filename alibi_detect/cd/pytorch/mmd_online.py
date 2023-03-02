@@ -87,8 +87,8 @@ class MMDDriftOnlineTorch(BaseMultiDriftOnline):
 
         # initialize kernel
         sigma = (
-            torch.from_numpy(sigma).to(self.device)
-            if isinstance(sigma, np.ndarray)  # type: ignore[assignment]
+            torch.from_numpy(sigma).to(self.device)  # type: ignore[assignment]
+            if isinstance(sigma, np.ndarray)
             else None
         )
         self.kernel = kernel(sigma) if kernel == GaussianRBF else kernel
