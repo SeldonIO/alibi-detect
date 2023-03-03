@@ -1,8 +1,16 @@
 # Change Log
 
 ## v0.12.0dev
-[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.11.0...master)
+[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.11.1...master)
 
+## v0.11.1
+[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.11.0...v0.11.1)
+
+### Fixed
+
+- Fixed two bugs with the saving/loading of drift detector `preprocess_fn`'s [#752](https://github.com/SeldonIO/alibi-detect/pull/752)):
+  - When `preprocess_fn` was a custom Python function wrapped in a partial, included kwarg's were not serialized. This has now been fixed.
+  - When saving drift detector `preprocess_fn`'s, for kwargs saved to `.dill` files, the filenames are now prepended with the kwarg name, so that files aren't overwritten if multiple kwargs are saved to `.dill`.
 
 ## v0.11.0
 [Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.10.5...v0.11.0)
