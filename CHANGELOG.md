@@ -1,7 +1,11 @@
 # Change Log
 
-## v0.11.0dev
-[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.10.5...master)
+## v0.12.0dev
+[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.11.0...master)
+
+
+## v0.11.0
+[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.10.5...v0.11.0)
 
 ### Added
 - **New feature** The [MMD](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/mmddrift.html) and [learned-kernel MMD](https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/learnedkerneldrift.html) drift detectors have been extended with [KeOps](https://www.kernel-operations.io/keops/index.html) backends to scale and speed up the detectors. See the [example notebook](https://docs.seldon.io/projects/alibi-detect/en/latest/examples/cd_mmd_keops.html) for more info ([#548](https://github.com/SeldonIO/alibi-detect/pull/548) and [#602](https://github.com/SeldonIO/alibi-detect/pull/602)).
