@@ -1,5 +1,8 @@
 # Change Log
 
+## v0.12.0dev
+[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.11.1...master)
+
 ## v0.11.1
 [Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.11.0...v0.11.1)
 
