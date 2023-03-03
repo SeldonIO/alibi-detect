@@ -5,6 +5,7 @@ Tests for saving/loading of detectors via config.toml files.
 Internal functions such as save_kernel/load_kernel_config etc are also tested.
 """
 from functools import partial
+import os
 from pathlib import Path
 from typing import Callable
 
@@ -1142,7 +1143,7 @@ def test_save_preprocess_custom(preprocess_fn, tmp_path):
     cfg_preprocess = PreprocessConfig(**cfg_preprocess).dict()  # pydantic validation
 
     assert tmp_path.joinpath(cfg_preprocess['src']).is_file()
-    assert cfg_preprocess['src'] == 'preprocess_fn/function.dill'
+    assert cfg_preprocess['src'] == os.path.join('preprocess_fn', 'function.dill')
     if isinstance(preprocess_fn, partial):  # kwargs expected
         assert cfg_preprocess['kwargs'] == preprocess_fn.keywords
     else:  # no kwargs expected
@@ -1177,7 +1178,7 @@ def test_save_preprocess_nlp(data, preprocess_fn, tmp_path, backend):
     assert cfg_preprocess['embedding']['src'] == 'preprocess_fn/embedding'
     assert cfg_preprocess['tokenizer']['src'] == 'preprocess_fn/tokenizer'
     assert tmp_path.joinpath(cfg_preprocess['preprocess_batch_fn']).is_file()
-    assert cfg_preprocess['preprocess_batch_fn'] == 'preprocess_fn/preprocess_batch_fn.dill'
+    assert cfg_preprocess['preprocess_batch_fn'] == os.path.join('preprocess_fn', 'preprocess_batch_fn.dill')
 
     if isinstance(preprocess_fn.keywords['model'], (TransformerEmbedding_tf, TransformerEmbedding_pt)):
         assert cfg_preprocess['model'] is None
