@@ -461,10 +461,10 @@ def fetch_genome(return_X_y: bool = False, return_labels: bool = False) -> Union
     Returns
     -------
     Bunch
-        Training, validation and test data, whether they are outliers and optionally including the
+        Training, validation and test data, whether they are outliers and optionally including the \
         genome labels which are specified in the `label_json` key as a dictionary.
     (data, outlier) or (data, outlier, target)
-        Tuple for the train, validation and test set with either the data and whether they
+        Tuple for the train, validation and test set with either the data and whether they \
         are outliers or the data, outlier flag and labels for the genomes if 'return_X_y' equals True.
     """
     data_train = load_genome_npz('train_in', return_labels=return_labels)

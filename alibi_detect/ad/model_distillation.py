@@ -205,8 +205,8 @@ class ModelDistillation(BaseDetector, FitMixin, ThresholdMixin):
         Returns
         -------
         Dictionary containing 'meta' and 'data' dictionaries.
-        'meta' has the model's metadata.
-        'data' contains the adversarial predictions and instance level adversarial scores.
+            - 'meta' has the model's metadata.
+            - 'data' contains the adversarial predictions and instance level adversarial scores.
         """
         score = self.score(X, batch_size=batch_size)
 

@@ -1194,9 +1194,9 @@ class BaseContextMMDDrift(BaseDetector):
         Returns
         -------
         Dictionary containing 'meta' and 'data' dictionaries.
-        'meta' has the model's metadata.
-        'data' contains the drift prediction and optionally the p-value, threshold, conditional MMD test statistic
-        and coupling matrices.
+            - 'meta' has the model's metadata.
+            - 'data' contains the drift prediction and optionally the p-value, threshold, conditional MMD test \
+            statistic and coupling matrices.
         """
         # compute drift scores
         p_val, dist, distance_threshold, coupling = self.score(x, c)

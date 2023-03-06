@@ -255,7 +255,7 @@ def inject_outlier_categorical(X: np.ndarray,
 
     Returns
     -------
-    Bunch object with the perturbed tabular data, outlier labels and
+    Bunch object with the perturbed tabular data, outlier labels and \
     a dictionary used to map categories to their furthest neighbour.
     """
     if cat_perturb is None:

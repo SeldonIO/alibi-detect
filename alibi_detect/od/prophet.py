@@ -175,8 +175,8 @@ class OutlierProphet(BaseDetector, FitMixin):
         Returns
         -------
         Dictionary containing 'meta' and 'data' dictionaries.
-        'meta' has the model's metadata.
-        'data' contains the outlier predictions, instance level outlier scores and the model forecast.
+            - 'meta' has the model's metadata.
+            - 'data' contains the outlier predictions, instance level outlier scores and the model forecast.
         """
         # compute outlier scores
         forecast = self.score(df)
