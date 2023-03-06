@@ -1,11 +1,12 @@
 # This submodule provides a link for the legacy alibi_detect.utils.saving location of load_detector and save_detector.
 # TODO: Remove in future
-from alibi_detect.saving import load_detector as _load_detector, save_detector as _save_detector
-from alibi_detect.base import ConfigurableDetector, Detector
-
-from typing import Union
-import warnings
 import os
+import warnings
+from typing import Union
+
+from alibi_detect.base import ConfigurableDetector, Detector
+from alibi_detect.saving import load_detector as _load_detector
+from alibi_detect.saving import save_detector as _save_detector
 
 
 def save_detector(

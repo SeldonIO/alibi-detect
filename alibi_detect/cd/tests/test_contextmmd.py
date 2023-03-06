@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+
 from alibi_detect.cd import ContextMMDDrift
 from alibi_detect.cd.pytorch.context_aware import ContextMMDDriftTorch
 from alibi_detect.cd.tensorflow.context_aware import ContextMMDDriftTF

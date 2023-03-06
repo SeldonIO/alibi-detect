@@ -1,8 +1,9 @@
 from functools import partial
+from typing import Dict, List
+
 import torch
 import torch.nn as nn
-from transformers import AutoModel, AutoConfig
-from typing import Dict, List
+from transformers import AutoConfig, AutoModel
 
 
 def hidden_state_embedding(hidden_states: torch.Tensor, layers: List[int],

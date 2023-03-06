@@ -1,7 +1,9 @@
+from itertools import product
+
 import numpy as np
 import pytest
+
 from alibi_detect.cd import FETDrift
-from itertools import product
 
 n, n_test = 500, 200
 np.random.seed(0)

@@ -1,9 +1,11 @@
 from itertools import product
+
 import numpy as np
 import pytest
-from sklearn.datasets import load_iris
 import tensorflow as tf
+from sklearn.datasets import load_iris
 from tensorflow.keras.layers import Dense, InputLayer
+
 from alibi_detect.od import OutlierAE
 from alibi_detect.version import __version__
 

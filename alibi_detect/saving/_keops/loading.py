@@ -1,4 +1,5 @@
 from typing import Callable
+
 from alibi_detect.utils.keops.kernels import DeepKernel
 
 

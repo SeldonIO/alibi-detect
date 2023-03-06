@@ -1,16 +1,18 @@
 from functools import partial
+from typing import Callable, Dict, Optional, Tuple, Union
+
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras.losses import BinaryCrossentropy
 from scipy.special import softmax
-from typing import Callable, Dict, Optional, Tuple, Union
+from tensorflow.keras.losses import BinaryCrossentropy
+
 from alibi_detect.cd.base import BaseClassifierDrift
 from alibi_detect.models.tensorflow.trainer import trainer
+from alibi_detect.utils.frameworks import Framework
 from alibi_detect.utils.tensorflow.data import TFDataset
 from alibi_detect.utils.tensorflow.misc import clone_model
 from alibi_detect.utils.tensorflow.prediction import predict_batch
 from alibi_detect.utils.warnings import deprecated_alias
-from alibi_detect.utils.frameworks import Framework
 
 
 class ClassifierDriftTF(BaseClassifierDrift):

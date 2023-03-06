@@ -1,15 +1,17 @@
+from typing import Tuple
+
 import numpy as np
 import pytest
 import tensorflow as tf
-from tensorflow.keras.layers import Dense, Input
 import torch
 import torch.nn as nn
+from sklearn.neural_network import MLPClassifier
+from tensorflow.keras.layers import Dense, Input
+
 from alibi_detect.cd import ClassifierDrift
 from alibi_detect.cd.pytorch.classifier import ClassifierDriftTorch
-from alibi_detect.cd.tensorflow.classifier import ClassifierDriftTF
 from alibi_detect.cd.sklearn.classifier import ClassifierDriftSklearn
-from sklearn.neural_network import MLPClassifier
-from typing import Tuple
+from alibi_detect.cd.tensorflow.classifier import ClassifierDriftTF
 
 n, n_features = 100, 5
 

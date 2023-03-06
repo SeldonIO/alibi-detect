@@ -1,7 +1,7 @@
 """Defines custom warnings and exceptions used across the Alibi Detect library."""
 import functools
 import warnings
-from typing import Dict, Any, Callable
+from typing import Any, Callable, Dict
 
 
 def deprecated_alias(**aliases: str) -> Callable:

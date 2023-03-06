@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+
 from alibi_detect.cd import CVMDriftOnline
 from alibi_detect.utils._random import fixed_seed
 

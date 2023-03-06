@@ -1,11 +1,13 @@
 import logging
+from typing import Dict, Optional
+
 import numpy as np
 from scipy.linalg import eigh
-from typing import Dict, Optional
-from alibi_detect.utils.discretizer import Discretizer
-from alibi_detect.utils.distance import abdm, mvdm, multidim_scaling
-from alibi_detect.utils.mapping import ohe2ord, ord2num
+
 from alibi_detect.base import BaseDetector, FitMixin, ThresholdMixin, outlier_prediction_dict
+from alibi_detect.utils.discretizer import Discretizer
+from alibi_detect.utils.distance import abdm, multidim_scaling, mvdm
+from alibi_detect.utils.mapping import ohe2ord, ord2num
 
 logger = logging.getLogger(__name__)
 

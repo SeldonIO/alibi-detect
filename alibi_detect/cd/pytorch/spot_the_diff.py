@@ -1,12 +1,14 @@
 import logging
+from typing import Callable, Dict, Optional, Union
+
 import numpy as np
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
-from typing import Callable, Dict, Optional, Union
+
 from alibi_detect.cd.pytorch.classifier import ClassifierDriftTorch
-from alibi_detect.utils.pytorch.data import TorchDataset
 from alibi_detect.utils.pytorch import GaussianRBF
+from alibi_detect.utils.pytorch.data import TorchDataset
 from alibi_detect.utils.pytorch.prediction import predict_batch
 
 logger = logging.getLogger(__name__)

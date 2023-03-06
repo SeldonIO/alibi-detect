@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+
 from alibi_detect.cd import LSDDDrift
 from alibi_detect.cd.pytorch.lsdd import LSDDDriftTorch
 from alibi_detect.cd.tensorflow.lsdd import LSDDDriftTF

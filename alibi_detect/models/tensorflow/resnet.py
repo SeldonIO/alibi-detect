@@ -1,19 +1,19 @@
 # implementation adopted from https://github.com/tensorflow/models
 # TODO: proper train-val-test split
 import argparse
-import numpy as np
 import os
 from pathlib import Path
+from typing import Callable, Tuple, Union
+
+import numpy as np
 import tensorflow as tf
 from tensorflow.keras.callbacks import Callback, ModelCheckpoint
 from tensorflow.keras.initializers import RandomNormal
-from tensorflow.keras.layers import (Activation, Add, BatchNormalization, Conv2D,
-                                     Dense, Input, ZeroPadding2D)
+from tensorflow.keras.layers import Activation, Add, BatchNormalization, Conv2D, Dense, Input, ZeroPadding2D
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import SGD
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.regularizers import l2
-from typing import Callable, Tuple, Union
 
 # parameters specific for CIFAR-10 training
 BATCH_NORM_DECAY = 0.997

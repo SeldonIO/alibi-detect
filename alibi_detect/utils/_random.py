@@ -3,10 +3,12 @@
 May change depending on how we decide to handle randomization in tests (and elsewhere)
 going forwards. See https://github.com/SeldonIO/alibi-detect/issues/250.
 """
-from contextlib import contextmanager
-import random
-import numpy as np
 import os
+import random
+from contextlib import contextmanager
+
+import numpy as np
+
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
 
 if has_tensorflow:

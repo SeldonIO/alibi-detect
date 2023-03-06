@@ -1,6 +1,8 @@
+from typing import Callable, Dict, Optional, Tuple, Union
+
 import numpy as np
 from scipy.stats import ks_2samp
-from typing import Callable, Dict, Optional, Tuple, Union
+
 from alibi_detect.cd.base import BaseUnivariateDrift
 from alibi_detect.utils.warnings import deprecated_alias
 

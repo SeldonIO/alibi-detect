@@ -1,7 +1,9 @@
-from prophet import Prophet
 import logging
-import pandas as pd
 from typing import Dict, List, Union
+
+import pandas as pd
+from prophet import Prophet
+
 from alibi_detect.base import BaseDetector, FitMixin, outlier_prediction_dict
 
 logger = logging.getLogger(__name__)

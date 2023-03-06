@@ -1,13 +1,15 @@
 from functools import partial
+from typing import Callable, Dict, Optional, Tuple, Union
+
 import numpy as np
 import tensorflow as tf
-from typing import Callable, Dict, Optional, Tuple, Union
+
 from alibi_detect.cd.base import BaseLearnedKernelDrift
-from alibi_detect.utils.tensorflow.data import TFDataset
-from alibi_detect.utils.tensorflow.misc import clone_model
-from alibi_detect.utils.tensorflow.distance import mmd2_from_kernel_matrix, batch_compute_kernel_matrix
-from alibi_detect.utils.warnings import deprecated_alias
 from alibi_detect.utils.frameworks import Framework
+from alibi_detect.utils.tensorflow.data import TFDataset
+from alibi_detect.utils.tensorflow.distance import batch_compute_kernel_matrix, mmd2_from_kernel_matrix
+from alibi_detect.utils.tensorflow.misc import clone_model
+from alibi_detect.utils.warnings import deprecated_alias
 
 
 class LearnedKernelDriftTF(BaseLearnedKernelDrift):

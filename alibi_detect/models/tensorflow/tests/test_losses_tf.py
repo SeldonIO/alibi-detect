@@ -1,6 +1,7 @@
 import numpy as np
 import tensorflow as tf
-from alibi_detect.models.tensorflow.losses import elbo, loss_adv_ae, loss_aegmm, loss_vaegmm, loss_distillation
+
+from alibi_detect.models.tensorflow.losses import elbo, loss_adv_ae, loss_aegmm, loss_distillation, loss_vaegmm
 
 N, K, D, F = 10, 5, 1, 3
 x = np.random.rand(N, F).astype(np.float32)

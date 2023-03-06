@@ -1,12 +1,14 @@
 from functools import partial
 from itertools import product
+from typing import Callable, List
+
 import numpy as np
 import pytest
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, Input, InputLayer
-from typing import Callable, List
+
 from alibi_detect.cd.tensorflow.context_aware import ContextMMDDriftTF
-from alibi_detect.cd.tensorflow.preprocess import HiddenOutput, UAE, preprocess_drift
+from alibi_detect.cd.tensorflow.preprocess import UAE, HiddenOutput, preprocess_drift
 
 n, n_hidden, n_classes = 250, 10, 3
 

@@ -1,5 +1,6 @@
-from torch import nn
 from typing import Callable
+
+from torch import nn
 
 
 def activate_train_mode_for_dropout_layers(model: Callable) -> Callable:

@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+
 from alibi_detect.utils.pytorch.data import TorchDataset
 
 # test on numpy array and list

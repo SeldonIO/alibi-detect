@@ -1,9 +1,12 @@
-import tensorflow as tf
+from typing import Callable, Optional, Union
+
 import numpy as np
-from . import distance
-from typing import Optional, Union, Callable
+import tensorflow as tf
 from scipy.special import logit
+
 from alibi_detect.utils.frameworks import Framework
+
+from . import distance
 
 
 def sigma_median(x: tf.Tensor, y: tf.Tensor, dist: tf.Tensor) -> tf.Tensor:

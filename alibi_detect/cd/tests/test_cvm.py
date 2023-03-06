@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 import scipy
 from packaging import version
+
 if version.parse(scipy.__version__) >= version.parse('1.7.0'):
     from alibi_detect.cd import CVMDrift
 

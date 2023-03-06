@@ -1,8 +1,10 @@
 from itertools import product
+
 import numpy as np
 import pytest
 import torch
 import torch.nn as nn
+
 from alibi_detect.cd.pytorch import HiddenOutput
 
 n, dim1, dim2, n_classes, latent_dim, n_hidden = 100, 2, 3, 5, 2, 7

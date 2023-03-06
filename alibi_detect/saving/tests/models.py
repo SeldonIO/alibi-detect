@@ -2,33 +2,33 @@ from functools import partial
 from importlib import import_module
 
 import numpy as np
+import pytest
 import tensorflow as tf
 import torch
 import torch.nn as nn
+from pytest_cases import fixture, parametrize
+from requests.exceptions import HTTPError
 from sklearn.ensemble import RandomForestClassifier
+from transformers import AutoTokenizer
 from xgboost import XGBClassifier
 
-from requests.exceptions import HTTPError
-
-import pytest
-from pytest_cases import fixture, parametrize
-from transformers import AutoTokenizer
 from alibi_detect.cd.pytorch import UAE as UAE_pt
+from alibi_detect.cd.pytorch import HiddenOutput as HiddenOutput_pt
 from alibi_detect.cd.pytorch import preprocess_drift as preprocess_drift_pt
 from alibi_detect.cd.tensorflow import UAE as UAE_tf
+from alibi_detect.cd.tensorflow import HiddenOutput as HiddenOutput_tf
 from alibi_detect.cd.tensorflow import preprocess_drift as preprocess_drift_tf
-from alibi_detect.utils.pytorch.kernels import GaussianRBF as GaussianRBF_pt
-from alibi_detect.utils.pytorch.kernels import DeepKernel as DeepKernel_pt
-from alibi_detect.utils.tensorflow.kernels import GaussianRBF as GaussianRBF_tf
-from alibi_detect.utils.tensorflow.kernels import DeepKernel as DeepKernel_tf
 from alibi_detect.models.pytorch import TransformerEmbedding as TransformerEmbedding_pt
 from alibi_detect.models.tensorflow import TransformerEmbedding as TransformerEmbedding_tf
-from alibi_detect.cd.pytorch import HiddenOutput as HiddenOutput_pt
-from alibi_detect.cd.tensorflow import HiddenOutput as HiddenOutput_tf
 from alibi_detect.utils.frameworks import has_keops
+from alibi_detect.utils.pytorch.kernels import DeepKernel as DeepKernel_pt
+from alibi_detect.utils.pytorch.kernels import GaussianRBF as GaussianRBF_pt
+from alibi_detect.utils.tensorflow.kernels import DeepKernel as DeepKernel_tf
+from alibi_detect.utils.tensorflow.kernels import GaussianRBF as GaussianRBF_tf
+
 if has_keops:  # pykeops only installed in Linux CI
-    from alibi_detect.utils.keops.kernels import GaussianRBF as GaussianRBF_ke
     from alibi_detect.utils.keops.kernels import DeepKernel as DeepKernel_ke
+    from alibi_detect.utils.keops.kernels import GaussianRBF as GaussianRBF_ke
 
 LATENT_DIM = 2  # Must be less than input_dim set in ./datasets.py
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"

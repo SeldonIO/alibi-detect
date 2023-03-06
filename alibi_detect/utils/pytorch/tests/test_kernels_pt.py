@@ -1,9 +1,11 @@
 from itertools import product
+
 import numpy as np
 import pytest
 import torch
 from torch import nn
-from alibi_detect.utils.pytorch import GaussianRBF, DeepKernel
+
+from alibi_detect.utils.pytorch import DeepKernel, GaussianRBF
 
 sigma = [None, np.array([1.]), np.array([1., 2.])]
 n_features = [5, 10]

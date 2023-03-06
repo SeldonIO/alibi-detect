@@ -1,10 +1,12 @@
-from pykeops.torch import LazyTensor
+from copy import deepcopy
+from typing import Callable, Optional, Union
+
 import torch
 import torch.nn as nn
-from typing import Callable, Optional, Union
-from alibi_detect.utils.frameworks import Framework
+from pykeops.torch import LazyTensor
+
 from alibi_detect.utils._types import Literal
-from copy import deepcopy
+from alibi_detect.utils.frameworks import Framework
 
 
 def sigma_mean(x: LazyTensor, y: LazyTensor, dist: LazyTensor, n_min: int = 100) -> torch.Tensor:

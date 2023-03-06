@@ -1,9 +1,11 @@
 from itertools import product
+
 import numpy as np
 import pytest
 import tensorflow as tf
-from alibi_detect.utils.tensorflow import GaussianRBF, mmd2
+
 from alibi_detect.utils.statstest import fdr, permutation_test
+from alibi_detect.utils.tensorflow import GaussianRBF, mmd2
 
 q_val = [.05, .1, .25]
 n_p = 1000

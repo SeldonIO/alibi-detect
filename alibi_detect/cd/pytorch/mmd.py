@@ -1,13 +1,15 @@
 import logging
+from typing import Callable, Dict, Optional, Tuple, Union
+
 import numpy as np
 import torch
-from typing import Callable, Dict, Optional, Tuple, Union
+
 from alibi_detect.cd.base import BaseMMDDrift
+from alibi_detect.utils.frameworks import Framework
 from alibi_detect.utils.pytorch import get_device
 from alibi_detect.utils.pytorch.distance import mmd2_from_kernel_matrix
 from alibi_detect.utils.pytorch.kernels import GaussianRBF
 from alibi_detect.utils.warnings import deprecated_alias
-from alibi_detect.utils.frameworks import Framework
 
 logger = logging.getLogger(__name__)
 

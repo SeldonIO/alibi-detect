@@ -1,5 +1,6 @@
-import numpy as np
 import random
+
+import numpy as np
 
 
 def reservoir_sampling(X_ref: np.ndarray,

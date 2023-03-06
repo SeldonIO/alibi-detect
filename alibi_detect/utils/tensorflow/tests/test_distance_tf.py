@@ -1,10 +1,11 @@
-import numpy as np
 from itertools import product
+
+import numpy as np
 import pytest
 import tensorflow as tf
-from alibi_detect.utils.tensorflow import GaussianRBF, mmd2, mmd2_from_kernel_matrix, permed_lsdds
-from alibi_detect.utils.tensorflow import relative_euclidean_distance, squared_pairwise_distance
-from alibi_detect.utils.tensorflow import batch_compute_kernel_matrix
+
+from alibi_detect.utils.tensorflow import (GaussianRBF, batch_compute_kernel_matrix, mmd2, mmd2_from_kernel_matrix,
+                                           permed_lsdds, relative_euclidean_distance, squared_pairwise_distance)
 
 n_features = [2, 5]
 n_instances = [(100, 100), (100, 75)]

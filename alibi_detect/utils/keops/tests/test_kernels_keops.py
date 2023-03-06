@@ -1,11 +1,15 @@
 from itertools import product
+
 import numpy as np
-from alibi_detect.utils.frameworks import has_keops
 import pytest
 import torch
 import torch.nn as nn
+
+from alibi_detect.utils.frameworks import has_keops
+
 if has_keops:
     from pykeops.torch import LazyTensor
+
     from alibi_detect.utils.keops import DeepKernel, GaussianRBF
 
 sigma = [None, np.array([1.]), np.array([1., 2.])]

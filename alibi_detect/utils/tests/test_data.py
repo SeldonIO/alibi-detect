@@ -1,7 +1,9 @@
 from itertools import product
+
 import numpy as np
 import pytest
-from alibi_detect.utils.data import create_outlier_batch, Bunch
+
+from alibi_detect.utils.data import Bunch, create_outlier_batch
 
 N, F = 1000, 4
 X = np.random.rand(N, F)

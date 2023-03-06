@@ -1,36 +1,32 @@
 import logging
 import os
-from importlib import import_module
 import warnings
 from functools import partial
+from importlib import import_module
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Tuple, Union, Type
+from typing import Callable, Dict, List, Optional, Tuple, Type, Union
 
 import dill
 import tensorflow as tf
-from tensorflow_probability.python.distributions.distribution import \
-    Distribution
+from tensorflow_probability.python.distributions.distribution import Distribution
 from transformers import AutoTokenizer
 
 from alibi_detect.ad import AdversarialAE, ModelDistillation
 from alibi_detect.ad.adversarialae import DenseHidden
-from alibi_detect.cd import (ChiSquareDrift, ClassifierDrift, KSDrift, MMDDrift, TabularDrift)
+from alibi_detect.base import Detector
+from alibi_detect.cd import ChiSquareDrift, ClassifierDrift, KSDrift, MMDDrift, TabularDrift
 from alibi_detect.cd.tensorflow import UAE, HiddenOutput
 from alibi_detect.cd.tensorflow.preprocess import _Encoder
 from alibi_detect.models.tensorflow import PixelCNN, TransformerEmbedding
-from alibi_detect.models.tensorflow.autoencoder import (AE, AEGMM, VAE, VAEGMM,
-                                                        DecoderLSTM,
-                                                        EncoderLSTM, Seq2Seq)
-from alibi_detect.od import (LLR, IForest, Mahalanobis, OutlierAE,
-                             OutlierAEGMM, OutlierProphet, OutlierSeq2Seq,
+from alibi_detect.models.tensorflow.autoencoder import AE, AEGMM, VAE, VAEGMM, DecoderLSTM, EncoderLSTM, Seq2Seq
+from alibi_detect.od import (LLR, IForest, Mahalanobis, OutlierAE, OutlierAEGMM, OutlierProphet, OutlierSeq2Seq,
                              OutlierVAE, OutlierVAEGMM, SpectralResidual)
 from alibi_detect.od.llr import build_model
-from alibi_detect.utils.tensorflow.kernels import DeepKernel
+from alibi_detect.saving._typing import VALID_DETECTORS
 from alibi_detect.utils.frameworks import Framework
+from alibi_detect.utils.tensorflow.kernels import DeepKernel
 # Below imports are used for legacy loading, and will be removed (or moved to utils/loading.py) in the future
 from alibi_detect.version import __version__
-from alibi_detect.base import Detector
-from alibi_detect.saving._typing import VALID_DETECTORS
 
 logger = logging.getLogger(__name__)
 

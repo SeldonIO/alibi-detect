@@ -1,11 +1,10 @@
 from pytest_cases import param_fixture, parametrize, parametrize_with_cases
 
-from alibi_detect.saving.tests.datasets import ContinuousData
-from alibi_detect.saving.tests.models import classifier_model, xgb_classifier_model
-
 from alibi_detect.saving.loading import _load_model_config
 from alibi_detect.saving.saving import _path2str, _save_model_config
 from alibi_detect.saving.schemas import ModelConfig
+from alibi_detect.saving.tests.datasets import ContinuousData
+from alibi_detect.saving.tests.models import classifier_model, xgb_classifier_model
 
 backend = param_fixture("backend", ['sklearn'])
 

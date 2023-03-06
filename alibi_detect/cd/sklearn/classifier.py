@@ -1,14 +1,16 @@
 import logging
-import numpy as np
 from functools import partial
 from typing import Callable, Dict, Optional, Tuple, Union
-from sklearn.base import clone, ClassifierMixin
+
+import numpy as np
+from sklearn.base import ClassifierMixin, clone
 from sklearn.calibration import CalibratedClassifierCV
-from sklearn.exceptions import NotFittedError
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.exceptions import NotFittedError
+
 from alibi_detect.cd.base import BaseClassifierDrift
-from alibi_detect.utils.warnings import deprecated_alias
 from alibi_detect.utils.frameworks import Framework
+from alibi_detect.utils.warnings import deprecated_alias
 
 logger = logging.getLogger(__name__)
 

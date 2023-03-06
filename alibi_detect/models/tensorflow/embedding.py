@@ -1,7 +1,8 @@
 from functools import partial
-import tensorflow as tf
-from transformers import TFAutoModel, AutoConfig
 from typing import Dict, List
+
+import tensorflow as tf
+from transformers import AutoConfig, TFAutoModel
 
 
 def hidden_state_embedding(hidden_states: tf.Tensor, layers: List[int],

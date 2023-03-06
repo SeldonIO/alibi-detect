@@ -1,6 +1,8 @@
 from itertools import product
+
 import numpy as np
 import pytest
+
 from alibi_detect.utils.discretizer import Discretizer
 
 x = np.random.rand(10, 4)

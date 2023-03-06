@@ -1,10 +1,12 @@
 from functools import partial
 from itertools import product
+from typing import Callable, List
+
 import numpy as np
 import pytest
 import torch
 import torch.nn as nn
-from typing import Callable, List
+
 from alibi_detect.cd.pytorch.mmd_online import MMDDriftOnlineTorch
 from alibi_detect.cd.pytorch.preprocess import HiddenOutput, preprocess_drift
 from alibi_detect.utils._random import fixed_seed

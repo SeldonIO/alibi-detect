@@ -1,9 +1,11 @@
 from itertools import product
+from typing import Union
+
 import numpy as np
 import pytest
 import torch
 import torch.nn as nn
-from typing import Union
+
 from alibi_detect.cd.pytorch.spot_the_diff import SpotTheDiffDriftTorch
 
 n = 100

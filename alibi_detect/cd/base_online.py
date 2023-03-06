@@ -1,17 +1,18 @@
 import logging
 import warnings
 from abc import abstractmethod
-from typing import Any, Callable, Dict, List, Optional, Union, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
+
 from alibi_detect.base import BaseDetector, concept_drift_dict
 from alibi_detect.cd.utils import get_input_shape
-from alibi_detect.utils.state import StateMixin
 from alibi_detect.utils._types import Literal
+from alibi_detect.utils.state import StateMixin
 
 if TYPE_CHECKING:
-    import torch
     import tensorflow as tf
+    import torch
 
 logger = logging.getLogger(__name__)
 

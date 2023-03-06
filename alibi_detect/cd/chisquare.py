@@ -1,6 +1,8 @@
+from typing import Callable, Dict, List, Optional, Tuple, Union
+
 import numpy as np
 from scipy.stats import chi2_contingency
-from typing import Callable, Dict, List, Optional, Tuple, Union
+
 from alibi_detect.cd.base import BaseUnivariateDrift
 from alibi_detect.utils.warnings import deprecated_alias
 

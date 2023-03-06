@@ -10,19 +10,17 @@ from tensorflow.keras.layers import Input, InputLayer
 
 # Below imports are used for legacy saving, and will be removed (or moved to utils/loading.py) in the future
 from alibi_detect.ad import AdversarialAE, ModelDistillation
-from alibi_detect.cd import (ChiSquareDrift, ClassifierDrift, KSDrift,
-                             MMDDrift, TabularDrift)
+from alibi_detect.cd import ChiSquareDrift, ClassifierDrift, KSDrift, MMDDrift, TabularDrift
 from alibi_detect.cd.tensorflow import UAE, HiddenOutput
 from alibi_detect.cd.tensorflow.classifier import ClassifierDriftTF
 from alibi_detect.cd.tensorflow.mmd import MMDDriftTF
 from alibi_detect.models.tensorflow import TransformerEmbedding
-from alibi_detect.od import (LLR, IForest, Mahalanobis, OutlierAE,
-                             OutlierAEGMM, OutlierProphet, OutlierSeq2Seq,
+from alibi_detect.od import (LLR, IForest, Mahalanobis, OutlierAE, OutlierAEGMM, OutlierProphet, OutlierSeq2Seq,
                              OutlierVAE, OutlierVAEGMM, SpectralResidual)
 from alibi_detect.utils._types import Literal
-from alibi_detect.utils.tensorflow.kernels import GaussianRBF
-from alibi_detect.utils.missing_optional_dependency import MissingDependency
 from alibi_detect.utils.frameworks import Framework
+from alibi_detect.utils.missing_optional_dependency import MissingDependency
+from alibi_detect.utils.tensorflow.kernels import GaussianRBF
 
 logger = logging.getLogger(__name__)
 

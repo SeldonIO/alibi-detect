@@ -4,52 +4,49 @@ Tests for saving/loading of detectors via config.toml files.
 
 Internal functions such as save_kernel/load_kernel_config etc are also tested.
 """
-from functools import partial
 import os
+from functools import partial
 from pathlib import Path
 from typing import Callable
 
-import sklearn.base
-import toml
 import dill
 import numpy as np
 import pytest
 import scipy
+import sklearn.base
 import tensorflow as tf
+import toml
 import torch
 import torch.nn as nn
-
-from .datasets import BinData, CategoricalData, ContinuousData, MixedData, TextData
-from .models import (encoder_model, preprocess_uae, preprocess_hiddenoutput, preprocess_simple,  # noqa: F401
-                     preprocess_simple_with_kwargs,
-                     preprocess_nlp, LATENT_DIM, classifier_model, kernel, deep_kernel, nlp_embedding_and_tokenizer,
-                     embedding, tokenizer, max_len, enc_dim, encoder_dropout_model, optimizer)
-
-from alibi_detect.utils._random import fixed_seed
 from packaging import version
 from pytest_cases import param_fixture, parametrize, parametrize_with_cases
 from sklearn.model_selection import StratifiedKFold
 
-
-from alibi_detect.cd import (ChiSquareDrift, ClassifierUncertaintyDrift, RegressorUncertaintyDrift,
-                             ClassifierDrift, FETDrift, KSDrift, LearnedKernelDrift, LSDDDrift, MMDDrift,
-                             SpotTheDiffDrift, TabularDrift, ContextMMDDrift, MMDDriftOnline, LSDDDriftOnline,
-                             CVMDriftOnline, FETDriftOnline)
+from alibi_detect.cd import (ChiSquareDrift, ClassifierDrift, ClassifierUncertaintyDrift, ContextMMDDrift,
+                             CVMDriftOnline, FETDrift, FETDriftOnline, KSDrift, LearnedKernelDrift, LSDDDrift,
+                             LSDDDriftOnline, MMDDrift, MMDDriftOnline, RegressorUncertaintyDrift, SpotTheDiffDrift,
+                             TabularDrift)
 from alibi_detect.models.pytorch import TransformerEmbedding as TransformerEmbedding_pt
 from alibi_detect.models.tensorflow import TransformerEmbedding as TransformerEmbedding_tf
-from alibi_detect.saving import (load_detector, read_config, registry,
-                                 resolve_config, save_detector, write_config)
-from alibi_detect.saving.loading import (_get_nested_value, _replace,
-                                         _set_dtypes, _set_nested_value, _prepend_cfg_filepaths)
-from alibi_detect.saving.saving import _serialize_object
-from alibi_detect.saving.saving import (_path2str, _int2str_keys, _save_kernel_config, _save_model_config,
-                                        _save_preprocess_config)
+from alibi_detect.saving import load_detector, read_config, registry, resolve_config, save_detector, write_config
+from alibi_detect.saving.loading import (_get_nested_value, _prepend_cfg_filepaths, _replace, _set_dtypes,
+                                         _set_nested_value)
+from alibi_detect.saving.saving import (_int2str_keys, _path2str, _save_kernel_config, _save_model_config,
+                                        _save_preprocess_config, _serialize_object)
 from alibi_detect.saving.schemas import DeepKernelConfig, KernelConfig, ModelConfig, PreprocessConfig
+from alibi_detect.utils._random import fixed_seed
+from alibi_detect.utils.frameworks import has_keops
 from alibi_detect.utils.pytorch.kernels import DeepKernel as DeepKernel_pt
 from alibi_detect.utils.tensorflow.kernels import DeepKernel as DeepKernel_tf
-from alibi_detect.utils.frameworks import has_keops
+
+from .datasets import BinData, CategoricalData, ContinuousData, MixedData, TextData
+from .models import (LATENT_DIM, classifier_model, deep_kernel, embedding, enc_dim, encoder_dropout_model,  # noqa: F401
+                     encoder_model, kernel, max_len, nlp_embedding_and_tokenizer, optimizer, preprocess_hiddenoutput,
+                     preprocess_nlp, preprocess_simple, preprocess_simple_with_kwargs, preprocess_uae, tokenizer)
+
 if has_keops:  # pykeops only installed in Linux CI
     from pykeops.torch import LazyTensor
+
     from alibi_detect.utils.keops.kernels import DeepKernel as DeepKernel_ke
 
 if version.parse(scipy.__version__) >= version.parse('1.7.0'):

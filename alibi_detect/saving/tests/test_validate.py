@@ -1,15 +1,15 @@
+from copy import deepcopy
+
 import numpy as np
 import pytest
+import tensorflow as tf
+import torch
 from pydantic import ValidationError
 
 from alibi_detect.saving import validate_config
-from alibi_detect.saving.schemas import KernelConfig
 from alibi_detect.saving.saving import X_REF_FILENAME
+from alibi_detect.saving.schemas import KernelConfig
 from alibi_detect.version import __version__
-from copy import deepcopy
-
-import tensorflow as tf
-import torch
 
 # Define a detector config dict
 mmd_cfg = {

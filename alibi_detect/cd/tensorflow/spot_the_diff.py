@@ -1,10 +1,12 @@
 import logging
+from typing import Callable, Dict, Optional, Union
+
 import numpy as np
 import tensorflow as tf
-from typing import Callable, Dict, Optional, Union
+
 from alibi_detect.cd.tensorflow.classifier import ClassifierDriftTF
-from alibi_detect.utils.tensorflow.data import TFDataset
 from alibi_detect.utils.tensorflow import GaussianRBF
+from alibi_detect.utils.tensorflow.data import TFDataset
 from alibi_detect.utils.tensorflow.prediction import predict_batch
 
 logger = logging.getLogger(__name__)

@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+
 from alibi_detect.cd import MMDDriftOnline
 from alibi_detect.cd.pytorch.mmd_online import MMDDriftOnlineTorch
 from alibi_detect.cd.tensorflow.mmd_online import MMDDriftOnlineTF

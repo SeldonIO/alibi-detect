@@ -18,8 +18,8 @@ Notes
     that need to be tested separately.
 """
 
-from types import ModuleType
 from collections import defaultdict
+from types import ModuleType
 
 
 def check_correct_dependencies(

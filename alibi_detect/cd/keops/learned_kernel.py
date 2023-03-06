@@ -1,16 +1,18 @@
 from copy import deepcopy
 from functools import partial
-from tqdm import tqdm
+from typing import Callable, Dict, List, Optional, Tuple, Union
+
 import numpy as np
-from pykeops.torch import LazyTensor
 import torch
 import torch.nn as nn
+from pykeops.torch import LazyTensor
 from torch.utils.data import DataLoader
-from typing import Callable, Dict, List, Optional, Union, Tuple
+from tqdm import tqdm
+
 from alibi_detect.cd.base import BaseLearnedKernelDrift
+from alibi_detect.utils.frameworks import Framework
 from alibi_detect.utils.pytorch import get_device, predict_batch
 from alibi_detect.utils.pytorch.data import TorchDataset
-from alibi_detect.utils.frameworks import Framework
 
 
 class LearnedKernelDriftKeops(BaseLearnedKernelDrift):

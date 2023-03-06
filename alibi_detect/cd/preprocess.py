@@ -1,7 +1,8 @@
+from typing import Callable, Union
+
 import numpy as np
 from scipy.special import softmax
 from scipy.stats import entropy
-from typing import Callable, Union
 
 
 def classifier_uncertainty(

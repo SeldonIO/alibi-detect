@@ -1,18 +1,20 @@
 from copy import deepcopy
 from functools import partial
+from typing import Callable, Dict, Optional, Tuple, Union
+
 import numpy as np
 import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader
 from scipy.special import softmax
-from typing import Callable, Dict, Optional, Union, Tuple
+from torch.utils.data import DataLoader
+
 from alibi_detect.cd.base import BaseClassifierDrift
 from alibi_detect.models.pytorch.trainer import trainer
+from alibi_detect.utils.frameworks import Framework
 from alibi_detect.utils.pytorch import get_device
 from alibi_detect.utils.pytorch.data import TorchDataset
 from alibi_detect.utils.pytorch.prediction import predict_batch
 from alibi_detect.utils.warnings import deprecated_alias
-from alibi_detect.utils.frameworks import Framework
 
 
 class ClassifierDriftTorch(BaseClassifierDrift):

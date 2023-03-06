@@ -1,8 +1,9 @@
 import logging
+from typing import Callable, List, Optional, Tuple, Union
+
+import numpy as np
 import torch
 from torch import nn
-import numpy as np
-from typing import Callable, List, Tuple, Optional, Union
 
 logger = logging.getLogger(__name__)
 

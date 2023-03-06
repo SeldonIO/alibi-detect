@@ -1,25 +1,16 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
 import functools
-import numpy as np
 import warnings
+
+import numpy as np
 import tensorflow.compat.v2 as tf
 from tensorflow_probability.python.bijectors import bijector
-from tensorflow_probability.python.distributions import categorical
-from tensorflow_probability.python.distributions import distribution
-from tensorflow_probability.python.distributions import independent
-from tensorflow_probability.python.distributions import logistic
-from tensorflow_probability.python.distributions import mixture_same_family
-from tensorflow_probability.python.distributions import quantized_distribution
-from tensorflow_probability.python.distributions import transformed_distribution
-from tensorflow_probability.python.internal import dtype_util
-from tensorflow_probability.python.internal import prefer_static
-from tensorflow_probability.python.internal import reparameterization
-from tensorflow_probability.python.internal import tensor_util
-from tensorflow_probability.python.internal import tensorshape_util
-
+from tensorflow_probability.python.distributions import (categorical, distribution, independent, logistic,
+                                                         mixture_same_family, quantized_distribution,
+                                                         transformed_distribution)
+from tensorflow_probability.python.internal import (dtype_util, prefer_static, reparameterization, tensor_util,
+                                                    tensorshape_util)
 
 __all__ = [
     'Shift',

@@ -1,13 +1,15 @@
 import logging
-import numpy as np
-from typing import Callable, Dict, Optional, Union
 from functools import partial
-from alibi_detect.cd.ks import KSDrift
+from typing import Callable, Dict, Optional, Union
+
+import numpy as np
+
+from alibi_detect.base import DriftConfigMixin
 from alibi_detect.cd.chisquare import ChiSquareDrift
+from alibi_detect.cd.ks import KSDrift
 from alibi_detect.cd.preprocess import classifier_uncertainty, regressor_uncertainty
 from alibi_detect.cd.utils import encompass_batching, encompass_shuffling_and_batch_filling
 from alibi_detect.utils.frameworks import BackendValidator, Framework
-from alibi_detect.base import DriftConfigMixin
 
 logger = logging.getLogger(__name__)
 

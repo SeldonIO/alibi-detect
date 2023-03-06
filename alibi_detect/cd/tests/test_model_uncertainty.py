@@ -1,13 +1,15 @@
-import numpy as np
-import pytest
 from functools import partial
 from itertools import product
+from typing import Union
+
+import numpy as np
+import pytest
 import scipy
 import tensorflow as tf
-from tensorflow.keras.layers import Dense, Input, Softmax, Dropout
 import torch
 import torch.nn as nn
-from typing import Union
+from tensorflow.keras.layers import Dense, Dropout, Input, Softmax
+
 from alibi_detect.cd import ClassifierUncertaintyDrift, RegressorUncertaintyDrift
 
 n = 500

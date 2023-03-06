@@ -1,6 +1,8 @@
 from itertools import product
+
 import pytest
 from sklearn.datasets import load_iris
+
 from alibi_detect.od import IForest
 from alibi_detect.version import __version__
 

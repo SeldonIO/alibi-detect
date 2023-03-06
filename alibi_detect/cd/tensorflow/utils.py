@@ -1,5 +1,5 @@
-from typing import Callable
 from functools import partial
+from typing import Callable
 
 
 def activate_train_mode_for_all_layers(model: Callable) -> Callable:

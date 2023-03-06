@@ -1,8 +1,10 @@
 from itertools import product
+
 import numpy as np
 import pytest
 import tensorflow as tf
-from tensorflow.keras.layers import Dense, Input, LSTM
+from tensorflow.keras.layers import LSTM, Dense, Input
+
 from alibi_detect.od import LLR
 from alibi_detect.version import __version__
 

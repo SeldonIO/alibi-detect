@@ -2,18 +2,19 @@ import io
 import logging
 from io import BytesIO
 from typing import List, Tuple, Type, Union
+from urllib.error import URLError
 from xml.etree import ElementTree
 
 import dill
 import numpy as np
 import pandas as pd
 import requests
-from alibi_detect.utils.data import Bunch
-from alibi_detect.utils.url import _join_url
 from requests import RequestException
-from urllib.error import URLError
 from scipy.io import arff
 from sklearn.datasets import fetch_kddcup99
+
+from alibi_detect.utils.data import Bunch
+from alibi_detect.utils.url import _join_url
 
 # do not extend pickle dispatch table so as not to change pickle behaviour
 dill.extend(use_dill=False)

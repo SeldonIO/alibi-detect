@@ -1,9 +1,11 @@
 import numpy as np
 import pytest
+
 from alibi_detect.cd import MMDDrift
 from alibi_detect.cd.pytorch.mmd import MMDDriftTorch
 from alibi_detect.cd.tensorflow.mmd import MMDDriftTF
 from alibi_detect.utils.frameworks import has_keops
+
 if has_keops:
     from alibi_detect.cd.keops.mmd import MMDDriftKeops
 

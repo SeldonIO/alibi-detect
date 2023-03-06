@@ -1,12 +1,15 @@
-import numpy as np
 from typing import Callable, Dict, Optional, Union
-from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, BackendValidator, Framework
+
+import numpy as np
+
 from alibi_detect.base import DriftConfigMixin
+from alibi_detect.utils.frameworks import BackendValidator, Framework, has_pytorch, has_tensorflow
 
 if has_pytorch:
+    from torch.utils.data import DataLoader
+
     from alibi_detect.cd.pytorch.spot_the_diff import SpotTheDiffDriftTorch
     from alibi_detect.utils.pytorch.data import TorchDataset
-    from torch.utils.data import DataLoader
 
 if has_tensorflow:
     from alibi_detect.cd.tensorflow.spot_the_diff import SpotTheDiffDriftTF

@@ -3,8 +3,9 @@ import random
 from typing import Callable, Dict, Optional, Tuple, Union
 
 import numpy as np
-from alibi_detect.utils.sampling import reservoir_sampling
+
 from alibi_detect.utils.frameworks import Framework
+from alibi_detect.utils.sampling import reservoir_sampling
 
 logger = logging.getLogger(__name__)
 

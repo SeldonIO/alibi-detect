@@ -1,16 +1,19 @@
 import numpy as np
 import pytest
 import tensorflow as tf
-from tensorflow.keras.layers import Dense
 import torch
 import torch.nn as nn
+from tensorflow.keras.layers import Dense
+
 from alibi_detect.cd import LearnedKernelDrift
 from alibi_detect.cd.pytorch.learned_kernel import LearnedKernelDriftTorch
 from alibi_detect.cd.tensorflow.learned_kernel import LearnedKernelDriftTF
 from alibi_detect.utils.frameworks import has_keops
+
 if has_keops:
-    from alibi_detect.cd.keops.learned_kernel import LearnedKernelDriftKeops
     from pykeops.torch import LazyTensor
+
+    from alibi_detect.cd.keops.learned_kernel import LearnedKernelDriftKeops
 
 n, n_features = 100, 5
 

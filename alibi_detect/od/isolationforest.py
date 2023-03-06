@@ -1,7 +1,9 @@
 import logging
+from typing import Dict, Union
+
 import numpy as np
 from sklearn.ensemble import IsolationForest
-from typing import Dict, Union
+
 from alibi_detect.base import BaseDetector, FitMixin, ThresholdMixin, outlier_prediction_dict
 
 logger = logging.getLogger(__name__)
