@@ -22,7 +22,7 @@ def permutation_test(x: np.ndarray, y: np.ndarray, metric: Callable, n_permutati
 
     Returns
     -------
-    p-value obtained from the permutation test, the metric between the reference and test set
+    p-value obtained from the permutation test, the metric between the reference and test set \
     and the metric values from the permutation test.
     """
     n, k = x.shape[0], 0
@@ -52,8 +52,8 @@ def fdr(p_val: np.ndarray, q_val: float) -> Tuple[int, Union[float, np.ndarray]]
 
     Returns
     -------
-    Whether any of the p-values are significant after the FDR correction
-    and the max threshold value or array of potential thresholds if no p-values
+    Whether any of the p-values are significant after the FDR correction \
+    and the max threshold value or array of potential thresholds if no p-values \
     are significant.
     """
     n = p_val.shape[0]

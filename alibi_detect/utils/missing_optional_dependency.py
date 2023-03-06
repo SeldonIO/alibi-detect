@@ -96,8 +96,8 @@ def import_optional(module_name: str, names: Optional[List[str]] = None) -> Any:
 
     Returns
     -------
-    The module or named objects within the modules if names is not None. If the import fails due to a
-    ModuleNotFoundError or ImportError then the requested module or named objects are replaced with instances of
+    The module or named objects within the modules if names is not None. If the import fails due to a \
+    `ModuleNotFoundError` or `ImportError` then the requested module or named objects are replaced with instances of \
     the MissingDependency class above.
     """
     try:

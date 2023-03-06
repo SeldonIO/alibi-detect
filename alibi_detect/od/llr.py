@@ -347,8 +347,8 @@ class LLR(BaseDetector, FitMixin, ThresholdMixin):
         Returns
         -------
         Dictionary containing 'meta' and 'data' dictionaries.
-        'meta' has the model's metadata.
-        'data' contains the outlier predictions and both feature and instance level outlier scores.
+            - 'meta' has the model's metadata.
+            - 'data' contains the outlier predictions and both feature and instance level outlier scores.
         """
         # compute outlier scores
         fscore, iscore = self.score(X, batch_size=batch_size)
