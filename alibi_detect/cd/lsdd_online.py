@@ -132,8 +132,8 @@ class LSDDDriftOnline(DriftConfigMixin):
         Returns
         -------
         Dictionary containing 'meta' and 'data' dictionaries.
-        'meta' has the model's metadata.
-        'data' contains the drift prediction and optionally the test-statistic and threshold.
+            - 'meta' has the model's metadata.
+            - 'data' contains the drift prediction and optionally the test-statistic and threshold.
         """
         return self._detector.predict(x_t, return_test_stat)
 

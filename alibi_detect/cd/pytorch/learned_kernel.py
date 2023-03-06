@@ -191,7 +191,7 @@ class LearnedKernelDriftTorch(BaseLearnedKernelDrift):
 
         Returns
         -------
-        p-value obtained from the permutation test, the MMD^2 between the reference and test set,
+        p-value obtained from the permutation test, the MMD^2 between the reference and test set, \
         and the MMD^2 threshold above which drift is flagged.
         """
         x_ref, x_cur = self.preprocess(x)
