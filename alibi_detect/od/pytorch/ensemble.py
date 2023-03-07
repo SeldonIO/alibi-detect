@@ -1,4 +1,3 @@
-from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Optional
 
@@ -46,7 +45,7 @@ class FitMixinTorch(ABC):
         """
         super().__init__()
 
-    def fit(self, x: torch.Tensor) -> FitMixinTorch:
+    def fit(self, x: torch.Tensor) -> 'FitMixinTorch':
         self.fitted = True
         self._fit(x)
         return self
@@ -115,7 +114,7 @@ class PValNormalizer(BaseFittedTransformTorch):
         super().__init__()
         self.val_scores = None
 
-    def _fit(self, val_scores: torch.Tensor) -> PValNormalizer:
+    def _fit(self, val_scores: torch.Tensor) -> 'PValNormalizer':
         """Fit transform on scores.
 
         Parameters
@@ -155,7 +154,7 @@ class ShiftAndScaleNormalizer(BaseFittedTransformTorch):
         self.val_means = None
         self.val_scales = None
 
-    def _fit(self, val_scores: torch.Tensor) -> ShiftAndScaleNormalizer:
+    def _fit(self, val_scores: torch.Tensor) -> 'ShiftAndScaleNormalizer':
         """Computes the mean and standard deviation of the scores and stores them.
 
         Parameters

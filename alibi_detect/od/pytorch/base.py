@@ -1,4 +1,3 @@
-from __future__ import annotations
 from typing import List, Union, Optional, Dict
 from dataclasses import dataclass, asdict
 from abc import ABC, abstractmethod
@@ -99,7 +98,7 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
         """
         if not self.threshold_inferred:
             raise ThresholdNotInferredError((f'{self.__class__.__name__} has no threshold set, '
-                                                 'call `infer_threshold` before predicting.'))
+                                             'call `infer_threshold` before predicting.'))
 
     @staticmethod
     def _to_numpy(arg: Union[torch.Tensor, TorchOutlierDetectorOutput]) -> Union[np.ndarray, Dict]:
