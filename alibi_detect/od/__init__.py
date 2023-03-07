@@ -4,7 +4,7 @@ from .isolationforest import IForest
 from .mahalanobis import Mahalanobis
 from .sr import SpectralResidual
 
-from alibi_detect.od.base import TransformProtocol, transform_protocols
+from alibi_detect.od.base import TransformProtocol, TransformProtocolType
 from typing_extensions import Literal
 from typing import Union
 
@@ -16,12 +16,12 @@ PValNormalizer, ShiftAndScaleNormalizer, TopKAggregator, AverageAggregator, \
     )
 
 
-normalizer_literals = Literal['PValNormalizer', 'ShiftAndScaleNormalizer']
-aggregator_literals = Literal['TopKAggregator', 'AverageAggregator',
-                              'MaxAggregator', 'MinAggregator']
+NormalizerLiterals = Literal['PValNormalizer', 'ShiftAndScaleNormalizer']
+AggregatorLiterals = Literal['TopKAggregator', 'AverageAggregator',
+                             'MaxAggregator', 'MinAggregator']
 
 
-def get_normalizer(normalizer: Union[transform_protocols, normalizer_literals]) -> TransformProtocol:
+def get_normalizer(normalizer: Union[TransformProtocolType, NormalizerLiterals]) -> TransformProtocol:
     if isinstance(normalizer, str):
         try:
             return {
@@ -33,7 +33,7 @@ def get_normalizer(normalizer: Union[transform_protocols, normalizer_literals]) 
     return normalizer
 
 
-def get_aggregator(aggregator: Union[TransformProtocol, aggregator_literals]) -> TransformProtocol:
+def get_aggregator(aggregator: Union[TransformProtocol, AggregatorLiterals]) -> TransformProtocol:
     if isinstance(aggregator, str):
         try:
             return {

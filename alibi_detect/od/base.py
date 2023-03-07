@@ -38,4 +38,4 @@ class FittedTransformProtocol(TransformProtocol, Protocol):
         pass
 
 
-transform_protocols = Union[TransformProtocol, FittedTransformProtocol]
+TransformProtocolType = Union[TransformProtocol, FittedTransformProtocol]
