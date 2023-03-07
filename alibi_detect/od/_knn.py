@@ -72,7 +72,7 @@ class KNN(BaseDetector, FitMixin, ThresholdMixin):
             Backend used for outlier detection. Defaults to ``'pytorch'``. Options are ``'pytorch'``.
         device
             Device type used. The default tries to use the GPU and falls back on CPU if needed.
-            Can be specified by passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of 
+            Can be specified by passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of
             ``torch.device``.
 
         Raises
@@ -120,7 +120,7 @@ class KNN(BaseDetector, FitMixin, ThresholdMixin):
         """
         self.backend.fit(self.backend._to_tensor(x_ref))
 
-    def score(self, X: np.ndarray) -> np.ndarray:
+    def score(self, x: np.ndarray) -> np.ndarray:
         """Score `x` instances using the detector.
 
         Computes the k nearest neighbor distance/kernel similarity for each instance in `x`. If `k` is a single
@@ -137,10 +137,10 @@ class KNN(BaseDetector, FitMixin, ThresholdMixin):
         Outlier scores. The shape of the scores is `(n_instances,)`. The higher the score, the more anomalous the \
         instance.
         """
-        score = self.backend.score(self.backend._to_tensor(X))
+        score = self.backend.score(self.backend._to_tensor(x))
         return self.backend._to_numpy(score)
 
-    def infer_threshold(self, X: np.ndarray, fpr: float) -> None:
+    def infer_threshold(self, x_ref: np.ndarray, fpr: float) -> None:
         """Infer the threshold for the kNN detector.
 
         The threshold is computed so that the outlier detector would incorrectly classify `fpr` proportion of the
@@ -155,7 +155,7 @@ class KNN(BaseDetector, FitMixin, ThresholdMixin):
             instances in `x_ref` that are incorrectly classified as outliers. The false positive rate should
             be in the range ``(0, 1)``.
         """
-        self.backend.infer_threshold(self.backend._to_tensor(X), fpr)
+        self.backend.infer_threshold(self.backend._to_tensor(x_ref), fpr)
 
     def predict(self, x: np.ndarray) -> Dict[str, Any]:
         """Predict whether the instances in `x` are outliers or not.
