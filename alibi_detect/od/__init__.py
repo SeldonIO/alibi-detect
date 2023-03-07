@@ -31,7 +31,7 @@ __all__ = [
     "OutlierSeq2Seq",
     "SpectralResidual",
     "LLR",
-    "OutlierProphet"
+    "OutlierProphet",
     "PValNormalizer",
     "ShiftAndScaleNormalizer",
     "TopKAggregator",
