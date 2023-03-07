@@ -4,9 +4,6 @@ from .isolationforest import IForest
 from .mahalanobis import Mahalanobis
 from .sr import SpectralResidual
 
-from alibi_detect.od.base import TransformProtocol, TransformProtocolType
-from typing_extensions import Literal
-from typing import Union
 
 PValNormalizer, ShiftAndScaleNormalizer, TopKAggregator, AverageAggregator, \
     MaxAggregator, MinAggregator = import_optional(
@@ -14,37 +11,6 @@ PValNormalizer, ShiftAndScaleNormalizer, TopKAggregator, AverageAggregator, \
         ['PValNormalizer', 'ShiftAndScaleNormalizer', 'TopKAggregator',
          'AverageAggregator', 'MaxAggregator', 'MinAggregator']
     )
-
-
-NormalizerLiterals = Literal['PValNormalizer', 'ShiftAndScaleNormalizer']
-AggregatorLiterals = Literal['TopKAggregator', 'AverageAggregator',
-                             'MaxAggregator', 'MinAggregator']
-
-
-def get_normalizer(normalizer: Union[TransformProtocolType, NormalizerLiterals]) -> TransformProtocol:
-    if isinstance(normalizer, str):
-        try:
-            return {
-                'PValNormalizer': PValNormalizer,
-                'ShiftAndScaleNormalizer': ShiftAndScaleNormalizer,
-            }.get(normalizer)()
-        except KeyError:
-            raise NotImplementedError(f'Normalizer {normalizer} not implemented.')
-    return normalizer
-
-
-def get_aggregator(aggregator: Union[TransformProtocol, AggregatorLiterals]) -> TransformProtocol:
-    if isinstance(aggregator, str):
-        try:
-            return {
-                'TopKAggregator': TopKAggregator,
-                'AverageAggregator': AverageAggregator,
-                'MaxAggregator': MaxAggregator,
-                'MinAggregator': MinAggregator,
-            }.get(aggregator)()
-        except KeyError:
-            raise NotImplementedError(f'Aggregator {aggregator} not implemented.')
-    return aggregator
 
 
 OutlierAEGMM = import_optional('alibi_detect.od.aegmm', names=['OutlierAEGMM'])

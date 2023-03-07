@@ -8,7 +8,7 @@ from alibi_detect.base import outlier_prediction_dict
 from alibi_detect.od.base import TransformProtocol, TransformProtocolType
 from alibi_detect.base import BaseDetector, FitMixin, ThresholdMixin
 from alibi_detect.od.pytorch import KNNTorch, Ensembler
-from alibi_detect.od import normalizer_literals, aggregator_literals, get_aggregator, get_normalizer
+from alibi_detect.od.base import get_aggregator, get_normalizer, NormalizerLiterals, AggregatorLiterals
 from alibi_detect.utils.frameworks import BackendValidator
 from alibi_detect.version import __version__
 
@@ -27,8 +27,8 @@ class KNN(BaseDetector, FitMixin, ThresholdMixin):
         self,
         k: Union[int, np.ndarray, List[int], Tuple[int]],
         kernel: Optional[Callable] = None,
-        normalizer: Optional[Union[TransformProtocolType, normalizer_literals]] = 'ShiftAndScaleNormalizer',
-        aggregator: Union[TransformProtocol, aggregator_literals] = 'AverageAggregator',
+        normalizer: Optional[Union[TransformProtocolType, NormalizerLiterals]] = 'ShiftAndScaleNormalizer',
+        aggregator: Union[TransformProtocol, AggregatorLiterals] = 'AverageAggregator',
         device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
         backend: Literal['pytorch'] = 'pytorch',
     ) -> None:
