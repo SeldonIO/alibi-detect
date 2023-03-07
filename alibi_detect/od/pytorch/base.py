@@ -205,7 +205,7 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
             Raised if `fpr` is not in ``(0, 1)``.
         """
         if not 0 < fpr < 1:
-            ValueError('`fpr` must be in `(0, 1)`.')
+            raise ValueError('`fpr` must be in `(0, 1)`.')
         self.val_scores = self.score(x)
         if self.ensemble:
             self.val_scores = self.ensembler.fit(self.val_scores).transform(self.val_scores)  # type: ignore

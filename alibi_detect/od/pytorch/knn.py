@@ -10,7 +10,7 @@ from alibi_detect.od.pytorch.base import TorchOutlierDetector
 class KNNTorch(TorchOutlierDetector):
     def __init__(
             self,
-            k: Union[np.ndarray, List, Tuple],
+            k: Union[np.ndarray, List, Tuple, int],
             kernel: Optional[torch.nn.Module] = None,
             ensembler: Optional[Ensembler] = None,
             device: Optional[Union[str, torch.device]] = None
@@ -36,7 +36,7 @@ class KNNTorch(TorchOutlierDetector):
             Can be specified by passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of
             ``torch.device``.
         """
-        TorchOutlierDetector.__init__(self, device=device)
+        super().__init__(device=device)
         self.kernel = kernel
         self.ensemble = isinstance(k, (np.ndarray, list, tuple))
         self.ks = torch.tensor(k) if self.ensemble else torch.tensor([k], device=self.device)
