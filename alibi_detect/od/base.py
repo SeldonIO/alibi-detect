@@ -7,7 +7,12 @@ from typing_extensions import Protocol, runtime_checkable
 # avoid the torch/tensorflow imports in the base class.
 @runtime_checkable
 class TransformProtocol(Protocol):
-    """Protocol for transformer objects."""
+    """Protocol for transformer objects.
+
+    The :py:obj:`~alibi_detect.od.pytorch.ensemble.BaseTransformTorch` object provides abstract methods for
+    objects that map between `torch` tensors. This protocol models the interface of the `BaseTransformTorch`
+    class.
+    """
     def transform(self, x):
         pass
 
@@ -17,7 +22,12 @@ class TransformProtocol(Protocol):
 
 @runtime_checkable
 class FittedTransformProtocol(TransformProtocol, Protocol):
-    """Protocol for fitted transformer objects."""
+    """Protocol for fitted transformer objects.
+
+    The :py:obj:`~alibi_detect.od.pytorch.ensemble.BaseFittedTransformTorch` object provides abstract methods for
+    objects that map between `torch` tensors and also require to be fit. This protocol models the interface of
+    the `BaseFittedTransformTorch`
+    class."""
     def fit(self, x_ref):
         pass
 

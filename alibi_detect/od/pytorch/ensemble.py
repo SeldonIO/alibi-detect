@@ -17,16 +17,20 @@ class BaseTransformTorch(Module, ABC):
         super().__init__()
 
     def transform(self, x: torch.Tensor):
+        """Public transform method. See `_transform` for implementation details.
+
+        Parameters
+        ----------
+        x
+            `torch.Tensor` array to be transformed
+        """
         return self._transform(x)
 
     @abstractmethod
     def _transform(self, x: torch.Tensor):
         """Applies class transform to `torch.Tensor`
 
-        Parameters
-        ----------
-        x
-            `torch.Tensor` array to be transformed
+        This method should be overridden on child classes.
         """
         pass
 
@@ -46,6 +50,16 @@ class FitMixinTorch(ABC):
         super().__init__()
 
     def fit(self, x: torch.Tensor) -> 'FitMixinTorch':
+        """Public fit method.
+
+        The `_fit` method contains the implementation details and should be overridden on child classes. Once the
+        `_fit` method has fit the object the `fitted` attribute should be set to `True`.
+
+        Parameters
+        ----------
+        x
+            `torch.Tensor` to fit object on.
+        """
         self.fitted = True
         self._fit(x)
         return self
@@ -54,12 +68,7 @@ class FitMixinTorch(ABC):
     def _fit(self, x: torch.Tensor):
         """Fit on `x` tensor.
 
-        This method should be overidden on child classes.
-
-        Parameters
-        ----------
-        x
-            Reference `torch.Tensor` for fitting object.
+        This method should be overridden on child classes and should set the `fitted` attribute to `True`.
         """
         pass
 
@@ -80,14 +89,14 @@ class BaseFittedTransformTorch(BaseTransformTorch, FitMixinTorch):
     def __init__(self):
         """Base Fitted Transform class.
 
-        Extends `BaseTransfrom` with fit functionality. Ensures that transform has been fit prior to
+        Extends `BaseTransform` with fit functionality. Ensures that transform has been fit prior to
         applying transform.
         """
         BaseTransformTorch.__init__(self)
         FitMixinTorch.__init__(self)
 
     def transform(self, x: torch.Tensor) -> torch.Tensor:
-        """Checks to make sure transform has been fitted and then applies trasform to input tensor.
+        """Checks to make sure transform has been fitted and then applies transform to input tensor.
 
         Parameters
         ----------
@@ -145,7 +154,7 @@ class PValNormalizer(BaseFittedTransformTorch):
 
 class ShiftAndScaleNormalizer(BaseFittedTransformTorch):
     def __init__(self):
-        """Maps scores to their normalised values.
+        """Maps scores to their normalized values.
 
         Needs to be fit (see :py:obj:`~alibi_detect.od.pytorch.ensemble.BaseFittedTransformTorch`).
         Subtracts the dataset mean and scales by the standard deviation.
@@ -167,7 +176,7 @@ class ShiftAndScaleNormalizer(BaseFittedTransformTorch):
         return self
 
     def _transform(self, scores: torch.Tensor) -> torch.Tensor:
-        """Transform scores to normalised values. Subtracts the mean and scales by the standard deviation.
+        """Transform scores to normalized values. Subtracts the mean and scales by the standard deviation.
 
         Parameters
         ----------
@@ -176,7 +185,7 @@ class ShiftAndScaleNormalizer(BaseFittedTransformTorch):
 
         Returns
         -------
-        `Torch.Tensor` of normalised scores.
+        `Torch.Tensor` of normalized scores.
         """
         return (scores - self.val_means)/self.val_scales
 
@@ -321,7 +330,7 @@ class Ensembler(BaseFittedTransformTorch):
 
         Returns
         -------
-        `Torch.Tensor` of aggregated and normalised scores.
+        `Torch.Tensor` of aggregated and normalized scores.
         """
         if self.normalizer is not None:
             x = self.normalizer(x)
