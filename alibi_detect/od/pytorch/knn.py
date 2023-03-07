@@ -20,7 +20,7 @@ class KNNTorch(TorchOutlierDetector):
         Parameters
         ----------
         k
-            Number of neirest neighbors to compute distance to. `k` can be a single value or
+            Number of nearest neighbors to compute distance to. `k` can be a single value or
             an array of integers. If `k` is a single value the outlier score is the distance/kernel
             similarity to the `k`-th nearest neighbor. If `k` is a list then it returns the distance/kernel
             similarity to each of the specified `k` neighbors.
@@ -32,8 +32,9 @@ class KNNTorch(TorchOutlierDetector):
             of :py:obj:`alibi_detect.od.pytorch.ensemble.ensembler`. Responsible for combining
             multiple scores into a single score.
         device
-            Device type used. The default None tries to use the GPU and falls back on CPU if needed.
-            Can be specified by passing either ``'cuda'``, ``'gpu'`` or ``'cpu'``.
+            Device type used. The default tries to use the GPU and falls back on CPU if needed.
+            Can be specified by passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of
+            ``torch.device``.
         """
         TorchOutlierDetector.__init__(self, device=device)
         self.kernel = kernel

@@ -29,11 +29,11 @@ class KNN(BaseDetector, FitMixin, ThresholdMixin):
         kernel: Optional[Callable] = None,
         normalizer: Optional[Union[TransformProtocolType, NormalizerLiterals]] = 'ShiftAndScaleNormalizer',
         aggregator: Union[TransformProtocol, AggregatorLiterals] = 'AverageAggregator',
-        device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
         backend: Literal['pytorch'] = 'pytorch',
+        device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
     ) -> None:
         """
-        k-Nearest Neighbours (kNN) outlier detector.
+        k-Nearest Neighbors (kNN) outlier detector.
 
         The kNN detector is a non-parametric method for outlier detection. The detector computes the distance
         between each test point and its `k` nearest neighbors. The distance can be computed using a kernel function
@@ -45,7 +45,7 @@ class KNN(BaseDetector, FitMixin, ThresholdMixin):
         In the latter case, an `ensembler` must be specified to aggregate the scores.
 
         Note that the `ensembler` is fit in the `infer_threshold` method and so if using an array of `k` values, the
-        `infer_threshold` method must be called before the `predict` method othewrise an exception is raised. If `k`
+        `infer_threshold` method must be called before the `predict` method otherwise an exception is raised. If `k`
         is a single value then the predict method can be called without first calling `infer_threshold` but only
         scores will be returned and not outlier predictions.
 
@@ -53,7 +53,7 @@ class KNN(BaseDetector, FitMixin, ThresholdMixin):
         Parameters
         ----------
         k
-            Number of neirest neighbors to compute distance to. `k` can be a single value or
+            Number of nearest neighbors to compute distance to. `k` can be a single value or
             an array of integers. If an array is passed, an aggregator is required to aggregate
             the scores. If `k` is a single value the outlier score is the distance/kernel
             similarity to the `k`-th nearest neighbor. If `k` is a list then it returns the
@@ -63,7 +63,7 @@ class KNN(BaseDetector, FitMixin, ThresholdMixin):
             Otherwise if a kernel is specified then instead of using `torch.cdist` the kernel
             defines the k nearest neighbor distance.
         normalizer
-            Normalizer to use for outlier detection. If ``None``, no normalisation is applied.
+            Normalizer to use for outlier detection. If ``None``, no normalization is applied.
             For a list of available normalizers, see :mod:`alibi_detect.od.pytorch.ensemble`.
         aggregator
             Aggregator to use for outlier detection. Can be set to ``None`` if `k` is a single
@@ -72,7 +72,8 @@ class KNN(BaseDetector, FitMixin, ThresholdMixin):
             Backend used for outlier detection. Defaults to ``'pytorch'``. Options are ``'pytorch'``.
         device
             Device type used. The default tries to use the GPU and falls back on CPU if needed.
-            Can be specified by passing either ``'cuda'``, ``'gpu'`` or ``'cpu'``.
+            Can be specified by passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of 
+            ``torch.device``.
 
         Raises
         ------
@@ -142,7 +143,7 @@ class KNN(BaseDetector, FitMixin, ThresholdMixin):
     def infer_threshold(self, X: np.ndarray, fpr: float) -> None:
         """Infer the threshold for the kNN detector.
 
-        The threshold is computed so that the outlier detector would incorectly classify `fpr` proportion of the
+        The threshold is computed so that the outlier detector would incorrectly classify `fpr` proportion of the
         reference data as outliers.
 
         Parameters
