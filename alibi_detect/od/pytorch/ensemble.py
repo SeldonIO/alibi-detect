@@ -138,9 +138,8 @@ class PValNormalizer(BaseFittedTransformTorch):
         -------
         `Torch.Tensor` of 1 - p-values.
         """
-        p_vals = (
-                1 + (scores[:, None, :] < self.val_scores[None, :, :]).sum(1)
-            )/(len(self.val_scores)+1)
+        less_than_val_scores = scores[:, None, :] < self.val_scores[None, :, :]
+        p_vals = (1 + less_than_val_scores.sum(1))/(len(self.val_scores) + 1)
         return 1 - p_vals
 
 
