@@ -65,17 +65,6 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
         super().__init__()
 
     @abstractmethod
-    def _fit(self, x_ref: torch.Tensor) -> None:
-        """Fit the outlier detector to the reference data.
-
-        Parameters
-        ----------
-        x_ref
-            Reference data.
-        """
-        pass
-
-    @abstractmethod
     def score(self, x: torch.Tensor) -> torch.Tensor:
         """Score the data.
 

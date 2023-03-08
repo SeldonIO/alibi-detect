@@ -85,14 +85,13 @@ class KNNTorch(TorchOutlierDetector):
         NotFittedError
             If called before detector has been fit.
         """
-        if not torch.jit.is_scripting():
-            self.check_fitted()
+        self.check_fitted()
         K = -self.kernel(x, self.x_ref) if self.kernel is not None else torch.cdist(x, self.x_ref)
         bot_k_dists = torch.topk(K, int(torch.max(self.ks)), dim=1, largest=False)
         all_knn_dists = bot_k_dists.values[:, self.ks-1]
         return all_knn_dists if self.ensemble else all_knn_dists[:, 0]
 
-    def _fit(self, x_ref: torch.Tensor):
+    def fit(self, x_ref: torch.Tensor):
         """Fits the detector
 
         Parameters
@@ -101,3 +100,4 @@ class KNNTorch(TorchOutlierDetector):
             The Dataset tensor.
         """
         self.x_ref = x_ref
+        return self.set_fitted()

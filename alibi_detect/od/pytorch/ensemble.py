@@ -1,4 +1,4 @@
-from abc import ABC, abstractmethod
+from abc import ABC
 from typing import Optional
 
 import torch
@@ -8,7 +8,7 @@ from torch.nn import Module
 from alibi_detect.exceptions import NotFittedError
 
 
-class BaseTransformTorch(Module, ABC):
+class BaseTransformTorch(Module):
     def __init__(self):
         """Base Transform class.
 
@@ -17,26 +17,18 @@ class BaseTransformTorch(Module, ABC):
         super().__init__()
 
     def transform(self, x: torch.Tensor):
-        """Public transform method. See `_transform` for implementation details.
+        """Public transform method.
 
         Parameters
         ----------
         x
             `torch.Tensor` array to be transformed
         """
-        return self._transform(x)
-
-    @abstractmethod
-    def _transform(self, x: torch.Tensor):
-        """Applies class transform to `torch.Tensor`
-
-        This method should be overridden on child classes.
-        """
-        pass
+        raise NotImplementedError()
 
     @torch.no_grad()
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.transform(x=x)
+        return self.transform(x)
 
 
 class FitMixinTorch(ABC):
@@ -53,58 +45,35 @@ class FitMixinTorch(ABC):
         x
             `torch.Tensor` to fit object on.
         """
+        raise NotImplementedError()
+
+    def set_fitted(self):
+        """Sets the fitted attribute to True.
+
+        Should be called within each transform method.
+        """
         self.fitted = True
-        self._fit(x)
         return self
 
-    @abstractmethod
-    def _fit(self, x: torch.Tensor):
-        """Fit on `x` tensor.
-
-        This method should be overridden on child classes and should set the `fitted` attribute to `True`.
-        """
-        pass
-
-    @torch.jit.unused
     def check_fitted(self):
-        """Raises error if parent object instance has not been fit.
+        """Checks to make sure object has been fitted.
 
         Raises
         ------
         NotFittedError
             Raised if method called and object has not been fit.
         """
+        if not torch.jit.is_scripting():
+            self._check_fitted()
+
+    @torch.jit.unused
+    def _check_fitted(self):
+        """Raises error if parent object instance has not been fit."""
         if not self.fitted:
             raise NotFittedError(f'{self.__class__.__name__} has not been fit!')
 
 
-class BaseFittedTransformTorch(BaseTransformTorch, FitMixinTorch):
-    def __init__(self):
-        """Base Fitted Transform class.
-
-        Extends `BaseTransform` with fit functionality. Ensures that transform has been fit prior to
-        applying transform.
-        """
-        super().__init__()
-
-    def transform(self, x: torch.Tensor) -> torch.Tensor:
-        """Checks to make sure transform has been fitted and then applies transform to input tensor.
-
-        Parameters
-        ----------
-        x
-            `torch.Tensor` being transformed.
-
-        Returns
-        -------
-        the transformed `torch.Tensor`.
-        """
-        if not torch.jit.is_scripting():
-            self.check_fitted()
-        return self._transform(x)
-
-
-class PValNormalizer(BaseFittedTransformTorch):
+class PValNormalizer(BaseTransformTorch, FitMixinTorch):
     def __init__(self):
         """Maps scores to there p-values.
 
@@ -115,7 +84,7 @@ class PValNormalizer(BaseFittedTransformTorch):
         super().__init__()
         self.val_scores = None
 
-    def _fit(self, val_scores: torch.Tensor) -> 'PValNormalizer':
+    def fit(self, val_scores: torch.Tensor) -> 'PValNormalizer':
         """Fit transform on scores.
 
         Parameters
@@ -124,9 +93,9 @@ class PValNormalizer(BaseFittedTransformTorch):
             score outputs of ensemble of detectors applied to reference data.
         """
         self.val_scores = val_scores
-        return self
+        return self.set_fitted()
 
-    def _transform(self, scores: torch.Tensor) -> torch.Tensor:
+    def transform(self, scores: torch.Tensor) -> torch.Tensor:
         """Transform scores to 1 - p-values.
 
         Parameters
@@ -138,12 +107,13 @@ class PValNormalizer(BaseFittedTransformTorch):
         -------
         `Torch.Tensor` of 1 - p-values.
         """
+        self.check_fitted()
         less_than_val_scores = scores[:, None, :] < self.val_scores[None, :, :]
         p_vals = (1 + less_than_val_scores.sum(1))/(len(self.val_scores) + 1)
         return 1 - p_vals
 
 
-class ShiftAndScaleNormalizer(BaseFittedTransformTorch):
+class ShiftAndScaleNormalizer(BaseTransformTorch, FitMixinTorch):
     def __init__(self):
         """Maps scores to their normalized values.
 
@@ -154,7 +124,7 @@ class ShiftAndScaleNormalizer(BaseFittedTransformTorch):
         self.val_means = None
         self.val_scales = None
 
-    def _fit(self, val_scores: torch.Tensor) -> 'ShiftAndScaleNormalizer':
+    def fit(self, val_scores: torch.Tensor) -> 'ShiftAndScaleNormalizer':
         """Computes the mean and standard deviation of the scores and stores them.
 
         Parameters
@@ -164,9 +134,9 @@ class ShiftAndScaleNormalizer(BaseFittedTransformTorch):
         """
         self.val_means = val_scores.mean(0)[None, :]
         self.val_scales = val_scores.std(0)[None, :]
-        return self
+        return self.set_fitted()
 
-    def _transform(self, scores: torch.Tensor) -> torch.Tensor:
+    def transform(self, scores: torch.Tensor) -> torch.Tensor:
         """Transform scores to normalized values. Subtracts the mean and scales by the standard deviation.
 
         Parameters
@@ -178,6 +148,7 @@ class ShiftAndScaleNormalizer(BaseFittedTransformTorch):
         -------
         `Torch.Tensor` of normalized scores.
         """
+        self.check_fitted()
         return (scores - self.val_means)/self.val_scales
 
 
@@ -194,7 +165,7 @@ class TopKAggregator(BaseTransformTorch):
         super().__init__()
         self.k = k
 
-    def _transform(self, scores: torch.Tensor) -> torch.Tensor:
+    def transform(self, scores: torch.Tensor) -> torch.Tensor:
         """Takes the mean of the top `k` scores.
 
         Parameters
@@ -232,9 +203,11 @@ class AverageAggregator(BaseTransformTorch):
             raise ValueError("Weights must sum to 1.")
         self.weights = weights
 
-    def _transform(self, scores: torch.Tensor) -> torch.Tensor:
+    def transform(self, scores: torch.Tensor) -> torch.Tensor:
         """Averages the scores of the detectors in an ensemble. If weights were passed in the `__init__`
         then these are used to weight the scores.
+
+        Parameters
         ----------
         scores
             `Torch.Tensor` of scores from ensemble of detectors.
@@ -254,7 +227,7 @@ class MaxAggregator(BaseTransformTorch):
         """Takes the maximum of the scores of the detectors in an ensemble."""
         super().__init__()
 
-    def _transform(self, scores: torch.Tensor) -> torch.Tensor:
+    def transform(self, scores: torch.Tensor) -> torch.Tensor:
         """Takes the maximum score of a set of detectors in an ensemble.
 
         Parameters
@@ -275,7 +248,7 @@ class MinAggregator(BaseTransformTorch):
         """Takes the minimum score of a set of detectors in an ensemble."""
         super().__init__()
 
-    def _transform(self, scores: torch.Tensor) -> torch.Tensor:
+    def transform(self, scores: torch.Tensor) -> torch.Tensor:
         """Takes the minimum score of a set of detectors in an ensemble.
 
         Parameters
@@ -291,9 +264,9 @@ class MinAggregator(BaseTransformTorch):
         return vals
 
 
-class Ensembler(BaseFittedTransformTorch):
+class Ensembler(BaseTransformTorch, FitMixinTorch):
     def __init__(self,
-                 normalizer: Optional[BaseFittedTransformTorch] = None,
+                 normalizer: Optional[BaseTransformTorch] = None,
                  aggregator: BaseTransformTorch = AverageAggregator()):
         """An Ensembler applies normlization and aggregation operations to the scores of an ensemble of detectors.
 
@@ -311,7 +284,7 @@ class Ensembler(BaseFittedTransformTorch):
             self.fitted = True
         self.aggregator = aggregator
 
-    def _transform(self, x: torch.Tensor) -> torch.Tensor:
+    def transform(self, x: torch.Tensor) -> torch.Tensor:
         """Apply the normalizer and aggregator to the scores.
 
         Parameters
@@ -328,7 +301,7 @@ class Ensembler(BaseFittedTransformTorch):
         x = self.aggregator(x)
         return x
 
-    def _fit(self, x: torch.Tensor):
+    def fit(self, x: torch.Tensor):
         """Fit the normalizer to the scores.
 
         Parameters
@@ -337,4 +310,5 @@ class Ensembler(BaseFittedTransformTorch):
             `Torch.Tensor` of scores from ensemble of detectors.
         """
         if self.normalizer is not None:
-            self.normalizer.fit(x)
+            self.normalizer.fit(x)  # type: ignore
+        return self.set_fitted()
