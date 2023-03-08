@@ -9,14 +9,12 @@ from alibi_detect.exceptions import NotFittedError
 
 
 class BaseTransformTorch(Module, ABC):
-    def __init__(self):
-        """Base Transform class.
+    """Base Transform class.
 
-        provides abstract methods for transform objects that map `torch` tensors.
-        """
-        super().__init__()
+    Provides abstract methods for transform objects that map `torch` tensors.
+    """
 
-    def transform(self, x: torch.Tensor):
+    def transform(self, x: torch.Tensor) -> torch.Tensor:
         """Public transform method. See `_transform` for implementation details.
 
         Parameters
@@ -27,7 +25,7 @@ class BaseTransformTorch(Module, ABC):
         return self._transform(x)
 
     @abstractmethod
-    def _transform(self, x: torch.Tensor):
+    def _transform(self, x: torch.Tensor) -> torch.Tensor:
         """Applies class transform to `torch.Tensor`
 
         This method should be overridden on child classes.
@@ -40,20 +38,18 @@ class BaseTransformTorch(Module, ABC):
 
 
 class FitMixinTorch(ABC):
+    """Fit mixin
+
+    Utility class that provides fitted checks for alibi-detect objects that require to be fit before use.
+    """
     fitted = False
-
-    def __init__(self):
-        """Fit mixin
-
-        Utility class that provides fitted checks for alibi-detect objects that require to be fit before use.
-        """
-        super().__init__()
 
     def fit(self, x: torch.Tensor) -> 'FitMixinTorch':
         """Public fit method.
 
         The `_fit` method contains the implementation details and should be overridden on child classes. Once the
-        `_fit` method has fit the object the `fitted` attribute should be set to `True`.
+        `_fit` method has fit the object the `fitted` attribute should be set to `True`. The `_fit` method should
+        return `self` to allow for chaining.
 
         Parameters
         ----------
@@ -65,12 +61,12 @@ class FitMixinTorch(ABC):
         return self
 
     @abstractmethod
-    def _fit(self, x: torch.Tensor):
+    def _fit(self, x: torch.Tensor) -> 'FitMixinTorch':
         """Fit on `x` tensor.
 
         This method should be overridden on child classes and should set the `fitted` attribute to `True`.
         """
-        pass
+        return self
 
     @torch.jit.unused
     def check_fitted(self):
@@ -86,14 +82,11 @@ class FitMixinTorch(ABC):
 
 
 class BaseFittedTransformTorch(BaseTransformTorch, FitMixinTorch):
-    def __init__(self):
-        """Base Fitted Transform class.
+    """Base Fitted Transform class.
 
-        Extends `BaseTransform` with fit functionality. Ensures that transform has been fit prior to
-        applying transform.
-        """
-        BaseTransformTorch.__init__(self)
-        FitMixinTorch.__init__(self)
+    Extends `BaseTransform` with fit functionality. Ensures that transform has been fit prior to
+    applying transform.
+    """
 
     def transform(self, x: torch.Tensor) -> torch.Tensor:
         """Checks to make sure transform has been fitted and then applies transform to input tensor.
@@ -120,7 +113,6 @@ class PValNormalizer(BaseFittedTransformTorch):
         Returns the proportion of scores in the reference dataset that are greater than the score of
         interest. Output is between ``1`` and ``0``. Small values are likely to be outliers.
         """
-        super().__init__()
         self.val_scores = None
 
     def _fit(self, val_scores: torch.Tensor) -> 'PValNormalizer':
@@ -159,7 +151,6 @@ class ShiftAndScaleNormalizer(BaseFittedTransformTorch):
         Needs to be fit (see :py:obj:`~alibi_detect.od.pytorch.ensemble.BaseFittedTransformTorch`).
         Subtracts the dataset mean and scales by the standard deviation.
         """
-        super().__init__()
         self.val_means = None
         self.val_scales = None
 
@@ -200,7 +191,6 @@ class TopKAggregator(BaseTransformTorch):
             number of scores to take the mean of. If `k` is left ``None`` then will be set to
             half the number of scores passed in the forward call.
         """
-        super().__init__()
         self.k = k
 
     def _transform(self, scores: torch.Tensor) -> torch.Tensor:
@@ -236,7 +226,6 @@ class AverageAggregator(BaseTransformTorch):
         ValueError
             If `weights` does not sum to ``1``.
         """
-        super().__init__()
         if weights is not None and weights.sum() != 1:
             raise ValueError("Weights must sum to 1.")
         self.weights = weights
@@ -259,9 +248,7 @@ class AverageAggregator(BaseTransformTorch):
 
 
 class MaxAggregator(BaseTransformTorch):
-    def __init__(self):
-        """Takes the maximum of the scores of the detectors in an ensemble."""
-        super().__init__()
+    """Takes the maximum of the scores of the detectors in an ensemble."""
 
     def _transform(self, scores: torch.Tensor) -> torch.Tensor:
         """Takes the maximum score of a set of detectors in an ensemble.
@@ -280,9 +267,7 @@ class MaxAggregator(BaseTransformTorch):
 
 
 class MinAggregator(BaseTransformTorch):
-    def __init__(self):
-        """Takes the minimum score of a set of detectors in an ensemble."""
-        super().__init__()
+    """Takes the minimum score of a set of detectors in an ensemble."""
 
     def _transform(self, scores: torch.Tensor) -> torch.Tensor:
         """Takes the minimum score of a set of detectors in an ensemble.
@@ -304,17 +289,16 @@ class Ensembler(BaseFittedTransformTorch):
     def __init__(self,
                  normalizer: Optional[BaseFittedTransformTorch] = None,
                  aggregator: BaseTransformTorch = AverageAggregator()):
-        """An Ensembler applies normlization and aggregation operations to the scores of an ensemble of detectors.
+        """An Ensembler applies normalization and aggregation operations to the scores of an ensemble of detectors.
 
         Parameters
         ----------
         normalizer
-            `BaseFittedTransformTorch` object to normalise the scores. If ``None`` then no normalisation
+            `BaseFittedTransformTorch` object to normalize the scores. If ``None`` then no normalization
             is applied.
         aggregator
             `BaseTransformTorch` object to aggregate the scores.
         """
-        super().__init__()
         self.normalizer = normalizer
         if self.normalizer is None:
             self.fitted = True
