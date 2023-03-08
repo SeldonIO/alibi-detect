@@ -17,9 +17,6 @@ class TransformProtocol(Protocol):
     def transform(self, x):
         pass
 
-    def _transform(self, x):
-        pass
-
 
 @runtime_checkable
 class FittedTransformProtocol(TransformProtocol, Protocol):
@@ -32,7 +29,7 @@ class FittedTransformProtocol(TransformProtocol, Protocol):
     def fit(self, x_ref):
         pass
 
-    def _fit(self, x_ref):
+    def set_fitted(self):
         pass
 
     def check_fitted(self):
