@@ -267,7 +267,7 @@ class MinAggregator(BaseTransformTorch):
 class Ensembler(BaseTransformTorch, FitMixinTorch):
     def __init__(self,
                  normalizer: Optional[BaseTransformTorch] = None,
-                 aggregator: BaseTransformTorch = AverageAggregator()):
+                 aggregator: BaseTransformTorch = None):
         """An Ensembler applies normalization and aggregation operations to the scores of an ensemble of detectors.
 
         Parameters
@@ -276,12 +276,14 @@ class Ensembler(BaseTransformTorch, FitMixinTorch):
             `BaseFittedTransformTorch` object to normalize the scores. If ``None`` then no normalization
             is applied.
         aggregator
-            `BaseTransformTorch` object to aggregate the scores.
+            `BaseTransformTorch` object to aggregate the scores. If ``None`` defaults to `AverageAggregator`.
         """
         super().__init__()
         self.normalizer = normalizer
         if self.normalizer is None:
             self.fitted = True
+        if aggregator is None:
+            aggregator = AverageAggregator()
         self.aggregator = aggregator
 
     def transform(self, x: torch.Tensor) -> torch.Tensor:
