@@ -42,13 +42,6 @@ class BaseTransformTorch(Module, ABC):
 class FitMixinTorch(ABC):
     fitted = False
 
-    def __init__(self):
-        """Fit mixin
-
-        Utility class that provides fitted checks for alibi-detect objects that require to be fit before use.
-        """
-        super().__init__()
-
     def fit(self, x: torch.Tensor) -> 'FitMixinTorch':
         """Public fit method.
 
@@ -92,8 +85,7 @@ class BaseFittedTransformTorch(BaseTransformTorch, FitMixinTorch):
         Extends `BaseTransform` with fit functionality. Ensures that transform has been fit prior to
         applying transform.
         """
-        BaseTransformTorch.__init__(self)
-        FitMixinTorch.__init__(self)
+        super().__init__()
 
     def transform(self, x: torch.Tensor) -> torch.Tensor:
         """Checks to make sure transform has been fitted and then applies transform to input tensor.
