@@ -199,7 +199,7 @@ class AverageAggregator(BaseTransformTorch):
             If `weights` does not sum to ``1``.
         """
         super().__init__()
-        if weights is not None and weights.sum() != 1:
+        if weights is not None and not np.isclose(weights.sum(), 1):
             raise ValueError("Weights must sum to 1.")
         self.weights = weights
 
