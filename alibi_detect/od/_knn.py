@@ -42,12 +42,12 @@ class KNN(BaseDetector, FitMixin, ThresholdMixin):
         The detector can be initialized with `k` a single value or an array of values. If `k` is a single value then
         the outlier score is the distance/kernel similarity to the k-th nearest neighbor. If `k` is an array of
         values then the outlier score is the distance/kernel similarity to each of the specified `k` neighbors.
-        In the latter case, an `ensembler` must be specified to aggregate the scores.
+        In the latter case, an `aggregator` must be specified to aggregate the scores.
 
-        Note that the `ensembler` is fit in the `infer_threshold` method and so if using an array of `k` values, the
-        `infer_threshold` method must be called before the `predict` method otherwise an exception is raised. If `k`
-        is a single value then the predict method can be called without first calling `infer_threshold` but only
-        scores will be returned and not outlier predictions.
+        Note that, in the multiple k case, a normalizer can be provided. If a normalizer is passed then it is fit in
+        the `infer_threshold` method and so this method must be called before the `predict` method. If this is not
+        done an exception is raised. If `k` is a single value then the predict method can be called without first
+        calling `infer_threshold` but only scores will be returned and not outlier predictions.
 
 
         Parameters
@@ -132,12 +132,20 @@ class KNN(BaseDetector, FitMixin, ThresholdMixin):
         x
             Data to score. The shape of `x` should be `(n_instances, n_features)`.
 
+        Raises
+        ------
+        NotFittedError
+            If called before detector has been fit.
+        ThresholdNotInferredError
+            If k is a list and a threshold was not inferred.
+
         Returns
         -------
         Outlier scores. The shape of the scores is `(n_instances,)`. The higher the score, the more anomalous the \
         instance.
         """
         score = self.backend.score(self.backend._to_tensor(x))
+        score = self.backend._ensembler(score)
         return self.backend._to_numpy(score)
 
     def infer_threshold(self, x_ref: np.ndarray, fpr: float) -> None:
@@ -145,6 +153,16 @@ class KNN(BaseDetector, FitMixin, ThresholdMixin):
 
         The threshold is computed so that the outlier detector would incorrectly classify `fpr` proportion of the
         reference data as outliers.
+
+        Raises
+        ------
+        ValueError
+            Raised if `fpr` is not in ``(0, 1)``.
+
+        Raises
+        ------
+        NotFittedError
+            If called before detector has been fit.
 
         Parameters
         ----------
@@ -166,6 +184,13 @@ class KNN(BaseDetector, FitMixin, ThresholdMixin):
         ----------
         x
             Data to predict. The shape of `x` should be `(n_instances, n_features)`.
+
+        Raises
+        ------
+        NotFittedError
+            If called before detector has been fit.
+        ThresholdNotInferredError
+            If k is a list and a threshold was not inferred.
 
         Returns
         -------

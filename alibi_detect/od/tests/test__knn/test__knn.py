@@ -3,7 +3,7 @@ import numpy as np
 import torch
 
 from alibi_detect.od._knn import KNN
-from alibi_detect.od import AverageAggregator, TopKAggregator, MaxAggregator, \
+from alibi_detect.od.pytorch.ensemble import AverageAggregator, TopKAggregator, MaxAggregator, \
     MinAggregator, ShiftAndScaleNormalizer, PValNormalizer
 from alibi_detect.exceptions import NotFittedError, ThresholdNotInferredError
 
@@ -54,7 +54,7 @@ def test_fitted_knn_score():
 def test_fitted_knn_ensemble_score():
     """
     Test fitted but not threshold inferred ensemble detectors correctly raise an error when calling
-    the predict method. This is becuase the ensembler is fit in the infer_threshold method.
+    the predict method. This is because the ensembler is fit in the infer_threshold method.
     """
     knn_detector = KNN(k=[10, 14, 18])
     x_ref = np.random.randn(100, 2)
@@ -62,6 +62,9 @@ def test_fitted_knn_ensemble_score():
     x = np.array([[0, 10], [0.1, 0]])
     with pytest.raises(ThresholdNotInferredError):
         knn_detector.predict(x)
+
+    with pytest.raises(ThresholdNotInferredError):
+        knn_detector.score(x)
 
 
 def test_incorrect_knn_ensemble_init():
@@ -154,6 +157,10 @@ def test_fitted_knn_ensemble_predict(aggregator, normalizer):
     assert y['threshold'] is not None
     assert y['p_value'].all()
     assert (y['is_outlier'] == [True, False]).all()
+
+    # test fitted detectors with inferred thresholds can score data using the score method.
+    scores = knn_detector.score(x)
+    assert np.all(y['instance_score'] == scores)
 
 
 @pytest.mark.parametrize("aggregator", [AverageAggregator, lambda: TopKAggregator(k=7),

@@ -5,14 +5,6 @@ from .mahalanobis import Mahalanobis
 from .sr import SpectralResidual
 
 
-PValNormalizer, ShiftAndScaleNormalizer, TopKAggregator, AverageAggregator, \
-    MaxAggregator, MinAggregator = import_optional(
-        'alibi_detect.od.pytorch.ensemble',
-        ['PValNormalizer', 'ShiftAndScaleNormalizer', 'TopKAggregator',
-         'AverageAggregator', 'MaxAggregator', 'MinAggregator']
-    )
-
-
 OutlierAEGMM = import_optional('alibi_detect.od.aegmm', names=['OutlierAEGMM'])
 OutlierAE = import_optional('alibi_detect.od.ae', names=['OutlierAE'])
 OutlierVAE = import_optional('alibi_detect.od.vae', names=['OutlierVAE'])
@@ -32,10 +24,4 @@ __all__ = [
     "SpectralResidual",
     "LLR",
     "OutlierProphet",
-    "PValNormalizer",
-    "ShiftAndScaleNormalizer",
-    "TopKAggregator",
-    "AverageAggregator",
-    "MaxAggregator",
-    "MinAggregator",
 ]

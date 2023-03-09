@@ -133,7 +133,7 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
         Raises
         ------
         ThresholdNotInferredError
-            If the detector is an ensemble, and the ensembler used to aggregate the outlier scores has a fitable
+            If the detector is an ensemble, and the ensembler used to aggregate the outlier scores has a fittable
             component, then the detector threshold must be inferred before predictions can be made. This is because
             while the scoring functionality of the detector is fit within the `.fit` method on the training data
             the ensembler has to be fit on the validation data along with the threshold and this is done in the
