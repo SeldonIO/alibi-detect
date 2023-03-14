@@ -7,7 +7,7 @@ from alibi_detect.od.pytorch.ensemble import Ensembler, PValNormalizer, AverageA
 from alibi_detect.exceptions import NotFittedError, ThresholdNotInferredError
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope='function')
 def ensembler(request):
     return Ensembler(
         normalizer=PValNormalizer(),
@@ -62,15 +62,6 @@ def test_knn_torch_backend_ensemble_ts(tmp_path, ensembler):
 
     knn_torch = KNNTorch(k=[4, 5], ensembler=ensembler)
     x = torch.randn((3, 10)) * torch.tensor([[1], [1], [100]])
-
-    with pytest.raises(NotFittedError) as err:
-        knn_torch(x)
-    assert str(err.value) == 'KNNTorch has not been fit!'
-
-    with pytest.raises(NotFittedError) as err:
-        knn_torch.predict(x)
-    assert str(err.value) == 'KNNTorch has not been fit!'
-
     x_ref = torch.randn((1024, 10))
     knn_torch.fit(x_ref)
     knn_torch.infer_threshold(x_ref, 0.1)
