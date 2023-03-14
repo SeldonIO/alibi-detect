@@ -1,4 +1,4 @@
-from abc import ABC
+from abc import ABC, abstractmethod
 from typing import Optional
 from typing_extensions import Self
 
@@ -35,18 +35,16 @@ class BaseTransformTorch(Module):
 class FitMixinTorch(ABC):
     fitted = False
 
-    def fit(self, x: torch.Tensor) -> 'FitMixinTorch':
-        """Public fit method.
-
-        The `_fit` method contains the implementation details and should be overridden on child classes. Once the
-        `_fit` method has fit the object the `fitted` attribute should be set to `True`.
+    @abstractmethod
+    def fit(self, x: torch.Tensor) -> Self:
+        """Abstract fit method.
 
         Parameters
         ----------
         x
             `torch.Tensor` to fit object on.
         """
-        raise NotImplementedError()
+        pass
 
     def set_fitted(self) -> Self:
         """Sets the fitted attribute to True.
