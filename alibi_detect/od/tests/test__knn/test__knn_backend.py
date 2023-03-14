@@ -4,7 +4,7 @@ import torch
 from alibi_detect.od.pytorch.knn import KNNTorch
 from alibi_detect.utils.pytorch.kernels import GaussianRBF
 from alibi_detect.od.pytorch.ensemble import Ensembler, PValNormalizer, AverageAggregator
-from alibi_detect.exceptions import NotFittedError
+from alibi_detect.exceptions import NotFittedError, ThresholdNotInferredError
 
 
 @pytest.fixture(scope='session')
@@ -143,34 +143,67 @@ def test_knn_kernel_ts(ensembler):
     assert torch.all(pred_1 == pred_2)
 
 
-# @pytest.mark.parametrize('k', [[4, 5], 4])
-# def test_knn_torch_backend_ensemble_fit_errors(k, ensembler):
-#     knn_torch = KNNTorch(k=k, ensembler=ensembler)
-#     assert not knn_torch.fitted
+def test_knn_torch_backend_ensemble_fit_errors(ensembler):
+    """Tests the correct errors are raised when using the KNNTorch backend as an ensemble."""
+    knn_torch = KNNTorch(k=[4, 5], ensembler=ensembler)
 
-#     # Test that the backend raises an error if it is not fitted before
-#     # calling forward method.
-#     x = torch.randn((1, 10))
-#     with pytest.raises(NotFittedError) as err:
-#         knn_torch(x)
-#     assert str(err.value) == 'KNNTorch has not been fit!'
+    # Test that the backend raises an error if it is not fitted before
+    # calling forward method.
+    x = torch.randn((1, 10))
+    with pytest.raises(NotFittedError) as err:
+        knn_torch(x)
+    assert str(err.value) == 'KNNTorch has not been fit!'
 
-#     # Test that the backend raises an error if it is not fitted before
-#     # predicting.
-#     with pytest.raises(NotFittedError) as err:
-#         knn_torch.predict(x)
-#     assert str(err.value) == 'KNNTorch has not been fit!'
+    # Test that the backend raises an error if it is not fitted before
+    # predicting.
+    with pytest.raises(NotFittedError) as err:
+        knn_torch.predict(x)
+    assert str(err.value) == 'KNNTorch has not been fit!'
 
-#     # Test the backend updates fitted flag on fit.
-#     x_ref = torch.randn((1024, 10))
-#     knn_torch.fit(x_ref)
-#     assert knn_torch.fitted
+    # Test the backend updates fitted flag on fit.
+    x_ref = torch.randn((1024, 10))
+    knn_torch.fit(x_ref)
+    assert knn_torch.fitted
 
-#     # Test that the backend raises an if the forward method is called without the
-#     # threshold being inferred.
-#     with pytest.raises(ThresholdNotInferredError) as err:
-#         knn_torch(x)
-#     assert str(err.value) == 'KNNTorch has no threshold set, call `infer_threshold` before predicting.'
+    # Test that the backend raises an if the forward method is called without the
+    # threshold being inferred.
+    with pytest.raises(ThresholdNotInferredError) as err:
+        knn_torch(x)
+    assert str(err.value) == 'KNNTorch has no threshold set, call `infer_threshold` before predicting.'
 
-#     # Test that the backend can call predict without the threshold being inferred.
-#     assert knn_torch.predict(x)
+    # Test that the backend can call predict without the threshold being inferred.
+    with pytest.raises(ThresholdNotInferredError) as err:
+        knn_torch.predict(x)
+    assert str(err.value) == 'KNNTorch has no threshold set, call `infer_threshold` before predicting.'
+
+
+def test_knn_torch_backend_fit_errors():
+    """Tests the correct errors are raised when using the KNNTorch backend as a single detector."""
+    knn_torch = KNNTorch(k=4)
+
+    # Test that the backend raises an error if it is not fitted before
+    # calling forward method.
+    x = torch.randn((1, 10))
+    with pytest.raises(NotFittedError) as err:
+        knn_torch(x)
+    assert str(err.value) == 'KNNTorch has not been fit!'
+
+    # Test that the backend raises an error if it is not fitted before
+    # predicting.
+    with pytest.raises(NotFittedError) as err:
+        knn_torch.predict(x)
+    assert str(err.value) == 'KNNTorch has not been fit!'
+
+    # Test the backend updates fitted flag on fit.
+    x_ref = torch.randn((1024, 10))
+    knn_torch.fit(x_ref)
+    assert knn_torch.fitted
+
+    # Test that the backend raises an if the forward method is called without the
+    # threshold being inferred.
+    with pytest.raises(ThresholdNotInferredError) as err:
+        knn_torch(x)
+    assert str(err.value) == 'KNNTorch has no threshold set, call `infer_threshold` before predicting.'
+
+    # Test that the backend can call predict without the threshold being inferred.
+    knn_torch.predict(x)
