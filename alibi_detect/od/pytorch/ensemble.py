@@ -1,5 +1,6 @@
 from abc import ABC
 from typing import Optional
+from typing_extensions import Self
 
 import torch
 import numpy as np
@@ -47,7 +48,7 @@ class FitMixinTorch(ABC):
         """
         raise NotImplementedError()
 
-    def set_fitted(self):
+    def set_fitted(self) -> Self:
         """Sets the fitted attribute to True.
 
         Should be called within each transform method.
@@ -84,7 +85,7 @@ class PValNormalizer(BaseTransformTorch, FitMixinTorch):
         super().__init__()
         self.val_scores = None
 
-    def fit(self, val_scores: torch.Tensor) -> 'PValNormalizer':
+    def fit(self, val_scores: torch.Tensor) -> Self:
         """Fit transform on scores.
 
         Parameters
@@ -124,7 +125,7 @@ class ShiftAndScaleNormalizer(BaseTransformTorch, FitMixinTorch):
         self.val_means = None
         self.val_scales = None
 
-    def fit(self, val_scores: torch.Tensor) -> 'ShiftAndScaleNormalizer':
+    def fit(self, val_scores: torch.Tensor) -> Self:
         """Computes the mean and standard deviation of the scores and stores them.
 
         Parameters
@@ -303,7 +304,7 @@ class Ensembler(BaseTransformTorch, FitMixinTorch):
         x = self.aggregator(x)
         return x
 
-    def fit(self, x: torch.Tensor):
+    def fit(self, x: torch.Tensor) -> Self:
         """Fit the normalizer to the scores.
 
         Parameters

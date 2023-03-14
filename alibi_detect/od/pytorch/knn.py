@@ -1,4 +1,5 @@
 from typing import Optional, Union, List, Tuple
+from typing_extensions import Self
 
 import numpy as np
 import torch
@@ -91,7 +92,7 @@ class KNNTorch(TorchOutlierDetector):
         all_knn_dists = bot_k_dists.values[:, self.ks-1]
         return all_knn_dists if self.ensemble else all_knn_dists[:, 0]
 
-    def fit(self, x_ref: torch.Tensor):
+    def fit(self, x_ref: torch.Tensor) -> Self:
         """Fits the detector
 
         Parameters
