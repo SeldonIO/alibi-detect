@@ -1,6 +1,8 @@
 """This module defines the Alibi Detect exception hierarchy and common exceptions used across the library."""
-
+from typing_extensions import Literal
+from typing import Callable
 from abc import ABC
+from functools import wraps
 
 
 class AlibiDetectException(Exception, ABC):
@@ -16,12 +18,46 @@ class AlibiDetectException(Exception, ABC):
 
 
 class NotFittedError(AlibiDetectException):
-    """Exception raised when a transform is not fitted."""
+    def __init__(self, object_name: str) -> None:
+        """Exception raised when a transform is not fitted.
 
-    pass
+        Parameters
+        ----------
+        message
+            The name of the unfit object.
+        """
+        message = f'{object_name} has not been fit!'
+        super().__init__(message)
 
 
 class ThresholdNotInferredError(AlibiDetectException):
-    """Exception raised when a threshold not inferred for an outlier detector."""
+    def __init__(self, object_name: str) -> None:
+        """Exception raised when a threshold not inferred for an outlier detector.
 
-    pass
+        Parameters
+        ----------
+        message
+            The name of the object that does not have a threshold fit.
+        """
+        message = f'{object_name} has no threshold set, call `infer_threshold` to fit one!'
+        super().__init__(message)
+
+
+def _catch_error(err_name: Literal['NotFittedError', 'ThresholdNotInferredError']) -> Callable:
+    """Decorator to catch errors and raise a more informative error message.
+
+    Note: This decorator is used to catch errors raised by specific backend components and
+    raise specific errors for the corresponding detector. This is done to avoid exposing
+    the backend components to the user.
+    """
+    error_type = globals()[err_name]
+
+    def decorate(f):
+        @wraps(f)
+        def applicator(self, *args, **kwargs):
+            try:
+                return f(self, *args, **kwargs)
+            except error_type as err:
+                raise error_type(self.__class__.__name__) from err
+        return applicator
+    return decorate

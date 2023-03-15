@@ -87,8 +87,7 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
             Raised if threshold is not inferred.
         """
         if not self.threshold_inferred:
-            raise ThresholdNotInferredError((f'{self.__class__.__name__} has no threshold set, '
-                                             'call `infer_threshold` before predicting.'))
+            raise ThresholdNotInferredError(self.__class__.__name__)
 
     @staticmethod
     def _to_numpy(arg: Union[torch.Tensor, TorchOutlierDetectorOutput]) -> Union[np.ndarray, Dict]:

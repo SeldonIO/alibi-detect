@@ -69,7 +69,7 @@ class FitMixinTorch(ABC):
     def _check_fitted(self):
         """Raises error if parent object instance has not been fit."""
         if not self.fitted:
-            raise NotFittedError(f'{self.__class__.__name__} has not been fit!')
+            raise NotFittedError(self.__class__.__name__)
 
 
 class PValNormalizer(BaseTransformTorch, FitMixinTorch):

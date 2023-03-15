@@ -160,12 +160,12 @@ def test_knn_torch_backend_ensemble_fit_errors(ensembler):
     # threshold being inferred.
     with pytest.raises(ThresholdNotInferredError) as err:
         knn_torch(x)
-    assert str(err.value) == 'KNNTorch has no threshold set, call `infer_threshold` before predicting.'
+    assert str(err.value) == 'KNNTorch has no threshold set, call `infer_threshold` to fit one!'
 
     # Test that the backend can call predict without the threshold being inferred.
     with pytest.raises(ThresholdNotInferredError) as err:
         knn_torch.predict(x)
-    assert str(err.value) == 'KNNTorch has no threshold set, call `infer_threshold` before predicting.'
+    assert str(err.value) == 'KNNTorch has no threshold set, call `infer_threshold` to fit one!'
 
 
 def test_knn_torch_backend_fit_errors():
@@ -194,7 +194,7 @@ def test_knn_torch_backend_fit_errors():
     # threshold being inferred.
     with pytest.raises(ThresholdNotInferredError) as err:
         knn_torch(x)
-    assert str(err.value) == 'KNNTorch has no threshold set, call `infer_threshold` before predicting.'
+    assert str(err.value) == 'KNNTorch has no threshold set, call `infer_threshold` to fit one!'
 
     # Test that the backend can call predict without the threshold being inferred.
     knn_torch.predict(x)

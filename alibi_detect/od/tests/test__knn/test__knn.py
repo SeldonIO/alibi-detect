@@ -28,7 +28,7 @@ def test_unfitted_knn_single_score():
     # test predict raises exception when not fitted
     with pytest.raises(NotFittedError) as err:
         _ = knn_detector.predict(x)
-    assert str(err.value) == 'KNNTorch has not been fit!'
+    assert str(err.value) == 'KNN has not been fit!'
 
 
 def test_fitted_knn_score():
@@ -114,7 +114,7 @@ def test_unfitted_knn_ensemble(aggregator, normalizer):
     # Test unfit knn ensemble raises exception when calling predict method.
     with pytest.raises(NotFittedError) as err:
         _ = knn_detector.predict(x)
-    assert str(err.value) == 'KNNTorch has not been fit!'
+    assert str(err.value) == 'KNN has not been fit!'
 
 
 @pytest.mark.parametrize("aggregator", [AverageAggregator, lambda: TopKAggregator(k=7),

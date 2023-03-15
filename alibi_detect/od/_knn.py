@@ -1,3 +1,9 @@
+"""
+.. automodule:: noodle
+   :members:
+   :private-members:
+"""
+
 from typing import Callable, Union, Optional, Dict, Any, List, Tuple
 from typing import TYPE_CHECKING
 
@@ -5,6 +11,7 @@ import numpy as np
 
 from typing_extensions import Literal
 from alibi_detect.base import outlier_prediction_dict
+from alibi_detect.exceptions import _catch_error as catch_error
 from alibi_detect.od.base import TransformProtocol, TransformProtocolType
 from alibi_detect.base import BaseDetector, FitMixin, ThresholdMixin
 from alibi_detect.od.pytorch import KNNTorch, Ensembler
@@ -120,6 +127,8 @@ class KNN(BaseDetector, FitMixin, ThresholdMixin):
         """
         self.backend.fit(self.backend._to_tensor(x_ref))
 
+    @catch_error('NotFittedError')
+    @catch_error('ThresholdNotInferredError')
     def score(self, x: np.ndarray) -> np.ndarray:
         """Score `x` instances using the detector.
 
@@ -148,6 +157,7 @@ class KNN(BaseDetector, FitMixin, ThresholdMixin):
         score = self.backend._ensembler(score)
         return self.backend._to_numpy(score)
 
+    @catch_error('NotFittedError')
     def infer_threshold(self, x_ref: np.ndarray, fpr: float) -> None:
         """Infer the threshold for the kNN detector.
 
@@ -175,6 +185,8 @@ class KNN(BaseDetector, FitMixin, ThresholdMixin):
         """
         self.backend.infer_threshold(self.backend._to_tensor(x_ref), fpr)
 
+    @catch_error('NotFittedError')
+    @catch_error('ThresholdNotInferredError')
     def predict(self, x: np.ndarray) -> Dict[str, Any]:
         """Predict whether the instances in `x` are outliers or not.
 
