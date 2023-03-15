@@ -1,5 +1,4 @@
 from typing import List, Union, Optional, Dict
-from typing_extensions import Self
 from dataclasses import dataclass, asdict
 from abc import ABC, abstractmethod
 
@@ -178,7 +177,7 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
         return (1 + (scores[:, None] < self.val_scores).sum(-1))/len(self.val_scores) \
             if self.threshold_inferred else None
 
-    def infer_threshold(self, x_ref: torch.Tensor, fpr: float) -> Self:
+    def infer_threshold(self, x_ref: torch.Tensor, fpr: float):
         """Infer the threshold for the data. Prerequisite for outlier predictions.
 
         Parameters
@@ -200,7 +199,6 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
             self.val_scores = self.ensembler.fit(self.val_scores).transform(self.val_scores)  # type: ignore
         self.threshold = torch.quantile(self.val_scores, 1-fpr)
         self.threshold_inferred = True
-        return self
 
     def predict(self, x: torch.Tensor) -> TorchOutlierDetectorOutput:
         """Predict outlier labels for the data.
