@@ -1,9 +1,3 @@
-"""
-.. automodule:: noodle
-   :members:
-   :private-members:
-"""
-
 from typing import Callable, Union, Optional, Dict, Any, List, Tuple
 from typing import TYPE_CHECKING
 
