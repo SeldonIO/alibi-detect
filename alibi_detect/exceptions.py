@@ -46,9 +46,9 @@ class ThresholdNotInferredError(AlibiDetectException):
 def _catch_error(err_name: Literal['NotFittedError', 'ThresholdNotInferredError']) -> Callable:
     """Decorator to catch errors and raise a more informative error message.
 
-    Note: This decorator is used to catch errors raised by specific backend components and
-    raise specific errors for the corresponding detector. This is done to avoid exposing
-    the backend components to the user.
+    Note: This decorator should only be used on detector frontend methods. It catches errors raised by
+    backend components and re-raises them with error messages corresponding to the specific detector frontend.
+    This is done to avoid exposing the backend components to the user.
     """
     error_type = globals()[err_name]
 
