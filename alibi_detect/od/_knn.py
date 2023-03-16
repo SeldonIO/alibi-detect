@@ -36,9 +36,9 @@ class KNN(BaseDetector, FitMixin, ThresholdMixin):
         """
         k-Nearest Neighbors (kNN) outlier detector.
 
-        The kNN detector is a non-parametric method for outlier detection. The detector computes the distance
-        between each test point and its `k` nearest neighbors. The distance can be computed using a kernel function
-        or a distance metric. The distance is then normalized and aggregated to obtain a single outlier score.
+        The kNN detector is a non-parametric method for outlier detection. The detector scores each instance
+        based on the distance to its neighbors. Instances with a large distance to their neighbors are more
+        likely to be outliers.
 
         The detector can be initialized with `k` a single value or an array of values. If `k` is a single value then
         the outlier score is the distance/kernel similarity to the k-th nearest neighbor. If `k` is an array of
