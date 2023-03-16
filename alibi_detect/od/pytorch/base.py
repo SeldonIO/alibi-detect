@@ -223,8 +223,7 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
 
         Returns
         -------
-        Output of the outlier detector. Includes the p-values, outlier labels, instance scores and \
-            threshold.
+        Output of the outlier detector. Includes the p-values, outlier labels, instance scores and threshold.
         """
         self.check_fitted()  # type: ignore
         raw_scores = self.score(x)
