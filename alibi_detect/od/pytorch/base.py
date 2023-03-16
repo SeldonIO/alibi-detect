@@ -160,7 +160,7 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
         -------
         `torch.Tensor` or ``None``
         """
-        return scores > self.threshold if self.threshold_inferred else None
+        return (scores > self.threshold).to(torch.int8) if self.threshold_inferred else None
 
     def _p_vals(self, scores: torch.Tensor) -> torch.Tensor:
         """Compute p-values for the scores.
