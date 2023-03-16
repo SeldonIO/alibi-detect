@@ -191,13 +191,17 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
         ------
         ValueError
             Raised if `fpr` is not in ``(0, 1)``.
+        ValueError
+            Raised if `fpr` is less than ``1/len(x_ref)``.
         """
         if not 0 < fpr < 1:
             raise ValueError('`fpr` must be in `(0, 1)`.')
+        if fpr < 1/len(x_ref):
+            raise ValueError(f'`fpr` must be greater than `1/len(x_ref)={1/len(x_ref)}`.')
         self.val_scores = self.score(x_ref)
         if self.ensemble:
             self.val_scores = self.ensembler.fit(self.val_scores).transform(self.val_scores)  # type: ignore
-        self.threshold = torch.quantile(self.val_scores, 1-fpr)
+        self.threshold = torch.quantile(self.val_scores, 1-fpr, interpolation='higher')
         self.threshold_inferred = True
 
     def predict(self, x: torch.Tensor) -> TorchOutlierDetectorOutput:
