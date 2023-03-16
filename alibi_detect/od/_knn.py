@@ -28,7 +28,7 @@ class KNN(BaseDetector, FitMixin, ThresholdMixin):
         self,
         k: Union[int, np.ndarray, List[int], Tuple[int]],
         kernel: Optional[Callable] = None,
-        normalizer: Optional[Union[TransformProtocolType, NormalizerLiterals]] = 'ShiftAndScaleNormalizer',
+        normalizer: Optional[Union[TransformProtocolType, NormalizerLiterals]] = 'PValNormalizer',
         aggregator: Union[TransformProtocol, AggregatorLiterals] = 'AverageAggregator',
         backend: Literal['pytorch'] = 'pytorch',
         device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
