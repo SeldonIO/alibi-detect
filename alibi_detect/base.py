@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
+import os
 import copy
 import json
 import numpy as np
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Union
 from typing_extensions import Protocol, runtime_checkable
 from alibi_detect.version import __version__
 
@@ -86,14 +87,14 @@ class BaseDetector(ABC):
 
 class FitMixin(ABC):
     @abstractmethod
-    def fit(self, X: np.ndarray) -> None:
-        pass
+    def fit(self, *args, **kwargs) -> None:
+        ...
 
 
 class ThresholdMixin(ABC):
     @abstractmethod
-    def infer_threshold(self, X: np.ndarray) -> None:
-        pass
+    def infer_threshold(self, *args, **kwargs) -> None:
+        ...
 
 
 # "Large artefacts" - to save memory these are skipped in _set_config(), but added back in get_config()
@@ -153,7 +154,7 @@ class DriftConfigMixin:
         detector.config['meta']['version_warning'] = version_warning
         return detector
 
-    def _set_config(self, inputs):  # TODO - move to BaseDetector once config save/load implemented for non-drift
+    def _set_config(self, inputs: dict):  # TODO - move to BaseDetector once config save/load implemented for non-drift
         """
         Set a detectors `config` attribute upon detector instantiation.
 
@@ -216,17 +217,27 @@ class Detector(Protocol):
 class ConfigurableDetector(Detector, Protocol):
     """Type Protocol for detectors that have support for saving via config.
 
-    Used for typing save and load functionality in `alibi_detect.saving.saving.py`.
-
-    Note:
-        This exists to distinguish between detectors with and without support for config saving and loading. Once all
-        detector support this then this protocol will be removed.
+    Used for typing save and load functionality in `alibi_detect.saving.saving`.
     """
-    def get_config(self): ...
+    def get_config(self) -> dict: ...
 
-    def from_config(self): ...
+    @classmethod
+    def from_config(cls, config: dict): ...
 
-    def _set_config(self): ...
+    def _set_config(self, inputs: dict): ...
+
+
+@runtime_checkable
+class StatefulDetectorOnline(ConfigurableDetector, Protocol):
+    """Type Protocol for detectors that have support for save/loading of online state.
+
+    Used for typing save and load functionality in `alibi_detect.saving.saving`.
+    """
+    t: int = 0
+
+    def save_state(self, filepath: Union[str, os.PathLike]): ...
+
+    def load_state(self, filepath: Union[str, os.PathLike]): ...
 
 
 class NumpyEncoder(json.JSONEncoder):

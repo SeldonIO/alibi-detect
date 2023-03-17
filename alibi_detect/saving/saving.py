@@ -4,18 +4,18 @@ import shutil
 import warnings
 from functools import partial
 from pathlib import Path
-from typing import Callable, Optional, Tuple, Union, Any, TYPE_CHECKING
+from typing import Callable, Optional, Tuple, Union, Any, Dict, TYPE_CHECKING
 import dill
 import numpy as np
 import toml
 from transformers import PreTrainedTokenizerBase
 
 from alibi_detect.saving._typing import VALID_DETECTORS
-from alibi_detect.saving.loading import _replace, validate_config
+from alibi_detect.saving.loading import _replace, validate_config, STATE_PATH
 from alibi_detect.saving.registry import registry
 from alibi_detect.utils._types import supported_models_all, supported_models_tf, supported_models_torch, \
     supported_models_sklearn
-from alibi_detect.base import Detector, ConfigurableDetector
+from alibi_detect.base import Detector, ConfigurableDetector, StatefulDetectorOnline
 from alibi_detect.saving._tensorflow import save_detector_legacy, save_model_config_tf, save_optimizer_config_tf
 from alibi_detect.saving._pytorch import save_model_config_pt
 from alibi_detect.saving._sklearn import save_model_config_sk
@@ -34,7 +34,8 @@ C_REF_FILENAME = 'c_ref.npy'
 
 def save_detector(
         detector: Union[Detector, ConfigurableDetector],
-        filepath: Union[str, os.PathLike], legacy: bool = False
+        filepath: Union[str, os.PathLike],
+        legacy: bool = False,
         ) -> None:
     """
     Save outlier, drift or adversarial detector.
@@ -110,7 +111,8 @@ def _cleanup_filepath(orig_files: set, filepath: Path):
 
 
 # TODO - eventually this will become save_detector (once outlier and adversarial updated to save via config.toml)
-def _save_detector_config(detector: ConfigurableDetector, filepath: Union[str, os.PathLike]):
+def _save_detector_config(detector: ConfigurableDetector,
+                          filepath: Union[str, os.PathLike]):
     """
     Save a drift detector. The detector is saved as a yaml config file. Artefacts such as
     `preprocess_fn`, models, embeddings, tokenizers etc are serialized, and their filepaths are
@@ -140,6 +142,11 @@ def _save_detector_config(detector: ConfigurableDetector, filepath: Union[str, o
         cfg = validate_config(cfg, resolved=True)
     else:
         raise NotImplementedError(f'{detector_name} does not yet support config.toml based saving.')
+
+    # Save state if an online detector and online state exists (self.t > 0)
+    if isinstance(detector, StatefulDetectorOnline):
+        if detector.t > 0:
+            detector.save_state(filepath.joinpath(STATE_PATH))
 
     # Save x_ref
     save_path = filepath.joinpath(X_REF_FILENAME)
@@ -257,7 +264,7 @@ def _save_preprocess_config(preprocess_fn: Callable,
     The config dictionary, containing references to the serialized artefacts. The format if this dict matches that
     of the `preprocess` field in the drift detector specification.
     """
-    preprocess_cfg = {}
+    preprocess_cfg: Dict[str, Any] = {}
     local_path = Path('preprocess_fn')
 
     # Serialize function
@@ -285,7 +292,7 @@ def _save_preprocess_config(preprocess_fn: Callable,
 
         # Arbitrary function
         elif callable(v):
-            src, _ = _serialize_object(v, filepath, local_path)
+            src, _ = _serialize_object(v, filepath, local_path.joinpath(k))
             kwargs.update({k: src})
 
         # Put remaining kwargs directly into cfg
@@ -295,7 +302,7 @@ def _save_preprocess_config(preprocess_fn: Callable,
     if 'preprocess_drift' in func:
         preprocess_cfg.update(kwargs)
     else:
-        kwargs.update({'kwargs': kwargs})
+        preprocess_cfg.update({'kwargs': kwargs})
 
     return preprocess_cfg
 
