@@ -5,10 +5,11 @@ import numpy as np
 
 from typing_extensions import Literal
 from alibi_detect.base import outlier_prediction_dict
-from alibi_detect.od.base import TransformProtocol, transform_protocols
+from alibi_detect.exceptions import _catch_error as catch_error
+from alibi_detect.od.base import TransformProtocol, TransformProtocolType
 from alibi_detect.base import BaseDetector, FitMixin, ThresholdMixin
 from alibi_detect.od.pytorch import KNNTorch, Ensembler
-from alibi_detect.od import normalizer_literals, aggregator_literals, get_aggregator, get_normalizer
+from alibi_detect.od.base import get_aggregator, get_normalizer, NormalizerLiterals, AggregatorLiterals
 from alibi_detect.utils.frameworks import BackendValidator
 from alibi_detect.version import __version__
 
@@ -27,27 +28,33 @@ class KNN(BaseDetector, FitMixin, ThresholdMixin):
         self,
         k: Union[int, np.ndarray, List[int], Tuple[int]],
         kernel: Optional[Callable] = None,
-        normalizer: Optional[Union[transform_protocols, normalizer_literals]] = 'ShiftAndScaleNormalizer',
-        aggregator: Union[TransformProtocol, aggregator_literals] = 'AverageAggregator',
-        device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
+        normalizer: Optional[Union[TransformProtocolType, NormalizerLiterals]] = 'PValNormalizer',
+        aggregator: Union[TransformProtocol, AggregatorLiterals] = 'AverageAggregator',
         backend: Literal['pytorch'] = 'pytorch',
+        device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
     ) -> None:
         """
-        k-Nearest Neighbours (kNN) outlier detector.
+        k-Nearest Neighbors (kNN) outlier detector.
 
-        The kNN detector is a non-parametric method for outlier detection. The detector computes the distance
-        between each test point and its `k` nearest neighbors. The distance can be computed using a kernel function
-        or a distance metric. The distance is then normalized and aggregated to obtain a single outlier score.
+        The kNN detector is a non-parametric method for outlier detection. The detector scores each instance
+        based on the distance to its neighbors. Instances with a large distance to their neighbors are more
+        likely to be outliers.
 
         The detector can be initialized with `k` a single value or an array of values. If `k` is a single value then
         the outlier score is the distance/kernel similarity to the k-th nearest neighbor. If `k` is an array of
         values then the outlier score is the distance/kernel similarity to each of the specified `k` neighbors.
-        In the latter case, an aggregator must be specified to aggregate the scores.
+        In the latter case, an `aggregator` must be specified to aggregate the scores.
+
+        Note that, in the multiple k case, a normalizer can be provided. If a normalizer is passed then it is fit in
+        the `infer_threshold` method and so this method must be called before the `predict` method. If this is not
+        done an exception is raised. If `k` is a single value then the predict method can be called without first
+        calling `infer_threshold` but only scores will be returned and not outlier predictions.
+
 
         Parameters
         ----------
         k
-            Number of neirest neighbors to compute distance to. `k` can be a single value or
+            Number of nearest neighbors to compute distance to. `k` can be a single value or
             an array of integers. If an array is passed, an aggregator is required to aggregate
             the scores. If `k` is a single value the outlier score is the distance/kernel
             similarity to the `k`-th nearest neighbor. If `k` is a list then it returns the
@@ -57,7 +64,7 @@ class KNN(BaseDetector, FitMixin, ThresholdMixin):
             Otherwise if a kernel is specified then instead of using `torch.cdist` the kernel
             defines the k nearest neighbor distance.
         normalizer
-            Normalizer to use for outlier detection. If ``None``, no normalisation is applied.
+            Normalizer to use for outlier detection. If ``None``, no normalization is applied.
             For a list of available normalizers, see :mod:`alibi_detect.od.pytorch.ensemble`.
         aggregator
             Aggregator to use for outlier detection. Can be set to ``None`` if `k` is a single
@@ -66,7 +73,8 @@ class KNN(BaseDetector, FitMixin, ThresholdMixin):
             Backend used for outlier detection. Defaults to ``'pytorch'``. Options are ``'pytorch'``.
         device
             Device type used. The default tries to use the GPU and falls back on CPU if needed.
-            Can be specified by passing either ``'cuda'``, ``'gpu'`` or ``'cpu'``.
+            Can be specified by passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of
+            ``torch.device``.
 
         Raises
         ------
@@ -113,7 +121,9 @@ class KNN(BaseDetector, FitMixin, ThresholdMixin):
         """
         self.backend.fit(self.backend._to_tensor(x_ref))
 
-    def score(self, X: np.ndarray) -> np.ndarray:
+    @catch_error('NotFittedError')
+    @catch_error('ThresholdNotInferredError')
+    def score(self, x: np.ndarray) -> np.ndarray:
         """Score `x` instances using the detector.
 
         Computes the k nearest neighbor distance/kernel similarity for each instance in `x`. If `k` is a single
@@ -125,31 +135,52 @@ class KNN(BaseDetector, FitMixin, ThresholdMixin):
         x
             Data to score. The shape of `x` should be `(n_instances, n_features)`.
 
+        Raises
+        ------
+        NotFittedError
+            If called before detector has been fit.
+        ThresholdNotInferredError
+            If k is a list and a threshold was not inferred.
+
         Returns
         -------
         Outlier scores. The shape of the scores is `(n_instances,)`. The higher the score, the more anomalous the \
         instance.
         """
-        score = self.backend.score(self.backend._to_tensor(X))
+        score = self.backend.score(self.backend._to_tensor(x))
+        score = self.backend._ensembler(score)
         return self.backend._to_numpy(score)
 
-    def infer_threshold(self, X: np.ndarray, fpr: float) -> None:
+    @catch_error('NotFittedError')
+    def infer_threshold(self, x: np.ndarray, fpr: float) -> None:
         """Infer the threshold for the kNN detector.
 
-        The threshold is computed so that the outlier detector would incorectly classify `fpr` proportion of the
+        The threshold is computed so that the outlier detector would incorrectly classify `fpr` proportion of the
         reference data as outliers.
+
+        Raises
+        ------
+        ValueError
+            Raised if `fpr` is not in ``(0, 1)``.
+
+        Raises
+        ------
+        NotFittedError
+            If called before detector has been fit.
 
         Parameters
         ----------
-        x_ref
+        x
             Reference data used to infer the threshold.
         fpr
             False positive rate used to infer the threshold. The false positive rate is the proportion of
-            instances in `x_ref` that are incorrectly classified as outliers. The false positive rate should
+            instances in `x` that are incorrectly classified as outliers. The false positive rate should
             be in the range ``(0, 1)``.
         """
-        self.backend.infer_threshold(self.backend._to_tensor(X), fpr)
+        self.backend.infer_threshold(self.backend._to_tensor(x), fpr)
 
+    @catch_error('NotFittedError')
+    @catch_error('ThresholdNotInferredError')
     def predict(self, x: np.ndarray) -> Dict[str, Any]:
         """Predict whether the instances in `x` are outliers or not.
 
@@ -159,6 +190,13 @@ class KNN(BaseDetector, FitMixin, ThresholdMixin):
         ----------
         x
             Data to predict. The shape of `x` should be `(n_instances, n_features)`.
+
+        Raises
+        ------
+        NotFittedError
+            If called before detector has been fit.
+        ThresholdNotInferredError
+            If k is a list and a threshold was not inferred.
 
         Returns
         -------

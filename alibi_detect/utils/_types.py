@@ -7,9 +7,9 @@ from alibi_detect.utils.frameworks import has_tensorflow, has_pytorch
 
 # Literal for typing
 if sys.version_info >= (3, 8):
-    from typing import Literal, Protocol, runtime_checkable  # noqa
+    from typing import Literal  # noqa
 else:
-    from typing_extensions import Literal, Protocol, runtime_checkable # noqa
+    from typing_extensions import Literal  # noqa
 
 
 # Optional dep dependent tuples of types
