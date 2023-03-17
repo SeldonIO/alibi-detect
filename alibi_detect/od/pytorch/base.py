@@ -177,12 +177,12 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
         return (1 + (scores[:, None] < self.val_scores).sum(-1))/len(self.val_scores) \
             if self.threshold_inferred else None
 
-    def infer_threshold(self, x_ref: torch.Tensor, fpr: float):
+    def infer_threshold(self, x: torch.Tensor, fpr: float):
         """Infer the threshold for the data. Prerequisite for outlier predictions.
 
         Parameters
         ----------
-        x_ref
+        x
             Data to infer the threshold for.
         fpr
             False positive rate to use for threshold inference.
@@ -192,13 +192,13 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
         ValueError
             Raised if `fpr` is not in ``(0, 1)``.
         ValueError
-            Raised if `fpr` is less than ``1/len(x_ref)``.
+            Raised if `fpr` is less than ``1/len(x)``.
         """
         if not 0 < fpr < 1:
             raise ValueError('`fpr` must be in `(0, 1)`.')
-        if fpr < 1/len(x_ref):
-            raise ValueError(f'`fpr` must be greater than `1/len(x_ref)={1/len(x_ref)}`.')
-        self.val_scores = self.score(x_ref)
+        if fpr < 1/len(x):
+            raise ValueError(f'`fpr` must be greater than `1/len(x)={1/len(x)}`.')
+        self.val_scores = self.score(x)
         if self.ensemble:
             self.val_scores = self.ensembler.fit(self.val_scores).transform(self.val_scores)  # type: ignore
         self.threshold = torch.quantile(self.val_scores, 1-fpr, interpolation='higher')

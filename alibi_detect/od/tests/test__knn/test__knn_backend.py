@@ -203,18 +203,18 @@ def test_knn_torch_backend_fit_errors():
 def test_knn_infer_threshold_value_errors():
     """Tests the correct errors are raised when using incorrect choice of fpr for the KNNTorch backend detector."""
     knn_torch = KNNTorch(k=4)
-    x_ref = torch.randn((1024, 10))
-    knn_torch.fit(x_ref)
+    x = torch.randn((1024, 10))
+    knn_torch.fit(x)
 
-    # fpr must be greater than 1/len(x_ref) otherwise it excludes all points in the reference dataset
+    # fpr must be greater than 1/len(x) otherwise it excludes all points in the reference dataset
     with pytest.raises(ValueError) as err:
-        knn_torch.infer_threshold(x_ref, 1/1025)
-    assert str(err.value) == '`fpr` must be greater than `1/len(x_ref)=0.0009765625`.'
+        knn_torch.infer_threshold(x, 1/1025)
+    assert str(err.value) == '`fpr` must be greater than `1/len(x)=0.0009765625`.'
 
     # fpr must be between 0 and 1
     with pytest.raises(ValueError) as err:
-        knn_torch.infer_threshold(x_ref, 1.1)
+        knn_torch.infer_threshold(x, 1.1)
     assert str(err.value) == '`fpr` must be in `(0, 1)`.'
 
-    knn_torch.infer_threshold(x_ref, 0.99)
-    knn_torch.infer_threshold(x_ref,  1/1023)
+    knn_torch.infer_threshold(x, 0.99)
+    knn_torch.infer_threshold(x,  1/1023)

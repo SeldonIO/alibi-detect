@@ -152,7 +152,7 @@ class KNN(BaseDetector, FitMixin, ThresholdMixin):
         return self.backend._to_numpy(score)
 
     @catch_error('NotFittedError')
-    def infer_threshold(self, x_ref: np.ndarray, fpr: float) -> None:
+    def infer_threshold(self, x: np.ndarray, fpr: float) -> None:
         """Infer the threshold for the kNN detector.
 
         The threshold is computed so that the outlier detector would incorrectly classify `fpr` proportion of the
@@ -170,14 +170,14 @@ class KNN(BaseDetector, FitMixin, ThresholdMixin):
 
         Parameters
         ----------
-        x_ref
+        x
             Reference data used to infer the threshold.
         fpr
             False positive rate used to infer the threshold. The false positive rate is the proportion of
-            instances in `x_ref` that are incorrectly classified as outliers. The false positive rate should
+            instances in `x` that are incorrectly classified as outliers. The false positive rate should
             be in the range ``(0, 1)``.
         """
-        self.backend.infer_threshold(self.backend._to_tensor(x_ref), fpr)
+        self.backend.infer_threshold(self.backend._to_tensor(x), fpr)
 
     @catch_error('NotFittedError')
     @catch_error('ThresholdNotInferredError')
