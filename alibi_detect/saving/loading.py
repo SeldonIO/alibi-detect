@@ -253,7 +253,10 @@ def _load_preprocess_config(cfg: dict) -> Optional[Callable]:
         logger.warning('Unable to process preprocess_fn. No preprocessing function is defined.')
         return None
 
-    return partial(preprocess_fn, **kwargs)
+    if kwargs == {}:
+        return preprocess_fn
+    else:
+        return partial(preprocess_fn, **kwargs)
 
 
 def _load_model_config(cfg: dict) -> Callable:

@@ -4,7 +4,7 @@ import shutil
 import warnings
 from functools import partial
 from pathlib import Path
-from typing import Callable, Optional, Tuple, Union, Any, TYPE_CHECKING
+from typing import Callable, Optional, Tuple, Union, Any, Dict, TYPE_CHECKING
 import dill
 import numpy as np
 import toml
@@ -264,7 +264,7 @@ def _save_preprocess_config(preprocess_fn: Callable,
     The config dictionary, containing references to the serialized artefacts. The format if this dict matches that
     of the `preprocess` field in the drift detector specification.
     """
-    preprocess_cfg = {}
+    preprocess_cfg: Dict[str, Any] = {}
     local_path = Path('preprocess_fn')
 
     # Serialize function
@@ -292,7 +292,7 @@ def _save_preprocess_config(preprocess_fn: Callable,
 
         # Arbitrary function
         elif callable(v):
-            src, _ = _serialize_object(v, filepath, local_path)
+            src, _ = _serialize_object(v, filepath, local_path.joinpath(k))
             kwargs.update({k: src})
 
         # Put remaining kwargs directly into cfg
@@ -302,7 +302,7 @@ def _save_preprocess_config(preprocess_fn: Callable,
     if 'preprocess_drift' in func:
         preprocess_cfg.update(kwargs)
     else:
-        kwargs.update({'kwargs': kwargs})
+        preprocess_cfg.update({'kwargs': kwargs})
 
     return preprocess_cfg
 
