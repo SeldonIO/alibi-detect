@@ -1,5 +1,7 @@
 from typing import Union, Optional, Dict, Any
 from typing import TYPE_CHECKING
+from alibi_detect.exceptions import _catch_error as catch_error
+
 
 import numpy as np
 
@@ -77,6 +79,8 @@ class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
         """
         self.backend.fit(self.backend._to_tensor(x_ref))
 
+    @catch_error('NotFittedError')
+    @catch_error('ThresholdNotInferredError')
     def score(self, x: np.ndarray) -> np.ndarray:
         """Score `x` instances using the detector.
 
@@ -96,6 +100,7 @@ class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
         score = self.backend.score(self.backend._to_tensor(x))
         return self.backend._to_numpy(score)
 
+    @catch_error('NotFittedError')
     def infer_threshold(self, x_ref: np.ndarray, fpr: float) -> None:
         """Infer the threshold for the Mahalanobis detector.
 
@@ -113,6 +118,8 @@ class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
         """
         self.backend.infer_threshold(self.backend._to_tensor(x_ref), fpr)
 
+    @catch_error('NotFittedError')
+    @catch_error('ThresholdNotInferredError')
     def predict(self, x: np.ndarray) -> Dict[str, Any]:
         """Predict whether the instances in `x` are outliers or not.
 

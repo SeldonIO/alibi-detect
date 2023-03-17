@@ -3,7 +3,7 @@ import numpy as np
 import torch
 
 from alibi_detect.od._mahalanobis import Mahalanobis
-from alibi_detect.base import NotFitException
+from alibi_detect.exceptions import NotFittedError
 from sklearn.datasets import make_moons
 
 
@@ -18,9 +18,9 @@ def make_mahalanobis_detector():
 def test_unfitted_mahalanobis_single_score():
     mahalanobis_detector = Mahalanobis()
     x = np.array([[0, 10], [0.1, 0]])
-    with pytest.raises(NotFitException) as err:
+    with pytest.raises(NotFittedError) as err:
         _ = mahalanobis_detector.predict(x)
-    assert str(err.value) == 'MahalanobisTorch has not been fit!'
+    assert str(err.value) == 'Mahalanobis has not been fit!'
 
 
 def test_fitted_mahalanobis_single_score():

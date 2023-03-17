@@ -3,30 +3,30 @@ import torch
 import numpy as np
 
 from alibi_detect.od.pytorch.mahalanobis import MahalanobisTorch
-from alibi_detect.base import NotFitException, ThresholdNotInferredException
+from alibi_detect.exceptions import NotFittedError, ThresholdNotInferredError
 
 
 def test_mahalanobis_torch_backend_fit_errors():
     mahalanobis_torch = MahalanobisTorch()
-    assert not mahalanobis_torch._fitted
+    assert not mahalanobis_torch.fitted
 
     x = torch.randn((1, 10))
-    with pytest.raises(NotFitException) as err:
+    with pytest.raises(NotFittedError) as err:
         mahalanobis_torch(x)
     assert str(err.value) == 'MahalanobisTorch has not been fit!'
 
-    with pytest.raises(NotFitException) as err:
+    with pytest.raises(NotFittedError) as err:
         mahalanobis_torch.predict(x)
     assert str(err.value) == 'MahalanobisTorch has not been fit!'
 
     x_ref = torch.randn((1024, 10))
     mahalanobis_torch.fit(x_ref)
 
-    assert mahalanobis_torch._fitted
+    assert mahalanobis_torch.fitted
 
-    with pytest.raises(ThresholdNotInferredException) as err:
+    with pytest.raises(ThresholdNotInferredError) as err:
         mahalanobis_torch(x)
-    assert str(err.value) == 'MahalanobisTorch has no threshold set, call `infer_threshold` before predicting.'
+    assert str(err.value) == 'MahalanobisTorch has no threshold set, call `infer_threshold` to fit one!'
 
     assert mahalanobis_torch.predict(x)
 

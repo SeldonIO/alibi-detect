@@ -6,6 +6,8 @@ from alibi_detect.od.pytorch.base import TorchOutlierDetector
 
 
 class MahalanobisTorch(TorchOutlierDetector):
+    ensemble = None
+
     def __init__(
             self,
             min_eigenvalue: float = 1e-6,
@@ -64,13 +66,12 @@ class MahalanobisTorch(TorchOutlierDetector):
         NotFitException
             If called before detector has been fit.
         """
-        if not torch.jit.is_scripting():
-            self.check_fitted()
+        self.check_fitted()
         x = torch.as_tensor(x)
         x_pcs = self._compute_linear_proj(x)
         return (x_pcs**2).sum(-1).cpu()
 
-    def _fit(self, x_ref: torch.Tensor):
+    def fit(self, x_ref: torch.Tensor):
         """Fits the detector
 
         Parameters
@@ -80,6 +81,7 @@ class MahalanobisTorch(TorchOutlierDetector):
         """
         self.x_ref = x_ref
         self._compute_linear_pcs(self.x_ref)
+        self.set_fitted()
 
     def _compute_linear_pcs(self, X: torch.Tensor):
         """Computes the principle components of the data.
