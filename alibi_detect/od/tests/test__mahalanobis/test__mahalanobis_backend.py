@@ -6,32 +6,14 @@ from alibi_detect.od.pytorch.mahalanobis import MahalanobisTorch
 from alibi_detect.exceptions import NotFittedError, ThresholdNotInferredError
 
 
-def test_mahalanobis_torch_backend_fit_errors():
-    mahalanobis_torch = MahalanobisTorch()
-    assert not mahalanobis_torch.fitted
-
-    x = torch.randn((1, 10))
-    with pytest.raises(NotFittedError) as err:
-        mahalanobis_torch(x)
-    assert str(err.value) == 'MahalanobisTorch has not been fit!'
-
-    with pytest.raises(NotFittedError) as err:
-        mahalanobis_torch.predict(x)
-    assert str(err.value) == 'MahalanobisTorch has not been fit!'
-
-    x_ref = torch.randn((1024, 10))
-    mahalanobis_torch.fit(x_ref)
-
-    assert mahalanobis_torch.fitted
-
-    with pytest.raises(ThresholdNotInferredError) as err:
-        mahalanobis_torch(x)
-    assert str(err.value) == 'MahalanobisTorch has no threshold set, call `infer_threshold` to fit one!'
-
-    assert mahalanobis_torch.predict(x)
-
-
 def test_mahalanobis_linear_scoring():
+    """Test Mahalanobis detector linear scoring method.
+
+    Test that the Mahalanobis detector _compute_linear_proj method correctly whitens the x_ref data
+    and that the score method correctly orders different test points. Test that the detector correctly
+    detects true outliers and that the correct proportion of in distribution data is flagged as
+    outliers.
+    """
     mahalanobis_torch = MahalanobisTorch()
     mean = [8, 8]
     cov = [[2., 0.], [0., 1.]]
@@ -69,6 +51,7 @@ def test_mahalanobis_linear_scoring():
 
 
 def test_mahalanobis_torch_backend_ts(tmp_path):
+    """Test Mahalanobis detector backend is torch-scriptable and savable."""
     mahalanobis_torch = MahalanobisTorch()
     x = torch.randn((3, 10)) * torch.tensor([[1], [1], [100]])
     x_ref = torch.randn((1024, 10))
@@ -84,3 +67,34 @@ def test_mahalanobis_torch_backend_ts(tmp_path):
     mahalanobis_torch = torch.load(tmp_path / 'mahalanobis_torch.pt')
     pred_2 = mahalanobis_torch(x)
     assert torch.all(pred_1 == pred_2)
+
+
+def test_mahalanobis_torch_backend_fit_errors():
+    """Test Mahalanobis detector backend fit errors.
+
+    Test that an unfit detector backend raises an error when calling predict or score. Test that the
+    detector backend raises an error when calling the forward method while the threshold has not been
+    inferred.
+    """
+    mahalanobis_torch = MahalanobisTorch()
+    assert not mahalanobis_torch.fitted
+
+    x = torch.randn((1, 10))
+    with pytest.raises(NotFittedError) as err:
+        mahalanobis_torch(x)
+    assert str(err.value) == 'MahalanobisTorch has not been fit!'
+
+    with pytest.raises(NotFittedError) as err:
+        mahalanobis_torch.predict(x)
+    assert str(err.value) == 'MahalanobisTorch has not been fit!'
+
+    x_ref = torch.randn((1024, 10))
+    mahalanobis_torch.fit(x_ref)
+
+    assert mahalanobis_torch.fitted
+
+    with pytest.raises(ThresholdNotInferredError) as err:
+        mahalanobis_torch(x)
+    assert str(err.value) == 'MahalanobisTorch has no threshold set, call `infer_threshold` to fit one!'
+
+    assert mahalanobis_torch.predict(x)
