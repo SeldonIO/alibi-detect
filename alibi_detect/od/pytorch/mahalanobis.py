@@ -61,7 +61,7 @@ class MahalanobisTorch(TorchOutlierDetector):
 
         Returns
         -------
-            Tensor of scores for each element in `x`.
+        Tensor of scores for each element in `x`.
 
         Raises
         ------
