@@ -350,6 +350,8 @@ class RBFKernelConfig(CustomBaseModelWithKwargs):
     src: str
     "A string referencing a filepath to a serialized kernel in `.dill` format, or an object registry reference."
 
+    kernel_type: Literal['GaussianRBF']
+
     # Below kwargs are only passed if kernel == @GaussianRBF
     flavour: Literal['tensorflow', 'pytorch']
     """
@@ -403,6 +405,8 @@ class RationalQuadraticKernelConfig(CustomBaseModelWithKwargs):
     """
     src: str
     "A string referencing a filepath to a serialized kernel in `.dill` format, or an object registry reference."
+
+    kernel_type: Literal['RationalQuadratic']
 
     # Below kwargs are only passed if kernel == @GaussianRBF
     flavour: Literal['tensorflow', 'pytorch']
@@ -469,6 +473,8 @@ class PeriodicKernelConfig(CustomBaseModelWithKwargs):
     src: str
     "A string referencing a filepath to a serialized kernel in `.dill` format, or an object registry reference."
 
+    kernel_type: Literal['Periodic']
+
     # Below kwargs are only passed if kernel == @GaussianRBF
     flavour: Literal['tensorflow', 'pytorch']
     """
@@ -504,6 +510,14 @@ class PeriodicKernelConfig(CustomBaseModelWithKwargs):
     _coerce_tau2tensor = validator('tau', allow_reuse=True, pre=False)(coerce_2_tensor)
 
 
+class CompositeKernelConfig(CustomBaseModelWithKwargs):
+    src: str
+
+    kernel_type: Literal['Sum', 'Product']
+
+    flavour: Literal['tensorflow', 'pytorch']
+
+
 class DeepKernelConfig(CustomBaseModel):
     """
     Unresolved schema for :class:`~alibi_detect.utils.tensorflow.kernels.DeepKernel`'s.
@@ -531,6 +545,10 @@ class DeepKernelConfig(CustomBaseModel):
         [kernel.proj]
         src = "model/"
     """
+    kernel_type: Literal['Deep']
+
+    flavour: Literal['tensorflow', 'pytorch']
+
     proj: Union[str, ModelConfig]
     """
     The projection to be applied to the inputs before applying `kernel_a`. This should be a Tensorflow or PyTorch

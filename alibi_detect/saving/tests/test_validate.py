@@ -101,7 +101,8 @@ def test_validate_kernel_and_coerce_2_tensor(flavour, sigma):
     kernel_cfg = {
         'src': f'@utils.{flavour}.kernels.GaussianRBF',
         'flavour': flavour,
-        'sigma': sigma
+        'sigma': sigma,
+        'kernel_type': 'GaussianRBF'
     }
 
     # Pass through validation and check results

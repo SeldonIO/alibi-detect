@@ -21,10 +21,14 @@ from alibi_detect.utils.pytorch.kernels import GaussianRBF as GaussianRBF_pt
 from alibi_detect.utils.pytorch.kernels import RationalQuadratic as RationalQuadratic_pt
 from alibi_detect.utils.pytorch.kernels import Periodic as Periodic_pt
 from alibi_detect.utils.pytorch.kernels import DeepKernel as DeepKernel_pt
+from alibi_detect.utils.pytorch.kernels import SumKernel as SumKernel_pt
+from alibi_detect.utils.pytorch.kernels import ProductKernel as ProductKernel_pt
 from alibi_detect.utils.tensorflow.kernels import GaussianRBF as GaussianRBF_tf
 from alibi_detect.utils.tensorflow.kernels import RationalQuadratic as RationalQuadratic_tf
 from alibi_detect.utils.tensorflow.kernels import Periodic as Periodic_tf
 from alibi_detect.utils.tensorflow.kernels import DeepKernel as DeepKernel_tf
+from alibi_detect.utils.tensorflow.kernels import SumKernel as SumKernel_tf
+from alibi_detect.utils.tensorflow.kernels import ProductKernel as ProductKernel_tf
 from alibi_detect.models.pytorch import TransformerEmbedding as TransformerEmbedding_pt
 from alibi_detect.models.tensorflow import TransformerEmbedding as TransformerEmbedding_tf
 from alibi_detect.cd.pytorch import HiddenOutput as HiddenOutput_pt
@@ -107,15 +111,11 @@ def kernel(request, backend):
     Kernel for given backend. Settings are parametrised in the test function.
     """
     kernel = request.param
-
     if isinstance(kernel, dict):  # dict of kwargs
-        kernel_meta_cfg = kernel.copy()
-        kernel_name = kernel_meta_cfg['kernel_name']
-        kernel_cfg = kernel_meta_cfg['kernel_config']
         if backend == 'tensorflow':
-            kernel = initial_kernel_tf(kernel_name, kernel_cfg)
+            kernel = initial_kernel_tf(kernel)
         elif backend == 'pytorch':
-            kernel = initial_kernel_pt(kernel_name, kernel_cfg)
+            kernel = initial_kernel_pt(kernel)
         else:
             pytest.skip('`kernel` only implemented for tensorflow and pytorch.')
     return kernel
@@ -148,8 +148,8 @@ def deep_kernel(request, backend, encoder_model):
     parametrised in the test function.
     """
     # Get DeepKernel options
-    kernel_a = request.param.get('kernel_a', {'kernel_name': 'GaussianRBF', 'kernel_config': {}})
-    kernel_b = request.param.get('kernel_b', {'kernel_name': 'GaussianRBF', 'kernel_config': {}})
+    kernel_a = request.param.get('kernel_a', {'kernel_type': 'GaussianRBF'})
+    kernel_b = request.param.get('kernel_b', {'kernel_type': 'GaussianRBF'})
     eps = request.param.get('eps', 'trainable')
 
     # Proj model (backend managed in encoder_model fixture)
@@ -157,49 +157,91 @@ def deep_kernel(request, backend, encoder_model):
 
     # Build DeepKernel
     if backend == 'tensorflow':
-        kernel_a = initial_kernel_tf(kernel_a['kernel_name'], kernel_a['kernel_config'])
-        kernel_b = initial_kernel_tf(kernel_b['kernel_name'], kernel_b['kernel_config'])
+        kernel_a = initial_kernel_tf(kernel_a)
+        kernel_b = initial_kernel_tf(kernel_b)
         deep_kernel = DeepKernel_tf(proj, kernel_a=kernel_a, kernel_b=kernel_b, eps=eps)
     elif backend == 'pytorch':
-        kernel_a = initial_kernel_pt(kernel_a['kernel_name'], kernel_a['kernel_config'])
-        kernel_b = initial_kernel_pt(kernel_b['kernel_name'], kernel_b['kernel_config'])
+        kernel_a = initial_kernel_pt(kernel_a)
+        kernel_b = initial_kernel_pt(kernel_b)
         deep_kernel = DeepKernel_pt(proj, kernel_a=kernel_a, kernel_b=kernel_b, eps=eps)
     else:
         pytest.skip('`deep_kernel` only implemented for tensorflow and pytorch.')
     return deep_kernel
 
 
-def initial_kernel_tf(kernel_name, kernel_config):
+def initial_kernel_tf(kernel_config):
+    kernel_config = kernel_config.copy()
+    if 'kernel_type' in kernel_config:
+        kernel_name = kernel_config.pop('kernel_type')
     if ('sigma' in kernel_config) and (kernel_config['sigma'] is not None):
-        kernel_config['sigma'] = tf.convert_to_tensor(np.array(kernel_config['sigma']))
+        kernel_config['sigma'] = tf.convert_to_tensor(np.array(kernel_config['sigma']), dtype=tf.float32)
     if ('alpha' in kernel_config) and (kernel_config['alpha'] is not None):
-        kernel_config['alpha'] = tf.convert_to_tensor(np.array(kernel_config['alpha']))
+        kernel_config['alpha'] = tf.convert_to_tensor(np.array(kernel_config['alpha']), dtype=tf.float32)
     if ('tau' in kernel_config) and (kernel_config['tau'] is not None):
-        kernel_config['tau'] = tf.convert_to_tensor(np.array(kernel_config['tau']))
+        kernel_config['tau'] = tf.convert_to_tensor(np.array(kernel_config['tau']), dtype=tf.float32)
     if kernel_name == 'GaussianRBF':
         kernel = GaussianRBF_tf(**kernel_config)
     elif kernel_name == 'RationalQuadratic':
         kernel = RationalQuadratic_tf(**kernel_config)
     elif kernel_name == 'Periodic':
         kernel = Periodic_tf(**kernel_config)
+    elif kernel_name == 'Sum':
+        kernel_list = []
+        for k_config in kernel_config.values():
+            if isinstance(k_config, dict):
+                kernel_list.append(initial_kernel_tf(k_config))
+            elif isinstance(k_config, float):
+                kernel_list.append(tf.cast(k_config, dtype=tf.float32))
+        final_config = {'kernel_list': kernel_list}
+        kernel = SumKernel_tf(**final_config)
+    elif kernel_name == 'Product':
+        kernel_list = []
+        for k_config in kernel_config.values():
+            if isinstance(k_config, dict):
+                kernel_list.append(initial_kernel_tf(k_config))
+            elif isinstance(k_config, float):
+                kernel_list.append(tf.cast(k_config, dtype=tf.float32))
+            final_config = {'kernel_list': kernel_list}
+        kernel = ProductKernel_tf(**final_config)
     else:
         pytest.skip('`initial_kernel_tf` only implemented for GaussianRBF, RationalQuadratic and Periodic.')
     return kernel
 
 
-def initial_kernel_pt(kernel_name, kernel_config):
+def initial_kernel_pt(kernel_config):
+    kernel_config = kernel_config.copy()
+    if 'kernel_type' in kernel_config:
+        kernel_name = kernel_config.pop('kernel_type')
     if ('sigma' in kernel_config) and (kernel_config['sigma'] is not None):
-        kernel_config['sigma'] = torch.tensor(np.array(kernel_config['sigma']))
+        kernel_config['sigma'] = torch.tensor(np.array(kernel_config['sigma']), dtype=torch.float32)
     if ('alpha' in kernel_config) and (kernel_config['alpha'] is not None):
-        kernel_config['alpha'] = torch.tensor(np.array(kernel_config['alpha']))
+        kernel_config['alpha'] = torch.tensor(np.array(kernel_config['alpha']), dtype=torch.float32)
     if ('tau' in kernel_config) and (kernel_config['tau'] is not None):
-        kernel_config['tau'] = torch.tensor(np.array(kernel_config['tau']))
+        kernel_config['tau'] = torch.tensor(np.array(kernel_config['tau']), dtype=torch.float32)
     if kernel_name == 'GaussianRBF':
         kernel = GaussianRBF_pt(**kernel_config)
     elif kernel_name == 'RationalQuadratic':
         kernel = RationalQuadratic_pt(**kernel_config)
     elif kernel_name == 'Periodic':
         kernel = Periodic_pt(**kernel_config)
+    elif kernel_name == 'Sum':
+        kernel_list = []
+        for k_config in kernel_config.values():
+            if isinstance(k_config, dict):
+                kernel_list.append(initial_kernel_pt(k_config))
+            elif isinstance(k_config, float):
+                kernel_list.append(torch.tensor(k_config, dtype=torch.float32))
+        final_config = {'kernel_list': kernel_list}
+        kernel = SumKernel_pt(**final_config)
+    elif kernel_name == 'Product':
+        kernel_list = []
+        for k_config in kernel_config.values():
+            if isinstance(k_config, dict):
+                kernel_list.append(initial_kernel_pt(k_config))
+            elif isinstance(k_config, float):
+                kernel_list.append(torch.tensor(k_config, dtype=torch.float32))
+            final_config = {'kernel_list': kernel_list}
+        kernel = ProductKernel_pt(**final_config)
     else:
         pytest.skip('`initial_kernel_pt` only implemented for GaussianRBF, RationalQuadratic and Periodic.')
     return kernel

@@ -466,6 +466,16 @@ def resolve_config(cfg: dict, config_dir: Optional[Path]) -> dict:
     if config_dir is not None:
         _prepend_cfg_filepaths(cfg, config_dir)
 
+    # get additional fields to resolve for composite kernels
+    if 'kernel' in cfg:
+        if isinstance(cfg['kernel'], dict):
+            if (cfg['kernel']['kernel_type'] == 'Sum') or (cfg['kernel']['kernel_type'] == 'Product'):
+                composite_fields = _get_composite_kernel_fields(cfg['kernel'])
+                for field in composite_fields:
+                    field.insert(0, 'kernel')
+                loc = FIELDS_TO_RESOLVE.index(['kernel'])
+                FIELDS_TO_RESOLVE[loc:loc] = composite_fields
+
     # Resolve filepaths (load files) and resolve function/object registries
     for key in FIELDS_TO_RESOLVE:
         logger.info('Resolving config field: {}.'.format(key))
@@ -517,6 +527,45 @@ def resolve_config(cfg: dict, config_dir: Optional[Path]) -> dict:
             _set_nested_value(cfg, key, obj)
 
     return cfg
+
+
+def _get_composite_kernel_fields(cfg: dict) -> list:
+    """
+    Get additional fields to resolve for composite kernels.
+
+    Parameters
+    ----------
+    cfg
+        The config dict.
+
+    Returns
+    -------
+    The additional fields to resolve.
+    """
+    fields = []
+    if 'kernel_type' in cfg:
+        if (cfg['kernel_type'] == 'Sum') or (cfg['kernel_type'] == 'Product'):
+            kernel_number = len(cfg) - 3
+            for i in range(kernel_number):
+                if isinstance(cfg['comp_{}'.format(i)], dict):
+                    if 'kernel_type' in cfg['comp_{}'.format(i)]:
+                        if (cfg['comp_{}'.format(i)]['kernel_type'] == 'Sum') or \
+                                (cfg['comp_{}'.format(i)]['kernel_type'] == 'Product'):
+                            fields.extend(_get_composite_kernel_fields(cfg['comp_{}'.format(i)]))
+                        elif cfg['comp_{}'.format(i)]['kernel_type'] == 'GaussianRBF':
+                            fields.append(['comp_{}'.format(i), 'src'])
+                            fields.append(['comp_{}'.format(i), 'init_sigma_fn'])
+                        elif cfg['comp_{}'.format(i)]['kernel_type'] == 'RationalQuadratic':
+                            fields.append(['comp_{}'.format(i), 'src'])
+                            fields.append(['comp_{}'.format(i), 'init_sigma_fn'])
+                            fields.append(['comp_{}'.format(i), 'init_alpha_fn'])
+                        elif cfg['comp_{}'.format(i)]['kernel_type'] == 'Period':
+                            fields.append(['comp_{}'.format(i), 'src'])
+                            fields.append(['comp_{}'.format(i), 'init_sigma_fn'])
+                            fields.append(['comp_{}'.format(i), 'init_tau_fn'])
+                        else:
+                            raise ValueError('Unknown kernel type: {}'.format(cfg['comp_{}'.format(i)]['kernel_type']))
+    return fields
 
 
 def _replace(cfg: dict, orig: Optional[str], new: Optional[str]) -> dict:

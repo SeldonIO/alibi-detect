@@ -127,6 +127,7 @@ class BaseKernel(nn.Module):
         """
         super().__init__()
         self.parameter_dict: dict = {}
+        self.config: dict = {}
         if active_dims is not None:
             self.active_dims = torch.as_tensor(active_dims)
         else:
@@ -153,12 +154,23 @@ class BaseKernel(nn.Module):
         other: Union['BaseKernel', torch.Tensor]
     ) -> 'SumKernel':
         if isinstance(other, SumKernel):
+            kernel_count = len(other.kernel_list)
             other.kernel_list.append(self)
+            other.config['comp_' + str(kernel_count)] = self.config  # type: ignore
             return other
-        elif isinstance(other, (BaseKernel, ProductKernel, torch.Tensor)):
+        elif isinstance(other, (BaseKernel, ProductKernel)):
             sum_kernel = SumKernel()
             sum_kernel.kernel_list.append(self)
+            sum_kernel.config['comp_0'] = self.config  # type: ignore
             sum_kernel.kernel_list.append(other)
+            sum_kernel.config['comp_1'] = other.config  # type: ignore
+            return sum_kernel
+        elif isinstance(other, torch.Tensor):
+            sum_kernel = SumKernel()
+            sum_kernel.kernel_list.append(self)
+            sum_kernel.config['comp_0'] = self.config  # type: ignore
+            sum_kernel.kernel_list.append(other)
+            sum_kernel.config['comp_1'] = other.detach().cpu().numpy()  # type: ignore
             return sum_kernel
         else:
             raise ValueError('Kernels can only added to another kernel or a constant.')
@@ -171,18 +183,33 @@ class BaseKernel(nn.Module):
         other: Union['BaseKernel', torch.Tensor]
     ) -> 'BaseKernel':
         if isinstance(other, ProductKernel):
-            other.kernel_factors.append(self)
+            other.kernel_list.append(self)
+            other.config['comp_' + str(len(other.kernel_list))] = self.config  # type: ignore
             return other
         elif isinstance(other, SumKernel):
             sum_kernel = SumKernel()
+            kernel_count = 0
             for k in other.kernel_list:
                 sum_kernel.kernel_list.append(self * k)
+                sum_kernel.config['comp_' + str(kernel_count)] = self.config  # type: ignore
+                kernel_count += 1
             return sum_kernel
-        else:
+        elif isinstance(other, BaseKernel):
             prod_kernel = ProductKernel()
-            prod_kernel.kernel_factors.append(self)
-            prod_kernel.kernel_factors.append(other)
+            prod_kernel.kernel_list.append(self)
+            prod_kernel.config['comp_0'] = self.config  # type: ignore
+            prod_kernel.kernel_list.append(other)
+            prod_kernel.config['comp_1'] = other.config  # type: ignore
             return prod_kernel
+        elif isinstance(other, torch.Tensor):
+            prod_kernel = ProductKernel()
+            prod_kernel.kernel_list.append(self)
+            prod_kernel.config['comp_0'] = self.config  # type: ignore
+            prod_kernel.kernel_list.append(other)
+            prod_kernel.config['comp_1'] = other.detach().cpu().numpy()  # type: ignore
+            return prod_kernel
+        else:
+            raise ValueError('Kernels can only be multiplied by another kernel or a constant.')
 
     def __rmul__(
         self,
@@ -205,33 +232,28 @@ class BaseKernel(nn.Module):
     def __rsub__(self, other):
         raise ValueError('Kernels do not support subtraction.')
 
-    @classmethod
-    def from_config(cls, config):
-        """
-        Instantiates a kernel from a config dictionary.
-
-        Parameters
-        ----------
-        config
-            A kernel config dictionary.
-        """
-        config.pop('flavour')
-        if 'sigma' in config and config['sigma'] is not None:
-            config['sigma'] = torch.tensor(np.array(config['sigma']))
-        if 'alpha' in config and config['alpha'] is not None:
-            config['alpha'] = torch.tensor(np.array(config['alpha']))
-        if 'tau' in config and config['tau'] is not None:
-            config['tau'] = torch.tensor(np.array(config['tau']))
-        return cls(**config)
+    def get_config(self) -> dict:
+        return self.config.copy()
 
 
 class SumKernel(BaseKernel):
-    def __init__(self) -> None:
+    def __init__(self,
+                 kernel_list: Optional[List[Union[BaseKernel, torch.Tensor]]] = None) -> None:
         """
         Construct a kernel by summing different kernels.
         """
         super().__init__()
-        self.kernel_list: List[Union[BaseKernel, torch.Tensor]] = []
+        self.kernel_list = []
+        self.config: dict = {'kernel_type': 'Sum'}
+        if kernel_list is not None:
+            self.kernel_list = kernel_list
+            for i in range(len(self.kernel_list)):
+                if isinstance(self.kernel_list[i], BaseKernel):
+                    self.config['comp_' + str(i)] = self.kernel_list[i].config  # type: ignore
+                elif isinstance(self.kernel_list[i], torch.Tensor):
+                    self.config['comp_' + str(i)] = self.kernel_list[i].detach().cpu().numpy()  # type: ignore
+                else:
+                    raise ValueError(str(type(self.kernel_list[i])) + 'is not supported by SumKernel.')
 
     def kernel_function(self, x: torch.Tensor, y: torch.Tensor,
                         infer_parameter: bool = False) -> torch.Tensor:
@@ -250,11 +272,23 @@ class SumKernel(BaseKernel):
         self,
         other: Union[BaseKernel, torch.Tensor]
     ) -> 'SumKernel':
+        kernel_count = len(self.kernel_list)
         if isinstance(other, SumKernel):
             for k in other.kernel_list:
                 self.kernel_list.append(k)
-        else:
+                if isinstance(k, BaseKernel):
+                    self.config['comp_' + str(kernel_count)] = k.config
+                elif isinstance(k, torch.Tensor):
+                    self.config['comp_' + str(kernel_count)] = k.detach().cpu().numpy()
+                kernel_count += 1
+        elif isinstance(other, BaseKernel):
             self.kernel_list.append(other)
+            self.config['comp_' + str(kernel_count)] = other.config
+        elif isinstance(other, torch.Tensor):
+            self.kernel_list.append(other)
+            self.config['comp_' + str(kernel_count)] = other.detach().cpu().numpy()
+        else:
+            raise ValueError(type(other) + 'is not supported by SumKernel.')
         return self
 
     def __radd__(self, other: BaseKernel) -> 'SumKernel':
@@ -269,6 +303,8 @@ class SumKernel(BaseKernel):
             for ki in self.kernel_list:
                 for kj in other.kernel_list:
                     sum_kernel.kernel_list.append((ki * kj))
+                    sum_kernel.config['comp_' + str(len(sum_kernel.kernel_list) - 1)] = \
+                        sum_kernel.kernel_list[-1].config  # type: ignore
             return sum_kernel
         elif isinstance(other, ProductKernel):
             return other * self
@@ -276,6 +312,8 @@ class SumKernel(BaseKernel):
             sum_kernel = SumKernel()
             for ki in self.kernel_list:
                 sum_kernel.kernel_list.append(other * ki)
+                sum_kernel.config['comp_' + str(len(sum_kernel.kernel_list) - 1)] = \
+                    sum_kernel.kernel_list[-1].config  # type: ignore
             return sum_kernel
         else:
             raise ValueError(type(other) + 'is not supported by SumKernel.')
@@ -301,19 +339,50 @@ class SumKernel(BaseKernel):
     def __rsub__(self, other):
         raise ValueError('Kernels do not support subtraction.')
 
+    def get_config(self) -> dict:
+        cfg = self.config.copy()
+        cfg.update({'flavour': Framework.PYTORCH.value})
+        return cfg
+
+    @classmethod
+    def from_config(cls, config):
+        """
+        Instantiates a kernel from a config dictionary.
+
+        Parameters
+        ----------
+        config
+            A kernel config dictionary.
+        """
+        config.pop('flavour')
+        config.pop('kernel_type')
+        config = fill_composite_config(config)
+        return cls(**config)
+
 
 class ProductKernel(BaseKernel):
-    def __init__(self) -> None:
+    def __init__(self,
+                 kernel_list: Optional[List[Union[BaseKernel, torch.Tensor]]] = None) -> None:
         """
         Construct a kernel by multiplying different kernels.
         """
         super().__init__()
-        self.kernel_factors: List[Union[BaseKernel, torch.Tensor]] = []
+        self.kernel_list = []
+        self.config: dict = {'kernel_type': 'Product'}
+        if kernel_list is not None:
+            self.kernel_list = kernel_list
+            for i in range(len(self.kernel_list)):
+                if isinstance(self.kernel_list[i], BaseKernel):
+                    self.config['comp_' + str(i)] = self.kernel_list[i].config  # type: ignore
+                elif isinstance(self.kernel_list[i], torch.Tensor):
+                    self.config['comp_' + str(i)] = self.kernel_list[i].detach().cpu().numpy()  # type: ignore
+                else:
+                    raise ValueError(str(type(self.kernel_list[i])) + 'is not supported by ProductKernel.')
 
     def kernel_function(self, x: torch.Tensor, y: torch.Tensor,
                         infer_parameter: bool = False) -> torch.Tensor:
         value_list: List[torch.Tensor] = []
-        for k in self.kernel_factors:
+        for k in self.kernel_list:
             k.to(x.device)
             if isinstance(k, BaseKernel) or isinstance(k, SumKernel) or isinstance(k, ProductKernel):
                 value_list.append(k(x, y, infer_parameter))
@@ -329,12 +398,24 @@ class ProductKernel(BaseKernel):
     ) -> 'SumKernel':
         if isinstance(other, SumKernel):
             other.kernel_list.append(self)
+            other.config['comp_' + str(len(other.kernel_list))] = self.config
             return other
-        else:
+        elif isinstance(other, ProductKernel) or isinstance(other, BaseKernel):
             sum_kernel = SumKernel()
             sum_kernel.kernel_list.append(self)
+            sum_kernel.config['comp_0'] = self.config
             sum_kernel.kernel_list.append(other)
+            sum_kernel.config['comp_1'] = other.config
             return sum_kernel
+        elif isinstance(other, torch.Tensor):
+            sum_kernel = SumKernel()
+            sum_kernel.kernel_list.append(self)
+            sum_kernel.config['comp_0'] = self.config
+            sum_kernel.kernel_list.append(other)
+            sum_kernel.config['comp_1'] = other.detach().cpu().numpy()
+            return sum_kernel
+        else:
+            raise ValueError(type(other) + 'is not supported by ProductKernel.')
 
     def __radd__(
         self,
@@ -350,15 +431,23 @@ class ProductKernel(BaseKernel):
             sum_kernel = SumKernel()
             for k in other.kernel_list:
                 tmp_prod_kernel = deepcopy(self)
-                tmp_prod_kernel.kernel_factors.append(k)
+                tmp_prod_kernel.kernel_list.append(k)
                 sum_kernel.kernel_list.append(tmp_prod_kernel)
+                sum_kernel.config['comp_' + str(len(sum_kernel.kernel_list))] = \
+                    sum_kernel.kernel_list[-1].config  # type: ignore
             return sum_kernel
         elif isinstance(other, ProductKernel):
-            for k in other.kernel_factors:
-                self.kernel_factors.append(k)
+            for k in other.kernel_list:
+                self.kernel_list.append(k)
+                self.config['comp_' + str(len(self.kernel_list))] = k.config  # type: ignore
             return self
-        elif isinstance(other, BaseKernel) or isinstance(other, torch.Tensor):
-            self.kernel_factors.append(other)
+        elif isinstance(other, BaseKernel):
+            self.kernel_list.append(other)
+            self.config['comp_' + str(len(self.kernel_list))] = other.config  # type: ignore
+            return self
+        elif isinstance(other, torch.Tensor):
+            self.kernel_list.append(other)
+            self.config['comp_' + str(len(self.kernel_list))] = other.detach().cpu().numpy()  # type: ignore
             return self
         else:
             raise ValueError(type(other) + 'is not supported by ProductKernel.')
@@ -383,6 +472,26 @@ class ProductKernel(BaseKernel):
 
     def __rsub__(self, other):
         raise ValueError('Kernels do not support subtraction.')
+
+    def get_config(self) -> dict:
+        cfg = self.config.copy()
+        cfg.update({'flavour': Framework.PYTORCH.value})
+        return cfg
+
+    @classmethod
+    def from_config(cls, config):
+        """
+        Instantiates a kernel from a config dictionary.
+
+        Parameters
+        ----------
+        config
+            A kernel config dictionary.
+        """
+        config.pop('flavour')
+        config.pop('kernel_type')
+        config = fill_composite_config(config)
+        return cls(**config)
 
 
 class GaussianRBF(BaseKernel):
@@ -418,7 +527,7 @@ class GaussianRBF(BaseKernel):
         super().__init__(active_dims)
         self.init_sigma_fn = log_sigma_median if init_sigma_fn is None else init_sigma_fn
         self.config = {'sigma': sigma, 'trainable': trainable, 'init_sigma_fn': self.init_sigma_fn,
-                       'active_dims': active_dims}
+                       'active_dims': active_dims, 'kernel_type': 'GaussianRBF'}
         self.parameter_dict['log-sigma'] = KernelParameter(
                 value=sigma.log().reshape(-1) if sigma is not None else torch.zeros(1),
                 init_fn=self.init_sigma_fn,  # type: ignore
@@ -455,6 +564,22 @@ class GaussianRBF(BaseKernel):
             cfg['sigma'] = cfg['sigma'].detach().cpu().numpy().tolist()
         cfg.update({'flavour': Framework.PYTORCH.value})
         return cfg
+
+    @classmethod
+    def from_config(cls, config):
+        """
+        Instantiates a kernel from a config dictionary.
+
+        Parameters
+        ----------
+        config
+            A kernel config dictionary.
+        """
+        config.pop('flavour')
+        config.pop('kernel_type')
+        if 'sigma' in config and config['sigma'] is not None:
+            config['sigma'] = torch.tensor(np.array(config['sigma']))
+        return cls(**config)
 
 
 class RationalQuadratic(BaseKernel):
@@ -494,7 +619,8 @@ class RationalQuadratic(BaseKernel):
         self.init_sigma_fn = log_sigma_median if init_sigma_fn is None else init_sigma_fn
         self.init_alpha_fn = init_alpha_fn
         self.config = {'alpha': alpha, 'sigma': sigma, 'trainable': trainable, 'active_dims': active_dims,
-                       'init_alpha_fn': self.init_alpha_fn, 'init_sigma_fn': self.init_sigma_fn}
+                       'init_alpha_fn': self.init_alpha_fn, 'init_sigma_fn': self.init_sigma_fn,
+                       'kernel_type': 'RationalQuadratic'}
         self.parameter_dict['log-alpha'] = KernelParameter(
             value=alpha.log().reshape(-1) if alpha is not None else torch.zeros(1),
             init_fn=self.init_alpha_fn,  # type: ignore
@@ -544,6 +670,24 @@ class RationalQuadratic(BaseKernel):
         cfg.update({'flavour': Framework.PYTORCH.value})
         return cfg
 
+    @classmethod
+    def from_config(cls, config):
+        """
+        Instantiates a kernel from a config dictionary.
+
+        Parameters
+        ----------
+        config
+            A kernel config dictionary.
+        """
+        config.pop('flavour')
+        config.pop('kernel_type')
+        if 'sigma' in config and config['sigma'] is not None:
+            config['sigma'] = torch.tensor(np.array(config['sigma']))
+        if 'alpha' in config and config['alpha'] is not None:
+            config['alpha'] = torch.tensor(np.array(config['alpha']))
+        return cls(**config)
+
 
 class Periodic(BaseKernel):
     def __init__(
@@ -584,7 +728,8 @@ class Periodic(BaseKernel):
         self.init_sigma_fn = log_sigma_median if init_sigma_fn is None else init_sigma_fn
         self.init_tau_fn = init_tau_fn
         self.config = {'tau': tau, 'sigma': sigma, 'trainable': trainable, 'active_dims': active_dims,
-                       'init_tau_fn': self.init_tau_fn, 'init_sigma_fn': self.init_sigma_fn}
+                       'init_tau_fn': self.init_tau_fn, 'init_sigma_fn': self.init_sigma_fn,
+                       'kernel_type': 'Periodic'}
         self.parameter_dict['log-tau'] = KernelParameter(
             value=tau.log().reshape(-1) if tau is not None else torch.zeros(1),
             init_fn=self.init_tau_fn,  # type: ignore
@@ -633,6 +778,24 @@ class Periodic(BaseKernel):
         cfg.update({'flavour': Framework.PYTORCH.value})
         return cfg
 
+    @classmethod
+    def from_config(cls, config):
+        """
+        Instantiates a kernel from a config dictionary.
+
+        Parameters
+        ----------
+        config
+            A kernel config dictionary.
+        """
+        config.pop('flavour')
+        config.pop('kernel_type')
+        if 'sigma' in config and config['sigma'] is not None:
+            config['sigma'] = torch.tensor(np.array(config['sigma']))
+        if 'tau' in config and config['tau'] is not None:
+            config['tau'] = torch.tensor(np.array(config['tau']))
+        return cls(**config)
+
 
 class ProjKernel(BaseKernel):
     def __init__(
@@ -653,6 +816,7 @@ class ProjKernel(BaseKernel):
             The kernel to apply to the projected inputs. Defaults to a Gaussian RBF with trainable bandwidth.
         """
         super().__init__()
+        self.config = {'proj': proj, 'raw_kernel': raw_kernel, 'kernel_type': 'Proj'}
         self.proj = proj
         self.raw_kernel = raw_kernel
         self.init_required = False
@@ -664,6 +828,17 @@ class ProjKernel(BaseKernel):
         infer_parameter: Optional[bool] = False
     ) -> torch.Tensor:
         return self.raw_kernel(self.proj(x), self.proj(y), infer_parameter)
+
+    def get_config(self) -> dict:
+        cfg = self.config.copy()
+        cfg.update({'flavour': Framework.PYTORCH.value})
+        return cfg
+
+    @classmethod
+    def from_config(cls, config):
+        config.pop('flavour')
+        config.pop('kernel_type')
+        return cls(**config)
 
 
 class DeepKernel(BaseKernel):
@@ -694,7 +869,7 @@ class DeepKernel(BaseKernel):
         eps: Union[float, str] = 'trainable'
     ) -> None:
         super().__init__()
-        self.config = {'proj': proj, 'kernel_a': kernel_a, 'kernel_b': kernel_b, 'eps': eps}
+        self.config = {'proj': proj, 'kernel_a': kernel_a, 'kernel_b': kernel_b, 'eps': eps, 'kernel_type': 'Deep'}
         self.proj = proj
         self.kernel_a = kernel_a
         self.kernel_b = kernel_b
@@ -736,8 +911,37 @@ class DeepKernel(BaseKernel):
         return self.comp_kernel(x, y, infer_parameter)
 
     def get_config(self) -> dict:
-        return self.config.copy()
+        cfg = self.config.copy()
+        cfg.update({'flavour': Framework.PYTORCH.value})
+        return cfg
 
     @classmethod
     def from_config(cls, config):
+        config.pop('kernel_type')
+        config.pop('flavour')
         return cls(**config)
+
+
+def fill_composite_config(config: dict) -> dict:
+    final_config: dict = {'kernel_list': []}
+    for k_config in config.values():
+        if isinstance(k_config, dict):
+            k_config.pop('src')
+            if k_config['kernel_type'] == 'Sum':
+                final_config['kernel_list'].append(SumKernel.from_config(k_config))
+            elif k_config['kernel_type'] == 'Product':
+                final_config['kernel_list'].append(ProductKernel.from_config(k_config))
+            elif k_config['kernel_type'] == 'GaussianRBF':
+                final_config['kernel_list'].append(GaussianRBF.from_config(k_config))
+            elif k_config['kernel_type'] == 'Periodic':
+                final_config['kernel_list'].append(Periodic.from_config(k_config))
+            elif k_config['kernel_type'] == 'RationalQuadratic':
+                final_config['kernel_list'].append(RationalQuadratic.from_config(k_config))
+            else:
+                raise ValueError('Unknown kernel type.')
+        elif isinstance(k_config, np.ndarray) or isinstance(k_config, float) or \
+                isinstance(k_config, np.float32) or isinstance(k_config, np.float64):
+            final_config['kernel_list'].append(torch.tensor(np.array(k_config)))
+        else:
+            raise ValueError('Unknown kernel type.')
+    return final_config

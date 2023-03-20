@@ -503,6 +503,22 @@ def _save_kernel_config(kernel: Callable,
         if not isinstance(kernel_b, str) and kernel_b is not None:
             cfg_kernel['kernel_b'] = _save_kernel_config(cfg_kernel['kernel_b'], base_path, Path('kernel_b'))
 
+    # if a composite kernel
+    elif hasattr(kernel, 'kernel_list'):
+        kernel_class = kernel.__class__
+
+        if hasattr(kernel, 'get_config'):
+            cfg_kernel = kernel.get_config()  # type: ignore[attr-defined]
+        else:
+            raise AttributeError("The detector's `kernel` must have a .get_config() method for it to be saved.")
+
+        for i, k in enumerate(kernel.kernel_list):
+            if hasattr(k, 'get_config'):
+                cfg_kernel['comp_' + str(i)] = _save_kernel_config(k, base_path,
+                                                                   Path(local_path, 'kernel_{}'.format(i)))
+        cfg_kernel = dict(sorted(cfg_kernel.items()))
+        cfg_kernel['src'], _ = _serialize_object(kernel_class, base_path, local_path.joinpath('kernel'))
+
     # If any other kernel, serialize the class to disk and get config
     else:
         if isinstance(kernel, type):  # if still a class
@@ -512,8 +528,18 @@ def _save_kernel_config(kernel: Callable,
             kernel_class = kernel.__class__
             if hasattr(kernel, 'get_config'):
                 cfg_kernel = kernel.get_config()  # type: ignore[attr-defined]
-                cfg_kernel['init_sigma_fn'], _ = _serialize_object(cfg_kernel['init_sigma_fn'], base_path,
-                                                                   local_path.joinpath('init_sigma_fn'))
+                if 'init_sigma_fn' in cfg_kernel:
+                    if cfg_kernel['init_sigma_fn'] is not None:
+                        cfg_kernel['init_sigma_fn'], _ = _serialize_object(cfg_kernel['init_sigma_fn'], base_path,
+                                                                           local_path.joinpath('init_sigma_fn'))
+                if 'init_alpha_fn' in cfg_kernel:
+                    if cfg_kernel['init_alpha_fn'] is not None:
+                        cfg_kernel['init_alpha_fn'], _ = _serialize_object(cfg_kernel['init_alpha_fn'], base_path,
+                                                                           local_path.joinpath('init_alpha_fn'))
+                if 'init_tau_fn' in cfg_kernel:
+                    if cfg_kernel['init_tau_fn'] is not None:
+                        cfg_kernel['init_tau_fn'], _ = _serialize_object(cfg_kernel['init_tau_fn'], base_path,
+                                                                         local_path.joinpath('init_tau_fn'))
             else:
                 raise AttributeError("The detector's `kernel` must have a .get_config() method for it to be saved.")
         # Serialize the kernel class
