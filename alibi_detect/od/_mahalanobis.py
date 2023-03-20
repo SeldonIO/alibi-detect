@@ -25,8 +25,8 @@ class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
     def __init__(
         self,
         min_eigenvalue: float = 1e-6,
-        device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
         backend: Literal['pytorch'] = 'pytorch',
+        device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
     ) -> None:
         """The Mahalanobis outlier detection method.
 
@@ -61,10 +61,12 @@ class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
         ).verify_backend(backend_str)
 
         backend_cls = backends[backend]
-        self.backend = backend_cls(
-            min_eigenvalue,
-            device=device
-        )
+        self.backend = backend_cls(min_eigenvalue, device=device)
+
+        # set metadata
+        self.meta['detector_type'] = 'outlier'
+        self.meta['data_type'] = 'numeric'
+        self.meta['online'] = False
 
     def fit(self, x_ref: np.ndarray) -> None:
         """Fit the detector on reference data.
@@ -101,7 +103,7 @@ class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
         return self.backend._to_numpy(score)
 
     @catch_error('NotFittedError')
-    def infer_threshold(self, x_ref: np.ndarray, fpr: float) -> None:
+    def infer_threshold(self, x: np.ndarray, fpr: float) -> None:
         """Infer the threshold for the Mahalanobis detector.
 
         The threshold is inferred using the reference data and the false positive rate. The threshold is used to
@@ -109,14 +111,14 @@ class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
 
         Parameters
         ----------
-        x_ref
+        x
             Reference data used to infer the threshold.
         fpr
-            False positive rate used to infer the threshold. The false positive rate is the proportion of instances in \
-            `x_ref` that are incorrectly classified as outliers. The false positive rate should be in the range \
-            ``(0, 1)``.
+            False positive rate used to infer the threshold. The false positive rate is the proportion of
+            instances in `x` that are incorrectly classified as outliers. The false positive rate should
+            be in the range ``(0, 1)``.
         """
-        self.backend.infer_threshold(self.backend._to_tensor(x_ref), fpr)
+        self.backend.infer_threshold(self.backend._to_tensor(x), fpr)
 
     @catch_error('NotFittedError')
     @catch_error('ThresholdNotInferredError')

@@ -26,6 +26,7 @@ class MahalanobisTorch(TorchOutlierDetector):
         TorchOutlierDetector.__init__(self, device=device)
         self.min_eigenvalue = min_eigenvalue
 
+    @torch.no_grad()
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Detect if `x` is an outlier.
 
@@ -49,6 +50,7 @@ class MahalanobisTorch(TorchOutlierDetector):
         preds = scores > self.threshold
         return preds.cpu()
 
+    @torch.no_grad()
     def score(self, x: torch.Tensor) -> torch.Tensor:
         """Computes the score of `x`
 
