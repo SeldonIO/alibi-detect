@@ -170,7 +170,7 @@ class BaseKernel(nn.Module):
             sum_kernel.kernel_list.append(self)
             sum_kernel.config['comp_0'] = self.config  # type: ignore
             sum_kernel.kernel_list.append(other)
-            sum_kernel.config['comp_1'] = other.detach().cpu().numpy()  # type: ignore
+            sum_kernel.config['comp_1'] = other.detach().cpu().item()  # type: ignore
             return sum_kernel
         else:
             raise ValueError('Kernels can only added to another kernel or a constant.')
@@ -206,7 +206,7 @@ class BaseKernel(nn.Module):
             prod_kernel.kernel_list.append(self)
             prod_kernel.config['comp_0'] = self.config  # type: ignore
             prod_kernel.kernel_list.append(other)
-            prod_kernel.config['comp_1'] = other.detach().cpu().numpy()  # type: ignore
+            prod_kernel.config['comp_1'] = other.detach().cpu().item()  # type: ignore
             return prod_kernel
         else:
             raise ValueError('Kernels can only be multiplied by another kernel or a constant.')
@@ -251,7 +251,8 @@ class SumKernel(BaseKernel):
                 if isinstance(self.kernel_list[i], BaseKernel):
                     self.config['comp_' + str(i)] = self.kernel_list[i].config  # type: ignore
                 elif isinstance(self.kernel_list[i], torch.Tensor):
-                    self.config['comp_' + str(i)] = self.kernel_list[i].detach().cpu().numpy()  # type: ignore
+                    self.config['comp_' + str(i)] = \
+                        self.kernel_list[i].detach().cpu().item()  # type: ignore
                 else:
                     raise ValueError(str(type(self.kernel_list[i])) + 'is not supported by SumKernel.')
 
@@ -279,14 +280,14 @@ class SumKernel(BaseKernel):
                 if isinstance(k, BaseKernel):
                     self.config['comp_' + str(kernel_count)] = k.config
                 elif isinstance(k, torch.Tensor):
-                    self.config['comp_' + str(kernel_count)] = k.detach().cpu().numpy()
+                    self.config['comp_' + str(kernel_count)] = k.detach().cpu().item()
                 kernel_count += 1
         elif isinstance(other, BaseKernel):
             self.kernel_list.append(other)
             self.config['comp_' + str(kernel_count)] = other.config
         elif isinstance(other, torch.Tensor):
             self.kernel_list.append(other)
-            self.config['comp_' + str(kernel_count)] = other.detach().cpu().numpy()
+            self.config['comp_' + str(kernel_count)] = other.detach().cpu().item()
         else:
             raise ValueError(type(other) + 'is not supported by SumKernel.')
         return self
@@ -375,7 +376,8 @@ class ProductKernel(BaseKernel):
                 if isinstance(self.kernel_list[i], BaseKernel):
                     self.config['comp_' + str(i)] = self.kernel_list[i].config  # type: ignore
                 elif isinstance(self.kernel_list[i], torch.Tensor):
-                    self.config['comp_' + str(i)] = self.kernel_list[i].detach().cpu().numpy()  # type: ignore
+                    self.config['comp_' + str(i)] = \
+                        self.kernel_list[i].detach().cpu().item()  # type: ignore
                 else:
                     raise ValueError(str(type(self.kernel_list[i])) + 'is not supported by ProductKernel.')
 
@@ -412,7 +414,7 @@ class ProductKernel(BaseKernel):
             sum_kernel.kernel_list.append(self)
             sum_kernel.config['comp_0'] = self.config
             sum_kernel.kernel_list.append(other)
-            sum_kernel.config['comp_1'] = other.detach().cpu().numpy()
+            sum_kernel.config['comp_1'] = other.detach().cpu().item()
             return sum_kernel
         else:
             raise ValueError(type(other) + 'is not supported by ProductKernel.')
@@ -447,7 +449,7 @@ class ProductKernel(BaseKernel):
             return self
         elif isinstance(other, torch.Tensor):
             self.kernel_list.append(other)
-            self.config['comp_' + str(len(self.kernel_list))] = other.detach().cpu().numpy()  # type: ignore
+            self.config['comp_' + str(len(self.kernel_list))] = other.detach().cpu().item()  # type: ignore
             return self
         else:
             raise ValueError(type(other) + 'is not supported by ProductKernel.')
@@ -943,5 +945,5 @@ def fill_composite_config(config: dict) -> dict:
                 isinstance(k_config, np.float32) or isinstance(k_config, np.float64):
             final_config['kernel_list'].append(torch.tensor(np.array(k_config)))
         else:
-            raise ValueError('Unknown kernel type.')
+            raise ValueError('Unknown component type.')
     return final_config

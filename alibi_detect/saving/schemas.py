@@ -511,6 +511,11 @@ class PeriodicKernelConfig(CustomBaseModelWithKwargs):
 
 
 class CompositeKernelConfig(CustomBaseModelWithKwargs):
+    """
+    Unresolved schema for composite kernels, to be passed to a detector's `kernel` kwarg.
+    HEre only the src, kernel_type and flavour fields are checked. The kernels within kernel list will be
+    checked sperately.
+    """
     src: str
 
     kernel_type: Literal['Sum', 'Product']
@@ -554,14 +559,14 @@ class DeepKernelConfig(CustomBaseModel):
     The projection to be applied to the inputs before applying `kernel_a`. This should be a Tensorflow or PyTorch
     model, specified as an object registry reference, or a :class:`~alibi_detect.utils.schemas.ModelConfig`.
     """
-    kernel_a: Union[str, RBFKernelConfig, RationalQuadraticKernelConfig, PeriodicKernelConfig]\
+    kernel_a: Union[str, RBFKernelConfig, RationalQuadraticKernelConfig, PeriodicKernelConfig, CompositeKernelConfig]\
         = "@utils.tensorflow.kernels.GaussianRBF"
     """
     The kernel to apply to the projected inputs. Defaults to a
     :class:`~alibi_detect.utils.tensorflow.kernels.GaussianRBF` with trainable bandwidth.
     """
-    kernel_b: Optional[Union[str, RBFKernelConfig, RationalQuadraticKernelConfig, PeriodicKernelConfig]]\
-        = "@utils.tensorflow.kernels.GaussianRBF"
+    kernel_b: Optional[Union[str, RBFKernelConfig, RationalQuadraticKernelConfig, PeriodicKernelConfig,
+                             CompositeKernelConfig]] = "@utils.tensorflow.kernels.GaussianRBF"
     """
     The kernel to apply to the raw inputs. Defaults to a :class:`~alibi_detect.utils.tensorflow.kernels.GaussianRBF`
     with trainable bandwidth. Set to `None` in order to use only the deep component (i.e. `eps=0`).
@@ -827,7 +832,8 @@ class MMDDriftConfig(DriftDetectorConfig):
     p_val: float = .05
     preprocess_at_init: bool = True
     update_x_ref: Optional[Dict[str, int]] = None
-    kernel: Optional[Union[str, RBFKernelConfig, RationalQuadraticKernelConfig, PeriodicKernelConfig]] = None
+    kernel: Optional[Union[str, RBFKernelConfig, RationalQuadraticKernelConfig,
+                           PeriodicKernelConfig, CompositeKernelConfig]] = None
     configure_kernel_from_x_ref: bool = True
     n_permutations: int = 100
     batch_size_permutations: int = 1000000
@@ -987,7 +993,8 @@ class SpotTheDiffDriftConfig(DriftDetectorConfig):
     verbose: int = 0
     train_kwargs: Optional[dict] = None
     dataset: Optional[str] = None
-    kernel: Optional[Union[str, RBFKernelConfig, RationalQuadraticKernelConfig, PeriodicKernelConfig]] = None
+    kernel: Optional[Union[str, RBFKernelConfig, RationalQuadraticKernelConfig,
+                           PeriodicKernelConfig, CompositeKernelConfig]] = None
     n_diffs: int = 1
     initial_diffs: Optional[str] = None
     l1_reg: float = 0.01
@@ -1107,8 +1114,10 @@ class ContextMMDDriftConfig(DriftDetectorConfig):
     c_ref: str
     preprocess_at_init: bool = True
     update_ref: Optional[Dict[str, int]] = None
-    x_kernel: Optional[Union[str, RBFKernelConfig, RationalQuadraticKernelConfig, PeriodicKernelConfig]] = None
-    c_kernel: Optional[Union[str, RBFKernelConfig, RationalQuadraticKernelConfig, PeriodicKernelConfig]] = None
+    x_kernel: Optional[Union[str, RBFKernelConfig, RationalQuadraticKernelConfig,
+                             PeriodicKernelConfig, CompositeKernelConfig]] = None
+    c_kernel: Optional[Union[str, RBFKernelConfig, RationalQuadraticKernelConfig,
+                             PeriodicKernelConfig, CompositeKernelConfig]] = None
     n_permutations: int = 100
     prop_c_held: float = 0.25
     n_folds: int = 5
@@ -1152,7 +1161,8 @@ class MMDDriftOnlineConfig(DriftDetectorConfig):
     backend: Literal['tensorflow', 'pytorch'] = 'tensorflow'
     ert: float
     window_size: int
-    kernel: Optional[Union[str, RBFKernelConfig, RationalQuadraticKernelConfig, PeriodicKernelConfig]] = None
+    kernel: Optional[Union[str, RBFKernelConfig, RationalQuadraticKernelConfig,
+                           PeriodicKernelConfig, CompositeKernelConfig]] = None
     n_bootstraps: int = 1000
     device: Optional[Literal['cpu', 'cuda']] = None
     verbose: bool = True

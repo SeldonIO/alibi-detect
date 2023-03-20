@@ -19,7 +19,8 @@ from alibi_detect.saving._sklearn import load_model_sk
 from alibi_detect.saving.validate import validate_config
 from alibi_detect.base import Detector, ConfigurableDetector
 from alibi_detect.utils.frameworks import has_tensorflow, has_pytorch, Framework
-from alibi_detect.saving.schemas import supported_models_tf, supported_models_torch
+from alibi_detect.saving.schemas import supported_models_tf, supported_models_torch, \
+    RBFKernelConfig, RationalQuadraticKernelConfig, PeriodicKernelConfig, CompositeKernelConfig
 from alibi_detect.utils.missing_optional_dependency import import_optional
 get_device = import_optional('alibi_detect.utils.pytorch.misc', names=['get_device'])
 
@@ -130,6 +131,13 @@ def _load_detector_config(filepath: Union[str, os.PathLike]) -> ConfigurableDete
 
     # Resolve and validate config
     cfg = validate_config(cfg)
+
+    # Validate unresolved composite kernels
+    if 'kernel' in cfg:
+        if isinstance(cfg['kernel'], dict):
+            if cfg['kernel']['kernel_type'] == 'Sum' or cfg['kernel']['kernel_type'] == 'Product':
+                cfg['kernel'] = _validate_composite_kernel_config(cfg['kernel'])
+
     logger.info('Validated unresolved config.')
     cfg = resolve_config(cfg, config_dir=config_dir)
     cfg = validate_config(cfg, resolved=True)
@@ -369,6 +377,8 @@ def _get_nested_value(dic: dict, keys: list) -> Any:
             dic = dic[key]
         except (TypeError, KeyError):
             return None
+        except IndexError:
+            return None  # only for scalar in composite kernels as it doesn't have any keys
     return dic
 
 
@@ -527,6 +537,41 @@ def resolve_config(cfg: dict, config_dir: Optional[Path]) -> dict:
             _set_nested_value(cfg, key, obj)
 
     return cfg
+
+
+def _validate_composite_kernel_config(cfg_kernel):
+    """
+    Validate composite kernel config.
+
+    Parameters
+    ----------
+    cfg_kernel
+        Composite kernel config.
+
+    Returns
+    -------
+    cfg_kernel
+        Validated composite kernel config.
+    """
+    cfg_kernel = CompositeKernelConfig(**cfg_kernel).dict()
+    comp_number = len(cfg_kernel) - 3
+    for i in range(comp_number):
+        if isinstance(cfg_kernel['comp_' + str(i)], dict):
+            if 'kernel_type' in cfg_kernel['comp_' + str(i)]:
+                if cfg_kernel['comp_' + str(i)]['kernel_type'] == 'Sum':
+                    cfg_kernel['comp_' + str(i)] = _validate_composite_kernel_config(cfg_kernel['comp_' + str(i)])
+                elif cfg_kernel['comp_' + str(i)]['kernel_type'] == 'Product':
+                    cfg_kernel['comp_' + str(i)] = _validate_composite_kernel_config(cfg_kernel['comp_' + str(i)])
+                elif cfg_kernel['comp_' + str(i)]['kernel_type'] == 'GaussianRBF':
+                    cfg_kernel['comp_' + str(i)] = RBFKernelConfig(**cfg_kernel['comp_' + str(i)]).dict()
+                elif cfg_kernel['comp_' + str(i)]['kernel_type'] == 'RationalQuadratic':
+                    cfg_kernel['comp_' + str(i)] = RationalQuadraticKernelConfig(**cfg_kernel['comp_' + str(i)]).dict()
+                elif cfg_kernel['comp_' + str(i)]['kernel_type'] == 'Periodic':
+                    cfg_kernel['comp_' + str(i)] = PeriodicKernelConfig(**cfg_kernel['comp_' + str(i)]).dict()
+                else:
+                    raise ValueError('Kernel type not supported.')
+    cfg_kernel = dict(sorted(cfg_kernel.items()))  # Sort dict to ensure order is consistent
+    return cfg_kernel
 
 
 def _get_composite_kernel_fields(cfg: dict) -> list:

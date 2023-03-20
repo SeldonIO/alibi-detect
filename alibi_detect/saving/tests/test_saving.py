@@ -38,12 +38,13 @@ from alibi_detect.models.tensorflow import TransformerEmbedding as TransformerEm
 from alibi_detect.saving import (load_detector, read_config, registry,
                                  resolve_config, save_detector, write_config)
 from alibi_detect.saving.loading import (_get_nested_value, _replace,
-                                         _set_dtypes, _set_nested_value, _prepend_cfg_filepaths)
+                                         _set_dtypes, _set_nested_value, _prepend_cfg_filepaths,
+                                         _validate_composite_kernel_config)
 from alibi_detect.saving.saving import _serialize_object
 from alibi_detect.saving.saving import (_path2str, _int2str_keys, _save_kernel_config, _save_model_config,
                                         _save_preprocess_config)
 from alibi_detect.saving.schemas import DeepKernelConfig, ModelConfig, PreprocessConfig, RBFKernelConfig,\
-    RationalQuadraticKernelConfig, PeriodicKernelConfig, CompositeKernelConfig
+    RationalQuadraticKernelConfig, PeriodicKernelConfig
 from alibi_detect.utils.pytorch.kernels import DeepKernel as DeepKernel_pt
 from alibi_detect.utils.tensorflow.kernels import DeepKernel as DeepKernel_tf
 
@@ -196,6 +197,10 @@ def test_save_cvmdrift(data, preprocess_custom, tmp_path):
         {'kernel_type': 'GaussianRBF', 'sigma': 0.5, 'trainable': False},  # pass kernel as object
         {'kernel_type': 'RationalQuadratic', 'sigma': 0.5, 'alpha': 4.0, 'trainable': False},
         {'kernel_type': 'Periodic', 'sigma': 0.5, 'tau': 2.0, 'trainable': False},
+        {'kernel_type': 'Sum',
+         'comp_1': {'kernel_type': 'GaussianRBF', 'sigma': 0.5, 'trainable': False, 'init_sigma_fn': None},
+         'comp_2': {'kernel_type': 'GaussianRBF', 'sigma': 1.0, 'trainable': False, 'init_sigma_fn': None},
+         'comp_3': 0.5}
     ], indirect=True
 )
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
@@ -236,8 +241,9 @@ def test_save_mmddrift(data, kernel, preprocess_custom, backend, tmp_path, seed)
     assert cd_load._detector.p_val == P_VAL
     assert isinstance(cd_load._detector.preprocess_fn, Callable)
     assert cd_load._detector.preprocess_fn.func.__name__ == 'preprocess_drift'
-    assert cd._detector.kernel.sigma == cd_load._detector.kernel.sigma
-    assert cd._detector.kernel.init_sigma_fn == cd_load._detector.kernel.init_sigma_fn
+    if hasattr(cd._detector.kernel, 'sigma'):
+        assert cd._detector.kernel.sigma == cd_load._detector.kernel.sigma
+        assert cd._detector.kernel.init_sigma_fn == cd_load._detector.kernel.init_sigma_fn
     assert preds['data']['p_val'] == preds_load['data']['p_val']
 
 
@@ -933,10 +939,16 @@ def test_save_kernel(kernel, backend, tmp_path):  # noqa: F811
         {'kernel_type': 'Sum',
          'comp_1': {'kernel_type': 'GaussianRBF', 'sigma': 0.5, 'trainable': False, 'init_sigma_fn': None},
          'comp_2': {'kernel_type': 'GaussianRBF', 'sigma': 1.0, 'trainable': False, 'init_sigma_fn': None},
-         'comp_3': 0.5},
+         'comp_3': 0.01},
         {'kernel_type': 'Product',
          'comp_1': {'kernel_type': 'GaussianRBF', 'sigma': 0.5, 'trainable': False, 'init_sigma_fn': None},
          'comp_2': {'kernel_type': 'GaussianRBF', 'sigma': 1.0, 'trainable': False, 'init_sigma_fn': None}},
+        {'kernel_type': 'Product',
+         'comp_1': 0.5,
+         'comp_2': {'kernel_type': 'Sum',
+                    'comp_1': {'kernel_type': 'GaussianRBF', 'sigma': 0.5, 'trainable': False, 'init_sigma_fn': None},
+                    'comp_2': {'kernel_type': 'GaussianRBF', 'sigma': 1.0, 'trainable': False, 'init_sigma_fn': None},
+                    'comp_3': 0.5}},
     ], indirect=True
 )
 def test_save_composite_kernel(kernel, backend, tmp_path):  # noqa: F811
@@ -951,10 +963,10 @@ def test_save_composite_kernel(kernel, backend, tmp_path):  # noqa: F811
     cfg_kernel = _save_kernel_config(kernel, filepath, filename)
     if kernel.__class__.__name__ == 'SumKernel':
         assert cfg_kernel['src'] == '@utils.' + backend + '.kernels.SumKernel'
-        cfg_kernel = validate_composite_kernel_config(cfg_kernel)  # Pass through validator to test
+        cfg_kernel = _validate_composite_kernel_config(cfg_kernel)  # Pass through validator to test
     elif kernel.__class__.__name__ == 'ProductKernel':
         assert cfg_kernel['src'] == '@utils.' + backend + '.kernels.ProductKernel'
-        cfg_kernel = validate_composite_kernel_config(cfg_kernel)  # Pass through validator to test
+        cfg_kernel = _validate_composite_kernel_config(cfg_kernel)  # Pass through validator to test
     else:
         assert Path(cfg_kernel['src']).suffix == '.dill'
 
@@ -998,28 +1010,6 @@ def test_save_composite_kernel(kernel, backend, tmp_path):  # noqa: F811
             for tmp_key in kernel.kernel_list[i].parameter_dict.keys():
                 assert kernel_loaded.kernel_list[i].parameter_dict[tmp_key].init_fn == \
                        kernel.kernel_list[i].parameter_dict[tmp_key].init_fn
-
-
-def validate_composite_kernel_config(cfg_kernel):
-    cfg_kernel = CompositeKernelConfig(**cfg_kernel).dict()
-    comp_number = len(cfg_kernel) - 3
-    for i in range(comp_number):
-        if isinstance(cfg_kernel['comp_' + str(i)], dict):
-            if 'kernel_type' in cfg_kernel['comp_' + str(i)]:
-                if cfg_kernel['comp_' + str(i)]['kernel_type'] == 'Sum':
-                    cfg_kernel['comp_' + str(i)] = validate_composite_kernel_config(cfg_kernel['comp_' + str(i)])
-                elif cfg_kernel['comp_' + str(i)]['kernel_type'] == 'Product':
-                    cfg_kernel['comp_' + str(i)] = validate_composite_kernel_config(cfg_kernel['comp_' + str(i)])
-                elif cfg_kernel['comp_' + str(i)]['kernel_type'] == 'GaussianRBF':
-                    cfg_kernel['comp_' + str(i)] = RBFKernelConfig(**cfg_kernel['comp_' + str(i)]).dict()
-                elif cfg_kernel['comp_' + str(i)]['kernel_type'] == 'RationalQuadratic':
-                    cfg_kernel['comp_' + str(i)] = RationalQuadraticKernelConfig(**cfg_kernel['comp_' + str(i)]).dict()
-                elif cfg_kernel['comp_' + str(i)]['kernel_type'] == 'Periodic':
-                    cfg_kernel['comp_' + str(i)] = PeriodicKernelConfig(**cfg_kernel['comp_' + str(i)]).dict()
-                else:
-                    raise ValueError('Kernel type not supported.')
-    cfg_kernel = dict(sorted(cfg_kernel.items()))  # Sort dict to ensure order is consistent
-    return cfg_kernel
 
 
 # `data` passed below as needed in encoder_model, which is used in deep_kernel
