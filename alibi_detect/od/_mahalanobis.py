@@ -28,7 +28,8 @@ class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
         backend: Literal['pytorch'] = 'pytorch',
         device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
     ) -> None:
-        """The Mahalanobis outlier detection method.
+        """
+        The Mahalanobis outlier detection method.
 
         The Mahalanobis method computes the covariance matrix of a reference dataset passed in the `fit` method. It
         then saves the eigenvectors of this matrix with eigenvalues greater than `min_eigenvalue`. While doing so
