@@ -162,9 +162,6 @@ class KNN(BaseDetector, FitMixin, ThresholdMixin):
         ------
         ValueError
             Raised if `fpr` is not in ``(0, 1)``.
-
-        Raises
-        ------
         NotFittedError
             If called before detector has been fit.
 
