@@ -85,29 +85,29 @@ class MahalanobisTorch(TorchOutlierDetector):
         self._compute_linear_pcs(self.x_ref)
         self.set_fitted()
 
-    def _compute_linear_pcs(self, X: torch.Tensor):
+    def _compute_linear_pcs(self, x: torch.Tensor):
         """Computes the principle components of the data.
 
         Parameters
         ----------
-        X
+        x
             The reference dataset.
         """
-        self.means = X.mean(0)
-        X = X - self.means
-        cov_mat = (X.t() @ X)/(len(X)-1)
+        self.means = x.mean(0)
+        x = x - self.means
+        cov_mat = (x.t() @ x)/(len(x)-1)
         D, V = torch.linalg.eigh(cov_mat)
         non_zero_inds = D > self.min_eigenvalue
         self.pcs = V[:, non_zero_inds] / D[None,  non_zero_inds].sqrt()
 
-    def _compute_linear_proj(self, X: torch.Tensor) -> torch.Tensor:
+    def _compute_linear_proj(self, x: torch.Tensor) -> torch.Tensor:
         """Projects the data point being tested onto the principle components.
 
         Parameters
         ----------
-        X
+        x
             The data point being tested.
         """
-        X_cen = X - self.means
-        X_proj = X_cen @ self.pcs
-        return X_proj
+        x_cen = x - self.means
+        x_proj = x_cen @ self.pcs
+        return x_proj
