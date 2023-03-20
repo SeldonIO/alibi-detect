@@ -9,7 +9,7 @@ from alibi_detect.exceptions import NotFittedError, ThresholdNotInferredError
 def test_mahalanobis_linear_scoring():
     """Test Mahalanobis detector linear scoring method.
 
-    Test that the Mahalanobis detector _compute_linear_proj method correctly whitens the x_ref data
+    Test that the Mahalanobis detector `_compute_linear_proj` method correctly whitens the x_ref data
     and that the score method correctly orders different test points. Test that the detector correctly
     detects true outliers and that the correct proportion of in distribution data is flagged as
     outliers.
