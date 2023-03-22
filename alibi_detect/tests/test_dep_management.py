@@ -113,11 +113,31 @@ def test_od_dependencies(opt_dep):
             ('OutlierAE', ['tensorflow']),
             ('OutlierAEGMM', ['tensorflow']),
             ('OutlierSeq2Seq', ['tensorflow']),
-            ("OutlierProphet", ['prophet'])
+            ("OutlierProphet", ['prophet']),
+            ('PValNormalizer', ['torch', 'keops']),
+            ('ShiftAndScaleNormalizer', ['torch', 'keops']),
+            ('TopKAggregator', ['torch', 'keops']),
+            ('AverageAggregator', ['torch', 'keops']),
+            ('MaxAggregator', ['torch', 'keops']),
+            ('MinAggregator', ['torch', 'keops']),
             ]:
         dependency_map[dependency] = relations
     from alibi_detect import od
     check_correct_dependencies(od, dependency_map, opt_dep)
+
+
+def test_od_backend_dependencies(opt_dep):
+    """Tests that the od module correctly protects against uninstalled optional dependencies.
+    """
+    dependency_map = defaultdict(lambda: ['default'])
+    for dependency, relations in [
+            ('Ensembler', ['torch', 'keops']),
+            ('KNNTorch', ['torch', 'keops']),
+            ('to_numpy', ['torch', 'keops']),
+            ]:
+        dependency_map[dependency] = relations
+    from alibi_detect.od import pytorch as od_pt_backend
+    check_correct_dependencies(od_pt_backend, dependency_map, opt_dep)
 
 
 def test_tensorflow_model_dependencies(opt_dep):

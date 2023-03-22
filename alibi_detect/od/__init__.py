@@ -4,6 +4,7 @@ from .isolationforest import IForest
 from .mahalanobis import Mahalanobis
 from .sr import SpectralResidual
 
+
 OutlierAEGMM = import_optional('alibi_detect.od.aegmm', names=['OutlierAEGMM'])
 OutlierAE = import_optional('alibi_detect.od.ae', names=['OutlierAE'])
 OutlierVAE = import_optional('alibi_detect.od.vae', names=['OutlierVAE'])
@@ -22,5 +23,5 @@ __all__ = [
     "OutlierSeq2Seq",
     "SpectralResidual",
     "LLR",
-    "OutlierProphet"
+    "OutlierProphet",
 ]
