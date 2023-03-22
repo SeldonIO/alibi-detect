@@ -1,8 +1,9 @@
 """Define the Alibi Detect exception hierarchy and common exceptions used across the library."""
-from typing_extensions import Literal
-from typing import Callable
 from abc import ABC
 from functools import wraps
+from typing import Callable
+
+from typing_extensions import Literal
 
 
 class AlibiDetectException(Exception, ABC):

@@ -1,10 +1,10 @@
 import pytest
 import torch
 
+from alibi_detect.exceptions import NotFittedError, ThresholdNotInferredError
+from alibi_detect.od.pytorch.ensemble import AverageAggregator, Ensembler, PValNormalizer
 from alibi_detect.od.pytorch.knn import KNNTorch
 from alibi_detect.utils.pytorch.kernels import GaussianRBF
-from alibi_detect.od.pytorch.ensemble import Ensembler, PValNormalizer, AverageAggregator
-from alibi_detect.exceptions import NotFittedError, ThresholdNotInferredError
 
 
 @pytest.fixture(scope='function')

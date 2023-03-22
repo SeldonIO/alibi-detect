@@ -1,10 +1,10 @@
-from typing import Optional, Union, List, Tuple
+from typing import List, Optional, Tuple, Union
 
 import numpy as np
 import torch
 
-from alibi_detect.od.pytorch.ensemble import Ensembler
 from alibi_detect.od.pytorch.base import TorchOutlierDetector
+from alibi_detect.od.pytorch.ensemble import Ensembler
 
 
 class KNNTorch(TorchOutlierDetector):

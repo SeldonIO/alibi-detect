@@ -1,13 +1,12 @@
-import pytest
 import numpy as np
+import pytest
 import torch
-
-from alibi_detect.od._knn import KNN
-from alibi_detect.od.pytorch.ensemble import AverageAggregator, TopKAggregator, MaxAggregator, \
-    MinAggregator, ShiftAndScaleNormalizer, PValNormalizer
-from alibi_detect.exceptions import NotFittedError, ThresholdNotInferredError
-
 from sklearn.datasets import make_moons
+
+from alibi_detect.exceptions import NotFittedError, ThresholdNotInferredError
+from alibi_detect.od._knn import KNN
+from alibi_detect.od.pytorch.ensemble import (AverageAggregator, MaxAggregator, MinAggregator, PValNormalizer,
+                                              ShiftAndScaleNormalizer, TopKAggregator)
 
 
 def make_knn_detector(k=5, aggregator=None, normalizer=None):

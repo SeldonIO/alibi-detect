@@ -1,10 +1,10 @@
 from abc import ABC, abstractmethod
 from typing import Optional
-from typing_extensions import Self
 
-import torch
 import numpy as np
+import torch
 from torch.nn import Module
+from typing_extensions import Self
 
 from alibi_detect.exceptions import NotFittedError
 

@@ -1,13 +1,13 @@
-from typing import List, Union, Optional, Dict
-from dataclasses import dataclass, asdict
 from abc import ABC, abstractmethod
+from dataclasses import asdict, dataclass
+from typing import Dict, List, Optional, Union
 
 import numpy as np
 import torch
 
+from alibi_detect.exceptions import ThresholdNotInferredError
 from alibi_detect.od.pytorch.ensemble import FitMixinTorch
 from alibi_detect.utils.pytorch.misc import get_device
-from alibi_detect.exceptions import ThresholdNotInferredError
 
 
 @dataclass

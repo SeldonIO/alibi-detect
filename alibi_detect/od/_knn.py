@@ -1,18 +1,15 @@
-from typing import Callable, Union, Optional, Dict, Any, List, Tuple
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
-
 from typing_extensions import Literal
-from alibi_detect.base import outlier_prediction_dict
+
+from alibi_detect.base import BaseDetector, FitMixin, ThresholdMixin, outlier_prediction_dict
 from alibi_detect.exceptions import _catch_error as catch_error
-from alibi_detect.od.base import TransformProtocol, TransformProtocolType
-from alibi_detect.base import BaseDetector, FitMixin, ThresholdMixin
-from alibi_detect.od.pytorch import KNNTorch, Ensembler
-from alibi_detect.od.base import get_aggregator, get_normalizer, NormalizerLiterals, AggregatorLiterals
+from alibi_detect.od.base import (AggregatorLiterals, NormalizerLiterals, TransformProtocol, TransformProtocolType,
+                                  get_aggregator, get_normalizer)
+from alibi_detect.od.pytorch import Ensembler, KNNTorch
 from alibi_detect.utils.frameworks import BackendValidator
 from alibi_detect.version import __version__
-
 
 if TYPE_CHECKING:
     import torch

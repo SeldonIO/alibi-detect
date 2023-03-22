@@ -1,8 +1,8 @@
 import pytest
 import torch
 
-from alibi_detect.od.pytorch import ensemble
 from alibi_detect.exceptions import NotFittedError
+from alibi_detect.od.pytorch import ensemble
 
 
 def test_pval_normalizer():
