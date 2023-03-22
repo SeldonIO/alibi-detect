@@ -14,6 +14,7 @@ class TransformProtocol(Protocol):
     objects that map between `torch` tensors. This protocol models the interface of the `BaseTransformTorch`
     class.
     """
+
     def transform(self, x):
         pass
 
@@ -24,7 +25,9 @@ class FittedTransformProtocol(TransformProtocol, Protocol):
 
     This protocol models the joint interface of the :py:obj:`~alibi_detect.od.pytorch.ensemble.BaseTransformTorch`
     class and the :py:obj:`~alibi_detect.od.pytorch.ensemble.FitMixinTorch` class. These objects are transforms that
-    require to be fit."""
+    require to be fit.
+    """
+
     def fit(self, x_ref):
         pass
 

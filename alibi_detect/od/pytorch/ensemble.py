@@ -108,7 +108,7 @@ class PValNormalizer(BaseTransformTorch, FitMixinTorch):
         """
         self.check_fitted()
         less_than_val_scores = scores[:, None, :] < self.val_scores[None, :, :]
-        p_vals = (1 + less_than_val_scores.sum(1))/(len(self.val_scores) + 1)
+        p_vals = (1 + less_than_val_scores.sum(1)) / (len(self.val_scores) + 1)
         return 1 - p_vals
 
 
@@ -148,7 +148,7 @@ class ShiftAndScaleNormalizer(BaseTransformTorch, FitMixinTorch):
         `Torch.Tensor` of normalized scores.
         """
         self.check_fitted()
-        return (scores - self.val_means)/self.val_scales
+        return (scores - self.val_means) / self.val_scales
 
 
 class TopKAggregator(BaseTransformTorch):
@@ -177,7 +177,7 @@ class TopKAggregator(BaseTransformTorch):
         `Torch.Tensor` of mean of top `k` scores.
         """
         if self.k is None:
-            self.k = int(np.ceil(scores.shape[1]/2))
+            self.k = int(np.ceil(scores.shape[1] / 2))
         sorted_scores, _ = torch.sort(scores, 1)
         return sorted_scores[:, -self.k:].mean(-1)
 
@@ -217,7 +217,7 @@ class AverageAggregator(BaseTransformTorch):
         """
         if self.weights is None:
             m = scores.shape[-1]
-            self.weights = torch.ones(m, device=scores.device)/m
+            self.weights = torch.ones(m, device=scores.device) / m
         return scores @ self.weights
 
 

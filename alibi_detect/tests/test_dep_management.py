@@ -127,8 +127,7 @@ def test_od_dependencies(opt_dep):
 
 
 def test_od_backend_dependencies(opt_dep):
-    """Tests that the od module correctly protects against uninstalled optional dependencies.
-    """
+    """Tests that the od module correctly protects against uninstalled optional dependencies."""
     dependency_map = defaultdict(lambda: ['default'])
     for dependency, relations in [
             ('Ensembler', ['torch', 'keops']),

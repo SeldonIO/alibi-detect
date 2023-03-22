@@ -82,7 +82,6 @@ def test_fitted_knn_predict():
     and label outliers, as well as return the p-values using the predict method. Also Check
     that the score method gives the same results.
     """
-
     knn_detector = make_knn_detector(k=10)
     x_ref = np.random.randn(100, 2)
     knn_detector.infer_threshold(x_ref, 0.1)
@@ -199,7 +198,6 @@ def test_knn_ensemble_integration(aggregator, normalizer):
     Fits and infers thresholds in each case. Verifies that the detector can correctly detect inliers
     and outliers and that it can be serialized using the torchscript.
     """
-
     knn_detector = KNN(
         k=[10, 14, 18],
         aggregator=aggregator(),

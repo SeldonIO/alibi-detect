@@ -1,4 +1,4 @@
-"""This module defines the Alibi Detect exception hierarchy and common exceptions used across the library."""
+"""Define the Alibi Detect exception hierarchy and common exceptions used across the library."""
 from typing_extensions import Literal
 from typing import Callable
 from abc import ABC
@@ -23,7 +23,7 @@ class NotFittedError(AlibiDetectException):
 
         Parameters
         ----------
-        message
+        object_name
             The name of the unfit object.
         """
         message = f'{object_name} has not been fit!'
@@ -36,7 +36,7 @@ class ThresholdNotInferredError(AlibiDetectException):
 
         Parameters
         ----------
-        message
+        object_name
             The name of the object that does not have a threshold fit.
         """
         message = f'{object_name} has no threshold set, call `infer_threshold` to fit one!'

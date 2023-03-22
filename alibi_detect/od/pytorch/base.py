@@ -13,6 +13,7 @@ from alibi_detect.exceptions import ThresholdNotInferredError
 @dataclass
 class TorchOutlierDetectorOutput:
     """Output of the outlier detector."""
+
     threshold_inferred: bool
     instance_score: torch.Tensor
     threshold: Optional[torch.Tensor]
@@ -45,7 +46,6 @@ def to_numpy(x: Union[torch.Tensor, TorchOutlierDetectorOutput]):
     -------
     `np.ndarray` or dictionary of containing `numpy` arrays
     """
-
     return {
         'TorchOutlierDetectorOutput': lambda x: x.to_numpy(),
         'Tensor': lambda x: x.cpu().detach().numpy()
@@ -57,6 +57,7 @@ def to_numpy(x: Union[torch.Tensor, TorchOutlierDetectorOutput]):
 
 class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
     """Base class for torch backend outlier detection algorithms."""
+
     threshold_inferred = False
     threshold = None
 
@@ -89,7 +90,7 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
             raise ThresholdNotInferredError(self.__class__.__name__)
 
     @staticmethod
-    def _to_numpy(arg: Union[torch.Tensor, TorchOutlierDetectorOutput]) -> Union[np.ndarray, Dict]:
+    def _to_numpy(x: Union[torch.Tensor, TorchOutlierDetectorOutput]) -> Union[np.ndarray, Dict]:
         """Converts any `torch` tensors found in input to `numpy` arrays.
 
         Takes a `torch` tensor or `TorchOutlierDetectorOutput` and converts any `torch` tensors found to `numpy` arrays
@@ -103,7 +104,7 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
         -------
         `np.ndarray` or dictionary of containing `numpy` arrays
         """
-        return to_numpy(arg)
+        return to_numpy(x)
 
     def _to_tensor(self, x: Union[List, np.ndarray]) -> torch.Tensor:
         """Converts the data to a tensor.
@@ -174,7 +175,7 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
         -------
         `torch.Tensor` or ``None``
         """
-        return (1 + (scores[:, None] < self.val_scores).sum(-1))/len(self.val_scores) \
+        return (1 + (scores[:, None] < self.val_scores).sum(-1)) / len(self.val_scores) \
             if self.threshold_inferred else None
 
     def infer_threshold(self, x: torch.Tensor, fpr: float):
@@ -196,12 +197,12 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
         """
         if not 0 < fpr < 1:
             raise ValueError('`fpr` must be in `(0, 1)`.')
-        if fpr < 1/len(x):
+        if fpr < 1 / len(x):
             raise ValueError(f'`fpr` must be greater than `1/len(x)={1/len(x)}`.')
         self.val_scores = self.score(x)
         if self.ensemble:
             self.val_scores = self.ensembler.fit(self.val_scores).transform(self.val_scores)  # type: ignore
-        self.threshold = torch.quantile(self.val_scores, 1-fpr, interpolation='higher')
+        self.threshold = torch.quantile(self.val_scores, 1 - fpr, interpolation='higher')
         self.threshold_inferred = True
 
     def predict(self, x: torch.Tensor) -> TorchOutlierDetectorOutput:

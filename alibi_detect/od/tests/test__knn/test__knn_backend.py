@@ -20,7 +20,6 @@ def test_knn_torch_backend():
     Test the knn torch backend can be correctly initialized, fit and used to
     predict outliers.
     """
-
     knn_torch = KNNTorch(k=5)
     x = torch.randn((3, 10)) * torch.tensor([[1], [1], [100]])
     x_ref = torch.randn((1024, 10))
@@ -43,7 +42,6 @@ def test_knn_torch_backend_ensemble(ensembler):
     Test the knn torch backend can be correctly initialized as an ensemble, fit
     on data and used to predict outliers.
     """
-
     knn_torch = KNNTorch(k=[4, 5], ensembler=ensembler)
     x_ref = torch.randn((1024, 10))
     knn_torch.fit(x_ref)
@@ -59,7 +57,6 @@ def test_knn_torch_backend_ensemble_ts(tmp_path, ensembler):
     Test the knn torch backend can be initalized as an ensemble and
     torchscripted, as well as saved and loaded to and from disk.
     """
-
     knn_torch = KNNTorch(k=[4, 5], ensembler=ensembler)
     x = torch.randn((3, 10)) * torch.tensor([[1], [1], [100]])
     x_ref = torch.randn((1024, 10))
@@ -81,7 +78,6 @@ def test_knn_torch_backend_ts(tmp_path):
     Test the knn torch backend can be initalized and torchscripted, as well as
     saved and loaded to and from disk.
     """
-
     knn_torch = KNNTorch(k=7)
     x = torch.randn((3, 10)) * torch.tensor([[1], [1], [100]])
     x_ref = torch.randn((1024, 10))
@@ -103,7 +99,6 @@ def test_knn_kernel(ensembler):
     Test the knn torch backend can be correctly initialized with a kernel, fit
     on data and used to predict outliers.
     """
-
     kernel = GaussianRBF(sigma=torch.tensor((0.25)))
     knn_torch = KNNTorch(k=[4, 5], kernel=kernel, ensembler=ensembler)
     x_ref = torch.randn((1024, 10))
@@ -121,7 +116,6 @@ def test_knn_kernel_ts(ensembler):
     Test the knn torch backend can be correctly initialized with a kernel,
     and torchscripted, as well as saved and loaded to and from disk.
     """
-
     kernel = GaussianRBF(sigma=torch.tensor((0.25)))
     knn_torch = KNNTorch(k=[4, 5], kernel=kernel, ensembler=ensembler)
     x_ref = torch.randn((1024, 10))
@@ -208,7 +202,7 @@ def test_knn_infer_threshold_value_errors():
 
     # fpr must be greater than 1/len(x) otherwise it excludes all points in the reference dataset
     with pytest.raises(ValueError) as err:
-        knn_torch.infer_threshold(x, 1/1025)
+        knn_torch.infer_threshold(x, 1 / 1025)
     assert str(err.value) == '`fpr` must be greater than `1/len(x)=0.0009765625`.'
 
     # fpr must be between 0 and 1
@@ -217,4 +211,4 @@ def test_knn_infer_threshold_value_errors():
     assert str(err.value) == '`fpr` must be in `(0, 1)`.'
 
     knn_torch.infer_threshold(x, 0.99)
-    knn_torch.infer_threshold(x,  1/1023)
+    knn_torch.infer_threshold(x,  1 / 1023)
