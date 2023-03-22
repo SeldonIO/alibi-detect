@@ -19,8 +19,7 @@ from alibi_detect.saving._sklearn import load_model_sk
 from alibi_detect.saving.validate import validate_config
 from alibi_detect.base import Detector, ConfigurableDetector
 from alibi_detect.utils.frameworks import has_tensorflow, has_pytorch, Framework
-from alibi_detect.saving.schemas import supported_models_tf, supported_models_torch, \
-    RBFKernelConfig, RationalQuadraticKernelConfig, PeriodicKernelConfig, CompositeKernelConfig
+from alibi_detect.saving.schemas import supported_models_tf, supported_models_torch
 from alibi_detect.utils.missing_optional_dependency import import_optional
 get_device = import_optional('alibi_detect.utils.pytorch.misc', names=['get_device'])
 
@@ -131,12 +130,6 @@ def _load_detector_config(filepath: Union[str, os.PathLike]) -> ConfigurableDete
 
     # Resolve and validate config
     cfg = validate_config(cfg)
-
-    # Validate unresolved composite kernels
-    if 'kernel' in cfg:
-        if isinstance(cfg['kernel'], dict):
-            if cfg['kernel']['kernel_type'] == 'Sum' or cfg['kernel']['kernel_type'] == 'Product':
-                cfg['kernel'] = _validate_composite_kernel_config(cfg['kernel'])
 
     logger.info('Validated unresolved config.')
     cfg = resolve_config(cfg, config_dir=config_dir)
@@ -476,18 +469,11 @@ def resolve_config(cfg: dict, config_dir: Optional[Path]) -> dict:
     if config_dir is not None:
         _prepend_cfg_filepaths(cfg, config_dir)
 
-    # get additional fields to resolve for composite kernels
-    if 'kernel' in cfg:
-        if isinstance(cfg['kernel'], dict):
-            if (cfg['kernel']['kernel_type'] == 'Sum') or (cfg['kernel']['kernel_type'] == 'Product'):
-                composite_fields = _get_composite_kernel_fields(cfg['kernel'])
-                for field in composite_fields:
-                    field.insert(0, 'kernel')
-                loc = FIELDS_TO_RESOLVE.index(['kernel'])
-                FIELDS_TO_RESOLVE[loc:loc] = composite_fields
+    # get additional fields to resolve for composite kernels TODO make a private function for this part, get temp fields
+    FIELDS_TO_RESOLVE_TEMP = _add_composite_fields(cfg)
 
     # Resolve filepaths (load files) and resolve function/object registries
-    for key in FIELDS_TO_RESOLVE:
+    for key in FIELDS_TO_RESOLVE_TEMP:
         logger.info('Resolving config field: {}.'.format(key))
         src = _get_nested_value(cfg, key)
         obj = None
@@ -539,39 +525,31 @@ def resolve_config(cfg: dict, config_dir: Optional[Path]) -> dict:
     return cfg
 
 
-def _validate_composite_kernel_config(cfg_kernel):
+def _add_composite_fields(cfg):
     """
-    Validate composite kernel config.
+    Check if the cfg contains a composite kernel and add the fields to resolve.
 
     Parameters
     ----------
-    cfg_kernel
-        Composite kernel config.
+    cfg
+        Config dict.
 
     Returns
     -------
-    cfg_kernel
-        Validated composite kernel config.
+    FIELDS_TO_RESOLVE_TEMP
+        List of fields to resolve.
     """
-    cfg_kernel = CompositeKernelConfig(**cfg_kernel).dict()
-    comp_number = len(cfg_kernel) - 3
-    for i in range(comp_number):
-        if isinstance(cfg_kernel['comp_' + str(i)], dict):
-            if 'kernel_type' in cfg_kernel['comp_' + str(i)]:
-                if cfg_kernel['comp_' + str(i)]['kernel_type'] == 'Sum':
-                    cfg_kernel['comp_' + str(i)] = _validate_composite_kernel_config(cfg_kernel['comp_' + str(i)])
-                elif cfg_kernel['comp_' + str(i)]['kernel_type'] == 'Product':
-                    cfg_kernel['comp_' + str(i)] = _validate_composite_kernel_config(cfg_kernel['comp_' + str(i)])
-                elif cfg_kernel['comp_' + str(i)]['kernel_type'] == 'GaussianRBF':
-                    cfg_kernel['comp_' + str(i)] = RBFKernelConfig(**cfg_kernel['comp_' + str(i)]).dict()
-                elif cfg_kernel['comp_' + str(i)]['kernel_type'] == 'RationalQuadratic':
-                    cfg_kernel['comp_' + str(i)] = RationalQuadraticKernelConfig(**cfg_kernel['comp_' + str(i)]).dict()
-                elif cfg_kernel['comp_' + str(i)]['kernel_type'] == 'Periodic':
-                    cfg_kernel['comp_' + str(i)] = PeriodicKernelConfig(**cfg_kernel['comp_' + str(i)]).dict()
-                else:
-                    raise ValueError('Kernel type not supported.')
-    cfg_kernel = dict(sorted(cfg_kernel.items()))  # Sort dict to ensure order is consistent
-    return cfg_kernel
+    FIELDS_TO_RESOLVE_TEMP = FIELDS_TO_RESOLVE.copy()
+    if 'kernel' in cfg:
+        if isinstance(cfg['kernel'], dict):
+            if (cfg['kernel']['kernel_type'] == 'Sum') or (cfg['kernel']['kernel_type'] == 'Product'):
+                FIELDS_TO_RESOLVE_TEMP = FIELDS_TO_RESOLVE.copy()
+                composite_fields = _get_composite_kernel_fields(cfg['kernel'])
+                for field in composite_fields:
+                    field.insert(0, 'kernel')
+                loc = FIELDS_TO_RESOLVE_TEMP.index(['kernel'])
+                FIELDS_TO_RESOLVE_TEMP[loc:loc] = composite_fields
+    return FIELDS_TO_RESOLVE_TEMP
 
 
 def _get_composite_kernel_fields(cfg: dict) -> list:
@@ -590,24 +568,24 @@ def _get_composite_kernel_fields(cfg: dict) -> list:
     fields = []
     if 'kernel_type' in cfg:
         if (cfg['kernel_type'] == 'Sum') or (cfg['kernel_type'] == 'Product'):
-            kernel_number = len(cfg) - 3
+            kernel_number = len(cfg['kernel_list'])
             for i in range(kernel_number):
-                if isinstance(cfg['comp_{}'.format(i)], dict):
-                    if 'kernel_type' in cfg['comp_{}'.format(i)]:
-                        if (cfg['comp_{}'.format(i)]['kernel_type'] == 'Sum') or \
-                                (cfg['comp_{}'.format(i)]['kernel_type'] == 'Product'):
-                            fields.extend(_get_composite_kernel_fields(cfg['comp_{}'.format(i)]))
-                        elif cfg['comp_{}'.format(i)]['kernel_type'] == 'GaussianRBF':
-                            fields.append(['comp_{}'.format(i), 'src'])
-                            fields.append(['comp_{}'.format(i), 'init_sigma_fn'])
-                        elif cfg['comp_{}'.format(i)]['kernel_type'] == 'RationalQuadratic':
-                            fields.append(['comp_{}'.format(i), 'src'])
-                            fields.append(['comp_{}'.format(i), 'init_sigma_fn'])
-                            fields.append(['comp_{}'.format(i), 'init_alpha_fn'])
-                        elif cfg['comp_{}'.format(i)]['kernel_type'] == 'Period':
-                            fields.append(['comp_{}'.format(i), 'src'])
-                            fields.append(['comp_{}'.format(i), 'init_sigma_fn'])
-                            fields.append(['comp_{}'.format(i), 'init_tau_fn'])
+                if isinstance(cfg['kernel_list']['comp_{}'.format(i)], dict):
+                    if 'kernel_type' in cfg['kernel_list']['comp_{}'.format(i)]:
+                        if (cfg['kernel_list']['comp_{}'.format(i)]['kernel_type'] == 'Sum') or \
+                                (cfg['kernel_list']['comp_{}'.format(i)]['kernel_type'] == 'Product'):
+                            fields.extend(_get_composite_kernel_fields(cfg['kernel_list']['comp_{}'.format(i)]))
+                        elif cfg['kernel_list']['comp_{}'.format(i)]['kernel_type'] == 'GaussianRBF':
+                            fields.append(['kernel_list', 'comp_{}'.format(i), 'src'])
+                            fields.append(['kernel_list', 'comp_{}'.format(i), 'init_sigma_fn'])
+                        elif cfg['kernel_list']['comp_{}'.format(i)]['kernel_type'] == 'RationalQuadratic':
+                            fields.append(['kernel_list', 'comp_{}'.format(i), 'src'])
+                            fields.append(['kernel_list', 'comp_{}'.format(i), 'init_sigma_fn'])
+                            fields.append(['kernel_list', 'comp_{}'.format(i), 'init_alpha_fn'])
+                        elif cfg['kernel_list']['comp_{}'.format(i)]['kernel_type'] == 'Period':
+                            fields.append(['kernel_list', 'comp_{}'.format(i), 'src'])
+                            fields.append(['kernel_list', 'comp_{}'.format(i), 'init_sigma_fn'])
+                            fields.append(['kernel_list', 'comp_{}'.format(i), 'init_tau_fn'])
                         else:
                             raise ValueError('Unknown kernel type: {}'.format(cfg['comp_{}'.format(i)]['kernel_type']))
     return fields

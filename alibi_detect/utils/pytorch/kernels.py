@@ -156,21 +156,21 @@ class BaseKernel(nn.Module):
         if isinstance(other, SumKernel):
             kernel_count = len(other.kernel_list)
             other.kernel_list.append(self)
-            other.config['comp_' + str(kernel_count)] = self.config  # type: ignore
+            other.config['kernel_list']['comp_' + str(kernel_count)] = self.config  # type: ignore
             return other
         elif isinstance(other, (BaseKernel, ProductKernel)):
             sum_kernel = SumKernel()
             sum_kernel.kernel_list.append(self)
-            sum_kernel.config['comp_0'] = self.config  # type: ignore
+            sum_kernel.config['kernel_list']['comp_0'] = self.config  # type: ignore
             sum_kernel.kernel_list.append(other)
-            sum_kernel.config['comp_1'] = other.config  # type: ignore
+            sum_kernel.config['kernel_list']['comp_1'] = other.config  # type: ignore
             return sum_kernel
         elif isinstance(other, torch.Tensor):
             sum_kernel = SumKernel()
             sum_kernel.kernel_list.append(self)
-            sum_kernel.config['comp_0'] = self.config  # type: ignore
+            sum_kernel.config['kernel_list']['comp_0'] = self.config  # type: ignore
             sum_kernel.kernel_list.append(other)
-            sum_kernel.config['comp_1'] = other.detach().cpu().item()  # type: ignore
+            sum_kernel.config['kernel_list']['comp_1'] = other.detach().cpu().item()  # type: ignore
             return sum_kernel
         else:
             raise ValueError('Kernels can only added to another kernel or a constant.')
@@ -184,29 +184,29 @@ class BaseKernel(nn.Module):
     ) -> 'BaseKernel':
         if isinstance(other, ProductKernel):
             other.kernel_list.append(self)
-            other.config['comp_' + str(len(other.kernel_list))] = self.config  # type: ignore
+            other.config['kernel_list']['comp_' + str(len(other.kernel_list))] = self.config  # type: ignore
             return other
         elif isinstance(other, SumKernel):
             sum_kernel = SumKernel()
             kernel_count = 0
             for k in other.kernel_list:
                 sum_kernel.kernel_list.append(self * k)
-                sum_kernel.config['comp_' + str(kernel_count)] = self.config  # type: ignore
+                sum_kernel.config['kernel_list']['comp_' + str(kernel_count)] = self.config  # type: ignore
                 kernel_count += 1
             return sum_kernel
         elif isinstance(other, BaseKernel):
             prod_kernel = ProductKernel()
             prod_kernel.kernel_list.append(self)
-            prod_kernel.config['comp_0'] = self.config  # type: ignore
+            prod_kernel.config['kernel_list']['comp_0'] = self.config  # type: ignore
             prod_kernel.kernel_list.append(other)
-            prod_kernel.config['comp_1'] = other.config  # type: ignore
+            prod_kernel.config['kernel_list']['comp_1'] = other.config  # type: ignore
             return prod_kernel
         elif isinstance(other, torch.Tensor):
             prod_kernel = ProductKernel()
             prod_kernel.kernel_list.append(self)
-            prod_kernel.config['comp_0'] = self.config  # type: ignore
+            prod_kernel.config['kernel_list']['comp_0'] = self.config  # type: ignore
             prod_kernel.kernel_list.append(other)
-            prod_kernel.config['comp_1'] = other.detach().cpu().item()  # type: ignore
+            prod_kernel.config['kernel_list']['comp_1'] = other.detach().cpu().item()  # type: ignore
             return prod_kernel
         else:
             raise ValueError('Kernels can only be multiplied by another kernel or a constant.')
@@ -244,14 +244,14 @@ class SumKernel(BaseKernel):
         """
         super().__init__()
         self.kernel_list = []
-        self.config: dict = {'kernel_type': 'Sum'}
+        self.config: dict = {'kernel_type': 'Sum', 'kernel_list': {}}
         if kernel_list is not None:
             self.kernel_list = kernel_list
             for i in range(len(self.kernel_list)):
                 if isinstance(self.kernel_list[i], BaseKernel):
-                    self.config['comp_' + str(i)] = self.kernel_list[i].config  # type: ignore
+                    self.config['kernel_list']['comp_' + str(i)] = self.kernel_list[i].config  # type: ignore
                 elif isinstance(self.kernel_list[i], torch.Tensor):
-                    self.config['comp_' + str(i)] = \
+                    self.config['kernel_list']['comp_' + str(i)] = \
                         self.kernel_list[i].detach().cpu().item()  # type: ignore
                 else:
                     raise ValueError(str(type(self.kernel_list[i])) + 'is not supported by SumKernel.')
@@ -278,16 +278,16 @@ class SumKernel(BaseKernel):
             for k in other.kernel_list:
                 self.kernel_list.append(k)
                 if isinstance(k, BaseKernel):
-                    self.config['comp_' + str(kernel_count)] = k.config
+                    self.config['kernel_list']['comp_' + str(kernel_count)] = k.config
                 elif isinstance(k, torch.Tensor):
-                    self.config['comp_' + str(kernel_count)] = k.detach().cpu().item()
+                    self.config['kernel_list']['comp_' + str(kernel_count)] = k.detach().cpu().item()
                 kernel_count += 1
         elif isinstance(other, BaseKernel):
             self.kernel_list.append(other)
-            self.config['comp_' + str(kernel_count)] = other.config
+            self.config['kernel_list']['comp_' + str(kernel_count)] = other.config
         elif isinstance(other, torch.Tensor):
             self.kernel_list.append(other)
-            self.config['comp_' + str(kernel_count)] = other.detach().cpu().item()
+            self.config['kernel_list']['comp_' + str(kernel_count)] = other.detach().cpu().item()
         else:
             raise ValueError(type(other) + 'is not supported by SumKernel.')
         return self
@@ -304,7 +304,7 @@ class SumKernel(BaseKernel):
             for ki in self.kernel_list:
                 for kj in other.kernel_list:
                     sum_kernel.kernel_list.append((ki * kj))
-                    sum_kernel.config['comp_' + str(len(sum_kernel.kernel_list) - 1)] = \
+                    sum_kernel.config['kernel_list']['comp_' + str(len(sum_kernel.kernel_list) - 1)] = \
                         sum_kernel.kernel_list[-1].config  # type: ignore
             return sum_kernel
         elif isinstance(other, ProductKernel):
@@ -313,7 +313,7 @@ class SumKernel(BaseKernel):
             sum_kernel = SumKernel()
             for ki in self.kernel_list:
                 sum_kernel.kernel_list.append(other * ki)
-                sum_kernel.config['comp_' + str(len(sum_kernel.kernel_list) - 1)] = \
+                sum_kernel.config['kernel_list']['comp_' + str(len(sum_kernel.kernel_list) - 1)] = \
                     sum_kernel.kernel_list[-1].config  # type: ignore
             return sum_kernel
         else:
@@ -369,14 +369,14 @@ class ProductKernel(BaseKernel):
         """
         super().__init__()
         self.kernel_list = []
-        self.config: dict = {'kernel_type': 'Product'}
+        self.config: dict = {'kernel_type': 'Product', 'kernel_list': {}}
         if kernel_list is not None:
             self.kernel_list = kernel_list
             for i in range(len(self.kernel_list)):
                 if isinstance(self.kernel_list[i], BaseKernel):
-                    self.config['comp_' + str(i)] = self.kernel_list[i].config  # type: ignore
+                    self.config['kernel_list']['comp_' + str(i)] = self.kernel_list[i].config  # type: ignore
                 elif isinstance(self.kernel_list[i], torch.Tensor):
-                    self.config['comp_' + str(i)] = \
+                    self.config['kernel_list']['comp_' + str(i)] = \
                         self.kernel_list[i].detach().cpu().item()  # type: ignore
                 else:
                     raise ValueError(str(type(self.kernel_list[i])) + 'is not supported by ProductKernel.')
@@ -400,21 +400,21 @@ class ProductKernel(BaseKernel):
     ) -> 'SumKernel':
         if isinstance(other, SumKernel):
             other.kernel_list.append(self)
-            other.config['comp_' + str(len(other.kernel_list))] = self.config
+            other.config['kernel_list']['comp_' + str(len(other.kernel_list))] = self.config
             return other
         elif isinstance(other, ProductKernel) or isinstance(other, BaseKernel):
             sum_kernel = SumKernel()
             sum_kernel.kernel_list.append(self)
-            sum_kernel.config['comp_0'] = self.config
+            sum_kernel.config['kernel_list']['comp_0'] = self.config
             sum_kernel.kernel_list.append(other)
-            sum_kernel.config['comp_1'] = other.config
+            sum_kernel.config['kernel_list']['comp_1'] = other.config
             return sum_kernel
         elif isinstance(other, torch.Tensor):
             sum_kernel = SumKernel()
             sum_kernel.kernel_list.append(self)
-            sum_kernel.config['comp_0'] = self.config
+            sum_kernel.config['kernel_list']['comp_0'] = self.config
             sum_kernel.kernel_list.append(other)
-            sum_kernel.config['comp_1'] = other.detach().cpu().item()
+            sum_kernel.config['kernel_list']['comp_1'] = other.detach().cpu().item()
             return sum_kernel
         else:
             raise ValueError(type(other) + 'is not supported by ProductKernel.')
@@ -435,21 +435,22 @@ class ProductKernel(BaseKernel):
                 tmp_prod_kernel = deepcopy(self)
                 tmp_prod_kernel.kernel_list.append(k)
                 sum_kernel.kernel_list.append(tmp_prod_kernel)
-                sum_kernel.config['comp_' + str(len(sum_kernel.kernel_list))] = \
+                sum_kernel.config['kernel_list']['comp_' + str(len(sum_kernel.kernel_list))] = \
                     sum_kernel.kernel_list[-1].config  # type: ignore
             return sum_kernel
         elif isinstance(other, ProductKernel):
             for k in other.kernel_list:
                 self.kernel_list.append(k)
-                self.config['comp_' + str(len(self.kernel_list))] = k.config  # type: ignore
+                self.config['kernel_list']['comp_' + str(len(self.kernel_list))] = k.config  # type: ignore
             return self
         elif isinstance(other, BaseKernel):
             self.kernel_list.append(other)
-            self.config['comp_' + str(len(self.kernel_list))] = other.config  # type: ignore
+            self.config['kernel_list']['comp_' + str(len(self.kernel_list))] = other.config  # type: ignore
             return self
         elif isinstance(other, torch.Tensor):
             self.kernel_list.append(other)
-            self.config['comp_' + str(len(self.kernel_list))] = other.detach().cpu().item()  # type: ignore
+            self.config['kernel_list']['comp_' + str(len(self.kernel_list))] =\
+                other.detach().cpu().item()  # type: ignore
             return self
         else:
             raise ValueError(type(other) + 'is not supported by ProductKernel.')
@@ -926,7 +927,7 @@ class DeepKernel(BaseKernel):
 
 def fill_composite_config(config: dict) -> dict:
     final_config: dict = {'kernel_list': []}
-    for k_config in config.values():
+    for k_config in config['kernel_list'].values():
         if isinstance(k_config, dict):
             k_config.pop('src')
             if k_config['kernel_type'] == 'Sum':

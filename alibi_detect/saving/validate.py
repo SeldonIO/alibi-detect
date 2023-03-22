@@ -1,7 +1,8 @@
 import warnings
 
 from alibi_detect.saving.schemas import (  # type: ignore[attr-defined]
-    DETECTOR_CONFIGS, DETECTOR_CONFIGS_RESOLVED)
+    DETECTOR_CONFIGS, DETECTOR_CONFIGS_RESOLVED,
+    RBFKernelConfig, RationalQuadraticKernelConfig, PeriodicKernelConfig)
 from alibi_detect.version import __version__
 
 
@@ -54,3 +55,43 @@ def validate_config(cfg: dict, resolved: bool = False) -> dict:
         cfg['meta'].update({'version_warning': True})
 
     return cfg
+
+
+def validate_composite_kernel_config(cfg_kernel):
+    """
+    Validate composite kernel config.
+
+    Parameters
+    ----------
+    cfg_kernel
+        Composite kernel config.
+
+    Returns
+    -------
+    cfg_kernel
+        Validated composite kernel config.
+    """
+    # cfg_kernel = CompositeKernelConfig(**cfg_kernel).dict()
+    comp_number = len(cfg_kernel['kernel_list'])
+    for i in range(comp_number):
+        if isinstance(cfg_kernel['kernel_list']['comp_' + str(i)], dict):
+            if 'kernel_type' in cfg_kernel['kernel_list']['comp_' + str(i)]:
+                if cfg_kernel['kernel_list']['comp_' + str(i)]['kernel_type'] == 'Sum':
+                    cfg_kernel['kernel_list']['comp_' + str(i)] =\
+                        validate_composite_kernel_config(cfg_kernel['kernel_list']['comp_' + str(i)])
+                elif cfg_kernel['kernel_list']['comp_' + str(i)]['kernel_type'] == 'Product':
+                    cfg_kernel['kernel_list']['comp_' + str(i)] =\
+                        validate_composite_kernel_config(cfg_kernel['kernel_list']['comp_' + str(i)])
+                elif cfg_kernel['kernel_list']['comp_' + str(i)]['kernel_type'] == 'GaussianRBF':
+                    cfg_kernel['kernel_list']['comp_' + str(i)] =\
+                        RBFKernelConfig(**cfg_kernel['kernel_list']['comp_' + str(i)]).dict()
+                elif cfg_kernel['kernel_list']['comp_' + str(i)]['kernel_type'] == 'RationalQuadratic':
+                    cfg_kernel['kernel_list']['comp_' + str(i)] =\
+                        RationalQuadraticKernelConfig(**cfg_kernel['kernel_list']['comp_' + str(i)]).dict()
+                elif cfg_kernel['kernel_list']['comp_' + str(i)]['kernel_type'] == 'Periodic':
+                    cfg_kernel['kernel_list']['comp_' + str(i)] =\
+                        PeriodicKernelConfig(**cfg_kernel['kernel_list']['comp_' + str(i)]).dict()
+                else:
+                    raise ValueError('Kernel type not supported.')
+    cfg_kernel = dict(sorted(cfg_kernel.items()))  # Sort dict to ensure order is consistent
+    return cfg_kernel

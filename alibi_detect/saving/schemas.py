@@ -51,6 +51,44 @@ class SupportedModel:
             raise TypeError('The model is not recognised as a supported type.')
 
 
+def validate_composite_kernel_config(cfg_kernel_list: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Validate composite kernel config.
+
+    Parameters
+    ----------
+    cfg_kernel
+        Composite kernel config.
+
+    Returns
+    -------
+    cfg_kernel
+        Validated composite kernel config.
+    """
+    # cfg_kernel = CompositeKernelConfig(**cfg_kernel).dict()
+    comp_number = len(cfg_kernel_list)
+    for i in range(comp_number):
+        if isinstance(cfg_kernel_list['comp_' + str(i)], dict):
+            if 'kernel_type' in cfg_kernel_list['comp_' + str(i)]:
+                if (cfg_kernel_list['comp_' + str(i)]['kernel_type'] == 'Sum') or\
+                        (cfg_kernel_list['comp_' + str(i)]['kernel_type'] == 'Product'):
+                    cfg_kernel_list['comp_' + str(i)] =\
+                        CompositeKernelConfig(**cfg_kernel_list['comp_' + str(i)]).dict()
+                elif cfg_kernel_list['comp_' + str(i)]['kernel_type'] == 'GaussianRBF':
+                    cfg_kernel_list['comp_' + str(i)] =\
+                        RBFKernelConfig(**cfg_kernel_list['comp_' + str(i)]).dict()
+                elif cfg_kernel_list['comp_' + str(i)]['kernel_type'] == 'RationalQuadratic':
+                    cfg_kernel_list['comp_' + str(i)] =\
+                        RationalQuadraticKernelConfig(**cfg_kernel_list['comp_' + str(i)]).dict()
+                elif cfg_kernel_list['comp_' + str(i)]['kernel_type'] == 'Periodic':
+                    cfg_kernel_list['comp_' + str(i)] =\
+                        PeriodicKernelConfig(**cfg_kernel_list['comp_' + str(i)]).dict()
+                else:
+                    raise ValueError('Kernel type not supported.')
+    cfg_kernel_list = dict(sorted(cfg_kernel_list.items()))  # Sort dict to ensure order is consistent
+    return cfg_kernel_list
+
+
 class SupportedOptimizer:
     """
     Pydantic custom type to check the optimizer is one of the supported types (conditional on what optional deps
@@ -380,12 +418,13 @@ class RationalQuadraticKernelConfig(CustomBaseModelWithKwargs):
     """
     Unresolved schema for kernels, to be passed to a detector's `kernel` kwarg.
 
-    If `src` specifies a :class:`~alibi_detect.utils.tensorflow.GaussianRBF` kernel, the `sigma`, `trainable` and
-    `init_sigma_fn` fields are passed to it. Otherwise, all fields except `src` are passed as kwargs.
+    If `src` specifies a :class:`~alibi_detect.utils.tensorflow.RationalQuadratic` kernel, the `sigma`, `alpha`,
+    'trainable' and `init_sigma_fn`, 'init_alpha_fn' fields are passed to it. Otherwise, all fields except `src`
+    are passed as kwargs.
 
     Examples
     --------
-    A :class:`~alibi_detect.utils.tensorflow.GaussianRBF` kernel, with three different bandwidths:
+    A :class:`~alibi_detect.utils.tensorflow.RationalQuadratic` kernel, with three different bandwidths and alphas:
 
     .. code-block :: toml
 
@@ -393,6 +432,7 @@ class RationalQuadraticKernelConfig(CustomBaseModelWithKwargs):
         src = "@alibi_detect.utils.tensorflow.GaussianRBF"
         trainable = false
         sigma = [0.1, 0.2, 0.3]
+        alpha = [1.0, 2.0, 3.0]
 
     A serialized kernel with keyword arguments passed:
 
@@ -401,6 +441,7 @@ class RationalQuadraticKernelConfig(CustomBaseModelWithKwargs):
         [kernel]
         src = "mykernel.dill"
         sigma = 0.42
+        alpha = 2.0
         custom_setting = "xyz"
     """
     src: str
@@ -447,8 +488,8 @@ class PeriodicKernelConfig(CustomBaseModelWithKwargs):
     """
     Unresolved schema for kernels, to be passed to a detector's `kernel` kwarg.
 
-    If `src` specifies a :class:`~alibi_detect.utils.tensorflow.GaussianRBF` kernel, the `sigma`, `trainable` and
-    `init_sigma_fn` fields are passed to it. Otherwise, all fields except `src` are passed as kwargs.
+    If `src` specifies a :class:`~alibi_detect.utils.tensorflow.PeriodicKernel` kernel, the `sigma`, 'tau', `trainable`
+    and `init_sigma_fn`, 'init_tau_fn' fields are passed to it. Otherwise, all fields except `src` are passed as kwargs.
 
     Examples
     --------
@@ -457,9 +498,10 @@ class PeriodicKernelConfig(CustomBaseModelWithKwargs):
     .. code-block :: toml
 
         [kernel]
-        src = "@alibi_detect.utils.tensorflow.GaussianRBF"
+        src = "@alibi_detect.utils.tensorflow.PeriodicKernel"
         trainable = false
         sigma = [0.1, 0.2, 0.3]
+        tau = [1.0, 2.0, 3.0]
 
     A serialized kernel with keyword arguments passed:
 
@@ -468,6 +510,7 @@ class PeriodicKernelConfig(CustomBaseModelWithKwargs):
         [kernel]
         src = "mykernel.dill"
         sigma = 0.42
+        tau = 1.0
         custom_setting = "xyz"
     """
     src: str
@@ -513,14 +556,31 @@ class PeriodicKernelConfig(CustomBaseModelWithKwargs):
 class CompositeKernelConfig(CustomBaseModelWithKwargs):
     """
     Unresolved schema for composite kernels, to be passed to a detector's `kernel` kwarg.
-    HEre only the src, kernel_type and flavour fields are checked. The kernels within kernel list will be
-    checked sperately.
+
+    Examples
+    --------
+    A :class:`~alibi_detect.utils.tensorflow.SumKernel` obtained by adding two
+    :class:`~alibi_detect.utils.tensorflow.GaussianRBF` instances:
+
+    .. code-block :: toml
+
+    [kernel]
+    src = "@alibi_detect.utils.tensorflow.SumKernel"
+    kernel_list = [
+        RBFKernelConfig(src="@alibi_detect.utils.tensorflow.GaussianRBF", trainable=false, sigma=0.1),
+        RBFKernelConfig(src="@alibi_detect.utils.tensorflow.GaussianRBF", trainable=false, sigma=0.2)
+        ]
     """
     src: str
 
     kernel_type: Literal['Sum', 'Product']
 
     flavour: Literal['tensorflow', 'pytorch']
+
+    kernel_list: Dict
+
+    _validate_composite_kernel =\
+        validator('kernel_list', allow_reuse=True, pre=False)(validate_composite_kernel_config)
 
 
 class DeepKernelConfig(CustomBaseModel):

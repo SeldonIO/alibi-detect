@@ -514,9 +514,9 @@ def _save_kernel_config(kernel: Callable,
 
         for i, k in enumerate(kernel.kernel_list):
             if hasattr(k, 'get_config'):
-                cfg_kernel['comp_' + str(i)] = _save_kernel_config(k, base_path,
-                                                                   Path(local_path, 'kernel_{}'.format(i)))
-        cfg_kernel = dict(sorted(cfg_kernel.items()))
+                cfg_kernel['kernel_list']['comp_' + str(i)] =\
+                    _save_kernel_config(k, base_path, Path(local_path, 'kernel_{}'.format(i)))
+        cfg_kernel['kernel_list'] = dict(sorted(cfg_kernel['kernel_list'].items()))
         cfg_kernel['src'], _ = _serialize_object(kernel_class, base_path, local_path.joinpath('kernel'))
 
     # If any other kernel, serialize the class to disk and get config

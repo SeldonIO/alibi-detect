@@ -38,13 +38,12 @@ from alibi_detect.models.tensorflow import TransformerEmbedding as TransformerEm
 from alibi_detect.saving import (load_detector, read_config, registry,
                                  resolve_config, save_detector, write_config)
 from alibi_detect.saving.loading import (_get_nested_value, _replace,
-                                         _set_dtypes, _set_nested_value, _prepend_cfg_filepaths,
-                                         _validate_composite_kernel_config)
+                                         _set_dtypes, _set_nested_value, _prepend_cfg_filepaths)
 from alibi_detect.saving.saving import _serialize_object
 from alibi_detect.saving.saving import (_path2str, _int2str_keys, _save_kernel_config, _save_model_config,
                                         _save_preprocess_config)
 from alibi_detect.saving.schemas import DeepKernelConfig, ModelConfig, PreprocessConfig, RBFKernelConfig,\
-    RationalQuadraticKernelConfig, PeriodicKernelConfig
+    RationalQuadraticKernelConfig, PeriodicKernelConfig, CompositeKernelConfig
 from alibi_detect.utils.pytorch.kernels import DeepKernel as DeepKernel_pt
 from alibi_detect.utils.tensorflow.kernels import DeepKernel as DeepKernel_tf
 
@@ -963,10 +962,12 @@ def test_save_composite_kernel(kernel, backend, tmp_path):  # noqa: F811
     cfg_kernel = _save_kernel_config(kernel, filepath, filename)
     if kernel.__class__.__name__ == 'SumKernel':
         assert cfg_kernel['src'] == '@utils.' + backend + '.kernels.SumKernel'
-        cfg_kernel = _validate_composite_kernel_config(cfg_kernel)  # Pass through validator to test
+        cfg_kernel = CompositeKernelConfig(**cfg_kernel).dict()  # Pass through validator to test
+        # cfg_kernel = _validate_composite_kernel_config(cfg_kernel)  # Pass through validator to test
     elif kernel.__class__.__name__ == 'ProductKernel':
         assert cfg_kernel['src'] == '@utils.' + backend + '.kernels.ProductKernel'
-        cfg_kernel = _validate_composite_kernel_config(cfg_kernel)  # Pass through validator to test
+        cfg_kernel = CompositeKernelConfig(**cfg_kernel).dict()  # Pass through validator to test
+        # cfg_kernel = _validate_composite_kernel_config(cfg_kernel)  # Pass through validator to test
     else:
         assert Path(cfg_kernel['src']).suffix == '.dill'
 
