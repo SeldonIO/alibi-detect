@@ -16,6 +16,7 @@ import os
 import sys
 # Hide RemovedInSphinx40Warning. Can remove once upgraded to sphinx>=4.0
 import warnings
+
 warnings.filterwarnings("ignore", category=DeprecationWarning) 
 
 sys.path.insert(0, os.path.abspath("../.."))
@@ -66,6 +67,7 @@ nbsphinx_execute = "auto"
 
 # Create symlinks for example notebooks
 import glob
+
 nb_files = [os.path.basename(f) for f in glob.glob(os.path.join('examples','*.ipynb')) 
         if not os.path.basename(f).startswith('temp_')]
 for nb_file in nb_files:
@@ -308,6 +310,7 @@ nbsphinx_prolog = (
 # -- Override order of preference for image formats --------------------------
 # Need to set gif above png so that it is chosen over png if present
 from sphinx.builders.html import StandaloneHTMLBuilder
+
 StandaloneHTMLBuilder.supported_image_types = [
     'image/svg+xml',
     'image/gif',
@@ -341,5 +344,6 @@ def call_mock(self, *args, **kw):
     return self
 
 from sphinx.ext.autodoc.mock import _MockObject
+
 _MockObject.__call__ = call_mock
 

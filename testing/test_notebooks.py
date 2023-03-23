@@ -4,8 +4,9 @@ plugin. This approach may be more flexible if our requirements change in the fut
 """
 
 import glob
-from pathlib import Path
 import shutil
+from pathlib import Path
+
 import pytest
 from jupytext.cli import jupytext
 
