@@ -88,6 +88,41 @@ def encoder_dropout_model(backend, current_cases):
     return model
 
 
+class EncoderTF(tf.keras.Model):
+    """A simple tensorflow encoder model."""
+    def __init__(self, input_dim=4):
+        super().__init__()
+        self.input_dim = input_dim
+        self.layer1 = tf.keras.layers.InputLayer(input_shape=(self.input_dim,))
+        self.layer2 = tf.keras.layers.Dense(5, activation=tf.nn.relu)
+        self.layer3 = tf.keras.layers.Dropout(0.0)  # 0.0 to ensure determinism
+        self.layer4 = tf.keras.layers.Dense(LATENT_DIM, activation=None)
+
+    def call(self, inputs, **kwargs):
+        x = self.layer1(inputs)
+        x = self.layer2(x)
+        x = self.layer3(x)
+        return self.layer4(x)
+
+    def get_config(self):
+        return {'input_dim': self.input_dim}
+
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
+
+
+@fixture
+def encoder_model_subclassed(current_cases):
+    """
+    An untrained encoder of given input dimension built by subclassing `tf.keras.Model` (this is a "custom" model,
+    NOT an Alibi Detect UAE).
+    """
+    _, _, data_params = current_cases["data"]
+    _, input_dim = data_params['data_shape']
+    return EncoderTF(input_dim=input_dim)
+
+
 @fixture
 def preprocess_uae(encoder_model):
     """
@@ -180,6 +215,26 @@ def deep_kernel(request, backend, encoder_model):
     return deep_kernel
 
 
+class ClassifierTF(tf.keras.Model):
+    """A simple tensorflow classifier model."""
+    def __init__(self, input_dim=4):
+        super().__init__()
+        self.input_dim = input_dim
+        self.layer1 = tf.keras.layers.InputLayer(input_shape=(self.input_dim,))
+        self.layer2 = tf.keras.layers.Dense(2, activation=tf.nn.softmax)
+
+    def call(self, inputs, **kwargs):
+        x = self.layer1(inputs)
+        return self.layer2(x)
+
+    def get_config(self):
+        return {'input_dim': self.input_dim}
+
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
+
+
 @fixture
 def classifier_model(backend, current_cases):
     """
@@ -202,6 +257,16 @@ def classifier_model(backend, current_cases):
     else:
         pytest.skip('`classifier_model` only implemented for tensorflow, pytorch, keops and sklearn.')
     return model
+
+
+@fixture
+def classifier_model_subclassed(current_cases):
+    """
+    Classification model with given input dimension, constructed by subclassing `tf.keras.Model`.
+    """
+    _, _, data_params = current_cases["data"]
+    _, input_dim = data_params['data_shape']
+    return ClassifierTF(input_dim=input_dim)
 
 
 @fixture

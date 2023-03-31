@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 def load_model(filepath: Union[str, os.PathLike],
                layer: Optional[int] = None,
+               **kwargs
                ) -> nn.Module:
     """
     Load PyTorch model.
@@ -29,13 +30,17 @@ def load_model(filepath: Union[str, os.PathLike],
     layer
         Optional index of a hidden layer to extract. If not `None`, a
         :py:class:`~alibi_detect.cd.pytorch.HiddenOutput` model is returned.
+    kwargs
+        Additional keyword arguments to be passed to :func:`torch.load`.
 
     Returns
     -------
     Loaded model.
     """
     filepath = Path(filepath).joinpath('model.pt')
-    model = torch.load(filepath, pickle_module=dill)
+    if 'pickle_module' not in kwargs:
+        kwargs['pickle_module'] = dill
+    model = torch.load(filepath, **kwargs)
     # Optionally extract hidden layer
     if isinstance(layer, int):
         model = HiddenOutput(model, layer=layer)

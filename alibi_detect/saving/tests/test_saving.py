@@ -1060,14 +1060,14 @@ def test_save_deepkernel(data, deep_kernel, backend, tmp_path):  # noqa: F811
     Kernels are saved and then loaded, with assertions to check equivalence.
     """
     # Get data dim
+    X, _ = data
     if backend == 'tensorflow':
-        X = tf.random.normal((10, 1), dtype=tf.float32)
+        X = tf.convert_to_tensor(X, dtype=tf.float32)
     elif backend == 'pytorch':
-        X = torch.randn((10, 1), dtype=torch.float32)
+        X = torch.from_numpy(X)
     else:  # backend == 'keops'
-        X = torch.randn((10, 1), dtype=torch.float32)
+        X = torch.from_numpy(X)
         X = LazyTensor(X[None, :])
-#    X, _ = data
     input_shape = (X.shape[1],)
 
     # Save kernel to config
@@ -1079,7 +1079,6 @@ def test_save_deepkernel(data, deep_kernel, backend, tmp_path):  # noqa: F811
     cfg_kernel['proj'] = ModelConfig(**cfg_kernel['proj']).dict()  # Pass thru ModelConfig to set `layers` etc
     cfg_kernel = DeepKernelConfig(**cfg_kernel).dict()  # pydantic validation
     assert cfg_kernel['proj']['src'] == 'model'
-    assert cfg_kernel['proj']['custom_objects'] is None
     assert cfg_kernel['proj']['layer'] is None
 
     # Resolve and load config

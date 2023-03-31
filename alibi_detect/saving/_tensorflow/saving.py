@@ -19,7 +19,6 @@ from alibi_detect.models.tensorflow import TransformerEmbedding
 from alibi_detect.od import (LLR, IForest, Mahalanobis, OutlierAE,
                              OutlierAEGMM, OutlierProphet, OutlierSeq2Seq,
                              OutlierVAE, OutlierVAEGMM, SpectralResidual)
-from alibi_detect.utils._types import Literal
 from alibi_detect.utils.tensorflow.kernels import GaussianRBF
 from alibi_detect.utils.missing_optional_dependency import MissingDependency
 from alibi_detect.utils.frameworks import Framework
@@ -29,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 def save_model_config(model: Callable,
                       base_path: Path,
-                      input_shape: Optional[tuple],
+                      input_shape: Optional[tuple] = None,
                       local_path: Path = Path('.')) -> Tuple[dict, Optional[dict]]:
     """
     Save a TensorFlow model to a config dictionary. When a model has a text embedding model contained within it,
@@ -90,9 +89,7 @@ def save_model_config(model: Callable,
 
 
 def save_model(model: tf.keras.Model,
-               filepath: Union[str, os.PathLike],
-               filename: str = 'model',
-               save_format: Literal['tf', 'h5'] = 'h5') -> None:  # TODO - change to tf, later PR
+               filepath: Union[str, os.PathLike]) -> None:
     """
     Save TensorFlow model.
 
@@ -101,24 +98,21 @@ def save_model(model: tf.keras.Model,
     model
         The tf.keras.Model to save.
     filepath
-        Save directory.
-    filename
-        Name of file to save to within the filepath directory.
-    save_format
-        The format to save to. 'tf' to save to the newer SavedModel format, 'h5' to save to the lighter-weight
-        legacy hdf5 format.
+        File path to save to. If it refers to a `.h5` file, the model is saved in `.h5` format. Otherwise, the model
+        is saved in `SavedModel` format.
     """
-    # create folder to save model in
-    model_path = Path(filepath)
-    if not model_path.is_dir():
-        logger.warning('Directory {} does not exist and is now created.'.format(model_path))
-        model_path.mkdir(parents=True, exist_ok=True)
-
+    filepath = Path(filepath)
+    # Determine file format to save in
+    save_format = 'h5' if filepath.suffix == '.h5' else 'tf'
     # save model
-    model_path = model_path.joinpath(filename + '.h5') if save_format == 'h5' else model_path
-
     if isinstance(model, tf.keras.Model):
-        model.save(model_path, save_format=save_format)
+        try:
+            model.save(filepath, save_format=save_format)
+        except ValueError as error:
+            raise ValueError("Saving of the `tf.keras.Model` failed. If the model is a subclassed tensorflow model, "
+                             "this might be because the model's input shape is not available. To specify an input "
+                             "shape call the model (on actual data) before passing it to the detector, or pass actual "
+                             "data to the detector's `predict` method.") from error
     else:
         raise ValueError('The extracted model to save is not a `tf.keras.Model`. Cannot save.')
 
@@ -261,24 +255,24 @@ def save_detector_legacy(detector, filepath):
         save_tf_vae(detector, filepath)
     elif isinstance(detector, (ChiSquareDrift, ClassifierDrift, KSDrift, MMDDrift, TabularDrift)):
         if model is not None:
-            save_model(model, model_dir, filename='encoder')
+            save_model(model, model_dir.joinpath('encoder.h5'))
         if embed is not None:
             save_embedding_legacy(embed, embed_args, filepath)
         if tokenizer is not None:
             tokenizer.save_pretrained(filepath.joinpath('model'))
         if detector_name == 'ClassifierDriftTF':
-            save_model(clf_drift, model_dir, filename='clf_drift')
+            save_model(clf_drift, model_dir.joinpath('clf_drift.h5'))
     elif isinstance(detector, OutlierAEGMM):
         save_tf_aegmm(detector, filepath)
     elif isinstance(detector, OutlierVAEGMM):
         save_tf_vaegmm(detector, filepath)
     elif isinstance(detector, AdversarialAE):
         save_tf_ae(detector, filepath)
-        save_model(detector.model, model_dir)
+        save_model(detector.model, model_dir.joinpath('model.h5'))
         save_tf_hl(detector.model_hl, filepath)
     elif isinstance(detector, ModelDistillation):
-        save_model(detector.distilled_model, model_dir, filename='distilled_model')
-        save_model(detector.model, model_dir, filename='model')
+        save_model(detector.distilled_model, model_dir.joinpath('distilled_model.h5'))
+        save_model(detector.model, model_dir.joinpath('model.h5'))
     elif isinstance(detector, OutlierSeq2Seq):
         save_tf_s2s(detector, filepath)
     elif isinstance(detector, LLR):
