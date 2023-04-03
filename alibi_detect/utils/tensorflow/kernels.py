@@ -141,8 +141,8 @@ class BaseKernel(tf.keras.Model):
     def call(self, x: tf.Tensor, y: tf.Tensor, infer_parameter: bool = False) -> tf.Tensor:
         y = tf.cast(y, x.dtype)
         if self.active_dims is not None:
-            x = tf.gather(x, self.active_dims, axis=self.feature_axis)
-            y = tf.gather(y, self.active_dims, axis=self.feature_axis)
+            x = tf.gather(x, self.active_dims, axis=-1)
+            y = tf.gather(y, self.active_dims, axis=-1)
         return self.kernel_function(x, y, infer_parameter)
 
     def __add__(

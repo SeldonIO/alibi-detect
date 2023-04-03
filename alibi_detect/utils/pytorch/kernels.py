@@ -524,8 +524,6 @@ class GaussianRBF(BaseKernel):
             Whether or not to track gradients w.r.t. `sigma` to allow it to be trained.
         active_dims
             Indices of the dimensions of the feature to be used for the kernel. If None, all dimensions are used.
-        feature_axis
-            Axis of the feature dimension.
         """
         super().__init__(active_dims)
         self.init_sigma_fn = log_sigma_median if init_sigma_fn is None else init_sigma_fn
@@ -721,8 +719,6 @@ class Periodic(BaseKernel):
             Whether or not to track gradients w.r.t. `sigma` to allow it to be trained.
         active_dims
             Indices of the dimensions of the feature to be used for the kernel. If None, all dimensions are used.
-        feature_axis
-            Axis of the feature dimension.
         """
         super().__init__(active_dims)
         if tau is not None and sigma is not None:
