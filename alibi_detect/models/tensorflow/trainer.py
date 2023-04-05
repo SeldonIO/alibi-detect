@@ -10,7 +10,7 @@ def trainer(
         x_train: np.ndarray,
         y_train: np.ndarray = None,
         dataset: tf.keras.utils.Sequence = None,
-        optimizer: tf.keras.optimizers = tf.keras.optimizers.Adam(learning_rate=1e-3),
+        optimizer: tf.keras.optimizers = tf.keras.optimizers.Adam,
         loss_fn_kwargs: dict = None,
         preprocess_fn: Callable = None,
         epochs: int = 20,
@@ -57,6 +57,7 @@ def trainer(
     callbacks
         Callbacks used during training.
     """
+    optimizer = optimizer() if isinstance(optimizer, type) else optimizer
     return_xy = False if not isinstance(dataset, tf.keras.utils.Sequence) and y_train is None else True
     if not isinstance(dataset, tf.keras.utils.Sequence):  # create dataset
         train_data = x_train if y_train is None else (x_train, y_train)

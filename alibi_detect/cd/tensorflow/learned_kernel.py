@@ -8,6 +8,7 @@ from alibi_detect.utils.tensorflow.misc import clone_model
 from alibi_detect.utils.tensorflow.distance import mmd2_from_kernel_matrix, batch_compute_kernel_matrix
 from alibi_detect.utils.warnings import deprecated_alias
 from alibi_detect.utils.frameworks import Framework
+from alibi_detect.utils._types import OptimizerTF
 
 
 class LearnedKernelDriftTF(BaseLearnedKernelDrift):
@@ -26,9 +27,10 @@ class LearnedKernelDriftTF(BaseLearnedKernelDrift):
             reg_loss_fn: Callable = (lambda kernel: 0),
             train_size: Optional[float] = .75,
             retrain_from_scratch: bool = True,
-            optimizer: tf.keras.optimizers.Optimizer = tf.keras.optimizers.Adam,
+            optimizer: OptimizerTF = tf.keras.optimizers.Adam,
             learning_rate: float = 1e-3,
             batch_size: int = 32,
+            batch_size_predict: int = 32,
             preprocess_batch_fn: Optional[Callable] = None,
             epochs: int = 3,
             verbose: int = 0,
@@ -85,6 +87,8 @@ class LearnedKernelDriftTF(BaseLearnedKernelDrift):
             Learning rate used by optimizer.
         batch_size
             Batch size used during training of the kernel.
+        batch_size_predict
+            Batch size used for the trained drift detector predictions.
         preprocess_batch_fn
             Optional batch preprocessing function. For example to convert a list of objects to a batch which can be
             processed by the kernel.
@@ -122,7 +126,7 @@ class LearnedKernelDriftTF(BaseLearnedKernelDrift):
 
         self.dataset = partial(dataset, batch_size=batch_size, shuffle=True)
         self.kernel_mat_fn = partial(
-            batch_compute_kernel_matrix, preprocess_fn=preprocess_batch_fn, batch_size=batch_size
+            batch_compute_kernel_matrix, preprocess_fn=preprocess_batch_fn, batch_size=batch_size_predict
         )
         self.train_kwargs = {'optimizer': optimizer, 'epochs': epochs, 'learning_rate': learning_rate,
                              'reg_loss_fn': reg_loss_fn, 'preprocess_fn': preprocess_batch_fn, 'verbose': verbose}
@@ -200,7 +204,7 @@ class LearnedKernelDriftTF(BaseLearnedKernelDrift):
     def trainer(
         j_hat: JHat,
         datasets: Tuple[tf.keras.utils.Sequence, tf.keras.utils.Sequence],
-        optimizer: tf.keras.optimizers.Optimizer = tf.keras.optimizers.Adam,
+        optimizer: OptimizerTF = tf.keras.optimizers.Adam,
         learning_rate: float = 1e-3,
         preprocess_fn: Callable = None,
         epochs: int = 20,

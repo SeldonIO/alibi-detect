@@ -89,7 +89,7 @@ def encoder_dropout_model(backend, current_cases):
 
 
 @fixture
-def preprocess_custom(encoder_model):
+def preprocess_uae(encoder_model):
     """
     Preprocess function with Untrained Autoencoder.
     """
@@ -261,6 +261,14 @@ def preprocess_simple(x: np.ndarray):
     Simple function to test serialization of generic Python function within preprocess_fn.
     """
     return x*2.0
+
+
+@fixture
+def preprocess_simple_with_kwargs():
+    """
+    Simple function to test serialization of generic Python function with kwargs, within preprocess_fn.
+    """
+    return partial(preprocess_simple, kwarg1=42, kwarg2=True)
 
 
 @fixture
