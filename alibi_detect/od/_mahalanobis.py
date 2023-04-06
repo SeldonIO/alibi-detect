@@ -31,10 +31,10 @@ class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
         """
         The Mahalanobis outlier detection method.
 
-        The Mahalanobis computes the directions of variation of a dataset and uses them to detect when points are
-        outliers by checking to see if the point vary from dataset points in unexpected ways.
+        The Mahalanobis detector computes the directions of variation of a dataset and uses them to detect when points
+        are outliers by checking to see if the points vary from dataset points in unexpected ways.
 
-        When we fit the Mahalanobis method we compute the covariance matrix of the reference data and its eigenvectors
+        When we fit the Mahalanobis detector we compute the covariance matrix of the reference data and its eigenvectors
         and eigenvalues. We filter small eigenvalues for numerical stability using the `min_eigenvalue` parameter. We
         then inversely weight each eigenvector by its eigenvalue.
 
@@ -78,7 +78,7 @@ class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
     def fit(self, x_ref: np.ndarray) -> None:
         """Fit the detector on reference data.
 
-        Fitting the Mahalanobis method amounts to computing the covariance matrix and its eigenvectors. We filter out
+        Fitting the Mahalanobis detector amounts to computing the covariance matrix and its eigenvectors. We filter out
         very small eigenvalues using the `min_eigenvalue` parameter. We then scale the eigenvectors such that the data
         projected onto them has mean ``0`` and std ``1``.
 
