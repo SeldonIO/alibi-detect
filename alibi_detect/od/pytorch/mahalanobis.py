@@ -48,7 +48,7 @@ class MahalanobisTorch(TorchOutlierDetector):
         if not torch.jit.is_scripting():
             self.check_threshold_inferred()
         preds = scores > self.threshold
-        return preds.cpu()
+        return preds
 
     @torch.no_grad()
     def score(self, x: torch.Tensor) -> torch.Tensor:
