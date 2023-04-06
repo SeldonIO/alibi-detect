@@ -101,15 +101,15 @@ class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
         x
             Data to score. The shape of `x` should be `(n_instances, n_features)`.
 
-        Raises
-        ------
-        NotFittedError
-            If called before detector has been fit.
-
         Returns
         -------
         Outlier scores. The shape of the scores is `(n_instances,)`. The higher the score, the more outlying the \
         instance.
+
+        Raises
+        ------
+        NotFittedError
+            If called before detector has been fit.
         """
         score = self.backend.score(self.backend._to_tensor(x))
         return self.backend._to_numpy(score)
@@ -121,13 +121,6 @@ class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
         The threshold is computed so that the outlier detector would incorrectly classify `fpr` proportion of the
         reference data as outliers.
 
-        Raises
-        ------
-        ValueError
-            Raised if `fpr` is not in ``(0, 1)``.
-        NotFittedError
-            If called before detector has been fit.
-
         Parameters
         ----------
         x
@@ -136,6 +129,13 @@ class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
             False positive rate used to infer the threshold. The false positive rate is the proportion of
             instances in `x` that are incorrectly classified as outliers. The false positive rate should
             be in the range ``(0, 1)``.
+
+        Raises
+        ------
+        ValueError
+            Raised if `fpr` is not in ``(0, 1)``.
+        NotFittedError
+            If called before detector has been fit.
         """
         self.backend.infer_threshold(self.backend._to_tensor(x), fpr)
 
@@ -150,17 +150,17 @@ class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
         x
             Data to predict. The shape of `x` should be `(n_instances, n_features)`.
 
-        Raises
-        ------
-        NotFittedError
-            If called before detector has been fit.
-
         Returns
         -------
         Dictionary with keys 'data' and 'meta'. 'data' contains the outlier scores. If threshold inference was  \
         performed, 'data' also contains the threshold value, outlier labels and p-vals . The shape of the scores is \
         `(n_instances,)`. The higher the score, the more anomalous the instance. 'meta' contains information about \
         the detector.
+
+        Raises
+        ------
+        NotFittedError
+            If called before detector has been fit.
         """
         outputs = self.backend.predict(self.backend._to_tensor(x))
         output = outlier_prediction_dict()
