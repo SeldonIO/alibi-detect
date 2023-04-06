@@ -69,7 +69,6 @@ class MahalanobisTorch(TorchOutlierDetector):
             If called before detector has been fit.
         """
         self.check_fitted()
-        x = torch.as_tensor(x)
         x_pcs = self._compute_linear_proj(x)
         return (x_pcs**2).sum(-1)
 

@@ -39,7 +39,7 @@ def test_mahalanobis_linear_scoring():
 
     # test that detector correctly detects true Outlier
     mahalanobis_torch.infer_threshold(x_ref, 0.01)
-    x = np.concatenate((x_1, x_2, x_3))
+    x = torch.cat((x_1, x_2, x_3))
     outputs = mahalanobis_torch.predict(x)
     assert torch.all(outputs.is_outlier == torch.tensor([False, False, True]))
     assert torch.all(mahalanobis_torch(x) == torch.tensor([False, False, True]))
