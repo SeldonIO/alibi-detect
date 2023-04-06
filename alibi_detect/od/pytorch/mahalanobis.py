@@ -71,7 +71,7 @@ class MahalanobisTorch(TorchOutlierDetector):
         self.check_fitted()
         x = torch.as_tensor(x)
         x_pcs = self._compute_linear_proj(x)
-        return (x_pcs**2).sum(-1).cpu()
+        return (x_pcs**2).sum(-1)
 
     def fit(self, x_ref: torch.Tensor):
         """Fits the detector
