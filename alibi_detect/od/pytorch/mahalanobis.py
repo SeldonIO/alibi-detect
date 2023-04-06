@@ -85,7 +85,7 @@ class MahalanobisTorch(TorchOutlierDetector):
         self._set_fitted()
 
     def _compute_linear_pcs(self, x: torch.Tensor):
-        """Computes the principle components of the data.
+        """Computes the principal components of the data.
 
         Parameters
         ----------
@@ -100,7 +100,7 @@ class MahalanobisTorch(TorchOutlierDetector):
         self.pcs = V[:, non_zero_inds] / D[None,  non_zero_inds].sqrt()
 
     def _compute_linear_proj(self, x: torch.Tensor) -> torch.Tensor:
-        """Projects the data point being tested onto the principle components.
+        """Projects the data point being tested onto the principal components.
 
         Parameters
         ----------
