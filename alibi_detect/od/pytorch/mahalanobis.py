@@ -83,7 +83,7 @@ class MahalanobisTorch(TorchOutlierDetector):
         """
         self.x_ref = x_ref
         self._compute_linear_pcs(self.x_ref)
-        self.set_fitted()
+        self._set_fitted()
 
     def _compute_linear_pcs(self, x: torch.Tensor):
         """Computes the principle components of the data.
