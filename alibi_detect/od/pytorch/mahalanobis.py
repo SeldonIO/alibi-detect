@@ -23,7 +23,7 @@ class MahalanobisTorch(TorchOutlierDetector):
             Device type used. The default None tries to use the GPU and falls back on CPU if needed.
             Can be specified by passing either ``'cuda'``, ``'gpu'`` or ``'cpu'``.
         """
-        TorchOutlierDetector.__init__(self, device=device)
+        super().__init__(device=device)
         self.min_eigenvalue = min_eigenvalue
 
     @torch.no_grad()
