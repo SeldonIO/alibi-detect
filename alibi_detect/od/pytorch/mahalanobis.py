@@ -6,7 +6,7 @@ from alibi_detect.od.pytorch.base import TorchOutlierDetector
 
 
 class MahalanobisTorch(TorchOutlierDetector):
-    ensemble = None
+    ensemble = False
 
     def __init__(
             self,
