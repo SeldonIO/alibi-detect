@@ -1,5 +1,7 @@
 from typing import Union, Optional, Dict, Any
 from typing import TYPE_CHECKING
+from alibi_detect.exceptions import _catch_error as catch_error
+
 
 import numpy as np
 
@@ -23,27 +25,34 @@ class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
     def __init__(
         self,
         min_eigenvalue: float = 1e-6,
-        device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
         backend: Literal['pytorch'] = 'pytorch',
+        device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
     ) -> None:
-        """The Mahalanobis outlier detection method.
+        """
+        The Mahalanobis outlier detection method.
 
-        The Mahalanobis method computes the covariance matrix of a reference dataset passed in the `fit` method. It
-        then saves the eigenvectors of this matrix with eigenvalues greater than `min_eigenvalue`. While doing so
-        it also scales the eigenvectors such that the reference data projected onto them has mean ``0`` and std ``1``.
+        The Mahalanobis detector computes the directions of variation of a dataset and uses them to detect when points
+        are outliers by checking to see if the points vary from dataset points in unexpected ways.
 
-        When we score a test point `x` we project it onto the eigenvectors and compute the l2-norm of the
-        projected point. The higher the score, the more outlying the instance.
+        When we fit the Mahalanobis detector we compute the covariance matrix of the reference data and its eigenvectors
+        and eigenvalues. We filter small eigenvalues for numerical stability using the `min_eigenvalue` parameter. We
+        then inversely weight each eigenvector by its eigenvalue.
+
+        When we score test points we project them onto the eigenvectors and compute the l2-norm of the projected point.
+        Because the eigenvectors are inversely weighted by the eigenvalues, the score will take into account the
+        difference in variance along each direction of variation. If a test point lies along a direction of high
+        variation then it must lie very far out to obtain a high score. If a test point lies along a direction of low
+        variation then it doesn't need to lie very far out to obtain a high score.
 
         Parameters
         ----------
         min_eigenvalue
-            Eigenvectors with eigenvalues below this value will be discarded.
+            Eigenvectors with eigenvalues below this value will be discarded. This is to ensure numerical stability.
         backend
             Backend used for outlier detection. Defaults to ``'pytorch'``. Options are ``'pytorch'``.
         device
             Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
-            passing either ``'cuda'``, ``'gpu'`` or ``'cpu'``.
+            passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of ``torch.device``.
 
         Raises
         ------
@@ -59,16 +68,19 @@ class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
         ).verify_backend(backend_str)
 
         backend_cls = backends[backend]
-        self.backend = backend_cls(
-            min_eigenvalue,
-            device=device
-        )
+        self.backend = backend_cls(min_eigenvalue, device=device)
+
+        # set metadata
+        self.meta['detector_type'] = 'outlier'
+        self.meta['data_type'] = 'numeric'
+        self.meta['online'] = False
 
     def fit(self, x_ref: np.ndarray) -> None:
         """Fit the detector on reference data.
 
-        Fitting the Mahalanobis method amounts to computing the covariance matrix of the reference data and
-        saving the eigenvectors with eigenvalues greater than `min_eigenvalue`.
+        Fitting the Mahalanobis detector amounts to computing the covariance matrix and its eigenvectors. We filter out
+        very small eigenvalues using the `min_eigenvalue` parameter. We then scale the eigenvectors such that the data
+        projected onto them has mean ``0`` and std ``1``.
 
         Parameters
         ----------
@@ -77,11 +89,12 @@ class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
         """
         self.backend.fit(self.backend._to_tensor(x_ref))
 
+    @catch_error('NotFittedError')
     def score(self, x: np.ndarray) -> np.ndarray:
         """Score `x` instances using the detector.
 
-        The mahalanobis method projects `x` onto the eigenvectors of the covariance matrix of the reference data.
-        The score is then the l2-norm of the projected data. The higher the score, the more outlying the instance.
+        The mahalanobis method projects `x` onto the scaled eigenvectors computed during the fit step. The score is then
+        the l2-norm of the projected data. The higher the score, the more outlying the instance.
 
         Parameters
         ----------
@@ -90,31 +103,47 @@ class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
 
         Returns
         -------
-        Outlier scores. The shape of the scores is `(n_instances,)`. The higher the score, the more anomalous the \
+        Outlier scores. The shape of the scores is `(n_instances,)`. The higher the score, the more outlying the \
         instance.
+
+        Raises
+        ------
+        NotFittedError
+            If called before detector has been fit.
         """
         score = self.backend.score(self.backend._to_tensor(x))
         return self.backend._to_numpy(score)
 
-    def infer_threshold(self, x_ref: np.ndarray, fpr: float) -> None:
+    @catch_error('NotFittedError')
+    def infer_threshold(self, x: np.ndarray, fpr: float) -> None:
         """Infer the threshold for the Mahalanobis detector.
 
-        The threshold is inferred using the reference data and the false positive rate. The threshold is used to
-        determine the outlier labels in the predict method.
+        The threshold is computed so that the outlier detector would incorrectly classify `fpr` proportion of the
+        reference data as outliers.
 
         Parameters
         ----------
-        x_ref
+        x
             Reference data used to infer the threshold.
         fpr
-            False positive rate used to infer the threshold. The false positive rate is the proportion of instances in \
-            `x_ref` that are incorrectly classified as outliers. The false positive rate should be in the range \
-            ``(0, 1)``.
-        """
-        self.backend.infer_threshold(self.backend._to_tensor(x_ref), fpr)
+            False positive rate used to infer the threshold. The false positive rate is the proportion of
+            instances in `x` that are incorrectly classified as outliers. The false positive rate should
+            be in the range ``(0, 1)``.
 
+        Raises
+        ------
+        ValueError
+            Raised if `fpr` is not in ``(0, 1)``.
+        NotFittedError
+            If called before detector has been fit.
+        """
+        self.backend.infer_threshold(self.backend._to_tensor(x), fpr)
+
+    @catch_error('NotFittedError')
     def predict(self, x: np.ndarray) -> Dict[str, Any]:
         """Predict whether the instances in `x` are outliers or not.
+
+        Scores the instances in `x` and if the threshold was inferred, returns the outlier labels and p-values as well.
 
         Parameters
         ----------
@@ -124,9 +153,14 @@ class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
         Returns
         -------
         Dictionary with keys 'data' and 'meta'. 'data' contains the outlier scores. If threshold inference was  \
-        performed, 'data' also contains the threshold value, outlier labels and p_vals . The shape of the scores is \
+        performed, 'data' also contains the threshold value, outlier labels and p-vals . The shape of the scores is \
         `(n_instances,)`. The higher the score, the more anomalous the instance. 'meta' contains information about \
         the detector.
+
+        Raises
+        ------
+        NotFittedError
+            If called before detector has been fit.
         """
         outputs = self.backend.predict(self.backend._to_tensor(x))
         output = outlier_prediction_dict()

@@ -10,7 +10,7 @@ from alibi_detect.od.pytorch.base import TorchOutlierDetector
 class KNNTorch(TorchOutlierDetector):
     def __init__(
             self,
-            k: Union[np.ndarray, List, Tuple],
+            k: Union[np.ndarray, List, Tuple, int],
             kernel: Optional[torch.nn.Module] = None,
             ensembler: Optional[Ensembler] = None,
             device: Optional[Union[str, torch.device]] = None
@@ -20,7 +20,7 @@ class KNNTorch(TorchOutlierDetector):
         Parameters
         ----------
         k
-            Number of neirest neighbors to compute distance to. `k` can be a single value or
+            Number of nearest neighbors to compute distance to. `k` can be a single value or
             an array of integers. If `k` is a single value the outlier score is the distance/kernel
             similarity to the `k`-th nearest neighbor. If `k` is a list then it returns the distance/kernel
             similarity to each of the specified `k` neighbors.
@@ -32,10 +32,11 @@ class KNNTorch(TorchOutlierDetector):
             of :py:obj:`alibi_detect.od.pytorch.ensemble.ensembler`. Responsible for combining
             multiple scores into a single score.
         device
-            Device type used. The default None tries to use the GPU and falls back on CPU if needed.
-            Can be specified by passing either ``'cuda'``, ``'gpu'`` or ``'cpu'``.
+            Device type used. The default tries to use the GPU and falls back on CPU if needed.
+            Can be specified by passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of
+            ``torch.device``.
         """
-        TorchOutlierDetector.__init__(self, device=device)
+        super().__init__(device=device)
         self.kernel = kernel
         self.ensemble = isinstance(k, (np.ndarray, list, tuple))
         self.ks = torch.tensor(k) if self.ensemble else torch.tensor([k], device=self.device)
@@ -56,7 +57,7 @@ class KNNTorch(TorchOutlierDetector):
 
         Raises
         ------
-        ThresholdNotInferredException
+        ThresholdNotInferredError
             If called before detector has had `infer_threshold` method called.
         """
         raw_scores = self.score(x)
@@ -81,17 +82,16 @@ class KNNTorch(TorchOutlierDetector):
 
         Raises
         ------
-        NotFitException
+        NotFittedError
             If called before detector has been fit.
         """
-        if not torch.jit.is_scripting():
-            self.check_fitted()
+        self.check_fitted()
         K = -self.kernel(x, self.x_ref) if self.kernel is not None else torch.cdist(x, self.x_ref)
         bot_k_dists = torch.topk(K, int(torch.max(self.ks)), dim=1, largest=False)
         all_knn_dists = bot_k_dists.values[:, self.ks-1]
         return all_knn_dists if self.ensemble else all_knn_dists[:, 0]
 
-    def _fit(self, x_ref: torch.Tensor):
+    def fit(self, x_ref: torch.Tensor):
         """Fits the detector
 
         Parameters
@@ -100,6 +100,4 @@ class KNNTorch(TorchOutlierDetector):
             The Dataset tensor.
         """
         self.x_ref = x_ref
-        if self.ensemble:
-            scores = self.score(x_ref)
-            self.ensembler.fit(scores)
+        self._set_fitted()

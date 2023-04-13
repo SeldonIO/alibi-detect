@@ -4,5 +4,3 @@ KNNTorch = import_optional('alibi_detect.od.pytorch.knn', ['KNNTorch'])
 MahalanobisTorch = import_optional('alibi_detect.od.pytorch.mahalanobis', ['MahalanobisTorch'])
 KernelPCATorch, LinearPCATorch = import_optional('alibi_detect.od.pytorch.pca', ['KernelPCATorch', 'LinearPCATorch'])
 Ensembler = import_optional('alibi_detect.od.pytorch.ensemble', ['Ensembler'])
-
-to_numpy = import_optional('alibi_detect.od.pytorch.base', ['to_numpy'])

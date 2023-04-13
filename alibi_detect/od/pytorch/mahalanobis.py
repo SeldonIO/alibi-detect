@@ -6,6 +6,8 @@ from alibi_detect.od.pytorch.base import TorchOutlierDetector
 
 
 class MahalanobisTorch(TorchOutlierDetector):
+    ensemble = False
+
     def __init__(
             self,
             min_eigenvalue: float = 1e-6,
@@ -21,9 +23,10 @@ class MahalanobisTorch(TorchOutlierDetector):
             Device type used. The default None tries to use the GPU and falls back on CPU if needed.
             Can be specified by passing either ``'cuda'``, ``'gpu'`` or ``'cpu'``.
         """
-        TorchOutlierDetector.__init__(self, device=device)
+        super().__init__(device=device)
         self.min_eigenvalue = min_eigenvalue
 
+    @torch.no_grad()
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Detect if `x` is an outlier.
 
@@ -45,8 +48,9 @@ class MahalanobisTorch(TorchOutlierDetector):
         if not torch.jit.is_scripting():
             self.check_threshold_inferred()
         preds = scores > self.threshold
-        return preds.cpu()
+        return preds
 
+    @torch.no_grad()
     def score(self, x: torch.Tensor) -> torch.Tensor:
         """Computes the score of `x`
 
@@ -57,20 +61,18 @@ class MahalanobisTorch(TorchOutlierDetector):
 
         Returns
         -------
-            Tensor of scores for each element in `x`.
+        Tensor of scores for each element in `x`.
 
         Raises
         ------
         NotFitException
             If called before detector has been fit.
         """
-        if not torch.jit.is_scripting():
-            self.check_fitted()
-        x = torch.as_tensor(x)
+        self.check_fitted()
         x_pcs = self._compute_linear_proj(x)
-        return (x_pcs**2).sum(-1).cpu()
+        return (x_pcs**2).sum(-1)
 
-    def _fit(self, x_ref: torch.Tensor):
+    def fit(self, x_ref: torch.Tensor):
         """Fits the detector
 
         Parameters
@@ -80,30 +82,31 @@ class MahalanobisTorch(TorchOutlierDetector):
         """
         self.x_ref = x_ref
         self._compute_linear_pcs(self.x_ref)
+        self._set_fitted()
 
-    def _compute_linear_pcs(self, X: torch.Tensor):
-        """Computes the principle components of the data.
+    def _compute_linear_pcs(self, x: torch.Tensor):
+        """Computes the principal components of the data.
 
         Parameters
         ----------
-        X
+        x
             The reference dataset.
         """
-        self.means = X.mean(0)
-        X = X - self.means
-        cov_mat = (X.t() @ X)/(len(X)-1)
+        self.means = x.mean(0)
+        x = x - self.means
+        cov_mat = (x.t() @ x)/(len(x)-1)
         D, V = torch.linalg.eigh(cov_mat)
         non_zero_inds = D > self.min_eigenvalue
         self.pcs = V[:, non_zero_inds] / D[None,  non_zero_inds].sqrt()
 
-    def _compute_linear_proj(self, X: torch.Tensor) -> torch.Tensor:
-        """Projects the data point being tested onto the principle components.
+    def _compute_linear_proj(self, x: torch.Tensor) -> torch.Tensor:
+        """Projects the data point being tested onto the principal components.
 
         Parameters
         ----------
-        X
+        x
             The data point being tested.
         """
-        X_cen = X - self.means
-        X_proj = X_cen @ self.pcs
-        return X_proj
+        x_cen = x - self.means
+        x_proj = x_cen @ self.pcs
+        return x_proj
