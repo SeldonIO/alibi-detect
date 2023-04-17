@@ -51,7 +51,7 @@ setup(
     install_requires=[
         "matplotlib>=3.0.0, <4.0.0",
         "numpy>=1.16.2, <2.0.0",
-        "pandas>=0.23.3, <2.0.0",
+        "pandas>=1.0.0, <3.0.0",
         "Pillow>=5.4.1, <10.0.0",
         "opencv-python>=3.2.0, <5.0.0",
         "scipy>=1.3.0, <2.0.0",

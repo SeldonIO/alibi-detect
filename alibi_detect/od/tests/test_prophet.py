@@ -11,7 +11,7 @@ return_instance_score = [True, False]
 return_forecast = [True, False]
 
 d_fit = {
-    'ds': pd.date_range(pd.datetime.today(), periods=100),
+    'ds': pd.date_range(datetime.date.today(), periods=100),
     'y': np.random.randn(100)
 }
 df_fit = pd.DataFrame(data=d_fit)
