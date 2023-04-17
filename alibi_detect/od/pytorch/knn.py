@@ -98,4 +98,4 @@ class KNNTorch(TorchOutlierDetector):
             The Dataset tensor.
         """
         self.x_ref = x_ref
-        self.set_fitted()
+        self._set_fitted()

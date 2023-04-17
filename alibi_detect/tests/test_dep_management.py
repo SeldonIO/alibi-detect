@@ -136,9 +136,9 @@ def test_od_backend_dependencies(opt_dep):
     """
     dependency_map = defaultdict(lambda: ['default'])
     for dependency, relations in [
-            ('Ensembler', ['torch', 'keops']),
-            ('KNNTorch', ['torch', 'keops']),
-            ('to_numpy', ['torch', 'keops']),
+                ('Ensembler', ['torch', 'keops']),
+                ('KNNTorch', ['torch', 'keops']),
+                ('MahalanobisTorch', ['torch', 'keops'])
             ]:
         dependency_map[dependency] = relations
     from alibi_detect.od import pytorch as od_pt_backend
