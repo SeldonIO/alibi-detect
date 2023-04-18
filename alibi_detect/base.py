@@ -87,14 +87,14 @@ class BaseDetector(ABC):
 
 class FitMixin(ABC):
     @abstractmethod
-    def fit(self, *args, **kwargs) -> None:
-        ...
+    def fit(self, X: np.ndarray) -> None:
+        pass
 
 
 class ThresholdMixin(ABC):
     @abstractmethod
-    def infer_threshold(self, *args, **kwargs) -> None:
-        ...
+    def infer_threshold(self, X: np.ndarray) -> None:
+        pass
 
 
 # "Large artefacts" - to save memory these are skipped in _set_config(), but added back in get_config()
