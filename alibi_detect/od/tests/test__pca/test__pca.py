@@ -24,10 +24,26 @@ def make_PCA_detector(kernel=False):
     lambda: PCA(n_components=5, kernel=GaussianRBF())
 ])
 def test_unfitted_PCA_single_score(detector):
+    """Test pca detector throws errors when not fitted."""
     pca = detector()
-    x = np.array([[0, 10, 0], [0.1, 0, 0]])
+    x = np.array([[0, 10], [0.1, 0]])
+    x_ref = np.random.randn(100, 2)
+
+    # test infer_threshold raises exception when not fitted
     with pytest.raises(NotFittedError) as err:
-        _ = pca.predict(x)
+        pca.infer_threshold(x_ref, 0.1)
+    assert str(err.value) == \
+        f'{pca.__class__.__name__} has not been fit!'
+
+    # test score raises exception when not fitted
+    with pytest.raises(NotFittedError) as err:
+        pca.score(x)
+    assert str(err.value) == \
+        f'{pca.__class__.__name__} has not been fit!'
+
+    # test predict raises exception when not fitted
+    with pytest.raises(NotFittedError) as err:
+        pca.predict(x)
     assert str(err.value) == \
         f'{pca.__class__.__name__} has not been fit!'
 

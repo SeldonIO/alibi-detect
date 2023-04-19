@@ -96,6 +96,7 @@ class PCA(BaseDetector, ThresholdMixin, FitMixin):
         """
         self.backend.fit(self.backend._to_tensor(x_ref))
 
+    @catch_error('NotFittedError')
     def score(self, x: np.ndarray) -> np.ndarray:
         """Score `x` instances using the detector.
 

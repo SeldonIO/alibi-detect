@@ -19,6 +19,11 @@ def test_unfitted_mahalanobis_single_score():
     """Test Mahalanobis detector throws errors when not fitted."""
     mahalanobis_detector = Mahalanobis()
     x = np.array([[0, 10], [0.1, 0]])
+    x_ref = np.random.randn(100, 2)
+
+    with pytest.raises(NotFittedError) as err:
+        mahalanobis_detector.infer_threshold(x_ref, 0.1)
+    assert str(err.value) == 'Mahalanobis has not been fit!'
 
     with pytest.raises(NotFittedError) as err:
         mahalanobis_detector.score(x)

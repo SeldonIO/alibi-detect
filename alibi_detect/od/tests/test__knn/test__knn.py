@@ -24,6 +24,17 @@ def make_knn_detector(k=5, aggregator=None, normalizer=None):
 def test_unfitted_knn_single_score():
     knn_detector = KNN(k=10)
     x = np.array([[0, 10], [0.1, 0]])
+    x_ref = np.random.randn(100, 2)
+
+    # test predict raises exception when not fitted
+    with pytest.raises(NotFittedError) as err:
+        _ = knn_detector.infer_threshold(x_ref, 0.1)
+    assert str(err.value) == 'KNN has not been fit!'
+
+    # test predict raises exception when not fitted
+    with pytest.raises(NotFittedError) as err:
+        _ = knn_detector.score(x)
+    assert str(err.value) == 'KNN has not been fit!'
 
     # test predict raises exception when not fitted
     with pytest.raises(NotFittedError) as err:
