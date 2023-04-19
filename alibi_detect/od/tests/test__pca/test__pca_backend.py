@@ -4,7 +4,7 @@ import numpy as np
 
 from alibi_detect.utils.pytorch.kernels import GaussianRBF
 from alibi_detect.od.pytorch.pca import LinearPCATorch, KernelPCATorch
-from alibi_detect.base import NotFitException, ThresholdNotInferredException
+from alibi_detect.exceptions import NotFittedError, ThresholdNotInferredError
 
 
 @pytest.mark.parametrize('backend_detector', [
@@ -16,11 +16,11 @@ def test_pca_torch_backend_fit_errors(backend_detector):
     assert not pca_torch._fitted
 
     x = torch.randn((1, 10))
-    with pytest.raises(NotFitException) as err:
+    with pytest.raises(NotFittedError) as err:
         pca_torch(x)
     assert str(err.value) == f'{pca_torch.__class__.__name__} has not been fit!'
 
-    with pytest.raises(NotFitException) as err:
+    with pytest.raises(NotFittedError) as err:
         pca_torch.predict(x)
     assert str(err.value) == f'{pca_torch.__class__.__name__} has not been fit!'
 
@@ -29,7 +29,7 @@ def test_pca_torch_backend_fit_errors(backend_detector):
 
     assert pca_torch._fitted
 
-    with pytest.raises(ThresholdNotInferredException) as err:
+    with pytest.raises(ThresholdNotInferredError) as err:
         pca_torch(x)
     assert str(err.value) == (f'{pca_torch.__class__.__name__} has no threshold set, call'
                               ' `infer_threshold` before predicting.')

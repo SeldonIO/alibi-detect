@@ -65,12 +65,11 @@ class PCATorch(TorchOutlierDetector):
         NotFitException
             If called before detector has been fit.
         """
-        if not torch.jit.is_scripting():
-            self.check_fitted()
+        self.check_fitted()
         score = self._compute_score(x)
         return score.cpu()
 
-    def _fit(self, x_ref: torch.Tensor) -> None:
+    def fit(self, x_ref: torch.Tensor) -> None:
         """Fits the PCA detector.
 
         Parameters
@@ -81,6 +80,7 @@ class PCATorch(TorchOutlierDetector):
         self.x_ref_mean = x_ref.mean(0)
         self.pcs = self._compute_pcs(x_ref)
         self.x_ref = x_ref
+        self._set_fitted()
 
     def _compute_pcs(self, x: torch.Tensor) -> torch.Tensor:
         raise NotImplementedError

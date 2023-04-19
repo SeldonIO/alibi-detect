@@ -4,7 +4,7 @@ import torch
 
 from alibi_detect.utils.pytorch.kernels import GaussianRBF
 from alibi_detect.od._pca import PCA
-from alibi_detect.base import NotFitException
+from alibi_detect.exceptions import NotFittedError
 from sklearn.datasets import make_moons
 
 
@@ -26,7 +26,7 @@ def make_PCA_detector(kernel=False):
 def test_unfitted_PCA_single_score(detector):
     pca = detector()
     x = np.array([[0, 10, 0], [0.1, 0, 0]])
-    with pytest.raises(NotFitException) as err:
+    with pytest.raises(NotFittedError) as err:
         _ = pca.predict(x)
     assert str(err.value) == \
         f'{pca.backend.__class__.__name__} has not been fit!'
