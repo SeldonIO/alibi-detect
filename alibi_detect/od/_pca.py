@@ -25,8 +25,8 @@ class PCA(BaseDetector, ThresholdMixin, FitMixin):
         self,
         n_components: int,
         kernel: Optional[Callable] = None,
-        device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
         backend: Literal['pytorch'] = 'pytorch',
+        device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
     ) -> None:
         """Principal Component Analysis (PCA) outlier detector.
 
@@ -45,14 +45,14 @@ class PCA(BaseDetector, ThresholdMixin, FitMixin):
         n_components:
             The number of dimensions in the principle subspace. For linear pca should have
             ``1 <= n_components < dim(data)``. For kernel pca should have ``1 <= n_components < len(data)``.
-        backend
-            Backend used for outlier detection. Defaults to ``'pytorch'``. Options are ``'pytorch'``.
         kernel
             Kernel function to use for outlier detection. If ``None``, linear PCA is used instead of the
             kernel variant.
+        backend
+            Backend used for outlier detection. Defaults to ``'pytorch'``. Options are ``'pytorch'``.
         device
             Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
-            passing either ``'cuda'``, ``'gpu'`` or ``'cpu'``.
+            passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of ``torch.device``.
 
         Raises
         ------
@@ -117,7 +117,6 @@ class PCA(BaseDetector, ThresholdMixin, FitMixin):
         """Infer the threshold for the Mahalanobis detector.
 
         The threshold is set such that the false positive rate of the detector on the reference data is `fpr`.
-
 
         Parameters
         ----------
