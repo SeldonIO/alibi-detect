@@ -6,6 +6,8 @@ from alibi_detect.od.pytorch.base import TorchOutlierDetector
 
 
 class PCATorch(TorchOutlierDetector):
+    ensemble = False
+
     def __init__(
             self,
             n_components: int,

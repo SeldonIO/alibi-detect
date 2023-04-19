@@ -13,7 +13,7 @@ from alibi_detect.exceptions import NotFittedError, ThresholdNotInferredError
 ])
 def test_pca_torch_backend_fit_errors(backend_detector):
     pca_torch = backend_detector()
-    assert not pca_torch._fitted
+    assert not pca_torch.fitted
 
     x = torch.randn((1, 10))
     with pytest.raises(NotFittedError) as err:
@@ -27,12 +27,12 @@ def test_pca_torch_backend_fit_errors(backend_detector):
     x_ref = torch.randn((1024, 10))
     pca_torch.fit(x_ref)
 
-    assert pca_torch._fitted
+    assert pca_torch.fitted
 
     with pytest.raises(ThresholdNotInferredError) as err:
         pca_torch(x)
-    assert str(err.value) == (f'{pca_torch.__class__.__name__} has no threshold set, call'
-                              ' `infer_threshold` before predicting.')
+
+    assert str(err.value) == (f'{pca_torch.__class__.__name__} has no threshold set, call `infer_threshold` to fit one!')
 
     assert pca_torch.predict(x)
 
