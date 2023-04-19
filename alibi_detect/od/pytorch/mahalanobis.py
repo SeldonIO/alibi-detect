@@ -20,8 +20,8 @@ class MahalanobisTorch(TorchOutlierDetector):
         min_eigenvalue
             Eigenvectors with eigenvalues below this value will be discarded.
         device
-            Device type used. The default None tries to use the GPU and falls back on CPU if needed.
-            Can be specified by passing either ``'cuda'``, ``'gpu'`` or ``'cpu'``.
+            Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
+            passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of ``torch.device``.
         """
         super().__init__(device=device)
         self.min_eigenvalue = min_eigenvalue
