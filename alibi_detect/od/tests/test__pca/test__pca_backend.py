@@ -32,7 +32,8 @@ def test_pca_torch_backend_fit_errors(backend_detector):
     with pytest.raises(ThresholdNotInferredError) as err:
         pca_torch(x)
 
-    assert str(err.value) == (f'{pca_torch.__class__.__name__} has no threshold set, call `infer_threshold` to fit one!')
+    assert str(err.value) == (f'{pca_torch.__class__.__name__} has no threshold set, '
+                              'call `infer_threshold` to fit one!')
 
     assert pca_torch.predict(x)
 
