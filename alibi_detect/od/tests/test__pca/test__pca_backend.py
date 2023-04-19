@@ -12,6 +12,12 @@ from alibi_detect.exceptions import NotFittedError, ThresholdNotInferredError
     lambda: KernelPCATorch(n_components=5, kernel=GaussianRBF())
 ])
 def test_pca_torch_backend_fit_errors(backend_detector):
+    """Test Linear and Kernel PCA detector backend fit errors.
+
+    Test that an unfit detector backend raises an error when calling predict or score. Test that the
+    detector backend raises an error when calling the forward method while the threshold has not been
+    inferred.
+    """
     pca_torch = backend_detector()
     assert not pca_torch.fitted
 
@@ -43,6 +49,11 @@ def test_pca_torch_backend_fit_errors(backend_detector):
     lambda: KernelPCATorch(n_components=1, kernel=GaussianRBF())
 ])
 def test_pca_linear_scoring(backend_detector):
+    """Test Linear and Kernel PCATorch detector backend scoring methods.
+
+    Test that the detector correctly detects true outliers and that the correct proportion of in
+    distribution data is flagged as outliers.
+    """
     pca_torch = backend_detector()
     mean = [8, 8]
     cov = [[2., 0.], [0., 1.]]
@@ -75,6 +86,7 @@ def test_pca_linear_scoring(backend_detector):
 
 
 def test_pca_linear_torch_backend_ts(tmp_path):
+    """Test Linear PCA detector backend is torch-scriptable and savable."""
     pca_torch = LinearPCATorch(n_components=5)
     x = torch.randn((3, 10)) * torch.tensor([[1], [1], [100]])
     x_ref = torch.randn((1024, 10))
@@ -94,6 +106,7 @@ def test_pca_linear_torch_backend_ts(tmp_path):
 
 @pytest.mark.skip(reason='GaussianRBF kernel does not have torchscript support yet.')
 def test_pca_kernel_torch_backend_ts(tmp_path):
+    """Test Kernel PCA detector backend is torch-scriptable and savable."""
     pca_torch = KernelPCATorch(n_components=5, kernel=GaussianRBF())
     x = torch.randn((3, 10)) * torch.tensor([[1], [1], [100]])
     x_ref = torch.randn((1024, 10))
