@@ -29,7 +29,7 @@ def test_unfitted_PCA_single_score(detector):
     with pytest.raises(NotFittedError) as err:
         _ = pca.predict(x)
     assert str(err.value) == \
-        f'{pca.backend.__class__.__name__} has not been fit!'
+        f'{pca.__class__.__name__} has not been fit!'
 
 
 def test_fitted_PCA_single_score():

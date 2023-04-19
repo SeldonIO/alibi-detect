@@ -9,6 +9,7 @@ from alibi_detect.base import BaseDetector, ThresholdMixin, FitMixin
 from alibi_detect.od.pytorch import KernelPCATorch, LinearPCATorch
 from alibi_detect.utils.frameworks import BackendValidator
 from alibi_detect.version import __version__
+from alibi_detect.exceptions import _catch_error as catch_error
 
 
 if TYPE_CHECKING:
@@ -113,6 +114,7 @@ class PCA(BaseDetector, ThresholdMixin, FitMixin):
         score = self.backend.score(self.backend._to_tensor(x))
         return self.backend._to_numpy(score)
 
+    @catch_error('NotFittedError')
     def infer_threshold(self, x_ref: np.ndarray, fpr: float) -> None:
         """Infer the threshold for the Mahalanobis detector.
 
@@ -126,9 +128,17 @@ class PCA(BaseDetector, ThresholdMixin, FitMixin):
             False positive rate used to infer the threshold. The false positive rate is the proportion of instances in \
             `x_ref` that are incorrectly classified as outliers. The false positive rate should be in the range \
             ``(0, 1)``.
+
+        Raises
+        ------
+        ValueError
+            Raised if `fpr` is not in ``(0, 1)``.
+        NotFittedError
+            If called before detector has been fit.
         """
         self.backend.infer_threshold(self.backend._to_tensor(x_ref), fpr)
 
+    @catch_error('NotFittedError')
     def predict(self, x: np.ndarray) -> Dict[str, Any]:
         """Predict whether the instances in `x` are outliers or not.
 
@@ -143,6 +153,11 @@ class PCA(BaseDetector, ThresholdMixin, FitMixin):
         performed, 'data' also contains the threshold value, outlier labels and p_vals . The shape of the scores is \
         `(n_instances,)`. The higher the score, the more anomalous the instance. 'meta' contains information about \
         the detector.
+
+        Raises
+        ------
+        NotFittedError
+            If called before detector has been fit.
         """
         outputs = self.backend.predict(self.backend._to_tensor(x))
         output = outlier_prediction_dict()
