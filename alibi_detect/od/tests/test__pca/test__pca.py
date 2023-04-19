@@ -122,7 +122,7 @@ def test_PCA_integration(tmp_path):
     ts_PCA.save(tmp_path / 'pca.pt')
     pca_detector = PCA(n_components=1)
     pca_detector = torch.load(tmp_path / 'pca.pt')
-    y = ts_PCA(x)
+    y = pca_detector(x)
     assert torch.all(y == torch.tensor([False, True]))
 
 

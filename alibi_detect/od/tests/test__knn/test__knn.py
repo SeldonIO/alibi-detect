@@ -203,7 +203,7 @@ def test_knn_single_torchscript():
                                         lambda: 'MinAggregator'])
 @pytest.mark.parametrize("normalizer", [ShiftAndScaleNormalizer, PValNormalizer, lambda: None,
                                         lambda: 'ShiftAndScaleNormalizer', lambda: 'PValNormalizer'])
-def test_knn_ensemble_integration(aggregator, normalizer):
+def test_knn_ensemble_integration(tmp_path, aggregator, normalizer):
     """Test knn ensemble detector on moons dataset.
 
     Tests ensemble knn detector with every combination of aggregator and normalizer on the moons dataset.
@@ -229,13 +229,18 @@ def test_knn_ensemble_integration(aggregator, normalizer):
     result = result['data']['is_outlier'][0]
     assert result
 
-    tsknn = torch.jit.script(knn_detector.backend)
+    ts_knn = torch.jit.script(knn_detector.backend)
     x = torch.tensor([x_inlier[0], x_outlier[0]], dtype=torch.float32)
-    y = tsknn(x)
+    y = ts_knn(x)
+    assert torch.all(y == torch.tensor([False, True]))
+
+    ts_knn.save(tmp_path / 'pca.pt')
+    knn_detector = torch.load(tmp_path / 'pca.pt')
+    y = knn_detector(x)
     assert torch.all(y == torch.tensor([False, True]))
 
 
-def test_knn_integration():
+def test_knn_integration(tmp_path):
     """Test knn detector on moons dataset.
 
     Tests knn detector on the moons dataset. Fits and infers thresholds and verifies that the detector can
@@ -255,7 +260,12 @@ def test_knn_integration():
     result = result['data']['is_outlier'][0]
     assert result
 
-    tsknn = torch.jit.script(knn_detector.backend)
+    ts_knn = torch.jit.script(knn_detector.backend)
     x = torch.tensor([x_inlier[0], x_outlier[0]], dtype=torch.float32)
-    y = tsknn(x)
+    y = ts_knn(x)
+    assert torch.all(y == torch.tensor([False, True]))
+
+    ts_knn.save(tmp_path / 'pca.pt')
+    knn_detector = torch.load(tmp_path / 'pca.pt')
+    y = knn_detector(x)
     assert torch.all(y == torch.tensor([False, True]))
