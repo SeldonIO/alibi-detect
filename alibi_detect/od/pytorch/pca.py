@@ -123,7 +123,7 @@ class LinearPCATorch(PCATorch):
 
         Returns
         -------
-            The principle components of the reference data.
+        The principle components of the reference data.
         """
         x -= self.x_ref_mean
         cov_mat = (x.t() @ x)/(len(x)-1)
@@ -143,7 +143,7 @@ class LinearPCATorch(PCATorch):
 
         Returns
         -------
-            The outlier score.
+        The outlier score.
         """
         x_cen = x - self.x_ref_mean
         x_pcs = x_cen @ self.pcs
@@ -186,7 +186,7 @@ class KernelPCATorch(PCATorch):
 
         Returns
         -------
-            The principle components of the reference data.
+        The principle components of the reference data.
         """
         K = self.compute_kernel_mat(x)
         D, V = torch.linalg.eigh(K)
@@ -206,10 +206,9 @@ class KernelPCATorch(PCATorch):
 
         Returns
         -------
-            The outlier score.
+        The outlier score.
         """
         k_xr = self.kernel(x, self.x_ref)
-        # Now to center
         k_xr_row_sums = k_xr.sum(1)
         _, n = k_xr.shape
         k_xr_cen = k_xr - self.k_col_sums[None, :]/n - k_xr_row_sums[:, None]/n + self.k_sum/(n**2)
@@ -227,12 +226,10 @@ class KernelPCATorch(PCATorch):
 
         Returns
         -------
-            The centered kernel matrix.
+        The centered kernel matrix.
         """
         n = len(x)
-        # Uncentered kernel matrix
         k = self.kernel(x, x)
-        # Now to center
         self.k_col_sums = k.sum(0)
         k_row_sums = k.sum(1)
         self.k_sum = k_row_sums.sum()
