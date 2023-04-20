@@ -27,7 +27,6 @@ class BaseTransformTorch(Module):
         """
         raise NotImplementedError()
 
-    @torch.no_grad()
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.transform(x)
 
