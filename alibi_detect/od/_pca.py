@@ -100,7 +100,7 @@ class PCA(BaseDetector, ThresholdMixin, FitMixin):
     def score(self, x: np.ndarray) -> np.ndarray:
         """Score `x` instances using the detector.
 
-        Project `x` onto the eigenvectors and compute its score using the L2 norm.
+        Project `x` onto the eigenvectors and compute the score using the L2 norm.
 
         Parameters
         ----------
@@ -111,24 +111,30 @@ class PCA(BaseDetector, ThresholdMixin, FitMixin):
         -------
         Outlier scores. The shape of the scores is `(n_instances,)`. The higher the score, the more anomalous the \
         instance.
+
+        Raises
+        ------
+        NotFittedError
+            If called before detector has been fit.
         """
         score = self.backend.score(self.backend._to_tensor(x))
         return self.backend._to_numpy(score)
 
     @catch_error('NotFittedError')
     def infer_threshold(self, x_ref: np.ndarray, fpr: float) -> None:
-        """Infer the threshold for the Mahalanobis detector.
+        """Infer the threshold for the kNN detector.
 
-        The threshold is set such that the false positive rate of the detector on the reference data is `fpr`.
+        The threshold is computed so that the outlier detector would incorrectly classify `fpr` proportion of the
+        reference data as outliers.
 
         Parameters
         ----------
-        x_ref
+        x
             Reference data used to infer the threshold.
         fpr
-            False positive rate used to infer the threshold. The false positive rate is the proportion of instances in \
-            `x_ref` that are incorrectly classified as outliers. The false positive rate should be in the range \
-            ``(0, 1)``.
+            False positive rate used to infer the threshold. The false positive rate is the proportion of
+            instances in `x` that are incorrectly classified as outliers. The false positive rate should
+            be in the range ``(0, 1)``.
 
         Raises
         ------
@@ -143,6 +149,8 @@ class PCA(BaseDetector, ThresholdMixin, FitMixin):
     def predict(self, x: np.ndarray) -> Dict[str, Any]:
         """Predict whether the instances in `x` are outliers or not.
 
+        Scores the instances in `x` and if the threshold was inferred, returns the outlier labels and p-values as well.
+
         Parameters
         ----------
         x
@@ -151,7 +159,7 @@ class PCA(BaseDetector, ThresholdMixin, FitMixin):
         Returns
         -------
         Dictionary with keys 'data' and 'meta'. 'data' contains the outlier scores. If threshold inference was  \
-        performed, 'data' also contains the threshold value, outlier labels and p_vals . The shape of the scores is \
+        performed, 'data' also contains the threshold value, outlier labels and p-vals . The shape of the scores is \
         `(n_instances,)`. The higher the score, the more anomalous the instance. 'meta' contains information about \
         the detector.
 
