@@ -19,7 +19,7 @@ extras_require = {
     # https://github.com/SeldonIO/alibi-detect/issues/375 and 387
     "tensorflow": [
         "tensorflow_probability>=0.8.0, <0.20.0",
-        "tensorflow>=2.2.0, !=2.6.0, !=2.6.1, <2.12.0",  # https://github.com/SeldonIO/alibi-detect/issues/375 and 387
+        "tensorflow>=2.2.0, !=2.6.0, !=2.6.1, <2.13.0",  # https://github.com/SeldonIO/alibi-detect/issues/375 and 387
     ],
     "keops": [
         "pykeops>=2.0.0, <2.2.0",
@@ -28,7 +28,7 @@ extras_require = {
     "all": [
         "prophet>=1.1.0, <2.0.0",
         "tensorflow_probability>=0.8.0, <0.20.0",
-        "tensorflow>=2.2.0, !=2.6.0, !=2.6.1, <2.12.0",  # https://github.com/SeldonIO/alibi-detect/issues/375 and 387
+        "tensorflow>=2.2.0, !=2.6.0, !=2.6.1, <2.13.0",  # https://github.com/SeldonIO/alibi-detect/issues/375 and 387
         "pykeops>=2.0.0, <2.2.0",
         "torch>=1.7.0, <1.14.0"
     ],
@@ -51,11 +51,11 @@ setup(
     install_requires=[
         "matplotlib>=3.0.0, <4.0.0",
         "numpy>=1.16.2, <2.0.0",
-        "pandas>=0.23.3, <2.0.0",
+        "pandas>=1.0.0, <3.0.0",
         "Pillow>=5.4.1, <10.0.0",
         "opencv-python>=3.2.0, <5.0.0",
         "scipy>=1.3.0, <2.0.0",
-        'scikit-image>=0.14.2, !=0.17.1, <0.20',  # https://github.com/SeldonIO/alibi/issues/215
+        'scikit-image>=0.14.2, !=0.17.1, <0.21',  # https://github.com/SeldonIO/alibi/issues/215
         "scikit-learn>=0.20.2, <2.0.0",
         "transformers>=4.0.0, <5.0.0",
         "dill>=0.3.0, <0.4.0",

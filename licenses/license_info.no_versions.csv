@@ -16,6 +16,7 @@
 "imageio","BSD License"
 "joblib","BSD License"
 "kiwisolver","BSD License"
+"lazy_loader","BSD License"
 "llvmlite","BSD"
 "matplotlib","Python Software Foundation License"
 "networkx","BSD License"
@@ -41,4 +42,5 @@
 "tqdm","MIT License; Mozilla Public License 2.0 (MPL 2.0)"
 "transformers","Apache Software License"
 "typing_extensions","Python Software Foundation License"
+"tzdata","Apache Software License"
 "urllib3","MIT License"
