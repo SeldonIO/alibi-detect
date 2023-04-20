@@ -77,7 +77,7 @@ def plot_feature_outlier_image(od_preds: Dict,
         instance_ids = list(range(len(od_preds['data']['is_outlier'])))
     n_instances = min(max_instances, len(instance_ids))
     instance_ids = instance_ids[:n_instances]
-    
+
     if outliers_only and n_instances == 0:
         return
 
