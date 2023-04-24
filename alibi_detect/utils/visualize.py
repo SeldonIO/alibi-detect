@@ -80,7 +80,7 @@ def plot_feature_outlier_image(od_preds: Dict,
     instance_ids = instance_ids[:n_instances]
 
     if outliers_only and n_instances == 0:
-        warnings.warn('No outliers found!', UserWarning, stacklevel=3)
+        warnings.warn('No outliers found!', UserWarning)
         return
 
     n_cols = 2
