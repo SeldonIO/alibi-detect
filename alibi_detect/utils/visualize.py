@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import roc_curve, auc
 from typing import Dict, Union
+import warnings
 
 
 def plot_instance_score(preds: Dict,
