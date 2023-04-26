@@ -88,8 +88,19 @@ class PCA(BaseDetector, ThresholdMixin, FitMixin):
     def fit(self, x_ref: np.ndarray) -> None:
         """Fit the detector on reference data.
 
-        Compute the eigenvectors of the covariance/kernel matrix of `x_ref` and save the smallest `n_components`
-        eigenvectors.
+        In the linear case we compute the principle components of the reference data using the
+        covariance matrix and then remove the largest `n_components` eigenvectors. The remaining
+        eigenvectors correspond to the invariant dimensions of the data. Changes in these
+        dimensions are used to compute the outlier score which is the distance to the principle
+        subspace spanned by the first `n_components` eigenvectors.
+
+        In the kernel Case we compute the principle components of the reference data using the
+        kernel matrix and then return the largest `n_components` eigenvectors. These are then
+        normalized to have length equal to `1/eigenvalue`. Note that this differs from the
+        linear case where we remove the largest eigenvectors.
+
+        In both cases we then store the computed principle components and use later when we score
+        test instances.
 
         Parameters
         ----------
@@ -99,8 +110,9 @@ class PCA(BaseDetector, ThresholdMixin, FitMixin):
         Raises
         ------
         ValueError
-            If using linear pca variant and `n_components` is greater than or equal to number of features or if
-            using kernel pca variant and `n_components` is greater than or equal to number of instances.
+            If using linear pca variant and `n_components` is greater than or equal to number of
+            features or if using kernel pca variant and `n_components` is greater than or equal
+            to number of instances.
         """
         self.backend.fit(self.backend._to_tensor(x_ref))
 

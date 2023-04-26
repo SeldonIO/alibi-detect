@@ -121,8 +121,10 @@ class LinearPCATorch(PCATorch):
         """Compute the principle components of the reference data.
 
         We compute the principle components of the reference data using the covariance matrix and then
-        return the last `n_components` of the eigenvectors. These correspond to the invariant dimensions
-        of the data. Changes in these dimensions are used to compute the outlier score.
+        remove the largest `n_components` eigenvectors. The remaining eigenvectors correspond to the
+        invariant dimensions of the data. Changes in these dimensions are used to compute the outlier
+        score which is the distance to the principle subspace spanned by the first `n_components`
+        eigenvectors.
 
         Parameters
         ----------
@@ -192,8 +194,9 @@ class KernelPCATorch(PCATorch):
         """Compute the principle components of the reference data.
 
         We compute the principle components of the reference data using the kernel matrix and then
-        return the last `n_components` of the eigenvectors. These correspond to the invariant dimensions
-        of the data. Changes in these dimensions are used to compute the outlier score.
+        return the largest `n_components` eigenvectors. These are then normalized to have length
+        equal to `1/eigenvalue`. Note that this differs from the linear case where we remove the
+        largest eigenvectors.
 
         Parameters
         ----------
