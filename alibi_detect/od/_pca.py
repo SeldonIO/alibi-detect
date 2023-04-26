@@ -101,8 +101,8 @@ class PCA(BaseDetector, ThresholdMixin, FitMixin):
         normalized to have length equal to `1/eigenvalue`. Note that this differs from the
         linear case where we remove the largest eigenvectors.
 
-        In both cases we then store the computed principle components and use later when we score
-        test instances.
+        In both cases we then store the computed components and use later when we score test
+        instances.
 
         Parameters
         ----------
