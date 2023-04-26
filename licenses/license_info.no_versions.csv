@@ -11,6 +11,7 @@
 "dill","BSD License"
 "filelock","The Unlicense (Unlicense)"
 "fonttools","MIT License"
+"fsspec","BSD License"
 "huggingface-hub","Apache Software License"
 "idna","BSD License"
 "imageio","BSD License"
