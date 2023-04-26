@@ -59,6 +59,8 @@ class PCA(BaseDetector, ThresholdMixin, FitMixin):
         ------
         NotImplementedError
             If choice of `backend` is not implemented.
+        ValueError
+            If `n_components` is less than 1.
         """
         super().__init__()
 
@@ -93,6 +95,12 @@ class PCA(BaseDetector, ThresholdMixin, FitMixin):
         ----------
         x_ref
             Reference data used to fit the detector.
+
+        Raises
+        ------
+        ValueError
+            If using linear pca variant and `n_components` is greater than or equal to number of features or if
+            using kernel pca variant and `n_components` is greater than or equal to number of instances.
         """
         self.backend.fit(self.backend._to_tensor(x_ref))
 

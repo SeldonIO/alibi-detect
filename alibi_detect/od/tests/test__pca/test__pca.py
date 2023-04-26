@@ -17,14 +17,14 @@ def fit_PCA_detector(detector):
 
 
 @pytest.mark.parametrize('detector', [
-    lambda: PCA(n_components=5),
-    lambda: PCA(n_components=5, kernel=GaussianRBF())
+    lambda: PCA(n_components=3),
+    lambda: PCA(n_components=3, kernel=GaussianRBF())
 ])
 def test_unfitted_PCA_single_score(detector):
     """Test pca detector throws errors when not fitted."""
     pca = detector()
-    x = np.array([[0, 10], [0.1, 0]])
-    x_ref = np.random.randn(100, 2)
+    x = np.array([[0, 10, 11], [0.1, 0, 11]])
+    x_ref = np.random.randn(100, 3)
 
     # test infer_threshold raises exception when not fitted
     with pytest.raises(NotFittedError) as err:
@@ -43,6 +43,22 @@ def test_unfitted_PCA_single_score(detector):
         pca.predict(x)
     assert str(err.value) == \
         f'{pca.__class__.__name__} has not been fit!'
+
+
+def test_pca_value_errors():
+    with pytest.raises(ValueError) as err:
+        PCA(n_components=0)
+    assert str(err.value) == 'n_components must be at least 1'
+
+    with pytest.raises(ValueError) as err:
+        pca = PCA(n_components=4)
+        pca.fit(np.random.randn(100, 3))
+    assert str(err.value) == 'n_components must be less than the number of features.'
+
+    with pytest.raises(ValueError) as err:
+        pca = PCA(n_components=10, kernel=GaussianRBF())
+        pca.fit(np.random.randn(9, 3))
+    assert str(err.value) == 'n_components must be less than the number of reference instances.'
 
 
 @pytest.mark.parametrize('detector', [

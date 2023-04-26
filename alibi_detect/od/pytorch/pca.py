@@ -23,9 +23,17 @@ class PCATorch(TorchOutlierDetector):
         device
             Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
             passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of ``torch.device``.
+
+        Raises
+        ------
+        ValueError
+            If `n_components` is less than 1.
         """
         super().__init__(device=device)
         self.n_components = n_components
+
+        if n_components < 1:
+            raise ValueError('n_components must be at least 1')
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Detect if `x` is an outlier.
@@ -124,7 +132,15 @@ class LinearPCATorch(PCATorch):
         Returns
         -------
         The principle components of the reference data.
+
+        Raises
+        ------
+        ValueError
+            If `n_components` is greater than or equal to number of features
         """
+        if self.n_components >= x.shape[1]:
+            raise ValueError("n_components must be less than the number of features.")
+
         x -= self.x_ref_mean
         cov_mat = (x.t() @ x)/(len(x)-1)
         _, V = torch.linalg.eigh(cov_mat)
@@ -187,7 +203,15 @@ class KernelPCATorch(PCATorch):
         Returns
         -------
         The principle components of the reference data.
+
+        Raises
+        ------
+        ValueError
+            If `n_components` is greater than or equal to the number of reference samples.
         """
+        if self.n_components >= x.shape[0]:
+            raise ValueError("n_components must be less than the number of reference instances.")
+
         K = self.compute_kernel_mat(x)
         D, V = torch.linalg.eigh(K)
         pcs = V / torch.sqrt(D)[None, :]
