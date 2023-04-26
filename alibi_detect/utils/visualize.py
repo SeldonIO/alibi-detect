@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import roc_curve, auc
 from typing import Dict, Union
+import warnings
 
 
 def plot_instance_score(preds: Dict,
@@ -77,6 +78,11 @@ def plot_feature_outlier_image(od_preds: Dict,
         instance_ids = list(range(len(od_preds['data']['is_outlier'])))
     n_instances = min(max_instances, len(instance_ids))
     instance_ids = instance_ids[:n_instances]
+
+    if outliers_only and n_instances == 0:
+        warnings.warn('No outliers found!', UserWarning)
+        return
+
     n_cols = 2
 
     if n_channels == 3:

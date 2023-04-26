@@ -42,7 +42,6 @@ class KNNTorch(TorchOutlierDetector):
         self.ks = torch.tensor(k) if self.ensemble else torch.tensor([k], device=self.device)
         self.ensembler = ensembler
 
-    @torch.no_grad()
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Detect if `x` is an outlier.
 
@@ -67,7 +66,6 @@ class KNNTorch(TorchOutlierDetector):
         preds = scores > self.threshold
         return preds
 
-    @torch.no_grad()
     def score(self, x: torch.Tensor) -> torch.Tensor:
         """Computes the score of `x`
 
@@ -100,4 +98,4 @@ class KNNTorch(TorchOutlierDetector):
             The Dataset tensor.
         """
         self.x_ref = x_ref
-        self.set_fitted()
+        self._set_fitted()

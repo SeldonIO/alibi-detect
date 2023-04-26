@@ -27,7 +27,6 @@ class BaseTransformTorch(Module):
         """
         raise NotImplementedError()
 
-    @torch.no_grad()
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.transform(x)
 
@@ -46,7 +45,7 @@ class FitMixinTorch(ABC):
         """
         pass
 
-    def set_fitted(self) -> Self:
+    def _set_fitted(self) -> Self:
         """Sets the fitted attribute to True.
 
         Should be called within each transform method.
@@ -92,7 +91,7 @@ class PValNormalizer(BaseTransformTorch, FitMixinTorch):
             score outputs of ensemble of detectors applied to reference data.
         """
         self.val_scores = val_scores
-        return self.set_fitted()
+        return self._set_fitted()
 
     def transform(self, scores: torch.Tensor) -> torch.Tensor:
         """Transform scores to 1 - p-values.
@@ -133,7 +132,7 @@ class ShiftAndScaleNormalizer(BaseTransformTorch, FitMixinTorch):
         """
         self.val_means = val_scores.mean(0)[None, :]
         self.val_scales = val_scores.std(0)[None, :]
-        return self.set_fitted()
+        return self._set_fitted()
 
     def transform(self, scores: torch.Tensor) -> torch.Tensor:
         """Transform scores to normalized values. Subtracts the mean and scales by the standard deviation.
@@ -312,4 +311,4 @@ class Ensembler(BaseTransformTorch, FitMixinTorch):
         """
         if self.normalizer is not None:
             self.normalizer.fit(x)  # type: ignore
-        return self.set_fitted()
+        return self._set_fitted()
