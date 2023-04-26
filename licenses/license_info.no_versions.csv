@@ -15,8 +15,6 @@
 "huggingface-hub","Apache Software License"
 "idna","BSD License"
 "imageio","BSD License"
-"importlib-metadata","Apache Software License"
-"importlib-resources","Apache Software License"
 "joblib","BSD License"
 "kiwisolver","BSD License"
 "lazy_loader","BSD License"
@@ -47,4 +45,3 @@
 "typing_extensions","Python Software Foundation License"
 "tzdata","Apache Software License"
 "urllib3","MIT License"
-"zipp","MIT License"
