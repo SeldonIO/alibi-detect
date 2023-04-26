@@ -5,7 +5,7 @@ sphinx-autodoc-typehints>=1.12.0, <1.21  # limited due to https://github.com/tox
 sphinx-rtd-theme>=1.0.0, <2.0.0
 sphinxcontrib-apidoc>=0.3.0, <0.4.0
 sphinxcontrib-bibtex>=2.1.0, <3.0.0
-myst-parser>=0.14, <0.19
+myst-parser>=1.0, <2.0
 nbsphinx>=0.8.5, <0.10.0
 sphinx_design==0.4.1  # Pinning for now as sphinx_design is v.new and still in flux.
 ipykernel>=5.1.0, <7.0.0 # required for executing notebooks via nbsphinx
@@ -16,3 +16,4 @@ ipython>=7.2.0, <9.0.0 # required for executing notebooks nbsphinx
 numpy>=1.16.2, <2.0.0
 pandas>=1.0.0, <3.0.0
 matplotlib>=3.0.0, <4.0.0
+typing-extensions>=3.7.4.3
