@@ -216,14 +216,14 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
         x
             Data to predict.
 
+        Returns
+        -------
+        Output of the outlier detector. Includes the p-values, outlier labels, instance scores and threshold.
+
         Raises
         ------
         ValueError
             Raised if the detector is not fit on reference data.
-
-        Returns
-        -------
-        Output of the outlier detector. Includes the p-values, outlier labels, instance scores and threshold.
         """
         self.check_fitted()  # type: ignore
         raw_scores = self.score(x)
