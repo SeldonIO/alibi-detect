@@ -234,8 +234,8 @@ def test_knn_ensemble_integration(tmp_path, aggregator, normalizer):
     y = ts_knn(x)
     assert torch.all(y == torch.tensor([False, True]))
 
-    ts_knn.save(tmp_path / 'pca.pt')
-    knn_detector = torch.load(tmp_path / 'pca.pt')
+    ts_knn.save(tmp_path / 'knn.pt')
+    knn_detector = torch.load(tmp_path / 'knn.pt')
     y = knn_detector(x)
     assert torch.all(y == torch.tensor([False, True]))
 
@@ -265,7 +265,7 @@ def test_knn_integration(tmp_path):
     y = ts_knn(x)
     assert torch.all(y == torch.tensor([False, True]))
 
-    ts_knn.save(tmp_path / 'pca.pt')
-    knn_detector = torch.load(tmp_path / 'pca.pt')
+    ts_knn.save(tmp_path / 'knn.pt')
+    knn_detector = torch.load(tmp_path / 'knn.pt')
     y = knn_detector(x)
     assert torch.all(y == torch.tensor([False, True]))
