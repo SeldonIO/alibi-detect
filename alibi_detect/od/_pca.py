@@ -141,7 +141,7 @@ class PCA(BaseDetector, ThresholdMixin, FitMixin):
         return self.backend._to_numpy(score)
 
     @catch_error('NotFittedError')
-    def infer_threshold(self, x_ref: np.ndarray, fpr: float) -> None:
+    def infer_threshold(self, x: np.ndarray, fpr: float) -> None:
         """Infer the threshold for the kNN detector.
 
         The threshold is computed so that the outlier detector would incorrectly classify `fpr` proportion of the
@@ -163,7 +163,7 @@ class PCA(BaseDetector, ThresholdMixin, FitMixin):
         NotFittedError
             If called before detector has been fit.
         """
-        self.backend.infer_threshold(self.backend._to_tensor(x_ref), fpr)
+        self.backend.infer_threshold(self.backend._to_tensor(x), fpr)
 
     @catch_error('NotFittedError')
     def predict(self, x: np.ndarray) -> Dict[str, Any]:
