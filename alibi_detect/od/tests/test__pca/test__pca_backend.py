@@ -48,7 +48,7 @@ def test_pca_torch_backend_fit_errors(backend_detector):
     lambda: LinearPCATorch(n_components=1),
     lambda: KernelPCATorch(n_components=1, kernel=GaussianRBF())
 ])
-def test_pca_linear_scoring(backend_detector):
+def test_pca_scoring(backend_detector):
     """Test Linear and Kernel PCATorch detector backend scoring methods.
 
     Test that the detector correctly detects true outliers and that the correct proportion of in
@@ -63,10 +63,10 @@ def test_pca_linear_scoring(backend_detector):
     x_1 = torch.tensor([[8., 8.]], dtype=torch.float64)
     scores_1 = pca_torch.score(x_1)
 
-    x_2 = torch.tensor(np.random.multivariate_normal(mean, cov, 1), dtype=torch.float64)
+    x_2 = torch.tensor([[10., 8.]], dtype=torch.float64)
     scores_2 = pca_torch.score(x_2)
 
-    x_3 = torch.tensor([[-20., 20.]], dtype=torch.float64)
+    x_3 = torch.tensor([[8., 20.]], dtype=torch.float64)
     scores_3 = pca_torch.score(x_3)
 
     # test correct ordering of scores given outlyingness of data

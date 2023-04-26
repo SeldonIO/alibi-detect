@@ -237,8 +237,8 @@ class KernelPCATorch(PCATorch):
         """
         k_xr = self.kernel(x, self.x_ref)
         k_xr_row_sums = k_xr.sum(1)
-        _, n = k_xr.shape
-        k_xr_cen = k_xr - self.k_col_sums[None, :]/n - k_xr_row_sums[:, None]/n + self.k_sum/(n**2)
+        n, m = k_xr.shape
+        k_xr_cen = k_xr - self.k_col_sums[None, :]/m - k_xr_row_sums[:, None]/n + self.k_sum/(m*n)
         x_pcs = k_xr_cen @ self.pcs
         scores = -2 * k_xr.mean(-1) - (x_pcs**2).sum(1)
         return scores
