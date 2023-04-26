@@ -87,12 +87,10 @@ class PCATorch(TorchOutlierDetector):
         x_ref
             The Dataset tensor.
         """
-        self.x_ref_mean = x_ref.mean(0)
-        self.pcs = self.compute_pcs(x_ref)
-        self.x_ref = x_ref
+        self.pcs = self._fit(x_ref)
         self._set_fitted()
 
-    def compute_pcs(self, x: torch.Tensor) -> torch.Tensor:
+    def _fit(self, x: torch.Tensor) -> torch.Tensor:
         raise NotImplementedError
 
     def compute_score(self, x: torch.Tensor) -> torch.Tensor:
@@ -117,7 +115,7 @@ class LinearPCATorch(PCATorch):
         """
         super().__init__(device=device, n_components=n_components)
 
-    def compute_pcs(self, x: torch.Tensor) -> torch.Tensor:
+    def _fit(self, x: torch.Tensor) -> torch.Tensor:
         """Compute the principle components of the reference data.
 
         We compute the principle components of the reference data using the covariance matrix and then
@@ -143,6 +141,7 @@ class LinearPCATorch(PCATorch):
         if self.n_components >= x.shape[1]:
             raise ValueError("n_components must be less than the number of features.")
 
+        self.x_ref_mean = x.mean(0)
         x -= self.x_ref_mean
         cov_mat = (x.t() @ x)/(len(x)-1)
         _, V = torch.linalg.eigh(cov_mat)
@@ -190,7 +189,7 @@ class KernelPCATorch(PCATorch):
         super().__init__(device=device, n_components=n_components)
         self.kernel = kernel
 
-    def compute_pcs(self, x: torch.Tensor) -> torch.Tensor:
+    def _fit(self, x: torch.Tensor) -> torch.Tensor:
         """Compute the principle components of the reference data.
 
         We compute the principle components of the reference data using the kernel matrix and then
@@ -215,6 +214,7 @@ class KernelPCATorch(PCATorch):
         if self.n_components >= x.shape[0]:
             raise ValueError("n_components must be less than the number of reference instances.")
 
+        self.x_ref = x
         K = self.compute_kernel_mat(x)
         D, V = torch.linalg.eigh(K)
         pcs = V / torch.sqrt(D)[None, :]

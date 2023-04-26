@@ -33,13 +33,15 @@ class PCA(BaseDetector, ThresholdMixin, FitMixin):
 
         The detector is based on the Principal Component Analysis (PCA) algorithm. There are two variants of PCA:
         linear PCA and kernel PCA. Linear PCA computes the eigenvectors of the covariance matrix of the data. Kernel
-        PCA computes the eigenvectors of the kernel matrix of the data. In each case, we choose the smallest
-        `n_components` eigenvectors. We do this as they correspond to the invariant directions of the data. i.e the
-        directions along which the data is least spread out. Thus a point that deviates along these dimensions is more
-        likely to be an outlier.
+        PCA computes the eigenvectors of the kernel matrix of the data.
 
-        When scoring a test instance we project it onto the eigenvectors and compute its score using the L2 norm. If
-        a threshold is fitted we use this to determine whether the instance is an outlier or not.
+        When scoring a test instance using the linear variant compute the distance to the principle subspace spanned
+        by the first `n_components` eigenvectors.
+
+        When scoring a test instance using the kernel variant we project it onto the largest eigenvectors and
+        compute its score using the L2 norm.
+
+        If a threshold is fitted we use this to determine whether the instance is an outlier or not.
 
         Parameters
         ----------
