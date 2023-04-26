@@ -142,7 +142,7 @@ class PCA(BaseDetector, ThresholdMixin, FitMixin):
 
     @catch_error('NotFittedError')
     def infer_threshold(self, x: np.ndarray, fpr: float) -> None:
-        """Infer the threshold for the kNN detector.
+        """Infer the threshold for the PCA detector.
 
         The threshold is computed so that the outlier detector would incorrectly classify `fpr` proportion of the
         reference data as outliers.
