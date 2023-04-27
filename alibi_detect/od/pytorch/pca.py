@@ -56,7 +56,7 @@ class PCATorch(TorchOutlierDetector):
         if not torch.jit.is_scripting():
             self.check_threshold_inferred()
         preds = scores > self.threshold
-        return preds.cpu()
+        return preds
 
     def score(self, x: torch.Tensor) -> torch.Tensor:
         """Computes the score of `x`
@@ -77,7 +77,7 @@ class PCATorch(TorchOutlierDetector):
         """
         self.check_fitted()
         score = self.compute_score(x)
-        return score.cpu()
+        return score
 
     def fit(self, x_ref: torch.Tensor) -> None:
         """Fits the PCA detector.
