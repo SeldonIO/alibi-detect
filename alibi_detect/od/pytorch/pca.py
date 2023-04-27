@@ -76,7 +76,7 @@ class PCATorch(TorchOutlierDetector):
             If called before detector has been fit.
         """
         self.check_fitted()
-        score = self.compute_score(x)
+        score = self._score(x)
         return score
 
     def fit(self, x_ref: torch.Tensor) -> None:
@@ -93,7 +93,7 @@ class PCATorch(TorchOutlierDetector):
     def _fit(self, x: torch.Tensor) -> torch.Tensor:
         raise NotImplementedError
 
-    def compute_score(self, x: torch.Tensor) -> torch.Tensor:
+    def _score(self, x: torch.Tensor) -> torch.Tensor:
         raise NotImplementedError
 
 
@@ -147,7 +147,7 @@ class LinearPCATorch(PCATorch):
         _, V = torch.linalg.eigh(cov_mat)
         return V[:, :-self.n_components]
 
-    def compute_score(self, x: torch.Tensor) -> torch.Tensor:
+    def _score(self, x: torch.Tensor) -> torch.Tensor:
         """Compute the outlier score.
 
         Centers the data and projects it onto the principle components. The score is then the sum of the
@@ -220,7 +220,7 @@ class KernelPCATorch(PCATorch):
         pcs = V / torch.sqrt(D)[None, :]
         return pcs[:, -self.n_components:]
 
-    def compute_score(self, x: torch.Tensor) -> torch.Tensor:
+    def _score(self, x: torch.Tensor) -> torch.Tensor:
         """Compute the outlier score.
 
         Centers the data and projects it onto the principle components. The score is then the sum of the
