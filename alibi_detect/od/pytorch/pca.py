@@ -1,4 +1,4 @@
-from typing import Optional, Union, Callable
+from typing import Optional, Union, Callable, Literal
 
 import torch
 
@@ -11,7 +11,7 @@ class PCATorch(TorchOutlierDetector):
     def __init__(
             self,
             n_components: int,
-            device: Optional[Union[str, torch.device]] = None
+            device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
             ):
         """PyTorch backend for PCA detector.
 
@@ -101,7 +101,7 @@ class LinearPCATorch(PCATorch):
     def __init__(
             self,
             n_components: int,
-            device: Optional[Union[str, torch.device]] = None
+            device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
             ):
         """Linear variant of the PyTorch backend for PCA detector.
 
@@ -172,7 +172,7 @@ class KernelPCATorch(PCATorch):
             self,
             n_components: int,
             kernel: Optional[Callable],
-            device: Optional[Union[str, torch.device]] = None
+            device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
             ):
         """Kernel variant of the PyTorch backend for PCA detector.
 

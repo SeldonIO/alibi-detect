@@ -1,9 +1,9 @@
 from typing import Union, Optional, Callable, Dict, Any
 from typing import TYPE_CHECKING
+from typing_extensions import Literal
 
 import numpy as np
 
-from alibi_detect.utils._types import Literal
 from alibi_detect.base import outlier_prediction_dict
 from alibi_detect.base import BaseDetector, ThresholdMixin, FitMixin
 from alibi_detect.od.pytorch import KernelPCATorch, LinearPCATorch
@@ -96,12 +96,12 @@ class PCA(BaseDetector, ThresholdMixin, FitMixin):
         dimensions are used to compute the outlier score which is the distance to the principle
         subspace spanned by the first `n_components` eigenvectors.
 
-        In the kernel Case we compute the principle components of the reference data using the
+        In the kernel case we compute the principle components of the reference data using the
         kernel matrix and then return the largest `n_components` eigenvectors. These are then
         normalized to have length equal to `1/eigenvalue`. Note that this differs from the
         linear case where we remove the largest eigenvectors.
 
-        In both cases we then store the computed components and use later when we score test
+        In both cases we then store the computed components to use later when we score test
         instances.
 
         Parameters

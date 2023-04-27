@@ -1,4 +1,5 @@
 from typing import List, Union, Optional, Dict
+from typing_extensions import Literal
 from dataclasses import dataclass, asdict
 from abc import ABC, abstractmethod
 
@@ -60,7 +61,10 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
     threshold_inferred = False
     threshold = None
 
-    def __init__(self, device: Optional[Union[str, torch.device]] = None):
+    def __init__(
+            self,
+            device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
+            ):
         self.device = get_device(device)
         super().__init__()
 
