@@ -18,7 +18,7 @@ class PCATorch(TorchOutlierDetector):
         Parameters
         ----------
         n_components:
-            The number of dimensions in the principle subspace. For linear PCA should have
+            The number of dimensions in the principal subspace. For linear PCA should have
             ``1 <= n_components < dim(data)``. For kernel pca should have ``1 <= n_components < len(data)``.
         device
             Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
@@ -108,7 +108,7 @@ class LinearPCATorch(PCATorch):
         Parameters
         ----------
         n_components:
-            The number of dimensions in the principle subspace.
+            The number of dimensions in the principal subspace.
         device
             Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
             passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of ``torch.device``.
@@ -116,12 +116,12 @@ class LinearPCATorch(PCATorch):
         super().__init__(device=device, n_components=n_components)
 
     def _fit(self, x: torch.Tensor) -> torch.Tensor:
-        """Compute the principle components of the reference data.
+        """Compute the principal components of the reference data.
 
-        We compute the principle components of the reference data using the covariance matrix and then
+        We compute the principal components of the reference data using the covariance matrix and then
         remove the largest `n_components` eigenvectors. The remaining eigenvectors correspond to the
         invariant dimensions of the data. Changes in these dimensions are used to compute the outlier
-        score which is the distance to the principle subspace spanned by the first `n_components`
+        score which is the distance to the principal subspace spanned by the first `n_components`
         eigenvectors.
 
         Parameters
@@ -131,7 +131,7 @@ class LinearPCATorch(PCATorch):
 
         Returns
         -------
-        The principle components of the reference data.
+        The principal components of the reference data.
 
         Raises
         ------
@@ -150,7 +150,7 @@ class LinearPCATorch(PCATorch):
     def _score(self, x: torch.Tensor) -> torch.Tensor:
         """Compute the outlier score.
 
-        Centers the data and projects it onto the principle components. The score is then the sum of the
+        Centers the data and projects it onto the principal components. The score is then the sum of the
         squared projections.
 
         Parameters
@@ -179,7 +179,7 @@ class KernelPCATorch(PCATorch):
         Parameters
         ----------
         n_components:
-            The number of dimensions in the principle subspace.
+            The number of dimensions in the principal subspace.
         kernel
             Kernel function to use for outlier detection.
         device
@@ -190,9 +190,9 @@ class KernelPCATorch(PCATorch):
         self.kernel = kernel
 
     def _fit(self, x: torch.Tensor) -> torch.Tensor:
-        """Compute the principle components of the reference data.
+        """Compute the principal components of the reference data.
 
-        We compute the principle components of the reference data using the kernel matrix and then
+        We compute the principal components of the reference data using the kernel matrix and then
         return the largest `n_components` eigenvectors. These are then normalized to have length
         equal to `1/eigenvalue`. Note that this differs from the linear case where we remove the
         largest eigenvectors.
@@ -204,7 +204,7 @@ class KernelPCATorch(PCATorch):
 
         Returns
         -------
-        The principle components of the reference data.
+        The principal components of the reference data.
 
         Raises
         ------
@@ -223,7 +223,7 @@ class KernelPCATorch(PCATorch):
     def _score(self, x: torch.Tensor) -> torch.Tensor:
         """Compute the outlier score.
 
-        Centers the data and projects it onto the principle components. The score is then the sum of the
+        Centers the data and projects it onto the principal components. The score is then the sum of the
         squared projections.
 
         Parameters

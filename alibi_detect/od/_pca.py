@@ -35,7 +35,7 @@ class PCA(BaseDetector, ThresholdMixin, FitMixin):
         linear PCA and kernel PCA. Linear PCA computes the eigenvectors of the covariance matrix of the data. Kernel
         PCA computes the eigenvectors of the kernel matrix of the data.
 
-        When scoring a test instance using the linear variant compute the distance to the principle subspace spanned
+        When scoring a test instance using the linear variant compute the distance to the principal subspace spanned
         by the first `n_components` eigenvectors.
 
         When scoring a test instance using the kernel variant we project it onto the largest eigenvectors and
@@ -46,7 +46,7 @@ class PCA(BaseDetector, ThresholdMixin, FitMixin):
         Parameters
         ----------
         n_components:
-            The number of dimensions in the principle subspace. For linear pca should have
+            The number of dimensions in the principal subspace. For linear pca should have
             ``1 <= n_components < dim(data)``. For kernel pca should have ``1 <= n_components < len(data)``.
         kernel
             Kernel function to use for outlier detection. If ``None``, linear PCA is used instead of the
@@ -90,13 +90,13 @@ class PCA(BaseDetector, ThresholdMixin, FitMixin):
     def fit(self, x_ref: np.ndarray) -> None:
         """Fit the detector on reference data.
 
-        In the linear case we compute the principle components of the reference data using the
+        In the linear case we compute the principal components of the reference data using the
         covariance matrix and then remove the largest `n_components` eigenvectors. The remaining
         eigenvectors correspond to the invariant dimensions of the data. Changes in these
-        dimensions are used to compute the outlier score which is the distance to the principle
+        dimensions are used to compute the outlier score which is the distance to the principal
         subspace spanned by the first `n_components` eigenvectors.
 
-        In the kernel case we compute the principle components of the reference data using the
+        In the kernel case we compute the principal components of the reference data using the
         kernel matrix and then return the largest `n_components` eigenvectors. These are then
         normalized to have length equal to `1/eigenvalue`. Note that this differs from the
         linear case where we remove the largest eigenvectors.
