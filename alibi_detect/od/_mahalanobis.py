@@ -1,11 +1,10 @@
 from typing import Union, Optional, Dict, Any
 from typing import TYPE_CHECKING
 from alibi_detect.exceptions import _catch_error as catch_error
-
+from typing_extensions import Literal
 
 import numpy as np
 
-from alibi_detect.utils._types import Literal
 from alibi_detect.base import BaseDetector, FitMixin, ThresholdMixin, outlier_prediction_dict
 from alibi_detect.od.pytorch import MahalanobisTorch
 from alibi_detect.utils.frameworks import BackendValidator

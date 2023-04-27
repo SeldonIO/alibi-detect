@@ -1,9 +1,9 @@
 from typing import Callable, Union, Optional, Dict, Any, List, Tuple
 from typing import TYPE_CHECKING
+from typing_extensions import Literal
 
 import numpy as np
 
-from typing_extensions import Literal
 from alibi_detect.base import outlier_prediction_dict
 from alibi_detect.exceptions import _catch_error as catch_error
 from alibi_detect.od.base import TransformProtocol, TransformProtocolType
