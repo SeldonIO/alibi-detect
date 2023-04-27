@@ -1,5 +1,5 @@
 from typing import Optional, Union, List, Tuple
-
+from typing_extensions import Literal
 import numpy as np
 import torch
 
@@ -13,7 +13,7 @@ class KNNTorch(TorchOutlierDetector):
             k: Union[np.ndarray, List, Tuple, int],
             kernel: Optional[torch.nn.Module] = None,
             ensembler: Optional[Ensembler] = None,
-            device: Optional[Union[str, torch.device]] = None
+            device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
             ):
         """PyTorch backend for KNN detector.
 

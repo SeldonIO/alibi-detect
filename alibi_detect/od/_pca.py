@@ -1,14 +1,15 @@
-from typing import Union, Optional, Dict, Any
+from typing import Union, Optional, Callable, Dict, Any
 from typing import TYPE_CHECKING
-from alibi_detect.exceptions import _catch_error as catch_error
 from typing_extensions import Literal
 
 import numpy as np
 
-from alibi_detect.base import BaseDetector, FitMixin, ThresholdMixin, outlier_prediction_dict
-from alibi_detect.od.pytorch import MahalanobisTorch
+from alibi_detect.base import outlier_prediction_dict
+from alibi_detect.base import BaseDetector, ThresholdMixin, FitMixin
+from alibi_detect.od.pytorch import KernelPCATorch, LinearPCATorch
 from alibi_detect.utils.frameworks import BackendValidator
 from alibi_detect.version import __version__
+from alibi_detect.exceptions import _catch_error as catch_error
 
 
 if TYPE_CHECKING:
@@ -16,37 +17,40 @@ if TYPE_CHECKING:
 
 
 backends = {
-    'pytorch': MahalanobisTorch
+    'pytorch': (KernelPCATorch, LinearPCATorch)
 }
 
 
-class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
+class PCA(BaseDetector, ThresholdMixin, FitMixin):
     def __init__(
         self,
-        min_eigenvalue: float = 1e-6,
+        n_components: int,
+        kernel: Optional[Callable] = None,
         backend: Literal['pytorch'] = 'pytorch',
         device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
     ) -> None:
-        """
-        The Mahalanobis outlier detection method.
+        """Principal Component Analysis (PCA) outlier detector.
 
-        The Mahalanobis detector computes the directions of variation of a dataset and uses them to detect when points
-        are outliers by checking to see if the points vary from dataset points in unexpected ways.
+        The detector is based on the Principal Component Analysis (PCA) algorithm. There are two variants of PCA:
+        linear PCA and kernel PCA. Linear PCA computes the eigenvectors of the covariance matrix of the data. Kernel
+        PCA computes the eigenvectors of the kernel matrix of the data.
 
-        When we fit the Mahalanobis detector we compute the covariance matrix of the reference data and its eigenvectors
-        and eigenvalues. We filter small eigenvalues for numerical stability using the `min_eigenvalue` parameter. We
-        then inversely weight each eigenvector by its eigenvalue.
+        When scoring a test instance using the linear variant compute the distance to the principal subspace spanned
+        by the first `n_components` eigenvectors.
 
-        When we score test points we project them onto the eigenvectors and compute the l2-norm of the projected point.
-        Because the eigenvectors are inversely weighted by the eigenvalues, the score will take into account the
-        difference in variance along each direction of variation. If a test point lies along a direction of high
-        variation then it must lie very far out to obtain a high score. If a test point lies along a direction of low
-        variation then it doesn't need to lie very far out to obtain a high score.
+        When scoring a test instance using the kernel variant we project it onto the largest eigenvectors and
+        compute its score using the L2 norm.
+
+        If a threshold is fitted we use this to determine whether the instance is an outlier or not.
 
         Parameters
         ----------
-        min_eigenvalue
-            Eigenvectors with eigenvalues below this value will be discarded. This is to ensure numerical stability.
+        n_components:
+            The number of dimensions in the principal subspace. For linear pca should have
+            ``1 <= n_components < dim(data)``. For kernel pca should have ``1 <= n_components < len(data)``.
+        kernel
+            Kernel function to use for outlier detection. If ``None``, linear PCA is used instead of the
+            kernel variant.
         backend
             Backend used for outlier detection. Defaults to ``'pytorch'``. Options are ``'pytorch'``.
         device
@@ -57,6 +61,8 @@ class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
         ------
         NotImplementedError
             If choice of `backend` is not implemented.
+        ValueError
+            If `n_components` is less than 1.
         """
         super().__init__()
 
@@ -66,25 +72,49 @@ class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
             construct_name=self.__class__.__name__
         ).verify_backend(backend_str)
 
-        backend_cls = backends[backend]
-        self.backend = backend_cls(min_eigenvalue, device=device)
+        kernel_backend_cls, linear_backend_cls = backends[backend]
 
-        # set metadata
-        self.meta['detector_type'] = 'outlier'
-        self.meta['data_type'] = 'numeric'
-        self.meta['online'] = False
+        self.backend: Union[KernelPCATorch, LinearPCATorch]
+        if kernel is not None:
+            self.backend = kernel_backend_cls(
+                n_components=n_components,
+                device=device,
+                kernel=kernel
+            )
+        else:
+            self.backend = linear_backend_cls(
+                n_components=n_components,
+                device=device,
+            )
 
     def fit(self, x_ref: np.ndarray) -> None:
         """Fit the detector on reference data.
 
-        Fitting the Mahalanobis detector amounts to computing the covariance matrix and its eigenvectors. We filter out
-        very small eigenvalues using the `min_eigenvalue` parameter. We then scale the eigenvectors such that the data
-        projected onto them has mean ``0`` and std ``1``.
+        In the linear case we compute the principal components of the reference data using the
+        covariance matrix and then remove the largest `n_components` eigenvectors. The remaining
+        eigenvectors correspond to the invariant dimensions of the data. Changes in these
+        dimensions are used to compute the outlier score which is the distance to the principal
+        subspace spanned by the first `n_components` eigenvectors.
+
+        In the kernel case we compute the principal components of the reference data using the
+        kernel matrix and then return the largest `n_components` eigenvectors. These are then
+        normalized to have length equal to `1/eigenvalue`. Note that this differs from the
+        linear case where we remove the largest eigenvectors.
+
+        In both cases we then store the computed components to use later when we score test
+        instances.
 
         Parameters
         ----------
         x_ref
             Reference data used to fit the detector.
+
+        Raises
+        ------
+        ValueError
+            If using linear pca variant and `n_components` is greater than or equal to number of
+            features or if using kernel pca variant and `n_components` is greater than or equal
+            to number of instances.
         """
         self.backend.fit(self.backend._to_tensor(x_ref))
 
@@ -92,8 +122,7 @@ class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
     def score(self, x: np.ndarray) -> np.ndarray:
         """Score `x` instances using the detector.
 
-        The mahalanobis method projects `x` onto the scaled eigenvectors computed during the fit step. The score is then
-        the l2-norm of the projected data. The higher the score, the more outlying the instance.
+        Project `x` onto the eigenvectors and compute the score using the L2 norm.
 
         Parameters
         ----------
@@ -102,7 +131,7 @@ class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
 
         Returns
         -------
-        Outlier scores. The shape of the scores is `(n_instances,)`. The higher the score, the more outlying the \
+        Outlier scores. The shape of the scores is `(n_instances,)`. The higher the score, the more anomalous the \
         instance.
 
         Raises
@@ -115,7 +144,7 @@ class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
 
     @catch_error('NotFittedError')
     def infer_threshold(self, x: np.ndarray, fpr: float) -> None:
-        """Infer the threshold for the Mahalanobis detector.
+        """Infer the threshold for the PCA detector.
 
         The threshold is computed so that the outlier detector would incorrectly classify `fpr` proportion of the
         reference data as outliers.

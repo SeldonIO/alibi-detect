@@ -19,6 +19,11 @@ def test_unfitted_mahalanobis_single_score():
     """Test Mahalanobis detector throws errors when not fitted."""
     mahalanobis_detector = Mahalanobis()
     x = np.array([[0, 10], [0.1, 0]])
+    x_ref = np.random.randn(100, 2)
+
+    with pytest.raises(NotFittedError) as err:
+        mahalanobis_detector.infer_threshold(x_ref, 0.1)
+    assert str(err.value) == 'Mahalanobis has not been fit!'
 
     with pytest.raises(NotFittedError) as err:
         mahalanobis_detector.score(x)
@@ -75,7 +80,7 @@ def test_fitted_mahalanobis_predict():
     assert (y['is_outlier'] == [True, False]).all()
 
 
-def test_mahalanobis_integration():
+def test_mahalanobis_integration(tmp_path):
     """Test Mahalanobis detector on moons dataset.
 
     Test Mahalanobis detector on a more complex 2d example. Test that the detector can be fitted
@@ -99,4 +104,10 @@ def test_mahalanobis_integration():
     ts_mahalanobis = torch.jit.script(mahalanobis_detector.backend)
     x = torch.tensor([x_inlier[0], x_outlier[0]], dtype=torch.float32)
     y = ts_mahalanobis(x)
+    assert torch.all(y == torch.tensor([False, True]))
+
+    ts_mahalanobis.save(tmp_path / 'mahalanobis.pt')
+    mahalanobis_detector = Mahalanobis()
+    mahalanobis_detector = torch.load(tmp_path / 'mahalanobis.pt')
+    y = mahalanobis_detector(x)
     assert torch.all(y == torch.tensor([False, True]))

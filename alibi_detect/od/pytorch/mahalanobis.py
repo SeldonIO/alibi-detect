@@ -1,5 +1,5 @@
 from typing import Optional, Union
-
+from typing_extensions import Literal
 import torch
 
 from alibi_detect.od.pytorch.base import TorchOutlierDetector
@@ -11,7 +11,7 @@ class MahalanobisTorch(TorchOutlierDetector):
     def __init__(
             self,
             min_eigenvalue: float = 1e-6,
-            device: Optional[Union[str, torch.device]] = None
+            device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
             ):
         """PyTorch backend for Mahalanobis detector.
 
@@ -20,8 +20,8 @@ class MahalanobisTorch(TorchOutlierDetector):
         min_eigenvalue
             Eigenvectors with eigenvalues below this value will be discarded.
         device
-            Device type used. The default None tries to use the GPU and falls back on CPU if needed.
-            Can be specified by passing either ``'cuda'``, ``'gpu'`` or ``'cpu'``.
+            Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
+            passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of ``torch.device``.
         """
         super().__init__(device=device)
         self.min_eigenvalue = min_eigenvalue
