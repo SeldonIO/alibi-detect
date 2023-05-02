@@ -49,7 +49,6 @@ class GMMSklearn(SklearnOutlierDetector):
         verbose
             Enable verbose output. If 1 then it prints the current initialization and each iteration step. If greater
             than 1 then it prints also the log probability and the time needed for each step.
-
         """
         self.gmm = GaussianMixture(
             n_components=self.n_components,
