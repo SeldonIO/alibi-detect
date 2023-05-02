@@ -23,7 +23,7 @@ class FitMixinSklearn(ABC):
     fitted = False
 
     @abstractmethod
-    def fit(self, x_ref: np.ndarray, **kwargs: dict) -> Self:
+    def fit(self, x_ref: np.ndarray) -> Self:
         """Abstract fit method.
 
         Parameters
@@ -169,9 +169,7 @@ class SklearnOutlierDetector(FitMixinSklearn, ABC):
         if fpr < 1/len(x):
             raise ValueError(f'`fpr` must be greater than `1/len(x)={1/len(x)}`.')
         self.val_scores = self.score(x)
-        self.threshold = np.quantile(
-            self.val_scores, 1-fpr, method='higher'
-        )
+        self.threshold = np.quantile(self.val_scores, 1-fpr, method='higher')
         self.threshold_inferred = True
 
     def predict(self, x: np.ndarray) -> SklearnOutlierDetectorOutput:
