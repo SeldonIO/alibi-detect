@@ -264,13 +264,3 @@ class NumpyEncoder(json.JSONEncoder):
         elif isinstance(obj, (np.ndarray,)):
             return obj.tolist()
         return json.JSONEncoder.default(self, obj)
-
-
-class NotFitException(Exception):
-    """Exception raised when a transform is not fitted."""
-    pass
-
-
-class ThresholdNotInferredException(Exception):
-    """Exception raised when a threshold not inferred for an outlier detector."""
-    pass

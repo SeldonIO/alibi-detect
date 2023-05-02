@@ -1,4 +1,5 @@
 from typing import Optional, Union, Callable
+from typing_extensions import Literal
 
 import torch
 
@@ -6,24 +7,34 @@ from alibi_detect.od.pytorch.base import TorchOutlierDetector
 
 
 class PCATorch(TorchOutlierDetector):
+    ensemble = False
+
     def __init__(
             self,
             n_components: int,
-            device: Optional[Union[str, torch.device]] = None
+            device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
             ):
         """PyTorch backend for PCA detector.
 
         Parameters
         ----------
         n_components:
-            The number of dimensions in the principle subspace. For linear PCA should have
+            The number of dimensions in the principal subspace. For linear PCA should have
             ``1 <= n_components < dim(data)``. For kernel pca should have ``1 <= n_components < len(data)``.
         device
-            Device type used. The default None tries to use the GPU and falls back on CPU if needed.
-            Can be specified by passing either ``'cuda'``, ``'gpu'`` or ``'cpu'``.
+            Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
+            passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of ``torch.device``.
+
+        Raises
+        ------
+        ValueError
+            If `n_components` is less than 1.
         """
-        TorchOutlierDetector.__init__(self, device=device)
+        super().__init__(device=device)
         self.n_components = n_components
+
+        if n_components < 1:
+            raise ValueError('n_components must be at least 1')
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Detect if `x` is an outlier.
@@ -46,10 +57,10 @@ class PCATorch(TorchOutlierDetector):
         if not torch.jit.is_scripting():
             self.check_threshold_inferred()
         preds = scores > self.threshold
-        return preds.cpu()
+        return preds
 
     def score(self, x: torch.Tensor) -> torch.Tensor:
-        """Score test instance `x`.
+        """Computes the score of `x`
 
         Parameters
         ----------
@@ -58,19 +69,18 @@ class PCATorch(TorchOutlierDetector):
 
         Returns
         -------
-            Tensor of scores for each element in `x`.
+        Tensor of scores for each element in `x`.
 
         Raises
         ------
         NotFitException
             If called before detector has been fit.
         """
-        if not torch.jit.is_scripting():
-            self.check_fitted()
-        score = self._compute_score(x)
-        return score.cpu()
+        self.check_fitted()
+        score = self._score(x)
+        return score
 
-    def _fit(self, x_ref: torch.Tensor) -> None:
+    def fit(self, x_ref: torch.Tensor) -> None:
         """Fits the PCA detector.
 
         Parameters
@@ -78,14 +88,13 @@ class PCATorch(TorchOutlierDetector):
         x_ref
             The Dataset tensor.
         """
-        self.x_ref_mean = x_ref.mean(0)
-        self.pcs = self._compute_pcs(x_ref)
-        self.x_ref = x_ref
+        self.pcs = self._fit(x_ref)
+        self._set_fitted()
 
-    def _compute_pcs(self, x: torch.Tensor) -> torch.Tensor:
+    def _fit(self, x: torch.Tensor) -> torch.Tensor:
         raise NotImplementedError
 
-    def _compute_score(self, x: torch.Tensor) -> torch.Tensor:
+    def _score(self, x: torch.Tensor) -> torch.Tensor:
         raise NotImplementedError
 
 
@@ -93,26 +102,28 @@ class LinearPCATorch(PCATorch):
     def __init__(
             self,
             n_components: int,
-            device: Optional[Union[str, torch.device]] = None
+            device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
             ):
         """Linear variant of the PyTorch backend for PCA detector.
 
         Parameters
         ----------
         n_components:
-            The number of dimensions in the principle subspace.
+            The number of dimensions in the principal subspace.
         device
-            Device type used. The default None tries to use the GPU and falls back on CPU if needed.
-            Can be specified by passing either ``'cuda'``, ``'gpu'`` or ``'cpu'``.
+            Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
+            passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of ``torch.device``.
         """
-        PCATorch.__init__(self, device=device, n_components=n_components)
+        super().__init__(device=device, n_components=n_components)
 
-    def _compute_pcs(self, x: torch.Tensor) -> torch.Tensor:
-        """Compute the principle components of the reference data.
+    def _fit(self, x: torch.Tensor) -> torch.Tensor:
+        """Compute the principal components of the reference data.
 
-        We compute the principle components of the reference data using the covariance matrix and then
-        return the last `n_components` of the eigenvectors. These correspond to the invariant dimensions
-        of the data. Changes in these dimensions are used to compute the outlier score.
+        We compute the principal components of the reference data using the covariance matrix and then
+        remove the largest `n_components` eigenvectors. The remaining eigenvectors correspond to the
+        invariant dimensions of the data. Changes in these dimensions are used to compute the outlier
+        score which is the distance to the principal subspace spanned by the first `n_components`
+        eigenvectors.
 
         Parameters
         ----------
@@ -121,17 +132,26 @@ class LinearPCATorch(PCATorch):
 
         Returns
         -------
-            The principle components of the reference data.
+        The principal components of the reference data.
+
+        Raises
+        ------
+        ValueError
+            If `n_components` is greater than or equal to number of features
         """
+        if self.n_components >= x.shape[1]:
+            raise ValueError("n_components must be less than the number of features.")
+
+        self.x_ref_mean = x.mean(0)
         x -= self.x_ref_mean
         cov_mat = (x.t() @ x)/(len(x)-1)
         _, V = torch.linalg.eigh(cov_mat)
         return V[:, :-self.n_components]
 
-    def _compute_score(self, x: torch.Tensor) -> torch.Tensor:
+    def _score(self, x: torch.Tensor) -> torch.Tensor:
         """Compute the outlier score.
 
-        Centers the data and projects it onto the principle components. The score is then the sum of the
+        Centers the data and projects it onto the principal components. The score is then the sum of the
         squared projections.
 
         Parameters
@@ -141,7 +161,7 @@ class LinearPCATorch(PCATorch):
 
         Returns
         -------
-            The outlier score.
+        The outlier score.
         """
         x_cen = x - self.x_ref_mean
         x_pcs = x_cen @ self.pcs
@@ -153,29 +173,30 @@ class KernelPCATorch(PCATorch):
             self,
             n_components: int,
             kernel: Optional[Callable],
-            device: Optional[Union[str, torch.device]] = None
+            device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
             ):
         """Kernel variant of the PyTorch backend for PCA detector.
 
         Parameters
         ----------
         n_components:
-            The number of dimensions in the principle subspace.
+            The number of dimensions in the principal subspace.
         kernel
             Kernel function to use for outlier detection.
         device
-            Device type used. The default None tries to use the GPU and falls back on CPU if needed.
-            Can be specified by passing either ``'cuda'``, ``'gpu'`` or ``'cpu'``.
+            Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
+            passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of ``torch.device``.
         """
-        PCATorch.__init__(self, device=device, n_components=n_components)
+        super().__init__(device=device, n_components=n_components)
         self.kernel = kernel
 
-    def _compute_pcs(self, x: torch.Tensor) -> torch.Tensor:
-        """Compute the principle components of the reference data.
+    def _fit(self, x: torch.Tensor) -> torch.Tensor:
+        """Compute the principal components of the reference data.
 
-        We compute the principle components of the reference data using the kernel matrix and then
-        return the last `n_components` of the eigenvectors. These correspond to the invariant dimensions
-        of the data. Changes in these dimensions are used to compute the outlier score.
+        We compute the principal components of the reference data using the kernel matrix and then
+        return the largest `n_components` eigenvectors. These are then normalized to have length
+        equal to `1/eigenvalue`. Note that this differs from the linear case where we remove the
+        largest eigenvectors.
 
         Parameters
         ----------
@@ -184,17 +205,26 @@ class KernelPCATorch(PCATorch):
 
         Returns
         -------
-            The principle components of the reference data.
+        The principal components of the reference data.
+
+        Raises
+        ------
+        ValueError
+            If `n_components` is greater than or equal to the number of reference samples.
         """
-        K = self._compute_kernel_mat(x)
+        if self.n_components >= x.shape[0]:
+            raise ValueError("n_components must be less than the number of reference instances.")
+
+        self.x_ref = x
+        K = self.compute_kernel_mat(x)
         D, V = torch.linalg.eigh(K)
         pcs = V / torch.sqrt(D)[None, :]
         return pcs[:, -self.n_components:]
 
-    def _compute_score(self, x: torch.Tensor) -> torch.Tensor:
+    def _score(self, x: torch.Tensor) -> torch.Tensor:
         """Compute the outlier score.
 
-        Centers the data and projects it onto the principle components. The score is then the sum of the
+        Centers the data and projects it onto the principal components. The score is then the sum of the
         squared projections.
 
         Parameters
@@ -204,18 +234,17 @@ class KernelPCATorch(PCATorch):
 
         Returns
         -------
-            The outlier score.
+        The outlier score.
         """
         k_xr = self.kernel(x, self.x_ref)
-        # Now to center
         k_xr_row_sums = k_xr.sum(1)
-        _, n = k_xr.shape
-        k_xr_cen = k_xr - self.k_col_sums[None, :]/n - k_xr_row_sums[:, None]/n + self.k_sum/(n**2)
+        n, m = k_xr.shape
+        k_xr_cen = k_xr - self.k_col_sums[None, :]/m - k_xr_row_sums[:, None]/n + self.k_sum/(m*n)
         x_pcs = k_xr_cen @ self.pcs
         scores = -2 * k_xr.mean(-1) - (x_pcs**2).sum(1)
         return scores
 
-    def _compute_kernel_mat(self, x: torch.Tensor) -> torch.Tensor:
+    def compute_kernel_mat(self, x: torch.Tensor) -> torch.Tensor:
         """Computes the centered kernel matrix.
 
         Parameters
@@ -225,12 +254,10 @@ class KernelPCATorch(PCATorch):
 
         Returns
         -------
-            The centered kernel matrix.
+        The centered kernel matrix.
         """
         n = len(x)
-        # Uncentered kernel matrix
         k = self.kernel(x, x)
-        # Now to center
         self.k_col_sums = k.sum(0)
         k_row_sums = k.sum(1)
         self.k_sum = k_row_sums.sum()

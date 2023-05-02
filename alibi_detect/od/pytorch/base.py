@@ -1,5 +1,5 @@
-from __future__ import annotations
 from typing import List, Union, Optional, Dict
+from typing_extensions import Literal
 from dataclasses import dataclass, asdict
 from abc import ABC, abstractmethod
 
@@ -8,7 +8,7 @@ import torch
 
 from alibi_detect.od.pytorch.ensemble import FitMixinTorch
 from alibi_detect.utils.pytorch.misc import get_device
-from alibi_detect.base import ThresholdNotInferredException
+from alibi_detect.exceptions import ThresholdNotInferredError
 
 
 @dataclass
@@ -61,20 +61,12 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
     threshold_inferred = False
     threshold = None
 
-    def __init__(self, device: Optional[Union[str, torch.device]] = None):
+    def __init__(
+            self,
+            device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
+            ):
         self.device = get_device(device)
         super().__init__()
-
-    @abstractmethod
-    def _fit(self, x_ref: torch.Tensor) -> None:
-        """Fit the outlier detector to the reference data.
-
-        Parameters
-        ----------
-        x_ref
-            Reference data.
-        """
-        pass
 
     @abstractmethod
     def score(self, x: torch.Tensor) -> torch.Tensor:
@@ -94,12 +86,11 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
 
         Raises
         ------
-        ThresholdNotInferredException
+        ThresholdNotInferredError
             Raised if threshold is not inferred.
         """
         if not self.threshold_inferred:
-            raise ThresholdNotInferredException((f'{self.__class__.__name__} has no threshold set, '
-                                                 'call `infer_threshold` before predicting.'))
+            raise ThresholdNotInferredError(self.__class__.__name__)
 
     @staticmethod
     def _to_numpy(arg: Union[torch.Tensor, TorchOutlierDetectorOutput]) -> Union[np.ndarray, Dict[str, np.ndarray]]:
@@ -141,10 +132,22 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
         Returns
         -------
         `torch.Tensor` or original data without alteration
+
+        Raises
+        ------
+        ThresholdNotInferredError
+            If the detector is an ensemble, and the ensembler used to aggregate the outlier scores has a fittable
+            component, then the detector threshold must be inferred before predictions can be made. This is because
+            while the scoring functionality of the detector is fit within the `.fit` method on the training data
+            the ensembler has to be fit on the validation data along with the threshold and this is done in the
+            `.infer_threshold` method.
         """
         if hasattr(self, 'ensembler') and self.ensembler is not None:
-            # `type: ignore` here becuase self.ensembler here causes an error with mypy when using torch.jit.script.
+            # `type: ignore` here because self.ensembler here causes an error with mypy when using torch.jit.script.
             # For some reason it thinks self.ensembler is a torch.Tensor and therefore is not callable.
+            if not torch.jit.is_scripting():
+                if not self.ensembler.fitted:  # type: ignore
+                    self.check_threshold_inferred()
             return self.ensembler(x)  # type: ignore
         else:
             return x
@@ -161,7 +164,7 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
         -------
         `torch.Tensor` or ``None``
         """
-        return scores > self.threshold if self.threshold_inferred else None
+        return (scores > self.threshold).to(torch.int8) if self.threshold_inferred else None
 
     def _p_vals(self, scores: torch.Tensor) -> torch.Tensor:
         """Compute p-values for the scores.
@@ -178,7 +181,7 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
         return (1 + (scores[:, None] < self.val_scores).sum(-1))/len(self.val_scores) \
             if self.threshold_inferred else None
 
-    def infer_threshold(self, x: torch.Tensor, fpr: float) -> None:
+    def infer_threshold(self, x: torch.Tensor, fpr: float):
         """Infer the threshold for the data. Prerequisite for outlier predictions.
 
         Parameters
@@ -192,12 +195,17 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
         ------
         ValueError
             Raised if `fpr` is not in ``(0, 1)``.
+        ValueError
+            Raised if `fpr` is less than ``1/len(x)``.
         """
         if not 0 < fpr < 1:
-            ValueError('`fpr` must be in `(0, 1)`.')
+            raise ValueError('`fpr` must be in `(0, 1)`.')
+        if fpr < 1/len(x):
+            raise ValueError(f'`fpr` must be greater than `1/len(x)={1/len(x)}`.')
         self.val_scores = self.score(x)
-        self.val_scores = self._ensembler(self.val_scores)
-        self.threshold = torch.quantile(self.val_scores, 1-fpr)
+        if self.ensemble:
+            self.val_scores = self.ensembler.fit(self.val_scores).transform(self.val_scores)  # type: ignore
+        self.threshold = torch.quantile(self.val_scores, 1-fpr, interpolation='higher')
         self.threshold_inferred = True
 
     def predict(self, x: torch.Tensor) -> TorchOutlierDetectorOutput:
@@ -212,15 +220,14 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
         x
             Data to predict.
 
+        Returns
+        -------
+        Output of the outlier detector. Includes the p-values, outlier labels, instance scores and threshold.
+
         Raises
         ------
         ValueError
             Raised if the detector is not fit on reference data.
-
-        Returns
-        -------
-        Output of the outlier detector. Includes the p-values, outlier labels, instance scores and \
-            threshold.
         """
         self.check_fitted()  # type: ignore
         raw_scores = self.score(x)
