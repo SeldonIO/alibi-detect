@@ -7,7 +7,7 @@ from alibi_detect.exceptions import NotFittedError, ThresholdNotInferredError
 
 def test_gmm_sklearn_backend_fit_errors():
     gmm_sklearn = GMMSklearn(n_components=2)
-    assert not gmm_sklearn._fitted
+    assert not gmm_sklearn.fitted
 
     # Test that the backend raises an error if it is not fitted before
     # calling forward method.
@@ -25,7 +25,7 @@ def test_gmm_sklearn_backend_fit_errors():
     # Test the backend updates _fitted flag on fit.
     x_ref = np.random.randn(1024, 10)
     gmm_sklearn.fit(x_ref)
-    assert gmm_sklearn._fitted
+    assert gmm_sklearn.fitted
 
     # Test that the backend raises an if the forward method is called without the
     # threshold being inferred.

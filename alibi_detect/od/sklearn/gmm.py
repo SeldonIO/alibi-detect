@@ -19,7 +19,7 @@ class GMMSklearn(SklearnOutlierDetector):
         super().__init__()
         self.n_components = n_components
 
-    def _fit(
+    def fit(
         self,
         x_ref: np.ndarray,
         tol: float = 1e-3,
@@ -62,6 +62,7 @@ class GMMSklearn(SklearnOutlierDetector):
         self.gmm = self.gmm.fit(
             x_ref,
         )
+        self._set_fitted()
 
     def format_fit_kwargs(self, fit_kwargs: Dict) -> Dict:
         """Format kwargs for `fit` method.

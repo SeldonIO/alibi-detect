@@ -1,6 +1,6 @@
 from typing import List, Union, Optional, Dict
 from typing_extensions import Literal
-from dataclasses import dataclass, asdict, fields
+from dataclasses import dataclass, fields
 from abc import ABC, abstractmethod
 
 import numpy as np
