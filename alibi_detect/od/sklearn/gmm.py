@@ -14,9 +14,16 @@ class GMMSklearn(SklearnOutlierDetector):
         Parameters
         ----------
         n_components
-            Number of components in guassian mixture model.
+            Number of components in gaussian mixture model.
+
+        Raises
+        ------
+        ValueError
+            If `n_components` is less than 1.
         """
         super().__init__()
+        if n_components < 1:
+            raise ValueError('n_components must be at least 1')
         self.n_components = n_components
 
     def fit(
