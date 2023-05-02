@@ -3,7 +3,8 @@ import numpy as np
 import torch
 
 from alibi_detect.od._gmm import GMM
-from alibi_detect.base import NotFitException
+from alibi_detect.exceptions import NotFittedError
+
 from sklearn.datasets import make_moons
 
 
@@ -15,9 +16,9 @@ def test_unfitted_gmm_single_score(backend):
     gmm_detector = GMM(n_components=1, backend=backend)
     x = np.array([[0, 10], [0.1, 0]])
 
-    with pytest.raises(NotFitException) as err:
+    with pytest.raises(NotFittedError) as err:
         _ = gmm_detector.predict(x)
-    assert str(err.value) == f'{gmm_detector.backend.__class__.__name__} has not been fit!'
+    assert str(err.value) == f'{gmm_detector.__class__.__name__} has not been fit!'
 
 
 @pytest.mark.parametrize('backend', ['pytorch', 'sklearn'])

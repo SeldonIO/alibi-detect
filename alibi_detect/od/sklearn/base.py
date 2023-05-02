@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 
-from alibi_detect.base import NotFitException, ThresholdNotInferredException
+from alibi_detect.exceptions import NotFittedError, ThresholdNotInferredError
 
 
 @dataclass
@@ -51,11 +51,11 @@ class FitMixin(ABC):
 
         Raises
         ------
-        NotFitException
+        NotFittedError
             Raised if method called and object has not been fit.
         """
         if not self._fitted:
-            raise NotFitException(f'{self.__class__.__name__} has not been fit!')
+            raise NotFittedError(self.__class__.__name__)
 
 
 class SklearnOutlierDetector(FitMixin, ABC):
@@ -94,12 +94,11 @@ class SklearnOutlierDetector(FitMixin, ABC):
 
         Raises
         ------
-        ThresholdNotInferredException
+        ThresholdNotInferredError
             Raised if threshold is not inferred.
         """
         if not self.threshold_inferred:
-            raise ThresholdNotInferredException((f'{self.__class__.__name__} has no threshold set, '
-                                                 'call `infer_threshold` before predicting.'))
+            raise ThresholdNotInferredError(self.__class__.__name__)
 
     @staticmethod
     def _to_numpy(arg):

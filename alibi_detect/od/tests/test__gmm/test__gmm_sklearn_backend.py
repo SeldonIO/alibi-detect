@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 
 from alibi_detect.od.sklearn.gmm import GMMSklearn
-from alibi_detect.base import NotFitException, ThresholdNotInferredException
+from alibi_detect.exceptions import NotFittedError, ThresholdNotInferredError
 
 
 def test_gmm_sklearn_backend_fit_errors():
@@ -12,13 +12,13 @@ def test_gmm_sklearn_backend_fit_errors():
     # Test that the backend raises an error if it is not fitted before
     # calling forward method.
     x = np.random.randn(1, 10)
-    with pytest.raises(NotFitException) as err:
+    with pytest.raises(NotFittedError) as err:
         gmm_sklearn(x)
     assert str(err.value) == 'GMMSklearn has not been fit!'
 
     # Test that the backend raises an error if it is not fitted before
     # predicting.
-    with pytest.raises(NotFitException) as err:
+    with pytest.raises(NotFittedError) as err:
         gmm_sklearn.predict(x)
     assert str(err.value) == 'GMMSklearn has not been fit!'
 
@@ -29,9 +29,9 @@ def test_gmm_sklearn_backend_fit_errors():
 
     # Test that the backend raises an if the forward method is called without the
     # threshold being inferred.
-    with pytest.raises(ThresholdNotInferredException) as err:
+    with pytest.raises(ThresholdNotInferredError) as err:
         gmm_sklearn(x)
-    assert str(err.value) == 'GMMSklearn has no threshold set, call `infer_threshold` before predicting.'
+    assert str(err.value) == 'GMMSklearn has no threshold set, call `infer_threshold` to fit one!'
 
     # Test that the backend can call predict without the threshold being inferred.
     assert gmm_sklearn.predict(x)

@@ -9,6 +9,7 @@ from alibi_detect.od.pytorch import GMMTorch
 from alibi_detect.od.sklearn import GMMSklearn
 from alibi_detect.utils.frameworks import BackendValidator
 from alibi_detect.version import __version__
+from alibi_detect.exceptions import _catch_error as catch_error
 
 
 if TYPE_CHECKING:
@@ -25,8 +26,8 @@ class GMM(BaseDetector, ThresholdMixin, FitMixin):
     def __init__(
         self,
         n_components: int = 1,
-        device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
         backend: Literal['pytorch', 'sklearn'] = 'pytorch',
+        device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
     ) -> None:
         """Gaussian Mixture Model (GMM) outlier detector.
 
@@ -125,6 +126,7 @@ class GMM(BaseDetector, ThresholdMixin, FitMixin):
             **self.backend.format_fit_kwargs(locals())
         )
 
+    @catch_error('NotFittedError')
     def score(self, x: np.ndarray) -> np.ndarray:
         """Score `x` instances using the detector.
 
@@ -144,6 +146,7 @@ class GMM(BaseDetector, ThresholdMixin, FitMixin):
         score = self.backend.score(self.backend._to_tensor(x))
         return self.backend._to_numpy(score)
 
+    @catch_error('NotFittedError')
     def infer_threshold(self, x_ref: np.ndarray, fpr: float) -> None:
         """Infer the threshold for the GMM detector.
 
@@ -161,6 +164,7 @@ class GMM(BaseDetector, ThresholdMixin, FitMixin):
         """
         self.backend.infer_threshold(self.backend._to_tensor(x_ref), fpr)
 
+    @catch_error('NotFittedError')
     def predict(self, x: np.ndarray) -> Dict[str, Any]:
         """Predict whether the instances in `x` are outliers or not.
 

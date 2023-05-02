@@ -16,7 +16,7 @@ class GMMSklearn(SklearnOutlierDetector):
         n_components
             Number of components in guassian mixture model.
         """
-        SklearnOutlierDetector.__init__(self)
+        super().__init__()
         self.n_components = n_components
 
     def _fit(

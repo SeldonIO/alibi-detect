@@ -1,4 +1,5 @@
 from typing import Callable, Optional, Union, Dict
+from typing_extensions import Literal
 from tqdm import tqdm
 import torch
 from torch.utils.data import DataLoader
@@ -10,27 +11,34 @@ from alibi_detect.utils.pytorch.misc import get_optimizer
 
 
 class GMMTorch(TorchOutlierDetector):
+    ensemble = False
 
     def __init__(
         self,
         n_components: int,
-        device: Optional[Union[str, torch.device]] = None
+        device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
     ) -> None:
         """Pytorch backend for the Gaussian Mixture Model (GMM) outlier detector.
 
         Parameters
         ----------
         n_components
-            Number of components in guassian mixture model.
+            Number of components in gaussian mixture model.
         device
             Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
-            passing either ``'cuda'``, ``'gpu'`` or ``'cpu'``.
-        """
-        self.ensembler = None
-        self.n_components = n_components
-        TorchOutlierDetector.__init__(self, device=device)
+            passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of ``torch.device``.
 
-    def _fit(
+        Raises
+        ------
+        ValueError
+            If `n_components` is less than 1.
+        """
+        super().__init__(device=device)
+        if n_components < 1:
+            raise ValueError('n_components must be at least 1')
+        self.n_components = n_components
+
+    def fit(
         self,
         x_ref: torch.Tensor,
         optimizer: Callable = torch.optim.Adam,
@@ -43,7 +51,7 @@ class GMMTorch(TorchOutlierDetector):
 
         Parameters
         ----------
-        X
+        x_ref
             Training data.
         optimizer
             Optimizer used to train the model.
@@ -78,6 +86,7 @@ class GMMTorch(TorchOutlierDetector):
                     loss_ma = loss_ma + (nll.item() - loss_ma) / (step + 1)
                     dl.set_description(f'Epoch {epoch + 1}/{epochs}')
                     dl.set_postfix(dict(loss_ma=loss_ma))
+        self._set_fitted()
 
     def format_fit_kwargs(self, fit_kwargs: Dict) -> Dict:
         """Format kwargs for `fit` method.
@@ -116,24 +125,22 @@ class GMMTorch(TorchOutlierDetector):
         ThresholdNotInferredException
             If called before detector has had `infer_threshold` method called.
         """
-        raw_scores = self.score(x)
-        scores = self._ensembler(raw_scores)
+        scores = self.score(x)
         if not torch.jit.is_scripting():
             self.check_threshold_inferred()
         preds = scores > self.threshold
         return preds.cpu()
 
-    @torch.no_grad()
-    def score(self, X: torch.Tensor) -> torch.Tensor:
-        """Score `X` using the GMM model.
+    def score(self, x: torch.Tensor) -> torch.Tensor:
+        """Computes the score of `x`
 
         Parameters
         ----------
-        X
+        x
             `torch.Tensor` with leading batch dimension.
         """
         if not torch.jit.is_scripting():
             self.check_fitted()
-        X = X.to(torch.float32)
-        preds = self.model(X.to(self.device)).cpu()
+        x = x.to(torch.float32)
+        preds = self.model(x.to(self.device))
         return preds
