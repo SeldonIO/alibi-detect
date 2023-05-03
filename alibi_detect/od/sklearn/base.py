@@ -118,7 +118,7 @@ class SklearnOutlierDetector(FitMixinSklearn, ABC):
         x
             Data to convert.
         """
-        return x
+        return np.array(x)
 
     def _classify_outlier(self, scores: np.ndarray) -> np.ndarray:
         """Classify the data as outlier or not.

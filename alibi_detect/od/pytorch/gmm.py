@@ -82,8 +82,8 @@ class GMMTorch(TorchOutlierDetector):
 
         for epoch in range(epochs):
             dl = tqdm(
-                enumerate(dataloader), 
-                total=len(dataloader), 
+                enumerate(dataloader),
+                total=len(dataloader),
                 disable=not verbose
             )
             loss_ma = 0
