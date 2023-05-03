@@ -88,8 +88,10 @@ class SklearnOutlierDetector(FitMixinSklearn, ABC):
     def _to_numpy(arg: Union[np.ndarray, SklearnOutlierDetectorOutput]) -> Union[np.ndarray, Dict[str, np.ndarray]]:
         """Map params to numpy arrays.
 
+        Note
+        ----
         This function is for interface compatibility with the other backends. As such it does nothing but
-        return the input.
+        return the input and unpack `SklearnOutlierDetectorOutput` into a `dict`.
 
         Parameters
         ----------
@@ -116,7 +118,7 @@ class SklearnOutlierDetector(FitMixinSklearn, ABC):
         x
             Data to convert.
         """
-        return np.array(x)
+        return x
 
     def _classify_outlier(self, scores: np.ndarray) -> np.ndarray:
         """Classify the data as outlier or not.
