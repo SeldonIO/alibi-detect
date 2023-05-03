@@ -69,12 +69,23 @@ class GMMTorch(TorchOutlierDetector):
 
         batch_size = len(x_ref) if batch_size is None else batch_size
         dataset = TorchDataset(x_ref)
-        dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
-        optimizer_instance: torch.optim.Optimizer = optimizer(self.model.parameters(), lr=learning_rate)
+        dataloader = DataLoader(
+            dataset,
+            batch_size=batch_size,
+            shuffle=True
+        )
+        optimizer_instance: torch.optim.Optimizer = optimizer(
+            self.model.parameters(),
+            lr=learning_rate
+        )
         self.model.train()
 
         for epoch in range(epochs):
-            dl = tqdm(enumerate(dataloader), total=len(dataloader), disable=not verbose)
+            dl = tqdm(
+                enumerate(dataloader), 
+                total=len(dataloader), 
+                disable=not verbose
+            )
             loss_ma = 0
             for step, x in dl:
                 x = x.to(self.device)
@@ -138,6 +149,15 @@ class GMMTorch(TorchOutlierDetector):
         ----------
         x
             `torch.Tensor` with leading batch dimension.
+
+        Returns
+        -------
+        `torch.Tensor` of scores with leading batch dimension.
+
+        Raises
+        ------
+        NotFittedError
+            Raised if method called and detector has not been fit.
         """
         if not torch.jit.is_scripting():
             self.check_fitted()

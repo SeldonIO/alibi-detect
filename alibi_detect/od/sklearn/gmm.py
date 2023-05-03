@@ -92,12 +92,21 @@ class GMMSklearn(SklearnOutlierDetector):
         )
 
     def score(self, x: np.ndarray) -> np.ndarray:
-        """Score the data.
+        """Computes the score of `x`
 
         Parameters
         ----------
         x
-            Data to score.
+            `mp.ndarray` with leading batch dimension.
+
+        Returns
+        -------
+        `np.ndarray` of scores with leading batch dimension.
+
+        Raises
+        ------
+        NotFittedError
+            Raised if method called and detector has not been fit.
         """
         self.check_fitted()
         return - self.gmm.score_samples(x)
