@@ -17,7 +17,7 @@ class GMMTorch(TorchOutlierDetector):
         self,
         n_components: int,
         device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
-    ) -> None:
+    ):
         """Pytorch backend for the Gaussian Mixture Model (GMM) outlier detector.
 
         Parameters
@@ -46,7 +46,7 @@ class GMMTorch(TorchOutlierDetector):
         batch_size: int = 32,
         epochs: int = 10,
         verbose: int = 0,
-    ) -> None:
+    ):
         """Fit the GMM model.
 
         Parameters

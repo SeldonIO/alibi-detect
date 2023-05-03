@@ -1,7 +1,8 @@
 import numpy as np
 from typing import Dict
-from alibi_detect.od.sklearn.base import SklearnOutlierDetector
 from sklearn.mixture import GaussianMixture
+
+from alibi_detect.od.sklearn.base import SklearnOutlierDetector
 
 
 class GMMSklearn(SklearnOutlierDetector):
@@ -35,7 +36,7 @@ class GMMSklearn(SklearnOutlierDetector):
         init_params: str = 'kmeans',
         verbose: int = 0,
     ) -> None:
-        """Fit the outlier detector to the reference data.
+        """Fit the SKLearn GMM model`.
 
         Parameters
         ----------
