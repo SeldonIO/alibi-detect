@@ -31,13 +31,12 @@ class GMM(BaseDetector, ThresholdMixin, FitMixin):
     ) -> None:
         """Gaussian Mixture Model (GMM) outlier detector.
 
-        The guassian mixture model outlier detector fits a mixture of gaussian distributions to the reference data.
-        Test points are scored via the negative log-likhood under the corresponding density function.
+        The gaussian mixture model outlier detector fits a mixture of gaussian distributions to the reference data.
+        Test points are scored via the negative log-likelihood under the corresponding density function.
 
         We support two backends: ``'pytorch'`` and ``'sklearn'``. The ``'pytorch'`` backend allows for GPU acceleration
-        and uses gradient descent to fit the mixture of gaussians. We recommend using the ``'pytorch'`` backend for
-        for large datasets. The ``'sklearn'`` backend is a pure python implementation and is recommended for smaller
-        datasets.
+        and uses gradient descent to fit the GMM. We recommend using the ``'pytorch'`` backend for for large datasets.
+        The ``'sklearn'`` backend is a pure python implementation and is recommended for smaller datasets.
 
         Parameters
         ----------
@@ -142,27 +141,39 @@ class GMM(BaseDetector, ThresholdMixin, FitMixin):
         -------
         Outlier scores. The shape of the scores is `(n_instances,)`. The higher the score, the more anomalous the \
         instance.
+
+        Raises
+        ------
+        NotFittedError
+            If called before detector has been fit.
         """
         score = self.backend.score(self.backend._to_tensor(x))
         return self.backend._to_numpy(score)
 
     @catch_error('NotFittedError')
-    def infer_threshold(self, x_ref: np.ndarray, fpr: float) -> None:
+    def infer_threshold(self, x: np.ndarray, fpr: float) -> None:
         """Infer the threshold for the GMM detector.
 
-        The threshold is computed so that the outlier detector would incorectly classify `fpr` proportion of the
+        The threshold is computed so that the outlier detector would incorrectly classify `fpr` proportion of the
         reference data as outliers.
 
         Parameters
         ----------
-        x_ref
+        x
             Reference data used to infer the threshold.
         fpr
-            False positive rate used to infer the threshold. The false positive rate is the proportion of instances in \
-            `x_ref` that are incorrectly classified as outliers. The false positive rate should be in the range \
-            ``(0, 1)``.
+            False positive rate used to infer the threshold. The false positive rate is the proportion of
+            instances in `x` that are incorrectly classified as outliers. The false positive rate should
+            be in the range ``(0, 1)``.
+
+        Raises
+        ------
+        ValueError
+            Raised if `fpr` is not in ``(0, 1)``.
+        NotFittedError
+            If called before detector has been fit.
         """
-        self.backend.infer_threshold(self.backend._to_tensor(x_ref), fpr)
+        self.backend.infer_threshold(self.backend._to_tensor(x), fpr)
 
     @catch_error('NotFittedError')
     def predict(self, x: np.ndarray) -> Dict[str, Any]:
@@ -178,9 +189,14 @@ class GMM(BaseDetector, ThresholdMixin, FitMixin):
         Returns
         -------
         Dictionary with keys 'data' and 'meta'. 'data' contains the outlier scores. If threshold inference was  \
-        performed, 'data' also contains the threshold value, outlier labels and p_vals . The shape of the scores is \
+        performed, 'data' also contains the threshold value, outlier labels and p-vals . The shape of the scores is \
         `(n_instances,)`. The higher the score, the more anomalous the instance. 'meta' contains information about \
         the detector.
+
+        Raises
+        ------
+        NotFittedError
+            If called before detector has been fit.
         """
         outputs = self.backend.predict(self.backend._to_tensor(x))
         output = outlier_prediction_dict()
