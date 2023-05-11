@@ -27,7 +27,7 @@ class GMMSklearn(SklearnOutlierDetector):
             raise ValueError('n_components must be at least 1')
         self.n_components = n_components
 
-    def fit(
+    def fit(  # type: ignore[override]
         self,
         x_ref: np.ndarray,
         tol: float = 1e-3,
@@ -35,7 +35,7 @@ class GMMSklearn(SklearnOutlierDetector):
         n_init: int = 1,
         init_params: str = 'kmeans',
         verbose: int = 0,
-    ) -> None:
+    ) -> Dict:
         """Fit the SKLearn GMM model`.
 
         Parameters
@@ -57,6 +57,13 @@ class GMMSklearn(SklearnOutlierDetector):
         verbose
             Enable verbose output. If 1 then it prints the current initialization and each iteration step. If greater
             than 1 then it prints also the log probability and the time needed for each step.
+
+        Returns
+        -------
+        Dictionary with fit results. The dictionary contains the following keys:
+        - converged: bool indicating whether EM algorithm converged.
+        - n_iter: number of EM iterations performed.
+        - lower_bound: log-likelihood lower bound.
         """
         self.gmm = GaussianMixture(
             n_components=self.n_components,
@@ -70,6 +77,11 @@ class GMMSklearn(SklearnOutlierDetector):
             x_ref,
         )
         self._set_fitted()
+        return {
+            'converged': self.gmm.converged_,
+            'n_iter': self.gmm.n_iter_,
+            'lower_bound': self.gmm.lower_bound_
+        }
 
     def format_fit_kwargs(self, fit_kwargs: Dict) -> Dict:
         """Format kwargs for `fit` method.

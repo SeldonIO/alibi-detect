@@ -76,6 +76,7 @@ class GMM(BaseDetector, ThresholdMixin, FitMixin):
         batch_size: Optional[int] = None,
         epochs: Optional[int] = 10,
         tol: float = 1e-3,
+        n_iter_no_change: int = 25,
         n_init: int = 1,
         init_params: str = 'kmeans',
         verbose: int = 0,
@@ -105,8 +106,11 @@ class GMM(BaseDetector, ThresholdMixin, FitMixin):
             If the backend is ``'sklearn'``, the detector is fit using the EM algorithm. If the backend is ``'pytorch'``,
             the detector is fitted using gradient descent. In both cases the number of epochs defaults to ``10``.
         tol
-            Convergence threshold used to fit the detector. Will cut the training short when this loss value is reached.
-            Only used if the ``'sklearn'`` backend is used. Defaults to ``1e-3``.
+            Convergence threshold used to fit the detector. Used for both ``'sklearn'`` and ``'pytorch'`` backends.
+            Defaults to ``1e-3``.
+        n_iter_no_change:
+            The number of iterations over which the loss must decrease by `tol` in order for optimization to continue.
+            Only used if the ``'pytorch'`` backend is used.
         n_init
             Number of initializations used to fit the detector. Only used if the ``'sklearn'`` backend is used.
             Defaults to ``1``.

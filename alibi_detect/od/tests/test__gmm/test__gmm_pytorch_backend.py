@@ -95,3 +95,18 @@ def test_gmm_pytorch_backend_fit_errors():
 
     # Test that the backend can call predict without the threshold being inferred.
     assert gmm_torch.predict(x)
+
+
+def test_gmm_pytorch_fit():
+    """Test GMM detector pytorch fit method.
+
+    Tests pytorch detector checks for convergence and stops early if it does.
+    """
+    gmm_torch = GMMTorch(n_components=1)
+    mean = [8, 8]
+    cov = [[2., 0.], [0., 1.]]
+    x_ref = torch.tensor(np.random.multivariate_normal(mean, cov, 1000))
+    fit_results = gmm_torch.fit(x_ref, tol=0.01)
+    assert fit_results['converged']
+    assert fit_results['epochs'] < 10
+    assert fit_results['lower_bound'] < 1

@@ -8,7 +8,7 @@ from alibi_detect.exceptions import NotFittedError, ThresholdNotInferredError
 def test_gmm_sklearn_scoring():
     """Test GMM detector sklearn scoring method.
 
-    Tests the scoring method of the GMMTorch sklearn backend detector.
+    Tests the scoring method of the GMM sklearn backend detector.
     """
     gmm_sklearn = GMMSklearn(n_components=2)
     mean = [8, 8]
@@ -44,7 +44,7 @@ def test_gmm_sklearn_scoring():
 def test_gmm_sklearn_backend_fit_errors():
     """Test gmm detector sklearn backend fit errors.
 
-    Tests the correct errors are raised when using the GMMTorch sklearn backend detector.
+    Tests the correct errors are raised when using the GMMSklearn backend detector.
     """
     gmm_sklearn = GMMSklearn(n_components=2)
     assert not gmm_sklearn.fitted
@@ -75,3 +75,18 @@ def test_gmm_sklearn_backend_fit_errors():
 
     # Test that the backend can call predict without the threshold being inferred.
     assert gmm_sklearn.predict(x)
+
+
+def test_gmm_sklearn_fit():
+    """Test GMM detector sklearn backend fit method.
+
+    Tests the scoring method of the GMMSklearn backend detector.
+    """
+    gmm_sklearn = GMMSklearn(n_components=1)
+    mean = [8, 8]
+    cov = [[2., 0.], [0., 1.]]
+    x_ref = np.random.multivariate_normal(mean, cov, 1000)
+    fit_results = gmm_sklearn.fit(x_ref, tol=0.01)
+    assert fit_results['converged']
+    assert fit_results['n_iter'] < 10
+    assert fit_results['lower_bound'] < 1
