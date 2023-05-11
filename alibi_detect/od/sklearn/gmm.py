@@ -97,7 +97,7 @@ class GMMSklearn(SklearnOutlierDetector):
         """
         return dict(
             tol=fit_kwargs.get('tol', 1e-3),
-            max_iter=(lambda v: 100 if v is None else v)(fit_kwargs.get('epochs', None)),
+            max_iter=(lambda v: 100 if v is None else v)(fit_kwargs.get('max_epochs', None)),
             n_init=fit_kwargs.get('n_init', 1),
             init_params=fit_kwargs.get('init_params', 'kmeans'),
             verbose=fit_kwargs.get('verbose', 0),

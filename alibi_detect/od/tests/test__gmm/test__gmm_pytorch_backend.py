@@ -108,5 +108,5 @@ def test_gmm_pytorch_fit():
     x_ref = torch.tensor(np.random.multivariate_normal(mean, cov, 1000))
     fit_results = gmm_torch.fit(x_ref, tol=0.01)
     assert fit_results['converged']
-    assert fit_results['epochs'] < 10
+    assert fit_results['n_epochs'] < 10
     assert fit_results['lower_bound'] < 1

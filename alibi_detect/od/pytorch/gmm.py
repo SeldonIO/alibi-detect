@@ -46,7 +46,7 @@ class GMMTorch(TorchOutlierDetector):
         optimizer: Type[torch.optim.Optimizer] = torch.optim.Adam,
         learning_rate: float = 0.1,
         batch_size: int = 32,
-        epochs: int = 10,
+        max_epochs: int = 10,
         verbose: int = 0,
     ) -> Dict:
         """Fit the GMM model.
@@ -67,8 +67,8 @@ class GMMTorch(TorchOutlierDetector):
             Learning rate used to train the model.
         batch_size
             Batch size used to train the model.
-        epochs
-            Number of training epochs.
+        max_epochs
+            Number of training max_epochs.
         verbose
             Verbosity level during training. 0 is silent, 1 a progress bar.
 
@@ -99,7 +99,7 @@ class GMMTorch(TorchOutlierDetector):
         converged = False
         epoch = 0
 
-        while not converged and epoch < epochs:
+        while not converged and epoch < max_epochs:
             epoch += 1
             dl = tqdm(
                 enumerate(dataloader),
@@ -116,7 +116,7 @@ class GMMTorch(TorchOutlierDetector):
 
                 if verbose and isinstance(dl, tqdm):
                     loss_ma = loss_ma + (nll.item() - loss_ma) / (step + 1)
-                    dl.set_description(f'Epoch {epoch + 1}/{epochs}')
+                    dl.set_description(f'Epoch {epoch + 1}/{max_epochs}')
                     dl.set_postfix(dict(loss_ma=loss_ma))
 
                 if min_loss is None or nll < min_loss - tol:
@@ -133,7 +133,7 @@ class GMMTorch(TorchOutlierDetector):
         return {
             'converged': converged,
             'lower_bound': min_loss,
-            'epochs': epoch
+            'n_epochs': epoch
         }
 
     def format_fit_kwargs(self, fit_kwargs: Dict) -> Dict:
@@ -152,7 +152,7 @@ class GMMTorch(TorchOutlierDetector):
             optimizer=get_optimizer(fit_kwargs.get('optimizer')),
             learning_rate=fit_kwargs.get('learning_rate', 0.1),
             batch_size=fit_kwargs.get('batch_size', None),
-            epochs=(lambda v: 10 if v is None else v)(fit_kwargs.get('epochs', None)),
+            max_epochs=(lambda v: 10 if v is None else v)(fit_kwargs.get('max_epochs', None)),
             verbose=fit_kwargs.get('verbose', 0),
             tol=fit_kwargs.get('tol', 1e-3),
             n_iter_no_change=fit_kwargs.get('n_iter_no_change', 25)
