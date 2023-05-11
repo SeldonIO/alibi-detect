@@ -26,7 +26,7 @@ class GMM(BaseDetector, ThresholdMixin, FitMixin):
     def __init__(
         self,
         n_components: int = 1,
-        backend: Literal['pytorch', 'sklearn'] = 'pytorch',
+        backend: Literal['pytorch', 'sklearn'] = 'sklearn',
         device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
     ) -> None:
         """Gaussian Mixture Model (GMM) outlier detector.
@@ -43,10 +43,11 @@ class GMM(BaseDetector, ThresholdMixin, FitMixin):
         n_components:
             The number of mixture components. Defaults to ``1``.
         backend
-            Backend used for outlier detection. Defaults to ``'pytorch'``. Options are ``'pytorch'`` and ``'sklearn'``.
+            Backend used for outlier detection. Defaults to ``'sklearn'``. Options are ``'pytorch'`` and ``'sklearn'``.
         device
             Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
-            passing either ``'cuda'``, ``'gpu'`` or ``'cpu'``.
+            passing either ``'cuda'``, ``'gpu'`` or ``'cpu'``. The device is only used if the ``'pytorch'`` backend is
+            used. Defaults to ``None``.
 
         Raises
         ------
@@ -73,7 +74,7 @@ class GMM(BaseDetector, ThresholdMixin, FitMixin):
         optimizer: Optional[str] = 'Adam',
         learning_rate: float = 0.1,
         batch_size: Optional[int] = None,
-        epochs: Optional[int] = None,
+        epochs: Optional[int] = 10,
         tol: float = 1e-3,
         n_init: int = 1,
         init_params: str = 'kmeans',
@@ -98,14 +99,14 @@ class GMM(BaseDetector, ThresholdMixin, FitMixin):
             Learning rate used to fit the detector. Only used if the ``'pytorch'`` backend is used. Defaults to ``0.1``.
         batch_size
             Batch size used to fit the detector. Only used if the ``'pytorch'`` backend is used. Defaults to ``None``.
-            If ``None``, the entire dataset is used in each epoch.
+            If ``None``, the entire dataset is used for each gradient update.
         epochs
             Number of epochs used to fit the detector. Used for both the ``'pytorch'`` and ``'sklearn'`` backends.
-            If the backend is ``'sklearn'``, the detector is fitted using the EM algorithm and the number of epochs
-            defaults to ``10``. If the backend is ``'pytorch'``, the detector is fitted using gradient descent and
-            the number of epochs defaults to ``100``.
+            If the backend is ``'sklearn'``, the detector is fit using the EM algorithm. If the backend is ``'pytorch'``,
+            the detector is fitted using gradient descent. In both cases the number of epochs defaults to ``10``.
         tol
-            Tolerance used to fit the detector. Only used if the ``'sklearn'`` backend is used. Defaults to ``1e-3``.
+            Convergence threshold used to fit the detector. Will cut the training short when this loss value is reached.
+            Only used if the ``'sklearn'`` backend is used. Defaults to ``1e-3``.
         n_init
             Number of initializations used to fit the detector. Only used if the ``'sklearn'`` backend is used.
             Defaults to ``1``.

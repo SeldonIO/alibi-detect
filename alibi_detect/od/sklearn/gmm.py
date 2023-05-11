@@ -97,7 +97,7 @@ class GMMSklearn(SklearnOutlierDetector):
         Parameters
         ----------
         x
-            `mp.ndarray` with leading batch dimension.
+            `np.ndarray` with leading batch dimension.
 
         Returns
         -------

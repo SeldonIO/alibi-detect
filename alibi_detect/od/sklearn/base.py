@@ -111,7 +111,7 @@ class SklearnOutlierDetector(FitMixinSklearn, ABC):
         x
             Data to convert.
         """
-        return np.array(x)
+        return np.asarray(x)
 
     def _classify_outlier(self, scores: np.ndarray) -> np.ndarray:
         """Classify the data as outlier or not.
@@ -125,7 +125,8 @@ class SklearnOutlierDetector(FitMixinSklearn, ABC):
         -------
         `np.ndarray` or ``None``
         """
-        return scores > self.threshold if self.threshold_inferred else None
+        return (scores > self.threshold).astype(np.int8) \
+            if self.threshold_inferred else None
 
     def _p_vals(self, scores: np.ndarray) -> np.ndarray:
         """Compute p-values for the scores.
@@ -164,7 +165,7 @@ class SklearnOutlierDetector(FitMixinSklearn, ABC):
         if fpr < 1/len(x):
             raise ValueError(f'`fpr` must be greater than `1/len(x)={1/len(x)}`.')
         self.val_scores = self.score(x)
-        self.threshold = np.quantile(self.val_scores, 1-fpr, interpolation='higher')  # type: ignore
+        self.threshold = np.quantile(self.val_scores, 1-fpr, interpolation='higher')  # type: ignore[call-overload]
         self.threshold_inferred = True
 
     def predict(self, x: np.ndarray) -> SklearnOutlierDetectorOutput:
