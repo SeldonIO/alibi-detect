@@ -102,7 +102,7 @@ class GMM(BaseDetector, ThresholdMixin, FitMixin):
         epochs
             Number of epochs used to fit the detector. Used for both the ``'pytorch'`` and ``'sklearn'`` backends.
             If the backend is ``'sklearn'``, the detector is fitted using the EM algorithm and the number of epochs
-            defualts to ``10``. If the backend is ``'pytorch'``, the detector is fitted using gradient descent and
+            defaults to ``10``. If the backend is ``'pytorch'``, the detector is fitted using gradient descent and
             the number of epochs defaults to ``100``.
         tol
             Tolerance used to fit the detector. Only used if the ``'sklearn'`` backend is used. Defaults to ``1e-3``.
