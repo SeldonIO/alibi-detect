@@ -1,4 +1,4 @@
-from typing import Callable, Optional, Union, Dict
+from typing import Optional, Union, Dict, Type
 from typing_extensions import Literal
 from tqdm import tqdm
 import torch
@@ -41,7 +41,7 @@ class GMMTorch(TorchOutlierDetector):
     def fit(
         self,
         x_ref: torch.Tensor,
-        optimizer: Callable = torch.optim.Adam,
+        optimizer: Type[torch.optim.Optimizer] = torch.optim.Adam,
         learning_rate: float = 0.1,
         batch_size: int = 32,
         epochs: int = 10,
@@ -77,7 +77,7 @@ class GMMTorch(TorchOutlierDetector):
         optimizer_instance: torch.optim.Optimizer = optimizer(
             self.model.parameters(),
             lr=learning_rate
-        )
+        )  # type: ignore[call-arg]
         self.model.train()
 
         for epoch in range(epochs):
@@ -93,7 +93,7 @@ class GMMTorch(TorchOutlierDetector):
                 optimizer_instance.zero_grad()
                 nll.backward()
                 optimizer_instance.step()
-                if verbose == 1 and isinstance(dl, tqdm):
+                if verbose and isinstance(dl, tqdm):
                     loss_ma = loss_ma + (nll.item() - loss_ma) / (step + 1)
                     dl.set_description(f'Epoch {epoch + 1}/{epochs}')
                     dl.set_postfix(dict(loss_ma=loss_ma))

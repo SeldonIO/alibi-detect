@@ -8,9 +8,9 @@ class GMMModel(nn.Module):
 
         Parameters
         ----------
-        n_components:
+        n_components
             The number of mixture components.
-        dim:
+        dim
             The dimensionality of the data.
         """
         super().__init__()
@@ -31,7 +31,7 @@ class GMMModel(nn.Module):
 
         Parameters
         ----------
-        x:
+        x
             Data to score.
         """
         det = torch.linalg.det(self._inv_cov)  # Note det(A^-1)=1/det(A)

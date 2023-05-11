@@ -1,4 +1,3 @@
-from __future__ import annotations
 from typing import List, Union, Optional, Dict
 from dataclasses import dataclass, asdict
 from abc import ABC, abstractmethod
@@ -58,9 +57,6 @@ class SklearnOutlierDetector(FitMixinSklearn, ABC):
     threshold_inferred = False
     threshold = None
 
-    def __init__(self):
-        super().__init__()
-
     @abstractmethod
     def score(self, x: np.ndarray) -> np.ndarray:
         """Score the data.
@@ -86,12 +82,9 @@ class SklearnOutlierDetector(FitMixinSklearn, ABC):
 
     @staticmethod
     def _to_numpy(arg: Union[np.ndarray, SklearnOutlierDetectorOutput]) -> Union[np.ndarray, Dict[str, np.ndarray]]:
-        """Map params to numpy arrays.
+        """Map arg to the frontend format.
 
-        Note
-        ----
-        This function is for interface compatibility with the other backends. As such it does nothing but
-        return the input and unpack `SklearnOutlierDetectorOutput` into a `dict`.
+        If `arg` is a `SklearnOutlierDetectorOutput` object, we unpack it into a `dict` and return it.
 
         Parameters
         ----------
@@ -100,7 +93,7 @@ class SklearnOutlierDetector(FitMixinSklearn, ABC):
 
         Returns
         -------
-        `np.ndarray` or dictionary of containing `numpy` arrays
+        `np.ndarray` or dictionary containing frontend compatible data.
         """
         if isinstance(arg, SklearnOutlierDetectorOutput):
             return asdict(arg)

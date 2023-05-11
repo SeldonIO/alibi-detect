@@ -35,8 +35,8 @@ class GMM(BaseDetector, ThresholdMixin, FitMixin):
         Test points are scored via the negative log-likelihood under the corresponding density function.
 
         We support two backends: ``'pytorch'`` and ``'sklearn'``. The ``'pytorch'`` backend allows for GPU acceleration
-        and uses gradient descent to fit the GMM. We recommend using the ``'pytorch'`` backend for for large datasets.
-        The ``'sklearn'`` backend is a pure python implementation and is recommended for smaller datasets.
+        and uses gradient descent to fit the GMM. We recommend using the ``'pytorch'`` backend for large datasets. The
+        ``'sklearn'`` backend is a pure python implementation and is recommended for smaller datasets.
 
         Parameters
         ----------
@@ -118,7 +118,7 @@ class GMM(BaseDetector, ThresholdMixin, FitMixin):
             'random_from_data' : responsibilities are initialized randomly from the data.
             Defaults to ``'kmeans'``.
         verbose
-            Verbosity level used to fit the detector. Only used if the ``'sklearn'`` backend is used. Defaults to ``0``.
+            Verbosity level used to fit the detector. Used for both ``'sklearn'`` and ``'pytorch'`` backends. Defaults to ``0``.
         """
         self.backend.fit(
             self.backend._to_tensor(x_ref),

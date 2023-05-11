@@ -94,7 +94,7 @@ def get_device(device: Optional[Union[str, torch.device]] = None) -> torch.devic
     return torch_device
 
 
-def get_optimizer(name: str = 'Adam'):
+def get_optimizer(name: str = 'Adam') -> torch.optim.Optimizer:
     """
     Get an optimizer class from its name.
 
