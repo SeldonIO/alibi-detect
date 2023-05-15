@@ -2,15 +2,20 @@ import pytest
 import torch
 
 from alibi_detect.od.pytorch import ensemble
-from alibi_detect.base import NotFitException
+from alibi_detect.exceptions import NotFittedError
 
 
 def test_pval_normalizer():
+    """Test the PValNormalizer
+
+    - Test the PValNormalizer correctly normalizes data passed to it
+    - Test the PValNormalizer throws the correct errors if not fit
+    """
     normalizer = ensemble.PValNormalizer()
     x = torch.randn(3, 10)
     x_ref = torch.randn(64, 10)
     # unfit normalizer raises exception
-    with pytest.raises(NotFitException) as err:
+    with pytest.raises(NotFittedError) as err:
         normalizer(x)
     assert err.value.args[0] == 'PValNormalizer has not been fit!'
 
@@ -35,12 +40,17 @@ def test_pval_normalizer():
 
 
 def test_shift_and_scale_normalizer():
+    """Test the ShiftAndScaleNormalizer
+
+    - Test the ShiftAndScaleNormalizer correctly normalizes data passed to it
+    - Test the ShiftAndScaleNormalizer throws the correct errors if not fit.
+    """
     normalizer = ensemble.ShiftAndScaleNormalizer()
     x = torch.randn(3, 10) * 3 + 2
     x_ref = torch.randn(5000, 10) * 3 + 2
 
     # unfit normalizer raises exception
-    with pytest.raises(NotFitException) as err:
+    with pytest.raises(NotFittedError) as err:
         normalizer(x)
     assert err.value.args[0] == 'ShiftAndScaleNormalizer has not been fit!'
 
@@ -57,6 +67,11 @@ def test_shift_and_scale_normalizer():
 
 
 def test_average_aggregator():
+    """Test the AverageAggregator
+
+    - Test the AverageAggregator correctly aggregates data passed to it.
+    - Test the AverageAggregator can be torch scripted
+    """
     aggregator = ensemble.AverageAggregator()
     scores = torch.randn((3, 10))
 
@@ -72,6 +87,12 @@ def test_average_aggregator():
 
 
 def test_weighted_average_aggregator():
+    """Test the AverageAggregator
+
+    - Test the AverageAggregator correctly aggregates data passed to it
+    - Test the AverageAggregator throws an error if the weights are not valid
+    - Test the AverageAggregator can be torch scripted
+    """
     weights = abs(torch.randn((10)))
 
     with pytest.raises(ValueError) as err:
@@ -94,6 +115,11 @@ def test_weighted_average_aggregator():
 
 
 def test_topk_aggregator():
+    """Test the TopKAggregator
+
+    - Test the TopKAggregator correctly aggregates data passed to it
+    - Test the TopKAggregator can be torch scripted
+    """
     aggregator = ensemble.TopKAggregator(k=4)
     scores = torch.randn((3, 10))
 
@@ -110,6 +136,11 @@ def test_topk_aggregator():
 
 
 def test_max_aggregator():
+    """Test the MaxAggregator
+
+    - Test the MaxAggregator correctly aggregates data passed to it
+    - Test the MaxAggregator can be torch scripted
+    """
     aggregator = ensemble.MaxAggregator()
     scores = torch.randn((3, 10))
 
@@ -126,6 +157,11 @@ def test_max_aggregator():
 
 
 def test_min_aggregator():
+    """Test the MinAggregator
+
+    - Test the MinAggregator correctly aggregates data passed to it
+    - Test the MinAggregator can be torch scripted
+    """
     aggregator = ensemble.MinAggregator()
     scores = torch.randn((3, 10))
 
@@ -144,6 +180,11 @@ def test_min_aggregator():
 @pytest.mark.parametrize('aggregator', ['AverageAggregator', 'MaxAggregator', 'MinAggregator', 'TopKAggregator'])
 @pytest.mark.parametrize('normalizer', ['PValNormalizer', 'ShiftAndScaleNormalizer'])
 def test_ensembler(aggregator, normalizer):
+    """Test the Ensembler for each combination of aggregator and normalizer
+
+    - Test the ensembler correctly aggregates and normalizes the scores
+    - Test the ensembler can be torch scripted
+    """
     aggregator = getattr(ensemble, aggregator)()
     normalizer = getattr(ensemble, normalizer)()
     ensembler = ensemble.Ensembler(aggregator=aggregator, normalizer=normalizer)

@@ -3,9 +3,9 @@ import numpy as np
 import torch
 
 from alibi_detect.od._knn import KNN
-from alibi_detect.od import AverageAggregator, TopKAggregator, MaxAggregator, \
+from alibi_detect.od.pytorch.ensemble import AverageAggregator, TopKAggregator, MaxAggregator, \
     MinAggregator, ShiftAndScaleNormalizer, PValNormalizer
-from alibi_detect.base import NotFitException
+from alibi_detect.exceptions import NotFittedError, ThresholdNotInferredError
 
 from sklearn.datasets import make_moons
 
@@ -24,30 +24,58 @@ def make_knn_detector(k=5, aggregator=None, normalizer=None):
 def test_unfitted_knn_single_score():
     knn_detector = KNN(k=10)
     x = np.array([[0, 10], [0.1, 0]])
+    x_ref = np.random.randn(100, 2)
+
+    # test infer_threshold raises exception when not fitted
+    with pytest.raises(NotFittedError) as err:
+        _ = knn_detector.infer_threshold(x_ref, 0.1)
+    assert str(err.value) == 'KNN has not been fit!'
+
+    # test score raises exception when not fitted
+    with pytest.raises(NotFittedError) as err:
+        _ = knn_detector.score(x)
+    assert str(err.value) == 'KNN has not been fit!'
 
     # test predict raises exception when not fitted
-    with pytest.raises(NotFitException) as err:
+    with pytest.raises(NotFittedError) as err:
         _ = knn_detector.predict(x)
-    assert str(err.value) == 'KNNTorch has not been fit!'
+    assert str(err.value) == 'KNN has not been fit!'
 
 
-@pytest.mark.parametrize('k', [10, [8, 9, 10]])
-def test_fitted_knn_single_score(k):
-    knn_detector = KNN(k=k)
+def test_fitted_knn_score():
+    """
+    Test fitted but not threshold inferred non-ensemble detectors can still score data using the predict method.
+    Unlike the ensemble detectors, the non-ensemble detectors do not require the ensembler to be fit in the
+    infer_threshold method. See the test_fitted_knn_ensemble_score test for the ensemble case.
+    """
+    knn_detector = KNN(k=10)
     x_ref = np.random.randn(100, 2)
     knn_detector.fit(x_ref)
     x = np.array([[0, 10], [0.1, 0]])
-    # test fitted but not threshold inferred detectors
-    # can still score data using the predict method.
     y = knn_detector.predict(x)
     y = y['data']
     assert y['instance_score'][0] > 5
     assert y['instance_score'][1] < 1
-
     assert not y['threshold_inferred']
     assert y['threshold'] is None
     assert y['is_outlier'] is None
     assert y['p_value'] is None
+
+
+def test_fitted_knn_ensemble_score():
+    """
+    Test fitted but not threshold inferred ensemble detectors correctly raise an error when calling
+    the predict method. This is because the ensembler is fit in the infer_threshold method.
+    """
+    knn_detector = KNN(k=[10, 14, 18])
+    x_ref = np.random.randn(100, 2)
+    knn_detector.fit(x_ref)
+    x = np.array([[0, 10], [0.1, 0]])
+    with pytest.raises(ThresholdNotInferredError):
+        knn_detector.predict(x)
+
+    with pytest.raises(ThresholdNotInferredError):
+        knn_detector.score(x)
 
 
 def test_incorrect_knn_ensemble_init():
@@ -95,9 +123,9 @@ def test_unfitted_knn_ensemble(aggregator, normalizer):
     x = np.array([[0, 10], [0.1, 0]])
 
     # Test unfit knn ensemble raises exception when calling predict method.
-    with pytest.raises(NotFitException) as err:
+    with pytest.raises(NotFittedError) as err:
         _ = knn_detector.predict(x)
-    assert str(err.value) == 'KNNTorch has not been fit!'
+    assert str(err.value) == 'KNN has not been fit!'
 
 
 @pytest.mark.parametrize("aggregator", [AverageAggregator, lambda: TopKAggregator(k=7),
@@ -113,14 +141,13 @@ def test_fitted_knn_ensemble(aggregator, normalizer):
     knn_detector.fit(x_ref)
     x = np.array([[0, 10], [0, 0.1]])
 
-    # test fitted but not threshold inferred detectors can still score data using the predict method.
-    y = knn_detector.predict(x)
-    y = y['data']
-    assert y['instance_score'].all()
-    assert not y['threshold_inferred']
-    assert y['threshold'] is None
-    assert y['is_outlier'] is None
-    assert y['p_value'] is None
+    # test ensemble raises ThresholdNotInferredError if only fit and not threshold inferred and
+    # the normalizer is not None.
+    if normalizer() is not None:
+        with pytest.raises(ThresholdNotInferredError):
+            knn_detector.predict(x)
+    else:
+        knn_detector.predict(x)
 
 
 @pytest.mark.parametrize("aggregator", [AverageAggregator, lambda: TopKAggregator(k=7),
@@ -141,6 +168,10 @@ def test_fitted_knn_ensemble_predict(aggregator, normalizer):
     assert y['threshold'] is not None
     assert y['p_value'].all()
     assert (y['is_outlier'] == [True, False]).all()
+
+    # test fitted detectors with inferred thresholds can score data using the score method.
+    scores = knn_detector.score(x)
+    assert np.all(y['instance_score'] == scores)
 
 
 @pytest.mark.parametrize("aggregator", [AverageAggregator, lambda: TopKAggregator(k=7),
@@ -172,7 +203,7 @@ def test_knn_single_torchscript():
                                         lambda: 'MinAggregator'])
 @pytest.mark.parametrize("normalizer", [ShiftAndScaleNormalizer, PValNormalizer, lambda: None,
                                         lambda: 'ShiftAndScaleNormalizer', lambda: 'PValNormalizer'])
-def test_knn_ensemble_integration(aggregator, normalizer):
+def test_knn_ensemble_integration(tmp_path, aggregator, normalizer):
     """Test knn ensemble detector on moons dataset.
 
     Tests ensemble knn detector with every combination of aggregator and normalizer on the moons dataset.
@@ -198,13 +229,18 @@ def test_knn_ensemble_integration(aggregator, normalizer):
     result = result['data']['is_outlier'][0]
     assert result
 
-    tsknn = torch.jit.script(knn_detector.backend)
+    ts_knn = torch.jit.script(knn_detector.backend)
     x = torch.tensor([x_inlier[0], x_outlier[0]], dtype=torch.float32)
-    y = tsknn(x)
+    y = ts_knn(x)
+    assert torch.all(y == torch.tensor([False, True]))
+
+    ts_knn.save(tmp_path / 'knn.pt')
+    knn_detector = torch.load(tmp_path / 'knn.pt')
+    y = knn_detector(x)
     assert torch.all(y == torch.tensor([False, True]))
 
 
-def test_knn_integration():
+def test_knn_integration(tmp_path):
     """Test knn detector on moons dataset.
 
     Tests knn detector on the moons dataset. Fits and infers thresholds and verifies that the detector can
@@ -224,7 +260,12 @@ def test_knn_integration():
     result = result['data']['is_outlier'][0]
     assert result
 
-    tsknn = torch.jit.script(knn_detector.backend)
+    ts_knn = torch.jit.script(knn_detector.backend)
     x = torch.tensor([x_inlier[0], x_outlier[0]], dtype=torch.float32)
-    y = tsknn(x)
+    y = ts_knn(x)
+    assert torch.all(y == torch.tensor([False, True]))
+
+    ts_knn.save(tmp_path / 'knn.pt')
+    knn_detector = torch.load(tmp_path / 'knn.pt')
+    y = knn_detector(x)
     assert torch.all(y == torch.tensor([False, True]))

@@ -1,11 +1,11 @@
-from __future__ import annotations
-from typing import List, Union, Optional
+from typing import List, Union, Optional, Dict
 from dataclasses import dataclass, asdict
 from abc import ABC, abstractmethod
+from typing_extensions import Self
 
 import numpy as np
 
-from alibi_detect.base import NotFitException, ThresholdNotInferredException
+from alibi_detect.exceptions import NotFittedError, ThresholdNotInferredError
 
 
 @dataclass
@@ -18,64 +18,44 @@ class SklearnOutlierDetectorOutput:
     p_value: Optional[np.ndarray]
 
 
-class FitMixin(ABC):
-    _fitted = False
-
-    def __init__(self):
-        """Fit mixin
-
-        Utility class that provides fitted checks for alibi-detect objects that require to be fit before use.
-        """
-        super().__init__()
-
-    def fit(self, x: np.ndarray, **kwargs: dict) -> FitMixin:
-        self._fitted = True
-        self._fit(x, **kwargs)
-        return self
+class FitMixinSklearn(ABC):
+    fitted = False
 
     @abstractmethod
-    def _fit(self, x: np.ndarray):
-        """Fit on `x` array.
-
-        This method should be overidden on child classes.
+    def fit(self, x_ref: np.ndarray) -> Self:
+        """Abstract fit method.
 
         Parameters
         ----------
         x
-            Reference `np.array` for fitting object.
+            `torch.Tensor` to fit object on.
         """
-        pass
+        return self
+
+    def _set_fitted(self) -> Self:
+        """Sets the fitted attribute to True.
+
+        Should be called within the object fit method.
+        """
+        self.fitted = True
+        return self
 
     def check_fitted(self):
-        """Raises error if parent object instance has not been fit.
+        """Checks to make sure object has been fitted.
 
         Raises
         ------
-        NotFitException
+        NotFittedError
             Raised if method called and object has not been fit.
         """
-        if not self._fitted:
-            raise NotFitException(f'{self.__class__.__name__} has not been fit!')
+        if not self.fitted:
+            raise NotFittedError(self.__class__.__name__)
 
 
-class SklearnOutlierDetector(FitMixin, ABC):
+class SklearnOutlierDetector(FitMixinSklearn, ABC):
     """Base class for sklearn backend outlier detection algorithms."""
     threshold_inferred = False
     threshold = None
-
-    def __init__(self):
-        super().__init__()
-
-    @abstractmethod
-    def _fit(self, x_ref: np.ndarray) -> None:
-        """Fit the outlier detector to the reference data.
-
-        Parameters
-        ----------
-        x_ref
-            Reference data.
-        """
-        pass
 
     @abstractmethod
     def score(self, x: np.ndarray) -> np.ndarray:
@@ -89,24 +69,22 @@ class SklearnOutlierDetector(FitMixin, ABC):
         """
         pass
 
-    def check_threshold_infered(self):
+    def check_threshold_inferred(self):
         """Check if threshold is inferred.
 
         Raises
         ------
-        ThresholdNotInferredException
+        ThresholdNotInferredError
             Raised if threshold is not inferred.
         """
         if not self.threshold_inferred:
-            raise ThresholdNotInferredException((f'{self.__class__.__name__} has no threshold set, '
-                                                 'call `infer_threshold` before predicting.'))
+            raise ThresholdNotInferredError(self.__class__.__name__)
 
     @staticmethod
-    def _to_numpy(arg):
-        """Map params to numpy arrays.
+    def _to_numpy(arg: Union[np.ndarray, SklearnOutlierDetectorOutput]) -> Union[np.ndarray, Dict[str, np.ndarray]]:
+        """Map arg to the frontend format.
 
-        This function is for interface compatibility with the other backends. As such it does nothing but
-        return the input.
+        If `arg` is a `SklearnOutlierDetectorOutput` object, we unpack it into a `dict` and return it.
 
         Parameters
         ----------
@@ -115,7 +93,7 @@ class SklearnOutlierDetector(FitMixin, ABC):
 
         Returns
         -------
-        `np.ndarray` or dictionary of containing `numpy` arrays
+        `np.ndarray` or dictionary containing frontend compatible data.
         """
         if isinstance(arg, SklearnOutlierDetectorOutput):
             return asdict(arg)
@@ -132,33 +110,10 @@ class SklearnOutlierDetector(FitMixin, ABC):
         ----------
         x
             Data to convert.
-
-        Returns
-        -------
-        `np.ndarray`
         """
-        return np.array(x)
+        return np.asarray(x)
 
-    def _ensembler(self, x: np.ndarray) -> np.ndarray:
-        """Aggregates and normalizes the data
-
-        If the detector has an ensembler attribute we use it to aggregate and normalize the data.
-
-        Parameters
-        ----------
-        x
-            Data to aggregate and normalize.
-
-        Returns
-        -------
-        `np.ndarray` or just returns original data
-        """
-        if hasattr(self, 'ensembler') and self.ensembler is not None:
-            return self.ensembler(x)
-        else:
-            return x
-
-    def _classify_outlier(self, scores: np.ndarray) -> np.ndarray:
+    def _classify_outlier(self, scores: np.ndarray) -> Optional[np.ndarray]:
         """Classify the data as outlier or not.
 
         Parameters
@@ -170,7 +125,9 @@ class SklearnOutlierDetector(FitMixin, ABC):
         -------
         `np.ndarray` or ``None``
         """
-        return scores > self.threshold if self.threshold_inferred else None
+        if (self.threshold_inferred and self.threshold is not None):
+            return (scores > self.threshold).astype(int)
+        return None
 
     def _p_vals(self, scores: np.ndarray) -> np.ndarray:
         """Compute p-values for the scores.
@@ -201,12 +158,15 @@ class SklearnOutlierDetector(FitMixin, ABC):
         ------
         ValueError
             Raised if `fpr` is not in ``(0, 1)``.
+        ValueError
+            Raised if `fpr` is less than ``1/len(x)``.
         """
         if not 0 < fpr < 1:
-            ValueError('`fpr` must be in `(0, 1)`.')
+            raise ValueError('`fpr` must be in `(0, 1)`.')
+        if fpr < 1/len(x):
+            raise ValueError(f'`fpr` must be greater than `1/len(x)={1/len(x)}`.')
         self.val_scores = self.score(x)
-        self.val_scores = self._ensembler(self.val_scores)
-        self.threshold = np.quantile(self.val_scores, 1-fpr)
+        self.threshold = np.quantile(self.val_scores, 1-fpr, interpolation='higher')  # type: ignore[call-overload]
         self.threshold_inferred = True
 
     def predict(self, x: np.ndarray) -> SklearnOutlierDetectorOutput:
@@ -221,20 +181,18 @@ class SklearnOutlierDetector(FitMixin, ABC):
         x
             Data to predict.
 
-        Raises
-        ------
-        ValueError
-            Raised if the detector is not fit on reference data.
-
         Returns
         -------
         `SklearnOutlierDetectorOutput`
             Output of the outlier detector.
 
+        Raises
+        ------
+        ValueError
+            Raised if the detector is not fit on reference data.
         """
-        self.check_fitted()  # type: ignore
-        raw_scores = self.score(x)
-        scores = self._ensembler(raw_scores)
+        self.check_fitted()
+        scores = self.score(x)
 
         return SklearnOutlierDetectorOutput(
             instance_score=scores,
@@ -252,7 +210,6 @@ class SklearnOutlierDetector(FitMixin, ABC):
         x
             Data to classify.
         """
-        raw_scores = self.score(x)
-        scores = self._ensembler(raw_scores)
-        self.check_threshold_infered()
+        scores = self.score(x)
+        self.check_threshold_inferred()
         return self._classify_outlier(scores)

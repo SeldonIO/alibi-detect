@@ -141,7 +141,7 @@ def test_od_backend_dependencies(opt_dep):
                 ('MahalanobisTorch', ['torch', 'keops']),
                 ('KernelPCATorch', ['torch', 'keops']),
                 ('LinearPCATorch', ['torch', 'keops']),
-                ('to_numpy', ['torch', 'keops']),
+                ('GMMTorch', ['torch', 'keops']),
             ]:
         dependency_map[dependency] = relations
     from alibi_detect.od import pytorch as od_pt_backend

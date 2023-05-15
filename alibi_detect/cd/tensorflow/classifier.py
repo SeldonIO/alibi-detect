@@ -11,6 +11,7 @@ from alibi_detect.utils.tensorflow.misc import clone_model
 from alibi_detect.utils.tensorflow.prediction import predict_batch
 from alibi_detect.utils.warnings import deprecated_alias
 from alibi_detect.utils.frameworks import Framework
+from alibi_detect.utils._types import OptimizerTF
 
 
 class ClassifierDriftTF(BaseClassifierDrift):
@@ -31,7 +32,7 @@ class ClassifierDriftTF(BaseClassifierDrift):
             n_folds: Optional[int] = None,
             retrain_from_scratch: bool = True,
             seed: int = 0,
-            optimizer: tf.keras.optimizers.Optimizer = tf.keras.optimizers.Adam,
+            optimizer: OptimizerTF = tf.keras.optimizers.Adam,
             learning_rate: float = 1e-3,
             batch_size: int = 32,
             preprocess_batch_fn: Optional[Callable] = None,
@@ -176,8 +177,12 @@ class ClassifierDriftTF(BaseClassifierDrift):
             else:
                 raise TypeError(f'x needs to be of type np.ndarray or list and not {type(x)}.')
             ds_tr = self.dataset(x_tr, y_tr)
-            self.model = clone_model(self.original_model) if self.retrain_from_scratch \
-                else self.model
+            if self.retrain_from_scratch:
+                # clone model to re-initialise
+                self.model = clone_model(self.original_model)
+                # Clone optimizer to prevent error due to cloned model (with new tf>=2.11 optimizers)
+                optimizer = self.train_kwargs['optimizer']
+                self.train_kwargs['optimizer'] = optimizer.__class__.from_config(optimizer.get_config())
             train_args = [self.model, self.loss_fn, None]
             self.train_kwargs.update({'dataset': ds_tr})
             trainer(*train_args, **self.train_kwargs)  # type: ignore
