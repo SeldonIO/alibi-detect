@@ -99,9 +99,10 @@ class GMM(BaseDetector, ThresholdMixin, FitMixin):
         learning_rate
             Learning rate used to fit the detector. Only used if the ``'pytorch'`` backend is used. Defaults to ``0.1``.
         max_epochs
-            Number of max_epochs used to fit the detector. Used for both the ``'pytorch'`` and ``'sklearn'`` backends.
-            If the backend is ``'sklearn'``, the detector is fit using the EM algorithm. If the backend is ``'pytorch'``,
-            the detector is fitted using gradient descent. In both cases the number of max_epochs defaults to ``10``.
+            Maximum number of training epochs used to fit the detector. Used for both the ``'pytorch'`` and ``'sklearn'``
+            backends. If the backend is ``'sklearn'``, the detector is fit using the EM algorithm. If the backend is
+            ``'pytorch'``, the detector is fitted using gradient descent. In both cases the number of max_epochs
+            defaults to ``10``.
         batch_size
             Batch size used to fit the detector. Only used if the ``'pytorch'`` backend is used. Defaults to ``None``.
             If ``None``, the entire dataset is used for each gradient update.

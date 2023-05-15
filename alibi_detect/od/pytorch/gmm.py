@@ -60,7 +60,7 @@ class GMMTorch(TorchOutlierDetector):
         learning_rate
             Learning rate used to train the model.
         max_epochs
-            Number of training max_epochs.
+            Maximum number of training epochs.
         batch_size
             Batch size used to train the model.
         tol
