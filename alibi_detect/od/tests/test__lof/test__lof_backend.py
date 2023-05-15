@@ -4,7 +4,7 @@ import torch
 from alibi_detect.od.pytorch.lof import LOFTorch
 from alibi_detect.utils.pytorch.kernels import GaussianRBF
 from alibi_detect.od.pytorch.ensemble import Ensembler, PValNormalizer, AverageAggregator
-from alibi_detect.base import NotFitException, ThresholdNotInferredException
+from alibi_detect.exceptions import NotFittedError, ThresholdNotInferredError
 
 
 @pytest.fixture(scope='session')
@@ -66,11 +66,11 @@ def test_lof_torch_backend_ensemble_ts(tmp_path, ensembler):
     lof_torch = LOFTorch(k=[4, 5], ensembler=ensembler)
     x = torch.randn((3, 10)) * torch.tensor([[1], [1], [100]])
 
-    with pytest.raises(NotFitException) as err:
+    with pytest.raises(NotFittedError) as err:
         lof_torch(x)
     assert str(err.value) == 'LOFTorch has not been fit!'
 
-    with pytest.raises(NotFitException) as err:
+    with pytest.raises(NotFittedError) as err:
         lof_torch.predict(x)
     assert str(err.value) == 'LOFTorch has not been fit!'
 
@@ -157,13 +157,13 @@ def test_lof_torch_backend_ensemble_fit_errors(k, ensembler):
     # Test that the backend raises an error if it is not fitted before
     # calling forward method.
     x = torch.randn((1, 10))
-    with pytest.raises(NotFitException) as err:
+    with pytest.raises(NotFittedError) as err:
         lof_torch(x)
     assert str(err.value) == 'LOFTorch has not been fit!'
 
     # Test that the backend raises an error if it is not fitted before
     # predicting.
-    with pytest.raises(NotFitException) as err:
+    with pytest.raises(NotFittedError) as err:
         lof_torch.predict(x)
     assert str(err.value) == 'LOFTorch has not been fit!'
 
@@ -174,7 +174,7 @@ def test_lof_torch_backend_ensemble_fit_errors(k, ensembler):
 
     # Test that the backend raises an if the forward method is called without the
     # threshold being inferred.
-    with pytest.raises(ThresholdNotInferredException) as err:
+    with pytest.raises(ThresholdNotInferredError) as err:
         lof_torch(x)
     assert str(err.value) == 'LOFTorch has no threshold set, call `infer_threshold` before predicting.'
 

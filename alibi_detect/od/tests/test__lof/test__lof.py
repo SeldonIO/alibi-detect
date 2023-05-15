@@ -3,9 +3,10 @@ import numpy as np
 import torch
 
 from alibi_detect.od._lof import LOF
-from alibi_detect.od import AverageAggregator, TopKAggregator, MaxAggregator, \
+from alibi_detect.od.pytorch.ensemble import AverageAggregator, TopKAggregator, MaxAggregator, \
     MinAggregator, ShiftAndScaleNormalizer, PValNormalizer
-from alibi_detect.base import NotFitException
+from alibi_detect.exceptions import NotFittedError
+
 
 from sklearn.datasets import make_moons
 
@@ -26,7 +27,7 @@ def test_unfitted_lof_single_score():
     x = np.array([[0, 10], [0.1, 0]])
 
     # test predict raises exception when not fitted
-    with pytest.raises(NotFitException) as err:
+    with pytest.raises(NotFittedError) as err:
         _ = lof_detector.predict(x)
     assert str(err.value) == 'LOFTorch has not been fit!'
 
@@ -95,7 +96,7 @@ def test_unfitted_lof_ensemble(aggregator, normalizer):
     x = np.array([[0, 10], [0.1, 0]])
 
     # Test unfit lof ensemble raises exception when calling predict method.
-    with pytest.raises(NotFitException) as err:
+    with pytest.raises(NotFittedError) as err:
         _ = lof_detector.predict(x)
     assert str(err.value) == 'LOFTorch has not been fit!'
 
