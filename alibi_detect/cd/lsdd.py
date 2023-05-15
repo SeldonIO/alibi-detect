@@ -116,8 +116,8 @@ class LSDDDrift(DriftConfigMixin):
         Returns
         -------
         Dictionary containing 'meta' and 'data' dictionaries.
-        'meta' has the model's metadata.
-        'data' contains the drift prediction and optionally the p-value, threshold and LSDD metric.
+            - 'meta' has the model's metadata.
+            - 'data' contains the drift prediction and optionally the p-value, threshold and LSDD metric.
         """
         return self._detector.predict(x, return_p_val, return_distance)
 
@@ -133,7 +133,7 @@ class LSDDDrift(DriftConfigMixin):
 
         Returns
         -------
-        p-value obtained from the permutation test, the LSDD between the reference and test set,
+        p-value obtained from the permutation test, the LSDD between the reference and test set, \
         and the LSDD threshold above which drift is flagged.
         """
         return self._detector.score(x)

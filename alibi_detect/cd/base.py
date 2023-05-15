@@ -135,10 +135,12 @@ class BaseClassifierDrift(BaseDetector):
     def preprocess(self, x: Union[np.ndarray, list]) -> Tuple[Union[np.ndarray, list], Union[np.ndarray, list]]:
         """
         Data preprocessing before computing the drift scores.
+
         Parameters
         ----------
         x
             Batch of instances.
+
         Returns
         -------
         Preprocessed reference data and new instances.
@@ -394,10 +396,12 @@ class BaseLearnedKernelDrift(BaseDetector):
     def preprocess(self, x: Union[np.ndarray, list]) -> Tuple[Union[np.ndarray, list], Union[np.ndarray, list]]:
         """
         Data preprocessing before computing the drift scores.
+
         Parameters
         ----------
         x
             Batch of instances.
+
         Returns
         -------
         Preprocessed reference data and new instances.
@@ -418,17 +422,18 @@ class BaseLearnedKernelDrift(BaseDetector):
         """
         Split reference and test data into two splits -- one of which to learn test locations
         and parameters and one to use for tests.
+
         Parameters
         ----------
         x_ref
             Data used as reference distribution.
         x
             Batch of instances.
+
         Returns
         -------
-        Tuple containing split train data and tuple containing split test data
+        Tuple containing split train data and tuple containing split test data.
         """
-
         n_ref, n_cur = len(x_ref), len(x)
         perm_ref, perm_cur = np.random.permutation(n_ref), np.random.permutation(n_cur)
         idx_ref_tr, idx_ref_te = perm_ref[:int(n_ref * self.train_size)], perm_ref[int(n_ref * self.train_size):]
@@ -586,10 +591,12 @@ class BaseMMDDrift(BaseDetector):
     def preprocess(self, x: Union[np.ndarray, list]) -> Tuple[np.ndarray, np.ndarray]:
         """
         Data preprocessing before computing the drift scores.
+
         Parameters
         ----------
         x
             Batch of instances.
+
         Returns
         -------
         Preprocessed reference data and new instances.
@@ -748,10 +755,12 @@ class BaseLSDDDrift(BaseDetector):
     def preprocess(self, x: Union[np.ndarray, list]) -> Tuple[np.ndarray, np.ndarray]:
         """
         Data preprocessing before computing the drift scores.
+
         Parameters
         ----------
         x
             Batch of instances.
+
         Returns
         -------
         Preprocessed reference data and new instances.
@@ -1136,10 +1145,12 @@ class BaseContextMMDDrift(BaseDetector):
     def preprocess(self, x: Union[np.ndarray, list]) -> Tuple[np.ndarray, np.ndarray]:
         """
         Data preprocessing before computing the drift scores.
+
         Parameters
         ----------
         x
             Batch of instances.
+
         Returns
         -------
         Preprocessed reference data and new instances.
@@ -1182,9 +1193,9 @@ class BaseContextMMDDrift(BaseDetector):
         Returns
         -------
         Dictionary containing 'meta' and 'data' dictionaries.
-        'meta' has the model's metadata.
-        'data' contains the drift prediction and optionally the p-value, threshold, conditional MMD test statistic
-        and coupling matrices.
+            - 'meta' has the model's metadata.
+            - 'data' contains the drift prediction and optionally the p-value, threshold, conditional MMD test \
+            statistic and coupling matrices.
         """
         # compute drift scores
         p_val, dist, distance_threshold, coupling = self.score(x, c)

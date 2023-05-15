@@ -46,7 +46,7 @@ class TabularDrift(BaseUnivariateDrift):
             values for the feature are [0, ..., N-1]. You can also explicitly pass the possible categories in the
             Dict[int, List[int]] format, e.g. {0: [0, 1, 2], 3: [0, 55]}. Note that the categories can be
             arbitrary int values.
-         x_ref_preprocessed
+        x_ref_preprocessed
             Whether the given reference data `x_ref` has been preprocessed yet. If `x_ref_preprocessed=True`, only
             the test data `x` will be preprocessed at prediction time. If `x_ref_preprocessed=False`, the reference
             data will also be preprocessed.
