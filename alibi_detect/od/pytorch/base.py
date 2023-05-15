@@ -1,5 +1,6 @@
 from typing import List, Union, Optional, Dict
-from dataclasses import dataclass, asdict
+from typing_extensions import Literal
+from dataclasses import dataclass, fields
 from abc import ABC, abstractmethod
 
 import numpy as np
@@ -21,18 +22,21 @@ class TorchOutlierDetectorOutput:
     p_value: Optional[torch.Tensor]
 
     def to_numpy(self):
-        outputs = asdict(self)
-        for key, value in outputs.items():
+        result = {}
+        for f in fields(self):
+            value = getattr(self, f.name)
             if isinstance(value, torch.Tensor):
-                outputs[key] = value.cpu().detach().numpy()
-        return outputs
+                result[f.name] = value.cpu().detach().numpy()
+            else:
+                result[f.name] = value
+        return result
 
 
 def _raise_type_error(x):
     raise TypeError(f'x is type={type(x)} but must be one of TorchOutlierDetectorOutput or a torch Tensor')
 
 
-def to_numpy(x: Union[torch.Tensor, TorchOutlierDetectorOutput]):
+def to_numpy(x: Union[torch.Tensor, TorchOutlierDetectorOutput]) -> Union[np.ndarray, Dict[str, np.ndarray]]:
     """Converts any `torch` tensors found in input to `numpy` arrays.
 
     Takes a `torch` tensor or `TorchOutlierDetectorOutput` and converts any `torch` tensors found to `numpy` arrays
@@ -61,7 +65,10 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
     threshold_inferred = False
     threshold = None
 
-    def __init__(self, device: Optional[Union[str, torch.device]] = None):
+    def __init__(
+            self,
+            device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
+            ):
         self.device = get_device(device)
         super().__init__()
 
@@ -90,7 +97,7 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
             raise ThresholdNotInferredError(self.__class__.__name__)
 
     @staticmethod
-    def _to_numpy(x: Union[torch.Tensor, TorchOutlierDetectorOutput]) -> Union[np.ndarray, Dict]:
+    def _to_numpy(arg: Union[torch.Tensor, TorchOutlierDetectorOutput]) -> Union[np.ndarray, Dict[str, np.ndarray]]:
         """Converts any `torch` tensors found in input to `numpy` arrays.
 
         Takes a `torch` tensor or `TorchOutlierDetectorOutput` and converts any `torch` tensors found to `numpy` arrays
@@ -217,14 +224,14 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
         x
             Data to predict.
 
+        Returns
+        -------
+        Output of the outlier detector. Includes the p-values, outlier labels, instance scores and threshold.
+
         Raises
         ------
         ValueError
             Raised if the detector is not fit on reference data.
-
-        Returns
-        -------
-        Output of the outlier detector. Includes the p-values, outlier labels, instance scores and threshold.
         """
         self.check_fitted()  # type: ignore
         raw_scores = self.score(x)

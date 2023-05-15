@@ -11,6 +11,7 @@ from alibi_detect.models.tensorflow.trainer import trainer
 from alibi_detect.base import BaseDetector, FitMixin, ThresholdMixin, outlier_prediction_dict
 from alibi_detect.utils.tensorflow.prediction import predict_batch
 from alibi_detect.utils.tensorflow.perturbation import mutate_categorical
+from alibi_detect.utils._types import OptimizerTF
 
 logger = logging.getLogger(__name__)
 
@@ -105,7 +106,7 @@ class LLR(BaseDetector, FitMixin, ThresholdMixin):
             mutate_batch_size: int = int(1e10),
             loss_fn: tf.keras.losses = None,
             loss_fn_kwargs: dict = None,
-            optimizer: tf.keras.optimizers = tf.keras.optimizers.Adam(learning_rate=1e-3),
+            optimizer: OptimizerTF = tf.keras.optimizers.Adam,
             epochs: int = 20,
             batch_size: int = 64,
             verbose: bool = True,
@@ -144,6 +145,10 @@ class LLR(BaseDetector, FitMixin, ThresholdMixin):
             Callbacks used during training.
         """
         input_shape = X.shape[1:]
+        optimizer = optimizer() if isinstance(optimizer, type) else optimizer
+        # Separate into two separate optimizers, one for semantic model and one for background model
+        optimizer_s = optimizer
+        optimizer_b = optimizer.__class__.from_config(optimizer.get_config())
 
         # training arguments
         kwargs = {'epochs': epochs,
@@ -168,28 +173,27 @@ class LLR(BaseDetector, FitMixin, ThresholdMixin):
         if use_build:
             # build and train semantic model
             self.model_s = build_model(self.dist_s, input_shape)[0]
-            self.model_s.compile(optimizer=optimizer)
+            self.model_s.compile(optimizer=optimizer_s)
             self.model_s.fit(X, **kwargs)
             # build and train background model
             self.model_b = build_model(self.dist_b, input_shape)[0]
-            self.model_b.compile(optimizer=optimizer)
+            self.model_b.compile(optimizer=optimizer_b)
             self.model_b.fit(X_back, **kwargs)
         else:
             # update training arguments
             kwargs.update({
-                'optimizer': optimizer,
                 'loss_fn_kwargs': loss_fn_kwargs,
                 'log_metric': log_metric
             })
 
             # train semantic model
             args = [self.dist_s, loss_fn, X]
-            kwargs.update({'y_train': y})
+            kwargs.update({'y_train': y, 'optimizer': optimizer_s})
             trainer(*args, **kwargs)  # type: ignore[arg-type]
 
             # train background model
             args = [self.dist_b, loss_fn, X_back]
-            kwargs.update({'y_train': y_back})
+            kwargs.update({'y_train': y_back, 'optimizer': optimizer_b})
             trainer(*args, **kwargs)  # type: ignore[arg-type]
 
     def infer_threshold(self,

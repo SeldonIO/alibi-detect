@@ -8,6 +8,7 @@ from alibi_detect.utils.tensorflow.misc import clone_model
 from alibi_detect.utils.tensorflow.distance import mmd2_from_kernel_matrix, batch_compute_kernel_matrix
 from alibi_detect.utils.warnings import deprecated_alias
 from alibi_detect.utils.frameworks import Framework
+from alibi_detect.utils._types import OptimizerTF
 
 
 class LearnedKernelDriftTF(BaseLearnedKernelDrift):
@@ -26,7 +27,7 @@ class LearnedKernelDriftTF(BaseLearnedKernelDrift):
             reg_loss_fn: Callable = (lambda kernel: 0),
             train_size: Optional[float] = .75,
             retrain_from_scratch: bool = True,
-            optimizer: tf.keras.optimizers.Optimizer = tf.keras.optimizers.Adam,
+            optimizer: OptimizerTF = tf.keras.optimizers.Adam,
             learning_rate: float = 1e-3,
             batch_size: int = 32,
             batch_size_predict: int = 32,
@@ -204,7 +205,7 @@ class LearnedKernelDriftTF(BaseLearnedKernelDrift):
     def trainer(
         j_hat: JHat,
         datasets: Tuple[tf.keras.utils.Sequence, tf.keras.utils.Sequence],
-        optimizer: tf.keras.optimizers.Optimizer = tf.keras.optimizers.Adam,
+        optimizer: OptimizerTF = tf.keras.optimizers.Adam,
         learning_rate: float = 1e-3,
         preprocess_fn: Callable = None,
         epochs: int = 20,

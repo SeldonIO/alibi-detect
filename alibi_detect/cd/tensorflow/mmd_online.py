@@ -166,7 +166,7 @@ class MMDDriftOnlineTF(BaseMultiDriftOnline):
                     2 * tf.reduce_sum(k_xy_col_sums[w:w + w_size]))
                     for k_xx_sum, y_inds_w, k_xy_col_sums in zip(k_xx_sums_all, y_inds_all_w, k_xy_col_sums_all)
                     ]
-            mmds = tf.concat(mmds, axis=0)  # an mmd for each bootstrap sample
+            mmds = tf.stack(mmds, axis=0)  # an mmd for each bootstrap sample
 
             # Now we discard all bootstrap samples for which mmd is in top (1/ert)% and record the thresholds
             thresholds.append(quantile(mmds, 1 - self.fpr))

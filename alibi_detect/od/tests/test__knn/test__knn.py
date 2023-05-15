@@ -24,6 +24,17 @@ def make_knn_detector(k=5, aggregator=None, normalizer=None):
 def test_unfitted_knn_single_score():
     knn_detector = KNN(k=10)
     x = np.array([[0, 10], [0.1, 0]])
+    x_ref = np.random.randn(100, 2)
+
+    # test infer_threshold raises exception when not fitted
+    with pytest.raises(NotFittedError) as err:
+        _ = knn_detector.infer_threshold(x_ref, 0.1)
+    assert str(err.value) == 'KNN has not been fit!'
+
+    # test score raises exception when not fitted
+    with pytest.raises(NotFittedError) as err:
+        _ = knn_detector.score(x)
+    assert str(err.value) == 'KNN has not been fit!'
 
     # test predict raises exception when not fitted
     with pytest.raises(NotFittedError) as err:
@@ -191,7 +202,7 @@ def test_knn_single_torchscript():
                                         lambda: 'MinAggregator'])
 @pytest.mark.parametrize("normalizer", [ShiftAndScaleNormalizer, PValNormalizer, lambda: None,
                                         lambda: 'ShiftAndScaleNormalizer', lambda: 'PValNormalizer'])
-def test_knn_ensemble_integration(aggregator, normalizer):
+def test_knn_ensemble_integration(tmp_path, aggregator, normalizer):
     """Test knn ensemble detector on moons dataset.
 
     Tests ensemble knn detector with every combination of aggregator and normalizer on the moons dataset.
@@ -216,13 +227,18 @@ def test_knn_ensemble_integration(aggregator, normalizer):
     result = result['data']['is_outlier'][0]
     assert result
 
-    tsknn = torch.jit.script(knn_detector.backend)
+    ts_knn = torch.jit.script(knn_detector.backend)
     x = torch.tensor([x_inlier[0], x_outlier[0]], dtype=torch.float32)
-    y = tsknn(x)
+    y = ts_knn(x)
+    assert torch.all(y == torch.tensor([False, True]))
+
+    ts_knn.save(tmp_path / 'knn.pt')
+    knn_detector = torch.load(tmp_path / 'knn.pt')
+    y = knn_detector(x)
     assert torch.all(y == torch.tensor([False, True]))
 
 
-def test_knn_integration():
+def test_knn_integration(tmp_path):
     """Test knn detector on moons dataset.
 
     Tests knn detector on the moons dataset. Fits and infers thresholds and verifies that the detector can
@@ -242,7 +258,12 @@ def test_knn_integration():
     result = result['data']['is_outlier'][0]
     assert result
 
-    tsknn = torch.jit.script(knn_detector.backend)
+    ts_knn = torch.jit.script(knn_detector.backend)
     x = torch.tensor([x_inlier[0], x_outlier[0]], dtype=torch.float32)
-    y = tsknn(x)
+    y = ts_knn(x)
+    assert torch.all(y == torch.tensor([False, True]))
+
+    ts_knn.save(tmp_path / 'knn.pt')
+    knn_detector = torch.load(tmp_path / 'knn.pt')
+    y = knn_detector(x)
     assert torch.all(y == torch.tensor([False, True]))

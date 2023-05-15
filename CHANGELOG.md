@@ -1,7 +1,27 @@
 # Change Log
 
-## v0.12.0dev
-[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.11.1...master)
+## [v0.11.2](https://github.com/SeldonIO/alibi-detect/tree/v0.11.2) (2023-04-28)
+[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.11.1...v0.11.2)
+
+### Fixed
+- Failure of `plot_feature_outlier_image` utility function when no outliers are detected ([#774](https://github.com/SeldonIO/alibi-detect/pull/774) - thanks [@signupatgmx](https://github.com/signupatgmx) !).
+
+### Changed
+ - Refactored methods that use `tensorflow` optimizers to work with the new optimizers introduced in `2.11` ([#739](https://github.com/SeldonIO/alibi-detect/pull/739)).
+ - Maximum supported version of `tensorflow` bumped to `2.12.x` ([#764](https://github.com/SeldonIO/alibi-detect/pull/764)).
+ - Maximum supported version of `tensorflow-probability` version to `0.19.x` ([#687](https://github.com/SeldonIO/alibi-detect/pull/687)).
+ - Supported version of `pandas` bumped to `>1.0.0, <3.0.0` ([#765](https://github.com/SeldonIO/alibi-detect/pull/765)).
+ - Maximum supported version of `scikit-image` bumped to `0.20.x` ([#751](https://github.com/SeldonIO/alibi-detect/pull/751)).
+
+### Development
+- Migrate `codecov` to use Github Actions and don't fail CI on coverage report upload failure due to rate limiting ([#768](https://github.com/SeldonIO/alibi-detect/pull/768), [#776](https://github.com/SeldonIO/alibi-detect/pull/776)).
+ - Bump `mypy` version to `>=1.0, <2.0` ([#754](https://github.com/SeldonIO/alibi-detect/pull/754)). 
+ - Bump `sphinx` version to `6.x` ([#709](https://github.com/SeldonIO/alibi-detect/pull/709)).
+ - Bump `sphinx-design` version to `0.4.1` ([#769](https://github.com/SeldonIO/alibi-detect/pull/769)).
+ - Bump `nbsphinx` version to `0.9.x` ([#757](https://github.com/SeldonIO/alibi-detect/pull/757)).
+ - Bump `myst-parser` version to `>=1.0, <2.0` ([#756](https://github.com/SeldonIO/alibi-detect/pull/756)).
+ - Bump `twine` version to `4.x` ([#511](https://github.com/SeldonIO/alibi-detect/pull/511)).
+ - Bump `pre-commit` version to `3.x` and update the config ([#731](https://github.com/SeldonIO/alibi-detect/pull/731)).
 
 ## v0.11.1
 [Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.11.0...v0.11.1)
