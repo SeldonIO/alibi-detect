@@ -544,8 +544,8 @@ class PixelCNN(distribution.Distribution):
             Returns
             -------
             samples
-                4D `Tensor`. Images with pixels sampled in raster order, up to
-                and including pixel `[index]`, with dimensions `[batch_size, height,
+                4D `Tensor`. Images with pixels sampled in raster order, up to \
+                and including pixel `[index]`, with dimensions `[batch_size, height, \
                 width, num_channels]`.
             """
             inputs = samples if conditional_input is None else [samples, h]
@@ -601,7 +601,7 @@ class PixelCNN(distribution.Distribution):
         Returns
         -------
         samples
-            4D `Tensor` of sampled image data with autoregression among
+            4D `Tensor` of sampled image data with autoregression among \
             channels. Dimensions are `[batch_size, height, width, num_channels]`.
         """
         num_channels = self.event_shape[-1]
@@ -999,22 +999,22 @@ class _PixelCNNNetwork(tf.keras.layers.Layer):
         Returns
         -------
         outputs
-            a 3- or 4-element `list` of `Tensor`s in the following order:
-            component_logits: 4D `Tensor` of logits for the Categorical distribution
-            over Quantized Logistic mixture components. Dimensions are
+            a 3- or 4-element `list` of `Tensor`s in the following order: \
+            component_logits: 4D `Tensor` of logits for the Categorical distribution \
+            over Quantized Logistic mixture components. Dimensions are \
             `[batch_size, height, width, num_logistic_mix]`.
         locs
-            4D `Tensor` of location parameters for the Quantized Logistic
-            mixture components. Dimensions are `[batch_size, height, width,
+            4D `Tensor` of location parameters for the Quantized Logistic \
+            mixture components. Dimensions are `[batch_size, height, width, \
             num_logistic_mix, num_channels]`.
         scales
-            4D `Tensor` of location parameters for the Quantized Logistic
-            mixture components. Dimensions are `[batch_size, height, width,
+            4D `Tensor` of location parameters for the Quantized Logistic \
+            mixture components. Dimensions are `[batch_size, height, width, \
             num_logistic_mix, num_channels]`.
         coeffs
-            4D `Tensor` of coefficients for the linear dependence among
-            color channels, included only if the image has more than one channel.
-            Dimensions are `[batch_size, height, width, num_logistic_mix,
+            4D `Tensor` of coefficients for the linear dependence among \
+            color channels, included only if the image has more than one channel. \
+            Dimensions are `[batch_size, height, width, num_logistic_mix, \
             num_coeffs]`, where `num_coeffs = num_channels * (num_channels - 1) // 2`.
         """
         return self._network(inputs, training=training)

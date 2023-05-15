@@ -182,7 +182,7 @@ def permed_lsdds(
 
     Returns
     -------
-    Vector of B LSDD estimates for each permutation, H_lam_inv which may have been inferred, and optionally
+    Vector of B LSDD estimates for each permutation, H_lam_inv which may have been inferred, and optionally \
     the unpermed LSDD estimate.
     """
 

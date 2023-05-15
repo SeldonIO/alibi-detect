@@ -141,7 +141,7 @@ def load_optimizer(cfg: dict) -> Union[Type[tf.keras.optimizers.Optimizer], tf.k
 
     Returns
     -------
-    The loaded optimizer, either as an instantiated object (if `cfg` is a tensorflow optimizer config dict), otherwise
+    The loaded optimizer, either as an instantiated object (if `cfg` is a tensorflow optimizer config dict), otherwise \
     as an uninstantiated class.
     """
     class_name = cfg.get('class_name')

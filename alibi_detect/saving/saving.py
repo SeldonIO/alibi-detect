@@ -261,7 +261,7 @@ def _save_preprocess_config(preprocess_fn: Callable,
 
     Returns
     -------
-    The config dictionary, containing references to the serialized artefacts. The format if this dict matches that
+    The config dictionary, containing references to the serialized artefacts. The format if this dict matches that \
     of the `preprocess` field in the drift detector specification.
     """
     preprocess_cfg: Dict[str, Any] = {}

@@ -176,7 +176,7 @@ class BaseClassifierDrift(BaseDetector):
 
         Returns
         -------
-        Combined reference and test instances with labels and optionally a list with tuples of
+        Combined reference and test instances with labels and optionally a list with tuples of \
         train and test indices for optionally different folds.
         """
         # create dataset and labels
