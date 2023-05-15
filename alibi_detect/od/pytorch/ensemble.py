@@ -35,7 +35,7 @@ class FitMixinTorch(ABC):
     fitted = False
 
     @abstractmethod
-    def fit(self, x: torch.Tensor) -> Self:
+    def fit(self, x_ref: torch.Tensor) -> Self:
         """Abstract fit method.
 
         Parameters

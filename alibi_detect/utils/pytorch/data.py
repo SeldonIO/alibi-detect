@@ -6,7 +6,7 @@ Indexable = Union[np.ndarray, torch.Tensor, list]
 
 
 class TorchDataset(torch.utils.data.Dataset):
-    def __init__(self, *indexables: Tuple[Indexable, ...]) -> None:
+    def __init__(self, *indexables: Union[Tuple[Indexable, ...], Indexable]) -> None:
         self.indexables = indexables
 
     def __getitem__(self, idx: int) -> Union[Tuple[Indexable, ...], Indexable]:

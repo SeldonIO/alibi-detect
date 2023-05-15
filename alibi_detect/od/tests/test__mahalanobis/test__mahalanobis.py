@@ -107,7 +107,6 @@ def test_mahalanobis_integration(tmp_path):
     assert torch.all(y == torch.tensor([False, True]))
 
     ts_mahalanobis.save(tmp_path / 'mahalanobis.pt')
-    mahalanobis_detector = Mahalanobis()
     mahalanobis_detector = torch.load(tmp_path / 'mahalanobis.pt')
     y = mahalanobis_detector(x)
     assert torch.all(y == torch.tensor([False, True]))

@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, Union
+from typing import Optional, Union, Type
 
 import torch
 
@@ -92,3 +92,24 @@ def get_device(device: Optional[Union[str, torch.device]] = None) -> torch.devic
             if device.lower() != 'cpu':
                 logger.warning('Requested device not recognised, fall back on CPU.')
     return torch_device
+
+
+def get_optimizer(name: str = 'Adam') -> Type[torch.optim.Optimizer]:
+    """
+    Get an optimizer class from its name.
+
+    Parameters
+    ----------
+    name
+        Name of the optimizer.
+
+    Returns
+    -------
+    The optimizer class.
+    """
+    optimizer = getattr(torch.optim, name, None)
+
+    if optimizer is None:
+        raise NotImplementedError(f"Optimizer {name} not implemented.")
+
+    return optimizer
