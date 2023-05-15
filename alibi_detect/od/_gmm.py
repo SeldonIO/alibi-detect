@@ -108,7 +108,7 @@ class GMM(BaseDetector, ThresholdMixin, FitMixin):
         tol
             Convergence threshold used to fit the detector. Used for both ``'sklearn'`` and ``'pytorch'`` backends.
             Defaults to ``1e-3``.
-        n_iter_no_change:
+        n_iter_no_change
             The number of iterations over which the loss must decrease by `tol` in order for optimization to continue.
             Only used if the ``'pytorch'`` backend is used.
         n_init
