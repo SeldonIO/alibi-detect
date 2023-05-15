@@ -89,9 +89,9 @@ class GMMTorch(TorchOutlierDetector):
             batch_size=batch_size,
             shuffle=True
         )
-        optimizer_instance: torch.optim.Optimizer = optimizer(
+        optimizer_instance: torch.optim.Optimizer = optimizer(  # type: ignore[call-arg]
             self.model.parameters(),
-            lr=learning_rate  # type: ignore[call-arg]
+            lr=learning_rate
         )
         self.model.train()
 
