@@ -271,11 +271,11 @@ class BaseClassifierDrift(BaseDetector):
         Returns
         -------
         Dictionary containing 'meta' and 'data' dictionaries.
-        'meta' has the model's metadata.
-        'data' contains the drift prediction and optionally the p-value, performance of the classifier
-        relative to its expectation under the no-change null, the out-of-fold classifier model
-        prediction probabilities on the reference and test data as well as the associated reference
-        and test instances of the out-of-fold predictions, and the trained model.
+            - 'meta' has the model's metadata.
+            - 'data' contains the drift prediction and optionally the p-value, performance of the classifier \
+            relative to its expectation under the no-change null, the out-of-fold classifier model \
+            prediction probabilities on the reference and test data as well as the associated reference \
+            and test instances of the out-of-fold predictions, and the trained model.
         """
         # compute drift scores
         p_val, dist, probs_ref, probs_test, x_ref_oof, x_test_oof = self.score(x)
@@ -474,8 +474,8 @@ class BaseLearnedKernelDrift(BaseDetector):
         Returns
         -------
         Dictionary containing 'meta' and 'data' dictionaries.
-        'meta' has the detector's metadata.
-        'data' contains the drift prediction and optionally the p-value, threshold, MMD metric and
+            - 'meta' has the detector's metadata.
+            - 'data' contains the drift prediction and optionally the p-value, threshold, MMD metric and \
             trained kernel.
         """
         # compute drift scores
@@ -634,8 +634,8 @@ class BaseMMDDrift(BaseDetector):
         Returns
         -------
         Dictionary containing 'meta' and 'data' dictionaries.
-        'meta' has the model's metadata.
-        'data' contains the drift prediction and optionally the p-value, threshold and MMD metric.
+            - 'meta' has the model's metadata.
+            - 'data' contains the drift prediction and optionally the p-value, threshold and MMD metric.
         """
         # compute drift scores
         p_val, dist, distance_threshold = self.score(x)
@@ -796,8 +796,8 @@ class BaseLSDDDrift(BaseDetector):
         Returns
         -------
         Dictionary containing 'meta' and 'data' dictionaries.
-        'meta' has the model's metadata.
-        'data' contains the drift prediction and optionally the p-value, threshold and LSDD metric.
+            - 'meta' has the model's metadata.
+            - 'data' contains the drift prediction and optionally the p-value, threshold and LSDD metric.
         """
         # compute drift scores
         p_val, dist, distance_threshold = self.score(x)
@@ -989,9 +989,9 @@ class BaseUnivariateDrift(BaseDetector, DriftConfigMixin):
         Returns
         -------
         Dictionary containing 'meta' and 'data' dictionaries.
-        'meta' has the model's metadata.
-        'data' contains the drift prediction and optionally the feature level p-values,
-         threshold after multivariate correction if needed and test statistics.
+            - 'meta' has the model's metadata.
+            - 'data' contains the drift prediction and optionally the feature level p-values, threshold after \
+            multivariate correction if needed and test statistics.
         """
         # compute drift scores
         p_vals, dist = self.score(x)
