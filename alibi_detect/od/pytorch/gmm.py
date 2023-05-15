@@ -41,12 +41,12 @@ class GMMTorch(TorchOutlierDetector):
     def fit(  # type: ignore[override]
         self,
         x_ref: torch.Tensor,
-        tol: float = 1e-3,
-        n_iter_no_change: int = 25,
         optimizer: Type[torch.optim.Optimizer] = torch.optim.Adam,
         learning_rate: float = 0.1,
-        batch_size: int = 32,
         max_epochs: int = 10,
+        batch_size: int = 32,
+        tol: float = 1e-3,
+        n_iter_no_change: int = 25,
         verbose: int = 0,
     ) -> Dict:
         """Fit the GMM model.
@@ -55,20 +55,20 @@ class GMMTorch(TorchOutlierDetector):
         ----------
         x_ref
             Training data.
+        optimizer
+            Optimizer used to train the model.
+        learning_rate
+            Learning rate used to train the model.
+        max_epochs
+            Number of training max_epochs.
+        batch_size
+            Batch size used to train the model.
         tol
             Convergence threshold. Training iterations will stop when the lower bound average
             gain is below this threshold.
         n_iter_no_change
             The number of iterations over which the loss must decrease by `tol` in order for
             optimization to continue.
-        optimizer
-            Optimizer used to train the model.
-        learning_rate
-            Learning rate used to train the model.
-        batch_size
-            Batch size used to train the model.
-        max_epochs
-            Number of training max_epochs.
         verbose
             Verbosity level during training. 0 is silent, 1 a progress bar.
 
