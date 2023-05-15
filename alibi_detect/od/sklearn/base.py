@@ -113,7 +113,7 @@ class SklearnOutlierDetector(FitMixinSklearn, ABC):
         """
         return np.asarray(x)
 
-    def _classify_outlier(self, scores: np.ndarray) -> np.ndarray:
+    def _classify_outlier(self, scores: np.ndarray) -> Optional[np.ndarray]:
         """Classify the data as outlier or not.
 
         Parameters
@@ -125,8 +125,9 @@ class SklearnOutlierDetector(FitMixinSklearn, ABC):
         -------
         `np.ndarray` or ``None``
         """
-        return (scores > self.threshold).astype(np.int8) \
-            if self.threshold_inferred else None
+        if (self.threshold_inferred and self.threshold is not None):
+            return (scores > self.threshold).astype(int)
+        return None
 
     def _p_vals(self, scores: np.ndarray) -> np.ndarray:
         """Compute p-values for the scores.
