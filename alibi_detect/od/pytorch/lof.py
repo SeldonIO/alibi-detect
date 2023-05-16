@@ -1,10 +1,11 @@
-from typing import Optional, Union, List, Tuple
+from typing import Optional, Union, List, Tuple, Literal
 
 import numpy as np
 import torch
 
 from alibi_detect.od.pytorch.ensemble import Ensembler
 from alibi_detect.od.pytorch.base import TorchOutlierDetector
+from torch import device
 
 
 class LOFTorch(TorchOutlierDetector):
@@ -13,7 +14,7 @@ class LOFTorch(TorchOutlierDetector):
             k: Union[np.ndarray, List, Tuple],
             kernel: Optional[torch.nn.Module] = None,
             ensembler: Optional[Ensembler] = None,
-            device: Optional[Union[str, torch.device]] = None
+            device: Union[device, None, Literal['cuda', 'gpu', 'cpu']] = None
             ):
         """PyTorch backend for LOF detector.
 
@@ -40,7 +41,6 @@ class LOFTorch(TorchOutlierDetector):
         self.ks = torch.tensor(k) if self.ensemble else torch.tensor([k], device=self.device)
         self.ensembler = ensembler
 
-    @torch.no_grad()
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Detect if `x` is an outlier.
 
@@ -74,7 +74,6 @@ class LOFTorch(TorchOutlierDetector):
     def _compute_K(self, x, y):
         return torch.exp(-self.kernel(x, y)) if self.kernel is not None else torch.cdist(x, y)
 
-    @torch.no_grad()
     def score(self, x: torch.Tensor) -> torch.Tensor:
         """Computes the score of `x`
 
@@ -82,8 +81,8 @@ class LOFTorch(TorchOutlierDetector):
         1. Compute the distance between each instance in `x` and the reference set.
         2. Compute the k-nearest neighbors of each instance in `x` in the reference set.
         3. Compute the reachability distance of each instance in `x` to its k-nearest neighbors.
-        4. For each instance sum the inv_avg_reachabilities of its neighbours.
-        5. LOF is average reachability of instance over average reachability of neighbours.
+        4. For each instance sum the inv_avg_reachabilities of its neighbors.
+        5. LOF is average reachability of instance over average reachability of neighbors.
 
 
         Parameters
@@ -116,30 +115,29 @@ class LOFTorch(TorchOutlierDetector):
         lofs = (avg_reachabilities * factors)
         return lofs if self.ensemble else lofs[:, 0]
 
-    @torch.no_grad()
-    def _fit(self, x_ref: torch.Tensor):
+    def fit(self, x_ref: torch.Tensor):
         """Fits the detector
 
-        The LOF algorithm fit step prodeeds as follows:
+        The LOF algorithm fit step proceeds as follows:
         1. Compute the distance matrix, D, between all instances in `x_ref`.
-        2. For each instance, compute the k nearest neighbours. (Note we prevent an instance from
-            considering itself a neighbour by setting the diagonal of D to be the maximum value of D.)
-        3. For each instance we store the distance to its kth nearest neighbour for each k in `ks`.
-        4. For each instance and k in `ks` we obtain a tensor of the k neighbours k nearest neighbour
+        2. For each instance, compute the k nearest neighbors. (Note we prevent an instance from
+            considering itself a neighbor by setting the diagonal of D to be the maximum value of D.)
+        3. For each instance we store the distance to its kth nearest neighbor for each k in `ks`.
+        4. For each instance and k in `ks` we obtain a tensor of the k neighbors k nearest neighbor
             distances.
-        5. The reachability of an instance is the maximum of its k nearest neighbours distances and
-            the distance to its kth nearest neighbour.
+        5. The reachability of an instance is the maximum of its k nearest neighbors distances and
+            the distance to its kth nearest neighbor.
         6. The reachabilites tensor is of shape `(n_instances, max(ks), len(ks))`. Where the second
-            dimension is the each of the k neighbours nearest distances and the third dimension is
+            dimension is the each of the k neighbors nearest distances and the third dimension is
             the specific k.
         7. The local reachability density is then given by 1 over the average reachability
             over the second dimension of this tensor. However we only want to consider the k nearest
-            neighbours for each k in `ks`, so we use a mask that prevents k from the second dimension
+            neighbors for each k in `ks`, so we use a mask that prevents k from the second dimension
             greater than k from the third dimension from being considered. This value is stored as
             we use it in the score step.
         8. If multiple k are passed in ks then the detector also needs to fit the ensembler. To do so
             we need to score the x_ref as well. The local outlier factor (LOF) is then given by the
-            average reachability of an instance over the average reachability of its k neighbours.
+            average reachability of an instance over the average reachability of its k neighbors.
 
         Parameters
         ----------
@@ -164,3 +162,5 @@ class LOFTorch(TorchOutlierDetector):
             factors = (self.ref_inv_avg_reachabilities[bot_k_inds]*mask[None, :, :]).sum(1)
             scores = (avg_reachabilities * factors)
             self.ensembler.fit(scores)
+
+        self._set_fitted()

@@ -152,7 +152,7 @@ def test_lof_kernel_ts(ensembler):
 @pytest.mark.parametrize('k', [[4, 5], 4])
 def test_lof_torch_backend_ensemble_fit_errors(k, ensembler):
     lof_torch = LOFTorch(k=[4, 5], ensembler=ensembler)
-    assert not lof_torch._fitted
+    assert not lof_torch.fitted
 
     # Test that the backend raises an error if it is not fitted before
     # calling forward method.
@@ -167,16 +167,16 @@ def test_lof_torch_backend_ensemble_fit_errors(k, ensembler):
         lof_torch.predict(x)
     assert str(err.value) == 'LOFTorch has not been fit!'
 
-    # Test the backend updates _fitted flag on fit.
+    # Test the backend updates fitted flag on fit.
     x_ref = torch.randn((1024, 10))
     lof_torch.fit(x_ref)
-    assert lof_torch._fitted
+    assert lof_torch.fitted
 
     # Test that the backend raises an if the forward method is called without the
     # threshold being inferred.
     with pytest.raises(ThresholdNotInferredError) as err:
         lof_torch(x)
-    assert str(err.value) == 'LOFTorch has no threshold set, call `infer_threshold` before predicting.'
+    assert str(err.value) == 'LOFTorch has no threshold set, call `infer_threshold` to fit one!'
 
     # Test that the backend can call predict without the threshold being inferred.
     assert lof_torch.predict(x)
