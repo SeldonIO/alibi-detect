@@ -141,9 +141,9 @@ class ContextMMDDrift(DriftConfigMixin):
 
         Returns
         -------
-        Dictionary containing 'meta' and 'data' dictionaries.
-            - 'meta' has the model's metadata.
-            - 'data' contains the drift prediction and optionally the p-value, threshold, conditional MMD test \
+        Dictionary containing ``'meta'`` and ``'data'`` dictionaries.
+            - ``'meta'`` has the model's metadata.
+            - ``'data'`` contains the drift prediction and optionally the p-value, threshold, conditional MMD test \
             statistic and coupling matrices.
         """
         return self._detector.predict(x, c, return_p_val, return_distance, return_coupling)

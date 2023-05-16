@@ -330,9 +330,9 @@ class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
 
         Returns
         -------
-        Dictionary containing 'meta' and 'data' dictionaries.
-            - 'meta' has the model's metadata.
-            - 'data' contains the outlier predictions and instance level outlier scores.
+        Dictionary containing ``'meta'`` and ``'data'`` dictionaries.
+            - ``'meta'`` has the model's metadata.
+            - ``'data'`` contains the outlier predictions and instance level outlier scores.
         """
         # convert categorical variables to numerical values
         X = self.cat2num(X)
