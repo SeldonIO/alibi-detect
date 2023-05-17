@@ -5,8 +5,7 @@ import torch
 from alibi_detect.od._lof import LOF
 from alibi_detect.od.pytorch.ensemble import AverageAggregator, TopKAggregator, MaxAggregator, \
     MinAggregator, ShiftAndScaleNormalizer, PValNormalizer
-from alibi_detect.exceptions import NotFittedError
-
+from alibi_detect.exceptions import NotFittedError, ThresholdNotInferredError
 
 from sklearn.datasets import make_moons
 
@@ -25,30 +24,58 @@ def make_lof_detector(k=5, aggregator=None, normalizer=None):
 def test_unfitted_lof_single_score():
     lof_detector = LOF(k=10)
     x = np.array([[0, 10], [0.1, 0]])
+    x_ref = np.random.randn(100, 2)
+
+    # test infer_threshold raises exception when not fitted
+    with pytest.raises(NotFittedError) as err:
+        _ = lof_detector.infer_threshold(x_ref, 0.1)
+    assert str(err.value) == 'LOF has not been fit!'
+
+    # test score raises exception when not fitted
+    with pytest.raises(NotFittedError) as err:
+        _ = lof_detector.score(x)
+    assert str(err.value) == 'LOF has not been fit!'
 
     # test predict raises exception when not fitted
     with pytest.raises(NotFittedError) as err:
         _ = lof_detector.predict(x)
-    assert str(err.value) == 'LOFTorch has not been fit!'
+    assert str(err.value) == 'LOF has not been fit!'
 
 
-@pytest.mark.parametrize('k', [10, [8, 9, 10]])
-def test_fitted_lof_single_score(k):
-    lof_detector = LOF(k=k)
+def test_fitted_lof_score():
+    """
+    Test fitted but not threshold inferred non-ensemble detectors can still score data using the predict method.
+    Unlike the ensemble detectors, the non-ensemble detectors do not require the ensembler to be fit in the
+    infer_threshold method. See the test_fitted_lof_ensemble_score test for the ensemble case.
+    """
+    lof_detector = LOF(k=10)
     x_ref = np.random.randn(100, 2)
     lof_detector.fit(x_ref)
     x = np.array([[0, 10], [0.1, 0]])
-    # test fitted but not threshold inferred detectors
-    # can still score data using the predict method.
     y = lof_detector.predict(x)
     y = y['data']
-    assert y['instance_score'][0] > 7
-    assert y['instance_score'][1] < 2
-
+    assert y['instance_score'][0] > 5
+    assert y['instance_score'][1] < 1
     assert not y['threshold_inferred']
     assert y['threshold'] is None
     assert y['is_outlier'] is None
     assert y['p_value'] is None
+
+
+def test_fitted_lof_ensemble_score():
+    """
+    Test fitted but not threshold inferred ensemble detectors correctly raise an error when calling
+    the predict method. This is because the ensembler is fit in the infer_threshold method.
+    """
+    lof_detector = LOF(k=[10, 14, 18])
+    x_ref = np.random.randn(100, 2)
+    lof_detector.fit(x_ref)
+    x = np.array([[0, 10], [0.1, 0]])
+    with pytest.raises(ThresholdNotInferredError):
+        lof_detector.predict(x)
+
+    with pytest.raises(ThresholdNotInferredError):
+        lof_detector.score(x)
 
 
 def test_incorrect_lof_ensemble_init():
@@ -76,8 +103,8 @@ def test_fitted_lof_predict():
     y = y['data']
     scores = lof_detector.score(x)
     assert np.all(y['instance_score'] == scores)
-    assert y['instance_score'][0] > 7
-    assert y['instance_score'][1] < 2
+    assert y['instance_score'][0] > 5
+    assert y['instance_score'][1] < 1
     assert y['threshold_inferred']
     assert y['threshold'] is not None
     assert y['p_value'].all()
@@ -98,7 +125,7 @@ def test_unfitted_lof_ensemble(aggregator, normalizer):
     # Test unfit lof ensemble raises exception when calling predict method.
     with pytest.raises(NotFittedError) as err:
         _ = lof_detector.predict(x)
-    assert str(err.value) == 'LOFTorch has not been fit!'
+    assert str(err.value) == 'LOF has not been fit!'
 
 
 @pytest.mark.parametrize("aggregator", [AverageAggregator, lambda: TopKAggregator(k=7),
@@ -114,14 +141,13 @@ def test_fitted_lof_ensemble(aggregator, normalizer):
     lof_detector.fit(x_ref)
     x = np.array([[0, 10], [0, 0.1]])
 
-    # test fitted but not threshold inferred detectors can still score data using the predict method.
-    y = lof_detector.predict(x)
-    y = y['data']
-    assert y['instance_score'].all()
-    assert not y['threshold_inferred']
-    assert y['threshold'] is None
-    assert y['is_outlier'] is None
-    assert y['p_value'] is None
+    # test ensemble raises ThresholdNotInferredError if only fit and not threshold inferred and
+    # the normalizer is not None.
+    if normalizer() is not None:
+        with pytest.raises(ThresholdNotInferredError):
+            lof_detector.predict(x)
+    else:
+        lof_detector.predict(x)
 
 
 @pytest.mark.parametrize("aggregator", [AverageAggregator, lambda: TopKAggregator(k=7),
@@ -143,27 +169,31 @@ def test_fitted_lof_ensemble_predict(aggregator, normalizer):
     assert y['p_value'].all()
     assert (y['is_outlier'] == [True, False]).all()
 
+    # test fitted detectors with inferred thresholds can score data using the score method.
+    scores = lof_detector.score(x)
+    assert np.all(y['instance_score'] == scores)
+
 
 @pytest.mark.parametrize("aggregator", [AverageAggregator, lambda: TopKAggregator(k=7),
                                         MaxAggregator, MinAggregator])
 @pytest.mark.parametrize("normalizer", [ShiftAndScaleNormalizer, PValNormalizer, lambda: None])
 def test_lof_ensemble_torch_script(aggregator, normalizer):
     lof_detector = make_lof_detector(k=[5, 6, 7], aggregator=aggregator(), normalizer=normalizer())
-    tslof = torch.jit.script(lof_detector.backend)
+    ts_lof = torch.jit.script(lof_detector.backend)
     x = torch.tensor([[0, 10], [0, 0.1]])
 
     # test torchscripted ensemble lof detector can be saved and loaded correctly.
-    y = tslof(x)
+    y = ts_lof(x)
     assert torch.all(y == torch.tensor([True, False]))
 
 
 def test_lof_single_torchscript():
     lof_detector = make_lof_detector(k=5)
-    tslof = torch.jit.script(lof_detector.backend)
+    ts_lof = torch.jit.script(lof_detector.backend)
     x = torch.tensor([[0, 10], [0, 0.1]])
 
     # test torchscripted single lof detector can be saved and loaded correctly.
-    y = tslof(x)
+    y = ts_lof(x)
     assert torch.all(y == torch.tensor([True, False]))
 
 
@@ -173,7 +203,7 @@ def test_lof_single_torchscript():
                                         lambda: 'MinAggregator'])
 @pytest.mark.parametrize("normalizer", [ShiftAndScaleNormalizer, PValNormalizer, lambda: None,
                                         lambda: 'ShiftAndScaleNormalizer', lambda: 'PValNormalizer'])
-def test_lof_ensemble_integration(aggregator, normalizer):
+def test_lof_ensemble_integration(tmp_path, aggregator, normalizer):
     """Test lof ensemble detector on moons dataset.
 
     Tests ensemble lof detector with every combination of aggregator and normalizer on the moons dataset.
@@ -199,13 +229,18 @@ def test_lof_ensemble_integration(aggregator, normalizer):
     result = result['data']['is_outlier'][0]
     assert result
 
-    tslof = torch.jit.script(lof_detector.backend)
+    ts_lof = torch.jit.script(lof_detector.backend)
     x = torch.tensor([x_inlier[0], x_outlier[0]], dtype=torch.float32)
-    y = tslof(x)
+    y = ts_lof(x)
+    assert torch.all(y == torch.tensor([False, True]))
+
+    ts_lof.save(tmp_path / 'lof.pt')
+    lof_detector = torch.load(tmp_path / 'lof.pt')
+    y = lof_detector(x)
     assert torch.all(y == torch.tensor([False, True]))
 
 
-def test_lof_integration():
+def test_lof_integration(tmp_path):
     """Test lof detector on moons dataset.
 
     Tests lof detector on the moons dataset. Fits and infers thresholds and verifies that the detector can
@@ -225,7 +260,12 @@ def test_lof_integration():
     result = result['data']['is_outlier'][0]
     assert result
 
-    tslof = torch.jit.script(lof_detector.backend)
+    ts_lof = torch.jit.script(lof_detector.backend)
     x = torch.tensor([x_inlier[0], x_outlier[0]], dtype=torch.float32)
-    y = tslof(x)
+    y = ts_lof(x)
+    assert torch.all(y == torch.tensor([False, True]))
+
+    ts_lof.save(tmp_path / 'lof.pt')
+    lof_detector = torch.load(tmp_path / 'lof.pt')
+    y = lof_detector(x)
     assert torch.all(y == torch.tensor([False, True]))

@@ -84,7 +84,6 @@ class LOFTorch(TorchOutlierDetector):
         4. For each instance sum the inv_avg_reachabilities of its neighbors.
         5. LOF is average reachability of instance over average reachability of neighbors.
 
-
         Parameters
         ----------
         x
@@ -135,9 +134,6 @@ class LOFTorch(TorchOutlierDetector):
             neighbors for each k in `ks`, so we use a mask that prevents k from the second dimension
             greater than k from the third dimension from being considered. This value is stored as
             we use it in the score step.
-        8. If multiple k are passed in ks then the detector also needs to fit the ensembler. To do so
-            we need to score the x_ref as well. The local outlier factor (LOF) is then given by the
-            average reachability of an instance over the average reachability of its k neighbors.
 
         Parameters
         ----------
@@ -157,10 +153,4 @@ class LOFTorch(TorchOutlierDetector):
         avg_reachabilities = (reachabilities*mask[None, :, :]).sum(1)
         self.ref_inv_avg_reachabilities = 1/avg_reachabilities
         self.x_ref = X
-
-        if self.ensemble:
-            factors = (self.ref_inv_avg_reachabilities[bot_k_inds]*mask[None, :, :]).sum(1)
-            scores = (avg_reachabilities * factors)
-            self.ensembler.fit(scores)
-
         self._set_fitted()

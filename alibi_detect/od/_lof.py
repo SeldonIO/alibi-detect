@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from typing_extensions import Literal
+from alibi_detect.exceptions import _catch_error as catch_error
 from alibi_detect.base import outlier_prediction_dict
 from alibi_detect.od.base import TransformProtocol, TransformProtocolType
 from alibi_detect.base import BaseDetector, FitMixin, ThresholdMixin
@@ -42,9 +43,9 @@ class LOF(BaseDetector, FitMixin, ThresholdMixin):
         Parameters
         ----------
         k
-            Number of neirest neighbors to compute distance to. `k` can be a single value or
+            Number of nearest neighbors to compute distance to. `k` can be a single value or
             an array of integers. If an array is passed, an aggregator is required to aggregate
-            the scores. If `k` is a single value we comput the local outlier factor for that `k`.
+            the scores. If `k` is a single value we compute the local outlier factor for that `k`.
             Otherwise if `k` is a list then we compute and aggregate the local outlier factor for each
             value in `k`.
         kernel
@@ -52,7 +53,7 @@ class LOF(BaseDetector, FitMixin, ThresholdMixin):
             Otherwise if a kernel is specified then instead of using `torch.cdist` the kernel
             defines the k nearest neighbor distance.
         normalizer
-            Normalizer to use for outlier detection. If ``None``, no normalisation is applied.
+            Normalizer to use for outlier detection. If ``None``, no normalization is applied.
             For a list of available normalizers, see :mod:`alibi_detect.od.pytorch.ensemble`.
         aggregator
             Aggregator to use for outlier detection. Can be set to ``None`` if `k` is a single
@@ -108,6 +109,8 @@ class LOF(BaseDetector, FitMixin, ThresholdMixin):
         """
         self.backend.fit(self.backend._to_tensor(x_ref))
 
+    @catch_error('NotFittedError')
+    @catch_error('ThresholdNotInferredError')
     def score(self, X: np.ndarray) -> np.ndarray:
         """Score `x` instances using the detector.
 
@@ -125,12 +128,14 @@ class LOF(BaseDetector, FitMixin, ThresholdMixin):
         instance.
         """
         score = self.backend.score(self.backend._to_tensor(X))
+        score = self.backend._ensembler(score)
         return self.backend._to_numpy(score)
 
+    @catch_error('NotFittedError')
     def infer_threshold(self, X: np.ndarray, fpr: float) -> None:
         """Infer the threshold for the LOF detector.
 
-        The threshold is computed so that the outlier detector would incorectly classify `fpr` proportion of the
+        The threshold is computed so that the outlier detector would incorrectly classify `fpr` proportion of the
         reference data as outliers.
 
         Parameters
@@ -144,6 +149,8 @@ class LOF(BaseDetector, FitMixin, ThresholdMixin):
         """
         self.backend.infer_threshold(self.backend._to_tensor(X), fpr)
 
+    @catch_error('NotFittedError')
+    @catch_error('ThresholdNotInferredError')
     def predict(self, x: np.ndarray) -> Dict[str, Any]:
         """Predict whether the instances in `x` are outliers or not.
 
