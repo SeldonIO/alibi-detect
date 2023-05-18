@@ -38,7 +38,7 @@ class SpectralResidual(BaseDetector, ThresholdMixin):
         """
         Outlier detector for time-series data using the spectral residual algorithm.
         Based on "Time-Series Anomaly Detection Service at Microsoft" (Ren et al., 2019)
-        https://arxiv.org/abs/1906.03821
+        https://arxiv.org/abs/1906.03821.
 
         Parameters
         ----------
@@ -388,8 +388,8 @@ class SpectralResidual(BaseDetector, ThresholdMixin):
         Returns
         -------
         Dictionary containing `meta` and `data` dictionaries.
-         - `meta` - has the model's metadata.
-         - `data` - contains the outlier predictions and instance level outlier scores.
+            - `meta` - has the model's metadata.
+            - `data` - contains the outlier predictions and instance level outlier scores.
         """
         if t is None:
             t = np.arange(X.shape[0])

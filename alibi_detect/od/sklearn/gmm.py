@@ -61,9 +61,9 @@ class GMMSklearn(SklearnOutlierDetector):
         Returns
         -------
         Dictionary with fit results. The dictionary contains the following keys:
-        - converged: bool indicating whether EM algorithm converged.
-        - n_iter: number of EM iterations performed.
-        - lower_bound: log-likelihood lower bound.
+            - converged: bool indicating whether EM algorithm converged.
+            - n_iter: number of EM iterations performed.
+            - lower_bound: log-likelihood lower bound.
         """
         self.gmm = GaussianMixture(
             n_components=self.n_components,

@@ -261,7 +261,7 @@ def _save_preprocess_config(preprocess_fn: Callable,
 
     Returns
     -------
-    The config dictionary, containing references to the serialized artefacts. The format if this dict matches that
+    The config dictionary, containing references to the serialized artefacts. The format if this dict matches that \
     of the `preprocess` field in the drift detector specification.
     """
     preprocess_cfg: Dict[str, Any] = {}
@@ -471,15 +471,16 @@ def _save_tokenizer_config(tokenizer: PreTrainedTokenizerBase,
 def _save_kernel_config(kernel: Callable,
                         base_path: Path,
                         local_path: Path = Path('.')) -> dict:
-    """
-    Function to save kernel. If the kernel is stored in the artefact registry, the registry key (and kwargs) are
-    written to config. If the kernel is a generic callable, it is pickled.
+    """Function to save kernel.
+
+    If the kernel is stored in the artefact registry, the registry key (and kwargs) are written
+    to config. If the kernel is a generic callable, it is pickled.
 
     Parameters
     ----------
     kernel
         The kernel to save.
-     base_path
+    base_path
         Base directory to save in.
     local_path
         A local (relative) filepath to append to base_path.

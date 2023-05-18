@@ -141,10 +141,10 @@ class ContextMMDDrift(DriftConfigMixin):
 
         Returns
         -------
-        Dictionary containing 'meta' and 'data' dictionaries.
-        'meta' has the model's metadata.
-        'data' contains the drift prediction and optionally the p-value, threshold, conditional MMD test statistic
-        and coupling matrices.
+        Dictionary containing ``'meta'`` and ``'data'`` dictionaries.
+            - ``'meta'`` has the model's metadata.
+            - ``'data'`` contains the drift prediction and optionally the p-value, threshold, conditional MMD test \
+            statistic and coupling matrices.
         """
         return self._detector.predict(x, c, return_p_val, return_distance, return_coupling)
 
@@ -162,8 +162,8 @@ class ContextMMDDrift(DriftConfigMixin):
 
         Returns
         -------
-        p-value obtained from the conditional permutation test, the conditional MMD test statistic, the test
-        statistic threshold above which drift is flagged, and a tuple containing the coupling matrices
-        (W_{ref,ref}, W_{test,test}, W_{ref,test}).
+        p-value obtained from the conditional permutation test, the conditional MMD test statistic, the test \
+        statistic threshold above which drift is flagged, and a tuple containing the coupling matrices \
+        :math:`(W_{ref,ref}, W_{test,test}, W_{ref,test})`.
         """
         return self._detector.score(x, c)

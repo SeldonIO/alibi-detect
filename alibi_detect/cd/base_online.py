@@ -184,9 +184,9 @@ class BaseMultiDriftOnline(BaseDetector, StateMixin):
 
         Returns
         -------
-        Dictionary containing 'meta' and 'data' dictionaries.
-        'meta' has the model's metadata.
-        'data' contains the drift prediction and optionally the test-statistic and threshold.
+        Dictionary containing ``'meta'`` and ``'data'`` dictionaries.
+            - ``'meta'`` has the model's metadata.
+            - ``'data'`` contains the drift prediction and optionally the test-statistic and threshold.
         """
         # Compute test stat and check for drift
         test_stat = self.score(x_t)
@@ -441,9 +441,9 @@ class BaseUniDriftOnline(BaseDetector, StateMixin):
 
         Returns
         -------
-        Dictionary containing 'meta' and 'data' dictionaries.
-        'meta' has the model's metadata.
-        'data' contains the drift prediction and optionally the test-statistic and threshold.
+        Dictionary containing ``'meta'`` and ``'data'`` dictionaries.
+            - ``'meta'`` has the model's metadata.
+            - ``'data'`` contains the drift prediction and optionally the test-statistic and threshold.
         """
         # Compute test stat and check for drift
         test_stats = self.score(x_t)

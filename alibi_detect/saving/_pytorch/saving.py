@@ -78,7 +78,7 @@ def save_model(model: nn.Module,
         The PyTorch model to save.
     filepath
         Save directory.
-     save_dir
+    save_dir
         Name of folder to save to within the filepath directory.
     """
     # create folder to save model in

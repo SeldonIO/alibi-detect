@@ -233,9 +233,9 @@ class OutlierAE(BaseDetector, FitMixin, ThresholdMixin):
 
         Returns
         -------
-        Dictionary containing 'meta' and 'data' dictionaries.
-        'meta' has the model's metadata.
-        'data' contains the outlier predictions and both feature and instance level outlier scores.
+        Dictionary containing ``'meta'`` and ``'data'`` dictionaries.
+            - ``'meta'`` has the model's metadata.
+            - ``'data'`` contains the outlier predictions and both feature and instance level outlier scores.
         """
         # compute outlier scores
         fscore, iscore = self.score(X, outlier_perc=outlier_perc, batch_size=batch_size)

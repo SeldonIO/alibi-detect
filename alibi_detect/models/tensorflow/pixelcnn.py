@@ -27,25 +27,31 @@ __all__ = [
 
 
 class WeightNorm(tf.keras.layers.Wrapper):
-    """Layer wrapper to decouple magnitude and direction of the layer's weights.
-    This wrapper reparameterizes a layer by decoupling the weight's
-    magnitude and direction. This speeds up convergence by improving the
-    conditioning of the optimization problem. It has an optional data-dependent
-    initialization scheme, in which initial values of weights are set as functions
-    of the first minibatch of data. Both the weight normalization and data-
-    dependent initialization are described in [Salimans and Kingma (2016)][1].
-    """
+    def __init__(self, layer, data_init: bool = True, **kwargs):
+        """Layer wrapper to decouple magnitude and direction of the layer's weights.
 
-    def __init__(self, layer, data_init=True, **kwargs):
-        """Initialize WeightNorm wrapper.
-        Args:
-          layer: A `tf.keras.layers.Layer` instance. Supported layer types are
+        This wrapper reparameterizes a layer by decoupling the weight's
+        magnitude and direction. This speeds up convergence by improving the
+        conditioning of the optimization problem. It has an optional data-dependent
+        initialization scheme, in which initial values of weights are set as functions
+        of the first minibatch of data. Both the weight normalization and data-
+        dependent initialization are described in [Salimans and Kingma (2016)][1].
+
+        Parameters
+        ----------
+        layer
+            A `tf.keras.layers.Layer` instance. Supported layer types are
             `Dense`, `Conv2D`, and `Conv2DTranspose`. Layers with multiple inputs
             are not supported.
-          data_init: `bool`, if `True` use data dependent variable initialization.
-          **kwargs: Additional keyword args passed to `tf.keras.layers.Wrapper`.
-        Raises:
-          ValueError: If `layer` is not a `tf.keras.layers.Layer` instance.
+        data_init
+            If `True` use data dependent variable initialization.
+        **kwargs
+            Additional keyword args passed to `tf.keras.layers.Wrapper`.
+
+        Raises
+        ------
+        ValueError
+            If `layer` is not a `tf.keras.layers.Layer` instance.
         """
         if not isinstance(layer, tf.keras.layers.Layer):
             raise ValueError(
@@ -108,12 +114,17 @@ class WeightNorm(tf.keras.layers.Wrapper):
 
     def build(self, input_shape=None):
         """Build `Layer`.
-        Args:
-          input_shape: The shape of the input to `self.layer`.
-        Raises:
-          ValueError: If `Layer` does not contain a `kernel` of weights
-        """
 
+        Parameters
+        ----------
+        input_shape
+            The shape of the input to `self.layer`.
+
+        Raises
+        ------
+        ValueError
+            If `Layer` does not contain a `kernel` of weights.
+        """
         input_shape = tf.TensorShape(input_shape).as_list()
         input_shape[0] = None
         self.input_spec = tf.keras.layers.InputSpec(shape=input_shape)
@@ -260,6 +271,8 @@ class PixelCNN(distribution.Distribution):
             The dropout probability. Should be between 0 and 1.
         resnet_activation
             The type of activation to use in the resnet blocks. May be 'concat_elu', 'elu', or 'relu'.
+        l2_weight
+            The L2 regularization weight.
         use_weight_norm
             If `True` then use weight normalization (works only in Eager mode).
         use_data_init
@@ -321,21 +334,30 @@ class PixelCNN(distribution.Distribution):
             self.conditional_shape = conditional_shape
             self.network.build(input_shape)
 
-    def _make_mixture_dist(self, component_logits, locs, scales, return_per_feature=False):
+    def _make_mixture_dist(self, component_logits, locs, scales, return_per_feature: bool = False):
         """Builds a mixture of quantized logistic distributions.
-        Args:
-          component_logits: 4D `Tensor` of logits for the Categorical distribution
+
+        Parameters
+        ----------
+        component_logits
+            4D `Tensor` of logits for the Categorical distribution
             over Quantized Logistic mixture components. Dimensions are `[batch_size,
             height, width, num_logistic_mix]`.
-          locs: 4D `Tensor` of location parameters for the Quantized Logistic
+        locs
+            4D `Tensor` of location parameters for the Quantized Logistic
             mixture components. Dimensions are `[batch_size, height, width,
             num_logistic_mix, num_channels]`.
-          scales: 4D `Tensor` of location parameters for the Quantized Logistic
+        scales
+            4D `Tensor` of location parameters for the Quantized Logistic
             mixture components. Dimensions are `[batch_size, height, width,
             num_logistic_mix, num_channels]`.
-          return_per_feature: `bool`. If True, return per pixel level log prob.
-        Returns:
-          dist: A quantized logistic mixture `tfp.distribution` over the input data.
+        return_per_feature
+            If True, return per pixel level log prob.
+
+        Returns
+        -------
+        dist
+            A quantized logistic mixture `tfp.distribution` over the input data.
         """
         mixture_distribution = categorical.Categorical(logits=component_logits)
 
@@ -360,22 +382,31 @@ class PixelCNN(distribution.Distribution):
 
     def _log_prob(self, value, conditional_input=None, training=None, return_per_feature=False):
         """Log probability function with optional conditional input.
+
         Calculates the log probability of a batch of data under the modeled
         distribution (or conditional distribution, if conditional input is
         provided).
-        Args:
-          value: `Tensor` or Numpy array of image data. May have leading batch
+
+        Parameters
+        ----------
+        value
+            `Tensor` or Numpy array of image data. May have leading batch
             dimension(s), which must broadcast to the leading batch dimensions of
             `conditional_input`.
-          conditional_input: `Tensor` on which to condition the distribution (e.g.
+        conditional_input
+            `Tensor` on which to condition the distribution (e.g.
             class labels), or `None`. May have leading batch dimension(s), which
             must broadcast to the leading batch dimensions of `value`.
-          training: `bool` or `None`. If `bool`, it controls the dropout layer,
+        training
+            `bool` or `None`. If `bool`, it controls the dropout layer,
             where `True` implies dropout is active. If `None`, it defaults to
             `tf.keras.backend.learning_phase()`.
-          return_per_feature: `bool`. If True, return per pixel level log prob.
-        Returns:
-          log_prob_values: `Tensor`.
+        return_per_feature
+            `bool`. If True, return per pixel level log prob.
+
+        Returns
+        -------
+        log_prob_values: `Tensor`.
         """
         # Determine the batch shape of the input images
         image_batch_shape = prefer_static.shape(value)[:-3]
@@ -447,17 +478,26 @@ class PixelCNN(distribution.Distribution):
 
     def _sample_n(self, n, seed=None, conditional_input=None, training=False):
         """Samples from the distribution, with optional conditional input.
-        Args:
-          n: `int`, number of samples desired.
-          seed: `int`, seed for RNG. Setting a random seed enforces reproducability
+
+        Parameters
+        ----------
+        n
+            `int`, number of samples desired.
+        seed
+            `int`, seed for RNG. Setting a random seed enforces reproducibility
             of the samples between sessions (not within a single session).
-          conditional_input: `Tensor` on which to condition the distribution (e.g.
+        conditional_input
+            `Tensor` on which to condition the distribution (e.g.
             class labels), or `None`.
-          training: `bool` or `None`. If `bool`, it controls the dropout layer,
+        training
+            `bool` or `None`. If `bool`, it controls the dropout layer,
             where `True` implies dropout is active. If `None`, it defers to Keras'
             handling of train/eval status.
-        Returns:
-          samples: a `Tensor` of shape `[n, height, width, num_channels]`.
+
+        Returns
+        -------
+        samples
+            a `Tensor` of shape `[n, height, width, num_channels]`.
         """
         if conditional_input is not None:
             conditional_input = tf.convert_to_tensor(conditional_input, dtype=self.dtype)
@@ -491,15 +531,22 @@ class PixelCNN(distribution.Distribution):
 
         def loop_body(index, samples):
             """Loop for iterative pixel sampling.
-            Args:
-            index: 0D `Tensor` of type `int32`. Index of the current pixel.
-            samples: 4D `Tensor`. Images with pixels sampled in raster order, up to
+
+            Parameters
+            ----------
+            index
+                0D `Tensor` of type `int32`. Index of the current pixel.
+            samples
+              4D `Tensor`. Images with pixels sampled in raster order, up to
               pixel `[index]`, with dimensions `[batch_size, height, width,
               num_channels]`.
-            Returns:
-            samples: 4D `Tensor`. Images with pixels sampled in raster order, up to
-              and including pixel `[index]`, with dimensions `[batch_size, height,
-              width, num_channels]`.
+
+            Returns
+            -------
+            samples
+                4D `Tensor`. Images with pixels sampled in raster order, up to \
+                and including pixel `[index]`, with dimensions `[batch_size, height, \
+                width, num_channels]`.
             """
             inputs = samples if conditional_input is None else [samples, h]
             params = self.network(inputs, training=training)
@@ -528,23 +575,33 @@ class PixelCNN(distribution.Distribution):
 
     def _sample_channels(self, component_logits, locs, scales, coeffs=None, seed=None):
         """Sample a single pixel-iteration and apply channel conditioning.
-        Args:
-          component_logits: 4D `Tensor` of logits for the Categorical distribution
+
+        Parameters
+        ----------
+        component_logits
+            4D `Tensor` of logits for the Categorical distribution
             over Quantized Logistic mixture components. Dimensions are `[batch_size,
             height, width, num_logistic_mix]`.
-          locs: 4D `Tensor` of location parameters for the Quantized Logistic
+        locs
+            4D `Tensor` of location parameters for the Quantized Logistic
             mixture components. Dimensions are `[batch_size, height, width,
             num_logistic_mix, num_channels]`.
-          scales: 4D `Tensor` of location parameters for the Quantized Logistic
+        scales
+            4D `Tensor` of location parameters for the Quantized Logistic
             mixture components. Dimensions are `[batch_size, height, width,
             num_logistic_mix, num_channels]`.
-          coeffs: 4D `Tensor` of coefficients for the linear dependence among color
+        coeffs
+            4D `Tensor` of coefficients for the linear dependence among color
             channels, or `None` if there is only one channel. Dimensions are
             `[batch_size, height, width, num_logistic_mix, num_coeffs]`, where
             `num_coeffs = num_channels * (num_channels - 1) // 2`.
-          seed: `int`, random seed.
-        Returns:
-          samples: 4D `Tensor` of sampled image data with autoregression among
+        seed
+            `int`, random seed.
+
+        Returns
+        -------
+        samples
+            4D `Tensor` of sampled image data with autoregression among \
             channels. Dimensions are `[batch_size, height, width, num_channels]`.
         """
         num_channels = self.event_shape[-1]
@@ -602,7 +659,7 @@ class _PixelCNNNetwork(tf.keras.layers.Layer):
        Alex Graves, and Koray Kavukcuoglu. Conditional Image Generation with
        PixelCNN Decoders. In _30th Conference on Neural Information Processing
        Systems_, 2016.
-       https://papers.nips.cc/paper/6527-conditional-image-generation-with-pixelcnn-decoders.pdf
+       https://papers.nips.cc/paper/6527-conditional-image-generation-with-pixelcnn-decoders.pdf.
     """
 
     def __init__(self,
@@ -618,27 +675,41 @@ class _PixelCNNNetwork(tf.keras.layers.Layer):
                  use_data_init: bool = True,
                  dtype=tf.float32) -> None:
         """Initialize the neural network for the Pixel CNN++ distribution.
-        Args:
-          dropout_p: `float`, the dropout probability. Should be between 0 and 1.
-          num_resnet: `int`, the number of layers (shown in Figure 2 of [2]) within
+
+        Parameters
+        ----------
+        dropout_p
+            `float`, the dropout probability. Should be between 0 and 1.
+        num_resnet
+            `int`, the number of layers (shown in Figure 2 of [2]) within
             each highest-level block of Figure 2 of [1].
-          num_hierarchies: `int`, the number of hightest-level blocks (separated by
+        num_hierarchies
+            `int`, the number of hightest-level blocks (separated by
             expansions/contractions of dimensions in Figure 2 of [1].)
-          num_filters: `int`, the number of convolutional filters.
-          num_logistic_mix: `int`, number of components in the logistic mixture
+        num_filters
+            `int`, the number of convolutional filters.
+        num_logistic_mix
+            `int`, number of components in the logistic mixture
             distribution.
-          receptive_field_dims: `tuple`, height and width in pixels of the receptive
+        receptive_field_dims
+            `tuple`, height and width in pixels of the receptive
             field of the convolutional layers above and to the left of a given
             pixel. The width (second element of the tuple) should be odd. Figure 1
             (middle) of [2] shows a receptive field of (3, 5) (the row containing
             the current pixel is included in the height). The default of (3, 3) was
             used to produce the results in [1].
-          resnet_activation: `string`, the type of activation to use in the resnet
+        resnet_activation
+            `string`, the type of activation to use in the resnet
             blocks. May be 'concat_elu', 'elu', or 'relu'.
-          use_weight_norm: `bool`, if `True` then use weight normalization.
-          use_data_init: `bool`, if `True` then use data-dependent initialization
+        l2_weight
+            `float`, the L2 regularization weight.
+        use_weight_norm
+            `bool`, if `True` then use weight normalization.
+        use_data_init
+            `bool`, if `True` then use data-dependent initialization
             (has no effect if `use_weight_norm` is `False`).
-          dtype: Data type of the layer.
+        dtype
+            Data type of the layer.
         """
         super(_PixelCNNNetwork, self).__init__(dtype=dtype)
         self._dropout_p = dropout_p
@@ -911,31 +982,40 @@ class _PixelCNNNetwork(tf.keras.layers.Layer):
 
     def call(self, inputs, training=None):
         """Call the Pixel CNN network model.
-        Args:
-          inputs: 4D `Tensor` of image data with dimensions [batch size, height,
+
+        Parameters
+        ----------
+        inputs
+            4D `Tensor` of image data with dimensions [batch size, height,
             width, channels] or a 2-element `list`. If `list`, the first element is
             the 4D image `Tensor` and the second element is a `Tensor` with
             conditional input data (e.g. VAE encodings or class labels) with the
             same leading batch dimension as the image `Tensor`.
-          training: `bool` or `None`. If `bool`, it controls the dropout layer,
+        training
+            `bool` or `None`. If `bool`, it controls the dropout layer,
             where `True` implies dropout is active. If `None`, it it defaults to
             `tf.keras.backend.learning_phase()`
-        Returns:
-          outputs: a 3- or 4-element `list` of `Tensor`s in the following order:
-            component_logits: 4D `Tensor` of logits for the Categorical distribution
-              over Quantized Logistic mixture components. Dimensions are
-              `[batch_size, height, width, num_logistic_mix]`.
-            locs: 4D `Tensor` of location parameters for the Quantized Logistic
-              mixture components. Dimensions are `[batch_size, height, width,
-              num_logistic_mix, num_channels]`.
-            scales: 4D `Tensor` of location parameters for the Quantized Logistic
-              mixture components. Dimensions are `[batch_size, height, width,
-              num_logistic_mix, num_channels]`.
-            coeffs: 4D `Tensor` of coefficients for the linear dependence among
-              color channels, included only if the image has more than one channel.
-              Dimensions are `[batch_size, height, width, num_logistic_mix,
-              num_coeffs]`, where
-              `num_coeffs = num_channels * (num_channels - 1) // 2`.
+
+        Returns
+        -------
+        outputs
+            a 3- or 4-element `list` of `Tensor`s in the following order: \
+            component_logits: 4D `Tensor` of logits for the Categorical distribution \
+            over Quantized Logistic mixture components. Dimensions are \
+            `[batch_size, height, width, num_logistic_mix]`.
+        locs
+            4D `Tensor` of location parameters for the Quantized Logistic \
+            mixture components. Dimensions are `[batch_size, height, width, \
+            num_logistic_mix, num_channels]`.
+        scales
+            4D `Tensor` of location parameters for the Quantized Logistic \
+            mixture components. Dimensions are `[batch_size, height, width, \
+            num_logistic_mix, num_channels]`.
+        coeffs
+            4D `Tensor` of coefficients for the linear dependence among \
+            color channels, included only if the image has more than one channel. \
+            Dimensions are `[batch_size, height, width, num_logistic_mix, \
+            num_coeffs]`, where `num_coeffs = num_channels * (num_channels - 1) // 2`.
         """
         return self._network(inputs, training=training)
 

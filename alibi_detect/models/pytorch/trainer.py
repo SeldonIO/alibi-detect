@@ -28,6 +28,8 @@ def trainer(
         Loss function used for training.
     dataloader
         PyTorch dataloader.
+    device
+        Device used for training.
     optimizer
         Optimizer used for training.
     learning_rate

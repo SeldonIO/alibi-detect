@@ -176,12 +176,12 @@ class SpotTheDiffDrift(DriftConfigMixin):
 
         Returns
         -------
-        Dictionary containing 'meta' and 'data' dictionaries.
-        'meta' has the detector's metadata.
-        'data' contains the drift prediction, the diffs used to distinguish reference from test instances,
-        and optionally the p-value, performance of the classifier relative to its expectation under the
-        no-change null, the out-of-fold classifier model prediction probabilities on the reference and test
-        data as well as well as the associated reference and test instances of the out-of-fold predictions,
-        and the trained model.
+        Dictionary containing ``'meta'`` and ``'data'`` dictionaries.
+            - ``'meta'`` has the detector's metadata.
+            - ``'data'`` contains the drift prediction, the diffs used to distinguish reference from test instances, \
+            and optionally the p-value, performance of the classifier relative to its expectation under the \
+            no-change null, the out-of-fold classifier model prediction probabilities on the reference and test \
+            data as well as well as the associated reference and test instances of the out-of-fold predictions, \
+            and the trained model.
         """
         return self._detector.predict(x, return_p_val, return_distance, return_probs, return_model)

@@ -135,9 +135,9 @@ class MMDDrift(DriftConfigMixin):
 
         Returns
         -------
-        Dictionary containing 'meta' and 'data' dictionaries.
-        'meta' has the model's metadata.
-        'data' contains the drift prediction and optionally the p-value, threshold and MMD metric.
+        Dictionary containing ``'meta'`` and ``'data'`` dictionaries.
+            - ``'meta'`` has the model's metadata.
+            - ``'data'`` contains the drift prediction and optionally the p-value, threshold and MMD metric.
         """
         return self._detector.predict(x, return_p_val, return_distance)
 
@@ -153,7 +153,7 @@ class MMDDrift(DriftConfigMixin):
 
         Returns
         -------
-        p-value obtained from the permutation test, the MMD^2 between the reference and test set,
+        p-value obtained from the permutation test, the MMD^2 between the reference and test set, \
         and the MMD^2 threshold above which drift is flagged.
         """
         return self._detector.score(x)
