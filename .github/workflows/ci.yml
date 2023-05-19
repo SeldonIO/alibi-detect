@@ -105,11 +105,11 @@ jobs:
 
       - name: Lint with flake8
         run: |
-          flake8 alibi
+          flake8 alibi_detect
 
       - name: Typecheck with mypy
         run: |
-          mypy alibi
+          mypy alibi_detect
 
   docs:
     if: github.event.pull_request.draft == false
