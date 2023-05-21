@@ -1,0 +1,50 @@
+# This github action builds Alibi Detect and publishes it to PyPI.
+# It is only run when a new "release" is published via GitHub here:
+# https://github.com/SeldonIO/alibi-detect/releases
+name: Publish release to PyPI
+
+# Only run when tags starting with "v" are pushed
+on: 
+  release:
+    types: [published]
+
+jobs:
+  build-and-publish:
+    name: Build and publish
+    runs-on: ubuntu-18.04
+
+    steps:
+    # Setup Python
+    - uses: actions/checkout@master
+    - name: Set up Python 3.9
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.9
+
+    # Build
+    - name: Build a binary wheel and a source tarball
+      run: make build
+
+    # Get the PEP440 compliant version number (so we can check version is installable)
+    - name: Get 📦 version number
+      id: get_version
+      run: echo "PACKAGE_VERS=$(python setup.py --version)" >> $GITHUB_ENV
+
+    # Publish the associated tag to PyPI
+    - name: Publish 📦 to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        password: ${{ secrets.PYPI_API_TOKEN }}
+
+    # Wait for a while to give PyPI time to update (otherwise the pip install might fail)
+    - name: Sleep for 3 minutes
+      shell: bash
+      run: sleep 3m
+
+    # Install from PyPI and test
+    - name: Install 📦 from PyPI and test
+      run: |
+        make clean
+        python -m pip install alibi-detect==${{ env.PACKAGE_VERS }}
+        python -c "import alibi_detect; print(alibi_detect)"
+        python -c "from alibi_detect.cd import *; print(MMDDrift)"

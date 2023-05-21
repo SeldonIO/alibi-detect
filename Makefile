@@ -2,9 +2,14 @@
 install: ## Install package in editable mode with all the dependencies
 	pip install -e .
 
+.PHONY: clean
+clean:	# Clean up install
+	pip uninstall -y alibi-detect
+	rm -r alibi_detect.egg-info/ dist/ build/
+
 .PHONY: test
 test: ## Run all tests
-	python setup.py test
+	pytest alibi_detect
 
 .PHONY: lint
 lint: ## Check linting according to the flake8 configuration in setup.cfg
@@ -13,6 +18,14 @@ lint: ## Check linting according to the flake8 configuration in setup.cfg
 .PHONY: mypy
 mypy: ## Run typeckecking according to mypy configuration in setup.cfg
 	mypy .
+
+.PHONY: build
+build: ## Build the Python package (for debugging, building for release is done via a GitHub Action)
+	# Below commands are a duplicate of those in the publish.yml "Build" step
+	# (virtualenv added due to Debian issue https://github.com/pypa/build/issues/224)
+	python -m pip install --upgrade pip virtualenv
+	python -m pip install build~=0.9
+	python -m build --sdist --wheel --outdir dist/ .
 
 .PHONY: build_docs
 build_docs:
@@ -31,18 +44,6 @@ build_latex: ## Build the documentation into a pdf
 clean_docs: ## Clean the documentation build
 	$(MAKE) -C doc clean
 	rm -r doc/source/api
-
-.PHONY: build_pypi
-build_pypi: ## Build the Python package
-	python setup.py sdist bdist_wheel
-
-.PHONY: push_pypi_test
-push_pypi_test: ## Upload the Python package to the test PyPI registry
-	twine upload --repository-url https://test.pypi.org/legacy/ dist/*
-
-.PHONY: push_pypi
-push_pypi: ## Upload the Python package to the PyPI registry
-	twine upload dist/*
 
 .PHONY: help
 help: ## Print out help message on using these commands

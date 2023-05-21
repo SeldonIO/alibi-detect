@@ -1,0 +1,51 @@
+# This github action builds Alibi Detect and publishes it to Test PyPI.
+# It is only run when a new tag is pushed to github.
+name: Publish release to Test PyPI
+
+# Only run when tags starting with "v" are pushed
+on: 
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-publish:
+    name: Build and publish
+    runs-on: ubuntu-18.04
+
+    steps:
+    # Setup Python
+    - uses: actions/checkout@master
+    - name: Set up Python 3.9
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.9
+
+    # Build
+    - name: Build a binary wheel and a source tarball
+      run: make build
+
+    # Publish to Test PyPI
+    - name: Publish 📦 to Test PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+        repository_url: https://test.pypi.org/legacy/
+
+    # Get the PEP440 compliant version number (so we can check version is installable)
+    - name: Get 📦 version number
+      id: get_version
+      run: echo "PACKAGE_VERS=$(python setup.py --version)" >> $GITHUB_ENV
+
+    # Wait for a while to give PyPI time to update (otherwise the pip install might fail)
+    - name: Sleep for 3 minutes
+      shell: bash
+      run: sleep 3m
+
+    # Install from Test PyPI and test
+    - name: Install 📦 from PyPI and test
+      run: |
+        make clean
+        python -m pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple alibi-detect==${{ env.PACKAGE_VERS }}
+        python -c "import alibi_detect; print(alibi_detect)"
+        python -c "from alibi_detect.cd import *; print(MMDDrift)"
