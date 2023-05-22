@@ -66,14 +66,6 @@ jobs:
         with:
           limit-access-to-actor: true
 
-      - name: Lint with flake8
-        run: |
-          flake8 alibi_detect
-
-      - name: Typecheck with mypy
-        run: |
-          mypy alibi_detect
-
       - name: Test with pytest
         run: |
           if [ "$RUNNER_OS" == "macOS" ]; then  # Avoid numba/OpenMP segfault in CVMDrift (https://github.com/SeldonIO/alibi-detect/issues/648)
@@ -95,6 +87,29 @@ jobs:
         run: |
           make build_pypi
 
+  code-quality:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python 3.x
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --upgrade --upgrade-strategy eager -r requirements/dev.txt
+          python -m pip install --upgrade --upgrade-strategy eager .[all]
+
+      - name: Lint with flake8
+        run: |
+          flake8 alibi_detect
+
+      - name: Typecheck with mypy
+        run: |
+          mypy alibi_detect
 
   docs:
     if: github.event.pull_request.draft == false
