@@ -166,7 +166,7 @@ class LearnedKernelDrift(DriftConfigMixin):
             else:
                 detector = LearnedKernelDriftKeops
 
-        self._detector = detector(*args, **kwargs)  # type: ignore
+        self._detector = detector(*args, **kwargs)
         self.meta = self._detector.meta
 
     def predict(self, x: Union[np.ndarray, list],  return_p_val: bool = True,

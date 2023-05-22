@@ -115,9 +115,9 @@ class ContextMMDDrift(DriftConfigMixin):
 
         if backend == Framework.TENSORFLOW:
             kwargs.pop('device', None)
-            self._detector = ContextMMDDriftTF(*args, **kwargs)  # type: ignore
+            self._detector = ContextMMDDriftTF(*args, **kwargs)
         else:
-            self._detector = ContextMMDDriftTorch(*args, **kwargs)  # type: ignore
+            self._detector = ContextMMDDriftTorch(*args, **kwargs)
         self.meta = self._detector.meta
 
     def predict(self, x: Union[np.ndarray, list], c: np.ndarray,

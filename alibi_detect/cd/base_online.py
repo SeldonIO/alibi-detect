@@ -152,8 +152,8 @@ class BaseMultiDriftOnline(BaseDetector, StateMixin):
         an example).
         """
         self.t = 0  # corresponds to a test set of ref data
-        self.test_stats = np.array([])  # type: ignore[var-annotated]
-        self.drift_preds = np.array([])  # type: ignore[var-annotated]
+        self.test_stats = np.array([])
+        self.drift_preds = np.array([])
 
     def reset(self) -> None:
         """
@@ -404,9 +404,9 @@ class BaseUniDriftOnline(BaseDetector, StateMixin):
         an example).
         """
         self.t = 0
-        self.xs = np.array([])  # type: ignore[var-annotated]
+        self.xs = np.array([])
         self.test_stats = np.empty([0, len(self.window_sizes), self.n_features])
-        self.drift_preds = np.array([])  # type: ignore[var-annotated]
+        self.drift_preds = np.array([])
 
     @abstractmethod
     def _check_drift(self, test_stats: np.ndarray, thresholds: np.ndarray) -> int:

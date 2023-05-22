@@ -135,7 +135,7 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
         """
         x_ref, x = self.preprocess(x)
         x_ref = torch.from_numpy(x_ref).to(self.device)  # type: ignore[assignment]
-        c_ref = torch.from_numpy(self.c_ref).to(self.device)  # type: ignore[assignment]
+        c_ref = torch.from_numpy(self.c_ref).to(self.device)
 
         # Hold out a portion of contexts for conditioning on
         n, n_held = len(c), int(len(c)*self.prop_c_held)

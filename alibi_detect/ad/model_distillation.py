@@ -176,7 +176,7 @@ class ModelDistillation(BaseDetector, FitMixin, ThresholdMixin):
 
         # scale predictions
         if self.temperature != 1.:
-            y = y ** (1 / self.temperature)  # type: ignore
+            y = y ** (1 / self.temperature)
             y = (y / tf.reshape(tf.reduce_sum(y, axis=-1), (-1, 1))).numpy()
 
         if self.loss_type == 'kld':

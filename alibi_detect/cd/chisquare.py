@@ -94,7 +94,7 @@ class ChiSquareDrift(BaseUnivariateDrift):
                                  'Dict[int, int], Dict[int, List[int]]')
         else:  # infer number of possible categories for each feature from reference data
             x_flat = self.x_ref.reshape(self.x_ref.shape[0], -1)
-            categories_per_feature = {f: list(np.unique(x_flat[:, f]))  # type: ignore
+            categories_per_feature = {f: list(np.unique(x_flat[:, f]))
                                       for f in range(self.n_features)}
         self.x_ref_categories = categories_per_feature
 

@@ -92,7 +92,7 @@ def encompass_shuffling_and_batch_filling(
         # shuffle
         n_x = len(x)
         perm = np.random.permutation(n_x)
-        x = x[perm] if is_np else [x[i] for i in perm]  # type: ignore[call-overload]
+        x = x[perm] if is_np else [x[i] for i in perm]
         # add extras if necessary
         final_batch_size = n_x % batch_size
         if final_batch_size != 0:

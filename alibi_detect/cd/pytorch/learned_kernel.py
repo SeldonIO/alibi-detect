@@ -200,7 +200,7 @@ class LearnedKernelDriftTorch(BaseLearnedKernelDrift):
         self.kernel = deepcopy(self.original_kernel) if self.retrain_from_scratch else self.kernel
         self.kernel = self.kernel.to(self.device)
         train_args = [self.j_hat, (dl_ref_tr, dl_cur_tr), self.device]
-        LearnedKernelDriftTorch.trainer(*train_args, **self.train_kwargs)  # type: ignore
+        LearnedKernelDriftTorch.trainer(*train_args, **self.train_kwargs)
 
         if isinstance(x_ref_te, np.ndarray) and isinstance(x_cur_te, np.ndarray):
             x_all = np.concatenate([x_ref_te, x_cur_te], axis=0)

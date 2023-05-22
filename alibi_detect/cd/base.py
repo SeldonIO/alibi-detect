@@ -151,9 +151,9 @@ class BaseClassifierDrift(BaseDetector):
                 x_ref = self.preprocess_fn(self.x_ref)
             else:
                 x_ref = self.x_ref
-            return x_ref, x  # type: ignore[return-value]
+            return x_ref, x
         else:
-            return self.x_ref, x  # type: ignore[return-value]
+            return self.x_ref, x
 
     def get_splits(
             self,
@@ -412,9 +412,9 @@ class BaseLearnedKernelDrift(BaseDetector):
                 x_ref = self.preprocess_fn(self.x_ref)
             else:
                 x_ref = self.x_ref
-            return x_ref, x  # type: ignore[return-value]
+            return x_ref, x
         else:
-            return self.x_ref, x  # type: ignore[return-value]
+            return self.x_ref, x
 
     def get_splits(self, x_ref: Union[np.ndarray, list], x: Union[np.ndarray, list]) \
             -> Tuple[Tuple[Union[np.ndarray, list], Union[np.ndarray, list]],
@@ -441,7 +441,7 @@ class BaseLearnedKernelDrift(BaseDetector):
 
         if isinstance(x_ref, np.ndarray):
             x_ref_tr, x_ref_te = x_ref[idx_ref_tr], x_ref[idx_ref_te]
-            x_cur_tr, x_cur_te = x[idx_cur_tr], x[idx_cur_te]  # type: ignore[call-overload]
+            x_cur_tr, x_cur_te = x[idx_cur_tr], x[idx_cur_te]
         elif isinstance(x, list):
             x_ref_tr, x_ref_te = [x_ref[_] for _ in idx_ref_tr], [x_ref[_] for _ in idx_ref_te]
             x_cur_tr, x_cur_te = [x[_] for _ in idx_cur_tr], [x[_] for _ in idx_cur_te]
@@ -814,7 +814,7 @@ class BaseLSDDDrift(BaseDetector):
                 pass
         self.x_ref = update_reference(self.x_ref, x, self.n, self.update_x_ref)  # type: ignore[arg-type]
         # used for reservoir sampling
-        self.n += len(x)  # type: ignore
+        self.n += len(x)
 
         # populate drift dict
         cd = concept_drift_dict()
@@ -1205,7 +1205,7 @@ class BaseContextMMDDrift(BaseDetector):
         if isinstance(self.update_ref, dict) and self.preprocess_fn is not None and self.preprocess_at_init:
             x = self.preprocess_fn(x)
         self.x_ref = update_reference(self.x_ref, x, self.n, self.update_ref)  # type: ignore[arg-type]
-        self.c_ref = update_reference(self.c_ref, c, self.n, self.update_ref)  # type: ignore[arg-type]
+        self.c_ref = update_reference(self.c_ref, c, self.n, self.update_ref)
         # used for reservoir sampling
         self.n += len(x)
 

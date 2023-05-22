@@ -96,7 +96,7 @@ class MMDDriftOnline(DriftConfigMixin):
 
         if backend == Framework.TENSORFLOW:
             kwargs.pop('device', None)
-            self._detector = MMDDriftOnlineTF(*args, **kwargs)  # type: ignore
+            self._detector = MMDDriftOnlineTF(*args, **kwargs)
         else:
             self._detector = MMDDriftOnlineTorch(*args, **kwargs)  # type: ignore
         self.meta = self._detector.meta

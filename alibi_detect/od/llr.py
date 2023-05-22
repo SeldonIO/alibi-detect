@@ -189,12 +189,12 @@ class LLR(BaseDetector, FitMixin, ThresholdMixin):
             # train semantic model
             args = [self.dist_s, loss_fn, X]
             kwargs.update({'y_train': y, 'optimizer': optimizer_s})
-            trainer(*args, **kwargs)  # type: ignore[arg-type]
+            trainer(*args, **kwargs)
 
             # train background model
             args = [self.dist_b, loss_fn, X_back]
             kwargs.update({'y_train': y_back, 'optimizer': optimizer_b})
-            trainer(*args, **kwargs)  # type: ignore[arg-type]
+            trainer(*args, **kwargs)
 
     def infer_threshold(self,
                         X: np.ndarray,
