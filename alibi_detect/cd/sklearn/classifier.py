@@ -300,7 +300,7 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
         if isinstance(x, np.ndarray):
             x_oob = x[idx_oob]
         elif isinstance(x, list):
-            x_oob = [x[_] for _ in idx_oob]  # type: ignore[assignment]
+            x_oob = [x[_] for _ in idx_oob]
         else:
             raise TypeError(f'x needs to be of type np.ndarray or list and not {type(x)}.')
         # comparison due to ordering in get_split (i.e, x = [x_ref, x])

@@ -82,7 +82,7 @@ def apply_mask(X: np.ndarray,
         if mask_type == 'zero':
             update_val = 0
         else:
-            update_val = noise[_]  # type: ignore[assignment]
+            update_val = noise[_]
 
         for c in channels:
             mask[
