@@ -94,9 +94,9 @@ class LSDDDrift(DriftConfigMixin):
 
         if backend == Framework.TENSORFLOW:
             kwargs.pop('device', None)
-            self._detector = LSDDDriftTF(*args, **kwargs)  # type: ignore
+            self._detector = LSDDDriftTF(*args, **kwargs)
         else:
-            self._detector = LSDDDriftTorch(*args, **kwargs)  # type: ignore
+            self._detector = LSDDDriftTorch(*args, **kwargs)
         self.meta = self._detector.meta
 
     def predict(self, x: Union[np.ndarray, list], return_p_val: bool = True, return_distance: bool = True) \

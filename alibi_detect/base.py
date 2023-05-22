@@ -193,8 +193,8 @@ class DriftConfigMixin:
         """
         The low-level nested detector.
         """
-        detector = self._detector if hasattr(self, '_detector') else self  # type: ignore[attr-defined]
-        detector = detector._detector if hasattr(detector, '_detector') else detector  # type: ignore[attr-defined]
+        detector = self._detector if hasattr(self, '_detector') else self
+        detector = detector._detector if hasattr(detector, '_detector') else detector
         return detector
 
 

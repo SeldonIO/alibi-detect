@@ -138,7 +138,7 @@ def _save_detector_config(detector: ConfigurableDetector,
 
     # Get the detector config (with artefacts still within it)
     if hasattr(detector, 'get_config'):
-        cfg = detector.get_config()  # type: ignore[union-attr]  # TODO - remove once all detectors have get_config
+        cfg = detector.get_config()  # TODO - remove once all detectors have get_config
         cfg = validate_config(cfg, resolved=True)
     else:
         raise NotImplementedError(f'{detector_name} does not yet support config.toml based saving.')
@@ -492,7 +492,7 @@ def _save_kernel_config(kernel: Callable,
     # if a DeepKernel
     if hasattr(kernel, 'proj'):
         if hasattr(kernel, 'get_config'):
-            cfg_kernel = kernel.get_config()  # type: ignore[attr-defined]
+            cfg_kernel = kernel.get_config()
         else:
             raise AttributeError("The detector's `kernel` must have a .get_config() method for it to be saved.")
         # Serialize the kernels (if needed)
@@ -511,7 +511,7 @@ def _save_kernel_config(kernel: Callable,
         else:  # if an object
             kernel_class = kernel.__class__
             if hasattr(kernel, 'get_config'):
-                cfg_kernel = kernel.get_config()  # type: ignore[attr-defined]
+                cfg_kernel = kernel.get_config()
                 cfg_kernel['init_sigma_fn'], _ = _serialize_object(cfg_kernel['init_sigma_fn'], base_path,
                                                                    local_path.joinpath('init_sigma_fn'))
             else:

@@ -181,8 +181,8 @@ class DeepKernel(nn.Module):
             kernel_a = GaussianRBF(trainable=True)
         if kernel_b == 'rbf':
             kernel_b = GaussianRBF(trainable=True)
-        self.kernel_a: Callable = kernel_a  # type: ignore[assignment]
-        self.kernel_b: Callable = kernel_b  # type: ignore[assignment]
+        self.kernel_a: Callable = kernel_a
+        self.kernel_b: Callable = kernel_b
         self.proj = proj
         if kernel_b is not None:
             self._init_eps(eps)

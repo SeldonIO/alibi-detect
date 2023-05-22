@@ -77,7 +77,7 @@ def batch_compute_kernel_matrix(
             y_batch = y[jstart:jstop]
             if isinstance(preprocess_fn, Callable):  # type: ignore
                 y_batch = preprocess_fn(y_batch)
-            k_ijs.append(kernel(x_batch, y_batch))  # type: ignore
+            k_ijs.append(kernel(x_batch, y_batch))
         k_is.append(tf.concat(k_ijs, axis=1))
     k_mat = tf.concat(k_is, axis=0)
     return k_mat
@@ -135,7 +135,7 @@ def mmd2(x: tf.Tensor, y: tf.Tensor, kernel: Callable) -> float:
     """
     n, m = x.shape[0], y.shape[0]
     c_xx, c_yy = 1 / (n * (n - 1)), 1 / (m * (m - 1))
-    k_xx, k_yy, k_xy = kernel(x, x), kernel(y, y), kernel(x, y)  # type: ignore
+    k_xx, k_yy, k_xy = kernel(x, x), kernel(y, y), kernel(x, y)
     return (c_xx * (tf.reduce_sum(k_xx) - tf.linalg.trace(k_xx)) +
             c_yy * (tf.reduce_sum(k_yy) - tf.linalg.trace(k_yy)) - 2. * tf.reduce_mean(k_xy))
 

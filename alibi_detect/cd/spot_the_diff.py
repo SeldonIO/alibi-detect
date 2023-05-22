@@ -143,7 +143,7 @@ class SpotTheDiffDrift(DriftConfigMixin):
             [kwargs.pop(k, None) for k in pop_kwargs]
             if dataset is None:
                 kwargs.update({'dataset': TFDataset})
-            self._detector = SpotTheDiffDriftTF(*args, **kwargs)  # type: ignore
+            self._detector = SpotTheDiffDriftTF(*args, **kwargs)
         else:
             if dataset is None:
                 kwargs.update({'dataset': TorchDataset})

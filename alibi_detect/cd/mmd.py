@@ -116,7 +116,7 @@ class MMDDrift(DriftConfigMixin):
                 from alibi_detect.utils.keops.kernels import GaussianRBF  # type: ignore
             kwargs.update({'kernel': GaussianRBF})
 
-        self._detector = detector(*args, **kwargs)  # type: ignore
+        self._detector = detector(*args, **kwargs)
         self.meta = self._detector.meta
 
     def predict(self, x: Union[np.ndarray, list], return_p_val: bool = True, return_distance: bool = True) \

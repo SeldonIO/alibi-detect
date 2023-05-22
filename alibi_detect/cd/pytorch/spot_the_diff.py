@@ -223,8 +223,8 @@ class SpotTheDiffDriftTorch:
         and the trained model.
         """
         preds = self._detector.predict(x, return_p_val, return_distance, return_probs, return_model=True)
-        preds['data']['diffs'] = preds['data']['model'].diffs.detach().cpu().numpy()  # type: ignore
-        preds['data']['diff_coeffs'] = preds['data']['model'].coeffs.detach().cpu().numpy()  # type: ignore
+        preds['data']['diffs'] = preds['data']['model'].diffs.detach().cpu().numpy()
+        preds['data']['diff_coeffs'] = preds['data']['model'].coeffs.detach().cpu().numpy()
         if not return_model:
             del preds['data']['model']
         return preds

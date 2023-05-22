@@ -232,7 +232,7 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
         ValueError
             Raised if the detector is not fit on reference data.
         """
-        self.check_fitted()  # type: ignore
+        self.check_fitted()
         raw_scores = self.score(x)
         scores = self._ensembler(raw_scores)
 

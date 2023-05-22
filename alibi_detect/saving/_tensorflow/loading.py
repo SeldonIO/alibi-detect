@@ -275,7 +275,7 @@ def load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwarg
         model = load_model(model_dir, custom_objects=custom_objects)
         detector = init_ad_md(state_dict, md, model)
     elif detector_name == 'OutlierProphet':
-        detector = init_od_prophet(state_dict)  # type: ignore[assignment]
+        detector = init_od_prophet(state_dict)
     elif detector_name == 'SpectralResidual':
         detector = init_od_sr(state_dict)  # type: ignore[assignment]
     elif detector_name == 'OutlierSeq2Seq':
@@ -291,7 +291,7 @@ def load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwarg
             logger.warning('No model found in {}, setting `model` to `None`.'.format(model_dir))
             model = None
         if detector_name == 'KSDrift':
-            load_fn = init_cd_ksdrift  # type: ignore[assignment]
+            load_fn = init_cd_ksdrift
         elif detector_name == 'MMDDriftTF':
             load_fn = init_cd_mmddrift  # type: ignore[assignment]
         elif detector_name == 'ChiSquareDrift':

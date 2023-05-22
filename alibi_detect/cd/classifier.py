@@ -167,7 +167,7 @@ class ClassifierDrift(DriftConfigMixin):
             [kwargs.pop(k, None) for k in pop_kwargs]
             if dataset is None:
                 kwargs.update({'dataset': TFDataset})
-            self._detector = ClassifierDriftTF(*args, **kwargs)  # type: ignore
+            self._detector = ClassifierDriftTF(*args, **kwargs)
         elif backend == Framework.PYTORCH:
             pop_kwargs = ['use_calibration', 'calibration_kwargs', 'use_oob']
             [kwargs.pop(k, None) for k in pop_kwargs]
@@ -175,12 +175,12 @@ class ClassifierDrift(DriftConfigMixin):
                 kwargs.update({'dataset': TorchDataset})
             if dataloader is None:
                 kwargs.update({'dataloader': DataLoader})
-            self._detector = ClassifierDriftTorch(*args, **kwargs)  # type: ignore
+            self._detector = ClassifierDriftTorch(*args, **kwargs)
         else:
             pop_kwargs = ['reg_loss_fn', 'optimizer', 'learning_rate', 'batch_size', 'preprocess_batch_fn',
                           'epochs', 'train_kwargs', 'device',  'dataset', 'dataloader', 'verbose']
             [kwargs.pop(k, None) for k in pop_kwargs]
-            self._detector = ClassifierDriftSklearn(*args, **kwargs)  # type: ignore
+            self._detector = ClassifierDriftSklearn(*args, **kwargs)
         self.meta = self._detector.meta
 
     def predict(self, x: Union[np.ndarray, list],  return_p_val: bool = True,
