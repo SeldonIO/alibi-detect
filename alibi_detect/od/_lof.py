@@ -1,11 +1,11 @@
 from typing import Callable, Union, Optional, Dict, Any, List, Tuple
 from typing import TYPE_CHECKING
+from typing_extensions import Literal
 
 import numpy as np
 
-from typing_extensions import Literal
-from alibi_detect.exceptions import _catch_error as catch_error
 from alibi_detect.base import outlier_prediction_dict
+from alibi_detect.exceptions import _catch_error as catch_error
 from alibi_detect.od.base import TransformProtocol, TransformProtocolType
 from alibi_detect.base import BaseDetector, FitMixin, ThresholdMixin
 from alibi_detect.od.pytorch import LOFTorch, Ensembler
@@ -28,10 +28,10 @@ class LOF(BaseDetector, FitMixin, ThresholdMixin):
         self,
         k: Union[int, np.ndarray, List[int], Tuple[int]],
         kernel: Optional[Callable] = None,
-        normalizer: Optional[Union[TransformProtocolType, NormalizerLiterals]] = 'ShiftAndScaleNormalizer',
+        normalizer: Optional[Union[TransformProtocolType, NormalizerLiterals]] = 'PValNormalizer',
         aggregator: Union[TransformProtocol, AggregatorLiterals] = 'AverageAggregator',
-        device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
         backend: Literal['pytorch'] = 'pytorch',
+        device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
     ) -> None:
         """
         Local Outlier Factor (LOF) outlier detector.
@@ -62,7 +62,8 @@ class LOF(BaseDetector, FitMixin, ThresholdMixin):
             Backend used for outlier detection. Defaults to ``'pytorch'``. Options are ``'pytorch'``.
         device
             Device type used. The default tries to use the GPU and falls back on CPU if needed.
-            Can be specified by passing either ``'cuda'``, ``'gpu'`` or ``'cpu'``.
+            Can be specified by passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of
+            ``torch.device``.
 
         Raises
         ------
@@ -111,7 +112,7 @@ class LOF(BaseDetector, FitMixin, ThresholdMixin):
 
     @catch_error('NotFittedError')
     @catch_error('ThresholdNotInferredError')
-    def score(self, X: np.ndarray) -> np.ndarray:
+    def score(self, x: np.ndarray) -> np.ndarray:
         """Score `x` instances using the detector.
 
         The LOF detector scores the instances in `x` by computing the local outlier factor for each instance. The
@@ -126,13 +127,20 @@ class LOF(BaseDetector, FitMixin, ThresholdMixin):
         -------
         Outlier scores. The shape of the scores is `(n_instances,)`. The higher the score, the more anomalous the \
         instance.
+
+        Raises
+        ------
+        NotFittedError
+            If called before detector has been fit.
+        ThresholdNotInferredError
+            If k is a list and a threshold was not inferred.
         """
-        score = self.backend.score(self.backend._to_tensor(X))
+        score = self.backend.score(self.backend._to_tensor(x))
         score = self.backend._ensembler(score)
         return self.backend._to_numpy(score)
 
     @catch_error('NotFittedError')
-    def infer_threshold(self, X: np.ndarray, fpr: float) -> None:
+    def infer_threshold(self, x: np.ndarray, fpr: float) -> None:
         """Infer the threshold for the LOF detector.
 
         The threshold is computed so that the outlier detector would incorrectly classify `fpr` proportion of the
@@ -146,8 +154,15 @@ class LOF(BaseDetector, FitMixin, ThresholdMixin):
             False positive rate used to infer the threshold. The false positive rate is the proportion of
             instances in `x_ref` that are incorrectly classified as outliers. The false positive rate should
             be in the range ``(0, 1)``.
+
+        Raises
+        ------
+        ValueError
+            Raised if `fpr` is not in ``(0, 1)``.
+        NotFittedError
+            If called before detector has been fit.
         """
-        self.backend.infer_threshold(self.backend._to_tensor(X), fpr)
+        self.backend.infer_threshold(self.backend._to_tensor(x), fpr)
 
     @catch_error('NotFittedError')
     @catch_error('ThresholdNotInferredError')
@@ -167,6 +182,13 @@ class LOF(BaseDetector, FitMixin, ThresholdMixin):
         performed, 'data' also contains the threshold value, outlier labels and p-vals . The shape of the scores is \
         `(n_instances,)`. The higher the score, the more anomalous the instance. 'meta' contains information about \
         the detector.
+
+        Raises
+        ------
+        NotFittedError
+            If called before detector has been fit.
+        ThresholdNotInferredError
+            If k is a list and a threshold was not inferred.
         """
         outputs = self.backend.predict(self.backend._to_tensor(x))
         output = outlier_prediction_dict()
