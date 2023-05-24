@@ -40,6 +40,16 @@ class LOF(BaseDetector, FitMixin, ThresholdMixin):
         deviation of a given data point with respect to its neighbors. It considers as outliers the
         samples that have a substantially lower density than their neighbors.
 
+        The detector can be initialized with `k` a single value or an array of values. If `k` is a single value then
+        the score method uses the distance/kernel similarity to the k-th nearest neighbor. If `k` is an array of
+        values then the score method uses the distance/kernel similarity to each of the specified `k` neighbors.
+        In the latter case, an `aggregator` must be specified to aggregate the scores.
+
+        Note that, in the multiple k case, a normalizer can be provided. If a normalizer is passed then it is fit in
+        the `infer_threshold` method and so this method must be called before the `predict` method. If this is not
+        done an exception is raised. If `k` is a single value then the predict method can be called without first
+        calling `infer_threshold` but only scores will be returned and not outlier predictions.
+
         Parameters
         ----------
         k
@@ -115,8 +125,8 @@ class LOF(BaseDetector, FitMixin, ThresholdMixin):
     def score(self, x: np.ndarray) -> np.ndarray:
         """Score `x` instances using the detector.
 
-        The LOF detector scores the instances in `x` by computing the local outlier factor for each instance. The
-        higher the score, the more anomalous the instance.
+        Computes the local outlier factor for each instance in `x`. If `k` is an array of values then the score for 
+        each `k` is aggregated using the ensembler.
 
         Parameters
         ----------
@@ -148,11 +158,11 @@ class LOF(BaseDetector, FitMixin, ThresholdMixin):
 
         Parameters
         ----------
-        x_ref
+        x
             Reference data used to infer the threshold.
         fpr
             False positive rate used to infer the threshold. The false positive rate is the proportion of
-            instances in `x_ref` that are incorrectly classified as outliers. The false positive rate should
+            instances in `x` that are incorrectly classified as outliers. The false positive rate should
             be in the range ``(0, 1)``.
 
         Raises
