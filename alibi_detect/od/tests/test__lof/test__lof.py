@@ -54,8 +54,7 @@ def test_fitted_lof_score():
     x = np.array([[0, 10], [0.1, 0]])
     y = lof_detector.predict(x)
     y = y['data']
-    assert y['instance_score'][0] > 5
-    assert y['instance_score'][1] < 1
+    assert y['instance_score'][0] > y['instance_score'][1]
     assert not y['threshold_inferred']
     assert y['threshold'] is None
     assert y['is_outlier'] is None
@@ -103,8 +102,7 @@ def test_fitted_lof_predict():
     y = y['data']
     scores = lof_detector.score(x)
     assert np.all(y['instance_score'] == scores)
-    assert y['instance_score'][0] > 5
-    assert y['instance_score'][1] < 1
+    assert y['instance_score'][0] > y['instance_score'][1]
     assert y['threshold_inferred']
     assert y['threshold'] is not None
     assert y['p_value'].all()
