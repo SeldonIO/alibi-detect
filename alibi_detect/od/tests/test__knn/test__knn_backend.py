@@ -56,7 +56,7 @@ def test_knn_torch_backend_ensemble(ensembler):
 
 def test_knn_torch_backend_ensemble_ts(tmp_path, ensembler):
     """
-    Test the knn torch backend can be initalized as an ensemble and
+    Test the knn torch backend can be initialized as an ensemble and
     torchscripted, as well as saved and loaded to and from disk.
     """
 
@@ -78,7 +78,7 @@ def test_knn_torch_backend_ensemble_ts(tmp_path, ensembler):
 
 def test_knn_torch_backend_ts(tmp_path):
     """
-    Test the knn torch backend can be initalized and torchscripted, as well as
+    Test the knn torch backend can be initialized and torchscripted, as well as
     saved and loaded to and from disk.
     """
 
