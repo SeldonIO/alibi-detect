@@ -135,16 +135,16 @@ class LOFTorch(TorchOutlierDetector):
         # compute k nearest neighbors for maximum k in self.ks
         max_k = torch.max(self.ks)
         bot_k_items = torch.topk(D, int(max_k), dim=1, largest=False)
-        bot_k_inds, bot_k_dists = bot_k_items.indices, bot_k_items.values  # shape (n_instances, max(ks))
+        bot_k_inds, bot_k_dists = bot_k_items.indices, bot_k_items.values
 
-        # store the k-distances for each instance for each k. shape (n_instances, len(ks))
+        # store the k-distances for each instance for each k.
         self.knn_dists_ref = bot_k_dists[:, self.ks-1]
 
         # To compute the reachabilities we get the k-distances of each object in the instances
         # k nearest neighbors. Then we take the maximum of their k-distances and the distance
         # to the instance.
         lower_bounds = self.knn_dists_ref[bot_k_inds]
-        reachabilities = torch.max(bot_k_dists[:, :, None], lower_bounds)  # shape (n_instances, max(ks), len(ks))
+        reachabilities = torch.max(bot_k_dists[:, :, None], lower_bounds)
 
         # Compute the average reachability for each instance. We use a mask to manage each k in
         # self.ks separately.
@@ -152,7 +152,7 @@ class LOFTorch(TorchOutlierDetector):
         avg_reachabilities = (reachabilities*mask[None, :, :]).sum(1)
 
         # Compute the inverse average reachability for each instance.
-        self.ref_inv_avg_reachabilities = 1/avg_reachabilities  # shape (n_instances, len(ks))
+        self.ref_inv_avg_reachabilities = 1/avg_reachabilities
 
         self.x_ref = x_ref
         self._set_fitted()
