@@ -125,7 +125,7 @@ class LOF(BaseDetector, FitMixin, ThresholdMixin):
     def score(self, x: np.ndarray) -> np.ndarray:
         """Score `x` instances using the detector.
 
-        Computes the local outlier factor for each instance in `x`. If `k` is an array of values then the score for 
+        Computes the local outlier factor for each instance in `x`. If `k` is an array of values then the score for
         each `k` is aggregated using the ensembler.
 
         Parameters

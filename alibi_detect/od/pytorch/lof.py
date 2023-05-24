@@ -1,30 +1,29 @@
-from typing import Optional, Union, List, Tuple, Literal
-
+from typing import Optional, Union, List, Tuple
+from typing_extensions import Literal
 import numpy as np
 import torch
 
 from alibi_detect.od.pytorch.ensemble import Ensembler
 from alibi_detect.od.pytorch.base import TorchOutlierDetector
-from torch import device
 
 
 class LOFTorch(TorchOutlierDetector):
     def __init__(
             self,
-            k: Union[np.ndarray, List, Tuple],
+            k: Union[np.ndarray, List, Tuple, int],
             kernel: Optional[torch.nn.Module] = None,
             ensembler: Optional[Ensembler] = None,
-            device: Union[device, None, Literal['cuda', 'gpu', 'cpu']] = None
+            device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
             ):
         """PyTorch backend for LOF detector.
-
-        Computes the Local Outlier Factor (LOF) of each instance in `x` with respect to a reference set `x_ref`.
 
         Parameters
         ----------
         k
-            Number of nearest neighbors used to compute LOF. If `k` is a list or array, then an ensemble of LOF
-            detectors is created with one detector for each value of `k`.
+            Number of nearest neighbors used to compute the local outlier factor. `k` can be a single
+            value or an array of integers. If `k` is a single value the score method uses the
+            distance/kernel similarity to the `k`-th nearest neighbor. If `k` is a list then it uses
+            the distance/kernel similarity to each of the specified `k` neighbors.
         kernel
             If a kernel is specified then instead of using `torch.cdist` the kernel defines the `k` nearest
             neighbor distance.
@@ -33,7 +32,9 @@ class LOFTorch(TorchOutlierDetector):
             of :py:obj:`alibi_detect.od.pytorch.ensemble.ensembler`. Responsible for combining
             multiple scores into a single score.
         device
-            Device on which to run the detector.
+            Device type used. The default tries to use the GPU and falls back on CPU if needed.
+            Can be specified by passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of
+            ``torch.device``.
         """
         TorchOutlierDetector.__init__(self, device=device)
         self.kernel = kernel
@@ -55,7 +56,7 @@ class LOFTorch(TorchOutlierDetector):
 
         Raises
         ------
-        ThresholdNotInferredException
+        ThresholdNotInferredError
             If called before detector has had `infer_threshold` method called.
         """
         raw_scores = self.score(x)
@@ -66,12 +67,18 @@ class LOFTorch(TorchOutlierDetector):
         return preds
 
     def _make_mask(self, reachabilities: torch.Tensor):
+        """Generate a mask for computing the average reachability.
+
+        If k is an array then we need to compute the average reachability for each k separately. To do
+        this we use a mask to weight the reachability of each k-close neighbor by 1/k and the rest to 0.
+        """
         mask = torch.zeros_like(reachabilities[0], device=self.device)
         for i, k in enumerate(self.ks):
             mask[:k, i] = torch.ones(k, device=self.device)/k
         return mask
 
     def _compute_K(self, x, y):
+        """Compute the distance/similarity matrix matrix between `x` and `y`."""
         return torch.exp(-self.kernel(x, y)) if self.kernel is not None else torch.cdist(x, y)
 
     def score(self, x: torch.Tensor) -> torch.Tensor:
@@ -88,18 +95,17 @@ class LOFTorch(TorchOutlierDetector):
 
         Raises
         ------
-        NotFitException
+        NotFittedError
             If called before detector has been fit.
         """
-        if not torch.jit.is_scripting():
-            self.check_fitted()
+        self.check_fitted()
 
         # compute the distance matrix between x and x_ref
-        D = self._compute_K(x, self.x_ref)
+        K = self._compute_K(x, self.x_ref)
 
         # compute k nearest neighbors for maximum k in self.ks
         max_k = torch.max(self.ks)
-        bot_k_items = torch.topk(D, int(max_k), dim=1, largest=False)
+        bot_k_items = torch.topk(K, int(max_k), dim=1, largest=False)
         bot_k_inds, bot_k_dists = bot_k_items.indices, bot_k_items.values
 
         # To compute the reachabilities we get the k-distances of each object in the instances
@@ -128,13 +134,13 @@ class LOFTorch(TorchOutlierDetector):
             The Dataset tensor.
         """
         # compute the distance matrix
-        D = self._compute_K(x_ref, x_ref)
+        K = self._compute_K(x_ref, x_ref)
         # set diagonal to max distance to prevent torch.topk from returning the instance itself
-        D += torch.eye(len(D), device=self.device) * torch.max(D)
+        K += torch.eye(len(K), device=self.device) * torch.max(K)
 
         # compute k nearest neighbors for maximum k in self.ks
         max_k = torch.max(self.ks)
-        bot_k_items = torch.topk(D, int(max_k), dim=1, largest=False)
+        bot_k_items = torch.topk(K, int(max_k), dim=1, largest=False)
         bot_k_inds, bot_k_dists = bot_k_items.indices, bot_k_items.values
 
         # store the k-distances for each instance for each k.
