@@ -776,7 +776,7 @@ SOFTWARE.
 
 
 alibi-detect
-0.12.0.dev0
+0.11.3.dev0
 Apache Software License
                                  Apache License
                            Version 2.0, January 2004
@@ -1008,7 +1008,7 @@ SOFTWARE.
 
 
 certifi
-2022.12.7
+2023.5.7
 Mozilla Public License 2.0 (MPL 2.0)
 This package contains a modified version of ca-bundle.crt:
 
@@ -1164,7 +1164,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 filelock
-3.12.0
+3.12.1
 The Unlicense (Unlicense)
 This is free and unencumbered software released into the public domain.
 
@@ -1193,7 +1193,7 @@ For more information, please refer to <http://unlicense.org>
 
 
 fonttools
-4.39.3
+4.39.4
 MIT License
 MIT License
 
@@ -1219,7 +1219,7 @@ SOFTWARE.
 
 
 fsspec
-2023.4.0
+2023.6.0
 BSD License
 BSD 3-Clause License
 
@@ -1253,7 +1253,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 huggingface-hub
-0.14.1
+0.15.1
 Apache Software License
                                  Apache License
                            Version 2.0, January 2004
@@ -1493,7 +1493,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 imageio
-2.28.0
+2.31.1
 BSD License
 Copyright (c) 2014-2022, imageio developers
 All rights reserved.
@@ -1666,7 +1666,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 llvmlite
-0.39.1
+0.40.1rc1
 BSD
 Copyright (c) 2014-, Continuum Analytics, Inc.
 All rights reserved.
@@ -1840,7 +1840,7 @@ NetworkX is distributed with the 3-clause BSD license.
 
 
 numba
-0.56.4
+0.57.0
 BSD License
 Copyright (c) 2012, Anaconda, Inc.
 All rights reserved.
@@ -1869,7 +1869,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 numpy
-1.23.5
+1.24.3
 BSD License
 Copyright (c) 2005-2022, NumPy Developers.
 All rights reserved.
@@ -5253,7 +5253,7 @@ under the terms of *both* these licenses.
 
 
 pandas
-2.0.1
+2.0.2
 BSD License
 BSD 3-Clause License
 
@@ -5289,7 +5289,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 pydantic
-1.10.7
+1.10.9
 MIT License
 The MIT License (MIT)
 
@@ -5420,7 +5420,7 @@ DEALINGS IN THE SOFTWARE.
 
 
 regex
-2023.3.23
+2023.6.3
 Apache Software License
 This work was derived from the 're' module of CPython 2.6 and CPython 3.1,
 copyright (c) 1998-2001 by Secret Labs AB and licensed under CNRI's Python 1.6
@@ -5633,7 +5633,7 @@ All additions and alterations are licensed under the Apache 2.0 License.
 
 
 requests
-2.28.2
+2.31.0
 Apache Software License
 
                                  Apache License
@@ -5812,8 +5812,13 @@ Apache Software License
       of your accepting any such warranty or additional liability.
 
 
+safetensors
+0.3.1
+Apache Software License
+UNKNOWN
+
 scikit-image
-0.20.0
+0.21.0
 BSD License
 Files: *
 Copyright: 2009-2022 the scikit-image team
@@ -5870,7 +5875,8 @@ Copyright: 2020 Broad Institute
 License: BSD-3-Clause
 
 File: skimage/exposure/_adapthist.py
-License: GraphicsGems-EULA
+Copyright: 1994 Karel Zuiderveld
+License: BSD-3-Clause
 
 Function: skimage/morphology/_skeletonize_cy.pyx:_skeletonize_loop
 Copyright: 2003-2009 Massachusetts Institute of Technology
@@ -5884,6 +5890,10 @@ License: BSD-3-Clause
 
 Function: skimage/_shared/version_requirements.py:is_installed
 Copyright: 2009-2011 Pierre Raybaut
+License: MIT
+
+File: skimage/feature/fisher_vector.py
+Copyright: 2014 2014 Dan Oneata
 License: MIT
 
 
@@ -5955,17 +5965,6 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
-License: GraphicsGems-EULA
-
-The Graphics Gems code is copyright-protected. In other words, you cannot
-claim the text of the code as your own and resell it. Using the code is
-permitted in any program, product, or library, non-commercial or commercial.
-Giving credit is not required, though is a nice gesture. The code comes as-is,
-and if there are any flaws or problems with any Gems code, nobody involved with
-Gems - authors, editors, publishers, or webmasters - are to be held
-responsible. Basically, don't be a jerk, and remember that anything free
-comes with no guarantee.
 
 
 scikit-learn
@@ -7094,7 +7093,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 transformers
-4.28.1
+4.30.1
 Apache Software License
 Copyright 2018- The Hugging Face team. All rights reserved.
 
@@ -7302,18 +7301,18 @@ Copyright 2018- The Hugging Face team. All rights reserved.
 
 
 typing_extensions
-4.5.0
+4.6.3
 Python Software Foundation License
 A. HISTORY OF THE SOFTWARE
 ==========================
 
 Python was created in the early 1990s by Guido van Rossum at Stichting
-Mathematisch Centrum (CWI, see http://www.cwi.nl) in the Netherlands
+Mathematisch Centrum (CWI, see https://www.cwi.nl) in the Netherlands
 as a successor of a language called ABC.  Guido remains Python's
 principal author, although it includes many contributions from others.
 
 In 1995, Guido continued his work on Python at the Corporation for
-National Research Initiatives (CNRI, see http://www.cnri.reston.va.us)
+National Research Initiatives (CNRI, see https://www.cnri.reston.va.us)
 in Reston, Virginia where he released several versions of the
 software.
 
@@ -7325,7 +7324,7 @@ https://www.python.org/psf/) was formed, a non-profit organization
 created specifically to own Python-related Intellectual Property.
 Zope Corporation was a sponsoring member of the PSF.
 
-All Python releases are Open Source (see http://www.opensource.org for
+All Python releases are Open Source (see https://opensource.org for
 the Open Source Definition).  Historically, most, but not all, Python
 releases have also been GPL-compatible; the table below summarizes
 the various releases.
@@ -7365,6 +7364,17 @@ direction to make these releases possible.
 B. TERMS AND CONDITIONS FOR ACCESSING OR OTHERWISE USING PYTHON
 ===============================================================
 
+Python software and documentation are licensed under the
+Python Software Foundation License Version 2.
+
+Starting with Python 3.8.6, examples, recipes, and other code in
+the documentation are dual licensed under the PSF License Version 2
+and the Zero-Clause BSD license.
+
+Some software incorporated into Python is under different licenses.
+The licenses are listed with code falling under that license.
+
+
 PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
 --------------------------------------------
 
@@ -7379,7 +7389,7 @@ analyze, test, perform and/or display publicly, prepare derivative works,
 distribute, and otherwise use Python alone or in any derivative version,
 provided, however, that PSF's License Agreement and PSF's notice of copyright,
 i.e., "Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010,
-2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022 Python Software Foundation;
+2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023 Python Software Foundation;
 All Rights Reserved" are retained in Python alone or in any derivative version
 prepared by Licensee.
 
@@ -7559,6 +7569,20 @@ WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
 ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
 OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
+ZERO-CLAUSE BSD LICENSE FOR CODE IN THE PYTHON DOCUMENTATION
+----------------------------------------------------------------------
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+PERFORMANCE OF THIS SOFTWARE.
+
 
 tzdata
 2023.3
@@ -7581,11 +7605,11 @@ limitations under the License.
 
 
 urllib3
-1.26.15
+2.0.3
 MIT License
 MIT License
 
-Copyright (c) 2008-2020 Andrey Petrov and contributors (see CONTRIBUTORS.txt)
+Copyright (c) 2008-2020 Andrey Petrov and contributors.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
