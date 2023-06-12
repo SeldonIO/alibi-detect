@@ -78,7 +78,7 @@ class LOFTorch(TorchOutlierDetector):
         return mask
 
     def _compute_K(self, x, y):
-        """Compute the distance/similarity matrix matrix between `x` and `y`."""
+        """Compute the distance matrix matrix between `x` and `y`."""
         return torch.exp(-self.kernel(x, y)) if self.kernel is not None else torch.cdist(x, y)
 
     def score(self, x: torch.Tensor) -> torch.Tensor:
