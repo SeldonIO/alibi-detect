@@ -96,7 +96,7 @@ class MMDDriftOnline(DriftConfigMixin):
 
         if backend == Framework.TENSORFLOW:
             kwargs.pop('device', None)
-            self._detector = MMDDriftOnlineTF(*args, **kwargs)  # type: ignore
+            self._detector = MMDDriftOnlineTF(*args, **kwargs)
         else:
             self._detector = MMDDriftOnlineTorch(*args, **kwargs)  # type: ignore
         self.meta = self._detector.meta
@@ -133,9 +133,9 @@ class MMDDriftOnline(DriftConfigMixin):
 
         Returns
         -------
-        Dictionary containing 'meta' and 'data' dictionaries.
-        'meta' has the model's metadata.
-        'data' contains the drift prediction and optionally the test-statistic and threshold.
+        Dictionary containing ``'meta'`` and ``'data'`` dictionaries.
+            - ``'meta'`` has the model's metadata.
+            - ``'data'`` contains the drift prediction and optionally the test-statistic and threshold.
         """
         return self._detector.predict(x_t, return_test_stat)
 

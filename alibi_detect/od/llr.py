@@ -189,12 +189,12 @@ class LLR(BaseDetector, FitMixin, ThresholdMixin):
             # train semantic model
             args = [self.dist_s, loss_fn, X]
             kwargs.update({'y_train': y, 'optimizer': optimizer_s})
-            trainer(*args, **kwargs)  # type: ignore[arg-type]
+            trainer(*args, **kwargs)
 
             # train background model
             args = [self.dist_b, loss_fn, X_back]
             kwargs.update({'y_train': y_back, 'optimizer': optimizer_b})
-            trainer(*args, **kwargs)  # type: ignore[arg-type]
+            trainer(*args, **kwargs)
 
     def infer_threshold(self,
                         X: np.ndarray,
@@ -350,9 +350,9 @@ class LLR(BaseDetector, FitMixin, ThresholdMixin):
 
         Returns
         -------
-        Dictionary containing 'meta' and 'data' dictionaries.
-        'meta' has the model's metadata.
-        'data' contains the outlier predictions and both feature and instance level outlier scores.
+        Dictionary containing ``'meta'`` and ``'data'`` dictionaries.
+            - ``'meta'`` has the model's metadata.
+            - ``'data'`` contains the outlier predictions and both feature and instance level outlier scores.
         """
         # compute outlier scores
         fscore, iscore = self.score(X, batch_size=batch_size)

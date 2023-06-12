@@ -343,8 +343,7 @@ def eucl_cosim_features(x: tf.Tensor,
 
     Returns
     -------
-    Tensor concatenating the relative Euclidean distance and
-    cosine similarity features.
+    Tensor concatenating the relative Euclidean distance and cosine similarity features.
     """
     if len(x.shape) > 2 or len(y.shape) > 2:
         x = Flatten()(x)

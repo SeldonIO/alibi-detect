@@ -103,7 +103,7 @@ class LSDDDriftOnlineTorch(BaseMultiDriftOnline):
         else:
             sigma = torch.from_numpy(sigma).to(self.device) if isinstance(sigma,  # type: ignore[assignment]
                                                                           np.ndarray) else None
-            self.kernel = GaussianRBF(sigma)  # type: ignore[arg-type]
+            self.kernel = GaussianRBF(sigma)
 
         if self.n_kernel_centers is None:
             self.n_kernel_centers = 2 * window_size

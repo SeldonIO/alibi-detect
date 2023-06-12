@@ -135,10 +135,12 @@ class BaseClassifierDrift(BaseDetector):
     def preprocess(self, x: Union[np.ndarray, list]) -> Tuple[Union[np.ndarray, list], Union[np.ndarray, list]]:
         """
         Data preprocessing before computing the drift scores.
+
         Parameters
         ----------
         x
             Batch of instances.
+
         Returns
         -------
         Preprocessed reference data and new instances.
@@ -149,9 +151,9 @@ class BaseClassifierDrift(BaseDetector):
                 x_ref = self.preprocess_fn(self.x_ref)
             else:
                 x_ref = self.x_ref
-            return x_ref, x  # type: ignore[return-value]
+            return x_ref, x
         else:
-            return self.x_ref, x  # type: ignore[return-value]
+            return self.x_ref, x
 
     def get_splits(
             self,
@@ -174,7 +176,7 @@ class BaseClassifierDrift(BaseDetector):
 
         Returns
         -------
-        Combined reference and test instances with labels and optionally a list with tuples of
+        Combined reference and test instances with labels and optionally a list with tuples of \
         train and test indices for optionally different folds.
         """
         # create dataset and labels
@@ -268,12 +270,12 @@ class BaseClassifierDrift(BaseDetector):
 
         Returns
         -------
-        Dictionary containing 'meta' and 'data' dictionaries.
-        'meta' has the model's metadata.
-        'data' contains the drift prediction and optionally the p-value, performance of the classifier
-        relative to its expectation under the no-change null, the out-of-fold classifier model
-        prediction probabilities on the reference and test data as well as the associated reference
-        and test instances of the out-of-fold predictions, and the trained model.
+        Dictionary containing ``'meta'`` and ``'data'`` dictionaries.
+            - ``'meta'`` has the model's metadata.
+            - ``'data'`` contains the drift prediction and optionally the p-value, performance of the classifier \
+            relative to its expectation under the no-change null, the out-of-fold classifier model \
+            prediction probabilities on the reference and test data as well as the associated reference \
+            and test instances of the out-of-fold predictions, and the trained model.
         """
         # compute drift scores
         p_val, dist, probs_ref, probs_test, x_ref_oof, x_test_oof = self.score(x)
@@ -394,10 +396,12 @@ class BaseLearnedKernelDrift(BaseDetector):
     def preprocess(self, x: Union[np.ndarray, list]) -> Tuple[Union[np.ndarray, list], Union[np.ndarray, list]]:
         """
         Data preprocessing before computing the drift scores.
+
         Parameters
         ----------
         x
             Batch of instances.
+
         Returns
         -------
         Preprocessed reference data and new instances.
@@ -408,9 +412,9 @@ class BaseLearnedKernelDrift(BaseDetector):
                 x_ref = self.preprocess_fn(self.x_ref)
             else:
                 x_ref = self.x_ref
-            return x_ref, x  # type: ignore[return-value]
+            return x_ref, x
         else:
-            return self.x_ref, x  # type: ignore[return-value]
+            return self.x_ref, x
 
     def get_splits(self, x_ref: Union[np.ndarray, list], x: Union[np.ndarray, list]) \
             -> Tuple[Tuple[Union[np.ndarray, list], Union[np.ndarray, list]],
@@ -418,17 +422,18 @@ class BaseLearnedKernelDrift(BaseDetector):
         """
         Split reference and test data into two splits -- one of which to learn test locations
         and parameters and one to use for tests.
+
         Parameters
         ----------
         x_ref
             Data used as reference distribution.
         x
             Batch of instances.
+
         Returns
         -------
-        Tuple containing split train data and tuple containing split test data
+        Tuple containing split train data and tuple containing split test data.
         """
-
         n_ref, n_cur = len(x_ref), len(x)
         perm_ref, perm_cur = np.random.permutation(n_ref), np.random.permutation(n_cur)
         idx_ref_tr, idx_ref_te = perm_ref[:int(n_ref * self.train_size)], perm_ref[int(n_ref * self.train_size):]
@@ -436,7 +441,7 @@ class BaseLearnedKernelDrift(BaseDetector):
 
         if isinstance(x_ref, np.ndarray):
             x_ref_tr, x_ref_te = x_ref[idx_ref_tr], x_ref[idx_ref_te]
-            x_cur_tr, x_cur_te = x[idx_cur_tr], x[idx_cur_te]  # type: ignore[call-overload]
+            x_cur_tr, x_cur_te = x[idx_cur_tr], x[idx_cur_te]
         elif isinstance(x, list):
             x_ref_tr, x_ref_te = [x_ref[_] for _ in idx_ref_tr], [x_ref[_] for _ in idx_ref_te]
             x_cur_tr, x_cur_te = [x[_] for _ in idx_cur_tr], [x[_] for _ in idx_cur_te]
@@ -468,9 +473,9 @@ class BaseLearnedKernelDrift(BaseDetector):
 
         Returns
         -------
-        Dictionary containing 'meta' and 'data' dictionaries.
-        'meta' has the detector's metadata.
-        'data' contains the drift prediction and optionally the p-value, threshold, MMD metric and
+        Dictionary containing ``'meta'`` and ``'data'`` dictionaries.
+            - ``'meta'`` has the detector's metadata.
+            - ``'data'`` contains the drift prediction and optionally the p-value, threshold, MMD metric and \
             trained kernel.
         """
         # compute drift scores
@@ -586,10 +591,12 @@ class BaseMMDDrift(BaseDetector):
     def preprocess(self, x: Union[np.ndarray, list]) -> Tuple[np.ndarray, np.ndarray]:
         """
         Data preprocessing before computing the drift scores.
+
         Parameters
         ----------
         x
             Batch of instances.
+
         Returns
         -------
         Preprocessed reference data and new instances.
@@ -626,9 +633,9 @@ class BaseMMDDrift(BaseDetector):
 
         Returns
         -------
-        Dictionary containing 'meta' and 'data' dictionaries.
-        'meta' has the model's metadata.
-        'data' contains the drift prediction and optionally the p-value, threshold and MMD metric.
+        Dictionary containing ``'meta'`` and ``'data'`` dictionaries.
+            - ``'meta'`` has the model's metadata.
+            - ``'data'`` contains the drift prediction and optionally the p-value, threshold and MMD metric.
         """
         # compute drift scores
         p_val, dist, distance_threshold = self.score(x)
@@ -748,10 +755,12 @@ class BaseLSDDDrift(BaseDetector):
     def preprocess(self, x: Union[np.ndarray, list]) -> Tuple[np.ndarray, np.ndarray]:
         """
         Data preprocessing before computing the drift scores.
+
         Parameters
         ----------
         x
             Batch of instances.
+
         Returns
         -------
         Preprocessed reference data and new instances.
@@ -786,9 +795,9 @@ class BaseLSDDDrift(BaseDetector):
 
         Returns
         -------
-        Dictionary containing 'meta' and 'data' dictionaries.
-        'meta' has the model's metadata.
-        'data' contains the drift prediction and optionally the p-value, threshold and LSDD metric.
+        Dictionary containing ``'meta'`` and ``'data'`` dictionaries.
+            - ``'meta'`` has the model's metadata.
+            - ``'data'`` contains the drift prediction and optionally the p-value, threshold and LSDD metric.
         """
         # compute drift scores
         p_val, dist, distance_threshold = self.score(x)
@@ -805,7 +814,7 @@ class BaseLSDDDrift(BaseDetector):
                 pass
         self.x_ref = update_reference(self.x_ref, x, self.n, self.update_x_ref)  # type: ignore[arg-type]
         # used for reservoir sampling
-        self.n += len(x)  # type: ignore
+        self.n += len(x)
 
         # populate drift dict
         cd = concept_drift_dict()
@@ -979,10 +988,10 @@ class BaseUnivariateDrift(BaseDetector, DriftConfigMixin):
 
         Returns
         -------
-        Dictionary containing 'meta' and 'data' dictionaries.
-        'meta' has the model's metadata.
-        'data' contains the drift prediction and optionally the feature level p-values,
-         threshold after multivariate correction if needed and test statistics.
+        Dictionary containing ``'meta'`` and ``'data'`` dictionaries.
+            - ``'meta'`` has the model's metadata.
+            - ``'data'`` contains the drift prediction and optionally the feature level p-values, threshold after \
+            multivariate correction if needed and test statistics.
         """
         # compute drift scores
         p_vals, dist = self.score(x)
@@ -1136,10 +1145,12 @@ class BaseContextMMDDrift(BaseDetector):
     def preprocess(self, x: Union[np.ndarray, list]) -> Tuple[np.ndarray, np.ndarray]:
         """
         Data preprocessing before computing the drift scores.
+
         Parameters
         ----------
         x
             Batch of instances.
+
         Returns
         -------
         Preprocessed reference data and new instances.
@@ -1181,10 +1192,10 @@ class BaseContextMMDDrift(BaseDetector):
 
         Returns
         -------
-        Dictionary containing 'meta' and 'data' dictionaries.
-        'meta' has the model's metadata.
-        'data' contains the drift prediction and optionally the p-value, threshold, conditional MMD test statistic
-        and coupling matrices.
+        Dictionary containing ``'meta'`` and ``'data'`` dictionaries.
+            - ``'meta'`` has the model's metadata.
+            - ``'data'`` contains the drift prediction and optionally the p-value, threshold, conditional MMD test \
+            statistic and coupling matrices.
         """
         # compute drift scores
         p_val, dist, distance_threshold, coupling = self.score(x, c)
@@ -1194,7 +1205,7 @@ class BaseContextMMDDrift(BaseDetector):
         if isinstance(self.update_ref, dict) and self.preprocess_fn is not None and self.preprocess_at_init:
             x = self.preprocess_fn(x)
         self.x_ref = update_reference(self.x_ref, x, self.n, self.update_ref)  # type: ignore[arg-type]
-        self.c_ref = update_reference(self.c_ref, c, self.n, self.update_ref)  # type: ignore[arg-type]
+        self.c_ref = update_reference(self.c_ref, c, self.n, self.update_ref)
         # used for reservoir sampling
         self.n += len(x)
 

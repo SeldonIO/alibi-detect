@@ -185,7 +185,7 @@ class ClassifierDriftTF(BaseClassifierDrift):
                 self.train_kwargs['optimizer'] = optimizer.__class__.from_config(optimizer.get_config())
             train_args = [self.model, self.loss_fn, None]
             self.train_kwargs.update({'dataset': ds_tr})
-            trainer(*train_args, **self.train_kwargs)  # type: ignore
+            trainer(*train_args, **self.train_kwargs)
             preds = self.predict_fn(x_te, self.model)
             preds_oof_list.append(preds)
             idx_oof_list.append(idx_te)

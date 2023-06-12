@@ -135,6 +135,7 @@ def load_embedding(src: str, embedding_type, layers) -> TransformerEmbedding:
        last_hidden_state, hidden_state or hidden_state_cls.
     layers
         A list with int's referring to the hidden layers used to extract the embedding.
+
     Returns
     -------
     The loaded embedding.

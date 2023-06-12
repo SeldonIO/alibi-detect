@@ -159,9 +159,9 @@ class ClassifierUncertaintyDrift(DriftConfigMixin):
 
         Returns
         -------
-        Dictionary containing 'meta' and 'data' dictionaries.
-        'meta' has the model's metadata.
-        'data' contains the drift prediction and optionally the p-value, threshold and test statistic.
+        Dictionary containing ``'meta'`` and ``'data'`` dictionaries.
+            - ``'meta'`` has the model's metadata.
+            - ``'data'`` contains the drift prediction and optionally the p-value, threshold and test statistic.
         """
         return self._detector.predict(x, return_p_val=return_p_val, return_distance=return_distance)
 
@@ -309,8 +309,8 @@ class RegressorUncertaintyDrift(DriftConfigMixin):
 
         Returns
         -------
-        Dictionary containing 'meta' and 'data' dictionaries.
-        'meta' has the model's metadata.
-        'data' contains the drift prediction and optionally the p-value, threshold and test statistic.
+        Dictionary containing ``'meta'`` and ``'data'`` dictionaries.
+            - ``'meta'`` has the model's metadata.
+            - ``'data'`` contains the drift prediction and optionally the p-value, threshold and test statistic.
         """
         return self._detector.predict(x, return_p_val=return_p_val, return_distance=return_distance)

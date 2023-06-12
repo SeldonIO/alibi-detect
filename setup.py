@@ -55,7 +55,7 @@ setup(
         "Pillow>=5.4.1, <10.0.0",
         "opencv-python>=3.2.0, <5.0.0",
         "scipy>=1.3.0, <2.0.0",
-        'scikit-image>=0.14.2, !=0.17.1, <0.21',  # https://github.com/SeldonIO/alibi/issues/215
+        'scikit-image>=0.14.2, !=0.17.1, <0.22',  # https://github.com/SeldonIO/alibi/issues/215
         "scikit-learn>=0.20.2, <2.0.0",
         "transformers>=4.0.0, <5.0.0",
         "dill>=0.3.0, <0.4.0",
@@ -64,7 +64,7 @@ setup(
         "pydantic>=1.8.0, <2.0.0",
         "toml>=0.10.1, <1.0.0",  # STC, see https://discuss.python.org/t/adopting-recommending-a-toml-parser/4068
         "catalogue>=2.0.0, <3.0.0",
-        "numba>=0.50.0, !=0.54.0, <0.57.0",  # Avoid 0.54 due to: https://github.com/SeldonIO/alibi/issues/466
+        "numba>=0.50.0, !=0.54.0, <0.58.0",  # Avoid 0.54 due to: https://github.com/SeldonIO/alibi/issues/466
         "typing-extensions>=3.7.4.3"
     ],
     extras_require=extras_require,

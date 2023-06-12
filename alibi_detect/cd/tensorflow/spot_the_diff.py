@@ -210,17 +210,17 @@ class SpotTheDiffDriftTF:
 
         Returns
         -------
-        Dictionary containing 'meta' and 'data' dictionaries.
-        'meta' has the detector's metadata.
-        'data' contains the drift prediction, the diffs used to distinguish reference from test instances,
-        and optionally the p-value, performance of the classifier relative to its expectation under the
-        no-change null, the out-of-fold classifier model prediction probabilities on the reference and test
-        data as well as well as the associated reference and test instances of the out-of-fold predictions,
+        Dictionary containing ``'meta'`` and ``'data'`` dictionaries.
+            - ``'meta'`` has the detector's metadata.
+            - ``'data'`` contains the drift prediction, the diffs used to distinguish reference from test instances, \
+        and optionally the p-value, performance of the classifier relative to its expectation under the \
+        no-change null, the out-of-fold classifier model prediction probabilities on the reference and test \
+        data as well as well as the associated reference and test instances of the out-of-fold predictions, \
         and the trained model.
         """
         preds = self._detector.predict(x, return_p_val, return_distance, return_probs, return_model=True)
-        preds['data']['diffs'] = preds['data']['model'].diffs.numpy()  # type: ignore
-        preds['data']['diff_coeffs'] = preds['data']['model'].coeffs.numpy()  # type: ignore
+        preds['data']['diffs'] = preds['data']['model'].diffs.numpy()
+        preds['data']['diff_coeffs'] = preds['data']['model'].coeffs.numpy()
         if not return_model:
             del preds['data']['model']
         return preds

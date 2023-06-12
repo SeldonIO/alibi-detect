@@ -120,7 +120,7 @@ class MMDDriftTorch(BaseMMDDrift):
 
         Returns
         -------
-        p-value obtained from the permutation test, the MMD^2 between the reference and test set,
+        p-value obtained from the permutation test, the MMD^2 between the reference and test set, \
         and the MMD^2 threshold above which drift is flagged.
         """
         x_ref, x = self.preprocess(x)
@@ -128,7 +128,7 @@ class MMDDriftTorch(BaseMMDDrift):
         x = torch.from_numpy(x).to(self.device)  # type: ignore[assignment]
         # compute kernel matrix, MMD^2 and apply permutation test using the kernel matrix
         # TODO: (See https://github.com/SeldonIO/alibi-detect/issues/540)
-        n = x.shape[0]  # type: ignore
+        n = x.shape[0]
         kernel_mat = self.kernel_matrix(x_ref, x)  # type: ignore[arg-type]
         kernel_mat = kernel_mat - torch.diag(kernel_mat.diag())  # zero diagonal
         mmd2 = mmd2_from_kernel_matrix(kernel_mat, n, permute=False, zero_diag=False)

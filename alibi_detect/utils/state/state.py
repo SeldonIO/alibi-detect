@@ -89,7 +89,7 @@ def _load_state_dict(detector: StateMixin, filepath: Path, raise_error: bool = T
 
     Parameters
     ----------
-     detector
+    detector
         The detector to update.
     filepath
         File to load state dictionary from.

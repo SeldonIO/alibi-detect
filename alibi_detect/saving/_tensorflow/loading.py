@@ -141,7 +141,7 @@ def load_optimizer(cfg: dict) -> Union[Type[tf.keras.optimizers.Optimizer], tf.k
 
     Returns
     -------
-    The loaded optimizer, either as an instantiated object (if `cfg` is a tensorflow optimizer config dict), otherwise
+    The loaded optimizer, either as an instantiated object (if `cfg` is a tensorflow optimizer config dict), otherwise \
     as an uninstantiated class.
     """
     class_name = cfg.get('class_name')
@@ -170,6 +170,7 @@ def load_embedding(src: str, embedding_type, layers) -> TransformerEmbedding:
        last_hidden_state, hidden_state or hidden_state_cls.
     layers
         A list with int's referring to the hidden layers used to extract the embedding.
+
     Returns
     -------
     The loaded embedding.
@@ -274,7 +275,7 @@ def load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwarg
         model = load_model(model_dir, custom_objects=custom_objects)
         detector = init_ad_md(state_dict, md, model)
     elif detector_name == 'OutlierProphet':
-        detector = init_od_prophet(state_dict)  # type: ignore[assignment]
+        detector = init_od_prophet(state_dict)
     elif detector_name == 'SpectralResidual':
         detector = init_od_sr(state_dict)  # type: ignore[assignment]
     elif detector_name == 'OutlierSeq2Seq':
@@ -290,7 +291,7 @@ def load_detector_legacy(filepath: Union[str, os.PathLike], suffix: str, **kwarg
             logger.warning('No model found in {}, setting `model` to `None`.'.format(model_dir))
             model = None
         if detector_name == 'KSDrift':
-            load_fn = init_cd_ksdrift  # type: ignore[assignment]
+            load_fn = init_cd_ksdrift
         elif detector_name == 'MMDDriftTF':
             load_fn = init_cd_mmddrift  # type: ignore[assignment]
         elif detector_name == 'ChiSquareDrift':
@@ -726,7 +727,7 @@ def load_text_embed(filepath: Union[str, os.PathLike], load_dir: str = 'model') 
 def init_preprocess(state_dict: Dict, model: Optional[Union[tf.keras.Model, tf.keras.Sequential]],
                     emb: Optional[TransformerEmbedding], tokenizer: Optional[Callable], **kwargs) \
         -> Tuple[Optional[Callable], Optional[dict]]:
-    """ Return preprocessing function and kwargs. """
+    """Return preprocessing function and kwargs."""
     if kwargs:  # override defaults
         keys = list(kwargs.keys())
         preprocess_fn = kwargs['preprocess_fn'] if 'preprocess_fn' in keys else None
@@ -760,6 +761,7 @@ def init_cd_classifierdrift(clf_drift: tf.keras.Model, state_dict: Dict, model: 
         -> ClassifierDrift:
     """
     Initialize ClassifierDrift detector.
+
     Parameters
     ----------
     clf_drift
@@ -774,6 +776,7 @@ def init_cd_classifierdrift(clf_drift: tf.keras.Model, state_dict: Dict, model: 
         Optional tokenizer for text drift.
     kwargs
         Kwargs optionally containing preprocess_fn and preprocess_kwargs.
+
     Returns
     -------
     Initialized ClassifierDrift instance.
@@ -796,6 +799,7 @@ def init_cd_chisquaredrift(state_dict: Dict, model: Optional[Union[tf.keras.Mode
         -> ChiSquareDrift:
     """
     Initialize ChiSquareDrift detector.
+
     Parameters
     ----------
     state_dict
@@ -808,6 +812,7 @@ def init_cd_chisquaredrift(state_dict: Dict, model: Optional[Union[tf.keras.Mode
         Optional tokenizer for text drift.
     kwargs
         Kwargs optionally containing preprocess_fn and preprocess_kwargs.
+
     Returns
     -------
     Initialized ChiSquareDrift instance.
@@ -826,6 +831,7 @@ def init_cd_tabulardrift(state_dict: Dict, model: Optional[Union[tf.keras.Model,
         -> TabularDrift:
     """
     Initialize TabularDrift detector.
+
     Parameters
     ----------
     state_dict
@@ -838,6 +844,7 @@ def init_cd_tabulardrift(state_dict: Dict, model: Optional[Union[tf.keras.Model,
         Optional tokenizer for text drift.
     kwargs
         Kwargs optionally containing preprocess_fn and preprocess_kwargs.
+
     Returns
     -------
     Initialized TabularDrift instance.
@@ -856,6 +863,7 @@ def init_cd_ksdrift(state_dict: Dict, model: Optional[Union[tf.keras.Model, tf.k
         -> KSDrift:
     """
     Initialize KSDrift detector.
+
     Parameters
     ----------
     state_dict
@@ -868,6 +876,7 @@ def init_cd_ksdrift(state_dict: Dict, model: Optional[Union[tf.keras.Model, tf.k
         Optional tokenizer for text drift.
     kwargs
         Kwargs optionally containing preprocess_fn and preprocess_kwargs.
+
     Returns
     -------
     Initialized KSDrift instance.
@@ -886,6 +895,7 @@ def init_cd_mmddrift(state_dict: Dict, model: Optional[Union[tf.keras.Model, tf.
         -> MMDDrift:
     """
     Initialize MMDDrift detector.
+
     Parameters
     ----------
     state_dict
@@ -898,6 +908,7 @@ def init_cd_mmddrift(state_dict: Dict, model: Optional[Union[tf.keras.Model, tf.
         Optional tokenizer for text drift.
     kwargs
         Kwargs optionally containing preprocess_fn and preprocess_kwargs.
+
     Returns
     -------
     Initialized MMDDrift instance.
@@ -1004,6 +1015,8 @@ def init_od_llr(state_dict: Dict, models: tuple) -> LLR:
     ----------
     state_dict
         Dictionary containing the parameter values.
+    models
+        Tuple containing the model and background model.
 
     Returns
     -------

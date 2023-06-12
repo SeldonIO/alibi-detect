@@ -129,13 +129,13 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
 
         Returns
         -------
-        p-value obtained from the conditional permutation test, the conditional MMD test statistic, the test
-        statistic threshold above which drift is flagged, and a tuple containing the coupling matrices
+        p-value obtained from the conditional permutation test, the conditional MMD test statistic, the test \
+        statistic threshold above which drift is flagged, and a tuple containing the coupling matrices \
         (W_{ref,ref}, W_{test,test}, W_{ref,test}).
         """
         x_ref, x = self.preprocess(x)
         x_ref = torch.from_numpy(x_ref).to(self.device)  # type: ignore[assignment]
-        c_ref = torch.from_numpy(self.c_ref).to(self.device)  # type: ignore[assignment]
+        c_ref = torch.from_numpy(self.c_ref).to(self.device)
 
         # Hold out a portion of contexts for conditioning on
         n, n_held = len(c), int(len(c)*self.prop_c_held)

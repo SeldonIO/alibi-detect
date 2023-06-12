@@ -115,8 +115,8 @@ class LSDDDriftTorch(BaseLSDDDrift):
     def _configure_normalization(self, x_ref: torch.Tensor, eps: float = 1e-12):
         x_ref_means = x_ref.mean(0)
         x_ref_stds = x_ref.std(0)
-        self._normalize = lambda x: (torch.as_tensor(x) - x_ref_means) / (x_ref_stds + eps)  # type: ignore[assignment]
-        self._unnormalize = lambda x: (torch.as_tensor(x) * (x_ref_stds + eps)  # type: ignore[assignment]
+        self._normalize = lambda x: (torch.as_tensor(x) - x_ref_means) / (x_ref_stds + eps)
+        self._unnormalize = lambda x: (torch.as_tensor(x) * (x_ref_stds + eps)
                                        + x_ref_means).cpu().numpy()
 
     def _configure_kernel_centers(self, x_ref: torch.Tensor):
@@ -142,7 +142,7 @@ class LSDDDriftTorch(BaseLSDDDrift):
 
         Returns
         -------
-        p-value obtained from the permutation test, the LSDD between the reference and test set,
+        p-value obtained from the permutation test, the LSDD between the reference and test set, \
         and the LSDD threshold above which drift is flagged.
         """
         x_ref, x = self.preprocess(x)

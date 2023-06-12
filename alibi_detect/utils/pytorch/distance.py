@@ -87,7 +87,7 @@ def batch_compute_kernel_matrix(
                 if preprocess_fn is not None:
                     y_batch = preprocess_fn(y_batch)
                 y_batch = y_batch.to(device)  # type: ignore
-                k_ijs.append(kernel(x_batch, y_batch).cpu())  # type: ignore
+                k_ijs.append(kernel(x_batch, y_batch).cpu())
             k_is.append(torch.cat(k_ijs, 1))
         k_mat = torch.cat(k_is, 0)
     return k_mat
@@ -145,7 +145,7 @@ def mmd2(x: torch.Tensor, y: torch.Tensor, kernel: Callable) -> float:
     """
     n, m = x.shape[0], y.shape[0]
     c_xx, c_yy = 1 / (n * (n - 1)), 1 / (m * (m - 1))
-    k_xx, k_yy, k_xy = kernel(x, x), kernel(y, y), kernel(x, y)  # type: ignore
+    k_xx, k_yy, k_xy = kernel(x, x), kernel(y, y), kernel(x, y)
     return c_xx * (k_xx.sum() - k_xx.trace()) + c_yy * (k_yy.sum() - k_yy.trace()) - 2. * k_xy.mean()
 
 
@@ -182,7 +182,7 @@ def permed_lsdds(
 
     Returns
     -------
-    Vector of B LSDD estimates for each permutation, H_lam_inv which may have been inferred, and optionally
+    Vector of B LSDD estimates for each permutation, H_lam_inv which may have been inferred, and optionally \
     the unpermed LSDD estimate.
     """
 

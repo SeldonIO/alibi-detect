@@ -1,12 +1,16 @@
-"""Test optional dependencies.
+"""
+Test optional dependencies.
+
 These tests import all the named objects from the public API of alibi-detect and test that they throw the correct errors
 if the relevant optional dependencies are not installed. If these tests fail, it is likely that:
 1. The optional dependency relation hasn't been added to the test script. In this case, this test assumes that the
-functionality should work for the default alibi-detect install. If this is not the case the exported object name should
-be added to the dependency_map in the relevant test.
+    functionality should work for the default alibi-detect install. If this is not the case the exported object name
+    should be added to the dependency_map in the relevant test.
 2. The relevant export in the public API hasn't been imported using `optional_import` from
-`alibi_detect.utils.missing_optional_dependency`.
-Notes:
+    `alibi_detect.utils.missing_optional_dependency`.
+
+Notes
+-----
     1. These tests will be skipped in the normal test suite. To run correctly use tox.
     2. If you need to configure a new optional dependency you will need to update the setup.cfg file and add a testenv
     environment.
@@ -23,6 +27,7 @@ def check_correct_dependencies(
         dependencies: defaultdict,
         opt_dep: str):
     """Checks that imported modules that depend on optional dependencies throw correct errors on use.
+
     Parameters
     ----------
     module
@@ -38,9 +43,9 @@ def check_correct_dependencies(
     for item_name in lib_obj:
         item = getattr(module, item_name)
         if not isinstance(item, ModuleType):
-            pass_contexts = dependencies[item_name]  # type: ignore
+            pass_contexts = dependencies[item_name]
             try:
-                item.test  # type: ignore # noqa
+                item.test  # noqa
             except AttributeError:
                 assert opt_dep in pass_contexts or 'default' in pass_contexts or opt_dep == 'all', \
                     (f'{item_name} was imported instead of an instance of MissingDependency. '
@@ -52,9 +57,7 @@ def check_correct_dependencies(
 
 
 def test_cd_dependencies(opt_dep):
-    """Tests that the cd module correctly protects against uninstalled optional dependencies.
-    """
-
+    """Tests that the cd module correctly protects against uninstalled optional dependencies."""
     dependency_map = defaultdict(lambda: ['default'])
     for dependency, relations in []:
         dependency_map[dependency] = relations
@@ -63,9 +66,7 @@ def test_cd_dependencies(opt_dep):
 
 
 def test_cd_torch_dependencies(opt_dep):
-    """Tests that the cd module correctly protects against uninstalled optional dependencies.
-    """
-
+    """Tests that the cd module correctly protects against uninstalled optional dependencies."""
     dependency_map = defaultdict(lambda: ['default'])
     for dependency, relations in [
         ("HiddenOutput", ['torch', 'keops']),
@@ -78,9 +79,7 @@ def test_cd_torch_dependencies(opt_dep):
 
 
 def test_cd_tensorflow_dependencies(opt_dep):
-    """Tests that the cd module correctly protects against uninstalled optional dependencies.
-    """
-
+    """Tests that the cd module correctly protects against uninstalled optional dependencies."""
     dependency_map = defaultdict(lambda: ['default'])
     for dependency, relations in [
         ("HiddenOutput", ['tensorflow']),
@@ -93,9 +92,7 @@ def test_cd_tensorflow_dependencies(opt_dep):
 
 
 def test_ad_dependencies(opt_dep):
-    """Tests that the ad module correctly protects against uninstalled optional dependencies.
-    """
-
+    """Tests that the ad module correctly protects against uninstalled optional dependencies."""
     dependency_map = defaultdict(lambda: ['default'])
     for dependency, relations in [
             ('AdversarialAE', ['tensorflow']),
@@ -107,9 +104,7 @@ def test_ad_dependencies(opt_dep):
 
 
 def test_od_dependencies(opt_dep):
-    """Tests that the od module correctly protects against uninstalled optional dependencies.
-    """
-
+    """Tests that the od module correctly protects against uninstalled optional dependencies."""
     dependency_map = defaultdict(lambda: ['default'])
     for dependency, relations in [
             ('LLR', ['tensorflow']),
@@ -132,8 +127,7 @@ def test_od_dependencies(opt_dep):
 
 
 def test_od_backend_dependencies(opt_dep):
-    """Tests that the od module correctly protects against uninstalled optional dependencies.
-    """
+    """Tests that the od module correctly protects against uninstalled optional dependencies."""
     dependency_map = defaultdict(lambda: ['default'])
     for dependency, relations in [
                 ('Ensembler', ['torch', 'keops']),
@@ -150,9 +144,7 @@ def test_od_backend_dependencies(opt_dep):
 
 
 def test_tensorflow_model_dependencies(opt_dep):
-    """Tests that the tensorflow models module correctly protects against uninstalled optional dependencies.
-    """
-
+    """Tests that the tensorflow models module correctly protects against uninstalled optional dependencies."""
     dependency_map = defaultdict(lambda: ['default'])
     for dependency, relations in [
             ("AE", ['tensorflow']),
@@ -178,9 +170,7 @@ def test_tensorflow_model_dependencies(opt_dep):
 
 
 def test_torch_model_dependencies(opt_dep):
-    """Tests that the torch models module correctly protects against uninstalled optional dependencies.
-    """
-
+    """Tests that the torch models module correctly protects against uninstalled optional dependencies."""
     dependency_map = defaultdict(lambda: ['default'])
     for dependency, relations in [
             ("TransformerEmbedding", ['torch', 'keops']),
@@ -192,9 +182,7 @@ def test_torch_model_dependencies(opt_dep):
 
 
 def test_dataset_dependencies(opt_dep):
-    """Tests that the datasets module correctly protects against uninstalled optional dependencies.
-    """
-
+    """Tests that the datasets module correctly protects against uninstalled optional dependencies."""
     dependency_map = defaultdict(lambda: ['default'])
     for dependency, relations in []:
         dependency_map[dependency] = relations
@@ -203,9 +191,7 @@ def test_dataset_dependencies(opt_dep):
 
 
 def test_fetching_utils_dependencies(opt_dep):
-    """Tests that the fetching utils module correctly protects against uninstalled optional dependencies.
-    """
-
+    """Tests that the fetching utils module correctly protects against uninstalled optional dependencies."""
     dependency_map = defaultdict(lambda: ['default'])
     for dependency, relations in [
         ('fetch_detector', ['tensorflow']),
@@ -220,7 +206,6 @@ def test_saving_tf_dependencies(opt_dep):
     """Tests that the alibi_detect.saving._tensorflow module correctly protects against uninstalled optional
     dependencies.
     """
-
     dependency_map = defaultdict(lambda: ['default'])
     for dependency, relations in [
         ('Detector', ['tensorflow']),
@@ -244,7 +229,6 @@ def test_saving_torch_dependencies(opt_dep):
     """Tests that the alibi_detect.saving._pytorch module correctly protects against uninstalled optional
     dependencies.
     """
-
     dependency_map = defaultdict(lambda: ['default'])
     for dependency, relations in [
         ('load_embedding_pt', ['torch', 'keops']),
@@ -262,7 +246,6 @@ def test_saving_torch_dependencies(opt_dep):
 
 def test_saving_dependencies(opt_dep):
     """Tests that the alibi_detect.saving module correctly protects against uninstalled optional dependencies."""
-
     dependency_map = defaultdict(lambda: ['default'])
     for dependency, relations in []:
         dependency_map[dependency] = relations
@@ -271,9 +254,7 @@ def test_saving_dependencies(opt_dep):
 
 
 def test_tensorflow_utils_dependencies(opt_dep):
-    """Tests that the saving utils module correctly protects against uninstalled optional dependencies.
-    """
-
+    """Tests that the saving utils module correctly protects against uninstalled optional dependencies."""
     dependency_map = defaultdict(lambda: ['default'])
     for dependency, relations in [
             ("batch_compute_kernel_matrix", ['tensorflow']),
@@ -298,9 +279,7 @@ def test_tensorflow_utils_dependencies(opt_dep):
 
 
 def test_torch_utils_dependencies(opt_dep):
-    """Tests that the pytorch utils module correctly protects against uninstalled optional dependencies.
-    """
-
+    """Tests that the pytorch utils module correctly protects against uninstalled optional dependencies."""
     dependency_map = defaultdict(lambda: ['default'])
     for dependency, relations in [
         ("batch_compute_kernel_matrix", ['torch', 'keops']),
@@ -325,9 +304,7 @@ def test_torch_utils_dependencies(opt_dep):
 
 
 def test_keops_utils_dependencies(opt_dep):
-    """Tests that the keops utils module correctly protects against uninstalled optional dependencies.
-    """
-
+    """Tests that the keops utils module correctly protects against uninstalled optional dependencies."""
     dependency_map = defaultdict(lambda: ['default'])
     for dependency, relations in [
         ("GaussianRBF", ['keops']),

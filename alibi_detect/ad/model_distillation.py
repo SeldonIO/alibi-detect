@@ -176,7 +176,7 @@ class ModelDistillation(BaseDetector, FitMixin, ThresholdMixin):
 
         # scale predictions
         if self.temperature != 1.:
-            y = y ** (1 / self.temperature)  # type: ignore
+            y = y ** (1 / self.temperature)
             y = (y / tf.reshape(tf.reduce_sum(y, axis=-1), (-1, 1))).numpy()
 
         if self.loss_type == 'kld':
@@ -207,9 +207,9 @@ class ModelDistillation(BaseDetector, FitMixin, ThresholdMixin):
 
         Returns
         -------
-        Dictionary containing 'meta' and 'data' dictionaries.
-        'meta' has the model's metadata.
-        'data' contains the adversarial predictions and instance level adversarial scores.
+        Dictionary containing ``'meta'`` and ``'data'`` dictionaries.
+            - ``'meta'`` has the model's metadata.
+            - ``'data'`` contains the adversarial predictions and instance level adversarial scores.
         """
         score = self.score(X, batch_size=batch_size)
 

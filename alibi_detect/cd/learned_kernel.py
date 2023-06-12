@@ -166,7 +166,7 @@ class LearnedKernelDrift(DriftConfigMixin):
             else:
                 detector = LearnedKernelDriftKeops
 
-        self._detector = detector(*args, **kwargs)  # type: ignore
+        self._detector = detector(*args, **kwargs)
         self.meta = self._detector.meta
 
     def predict(self, x: Union[np.ndarray, list],  return_p_val: bool = True,
@@ -188,9 +188,9 @@ class LearnedKernelDrift(DriftConfigMixin):
 
         Returns
         -------
-        Dictionary containing 'meta' and 'data' dictionaries.
-        'meta' has the detector's metadata.
-        'data' contains the drift prediction and optionally the p-value, threshold, MMD metric and
+        Dictionary containing ``'meta'`` and ``'data'`` dictionaries.
+            - ``'meta'`` has the detector's metadata.
+            - ``'data'`` contains the drift prediction and optionally the p-value, threshold, MMD metric and \
             trained kernel.
         """
         return self._detector.predict(x, return_p_val, return_distance, return_kernel)

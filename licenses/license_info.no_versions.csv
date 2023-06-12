@@ -32,6 +32,7 @@
 "pytz","MIT License"
 "regex","Apache Software License"
 "requests","Apache Software License"
+"safetensors","Apache Software License"
 "scikit-image","BSD License"
 "scikit-learn","BSD License"
 "scipy","BSD License"
