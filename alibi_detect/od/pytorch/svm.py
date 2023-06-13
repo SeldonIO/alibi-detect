@@ -89,8 +89,14 @@ class SVMTorch(TorchOutlierDetector):
         X_nys = self.nystroem.fit(x_ref).transform(x_ref)
         n, d = X_nys.shape
         min_eta, max_eta = step_size_range
-        etas = torch.tensor(np.linspace(
-            np.log(min_eta), np.log(max_eta), n_step_sizes), dtype=X_nys.dtype
+        etas = torch.tensor(
+            np.linspace(
+                np.log(min_eta),
+                np.log(max_eta),
+                n_step_sizes
+            ),
+            dtype=X_nys.dtype,
+            device=self.device
         ).exp()
 
         # Initialise coeffs/preds/loss
