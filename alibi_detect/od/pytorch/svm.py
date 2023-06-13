@@ -36,8 +36,6 @@ class SVMTorch(TorchOutlierDetector):
             If `n_components` is less than 1.
         """
         super().__init__(device=device)
-        if n_components < 1:
-            raise ValueError('n_components must be at least 1')
         self.n_components = n_components
         self.kernel = kernel
         self.nystroem = Nystroem(kernel, n_components)

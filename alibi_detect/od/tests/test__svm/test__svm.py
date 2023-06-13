@@ -89,7 +89,8 @@ def test_fitted_svm_predict():
     assert (y['is_outlier'] == [True, False]).all()
 
 
-def test_svm_integration():
+@pytest.mark.parametrize('n_components', [None, 100])
+def test_svm_integration(n_components):
     """Test SVM detector on moons dataset.
 
     Test SVM detector on a more complex 2d example. Test that the detector can be fitted
@@ -97,7 +98,7 @@ def test_svm_integration():
     """
     sigma = torch.tensor(0.2)
     svm_detector = SVM(
-        n_components=100,
+        n_components=n_components,
         backend='pytorch',
         kernel=GaussianRBF(sigma=sigma)
     )

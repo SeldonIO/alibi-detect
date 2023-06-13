@@ -22,14 +22,16 @@ backends = {
 class SVM(BaseDetector, ThresholdMixin, FitMixin):
     def __init__(
         self,
-        n_components: int = 1,
+        n_components: Optional[int] = None,
         backend: Literal['pytorch'] = 'pytorch',
         device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
         kernel: Optional['torch.nn.Module'] = None,
     ) -> None:
         """Support vector machine (SVM) outlier detector.
 
-        The Support vector machine outlier detector fits a... TODO
+        The Support vector machine outlier detector fits a one-class SVM to the reference data and uses the decision
+        function to detect outliers. The user can optionally choose to use the Nystroem approximation to speed up
+        training and inference.
 
         Parameters
         ----------
