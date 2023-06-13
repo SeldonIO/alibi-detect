@@ -3,6 +3,7 @@ from typing import Callable, Dict, Optional, Tuple, Union
 import numpy as np
 import torch
 from typing_extensions import Literal, Self
+from tqdm import tqdm
 
 from alibi_detect.od.pytorch.base import TorchOutlierDetector
 from alibi_detect.utils.pytorch.losses import hinge_loss
@@ -103,37 +104,41 @@ class SVMTorch(TorchOutlierDetector):
         iter, t_since_improv = 0, 0
         converged = False
 
-        # TODO: add tqdm for verbosity
-        while not converged:
-            # First two lines give form of sgd update (for each candidate step size)
-            sup_vec_inds = (preds < 1)
-            cand_coeffs = coeffs[:, None] * \
-                (1-etas*nu) + etas*(X_nys[sup_vec_inds].sum(0)/n)[:, None]
-            cand_intercept = intercept - etas*nu + (sup_vec_inds.sum()/n)
+        with tqdm(total=max_iter, disable=not verbose) as pbar:
+            while not converged:
+                pbar.update(1)
+                # First two lines give form of sgd update (for each candidate step size)
+                sup_vec_inds = (preds < 1)
+                cand_coeffs = coeffs[:, None] * \
+                    (1-etas*nu) + etas*(X_nys[sup_vec_inds].sum(0)/n)[:, None]
+                cand_intercept = intercept - etas*nu + (sup_vec_inds.sum()/n)
 
-            # Compute loss for each candidate step size and choose the best
-            cand_preds = X_nys @ cand_coeffs + cand_intercept
-            cand_losses = nu * (cand_coeffs.square().sum(0)/2 + cand_intercept) + hinge_loss(cand_preds)
-            best_step_size = cand_losses.argmin()
-            coeffs, intercept = cand_coeffs[:, best_step_size], cand_intercept[best_step_size]
-            preds, loss = cand_preds[:, best_step_size], cand_losses[best_step_size]
+                # Compute loss for each candidate step size and choose the best
+                cand_preds = X_nys @ cand_coeffs + cand_intercept
+                cand_losses = nu * (cand_coeffs.square().sum(0)/2 + cand_intercept) + hinge_loss(cand_preds)
+                best_step_size = cand_losses.argmin()
+                coeffs, intercept = cand_coeffs[:, best_step_size], cand_intercept[best_step_size]
+                preds, loss = cand_preds[:, best_step_size], cand_losses[best_step_size]
 
-            # Keep track of best performing coefficients and time since improving (by more than tol)
-            if loss < min_loss:
-                if loss < min_loss - tol:
-                    t_since_improv = 0
-                min_loss, min_loss_coeffs, min_loss_intercept = loss, coeffs, intercept
-            else:
-                t_since_improv += 1
+                # Keep track of best performing coefficients and time since improving (by more than tol)
+                if loss < min_loss:
+                    if loss < min_loss - tol:
+                        t_since_improv = 0
+                    min_loss, min_loss_coeffs, min_loss_intercept = loss, coeffs, intercept
+                else:
+                    t_since_improv += 1
 
-            # Decide whether to continue
-            if iter > max_iter or t_since_improv > n_iter_no_change:
-                self.coeffs = min_loss_coeffs
-                self.intercept = min_loss_intercept
-                converged = True
-                break
-            else:
-                iter += 1
+                # Decide whether to continue
+                if iter > max_iter or t_since_improv > n_iter_no_change:
+                    self.coeffs = min_loss_coeffs
+                    self.intercept = min_loss_intercept
+                    converged = True
+                    break
+                else:
+                    iter += 1
+
+                if verbose and isinstance(pbar, tqdm):
+                    pbar.set_postfix(dict(loss=loss.detach().numpy().item()))
 
         self._set_fitted()
         return {
@@ -214,21 +219,62 @@ class SVMTorch(TorchOutlierDetector):
 
 
 class Nystroem:
-    def __init__(self, kernel: Callable, n_components: Optional[int] = None) -> None:
+    def __init__(
+        self,
+        kernel: Callable,
+        n_components: Optional[int] = None
+    ) -> None:
+        """Nystroem Approximation of a kernel.
+
+        Parameters
+        ----------
+        kernel
+            Kernel function.
+        n_components, optional
+            Number of components in the Nystroem approximation. By default uses all of them.
+        """
         self.kernel = kernel
         self.n_components = n_components
 
-    def fit(self, X: torch.Tensor) -> Self:
-        n = len(X)
+    def fit(
+        self,
+        x: torch.Tensor
+    ) -> Self:
+        """Fit the Nystroem approximation.
+
+        Parameters
+        ----------
+        x
+            `torch.Tensor` of shape ``(n, d)`` where ``n`` is the number of samples and ``d`` is the dimensionality of
+            the data.
+        """
+        n = len(x)
         n_components = n if self.n_components is None else self.n_components
         inds = torch.randperm(n)[:n_components]
-        self.Z = X[inds]
-        K_zz = self.kernel(self.Z,  self.Z)
+        self.z = x[inds]
+        K_zz = self.kernel(self.z,  self.z)
         K_zz += 1e-16 + torch.eye(n_components)
         U, S, V = torch.linalg.svd(K_zz)
         self.K_zz_root_inv = (U / S.sqrt()) @ V
         return self
 
-    def transform(self, X: torch.Tensor) -> torch.Tensor:
-        K_xz = self.kernel(X, self.Z)
+    def transform(
+        self,
+        x: torch.Tensor
+    ) -> torch.Tensor:
+        """Transform `x` into the Nystroem approximation.
+
+        Parameters
+        ----------
+        x
+            `torch.Tensor` of shape ``(n, d)`` where ``n`` is the number of samples and ``d`` is the dimensionality of
+            the data.
+
+        Returns
+        -------
+        `torch.Tensor` of shape ``(n, n_components)`` where ``n_components`` is the number of components in the
+        Nystroem approximation.
+        """
+
+        K_xz = self.kernel(x, self.z)
         return K_xz @ self.K_zz_root_inv
