@@ -25,7 +25,7 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
         n_components: int = 1,
         backend: Literal['pytorch'] = 'pytorch',
         device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
-        kernel: Optional[torch.nn.Module] = None,
+        kernel: Optional['torch.nn.Module'] = None,
     ) -> None:
         """Support vector machine (SVM) outlier detector.
 

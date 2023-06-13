@@ -85,6 +85,8 @@ class SVMTorch(TorchOutlierDetector):
             - n_iter: number of EM iterations performed.
             - lower_bound: log-likelihood lower bound.
         """
+        # TODO: Can we use float32? or float()?
+        x_ref = x_ref.to(torch.float64)
         X_nys = self.nystroem.fit(x_ref).transform(x_ref)
         n, d = X_nys.shape
         min_eta, max_eta = step_size_range
@@ -204,10 +206,11 @@ class SVMTorch(TorchOutlierDetector):
         """
         if not torch.jit.is_scripting():
             self.check_fitted()
-        x = x.to(torch.float32)
+        # TODO: Can we use float32?
+        x = x.to(torch.float64)
         x_nys = self.nystroem.transform(x)
         preds = x_nys @ self.coeffs + self.intercept
-        return -preds.numpy()
+        return -preds
 
 
 class Nystroem:
