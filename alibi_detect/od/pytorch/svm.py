@@ -142,7 +142,7 @@ class SVMTorch(TorchOutlierDetector):
                     iter += 1
 
                 if verbose and isinstance(pbar, tqdm):
-                    pbar.set_postfix(dict(loss=loss.detach().numpy().item()))
+                    pbar.set_postfix(dict(loss=loss.cpu().detach().numpy().item()))
 
         self._set_fitted()
         return {
