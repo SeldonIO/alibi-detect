@@ -86,18 +86,16 @@ class SVMTorch(TorchOutlierDetector):
             - n_iter: number of EM iterations performed.
             - lower_bound: log-likelihood lower bound.
         """
-        # TODO: Can we use float32? or float()?
-        x_ref = x_ref.to(torch.float64)
         X_nys = self.nystroem.fit(x_ref).transform(x_ref)
         n, d = X_nys.shape
         min_eta, max_eta = step_size_range
         etas = torch.tensor(np.linspace(
-            np.log(min_eta), np.log(max_eta), n_step_sizes)
+            np.log(min_eta), np.log(max_eta), n_step_sizes), dtype=X_nys.dtype
         ).exp()
 
         # Initialise coeffs/preds/loss
-        coeffs = torch.zeros(d, dtype=X_nys.dtype)
-        intercept = torch.zeros(1, dtype=X_nys.dtype)
+        coeffs = torch.zeros(d, dtype=X_nys.dtype, device=self.device)
+        intercept = torch.zeros(1, dtype=X_nys.dtype, device=self.device)
         preds = X_nys @ coeffs + intercept
         loss = nu * (coeffs.square().sum()/2 + intercept) + hinge_loss(preds)
         min_loss, min_loss_coeffs, min_loss_intercept = loss, coeffs, intercept
@@ -211,8 +209,6 @@ class SVMTorch(TorchOutlierDetector):
         """
         if not torch.jit.is_scripting():
             self.check_fitted()
-        # TODO: Can we use float32?
-        x = x.to(torch.float64)
         x_nys = self.nystroem.transform(x)
         preds = x_nys @ self.coeffs + self.intercept
         return -preds
@@ -253,7 +249,7 @@ class Nystroem:
         inds = torch.randperm(n)[:n_components]
         self.z = x[inds]
         K_zz = self.kernel(self.z,  self.z)
-        K_zz += 1e-16 + torch.eye(n_components)
+        K_zz += 1e-16 + torch.eye(n_components, device=K_zz.device)
         U, S, V = torch.linalg.svd(K_zz)
         self.K_zz_root_inv = (U / S.sqrt()) @ V
         return self
