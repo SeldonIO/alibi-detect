@@ -6,6 +6,7 @@ from alibi_detect.base import (BaseDetector, FitMixin, ThresholdMixin,
                                outlier_prediction_dict)
 from alibi_detect.exceptions import _catch_error as catch_error
 from alibi_detect.od.pytorch import SVMTorch
+from alibi_detect.od.sklearn import SVMSklearn
 from alibi_detect.utils._types import Literal
 from alibi_detect.utils.frameworks import BackendValidator
 from alibi_detect.version import __version__
@@ -16,6 +17,7 @@ if TYPE_CHECKING:
 
 backends = {
     'pytorch': SVMTorch,
+    'sklearn': SVMSklearn
 }
 
 
@@ -23,15 +25,30 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
     def __init__(
         self,
         n_components: Optional[int] = None,
-        backend: Literal['pytorch'] = 'pytorch',
+        backend: Literal['pytorch', 'sklearn'] = 'sklearn',
         device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
-        kernel: Optional['torch.nn.Module'] = None,
+        kernel: Union['torch.nn.Module', Literal['linear', 'poly', 'rbf', 'sigmoid']] = 'rbf',
     ) -> None:
         """Support vector machine (SVM) outlier detector.
 
         The Support vector machine outlier detector fits a one-class SVM to the reference data and uses the decision
-        function to detect outliers. The user can optionally choose to use the Nystroem approximation to speed up
-        training and inference.
+        function to detect outliers.
+
+        Rather than the typical approach of optimizing the exact kernel OCSVM objective through a dual formulation,
+        here we instead map the data into the kernel's RKHS and then solve the linear optimization problem
+        directly through its primal formulation. The Nystroem approximation can optionally be used to speed up
+        training and inference by approximating the kernel's RKHS.
+
+        This is the approach of SKLearn's `SGDOneClassSVM`, except here the optimization procedure is more tailored
+        for operation on GPUs. Instead of applying stochastic gradient descent (one data point at a time) with a
+        fixed learning rate schedule we perform full gradient descent with step size chosen at each iteration via
+        line search. Note that on a CPU this would not necessarily be preferable to SGD as we would have to iterate
+        through both data points and candidate step sizes, however on GPU all of the operations are
+        vectorized/parallelized.
+
+        Moreover, the Nystroem approximation has complexity O(n^2m) where n is the number of reference instances
+        and m defines the number of inducing points. This can therefore be expensive for large reference sets and
+        benefits from implementation on the GPU.
 
         Parameters
         ----------
@@ -52,16 +69,18 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
 
         backend_str: str = backend.lower()
         BackendValidator(
-            backend_options={'pytorch': ['pytorch']},
+            backend_options={'pytorch': ['pytorch'], 'sklearn': ['sklearn']},
             construct_name=self.__class__.__name__
         ).verify_backend(backend_str)
 
         backend_cls = backends[backend]
-        self.backend = backend_cls(
-            n_components=n_components,
-            device=device,
-            kernel=kernel
-        )
+        args: Dict[str, Any] = {
+            'n_components': n_components,
+            'kernel': kernel
+        }
+        if backend == 'pytorch':
+            args['device'] = device
+        self.backend = backend_cls(**args)
 
     def fit(
         self,

@@ -22,7 +22,7 @@ class SVMTorch(TorchOutlierDetector):
 
         Parameters
         ----------
-        kernel:
+        kernel
             Used to define similarity between data points.
         n_components
             Number of components in the Nystroem approximation By default uses all of them.
