@@ -28,6 +28,7 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
         backend: Literal['pytorch', 'sklearn'] = 'sklearn',
         device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
         kernel: Union['torch.nn.Module', Literal['linear', 'poly', 'rbf', 'sigmoid']] = 'rbf',
+        sigma: Optional[float] = None,
     ) -> None:
         """Support vector machine (SVM) outlier detector.
 
@@ -59,6 +60,8 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
         device
             Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
             passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of ``torch.device``.
+        sigma
+            Kernel coefficient for 'rbf', 'poly' and 'sigmoid'. If None, then defaults to 1 / n_features.
 
         Raises
         ------
@@ -76,7 +79,8 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
         backend_cls = backends[backend]
         args: Dict[str, Any] = {
             'n_components': n_components,
-            'kernel': kernel
+            'kernel': kernel,
+            'sigma': sigma,
         }
         if backend == 'pytorch':
             args['device'] = device

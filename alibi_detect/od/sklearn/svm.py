@@ -14,15 +14,22 @@ class SVMSklearn(SklearnOutlierDetector):
         self,
         n_components: Optional[int] = None,
         kernel: Union[Literal['linear', 'poly', 'rbf', 'sigmoid'], Callable] = 'rbf',
+        sigma: Optional[float] = None,
     ):
         """sklearn backend for the One class support vector machine (SVM) outlier detector.
 
         Parameters
         ----------
         n_components
-            Number of components in gaussian mixture model.
+            Number of features to construct. How many data points will be used to construct the mapping.
         kernel
-            Used to define similarity between data points.
+            Kernel map to be approximated. A callable should accept two arguments and the keyword arguments passed to
+            this object as kernel_params, and should return a floating point number.
+        sigma:
+            Sigma parameter for the RBF, polynomial, and sigmoid kernels. Interpretation of the default value is left
+            to the kernel; see the documentation for
+            `sklearn.metrics.pairwise <https://scikit-learn.org/stable/modules/classes.html#pairwise-metrics/>`_.
+            Ignored by other kernels.
 
         Raises
         ------
@@ -32,12 +39,13 @@ class SVMSklearn(SklearnOutlierDetector):
         super().__init__()
         self.n_components = n_components
         self.kernel = kernel
+        self.sigma = sigma
         self.nystroem = None
 
     def fit(  # type: ignore[override]
         self,
         x_ref: np.ndarray,
-        nu: float,
+        nu: float = 0.5,
         tol: float = 1e-6,
         max_iter: int = 1000,
         verbose: int = 0,
@@ -67,7 +75,11 @@ class SVMSklearn(SklearnOutlierDetector):
             - n_iter: number of EM iterations performed.
         """
         n_components = self.n_components if self.n_components is not None else len(x_ref)
-        self.nystroem = Nystroem(kernel=self.kernel, n_components=n_components)
+        self.nystroem = Nystroem(
+            kernel=self.kernel,
+            n_components=n_components,
+            gamma=self.sigma
+        )
         x_ref = self.nystroem.fit(x_ref).transform(x_ref)
         self.gmm = SGDOneClassSVM(
             tol=tol,

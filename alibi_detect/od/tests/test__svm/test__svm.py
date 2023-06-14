@@ -34,8 +34,12 @@ def test_unfitted_svm_score(backend, kernel):
     assert str(err.value) == 'SVM has not been fit!'
 
 
-@pytest.mark.parametrize('backend,kernel', [('sklearn', 'rbf'), ('pytorch', GaussianRBF(torch.tensor(2)))])
-def test_fitted_svm_score(backend, kernel):
+@pytest.mark.parametrize('backend,kernel,sigma', [
+    ('sklearn', 'rbf', 2),
+    ('pytorch', GaussianRBF(torch.tensor(2)), None),
+    ('pytorch', 'rbf', 2)
+])
+def test_fitted_svm_score(backend, kernel, sigma):
     """Test SVM detector score method.
 
     Test SVM detector that has been fitted on reference data but has not had a threshold
@@ -45,7 +49,8 @@ def test_fitted_svm_score(backend, kernel):
     svm_detector = SVM(
         n_components=10,
         backend=backend,
-        kernel=kernel
+        kernel=kernel,
+        sigma=sigma
     )
     x_ref = np.random.randn(100, 2)
     svm_detector.fit(x_ref, nu=0.1)
@@ -90,9 +95,13 @@ def test_fitted_svm_predict(backend, kernel):
     assert (y['is_outlier'] == [True, False]).all()
 
 
-@pytest.mark.parametrize('backend,kernel', [('sklearn', 'rbf'), ('pytorch', GaussianRBF(torch.tensor(2)))])
+@pytest.mark.parametrize('backend,kernel,sigma', [
+    ('sklearn', 'rbf', 2),
+    ('pytorch', GaussianRBF(torch.tensor(2)), None),
+    ('pytorch', 'rbf', 2)
+])
 @pytest.mark.parametrize('n_components', [None, 100])
-def test_svm_integration(backend, kernel, n_components):
+def test_svm_integration(backend, kernel, sigma, n_components):
     """Test SVM detector on moons dataset.
 
     Test SVM detector on a more complex 2d example. Test that the detector can be fitted
@@ -101,7 +110,8 @@ def test_svm_integration(backend, kernel, n_components):
     svm_detector = SVM(
         n_components=n_components,
         backend=backend,
-        kernel=kernel
+        kernel=kernel,
+        sigma=sigma
     )
     X_ref, _ = make_moons(1001, shuffle=True, noise=0.05, random_state=None)
     X_ref, x_inlier = X_ref[0:1000], X_ref[1000][None]

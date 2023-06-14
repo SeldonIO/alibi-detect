@@ -7,6 +7,7 @@ from tqdm import tqdm
 
 from alibi_detect.od.pytorch.base import TorchOutlierDetector
 from alibi_detect.utils.pytorch.losses import hinge_loss
+from alibi_detect.utils.pytorch.kernels import GaussianRBF
 
 
 class SVMTorch(TorchOutlierDetector):
@@ -16,7 +17,8 @@ class SVMTorch(TorchOutlierDetector):
         self,
         n_components: Optional[int] = None,
         device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
-        kernel: Optional[torch.nn.Module] = None,
+        kernel: Union['torch.nn.Module', Literal['rbf']] = 'rbf',
+        sigma: Optional[float] = None,
     ):
         """Pytorch backend for the Support Vector Machine (SVM) outlier detector.
 
@@ -29,6 +31,8 @@ class SVMTorch(TorchOutlierDetector):
         device
             Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
             passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of ``torch.device``.
+        sigma
+            Kernel coefficient for 'rbf', 'poly' and 'sigmoid'. If None, then defaults to 1 / n_features.
 
         Raises
         ------
@@ -38,12 +42,26 @@ class SVMTorch(TorchOutlierDetector):
         super().__init__(device=device)
         self.n_components = n_components
         self.kernel = kernel
-        self.nystroem = Nystroem(kernel, n_components)
+        self.sigma = sigma
+
+    def _init_kernel(self, x_ref: torch.Tensor) -> None:
+        """Initialize the Kernel."""
+
+        if isinstance(self.kernel, str):
+            if self.kernel not in ['rbf']:
+                raise ValueError(
+                    f'Currently only the rbf Kernel is supported for the SVM torch backend, got {self.kernel}.'
+                )
+            if self.kernel == 'rbf':
+                if self.sigma is None:
+                    self.sigma = 1.0 / x_ref.shape[1]
+                self.sigma = torch.tensor(self.sigma, device=self.device)
+                self.kernel = GaussianRBF(sigma=self.sigma)
 
     def fit(  # type: ignore[override]
         self,
         x_ref: torch.Tensor,
-        nu: float,
+        nu: float = 0.5,
         step_size_range: Tuple[float, float] = (1e-6, 1.0),
         n_step_sizes: int = 16,
         tol: float = 1e-6,
@@ -84,6 +102,14 @@ class SVMTorch(TorchOutlierDetector):
             - n_iter: number of EM iterations performed.
             - lower_bound: log-likelihood lower bound.
         """
+
+        self._init_kernel(x_ref)
+
+        self.nystroem = Nystroem(
+            self.kernel,
+            self.n_components
+        )
+
         X_nys = self.nystroem.fit(x_ref).transform(x_ref)
         n, d = X_nys.shape
         min_eta, max_eta = step_size_range
