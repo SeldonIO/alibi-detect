@@ -60,7 +60,7 @@ def test_fitted_svm_score(backend, kernel, sigma):
     y = svm_detector.predict(x)
     y = y['data']
     assert y['instance_score'][0] > -0.85
-    assert y['instance_score'][1] < -0.99
+    assert y['instance_score'][1] < -0.9
     assert all(y['instance_score'] == scores)
     assert not y['threshold_inferred']
     assert y['threshold'] is None
@@ -68,8 +68,11 @@ def test_fitted_svm_score(backend, kernel, sigma):
     assert y['p_value'] is None
 
 
-@pytest.mark.parametrize('backend,kernel', [('sklearn', 'rbf'), ('pytorch', GaussianRBF(torch.tensor(2)))])
-def test_fitted_svm_predict(backend, kernel):
+@pytest.mark.parametrize('backend,kernel,sigma', [
+    ('sklearn', 'rbf', 2),
+    ('pytorch', GaussianRBF(torch.tensor(2)), None)
+])
+def test_fitted_svm_predict(backend, kernel, sigma):
     """Test SVM detector predict method.
 
     Test SVM detector that has been fitted on reference data and has had a threshold
@@ -79,7 +82,8 @@ def test_fitted_svm_predict(backend, kernel):
     svm_detector = SVM(
         n_components=10,
         backend=backend,
-        kernel=kernel
+        kernel=kernel,
+        sigma=sigma
     )
     x_ref = np.random.randn(100, 2)
     svm_detector.fit(x_ref, nu=0.1)
@@ -88,7 +92,7 @@ def test_fitted_svm_predict(backend, kernel):
     y = svm_detector.predict(x)
     y = y['data']
     assert y['instance_score'][0] > -0.85
-    assert y['instance_score'][1] < -0.99
+    assert y['instance_score'][1] < -0.9
     assert y['threshold_inferred']
     assert y['threshold'] is not None
     assert y['p_value'].all()

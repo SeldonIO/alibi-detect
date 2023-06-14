@@ -78,7 +78,7 @@ class SVMSklearn(SklearnOutlierDetector):
         self.nystroem = Nystroem(
             kernel=self.kernel,
             n_components=n_components,
-            gamma=self.sigma
+            gamma=1. / (2. * self.sigma ** 2) if self.sigma is not None else None,
         )
         x_ref = self.nystroem.fit(x_ref).transform(x_ref)
         self.gmm = SGDOneClassSVM(
