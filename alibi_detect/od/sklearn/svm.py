@@ -47,7 +47,6 @@ class SVMSklearn(SklearnOutlierDetector):
         self.n_components = n_components
         self.kernel = kernel
         self.sigma = sigma
-        self.nystroem = None
         self.kernel_params = kernel_params
 
     def fit(  # type: ignore[override]

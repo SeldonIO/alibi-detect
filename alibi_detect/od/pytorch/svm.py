@@ -59,8 +59,8 @@ class SVMTorch(TorchOutlierDetector):
                 )
             if self.kernel == 'rbf':
                 if self.sigma is not None:
-                    self.sigma = torch.tensor(self.sigma, device=self.device)
-                self.kernel = GaussianRBF(sigma=self.sigma)
+                    sigma = torch.tensor(self.sigma, device=self.device)
+                self.kernel = GaussianRBF(sigma=sigma)
 
     def fit(  # type: ignore[override]
         self,
@@ -107,7 +107,7 @@ class SVMTorch(TorchOutlierDetector):
         """
 
         self.nystroem = _Nystroem(
-            self.kernel,
+            self.kernel,  # type: ignore[arg-type]
             self.n_components
         )
 
