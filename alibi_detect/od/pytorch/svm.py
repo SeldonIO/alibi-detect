@@ -15,36 +15,41 @@ class SVMTorch(TorchOutlierDetector):
 
     def __init__(
         self,
-        n_components: Optional[int] = None,
-        device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
         kernel: Union['torch.nn.Module', Literal['rbf']] = 'rbf',
         sigma: Optional[float] = None,
+        n_components: Optional[int] = None,
+        device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
     ):
         """Pytorch backend for the Support Vector Machine (SVM) outlier detector.
 
         Parameters
         ----------
         kernel
-            Used to define similarity between data points.
+            Used to define similarity between data points. Can be either a `torch.nn.Module` or a string. The user can
+            either pass a custom kernel as a `torch.nn.Module` or indicate a built-in kernel. The only built-in kernel
+            currently supported is the Gaussian RBF kernel. This can be specified by passing ``'rbf'`` or the user can
+            initialize the GaussianRBF kernel directly and pass it as an argument.
+        sigma
+            Kernel coefficient for the `GaussianRBF` kernel if `kernel` is ``'rbf'``. If `kernel` is a `torch.nn.Module`
+            then this argument is ignored.
         n_components
-            Number of components in the Nystroem approximation By default uses all of them.
+            Number of components in the Nystroem approximation, by default uses all of them.
         device
             Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
             passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of ``torch.device``.
-        sigma
-            Kernel coefficient for 'rbf', 'poly' and 'sigmoid'. If None, then defaults to 1 / n_features.
 
         Raises
         ------
         ValueError
-            If `n_components` is less than 1.
+            If the kernel is not supported.
         """
         super().__init__(device=device)
         self.n_components = n_components
         self.kernel = kernel
         self.sigma = sigma
+        self._init_kernel()
 
-    def _init_kernel(self, x_ref: torch.Tensor) -> None:
+    def _init_kernel(self) -> None:
         """Initialize the Kernel."""
 
         if isinstance(self.kernel, str):
@@ -53,9 +58,8 @@ class SVMTorch(TorchOutlierDetector):
                     f'Currently only the rbf Kernel is supported for the SVM torch backend, got {self.kernel}.'
                 )
             if self.kernel == 'rbf':
-                if self.sigma is None:
-                    self.sigma = 1.0 / x_ref.shape[1]
-                self.sigma = torch.tensor(self.sigma, device=self.device)
+                if self.sigma is not None:
+                    self.sigma = torch.tensor(self.sigma, device=self.device)
                 self.kernel = GaussianRBF(sigma=self.sigma)
 
     def fit(  # type: ignore[override]
@@ -75,37 +79,33 @@ class SVMTorch(TorchOutlierDetector):
         ----------
         x_ref
             Training data.
-        nu:
-            The proportion of the training data that should be considered outliers. Note that this does
-            not necessarily correspond to the false positive rate on test data, which is still defined when
-            calling the `infer_threshold()` method.
-        step_size_range:
+        nu
+            The proportion of the training data that should be considered outliers. Note that this does not necessarily
+            correspond to the false positive rate on test data, which is still defined when calling the
+            `infer_threshold()` method.
+        step_size_range
             The range of values to be considered for the gradient descent step size at each iteration.
-        n_step_sizes:
-            The number of step sizes in the defined range to be tested for loss reduction. This many points
-            are spaced equidistantly along the range in log space.
-        tol:
-            The decrease in loss required over the previous n_iter_no_change iterations in order to
-            continue optimizing.
-        n_iter_no_change:
-            The number of iterations over which the loss must decrease by `tol` in order for
-            optimization to continue.
-        max_iter:
+        n_step_sizes
+            The number of step sizes in the defined range to be tested for loss reduction. This many points are spaced
+            equidistantly along the range in log space.
+        tol
+            The decrease in loss required over the previous n_iter_no_change iterations in order to continue optimizing.
+        n_iter_no_change
+            The number of iterations over which the loss must decrease by `tol` in order for optimization to continue.
+        max_iter
             The maximum number of optimization steps.
         verbose
-            Verbosity level during training. 0 is silent, 1 a progress bar.
+            Verbosity level during training. ``0`` is silent, ``1`` a progress bar.
 
         Returns
         -------
-        Dictionary with fit results. The dictionary contains the following keys:
-            - converged: bool indicating whether EM algorithm converged.
-            - n_iter: number of EM iterations performed.
-            - lower_bound: log-likelihood lower bound.
+        Dictionary with fit results. The dictionary contains the following keys
+            - converged: bool indicating whether training converged.
+            - n_iter: number of iterations performed.
+            - lower_bound: loss lower bound.
         """
 
-        self._init_kernel(x_ref)
-
-        self.nystroem = Nystroem(
+        self.nystroem = _Nystroem(
             self.kernel,
             self.n_components
         )
@@ -188,7 +188,7 @@ class SVMTorch(TorchOutlierDetector):
         Formatted kwargs.
         """
         return dict(
-            nu=fit_kwargs.get('nu', None),
+            nu=fit_kwargs.get('nu', 0.5),
             step_size_range=fit_kwargs.get('step_size_range', (1e-6, 1.0)),
             n_iter_no_change=fit_kwargs.get('n_iter_no_change', 25),
             tol=fit_kwargs.get('tol', 1e-6),
@@ -244,7 +244,7 @@ class SVMTorch(TorchOutlierDetector):
         return -preds
 
 
-class Nystroem:
+class _Nystroem:
     def __init__(
         self,
         kernel: Callable,

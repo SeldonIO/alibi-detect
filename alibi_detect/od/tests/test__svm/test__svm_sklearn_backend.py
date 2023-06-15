@@ -1,8 +1,6 @@
 import pytest
 import numpy as np
-import torch
 
-from alibi_detect.utils.pytorch.kernels import GaussianRBF
 from alibi_detect.od.sklearn.svm import SVMSklearn
 from alibi_detect.exceptions import NotFittedError, ThresholdNotInferredError
 

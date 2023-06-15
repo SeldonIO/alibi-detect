@@ -29,39 +29,44 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
         device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
         kernel: Union['torch.nn.Module', Literal['linear', 'poly', 'rbf', 'sigmoid']] = 'rbf',
         sigma: Optional[float] = None,
+        kernel_params: Optional[Dict] = None,
     ) -> None:
         """Support vector machine (SVM) outlier detector.
 
-        The Support vector machine outlier detector fits a one-class SVM to the reference data and uses the decision
-        function to detect outliers.
+        TODO
 
-        Rather than the typical approach of optimizing the exact kernel OCSVM objective through a dual formulation,
-        here we instead map the data into the kernel's RKHS and then solve the linear optimization problem
-        directly through its primal formulation. The Nystroem approximation can optionally be used to speed up
-        training and inference by approximating the kernel's RKHS.
+        # The Support vector machine outlier detector fits a one-class SVM to the reference data and uses the decision
+        # function to detect outliers.
 
-        This is the approach of SKLearn's `SGDOneClassSVM`, except here the optimization procedure is more tailored
-        for operation on GPUs. Instead of applying stochastic gradient descent (one data point at a time) with a
-        fixed learning rate schedule we perform full gradient descent with step size chosen at each iteration via
-        line search. Note that on a CPU this would not necessarily be preferable to SGD as we would have to iterate
-        through both data points and candidate step sizes, however on GPU all of the operations are
-        vectorized/parallelized.
+        # Rather than the typical approach of optimizing the exact kernel OCSVM objective through a dual formulation,
+        # here we instead map the data into the kernel's RKHS and then solve the linear optimization problem
+        # directly through its primal formulation. The Nystroem approximation can optionally be used to speed up
+        # training and inference by approximating the kernel's RKHS.
 
-        Moreover, the Nystroem approximation has complexity O(n^2m) where n is the number of reference instances
-        and m defines the number of inducing points. This can therefore be expensive for large reference sets and
-        benefits from implementation on the GPU.
+        # This is the approach of SKLearn's `SGDOneClassSVM`, except here the optimization procedure is more tailored
+        # for operation on GPUs. Instead of applying stochastic gradient descent (one data point at a time) with a
+        # fixed learning rate schedule we perform full gradient descent with step size chosen at each iteration via
+        # line search. Note that on a CPU this would not necessarily be preferable to SGD as we would have to iterate
+        # through both data points and candidate step sizes, however on GPU all of the operations are
+        # vectorized/parallelized.
 
-        Parameters
-        ----------
-        kernel:
-            Used to define similarity between data points.
-        n_components
-            Number of components in the Nystroem approximation By default uses all of them.
-        device
-            Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
-            passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of ``torch.device``.
-        sigma
-            Kernel coefficient for 'rbf', 'poly' and 'sigmoid'. If None, then defaults to 1 / n_features.
+        # Moreover, the Nystroem approximation has complexity `O(n^2m)` where `n` is the number of reference instances
+        # and `m` defines the number of inducing points. This can therefore be expensive for large reference sets and
+        # benefits from implementation on the GPU.
+
+        # Parameters
+        # ----------
+        # kernel
+        #     Used to define similarity between data points.
+        # n_components
+        #     Number of components in the Nystroem approximation By default uses all of them.
+        # device
+        #     Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
+        #     passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of ``torch.device``.
+        # sigma
+        #     Kernel coefficient for 'rbf', 'poly' and 'sigmoid'.
+        # kernel_params
+        #     Additional parameters (keyword arguments) for kernel function passed as a dictionary.... TODO
 
         Raises
         ------
@@ -84,6 +89,8 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
         }
         if backend == 'pytorch':
             args['device'] = device
+        if backend == 'sklearn':
+            args['kernel_params'] = kernel_params
         self.backend = backend_cls(**args)
 
     def fit(
@@ -105,22 +112,22 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
         ----------
         x_ref
             Training data.
-        nu:
+        nu
             The proportion of the training data that should be considered outliers. Note that this does
             not necessarily correspond to the false positive rate on test data, which is still defined when
             calling the `infer_threshold()` method.
-        step_size_range:
+        step_size_range
             The range of values to be considered for the gradient descent step size at each iteration.
-        n_step_sizes:
+        n_step_sizes
             The number of step sizes in the defined range to be tested for loss reduction. This many points
             are spaced equidistantly along the range in log space.
-        tol:
+        tol
             The decrease in loss required over the previous n_iter_no_change iterations in order to
             continue optimizing.
-        n_iter_no_change:
+        n_iter_no_change
             The number of iterations over which the loss must decrease by `tol` in order for
             optimization to continue.
-        max_iter:
+        max_iter
             The maximum number of optimization steps.
         verbose
             Verbosity level during training. 0 is silent, 1 a progress bar.

@@ -5,7 +5,6 @@ import torch
 from alibi_detect.od._svm import SVM
 from alibi_detect.exceptions import NotFittedError
 from alibi_detect.utils.pytorch import GaussianRBF
-
 from sklearn.datasets import make_moons
 
 
@@ -34,10 +33,24 @@ def test_unfitted_svm_score(backend, kernel):
     assert str(err.value) == 'SVM has not been fit!'
 
 
+def test_svm_detector_unsupported_kernel_errors():
+    """Test SVM detector raises exceptions when not fitted."""
+    with pytest.raises(ValueError) as err:
+        _ = SVM(
+            n_components=10,
+            backend='pytorch',
+            kernel='unsupported_kernel'
+        )
+    assert str(err.value) == ('Currently only the rbf Kernel is supported for'
+                              ' the SVM torch backend, got unsupported_kernel.')
+
+
 @pytest.mark.parametrize('backend,kernel,sigma', [
     ('sklearn', 'rbf', 2),
+    # test custom rbf kernel for sklearn backend
+    ('sklearn', lambda x, y: np.exp(-1. / 8 * (np.sum(x ** 2) + np.sum(y ** 2) - 2 * np.dot(x, y.T))), None),
+    ('pytorch', 'rbf', 2),
     ('pytorch', GaussianRBF(torch.tensor(2)), None),
-    ('pytorch', 'rbf', 2)
 ])
 def test_fitted_svm_score(backend, kernel, sigma):
     """Test SVM detector score method.
