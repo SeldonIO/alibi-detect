@@ -49,7 +49,8 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
 
         Moreover, the Nystroem approximation has complexity `O(n^2m)` where `n` is the number of reference instances
         and `m` defines the number of inducing points. This can therefore be expensive for large reference sets and
-        benefits from implementation on the GPU.
+        benefits from implementation on the GPU. In general if using a small dataset opt for the sklearn backend and
+        if using a large dataset opt for the pytorch backend.
 
         Parameters
         ----------
@@ -65,13 +66,13 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
             Number of components in the Nystroem approximation By default uses all of them.
         device
             Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
-            passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of ``torch.device``. Only used for the pytorch
-            backend.
+            passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of ``torch.device``. Only used for the
+            ``'pytorch'`` backend.
         sigma
             Kernel coefficient for 'rbf', 'poly' and 'sigmoid'. Only used if the kernel is specified as a string.
         kernel_params
             Additional parameters (keyword arguments) for kernel function passed as a dictionary. Only used for the
-            sklearn backend and the kernel is a custom function.
+            '``sklearn``' backend and the kernel is a custom function.
 
         Raises
         ------
@@ -116,27 +117,28 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
         Parameters
         ----------
         x_ref
-            Training data.
+            Reference data used to fit the detector.
         nu
             The proportion of the training data that should be considered outliers. Note that this does
             not necessarily correspond to the false positive rate on test data, which is still defined when
-            calling the `infer_threshold` method.
+            calling the `infer_threshold` method. Used for both ``'sklearn'`` and ``'pytorch'`` backends.
         tol
-            The decrease in loss required over the previous ``n_iter_no_change`` iterations in order to
-            continue optimizing.
+            Convergence threshold used to fit the detector. Used for both ``'sklearn'`` and ``'pytorch'`` backends.
+            Defaults to ``1e-3``.
         max_iter
-            The maximum number of optimization steps.
+            The maximum number of optimization steps. Used for both ``'sklearn'`` and ``'pytorch'`` backends.
         step_size_range
             The range of values to be considered for the gradient descent step size at each iteration. This is
-            specified as a tuple of the form `(min_eta, max_eta)` and only used for the pytorch backend.
+            specified as a tuple of the form `(min_eta, max_eta)` and only used for the ``'pytorch'`` backend.
         n_step_sizes
             The number of step sizes in the defined range to be tested for loss reduction. This many points
-            are spaced equidistantly along the range in log space. This is only used for the pytorch backend.
+            are spaced equidistantly along the range in log space. This is only used for the ``'pytorch'``
+            backend.
         n_iter_no_change
             The number of iterations over which the loss must decrease by `tol` in order for optimization to
-            continue. This is only used for the pytorch backend.
+            continue. This is only used for the ``'pytorch'`` backend.
         verbose
-            Verbosity level during training. 0 is silent, 1 a progress bar or sklearn training output for the
+            Verbosity level during training. ``0`` is silent, ``1`` a progress bar or sklearn training output for the
             `SGDOneClassSVM`.
         """
         self.backend.fit(
