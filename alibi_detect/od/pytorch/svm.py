@@ -84,7 +84,8 @@ class SVMTorch(TorchOutlierDetector):
             correspond to the false positive rate on test data, which is still defined when calling the
             `infer_threshold()` method.
         step_size_range
-            The range of values to be considered for the gradient descent step size at each iteration.
+            The range of values to be considered for the gradient descent step size at each iteration. This is
+            specified as a tuple of the form `(min_eta, max_eta)`.
         n_step_sizes
             The number of step sizes in the defined range to be tested for loss reduction. This many points are spaced
             equidistantly along the range in log space.

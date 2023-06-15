@@ -33,40 +33,44 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
     ) -> None:
         """Support vector machine (SVM) outlier detector.
 
-        TODO
+        The Support vector machine outlier detector fits a one-class SVM to the reference data.
 
-        # The Support vector machine outlier detector fits a one-class SVM to the reference data and uses the decision
-        # function to detect outliers.
+        Rather than the typical approach of optimizing the exact kernel OCSVM objective through a dual formulation,
+        here we instead map the data into the kernel's RKHS and then solve the linear optimization problem
+        directly through its primal formulation. The Nystroem approximation can optionally be used to speed up
+        training and inference by approximating the kernel's RKHS.
 
-        # Rather than the typical approach of optimizing the exact kernel OCSVM objective through a dual formulation,
-        # here we instead map the data into the kernel's RKHS and then solve the linear optimization problem
-        # directly through its primal formulation. The Nystroem approximation can optionally be used to speed up
-        # training and inference by approximating the kernel's RKHS.
+        We provide two backends for the one class svm, one based on PyTorch and one based on scikit-learn. The
+        scikit-learn backend wraps the `SGDOneClassSVM` class. The PyTorch backend is  tailored for operation on GPUs.
+        Instead of applying stochastic gradient descent (one data point at a time) with a fixed learning rate schedule
+        we perform full gradient descent with step size chosen at each iteration via line search. Note that on a CPU
+        this would not necessarily be preferable to SGD as we would have to iterate through both data points and
+        candidate step sizes, however on GPU all of the operations are vectorized/parallelized.
 
-        # This is the approach of SKLearn's `SGDOneClassSVM`, except here the optimization procedure is more tailored
-        # for operation on GPUs. Instead of applying stochastic gradient descent (one data point at a time) with a
-        # fixed learning rate schedule we perform full gradient descent with step size chosen at each iteration via
-        # line search. Note that on a CPU this would not necessarily be preferable to SGD as we would have to iterate
-        # through both data points and candidate step sizes, however on GPU all of the operations are
-        # vectorized/parallelized.
+        Moreover, the Nystroem approximation has complexity `O(n^2m)` where `n` is the number of reference instances
+        and `m` defines the number of inducing points. This can therefore be expensive for large reference sets and
+        benefits from implementation on the GPU.
 
-        # Moreover, the Nystroem approximation has complexity `O(n^2m)` where `n` is the number of reference instances
-        # and `m` defines the number of inducing points. This can therefore be expensive for large reference sets and
-        # benefits from implementation on the GPU.
-
-        # Parameters
-        # ----------
-        # kernel
-        #     Used to define similarity between data points.
-        # n_components
-        #     Number of components in the Nystroem approximation By default uses all of them.
-        # device
-        #     Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
-        #     passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of ``torch.device``.
-        # sigma
-        #     Kernel coefficient for 'rbf', 'poly' and 'sigmoid'.
-        # kernel_params
-        #     Additional parameters (keyword arguments) for kernel function passed as a dictionary.... TODO
+        Parameters
+        ----------
+        kernel
+            Used to define similarity between data points. If using the pytorch backend, this can be either a string
+            specifying a built-in kernel. Alternatively, a custom kernel can be passed as a subclass of the
+            `torch.nn.Module` class. If using the ``'sklearn'`` backend, this can be either a string specifying a
+            built-in kernel or a callable. The callable should take two arguments (data points) and return a similarity
+            score. Currently we only provide one built-in kernel for the pytorch backend, namely the `GaussianRBF`
+            kernel which can be specified by 'rbf' or initialized and passed in directly. The sklearn backend provides
+            the following built-in kernels: ``'linear'``, ``'poly'``, ``'rbf'`` and ``'sigmoid'``.
+        n_components
+            Number of components in the Nystroem approximation By default uses all of them.
+        device
+            Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
+            passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of ``torch.device``.
+        sigma
+            Kernel coefficient for 'rbf', 'poly' and 'sigmoid'. Only used if the kernel is specified as a string.
+        kernel_params
+            Additional parameters (keyword arguments) for kernel function passed as a dictionary. Only used for the
+            sklearn backend and the kernel is a custom function.
 
         Raises
         ------
@@ -97,16 +101,16 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
         self,
         x_ref: np.ndarray,
         nu: float,
+        tol: float = 1e-6,
+        max_iter: int = 1000,
         step_size_range: Tuple[float, float] = (1e-6, 1.0),
         n_step_sizes: int = 16,
-        tol: float = 1e-6,
         n_iter_no_change: int = 25,
-        max_iter: int = 1000,
         verbose: int = 0,
     ) -> None:
         """Fit the detector on reference data.
 
-        TODO
+        Uses the choice of backend to fit the svm model to the data.
 
         Parameters
         ----------
@@ -115,22 +119,24 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
         nu
             The proportion of the training data that should be considered outliers. Note that this does
             not necessarily correspond to the false positive rate on test data, which is still defined when
-            calling the `infer_threshold()` method.
-        step_size_range
-            The range of values to be considered for the gradient descent step size at each iteration.
-        n_step_sizes
-            The number of step sizes in the defined range to be tested for loss reduction. This many points
-            are spaced equidistantly along the range in log space.
+            calling the `infer_threshold` method.
         tol
-            The decrease in loss required over the previous n_iter_no_change iterations in order to
+            The decrease in loss required over the previous ``n_iter_no_change`` iterations in order to
             continue optimizing.
-        n_iter_no_change
-            The number of iterations over which the loss must decrease by `tol` in order for
-            optimization to continue.
         max_iter
             The maximum number of optimization steps.
+        step_size_range
+            The range of values to be considered for the gradient descent step size at each iteration. This is
+            specified as a tuple of the form `(min_eta, max_eta)` and only used for the pytorch backend.
+        n_step_sizes
+            The number of step sizes in the defined range to be tested for loss reduction. This many points
+            are spaced equidistantly along the range in log space. This is only used for the pytorch backend.
+        n_iter_no_change
+            The number of iterations over which the loss must decrease by `tol` in order for optimization to
+            continue. This is only used for the pytorch backend.
         verbose
-            Verbosity level during training. 0 is silent, 1 a progress bar.
+            Verbosity level during training. 0 is silent, 1 a progress bar or sklearn training output for the
+            `SGDOneClassSVM`.
         """
         self.backend.fit(
             self.backend._to_tensor(x_ref),
@@ -141,7 +147,7 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
     def score(self, x: np.ndarray) -> np.ndarray:
         """Score `x` instances using the detector.
 
-        TODO
+        Scores the data using the fitted svm model. The higher the score, the more anomalous the instance.
 
         Parameters
         ----------
