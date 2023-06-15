@@ -65,7 +65,8 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
             Number of components in the Nystroem approximation By default uses all of them.
         device
             Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
-            passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of ``torch.device``.
+            passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of ``torch.device``. Only used for the pytorch
+            backend.
         sigma
             Kernel coefficient for 'rbf', 'poly' and 'sigmoid'. Only used if the kernel is specified as a string.
         kernel_params
