@@ -1,5 +1,21 @@
 # Change Log
 
+## [v0.11.3](https://github.com/SeldonIO/alibi-detect/tree/v0.11.3) (2023-06-21)
+[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.11.2...v0.11.3)
+
+This is a patch release to officially enable support for Python 3.11.<br>
+This is the last release with official support for Python 3.7.
+
+### Development
+- Test library on Python 3.11 ([#817](https://github.com/SeldonIO/alibi-detect/pull/817)).
+- Separate code quality into its own Github Action and only run against the main development version of Python, currently Python 3.10 ([#793](https://github.com/SeldonIO/alibi-detect/pull/793)).
+- Check and remove stale `mypy` ignore commands ([#794](https://github.com/SeldonIO/alibi-detect/pull/794)).
+- Add developer instructions for docstring formatting ([#789](https://github.com/SeldonIO/alibi-detect/pull/789)).
+- Bump `scikit-image` version to `0.21.x` ([#803](https://github.com/SeldonIO/alibi-detect/pull/803)).
+- Bump `numba` version to `0.57.x` ([#783](https://github.com/SeldonIO/alibi-detect/pull/783)).
+- Bump `sphinx` version to `7.x` ([#782](https://github.com/SeldonIO/alibi-detect/pull/782)).
+
+
 ## [v0.11.2](https://github.com/SeldonIO/alibi-detect/tree/v0.11.2) (2023-04-28)
 [Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.11.1...v0.11.2)
 
