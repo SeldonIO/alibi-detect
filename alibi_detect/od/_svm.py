@@ -28,7 +28,7 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
         nu: float,
         kernel: 'torch.nn.Module',
         n_components: Optional[int],
-        optimization: Literal['sdg', 'dg'] = 'sgd',
+        optimization: Literal['sgd', 'gd'] = 'sgd',
         backend: Literal['pytorch'] = 'pytorch',
         device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
     ) -> None:

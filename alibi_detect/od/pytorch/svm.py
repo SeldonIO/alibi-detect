@@ -43,7 +43,7 @@ class SVMTorch(TorchOutlierDetector):
         self.n_components = n_components
         self.kernel = kernel
         self.nystroem = _Nystroem(
-            self.kernel,  # type: ignore[arg-type]
+            self.kernel,
             self.n_components
         )
         self.nu = nu
@@ -107,7 +107,7 @@ class SgdSVMTorch(SVMTorch):
 
     def fit(  # type: ignore[override]
         self,
-        x_ref: np.ndarray,
+        x_ref: torch.Tensor,
         tol: float = 1e-6,
         max_iter: int = 1000,
         verbose: int = 0,
@@ -168,17 +168,19 @@ class SgdSVMTorch(SVMTorch):
             verbose=fit_kwargs.get('verbose', 0),
         )
 
-    def score(self, x: np.ndarray) -> np.ndarray:
+    def score(self, x: torch.Tensor) -> torch.Tensor:
         """Computes the score of `x`
+
+        TODO: types?
 
         Parameters
         ----------
         x
-            `np.ndarray` with leading batch dimension.
+            `torch.Tensor` with leading batch dimension.
 
         Returns
         -------
-        `np.ndarray` of scores with leading batch dimension.
+        `torch.Tensor¬` of scores with leading batch dimension.
 
         Raises
         ------
@@ -196,7 +198,7 @@ class GdSVMTorch(SVMTorch):
     def __init__(
         self,
         nu: float,
-        kernel: Union['torch.nn.Module', Literal['rbf']] = 'rbf',
+        kernel: 'torch.nn.Module',
         n_components: Optional[int] = None,
         device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
     ):
@@ -213,7 +215,7 @@ class GdSVMTorch(SVMTorch):
             passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of ``torch.device``.
         nu
             TODO
-            
+
         Raises
         ------
         ValueError
@@ -229,7 +231,6 @@ class GdSVMTorch(SVMTorch):
     def fit(  # type: ignore[override]
         self,
         x_ref: torch.Tensor,
-        nu: float = 0.5,
         step_size_range: Tuple[float, float] = (1e-6, 1.0),
         n_step_sizes: int = 16,
         tol: float = 1e-6,
@@ -243,10 +244,6 @@ class GdSVMTorch(SVMTorch):
         ----------
         x_ref
             Training data.
-        nu
-            The proportion of the training data that should be considered outliers. Note that this does not necessarily
-            correspond to the false positive rate on test data, which is still defined when calling the
-            `infer_threshold()` method.
         step_size_range
             The range of values to be considered for the gradient descent step size at each iteration. This is
             specified as a tuple of the form `(min_eta, max_eta)`.
