@@ -56,24 +56,17 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
         Parameters
         ----------
         kernel
-            Used to define similarity between data points. If using the pytorch backend, this can be either a string
-            specifying a built-in kernel. Alternatively, a custom kernel can be passed as a subclass of the
-            `torch.nn.Module` class. If using the ``'sklearn'`` backend, this can be either a string specifying a
-            built-in kernel or a callable. The callable should take two arguments (data points) and return a similarity
-            score. Currently we only provide one built-in kernel for the pytorch backend, namely the `GaussianRBF`
-            kernel which can be specified by 'rbf' or initialized and passed in directly. The sklearn backend provides
-            the following built-in kernels: ``'linear'``, ``'poly'``, ``'rbf'`` and ``'sigmoid'``.
+            TODO
+        nu
+            The proportion of the training data that should be considered outliers. Note that this does
+            not necessarily correspond to the false positive rate on test data, which is still defined when
+            calling the `infer_threshold` method. Used for both ``'sklearn'`` and ``'pytorch'`` backends.
         n_components
             Number of components in the Nystroem approximation By default uses all of them.
         device
             Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
             passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of ``torch.device``. Only used for the
             ``'pytorch'`` backend.
-        sigma
-            Kernel coefficient for 'rbf', 'poly' and 'sigmoid'. Only used if the kernel is specified as a string.
-        kernel_params
-            Additional parameters (keyword arguments) for kernel function passed as a dictionary. Only used for the
-            '``sklearn``' backend and the kernel is a custom function.
 
         Raises
         ------
@@ -84,7 +77,7 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
 
         backend_str: str = backend.lower()
         BackendValidator(
-            backend_options={'pytorch': ['pytorch'], 'sklearn': ['sklearn']},
+            backend_options={'pytorch': ['pytorch']},
             construct_name=self.__class__.__name__
         ).verify_backend(backend_str)
 
@@ -115,10 +108,6 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
         ----------
         x_ref
             Reference data used to fit the detector.
-        nu
-            The proportion of the training data that should be considered outliers. Note that this does
-            not necessarily correspond to the false positive rate on test data, which is still defined when
-            calling the `infer_threshold` method. Used for both ``'sklearn'`` and ``'pytorch'`` backends.
         tol
             Convergence threshold used to fit the detector. Used for both ``'sklearn'`` and ``'pytorch'`` backends.
             Defaults to ``1e-3``.

@@ -1,4 +1,5 @@
 from typing import Callable, Dict, Optional, Tuple, Union
+import warnings
 
 import numpy as np
 import torch
@@ -98,6 +99,11 @@ class SgdSVMTorch(SVMTorch):
         ValueError
             If `n_components` is less than 1.
         """
+        if (isinstance(device, str) and device in ('gpu', 'cuda')) or \
+                (isinstance(device, torch.device) and device.type == 'cuda'):
+            warnings.warn(('The `sgd` optimization option is best suited for CPU. If '
+                           'you want to use GPU, consider using the `gd` option.'))
+
         super().__init__(
             device=device,
             n_components=n_components,
@@ -143,6 +149,7 @@ class SgdSVMTorch(SVMTorch):
             verbose=verbose,
             nu=self.nu
         )
+        x_ref = x_ref.cpu().numpy()
         self.svm = self.svm.fit(x_ref)
         self._set_fitted()
         return {
@@ -189,7 +196,8 @@ class SgdSVMTorch(SVMTorch):
         """
         self.check_fitted()
         x = self.nystroem.transform(x)
-        return - torch.tensor(self.svm.score_samples(x.numpy()))
+        x = x.cpu().numpy()
+        return - torch.tensor(self.svm.score_samples(x))
 
 
 class GdSVMTorch(SVMTorch):
@@ -221,6 +229,12 @@ class GdSVMTorch(SVMTorch):
         ValueError
             If the kernel is not supported.
         """
+
+        if (isinstance(device, str) and device == 'cpu') or \
+                (isinstance(device, torch.device) and device.type == 'cpu'):
+            warnings.warn(('The `gd` optimization option is best suited for GPU. If '
+                           'you want to use CPU, consider using the `sgd` option.'))
+
         super().__init__(
             device=device,
             n_components=n_components,
