@@ -5,8 +5,7 @@ import numpy as np
 from alibi_detect.base import (BaseDetector, FitMixin, ThresholdMixin,
                                outlier_prediction_dict)
 from alibi_detect.exceptions import _catch_error as catch_error
-from alibi_detect.od.pytorch import SVMTorch
-from alibi_detect.od.sklearn import SVMSklearn
+from alibi_detect.od.pytorch import SdgSVMTorch, DgSVMTorch
 from alibi_detect.utils._types import Literal
 from alibi_detect.utils.frameworks import BackendValidator
 from alibi_detect.version import __version__
@@ -16,20 +15,22 @@ if TYPE_CHECKING:
 
 
 backends = {
-    'pytorch': SVMTorch,
-    'sklearn': SVMSklearn
+    'pytorch': {
+        'sgd': SdgSVMTorch,
+        'gd': DgSVMTorch
+    }
 }
 
 
 class SVM(BaseDetector, ThresholdMixin, FitMixin):
     def __init__(
         self,
-        n_components: Optional[int] = None,
-        backend: Literal['pytorch', 'sklearn'] = 'sklearn',
+        nu: float,
+        kernel: 'torch.nn.Module',
+        n_components: Optional[int],
+        optimization: Literal['sdg', 'dg'] = 'sgd',
+        backend: Literal['pytorch'] = 'pytorch',
         device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
-        kernel: Union['torch.nn.Module', Literal['linear', 'poly', 'rbf', 'sigmoid']] = 'rbf',
-        sigma: Optional[float] = None,
-        kernel_params: Optional[Dict] = None,
     ) -> None:
         """Support vector machine (SVM) outlier detector.
 
@@ -87,22 +88,18 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
             construct_name=self.__class__.__name__
         ).verify_backend(backend_str)
 
-        backend_cls = backends[backend]
+        backend_cls = backends[backend][optimization]
         args: Dict[str, Any] = {
             'n_components': n_components,
             'kernel': kernel,
-            'sigma': sigma,
+            'nu': nu
         }
-        if backend == 'pytorch':
-            args['device'] = device
-        if backend == 'sklearn':
-            args['kernel_params'] = kernel_params
+        args['device'] = device
         self.backend = backend_cls(**args)
 
     def fit(
         self,
         x_ref: np.ndarray,
-        nu: float,
         tol: float = 1e-6,
         max_iter: int = 1000,
         step_size_range: Tuple[float, float] = (1e-6, 1.0),

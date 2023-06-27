@@ -6,4 +6,4 @@ MahalanobisTorch = import_optional('alibi_detect.od.pytorch.mahalanobis', ['Maha
 KernelPCATorch, LinearPCATorch = import_optional('alibi_detect.od.pytorch.pca', ['KernelPCATorch', 'LinearPCATorch'])
 Ensembler = import_optional('alibi_detect.od.pytorch.ensemble', ['Ensembler'])
 GMMTorch = import_optional('alibi_detect.od.pytorch.gmm', ['GMMTorch'])
-SVMTorch = import_optional('alibi_detect.od.pytorch.svm', ['SVMTorch'])
+SdgSVMTorch, DgSVMTorch = import_optional('alibi_detect.od.pytorch.svm', ['SgdSVMTorch', 'GdSVMTorch'])

@@ -4,10 +4,10 @@ import numpy as np
 import torch
 from typing_extensions import Literal, Self
 from tqdm import tqdm
+from sklearn.linear_model import SGDOneClassSVM
 
 from alibi_detect.od.pytorch.base import TorchOutlierDetector
 from alibi_detect.utils.pytorch.losses import hinge_loss
-from alibi_detect.utils.pytorch.kernels import GaussianRBF
 
 
 class SVMTorch(TorchOutlierDetector):
@@ -15,8 +15,8 @@ class SVMTorch(TorchOutlierDetector):
 
     def __init__(
         self,
-        kernel: Union['torch.nn.Module', Literal['rbf']] = 'rbf',
-        sigma: Optional[float] = None,
+        kernel: 'torch.nn.Module',
+        nu: float,
         n_components: Optional[int] = None,
         device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
     ):
@@ -25,18 +25,14 @@ class SVMTorch(TorchOutlierDetector):
         Parameters
         ----------
         kernel
-            Used to define similarity between data points. Can be either a `torch.nn.Module` or a string. The user can
-            either pass a custom kernel as a `torch.nn.Module` or indicate a built-in kernel. The only built-in kernel
-            currently supported is the Gaussian RBF kernel. This can be specified by passing ``'rbf'`` or the user can
-            initialize the GaussianRBF kernel directly and pass it as an argument.
-        sigma
-            Kernel coefficient for the `GaussianRBF` kernel if `kernel` is ``'rbf'``. If `kernel` is a `torch.nn.Module`
-            then this argument is ignored.
+            TODO
         n_components
             Number of components in the Nystroem approximation, by default uses all of them.
         device
             Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
             passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of ``torch.device``.
+        nu
+            TODO
 
         Raises
         ------
@@ -46,21 +42,189 @@ class SVMTorch(TorchOutlierDetector):
         super().__init__(device=device)
         self.n_components = n_components
         self.kernel = kernel
-        self.sigma = sigma
-        self._init_kernel()
+        self.nystroem = _Nystroem(
+            self.kernel,  # type: ignore[arg-type]
+            self.n_components
+        )
+        self.nu = nu
 
-    def _init_kernel(self) -> None:
-        """Initialize the Kernel."""
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Detect if `x` is an outlier.
 
-        if isinstance(self.kernel, str):
-            if self.kernel not in ['rbf']:
-                raise ValueError(
-                    f'Currently only the rbf Kernel is supported for the SVM torch backend, got {self.kernel}.'
-                )
-            if self.kernel == 'rbf':
-                if self.sigma is not None:
-                    sigma = torch.tensor(self.sigma, device=self.device)
-                self.kernel = GaussianRBF(sigma=sigma)
+        Parameters
+        ----------
+        x
+            `torch.Tensor` with leading batch dimension.
+
+        Returns
+        -------
+        `torch.Tensor` of ``bool`` values with leading batch dimension.
+
+        Raises
+        ------
+        ThresholdNotInferredException
+            If called before detector has had `infer_threshold` method called.
+        """
+        scores = self.score(x)
+        if not torch.jit.is_scripting():
+            self.check_threshold_inferred()
+        preds = scores > self.threshold
+        return preds
+
+
+class SgdSVMTorch(SVMTorch):
+    ensemble = False
+
+    def __init__(
+        self,
+        kernel: 'torch.nn.Module',
+        nu: float,
+        n_components: Optional[int] = None,
+        device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
+    ):
+        """SKlearn backend for the One class support vector machine (SVM) outlier detector.
+
+        Parameters
+        ----------
+        n_components
+            Number of features to construct. How many data points will be used to construct the mapping.
+        kernel
+            TODO
+        device:
+            TODO
+
+        Raises
+        ------
+        ValueError
+            If `n_components` is less than 1.
+        """
+        super().__init__(
+            device=device,
+            n_components=n_components,
+            kernel=kernel,
+            nu=nu,
+        )
+
+    def fit(  # type: ignore[override]
+        self,
+        x_ref: np.ndarray,
+        tol: float = 1e-6,
+        max_iter: int = 1000,
+        verbose: int = 0,
+    ) -> Dict:
+        """Fit the SKLearn SVM model.
+
+        Parameters
+        ----------
+        x_ref
+            Training data.
+        nu
+            The proportion of the training data that should be considered outliers. Note that this does
+            not necessarily correspond to the false positive rate on test data, which is still defined when
+            calling the `infer_threshold` method.
+        tol
+            The decrease in loss required over the previous ``n_iter_no_change`` iterations in order to
+            continue optimizing.
+        max_iter
+            The maximum number of optimization steps.
+        verbose
+            Verbosity level during training. ``0`` is silent, ``1`` a progress bar.
+
+        Returns
+        -------
+        Dictionary with fit results. The dictionary contains the following keys:
+            - converged: `bool` indicating whether training converged.
+            - n_iter: number of iterations performed.
+        """
+        x_ref = self.nystroem.fit(x_ref).transform(x_ref)
+        self.svm = SGDOneClassSVM(
+            tol=tol,
+            max_iter=max_iter,
+            verbose=verbose,
+            nu=self.nu
+        )
+        self.svm = self.svm.fit(x_ref)
+        self._set_fitted()
+        return {
+            'converged': self.svm.n_iter_ < max_iter,
+            'n_iter': self.svm.n_iter_,
+        }
+
+    def format_fit_kwargs(self, fit_kwargs: Dict) -> Dict:
+        """Format kwargs for `fit` method.
+
+        Parameters
+        ----------
+        kwargs
+            dictionary of Kwargs to format. See `fit` method for details.
+
+        Returns
+        -------
+        Formatted kwargs.
+        """
+        return dict(
+            tol=fit_kwargs.get('tol', 1e-3),
+            max_iter=fit_kwargs.get('max_iter', 1000),
+            verbose=fit_kwargs.get('verbose', 0),
+        )
+
+    def score(self, x: np.ndarray) -> np.ndarray:
+        """Computes the score of `x`
+
+        Parameters
+        ----------
+        x
+            `np.ndarray` with leading batch dimension.
+
+        Returns
+        -------
+        `np.ndarray` of scores with leading batch dimension.
+
+        Raises
+        ------
+        NotFittedError
+            Raised if method called and detector has not been fit.
+        """
+        self.check_fitted()
+        x = self.nystroem.transform(x)
+        return - torch.tensor(self.svm.score_samples(x.numpy()))
+
+
+class GdSVMTorch(SVMTorch):
+    ensemble = False
+
+    def __init__(
+        self,
+        nu: float,
+        kernel: Union['torch.nn.Module', Literal['rbf']] = 'rbf',
+        n_components: Optional[int] = None,
+        device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
+    ):
+        """Pytorch backend for the Support Vector Machine (SVM) outlier detector.
+
+        Parameters
+        ----------
+        kernel
+            TODO
+        n_components
+            Number of components in the Nystroem approximation, by default uses all of them.
+        device
+            Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
+            passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of ``torch.device``.
+        nu
+            TODO
+            
+        Raises
+        ------
+        ValueError
+            If the kernel is not supported.
+        """
+        super().__init__(
+            device=device,
+            n_components=n_components,
+            kernel=kernel,
+            nu=nu,
+        )
 
     def fit(  # type: ignore[override]
         self,
@@ -106,11 +270,6 @@ class SVMTorch(TorchOutlierDetector):
             - lower_bound: loss lower bound.
         """
 
-        self.nystroem = _Nystroem(
-            self.kernel,  # type: ignore[arg-type]
-            self.n_components
-        )
-
         X_nys = self.nystroem.fit(x_ref).transform(x_ref)
         n, d = X_nys.shape
         min_eta, max_eta = step_size_range
@@ -128,7 +287,7 @@ class SVMTorch(TorchOutlierDetector):
         coeffs = torch.zeros(d, dtype=X_nys.dtype, device=self.device)
         intercept = torch.zeros(1, dtype=X_nys.dtype, device=self.device)
         preds = X_nys @ coeffs + intercept
-        loss = nu * (coeffs.square().sum()/2 + intercept) + hinge_loss(preds)
+        loss = self.nu * (coeffs.square().sum()/2 + intercept) + hinge_loss(preds)
         min_loss, min_loss_coeffs, min_loss_intercept = loss, coeffs, intercept
         iter, t_since_improv = 0, 0
         converged = False
@@ -139,12 +298,12 @@ class SVMTorch(TorchOutlierDetector):
                 # First two lines give form of sgd update (for each candidate step size)
                 sup_vec_inds = (preds < 1)
                 cand_coeffs = coeffs[:, None] * \
-                    (1-etas*nu) + etas*(X_nys[sup_vec_inds].sum(0)/n)[:, None]
-                cand_intercept = intercept - etas*nu + (sup_vec_inds.sum()/n)
+                    (1-etas*self.nu) + etas*(X_nys[sup_vec_inds].sum(0)/n)[:, None]
+                cand_intercept = intercept - etas*self.nu + (sup_vec_inds.sum()/n)
 
                 # Compute loss for each candidate step size and choose the best
                 cand_preds = X_nys @ cand_coeffs + cand_intercept
-                cand_losses = nu * (cand_coeffs.square().sum(0)/2 + cand_intercept) + hinge_loss(cand_preds)
+                cand_losses = self.nu * (cand_coeffs.square().sum(0)/2 + cand_intercept) + hinge_loss(cand_preds)
                 best_step_size = cand_losses.argmin()
                 coeffs, intercept = cand_coeffs[:, best_step_size], cand_intercept[best_step_size]
                 preds, loss = cand_preds[:, best_step_size], cand_losses[best_step_size]
@@ -189,7 +348,6 @@ class SVMTorch(TorchOutlierDetector):
         Formatted kwargs.
         """
         return dict(
-            nu=fit_kwargs.get('nu', 0.5),
             step_size_range=fit_kwargs.get('step_size_range', (1e-6, 1.0)),
             n_iter_no_change=fit_kwargs.get('n_iter_no_change', 25),
             tol=fit_kwargs.get('tol', 1e-6),
@@ -197,29 +355,6 @@ class SVMTorch(TorchOutlierDetector):
             n_step_sizes=fit_kwargs.get('n_step_sizes', 16),
             max_iter=fit_kwargs.get('max_iter', 1000)
         )
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Detect if `x` is an outlier.
-
-        Parameters
-        ----------
-        x
-            `torch.Tensor` with leading batch dimension.
-
-        Returns
-        -------
-        `torch.Tensor` of ``bool`` values with leading batch dimension.
-
-        Raises
-        ------
-        ThresholdNotInferredException
-            If called before detector has had `infer_threshold` method called.
-        """
-        scores = self.score(x)
-        if not torch.jit.is_scripting():
-            self.check_threshold_inferred()
-        preds = scores > self.threshold
-        return preds
 
     def score(self, x: torch.Tensor) -> torch.Tensor:
         """Computes the score of `x`
