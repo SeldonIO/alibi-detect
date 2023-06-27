@@ -60,6 +60,22 @@ def test_svm_device_warnings(optimization, device):
     assert str(warning[0].message) == warning_msgs[optimization]
 
 
+def test_svm_optimization_error():
+    """Test SVM detector raises correct errors for wrong optimization kwargs."""
+
+    with pytest.raises(ValueError) as err:
+        _ = SVM(
+            n_components=10,
+            backend='pytorch',
+            kernel=GaussianRBF(torch.tensor(2)),
+            optimization='not_an_option',
+            device='cpu',
+            nu=0.1
+        )
+
+    assert str(err.value) == 'Optimization not_an_option not recognized. Choose from `sgd` or `gd`.'
+
+
 @pytest.mark.parametrize('optimization,score_bounds', [('sgd', [-0.15, -0.6]), ('gd', [-0.85, -0.9])])
 def test_fitted_svm_score(optimization, score_bounds):
     """Test SVM detector score method.

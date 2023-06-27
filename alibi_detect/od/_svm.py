@@ -75,6 +75,9 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
         """
         super().__init__()
 
+        if optimization not in ('sgd', 'gd'):
+            raise ValueError(f'Optimization {optimization} not recognized. Choose from `sgd` or `gd`.')
+
         backend_str: str = backend.lower()
         BackendValidator(
             backend_options={'pytorch': ['pytorch']},
