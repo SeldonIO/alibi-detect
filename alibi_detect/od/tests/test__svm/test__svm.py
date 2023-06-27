@@ -35,6 +35,31 @@ def test_unfitted_svm_score(optimization):
     assert str(err.value) == 'SVM has not been fit!'
 
 
+@pytest.mark.parametrize('optimization,device', [('sgd', 'gpu'), ('gd', 'cpu')])
+def test_svm_device_warnings(optimization, device):
+    """Test SVM detector device warnings."""
+
+    warning_msgs = {
+        'sgd': ('The `sgd` optimization option is best suited for CPU. '
+                'If you want to use GPU, consider using the `gd` option.'),
+        'gd': ('The `gd` optimization option is best suited for GPU. '
+               'If you want to use CPU, consider using the `sgd` option.')
+    }
+
+    with pytest.warns(UserWarning) as warning:
+        _ = SVM(
+            n_components=10,
+            backend='pytorch',
+            kernel=GaussianRBF(torch.tensor(2)),
+            optimization=optimization,
+            device=device,
+            nu=0.1
+        )
+
+    assert len(warning) == 1
+    assert str(warning[0].message) == warning_msgs[optimization]
+
+
 @pytest.mark.parametrize('optimization,score_bounds', [('sgd', [-0.15, -0.6]), ('gd', [-0.85, -0.9])])
 def test_fitted_svm_score(optimization, score_bounds):
     """Test SVM detector score method.
