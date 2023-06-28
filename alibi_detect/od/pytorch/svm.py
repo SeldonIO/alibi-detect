@@ -26,19 +26,16 @@ class SVMTorch(TorchOutlierDetector):
         Parameters
         ----------
         kernel
-            TODO
+            Kernel function to use for outlier detection.
         n_components
             Number of components in the Nystroem approximation, by default uses all of them.
         device
             Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
             passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of ``torch.device``.
         nu
-            TODO
-
-        Raises
-        ------
-        ValueError
-            If the kernel is not supported.
+            The proportion of the training data that should be considered outliers. Note that this does
+            not necessarily correspond to the false positive rate on test data, which is still defined when
+            calling the `infer_threshold` method.
         """
         super().__init__(device=device)
         self.n_components = n_components
@@ -83,16 +80,17 @@ class SgdSVMTorch(SVMTorch):
         n_components: Optional[int] = None,
         device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
     ):
-        """SKlearn backend for the One class support vector machine (SVM) outlier detector.
+        """SGD SKlearn backend for the One class support vector machine (SVM) outlier detector.
 
         Parameters
         ----------
         n_components
             Number of features to construct. How many data points will be used to construct the mapping.
         kernel
-            TODO
-        device:
-            TODO
+            Kernel function to use for outlier detection.
+        device
+            Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
+            passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of ``torch.device``.
 
         Raises
         ------
@@ -124,10 +122,6 @@ class SgdSVMTorch(SVMTorch):
         ----------
         x_ref
             Training data.
-        nu
-            The proportion of the training data that should be considered outliers. Note that this does
-            not necessarily correspond to the false positive rate on test data, which is still defined when
-            calling the `infer_threshold` method.
         tol
             The decrease in loss required over the previous ``n_iter_no_change`` iterations in order to
             continue optimizing.
@@ -178,8 +172,6 @@ class SgdSVMTorch(SVMTorch):
     def score(self, x: torch.Tensor) -> torch.Tensor:
         """Computes the score of `x`
 
-        TODO: types?
-
         Parameters
         ----------
         x
@@ -197,7 +189,7 @@ class SgdSVMTorch(SVMTorch):
         self.check_fitted()
         x = self.nystroem.transform(x)
         x = x.cpu().numpy()
-        return - torch.tensor(self.svm.score_samples(x))
+        return self._to_tensor(- self.svm.score_samples(x))
 
 
 class GdSVMTorch(SVMTorch):
@@ -215,19 +207,16 @@ class GdSVMTorch(SVMTorch):
         Parameters
         ----------
         kernel
-            TODO
+            Kernel function to use for outlier detection.
         n_components
             Number of components in the Nystroem approximation, by default uses all of them.
         device
             Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
             passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of ``torch.device``.
         nu
-            TODO
-
-        Raises
-        ------
-        ValueError
-            If the kernel is not supported.
+            The proportion of the training data that should be considered outliers. Note that this does
+            not necessarily correspond to the false positive rate on test data, which is still defined when
+            calling the `infer_threshold` method.
         """
 
         if (isinstance(device, str) and device == 'cpu') or \

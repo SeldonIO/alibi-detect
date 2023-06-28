@@ -32,46 +32,48 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
         backend: Literal['pytorch'] = 'pytorch',
         device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
     ) -> None:
-        """Support vector machine (SVM) outlier detector.
+        """One Class Support vector machine (OCSVM) outlier detector.
 
-        The Support vector machine outlier detector fits a one-class SVM to the reference data.
+        The one-class Support vector machine outlier detector fits a one-class SVM to the reference data.
 
         Rather than the typical approach of optimizing the exact kernel OCSVM objective through a dual formulation,
         here we instead map the data into the kernel's RKHS and then solve the linear optimization problem
-        directly through its primal formulation. The Nystroem approximation can optionally be used to speed up
-        training and inference by approximating the kernel's RKHS.
+        directly through its primal formulation. The Nystroem approximation is used to speed up training and inference
+        by approximating the kernel's RKHS.
 
-        We provide two backends for the one class svm, one based on PyTorch and one based on scikit-learn. The
-        scikit-learn backend wraps the `SGDOneClassSVM` class. The PyTorch backend is  tailored for operation on GPUs.
-        Instead of applying stochastic gradient descent (one data point at a time) with a fixed learning rate schedule
-        we perform full gradient descent with step size chosen at each iteration via line search. Note that on a CPU
-        this would not necessarily be preferable to SGD as we would have to iterate through both data points and
-        candidate step sizes, however on GPU all of the operations are vectorized/parallelized.
+        We provide two options, specified by the optimization `kwarg`, for optimizing the one-class svm. `''sgd''`
+        wraps the `SGDOneClassSVM` class from the sklearn package and the other, `''gd''` uses a custom implementation
+        in PyTorch. The PyTorch approach is tailored for operation on GPUs. Instead of applying stochastic gradient
+        descent (one data point at a time) with a fixed learning rate schedule it performs full gradient descent with
+        step size chosen at each iteration via line search. Note that on a CPU this would not necessarily be preferable
+        to SGD as we would have to iterate through both data points and candidate step sizes, however on GPU all of the
+        operations are vectorized/parallelized. Moreover, the Nystroem approximation has complexity `O(n^2m)` where
+        `n` is the number of reference instances and `m` defines the number of inducing points. This can therefore be
+        expensive for large reference sets and benefits from implementation on the GPU.
 
-        Moreover, the Nystroem approximation has complexity `O(n^2m)` where `n` is the number of reference instances
-        and `m` defines the number of inducing points. This can therefore be expensive for large reference sets and
-        benefits from implementation on the GPU. In general if using a small dataset opt for the sklearn backend and
-        if using a large dataset opt for the pytorch backend.
+        In general if using a small dataset then using the `''cpu''` with the optimization `''sgd''` is the best choice.
+        Whereas if using a large dataset then using the `''gpu''` with the optimization `''gd''` is the best choice.
 
         Parameters
         ----------
-        kernel
-            TODO
         nu
             The proportion of the training data that should be considered outliers. Note that this does
             not necessarily correspond to the false positive rate on test data, which is still defined when
-            calling the `infer_threshold` method. Used for both ``'sklearn'`` and ``'pytorch'`` backends.
+            calling the `infer_threshold` method.
+        kernel
+            Kernel function to use for outlier detection.
         n_components
             Number of components in the Nystroem approximation By default uses all of them.
         device
             Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
-            passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of ``torch.device``. Only used for the
-            ``'pytorch'`` backend.
+            passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of ``torch.device``.
 
         Raises
         ------
         NotImplementedError
             If choice of `backend` is not implemented.
+        ValueError
+            If choice of `optimization` is not implemented.
         """
         super().__init__()
 
@@ -105,27 +107,26 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
     ) -> None:
         """Fit the detector on reference data.
 
-        Uses the choice of backend to fit the svm model to the data.
+        Uses the choice of optimization method to fit the svm model to the data.
 
         Parameters
         ----------
         x_ref
             Reference data used to fit the detector.
         tol
-            Convergence threshold used to fit the detector. Used for both ``'sklearn'`` and ``'pytorch'`` backends.
+            Convergence threshold used to fit the detector. Used for both ``'sgd'`` and ``'gd'`` optimizations.
             Defaults to ``1e-3``.
         max_iter
-            The maximum number of optimization steps. Used for both ``'sklearn'`` and ``'pytorch'`` backends.
+            The maximum number of optimization steps. Used for both ``'sgd'`` and ``'gd'`` optimizations.
         step_size_range
-            The range of values to be considered for the gradient descent step size at each iteration. This is
-            specified as a tuple of the form `(min_eta, max_eta)` and only used for the ``'pytorch'`` backend.
+            The range of values to be considered for the gradient descent step size at each iteration. This is specified
+            as a tuple of the form `(min_eta, max_eta)` and only used for the ``'gd'`` optimization.
         n_step_sizes
-            The number of step sizes in the defined range to be tested for loss reduction. This many points
-            are spaced equidistantly along the range in log space. This is only used for the ``'pytorch'``
-            backend.
+            The number of step sizes in the defined range to be tested for loss reduction. This many points are spaced
+            equidistantly along the range in log space. This is only used for the ``'gd'`` optimization.
         n_iter_no_change
-            The number of iterations over which the loss must decrease by `tol` in order for optimization to
-            continue. This is only used for the ``'pytorch'`` backend.
+            The number of iterations over which the loss must decrease by `tol` in order for optimization to continue.
+            This is only used for the ``'gd'`` optimization..
         verbose
             Verbosity level during training. ``0`` is silent, ``1`` a progress bar or sklearn training output for the
             `SGDOneClassSVM`.
