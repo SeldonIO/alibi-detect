@@ -61,7 +61,7 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
             correspond to the false positive rate on test data, which is still defined when calling the
             `infer_threshold` method.
         kernel
-            Kernel function to use for outlier detection.
+            Kernel function to use for outlier detection. Should be an instance of a subclass of `torch.nn.Module`.
         n_components
             Number of components in the Nystroem approximation By default uses all of them.
         optimization
@@ -78,11 +78,16 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
             If choice of `backend` is not implemented.
         ValueError
             If choice of `optimization` is not implemented.
+        ValueError
+            If `n_components` is not a positive integer.
         """
         super().__init__()
 
         if optimization not in ('sgd', 'gd'):
             raise ValueError(f'Optimization {optimization} not recognized. Choose from `sgd` or `gd`.')
+
+        if n_components is not None and n_components <= 0:
+            raise ValueError(f'n_components must be a positive integer, got {n_components}.')
 
         backend_str: str = backend.lower()
         BackendValidator(

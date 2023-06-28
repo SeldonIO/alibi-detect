@@ -16,8 +16,8 @@ class SVMTorch(TorchOutlierDetector):
 
     def __init__(
         self,
-        kernel: 'torch.nn.Module',
         nu: float,
+        kernel: 'torch.nn.Module',
         n_components: Optional[int] = None,
         device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
     ):
@@ -91,15 +91,10 @@ class SgdSVMTorch(SVMTorch):
         kernel
             Kernel function to use for outlier detection.
         n_components
-            Number of features to construct. How many data points will be used to construct the mapping.
+            Number of components in the Nystroem approximation, by default uses all of them.
         device
             Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
             passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of ``torch.device``.
-
-        Raises
-        ------
-        ValueError
-            If `n_components` is less than 1.
         """
         if (isinstance(device, str) and device in ('gpu', 'cuda')) or \
                 (isinstance(device, torch.device) and device.type == 'cuda'):
@@ -140,15 +135,15 @@ class SgdSVMTorch(SVMTorch):
             - converged: `bool` indicating whether training converged.
             - n_iter: number of iterations performed.
         """
-        x_ref = self.nystroem.fit(x_ref).transform(x_ref)
+        x_nys = self.nystroem.fit(x_ref).transform(x_ref)
         self.svm = SGDOneClassSVM(
             tol=tol,
             max_iter=max_iter,
             verbose=verbose,
             nu=self.nu
         )
-        x_ref = x_ref.cpu().numpy()
-        self.svm = self.svm.fit(x_ref)
+        x_nys = x_nys.cpu().numpy()
+        self.svm = self.svm.fit(x_nys)
         self._set_fitted()
         return {
             'converged': self.svm.n_iter_ < max_iter,
@@ -191,9 +186,9 @@ class SgdSVMTorch(SVMTorch):
             Raised if method called and detector has not been fit.
         """
         self.check_fitted()
-        x = self.nystroem.transform(x)
-        x = x.cpu().numpy()
-        return self._to_tensor(- self.svm.score_samples(x))
+        x_nys = self.nystroem.transform(x)
+        x_nys = x_nys.cpu().numpy()
+        return self._to_tensor(-self.svm.score_samples(x_nys))
 
 
 class GdSVMTorch(SVMTorch):
@@ -274,8 +269,8 @@ class GdSVMTorch(SVMTorch):
             - lower_bound: loss lower bound.
         """
 
-        X_nys = self.nystroem.fit(x_ref).transform(x_ref)
-        n, d = X_nys.shape
+        x_nys = self.nystroem.fit(x_ref).transform(x_ref)
+        n, d = x_nys.shape
         min_eta, max_eta = step_size_range
         etas = torch.tensor(
             np.linspace(
@@ -283,14 +278,14 @@ class GdSVMTorch(SVMTorch):
                 np.log(max_eta),
                 n_step_sizes
             ),
-            dtype=X_nys.dtype,
+            dtype=x_nys.dtype,
             device=self.device
         ).exp()
 
         # Initialise coeffs/preds/loss
-        coeffs = torch.zeros(d, dtype=X_nys.dtype, device=self.device)
-        intercept = torch.zeros(1, dtype=X_nys.dtype, device=self.device)
-        preds = X_nys @ coeffs + intercept
+        coeffs = torch.zeros(d, dtype=x_nys.dtype, device=self.device)
+        intercept = torch.zeros(1, dtype=x_nys.dtype, device=self.device)
+        preds = x_nys @ coeffs + intercept
         loss = self.nu * (coeffs.square().sum()/2 + intercept) + hinge_loss(preds)
         min_loss, min_loss_coeffs, min_loss_intercept = loss, coeffs, intercept
         iter, t_since_improv = 0, 0
@@ -302,11 +297,11 @@ class GdSVMTorch(SVMTorch):
                 # First two lines give form of sgd update (for each candidate step size)
                 sup_vec_inds = (preds < 1)
                 cand_coeffs = coeffs[:, None] * \
-                    (1-etas*self.nu) + etas*(X_nys[sup_vec_inds].sum(0)/n)[:, None]
+                    (1-etas*self.nu) + etas*(x_nys[sup_vec_inds].sum(0)/n)[:, None]
                 cand_intercept = intercept - etas*self.nu + (sup_vec_inds.sum()/n)
 
                 # Compute loss for each candidate step size and choose the best
-                cand_preds = X_nys @ cand_coeffs + cand_intercept
+                cand_preds = x_nys @ cand_coeffs + cand_intercept
                 cand_losses = self.nu * (cand_coeffs.square().sum(0)/2 + cand_intercept) + hinge_loss(cand_preds)
                 best_step_size = cand_losses.argmin()
                 coeffs, intercept = cand_coeffs[:, best_step_size], cand_intercept[best_step_size]

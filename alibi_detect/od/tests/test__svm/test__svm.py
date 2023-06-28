@@ -76,6 +76,22 @@ def test_svm_optimization_error():
     assert str(err.value) == 'Optimization not_an_option not recognized. Choose from `sgd` or `gd`.'
 
 
+def test_svm_n_components_error():
+    """Test SVM detector raises correct errors for wrong value of n_components."""
+
+    with pytest.raises(ValueError) as err:
+        _ = SVM(
+            n_components=0,
+            backend='pytorch',
+            kernel=GaussianRBF(torch.tensor(2)),
+            optimization='gd',
+            device='cpu',
+            nu=0.1
+        )
+
+    assert str(err.value) == 'n_components must be a positive integer, got 0.'
+
+
 @pytest.mark.parametrize('optimization,score_bounds', [('sgd', [-0.15, -0.6]), ('gd', [-0.85, -0.9])])
 def test_fitted_svm_score(optimization, score_bounds):
     """Test SVM detector score method.
