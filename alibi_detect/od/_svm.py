@@ -5,7 +5,7 @@ import numpy as np
 from alibi_detect.base import (BaseDetector, FitMixin, ThresholdMixin,
                                outlier_prediction_dict)
 from alibi_detect.exceptions import _catch_error as catch_error
-from alibi_detect.od.pytorch import SdgSVMTorch, DgSVMTorch
+from alibi_detect.od.pytorch import DgSVMTorch, SdgSVMTorch
 from alibi_detect.utils._types import Literal
 from alibi_detect.utils.frameworks import BackendValidator
 from alibi_detect.version import __version__
@@ -32,7 +32,7 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
         backend: Literal['pytorch'] = 'pytorch',
         device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
     ) -> None:
-        """One Class Support vector machine (OCSVM) outlier detector.
+        """One-Class Support vector machine (OCSVM) outlier detector.
 
         The one-class Support vector machine outlier detector fits a one-class SVM to the reference data.
 
@@ -57,13 +57,17 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
         Parameters
         ----------
         nu
-            The proportion of the training data that should be considered outliers. Note that this does
-            not necessarily correspond to the false positive rate on test data, which is still defined when
-            calling the `infer_threshold` method.
+            The proportion of the training data that should be considered outliers. Note that this does not necessarily
+            correspond to the false positive rate on test data, which is still defined when calling the
+            `infer_threshold` method.
         kernel
             Kernel function to use for outlier detection.
         n_components
             Number of components in the Nystroem approximation By default uses all of them.
+        optimization
+            Optimization method to use. Choose from ``'sgd'`` or ``'gd'``. Defaults to ``'sgd'``.
+        backend
+            Backend used for outlier detection. Defaults to ``'pytorch'``. Options are ``'pytorch'``.
         device
             Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
             passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of ``torch.device``.

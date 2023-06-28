@@ -1,11 +1,11 @@
-from typing import Callable, Dict, Optional, Tuple, Union
 import warnings
+from typing import Callable, Dict, Optional, Tuple, Union
 
 import numpy as np
 import torch
-from typing_extensions import Literal, Self
-from tqdm import tqdm
 from sklearn.linear_model import SGDOneClassSVM
+from tqdm import tqdm
+from typing_extensions import Literal, Self
 
 from alibi_detect.od.pytorch.base import TorchOutlierDetector
 from alibi_detect.utils.pytorch.losses import hinge_loss
@@ -25,6 +25,10 @@ class SVMTorch(TorchOutlierDetector):
 
         Parameters
         ----------
+        nu
+            The proportion of the training data that should be considered outliers. Note that this does
+            not necessarily correspond to the false positive rate on test data, which is still defined when
+            calling the `infer_threshold` method.
         kernel
             Kernel function to use for outlier detection.
         n_components
@@ -32,10 +36,6 @@ class SVMTorch(TorchOutlierDetector):
         device
             Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
             passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of ``torch.device``.
-        nu
-            The proportion of the training data that should be considered outliers. Note that this does
-            not necessarily correspond to the false positive rate on test data, which is still defined when
-            calling the `infer_threshold` method.
         """
         super().__init__(device=device)
         self.n_components = n_components
@@ -75,8 +75,8 @@ class SgdSVMTorch(SVMTorch):
 
     def __init__(
         self,
-        kernel: 'torch.nn.Module',
         nu: float,
+        kernel: 'torch.nn.Module',
         n_components: Optional[int] = None,
         device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
     ):
@@ -84,10 +84,14 @@ class SgdSVMTorch(SVMTorch):
 
         Parameters
         ----------
-        n_components
-            Number of features to construct. How many data points will be used to construct the mapping.
+        nu
+            The proportion of the training data that should be considered outliers. Note that this does
+            not necessarily correspond to the false positive rate on test data, which is still defined when
+            calling the `infer_threshold` method.
         kernel
             Kernel function to use for outlier detection.
+        n_components
+            Number of features to construct. How many data points will be used to construct the mapping.
         device
             Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
             passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of ``torch.device``.
@@ -156,7 +160,7 @@ class SgdSVMTorch(SVMTorch):
 
         Parameters
         ----------
-        kwargs
+        fit_kwargs
             dictionary of Kwargs to format. See `fit` method for details.
 
         Returns
@@ -206,6 +210,10 @@ class GdSVMTorch(SVMTorch):
 
         Parameters
         ----------
+        nu
+            The proportion of the training data that should be considered outliers. Note that this does
+            not necessarily correspond to the false positive rate on test data, which is still defined when
+            calling the `infer_threshold` method.
         kernel
             Kernel function to use for outlier detection.
         n_components
@@ -213,10 +221,6 @@ class GdSVMTorch(SVMTorch):
         device
             Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
             passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of ``torch.device``.
-        nu
-            The proportion of the training data that should be considered outliers. Note that this does
-            not necessarily correspond to the false positive rate on test data, which is still defined when
-            calling the `infer_threshold` method.
         """
 
         if (isinstance(device, str) and device == 'cpu') or \
@@ -340,7 +344,7 @@ class GdSVMTorch(SVMTorch):
 
         Parameters
         ----------
-        kwargs
+        fit_kwargs
             dictionary of Kwargs to format. See `fit` method for details.
 
         Returns
@@ -392,7 +396,7 @@ class _Nystroem:
         ----------
         kernel
             Kernel function.
-        n_components, optional
+        n_components
             Number of components in the Nystroem approximation. By default uses all of them.
         """
         self.kernel = kernel
