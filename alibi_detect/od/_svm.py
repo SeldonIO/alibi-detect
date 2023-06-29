@@ -41,7 +41,7 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
         directly through its primal formulation. The Nystroem approximation is used to speed up training and inference
         by approximating the kernel's RKHS.
 
-        We provide two options, specified by the optimization `kwarg`, for optimizing the one-class svm. `''sgd''`
+        We provide two options, specified by the `optimization` parameter, for optimizing the one-class svm. `''sgd''`
         wraps the `SGDOneClassSVM` class from the sklearn package and the other, `''gd''` uses a custom implementation
         in PyTorch. The PyTorch approach is tailored for operation on GPUs. Instead of applying stochastic gradient
         descent (one data point at a time) with a fixed learning rate schedule it performs full gradient descent with
@@ -77,7 +77,7 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
         NotImplementedError
             If choice of `backend` is not implemented.
         ValueError
-            If choice of `optimization` is not implemented.
+            If choice of `optimization` is not valid.
         ValueError
             If `n_components` is not a positive integer.
         """

@@ -80,7 +80,7 @@ class SgdSVMTorch(SVMTorch):
         n_components: Optional[int] = None,
         device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
     ):
-        """SGD SKlearn backend for the One class support vector machine (SVM) outlier detector.
+        """SGD Optimization backend for the One class support vector machine (SVM) outlier detector.
 
         Parameters
         ----------
