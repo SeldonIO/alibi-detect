@@ -3,11 +3,11 @@ import numpy as np
 import torch
 
 from alibi_detect.utils.pytorch.kernels import GaussianRBF
-from alibi_detect.od.pytorch.svm import SgdSVMTorch, GdSVMTorch
+from alibi_detect.od.pytorch.svm import BgdSVMTorch, SgdSVMTorch
 from alibi_detect.exceptions import NotFittedError, ThresholdNotInferredError
 
 
-@pytest.mark.parametrize('backend_cls', [SgdSVMTorch, GdSVMTorch])
+@pytest.mark.parametrize('backend_cls', [BgdSVMTorch, SgdSVMTorch])
 def test_svm_pytorch_scoring(backend_cls):
     """Test SVM detector pytorch scoring method.
 
@@ -50,7 +50,7 @@ def test_svm_pytorch_scoring(backend_cls):
 
 
 @pytest.mark.skip(reason="Can't convert GaussianRBF to torchscript due to torchscript type constraints")
-@pytest.mark.parametrize('backend_cls', [SgdSVMTorch, GdSVMTorch])
+@pytest.mark.parametrize('backend_cls', [BgdSVMTorch, SgdSVMTorch])
 def test_svm_torch_backend_ts(tmp_path, backend_cls):
     """Test SVM detector backend is torch-scriptable and savable."""
     svm_torch = backend_cls(n_components=10, kernel=GaussianRBF())
@@ -70,7 +70,7 @@ def test_svm_torch_backend_ts(tmp_path, backend_cls):
     assert torch.all(pred_1 == pred_2)
 
 
-@pytest.mark.parametrize('backend_cls', [SgdSVMTorch, GdSVMTorch])
+@pytest.mark.parametrize('backend_cls', [BgdSVMTorch, SgdSVMTorch])
 def test_svm_pytorch_backend_fit_errors(backend_cls):
     """Test SVM detector pytorch backend fit errors.
 
@@ -107,7 +107,7 @@ def test_svm_pytorch_backend_fit_errors(backend_cls):
     assert svm_torch.predict(x)
 
 
-@pytest.mark.parametrize('backend_cls', [SgdSVMTorch, GdSVMTorch])
+@pytest.mark.parametrize('backend_cls', [BgdSVMTorch, SgdSVMTorch])
 def test_svm_pytorch_fit(backend_cls):
     """Test SVM detector pytorch fit method.
 

@@ -8,7 +8,7 @@ from alibi_detect.utils.pytorch import GaussianRBF
 from sklearn.datasets import make_moons
 
 
-@pytest.mark.parametrize('optimization', ['sgd', 'gd'])
+@pytest.mark.parametrize('optimization', ['sgd', 'bgd'])
 def test_unfitted_svm_score(optimization):
     """Test SVM detector raises exceptions when not fitted."""
     svm_detector = SVM(
@@ -35,15 +35,15 @@ def test_unfitted_svm_score(optimization):
     assert str(err.value) == 'SVM has not been fit!'
 
 
-@pytest.mark.parametrize('optimization,device', [('sgd', 'gpu'), ('gd', 'cpu')])
+@pytest.mark.parametrize('optimization,device', [('sgd', 'gpu'), ('bgd', 'cpu')])
 def test_svm_device_warnings(optimization, device):
     """Test SVM detector device warnings."""
 
     warning_msgs = {
         'sgd': ('The `sgd` optimization option is best suited for CPU. '
                 'If you want to use GPU, consider using the `gd` option.'),
-        'gd': ('The `gd` optimization option is best suited for GPU. '
-               'If you want to use CPU, consider using the `sgd` option.')
+        'bgd': ('The `gd` optimization option is best suited for GPU. '
+                'If you want to use CPU, consider using the `sgd` option.')
     }
 
     with pytest.warns(UserWarning) as warning:
@@ -73,7 +73,7 @@ def test_svm_optimization_error():
             nu=0.1
         )
 
-    assert str(err.value) == 'Optimization not_an_option not recognized. Choose from `sgd` or `gd`.'
+    assert str(err.value) == 'Optimization not_an_option not recognized. Choose from `sgd` or `bgd`.'
 
 
 def test_svm_n_components_error():
@@ -84,7 +84,7 @@ def test_svm_n_components_error():
             n_components=0,
             backend='pytorch',
             kernel=GaussianRBF(torch.tensor(2)),
-            optimization='gd',
+            optimization='bgd',
             device='cpu',
             nu=0.1
         )
@@ -92,7 +92,7 @@ def test_svm_n_components_error():
     assert str(err.value) == 'n_components must be a positive integer, got 0.'
 
 
-@pytest.mark.parametrize('optimization,score_bounds', [('sgd', [-0.15, -0.6]), ('gd', [-0.85, -0.9])])
+@pytest.mark.parametrize('optimization,score_bounds', [('sgd', [-0.15, -0.6]), ('bgd', [-0.85, -0.9])])
 def test_fitted_svm_score(optimization, score_bounds):
     """Test SVM detector score method.
 
@@ -123,7 +123,7 @@ def test_fitted_svm_score(optimization, score_bounds):
     assert y['p_value'] is None
 
 
-@pytest.mark.parametrize('optimization,score_bounds', [('sgd', [-0.15, -0.6]), ('gd', [-0.85, -0.9])])
+@pytest.mark.parametrize('optimization,score_bounds', [('sgd', [-0.15, -0.6]), ('bgd', [-0.85, -0.9])])
 def test_fitted_svm_predict(optimization, score_bounds):
     """Test SVM detector predict method.
 
@@ -152,7 +152,7 @@ def test_fitted_svm_predict(optimization, score_bounds):
     assert (y['is_outlier'] == [True, False]).all()
 
 
-@pytest.mark.parametrize('optimization', ['sgd', 'gd'])
+@pytest.mark.parametrize('optimization', ['sgd', 'bgd'])
 @pytest.mark.parametrize('n_components', [None, 100])
 def test_svm_integration(optimization, n_components):
     """Test SVM detector on moons dataset.

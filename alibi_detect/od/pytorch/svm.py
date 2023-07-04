@@ -191,7 +191,7 @@ class SgdSVMTorch(SVMTorch):
         return self._to_tensor(-self.svm.score_samples(x_nys))
 
 
-class GdSVMTorch(SVMTorch):
+class BgdSVMTorch(SVMTorch):
     ensemble = False
 
     def __init__(

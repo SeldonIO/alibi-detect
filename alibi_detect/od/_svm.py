@@ -5,7 +5,7 @@ import numpy as np
 from alibi_detect.base import (BaseDetector, FitMixin, ThresholdMixin,
                                outlier_prediction_dict)
 from alibi_detect.exceptions import _catch_error as catch_error
-from alibi_detect.od.pytorch import DgSVMTorch, SdgSVMTorch
+from alibi_detect.od.pytorch import SgdSVMTorch, BgdSVMTorch
 from alibi_detect.utils._types import Literal
 from alibi_detect.utils.frameworks import BackendValidator
 from alibi_detect.version import __version__
@@ -16,8 +16,8 @@ if TYPE_CHECKING:
 
 backends = {
     'pytorch': {
-        'sgd': SdgSVMTorch,
-        'gd': DgSVMTorch
+        'sgd': SgdSVMTorch,
+        'bgd': BgdSVMTorch
     }
 }
 
@@ -28,7 +28,7 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
         nu: float,
         kernel: 'torch.nn.Module',
         n_components: Optional[int],
-        optimization: Literal['sgd', 'gd'] = 'sgd',
+        optimization: Literal['sgd', 'bgd'] = 'sgd',
         backend: Literal['pytorch'] = 'pytorch',
         device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
     ) -> None:
@@ -42,7 +42,7 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
         by approximating the kernel's RKHS.
 
         We provide two options, specified by the `optimization` parameter, for optimizing the one-class svm. `''sgd''`
-        wraps the `SGDOneClassSVM` class from the sklearn package and the other, `''gd''` uses a custom implementation
+        wraps the `SGDOneClassSVM` class from the sklearn package and the other, `''bgd''` uses a custom implementation
         in PyTorch. The PyTorch approach is tailored for operation on GPUs. Instead of applying stochastic gradient
         descent (one data point at a time) with a fixed learning rate schedule it performs full gradient descent with
         step size chosen at each iteration via line search. Note that on a CPU this would not necessarily be preferable
@@ -52,7 +52,7 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
         expensive for large reference sets and benefits from implementation on the GPU.
 
         In general if using a small dataset then using the `''cpu''` with the optimization `''sgd''` is the best choice.
-        Whereas if using a large dataset then using the `''gpu''` with the optimization `''gd''` is the best choice.
+        Whereas if using a large dataset then using the `''gpu''` with the optimization `''bgd''` is the best choice.
 
         Parameters
         ----------
@@ -65,7 +65,7 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
         n_components
             Number of components in the Nystroem approximation By default uses all of them.
         optimization
-            Optimization method to use. Choose from ``'sgd'`` or ``'gd'``. Defaults to ``'sgd'``.
+            Optimization method to use. Choose from ``'sgd'`` or ``'bgd'``. Defaults to ``'sgd'``.
         backend
             Backend used for outlier detection. Defaults to ``'pytorch'``. Options are ``'pytorch'``.
         device
@@ -83,8 +83,8 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
         """
         super().__init__()
 
-        if optimization not in ('sgd', 'gd'):
-            raise ValueError(f'Optimization {optimization} not recognized. Choose from `sgd` or `gd`.')
+        if optimization not in ('sgd', 'bgd'):
+            raise ValueError(f'Optimization {optimization} not recognized. Choose from `sgd` or `bgd`.')
 
         if n_components is not None and n_components <= 0:
             raise ValueError(f'n_components must be a positive integer, got {n_components}.')
@@ -123,19 +123,19 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
         x_ref
             Reference data used to fit the detector.
         tol
-            Convergence threshold used to fit the detector. Used for both ``'sgd'`` and ``'gd'`` optimizations.
+            Convergence threshold used to fit the detector. Used for both ``'sgd'`` and ``'bgd'`` optimizations.
             Defaults to ``1e-3``.
         max_iter
-            The maximum number of optimization steps. Used for both ``'sgd'`` and ``'gd'`` optimizations.
+            The maximum number of optimization steps. Used for both ``'sgd'`` and ``'bgd'`` optimizations.
         step_size_range
             The range of values to be considered for the gradient descent step size at each iteration. This is specified
-            as a tuple of the form `(min_eta, max_eta)` and only used for the ``'gd'`` optimization.
+            as a tuple of the form `(min_eta, max_eta)` and only used for the ``'bgd'`` optimization.
         n_step_sizes
             The number of step sizes in the defined range to be tested for loss reduction. This many points are spaced
-            equidistantly along the range in log space. This is only used for the ``'gd'`` optimization.
+            equidistantly along the range in log space. This is only used for the ``'bgd'`` optimization.
         n_iter_no_change
             The number of iterations over which the loss must decrease by `tol` in order for optimization to continue.
-            This is only used for the ``'gd'`` optimization..
+            This is only used for the ``'bgd'`` optimization..
         verbose
             Verbosity level during training. ``0`` is silent, ``1`` a progress bar or sklearn training output for the
             `SGDOneClassSVM`.
