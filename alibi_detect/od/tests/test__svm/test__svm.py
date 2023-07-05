@@ -93,8 +93,8 @@ def test_svm_n_components_error():
     assert str(err.value) == 'n_components must be a positive integer, got 0.'
 
 
-@pytest.mark.parametrize('optimization,score_bounds', [('sgd', [-0.15, -0.6]), ('bgd', [-0.85, -0.9])])
-def test_fitted_svm_score(optimization, score_bounds):
+@pytest.mark.parametrize('optimization', [('sgd'), ('bgd')])
+def test_fitted_svm_score(optimization):
     """Test SVM detector score method.
 
     Test SVM detector that has been fitted on reference data but has not had a threshold
@@ -115,8 +115,8 @@ def test_fitted_svm_score(optimization, score_bounds):
 
     y = svm_detector.predict(x)
     y = y['data']
-    assert y['instance_score'][0] > score_bounds[0]
-    assert y['instance_score'][1] < score_bounds[1]
+    assert y['instance_score'][0] > -0.01
+    assert y['instance_score'][1] < -0.8
     assert all(y['instance_score'] == scores)
     assert not y['threshold_inferred']
     assert y['threshold'] is None
@@ -124,8 +124,8 @@ def test_fitted_svm_score(optimization, score_bounds):
     assert y['p_value'] is None
 
 
-@pytest.mark.parametrize('optimization,score_bounds', [('sgd', [-0.15, -0.6]), ('bgd', [-0.85, -0.9])])
-def test_fitted_svm_predict(optimization, score_bounds):
+@pytest.mark.parametrize('optimization', [('sgd'), ('bgd')])
+def test_fitted_svm_predict(optimization):
     """Test SVM detector predict method.
 
     Test SVM detector that has been fitted on reference data and has had a threshold
@@ -145,8 +145,8 @@ def test_fitted_svm_predict(optimization, score_bounds):
     x = np.array([[0, 10], [0, 0.1]])
     y = svm_detector.predict(x)
     y = y['data']
-    assert y['instance_score'][0] > score_bounds[0]
-    assert y['instance_score'][1] < score_bounds[1]
+    assert y['instance_score'][0] > -0.01
+    assert y['instance_score'][1] < -0.8
     assert y['threshold_inferred']
     assert y['threshold'] is not None
     assert y['p_value'].all()

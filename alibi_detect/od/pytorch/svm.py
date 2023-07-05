@@ -4,6 +4,7 @@ from typing import Callable, Dict, Optional, Tuple, Union
 import numpy as np
 import torch
 from sklearn.linear_model import SGDOneClassSVM
+from sklearn.utils.extmath import safe_sparse_dot
 from tqdm import tqdm
 from typing_extensions import Literal, Self
 
@@ -148,8 +149,6 @@ class SgdSVMTorch(SVMTorch):
         )
         x_nys = x_nys.cpu().numpy()
         self.svm = self.svm.fit(x_nys)
-        self.svm.coef_ = self.svm.coef_/(1 - self.svm.offset_)
-        self.svm.offset_ = 0
         self._set_fitted()
         return {
             'converged': self.svm.n_iter_ < max_iter,
@@ -194,7 +193,10 @@ class SgdSVMTorch(SVMTorch):
         self.check_fitted()
         x_nys = self.nystroem.transform(x)
         x_nys = x_nys.cpu().numpy()
-        return - self._to_tensor(self.svm.score_samples(x_nys))
+        coef_ = self.svm.coef_ / (self.svm.coef_ ** 2).sum()
+        x_nys = self.svm._validate_data(x_nys, accept_sparse="csr", reset=False)
+        result = safe_sparse_dot(x_nys, coef_.T, dense_output=True).ravel()
+        return - self._to_tensor(result)
 
 
 class BgdSVMTorch(SVMTorch):
@@ -333,9 +335,6 @@ class BgdSVMTorch(SVMTorch):
                 if verbose and isinstance(pbar, tqdm):
                     pbar.set_postfix(dict(loss=loss.cpu().detach().numpy().item()))
 
-        self.coeffs = self.coeffs * 1/self.intercept
-        self.intercept = 1
-
         self._set_fitted()
         return {
             'converged': converged,
@@ -384,7 +383,8 @@ class BgdSVMTorch(SVMTorch):
         if not torch.jit.is_scripting():
             self.check_fitted()
         x_nys = self.nystroem.transform(x)
-        preds = x_nys @ self.coeffs + self.intercept
+        coeffs = torch.nn.functional.normalize(self.coeffs, dim=-1)
+        preds = x_nys @ coeffs
         return -preds
 
 

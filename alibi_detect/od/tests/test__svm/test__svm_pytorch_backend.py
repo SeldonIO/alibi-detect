@@ -125,28 +125,16 @@ def test_svm_pytorch_fit(backend_cls):
 
 
 def test_sgd_bgd_diffs():
-    # n_components = 200
-    import matplotlib.pyplot as plt
-    scores = []
-    for n_components in range(10, 600):
-        bgd_svm = BgdSVMTorch(n_components=n_components, kernel=GaussianRBF(sigma=torch.tensor(2)), nu=0.1)
-        sgd_svm = SgdSVMTorch(n_components=n_components, kernel=GaussianRBF(sigma=torch.tensor(2)), nu=0.1)
+    n_components = 300
+    bgd_svm = BgdSVMTorch(n_components=n_components, kernel=GaussianRBF(sigma=torch.tensor(2)), nu=0.05)
+    sgd_svm = SgdSVMTorch(n_components=n_components, kernel=GaussianRBF(sigma=torch.tensor(2)), nu=0.05)
 
-        mean = [8, 8]
-        cov = [[2., 0.], [0., 1.]]
-        x_ref = torch.tensor(np.random.multivariate_normal(mean, cov, 1000))
-        bgd_svm.fit(x_ref)
-        sgd_svm.fit(x_ref)
+    mean = [8, 8]
+    cov = [[2., 0.], [0., 1.]]
+    x_ref = torch.tensor(np.random.multivariate_normal(mean, cov, 1000))
+    bgd_svm.fit(x_ref)
+    sgd_svm.fit(x_ref)
 
-        # print(bgd_svm.intercept, 1 - sgd_svm.svm.offset_)
-        # print(bgd_svm.coeffs, sgd_svm.svm.coef_)
-
-        test_x = x_ref[:10]
-        diffs = (sgd_svm.score(test_x) - bgd_svm.score(test_x)).numpy()
-        # print(np.abs(diffs.mean()))
-
-        scores.append(np.abs(diffs.mean()))
-        # print('sgd_svm.score(test_x) = ', sgd_svm.score(test_x))
-        # print('bgd_svm.score(test_x) = ', bgd_svm.score(test_x))
-    plt.plot(scores)
-    plt.show()
+    test_x = x_ref[:1000]
+    diffs = (sgd_svm.score(test_x) - bgd_svm.score(test_x)).numpy()
+    assert np.abs(diffs.mean()) < 0.04
