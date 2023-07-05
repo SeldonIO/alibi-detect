@@ -9,6 +9,7 @@ from typing_extensions import Literal, Self
 
 from alibi_detect.od.pytorch.base import TorchOutlierDetector
 from alibi_detect.utils.pytorch.losses import hinge_loss
+from alibi_detect.utils.pytorch.kernels import GaussianRBF
 
 
 class SVMTorch(TorchOutlierDetector):
@@ -17,7 +18,7 @@ class SVMTorch(TorchOutlierDetector):
     def __init__(
         self,
         nu: float,
-        kernel: 'torch.nn.Module',
+        kernel: 'torch.nn.Module' = None,
         n_components: Optional[int] = None,
         device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
     ):
@@ -39,6 +40,8 @@ class SVMTorch(TorchOutlierDetector):
         """
         super().__init__(device=device)
         self.n_components = n_components
+        if kernel is None:
+            kernel = GaussianRBF()
         self.kernel = kernel
         self.nystroem = _Nystroem(
             self.kernel,
@@ -76,7 +79,7 @@ class SgdSVMTorch(SVMTorch):
     def __init__(
         self,
         nu: float,
-        kernel: 'torch.nn.Module',
+        kernel: 'torch.nn.Module' = None,
         n_components: Optional[int] = None,
         device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
     ):
@@ -98,8 +101,9 @@ class SgdSVMTorch(SVMTorch):
         """
         if (isinstance(device, str) and device in ('gpu', 'cuda')) or \
                 (isinstance(device, torch.device) and device.type == 'cuda'):
-            warnings.warn(('The `sgd` optimization option is best suited for CPU. If '
-                           'you want to use GPU, consider using the `gd` option.'))
+            warnings.warn(('If using the `sgd` optimization option with GPU then only the Nystroem approximation'
+                           ' portion of the method will utilize the GPU. Consider using the `bgd` option which will'
+                           ' run everything on the GPU.'))
 
         super().__init__(
             device=device,
@@ -115,7 +119,7 @@ class SgdSVMTorch(SVMTorch):
         max_iter: int = 1000,
         verbose: int = 0,
     ) -> Dict:
-        """Fit the SKLearn SVM model.
+        """Fit the Nystroem approximation and Sklearn `SGDOneClassSVM` SVM model.
 
         Parameters
         ----------
@@ -197,7 +201,7 @@ class BgdSVMTorch(SVMTorch):
     def __init__(
         self,
         nu: float,
-        kernel: 'torch.nn.Module',
+        kernel: 'torch.nn.Module' = None,
         n_components: Optional[int] = None,
         device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
     ):
@@ -220,7 +224,7 @@ class BgdSVMTorch(SVMTorch):
 
         if (isinstance(device, str) and device == 'cpu') or \
                 (isinstance(device, torch.device) and device.type == 'cpu'):
-            warnings.warn(('The `gd` optimization option is best suited for GPU. If '
+            warnings.warn(('The `bgd` optimization option is best suited for GPU. If '
                            'you want to use CPU, consider using the `sgd` option.'))
 
         super().__init__(
@@ -240,7 +244,7 @@ class BgdSVMTorch(SVMTorch):
         max_iter: int = 1000,
         verbose: int = 0,
     ) -> Dict:
-        """Fit the SVM detector.
+        """Fit the Nystroem approximation and python SVM model.
 
         Parameters
         ----------
@@ -263,7 +267,7 @@ class BgdSVMTorch(SVMTorch):
 
         Returns
         -------
-        Dictionary with fit results. The dictionary contains the following keys
+        Dictionary with fit results. The dictionary contains the following keys:
             - converged: bool indicating whether training converged.
             - n_iter: number of iterations performed.
             - lower_bound: loss lower bound.

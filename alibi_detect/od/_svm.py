@@ -10,6 +10,7 @@ from alibi_detect.utils._types import Literal
 from alibi_detect.utils.frameworks import BackendValidator
 from alibi_detect.version import __version__
 
+
 if TYPE_CHECKING:
     import torch
 
@@ -26,8 +27,8 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
     def __init__(
         self,
         nu: float,
-        kernel: 'torch.nn.Module',
-        n_components: Optional[int],
+        n_components: Optional[int] = None,
+        kernel: 'torch.nn.Module' = None,
         optimization: Literal['sgd', 'bgd'] = 'sgd',
         backend: Literal['pytorch'] = 'pytorch',
         device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
@@ -59,11 +60,13 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
         nu
             The proportion of the training data that should be considered outliers. Note that this does not necessarily
             correspond to the false positive rate on test data, which is still defined when calling the
-            `infer_threshold` method.
-        kernel
-            Kernel function to use for outlier detection. Should be an instance of a subclass of `torch.nn.Module`.
+            `infer_threshold` method. `nu` should be thought of as a regularization parameter that affects how smooth
+            the svm decision boundary is.
         n_components
-            Number of components in the Nystroem approximation By default uses all of them.
+            Number of components in the Nystroem approximation, By default uses all of them.
+        kernel
+            Kernel function to use for outlier detection. Should be an instance of a subclass of `torch.nn.Module`. If
+            not specified then defaults to the `GaussianRBF`.
         optimization
             Optimization method to use. Choose from ``'sgd'`` or ``'bgd'``. Defaults to ``'sgd'``.
         backend
@@ -132,13 +135,13 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
             as a tuple of the form `(min_eta, max_eta)` and only used for the ``'bgd'`` optimization.
         n_step_sizes
             The number of step sizes in the defined range to be tested for loss reduction. This many points are spaced
-            equidistantly along the range in log space. This is only used for the ``'bgd'`` optimization.
+            evenly along the range in log space. This is only used for the ``'bgd'`` optimization.
         n_iter_no_change
             The number of iterations over which the loss must decrease by `tol` in order for optimization to continue.
             This is only used for the ``'bgd'`` optimization..
         verbose
-            Verbosity level during training. ``0`` is silent, ``1`` a progress bar or sklearn training output for the
-            `SGDOneClassSVM`.
+            Verbosity level during training. ``0`` is silent, ``1`` prints fit status. If using `bgd`, fit displays a
+            progress bar. Otherwise, if using `sgd` then we output the Sklearn `SGDOneClassSVM.fit()` logs.
         """
         self.backend.fit(
             self.backend._to_tensor(x_ref),

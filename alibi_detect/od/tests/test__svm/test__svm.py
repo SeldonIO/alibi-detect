@@ -40,9 +40,10 @@ def test_svm_device_warnings(optimization, device):
     """Test SVM detector device warnings."""
 
     warning_msgs = {
-        'sgd': ('The `sgd` optimization option is best suited for CPU. '
-                'If you want to use GPU, consider using the `gd` option.'),
-        'bgd': ('The `gd` optimization option is best suited for GPU. '
+        'sgd': ('If using the `sgd` optimization option with GPU then only the Nystroem approximation'
+                ' portion of the method will utilize the GPU. Consider using the `bgd` option which will'
+                ' run everything on the GPU.'),
+        'bgd': ('The `bgd` optimization option is best suited for GPU. '
                 'If you want to use CPU, consider using the `sgd` option.')
     }
 
@@ -154,7 +155,8 @@ def test_fitted_svm_predict(optimization, score_bounds):
 
 @pytest.mark.parametrize('optimization', ['sgd', 'bgd'])
 @pytest.mark.parametrize('n_components', [None, 100])
-def test_svm_integration(optimization, n_components):
+@pytest.mark.parametrize('kernel', [None, GaussianRBF(torch.tensor(2))])
+def test_svm_integration(optimization, n_components, kernel):
     """Test SVM detector on moons dataset.
 
     Test SVM detector on a more complex 2d example. Test that the detector can be fitted
@@ -164,7 +166,7 @@ def test_svm_integration(optimization, n_components):
         n_components=n_components,
         nu=0.1,
         backend='pytorch',
-        kernel=GaussianRBF(torch.tensor(2)),
+        kernel=kernel,
         optimization=optimization,
     )
     X_ref, _ = make_moons(1001, shuffle=True, noise=0.05, random_state=None)
