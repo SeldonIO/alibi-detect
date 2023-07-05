@@ -148,6 +148,8 @@ class SgdSVMTorch(SVMTorch):
         )
         x_nys = x_nys.cpu().numpy()
         self.svm = self.svm.fit(x_nys)
+        self.svm.coef_ = self.svm.coef_/(1 - self.svm.offset_)
+        self.svm.offset_ = 0
         self._set_fitted()
         return {
             'converged': self.svm.n_iter_ < max_iter,
@@ -192,7 +194,7 @@ class SgdSVMTorch(SVMTorch):
         self.check_fitted()
         x_nys = self.nystroem.transform(x)
         x_nys = x_nys.cpu().numpy()
-        return self._to_tensor(-self.svm.score_samples(x_nys))
+        return - self._to_tensor(self.svm.score_samples(x_nys))
 
 
 class BgdSVMTorch(SVMTorch):
@@ -330,6 +332,9 @@ class BgdSVMTorch(SVMTorch):
 
                 if verbose and isinstance(pbar, tqdm):
                     pbar.set_postfix(dict(loss=loss.cpu().detach().numpy().item()))
+
+        self.coeffs = self.coeffs * 1/self.intercept
+        self.intercept = 1
 
         self._set_fitted()
         return {
