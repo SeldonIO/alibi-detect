@@ -1,6 +1,6 @@
 import random
 from io import BytesIO
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 import cv2
 import numpy as np
@@ -80,7 +80,7 @@ def apply_mask(X: np.ndarray,
     for _ in range(x_start.shape[0]):
 
         if mask_type == 'zero':
-            update_val = 0
+            update_val: Union[float, np.ndarray] = 0.0
         else:
             update_val = noise[_]
 
