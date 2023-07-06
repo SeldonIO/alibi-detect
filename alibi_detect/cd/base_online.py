@@ -342,8 +342,7 @@ class BaseUniDriftOnline(BaseDetector, StateMixin):
         # Check the type of x
         if isinstance(x, np.ndarray):
             pass
-        # TODO: np.int, np.float checks deprecated in numpy 1.20
-        elif isinstance(x, (int, float, np.int, np.float)):  # type: ignore[attr-defined]
+        elif isinstance(x, (int, float)):
             x = np.array([x])
         else:
             raise TypeError("Detectors expect data to be 2D np.ndarray's. If data is passed as another type, a "
