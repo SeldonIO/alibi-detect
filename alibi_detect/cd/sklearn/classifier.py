@@ -298,7 +298,7 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
         probs_oob = self.model.oob_decision_function_[idx_oob]
         y_oob = y[idx_oob]
         if isinstance(x, np.ndarray):
-            x_oob = x[idx_oob]
+            x_oob: Union[list, np.ndarray] = x[idx_oob]
         elif isinstance(x, list):
             x_oob = [x[_] for _ in idx_oob]
         else:
