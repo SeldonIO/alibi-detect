@@ -241,7 +241,7 @@ class BgdSVMTorch(SVMTorch):
     def fit(  # type: ignore[override]
         self,
         x_ref: torch.Tensor,
-        step_size_range: Tuple[float, float] = (1e-6, 1.0),
+        step_size_range: Tuple[float, float] = (1e-8, 1.0),
         n_step_sizes: int = 16,
         tol: float = 1e-6,
         n_iter_no_change: int = 25,
@@ -355,7 +355,7 @@ class BgdSVMTorch(SVMTorch):
         Formatted kwargs.
         """
         return dict(
-            step_size_range=fit_kwargs.get('step_size_range', (1e-6, 1.0)),
+            step_size_range=fit_kwargs.get('step_size_range', (1e-8, 1.0)),
             n_iter_no_change=fit_kwargs.get('n_iter_no_change', 25),
             tol=fit_kwargs.get('tol', 1e-6),
             verbose=fit_kwargs.get('verbose', 0),
