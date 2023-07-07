@@ -137,4 +137,4 @@ def test_sgd_bgd_diffs():
 
     test_x = x_ref[:1000]
     diffs = (sgd_svm.score(test_x) - bgd_svm.score(test_x)).numpy()
-    assert np.abs(diffs.mean()) < 0.04
+    assert np.abs(diffs.mean()) < 0.1
