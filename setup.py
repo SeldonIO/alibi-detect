@@ -46,7 +46,7 @@ setup(
     license="Apache 2.0",
     packages=find_packages(),
     include_package_data=True,
-    python_requires=">=3.7",
+    python_requires=">=3.8",
     # lower bounds based on Debian Stable versions where available
     install_requires=[
         "matplotlib>=3.0.0, <4.0.0",
@@ -74,7 +74,6 @@ setup(
         "Intended Audience :: Science/Research",
         "Operating System :: OS Independent",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
