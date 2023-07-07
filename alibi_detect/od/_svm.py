@@ -112,7 +112,7 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
         x_ref: np.ndarray,
         tol: float = 1e-6,
         max_iter: int = 1000,
-        step_size_range: Tuple[float, float] = (1e-6, 1.0),
+        step_size_range: Tuple[float, float] = (1e-8, 1.0),
         n_step_sizes: int = 16,
         n_iter_no_change: int = 25,
         verbose: int = 0,
