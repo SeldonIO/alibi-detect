@@ -1,5 +1,17 @@
 # Change Log
 
+## [v0.11.4](https://github.com/SeldonIO/alibi-detect/tree/v0.11.4) (2023-07-07)
+[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.11.3...v0.11.4)
+
+This is a patch release to support `numpy >= 1.24`, and drop official support for Python 3.7.
+
+### Fixed
+- Replace numpy aliases of builtin types like `np.int`, in order to support `numpy >= 1.24` ([#826](https://github.com/SeldonIO/alibi-detect/pull/826)).
+
+### Development
+- Drop official support for Python 3.7 ([#825](https://github.com/SeldonIO/alibi-detect/pull/825)).
+
+
 ## [v0.11.3](https://github.com/SeldonIO/alibi-detect/tree/v0.11.3) (2023-06-21)
 [Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.11.2...v0.11.3)
 
