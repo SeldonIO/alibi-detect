@@ -35,12 +35,12 @@ def elbo(y_true: tf.Tensor,
     -------
     ELBO loss value.
 
-    Examples
-    --------
-    >>> import numpy as np
+    Example
+    -------
+    >>> import tensorflow as tf
     >>> from alibi_detect.models.tensorflow.losses import elbo
-    >>> y_true = np.array([[0, 1], [1, 0]])
-    >>> y_pred = np.array([[0.1, 0.9], [0.8, 0.2]])
+    >>> y_true = tf.constant([[0.0, 1.0], [1.0, 0.0]])
+    >>> y_pred = tf.constant([[0.1, 0.9], [0.8, 0.2]])
     >>> # Specifying scale identity multiplier
     >>> elbo(y_true, y_pred, sim=1.0)
     >>> # Specifying covariance matrix diagonal
