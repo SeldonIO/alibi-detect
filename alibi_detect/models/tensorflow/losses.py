@@ -11,7 +11,7 @@ def elbo(y_true: tf.Tensor,
          y_pred: tf.Tensor,
          cov_full: Optional[tf.Tensor] = None,
          cov_diag: Optional[tf.Tensor] = None,
-         sim: Optional[float] = .05
+         sim: Optional[float] = None
          ) -> tf.Tensor:
     """
     Compute ELBO loss.
@@ -33,8 +33,10 @@ def elbo(y_true: tf.Tensor,
     -------
     ELBO loss value.
     """
-    y_pred_flat = Flatten()(y_pred)
+    if len([x for x in [cov_full, cov_diag, sim] if x is not None]) > 1:
+        raise ValueError('Only one of cov_full, cov_diag or sim should be specified.')
 
+    y_pred_flat = Flatten()(y_pred)
     if isinstance(cov_full, tf.Tensor):
         y_mn = tfp.distributions.MultivariateNormalFullCovariance(y_pred_flat,
                                                                   covariance_matrix=cov_full)
