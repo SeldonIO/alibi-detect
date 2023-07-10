@@ -13,6 +13,7 @@ cov_full = tf.eye(x.shape[1])
 
 def test_elbo():
     assert elbo(x, y, cov_full=cov_full) == elbo(x, y, cov_diag=cov_diag) == elbo(x, y, sim=sim)
+    assert elbo(x, y) == elbo(x, y, sim=1.)  # Passing no kwarg's should lead to an identity covariance matrix
     assert elbo(x, y, sim=.05).numpy() > 0
     assert elbo(x, x, sim=.05).numpy() < 0
 

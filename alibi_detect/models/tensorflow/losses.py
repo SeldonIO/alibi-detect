@@ -14,7 +14,9 @@ def elbo(y_true: tf.Tensor,
          sim: Optional[float] = None
          ) -> tf.Tensor:
     """
-    Compute ELBO loss.
+    Compute ELBO loss. The covariance matrix can be specified by passing the full covariance matrix, the matrix
+    diagonal, or a scale identity multiplier. Only one of these should be specified. If none are specified, the
+    identity matrix is used.
 
     Parameters
     ----------
@@ -32,6 +34,19 @@ def elbo(y_true: tf.Tensor,
     Returns
     -------
     ELBO loss value.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from alibi_detect.models.tensorflow.losses import elbo
+    >>> y_true = np.array([[0, 1], [1, 0]])
+    >>> y_pred = np.array([[0.1, 0.9], [0.8, 0.2]])
+    >>> # Specifying scale identity multiplier
+    >>> elbo(y_true, y_pred, sim=1.0)
+    >>> # Specifying covariance matrix diagonal
+    >>> elbo(y_true, y_pred, cov_diag=tf.ones(2))
+    >>> # Specifying full covariance matrix
+    >>> elbo(y_true, y_pred, cov_full=tf.eye(2))
     """
     if len([x for x in [cov_full, cov_diag, sim] if x is not None]) > 1:
         raise ValueError('Only one of cov_full, cov_diag or sim should be specified.')
