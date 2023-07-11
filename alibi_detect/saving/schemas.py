@@ -295,7 +295,7 @@ class PreprocessConfig(CustomBaseModel):
     Optional tokenizer for text drift. Either a string referencing a HuggingFace tokenizer model name, or a
     :class:`~alibi_detect.utils.schemas.TokenizerConfig`.
     """
-    device: Optional[Literal['cpu', 'cuda']] = None
+    device: Optional[Literal['cpu', 'cuda', 'gpu']] = None
     """
     Device type used. The default `None` tries to use the GPU and falls back on CPU if needed. Only relevant if
     `src='@cd.torch.preprocess.preprocess_drift'`
@@ -682,7 +682,7 @@ class MMDDriftConfig(DriftDetectorConfig):
     configure_kernel_from_x_ref: bool = True
     n_permutations: int = 100
     batch_size_permutations: int = 1000000
-    device: Optional[Literal['cpu', 'cuda']] = None
+    device: Optional[Literal['cpu', 'cuda', 'gpu']] = None
 
 
 class MMDDriftConfigResolved(DriftDetectorConfigResolved):
@@ -702,7 +702,7 @@ class MMDDriftConfigResolved(DriftDetectorConfigResolved):
     configure_kernel_from_x_ref: bool = True
     n_permutations: int = 100
     batch_size_permutations: int = 1000000
-    device: Optional[Literal['cpu', 'cuda']] = None
+    device: Optional[Literal['cpu', 'cuda', 'gpu']] = None
 
 
 class LSDDDriftConfig(DriftDetectorConfig):
@@ -721,7 +721,7 @@ class LSDDDriftConfig(DriftDetectorConfig):
     n_permutations: int = 100
     n_kernel_centers: Optional[int] = None
     lambda_rd_max: float = 0.2
-    device: Optional[Literal['cpu', 'cuda']] = None
+    device: Optional[Literal['cpu', 'cuda', 'gpu']] = None
 
 
 class LSDDDriftConfigResolved(DriftDetectorConfigResolved):
@@ -740,7 +740,7 @@ class LSDDDriftConfigResolved(DriftDetectorConfigResolved):
     n_permutations: int = 100
     n_kernel_centers: Optional[int] = None
     lambda_rd_max: float = 0.2
-    device: Optional[Literal['cpu', 'cuda']] = None
+    device: Optional[Literal['cpu', 'cuda', 'gpu']] = None
 
 
 class ClassifierDriftConfig(DriftDetectorConfig):
@@ -772,7 +772,7 @@ class ClassifierDriftConfig(DriftDetectorConfig):
     verbose: int = 0
     train_kwargs: Optional[dict] = None
     dataset: Optional[str] = None
-    device: Optional[Literal['cpu', 'cuda']] = None
+    device: Optional[Literal['cpu', 'cuda', 'gpu']] = None
     dataloader: Optional[str] = None  # TODO: placeholder, will need to be updated for pytorch implementation
     use_calibration: bool = False
     calibration_kwargs: Optional[dict] = None
@@ -808,7 +808,7 @@ class ClassifierDriftConfigResolved(DriftDetectorConfigResolved):
     verbose: int = 0
     train_kwargs: Optional[dict] = None
     dataset: Optional[Callable] = None
-    device: Optional[Literal['cpu', 'cuda']] = None
+    device: Optional[Literal['cpu', 'cuda', 'gpu']] = None
     dataloader: Optional[Callable] = None  # TODO: placeholder, will need to be updated for pytorch implementation
     use_calibration: bool = False
     calibration_kwargs: Optional[dict] = None
@@ -843,7 +843,7 @@ class SpotTheDiffDriftConfig(DriftDetectorConfig):
     n_diffs: int = 1
     initial_diffs: Optional[str] = None
     l1_reg: float = 0.01
-    device: Optional[Literal['cpu', 'cuda']] = None
+    device: Optional[Literal['cpu', 'cuda', 'gpu']] = None
     dataloader: Optional[str] = None  # TODO: placeholder, will need to be updated for pytorch implementation
 
 
@@ -875,7 +875,7 @@ class SpotTheDiffDriftConfigResolved(DriftDetectorConfigResolved):
     n_diffs: int = 1
     initial_diffs: Optional[np.ndarray] = None
     l1_reg: float = 0.01
-    device: Optional[Literal['cpu', 'cuda']] = None
+    device: Optional[Literal['cpu', 'cuda', 'gpu']] = None
     dataloader: Optional[Callable] = None  # TODO: placeholder, will need to be updated for pytorch implementation
 
 
@@ -909,7 +909,7 @@ class LearnedKernelDriftConfig(DriftDetectorConfig):
     verbose: int = 0
     train_kwargs: Optional[dict] = None
     dataset: Optional[str] = None
-    device: Optional[Literal['cpu', 'cuda']] = None
+    device: Optional[Literal['cpu', 'cuda', 'gpu']] = None
     dataloader: Optional[str] = None  # TODO: placeholder, will need to be updated for pytorch implementation
 
 
@@ -943,7 +943,7 @@ class LearnedKernelDriftConfigResolved(DriftDetectorConfigResolved):
     verbose: int = 0
     train_kwargs: Optional[dict] = None
     dataset: Optional[Callable] = None
-    device: Optional[Literal['cpu', 'cuda']] = None
+    device: Optional[Literal['cpu', 'cuda', 'gpu']] = None
     dataloader: Optional[Callable] = None  # TODO: placeholder, will need to be updated for pytorch implementation
 
 
@@ -968,7 +968,7 @@ class ContextMMDDriftConfig(DriftDetectorConfig):
     n_folds: int = 5
     batch_size: Optional[int] = 256
     verbose: bool = False
-    device: Optional[Literal['cpu', 'cuda']] = None
+    device: Optional[Literal['cpu', 'cuda', 'gpu']] = None
 
 
 class ContextMMDDriftConfigResolved(DriftDetectorConfigResolved):
@@ -991,7 +991,7 @@ class ContextMMDDriftConfigResolved(DriftDetectorConfigResolved):
     n_folds: int = 5
     batch_size: Optional[int] = 256
     verbose: bool = False
-    device: Optional[Literal['cpu', 'cuda']] = None
+    device: Optional[Literal['cpu', 'cuda', 'gpu']] = None
 
 
 class MMDDriftOnlineConfig(DriftDetectorConfig):
@@ -1009,7 +1009,7 @@ class MMDDriftOnlineConfig(DriftDetectorConfig):
     kernel: Optional[Union[str, KernelConfig]] = None
     sigma: Optional[np.ndarray] = None
     n_bootstraps: int = 1000
-    device: Optional[Literal['cpu', 'cuda']] = None
+    device: Optional[Literal['cpu', 'cuda', 'gpu']] = None
     verbose: bool = True
 
 
@@ -1028,7 +1028,7 @@ class MMDDriftOnlineConfigResolved(DriftDetectorConfigResolved):
     kernel: Optional[Callable] = None
     sigma: Optional[np.ndarray] = None
     n_bootstraps: int = 1000
-    device: Optional[Literal['cpu', 'cuda']] = None
+    device: Optional[Literal['cpu', 'cuda', 'gpu']] = None
     verbose: bool = True
 
 
@@ -1048,7 +1048,7 @@ class LSDDDriftOnlineConfig(DriftDetectorConfig):
     n_bootstraps: int = 1000
     n_kernel_centers: Optional[int] = None
     lambda_rd_max: float = 0.2
-    device: Optional[Literal['cpu', 'cuda']] = None
+    device: Optional[Literal['cpu', 'cuda', 'gpu']] = None
     verbose: bool = True
 
 
@@ -1068,7 +1068,7 @@ class LSDDDriftOnlineConfigResolved(DriftDetectorConfigResolved):
     n_bootstraps: int = 1000
     n_kernel_centers: Optional[int] = None
     lambda_rd_max: float = 0.2
-    device: Optional[Literal['cpu', 'cuda']] = None
+    device: Optional[Literal['cpu', 'cuda', 'gpu']] = None
     verbose: bool = True
 
 
@@ -1178,7 +1178,7 @@ class ClassifierUncertaintyDriftConfig(DetectorConfig):
     margin_width: float = 0.1
     batch_size: int = 32
     preprocess_batch_fn: Optional[str] = None
-    device: Optional[str] = None
+    device: Optional[Literal['cpu', 'cuda', 'gpu']] = None
     tokenizer: Optional[Union[str, TokenizerConfig]] = None
     max_len: Optional[int] = None
     input_shape: Optional[tuple] = None
@@ -1205,7 +1205,7 @@ class ClassifierUncertaintyDriftConfigResolved(DetectorConfig):
     margin_width: float = 0.1
     batch_size: int = 32
     preprocess_batch_fn: Optional[Callable] = None
-    device: Optional[str] = None
+    device: Optional[Literal['cpu', 'cuda', 'gpu']] = None
     tokenizer: Optional[Union[str, Callable]] = None
     max_len: Optional[int] = None
     input_shape: Optional[tuple] = None
@@ -1231,7 +1231,7 @@ class RegressorUncertaintyDriftConfig(DetectorConfig):
     n_evals: int = 25
     batch_size: int = 32
     preprocess_batch_fn: Optional[str] = None
-    device: Optional[str] = None
+    device: Optional[Literal['cpu', 'cuda', 'gpu']] = None
     tokenizer: Optional[Union[str, TokenizerConfig]] = None
     max_len: Optional[int] = None
     input_shape: Optional[tuple] = None
@@ -1257,7 +1257,7 @@ class RegressorUncertaintyDriftConfigResolved(DetectorConfig):
     n_evals: int = 25
     batch_size: int = 32
     preprocess_batch_fn: Optional[Callable] = None
-    device: Optional[str] = None
+    device: Optional[Literal['cpu', 'cuda', 'gpu']] = None
     tokenizer: Optional[Callable] = None
     max_len: Optional[int] = None
     input_shape: Optional[tuple] = None

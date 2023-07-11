@@ -1,15 +1,16 @@
 from functools import partial
-from typing import Callable, Optional, Type, Union
+from typing import Callable, Type, Union
 
 import numpy as np
 import torch
 import torch.nn as nn
 from alibi_detect.utils.pytorch.misc import get_device
 from alibi_detect.utils.prediction import tokenize_transformer
+from alibi_detect.utils._types import TorchDeviceType
 
 
 def predict_batch(x: Union[list, np.ndarray, torch.Tensor], model: Union[Callable, nn.Module, nn.Sequential],
-                  device: Optional[torch.device] = None, batch_size: int = int(1e10), preprocess_fn: Callable = None,
+                  device: TorchDeviceType = None, batch_size: int = int(1e10), preprocess_fn: Callable = None,
                   dtype: Union[Type[np.generic], torch.dtype] = np.float32) -> Union[np.ndarray, torch.Tensor, tuple]:
     """
     Make batch predictions on a model.
@@ -21,8 +22,9 @@ def predict_batch(x: Union[list, np.ndarray, torch.Tensor], model: Union[Callabl
     model
         PyTorch model.
     device
-        Device type used. The default None tries to use the GPU and falls back on CPU if needed.
-        Can be specified by passing either torch.device('cuda') or torch.device('cpu').
+        Device type used. The default tries to use the GPU and falls back on CPU if needed.
+        Can be specified by passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of
+        ``torch.device``.
     batch_size
         Batch size used during prediction.
     preprocess_fn
@@ -74,7 +76,7 @@ def predict_batch(x: Union[list, np.ndarray, torch.Tensor], model: Union[Callabl
 
 
 def predict_batch_transformer(x: Union[list, np.ndarray], model: Union[nn.Module, nn.Sequential],
-                              tokenizer: Callable, max_len: int, device: Optional[torch.device] = None,
+                              tokenizer: Callable, max_len: int, device: TorchDeviceType = None,
                               batch_size: int = int(1e10), dtype: Union[Type[np.generic], torch.dtype] = np.float32) \
         -> Union[np.ndarray, torch.Tensor, tuple]:
     """

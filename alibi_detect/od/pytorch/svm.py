@@ -11,7 +11,7 @@ from typing_extensions import Self
 from alibi_detect.od.pytorch.base import TorchOutlierDetector
 from alibi_detect.utils.pytorch.losses import hinge_loss
 from alibi_detect.utils.pytorch.kernels import GaussianRBF
-from alibi_detect.utils._types import TorchDeviceTypes
+from alibi_detect.utils._types import TorchDeviceType
 
 
 class SVMTorch(TorchOutlierDetector):
@@ -22,7 +22,7 @@ class SVMTorch(TorchOutlierDetector):
         nu: float,
         kernel: 'torch.nn.Module' = None,
         n_components: Optional[int] = None,
-        device: TorchDeviceTypes = None,
+        device: TorchDeviceType = None,
     ):
         """Pytorch backend for the Support Vector Machine (SVM) outlier detector.
 
@@ -37,8 +37,9 @@ class SVMTorch(TorchOutlierDetector):
         n_components
             Number of components in the Nystroem approximation, by default uses all of them.
         device
-            Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
-            passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of ``torch.device``.
+            Device type used. The default tries to use the GPU and falls back on CPU if needed.
+            Can be specified by passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of
+            ``torch.device``.
         """
         super().__init__(device=device)
         self.n_components = n_components
@@ -83,7 +84,7 @@ class SgdSVMTorch(SVMTorch):
         nu: float,
         kernel: 'torch.nn.Module' = None,
         n_components: Optional[int] = None,
-        device: TorchDeviceTypes = None,
+        device: TorchDeviceType = None,
     ):
         """SGD Optimization backend for the One class support vector machine (SVM) outlier detector.
 
@@ -98,8 +99,9 @@ class SgdSVMTorch(SVMTorch):
         n_components
             Number of components in the Nystroem approximation, by default uses all of them.
         device
-            Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
-            passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of ``torch.device``.
+            Device type used. The default tries to use the GPU and falls back on CPU if needed.
+            Can be specified by passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of
+            ``torch.device``.
         """
         if (isinstance(device, str) and device in ('gpu', 'cuda')) or \
                 (isinstance(device, torch.device) and device.type == 'cuda'):
@@ -208,7 +210,7 @@ class BgdSVMTorch(SVMTorch):
         nu: float,
         kernel: 'torch.nn.Module' = None,
         n_components: Optional[int] = None,
-        device: TorchDeviceTypes = None,
+        device: TorchDeviceType = None,
     ):
         """Pytorch backend for the Support Vector Machine (SVM) outlier detector.
 
@@ -223,8 +225,9 @@ class BgdSVMTorch(SVMTorch):
         n_components
             Number of components in the Nystroem approximation, by default uses all of them.
         device
-            Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
-            passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of ``torch.device``.
+            Device type used. The default tries to use the GPU and falls back on CPU if needed.
+            Can be specified by passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of
+            ``torch.device``.
         """
 
         if (isinstance(device, str) and device == 'cpu') or \

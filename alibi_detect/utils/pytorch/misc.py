@@ -1,5 +1,6 @@
 import logging
-from typing import Optional, Union, Type
+from typing import Type
+from alibi_detect.utils._types import TorchDeviceType
 
 import torch
 
@@ -66,14 +67,14 @@ def quantile(sample: torch.Tensor, p: float, type: int = 7, sorted: bool = False
     return float(quantile)
 
 
-def get_device(device: Optional[Union[str, torch.device]] = None) -> torch.device:
+def get_device(device: TorchDeviceType = None) -> torch.device:
     """
     Instantiates a PyTorch device object.
 
     Parameters
     ----------
     device
-        Either `None`, a str ('gpu' or 'cpu') indicating the device to choose, or an already instantiated device
+        Either `None`, a str ('gpu', 'cuda' or 'cpu') indicating the device to choose, or an already instantiated device
         object. If `None`, the GPU is selected if it is detected, otherwise the CPU is used as a fallback.
 
     Returns

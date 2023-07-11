@@ -11,7 +11,7 @@ from alibi_detect.od.pytorch import KNNTorch, Ensembler
 from alibi_detect.od.base import get_aggregator, get_normalizer, NormalizerLiterals, AggregatorLiterals
 from alibi_detect.utils.frameworks import BackendValidator
 from alibi_detect.version import __version__
-from alibi_detect.utils._types import TorchDeviceTypes
+from alibi_detect.utils._types import TorchDeviceType
 
 
 backends = {
@@ -27,7 +27,7 @@ class KNN(BaseDetector, FitMixin, ThresholdMixin):
         normalizer: Optional[Union[TransformProtocolType, NormalizerLiterals]] = 'PValNormalizer',
         aggregator: Union[TransformProtocol, AggregatorLiterals] = 'AverageAggregator',
         backend: Literal['pytorch'] = 'pytorch',
-        device: TorchDeviceTypes = None,
+        device: TorchDeviceType = None,
     ) -> None:
         """
         k-Nearest Neighbors (kNN) outlier detector.

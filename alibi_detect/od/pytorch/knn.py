@@ -4,7 +4,7 @@ import torch
 
 from alibi_detect.od.pytorch.ensemble import Ensembler
 from alibi_detect.od.pytorch.base import TorchOutlierDetector
-from alibi_detect.utils._types import TorchDeviceTypes
+from alibi_detect.utils._types import TorchDeviceType
 
 
 class KNNTorch(TorchOutlierDetector):
@@ -13,7 +13,7 @@ class KNNTorch(TorchOutlierDetector):
             k: Union[np.ndarray, List, Tuple, int],
             kernel: Optional[torch.nn.Module] = None,
             ensembler: Optional[Ensembler] = None,
-            device: TorchDeviceTypes = None,
+            device: TorchDeviceType = None,
             ):
         """PyTorch backend for KNN detector.
 

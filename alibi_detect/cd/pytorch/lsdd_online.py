@@ -6,6 +6,7 @@ from alibi_detect.cd.base_online import BaseMultiDriftOnline
 from alibi_detect.utils.pytorch import get_device
 from alibi_detect.utils.pytorch import GaussianRBF, permed_lsdds, quantile
 from alibi_detect.utils.frameworks import Framework
+from alibi_detect.utils._types import TorchDeviceType
 
 
 class LSDDDriftOnlineTorch(BaseMultiDriftOnline):
@@ -22,7 +23,7 @@ class LSDDDriftOnlineTorch(BaseMultiDriftOnline):
             n_bootstraps: int = 1000,
             n_kernel_centers: Optional[int] = None,
             lambda_rd_max: float = 0.2,
-            device: Optional[str] = None,
+            device: TorchDeviceType = None,
             verbose: bool = True,
             input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None
@@ -65,8 +66,9 @@ class LSDDDriftOnlineTorch(BaseMultiDriftOnline):
             The maximum relative difference between two estimates of LSDD that the regularization parameter
             lambda is allowed to cause. Defaults to 0.2 as in the paper.
         device
-            Device type used. The default None tries to use the GPU and falls back on CPU if needed.
-            Can be specified by passing either 'cuda', 'gpu' or 'cpu'. Only relevant for 'pytorch' backend.
+            Device type used. The default tries to use the GPU and falls back on CPU if needed.
+            Can be specified by passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of
+            ``torch.device``. Only relevant for 'pytorch' backend.
         verbose
             Whether or not to print progress during configuration.
         input_shape

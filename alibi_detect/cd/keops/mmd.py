@@ -7,6 +7,7 @@ from alibi_detect.cd.base import BaseMMDDrift
 from alibi_detect.utils.keops.kernels import GaussianRBF
 from alibi_detect.utils.pytorch import get_device
 from alibi_detect.utils.frameworks import Framework
+from alibi_detect.utils._types import TorchDeviceType
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +26,7 @@ class MMDDriftKeops(BaseMMDDrift):
             configure_kernel_from_x_ref: bool = True,
             n_permutations: int = 100,
             batch_size_permutations: int = 1000000,
-            device: Optional[str] = None,
+            device: TorchDeviceType = None,
             input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None
     ) -> None:
@@ -63,8 +64,9 @@ class MMDDriftKeops(BaseMMDDrift):
         batch_size_permutations
             KeOps computes the n_permutations of the MMD^2 statistics in chunks of batch_size_permutations.
         device
-            Device type used. The default None tries to use the GPU and falls back on CPU if needed.
-            Can be specified by passing either 'cuda', 'gpu' or 'cpu'.
+            Device type used. The default tries to use the GPU and falls back on CPU if needed.
+            Can be specified by passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of
+            ``torch.device``.
         input_shape
             Shape of input data.
         data_type

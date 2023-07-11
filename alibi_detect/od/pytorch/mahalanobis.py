@@ -1,7 +1,7 @@
 import torch
 
 from alibi_detect.od.pytorch.base import TorchOutlierDetector
-from alibi_detect.utils._types import TorchDeviceTypes
+from alibi_detect.utils._types import TorchDeviceType
 
 
 class MahalanobisTorch(TorchOutlierDetector):
@@ -10,7 +10,7 @@ class MahalanobisTorch(TorchOutlierDetector):
     def __init__(
             self,
             min_eigenvalue: float = 1e-6,
-            device: TorchDeviceTypes = None,
+            device: TorchDeviceType = None,
             ):
         """PyTorch backend for Mahalanobis detector.
 
@@ -19,8 +19,9 @@ class MahalanobisTorch(TorchOutlierDetector):
         min_eigenvalue
             Eigenvectors with eigenvalues below this value will be discarded.
         device
-            Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
-            passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of ``torch.device``.
+            Device type used. The default tries to use the GPU and falls back on CPU if needed.
+            Can be specified by passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of
+            ``torch.device``.
         """
         super().__init__(device=device)
         self.min_eigenvalue = min_eigenvalue

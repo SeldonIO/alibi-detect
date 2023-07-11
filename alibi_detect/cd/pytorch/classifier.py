@@ -13,6 +13,7 @@ from alibi_detect.utils.pytorch.data import TorchDataset
 from alibi_detect.utils.pytorch.prediction import predict_batch
 from alibi_detect.utils.warnings import deprecated_alias
 from alibi_detect.utils.frameworks import Framework
+from alibi_detect.utils._types import TorchDeviceType
 
 
 class ClassifierDriftTorch(BaseClassifierDrift):
@@ -40,7 +41,7 @@ class ClassifierDriftTorch(BaseClassifierDrift):
             epochs: int = 3,
             verbose: int = 0,
             train_kwargs: Optional[dict] = None,
-            device: Optional[str] = None,
+            device: TorchDeviceType = None,
             dataset: Callable = TorchDataset,
             dataloader: Callable = DataLoader,
             input_shape: Optional[tuple] = None,
@@ -108,8 +109,9 @@ class ClassifierDriftTorch(BaseClassifierDrift):
         train_kwargs
             Optional additional kwargs when fitting the classifier.
         device
-            Device type used. The default None tries to use the GPU and falls back on CPU if needed.
-            Can be specified by passing either 'cuda', 'gpu' or 'cpu'.
+            Device type used. The default tries to use the GPU and falls back on CPU if needed.
+            Can be specified by passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of
+            ``torch.device``.
         dataset
             Dataset object used during training.
         dataloader

@@ -3,6 +3,7 @@ from typing import Callable, Dict, Optional, Union
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, \
     BackendValidator, Framework
 from alibi_detect.base import DriftConfigMixin
+from alibi_detect.utils._types import TorchDeviceType
 
 
 from sklearn.base import ClassifierMixin
@@ -43,7 +44,7 @@ class ClassifierDrift(DriftConfigMixin):
             epochs: int = 3,
             verbose: int = 0,
             train_kwargs: Optional[dict] = None,
-            device: Optional[str] = None,
+            device: TorchDeviceType = None,
             dataset: Optional[Callable] = None,
             dataloader: Optional[Callable] = None,
             input_shape: Optional[tuple] = None,
@@ -122,8 +123,9 @@ class ClassifierDrift(DriftConfigMixin):
             Optional additional kwargs when fitting the classifier. Only relevant for 'tensorflow' and
             'pytorch' backends.
         device
-            Device type used. The default None tries to use the GPU and falls back on CPU if needed.
-            Can be specified by passing either 'cuda', 'gpu' or 'cpu'. Only relevant for 'pytorch' backend.
+            Device type used. The default tries to use the GPU and falls back on CPU if needed.
+            Can be specified by passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of
+            ``torch.device``. Only relevant for 'pytorch' backend.
         dataset
             Dataset object used during training. Only relevant for 'tensorflow' and 'pytorch' backends.
         dataloader

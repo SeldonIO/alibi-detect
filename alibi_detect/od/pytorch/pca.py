@@ -3,7 +3,7 @@ from typing import Optional, Callable
 import torch
 
 from alibi_detect.od.pytorch.base import TorchOutlierDetector
-from alibi_detect.utils._types import TorchDeviceTypes
+from alibi_detect.utils._types import TorchDeviceType
 
 
 class PCATorch(TorchOutlierDetector):
@@ -12,7 +12,7 @@ class PCATorch(TorchOutlierDetector):
     def __init__(
             self,
             n_components: int,
-            device: TorchDeviceTypes = None,
+            device: TorchDeviceType = None,
             ):
         """PyTorch backend for PCA detector.
 
@@ -22,8 +22,9 @@ class PCATorch(TorchOutlierDetector):
             The number of dimensions in the principal subspace. For linear PCA should have
             ``1 <= n_components < dim(data)``. For kernel pca should have ``1 <= n_components < len(data)``.
         device
-            Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
-            passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of ``torch.device``.
+            Device type used. The default tries to use the GPU and falls back on CPU if needed.
+            Can be specified by passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of
+            ``torch.device``.
 
         Raises
         ------
@@ -102,7 +103,7 @@ class LinearPCATorch(PCATorch):
     def __init__(
             self,
             n_components: int,
-            device: TorchDeviceTypes = None,
+            device: TorchDeviceType = None,
             ):
         """Linear variant of the PyTorch backend for PCA detector.
 
@@ -111,8 +112,9 @@ class LinearPCATorch(PCATorch):
         n_components:
             The number of dimensions in the principal subspace.
         device
-            Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
-            passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of ``torch.device``.
+            Device type used. The default tries to use the GPU and falls back on CPU if needed.
+            Can be specified by passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of
+            ``torch.device``.
         """
         super().__init__(device=device, n_components=n_components)
 
@@ -173,7 +175,7 @@ class KernelPCATorch(PCATorch):
             self,
             n_components: int,
             kernel: Optional[Callable],
-            device: TorchDeviceTypes = None,
+            device: TorchDeviceType = None,
             ):
         """Kernel variant of the PyTorch backend for PCA detector.
 
@@ -184,8 +186,9 @@ class KernelPCATorch(PCATorch):
         kernel
             Kernel function to use for outlier detection.
         device
-            Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
-            passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of ``torch.device``.
+            Device type used. The default tries to use the GPU and falls back on CPU if needed.
+            Can be specified by passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of
+            ``torch.device``.
         """
         super().__init__(device=device, n_components=n_components)
         self.kernel = kernel

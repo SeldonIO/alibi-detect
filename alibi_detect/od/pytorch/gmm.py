@@ -7,7 +7,7 @@ from alibi_detect.utils.pytorch.data import TorchDataset
 from alibi_detect.od.pytorch.base import TorchOutlierDetector
 from alibi_detect.models.pytorch.gmm import GMMModel
 from alibi_detect.utils.pytorch.misc import get_optimizer
-from alibi_detect.utils._types import TorchDeviceTypes
+from alibi_detect.utils._types import TorchDeviceType
 
 
 class GMMTorch(TorchOutlierDetector):
@@ -16,7 +16,7 @@ class GMMTorch(TorchOutlierDetector):
     def __init__(
         self,
         n_components: int,
-        device: TorchDeviceTypes = None,
+        device: TorchDeviceType = None,
     ):
         """Pytorch backend for the Gaussian Mixture Model (GMM) outlier detector.
 
@@ -25,8 +25,9 @@ class GMMTorch(TorchOutlierDetector):
         n_components
             Number of components in gaussian mixture model.
         device
-            Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
-            passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of ``torch.device``.
+            Device type used. The default tries to use the GPU and falls back on CPU if needed.
+            Can be specified by passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of
+            ``torch.device``.
 
         Raises
         ------

@@ -4,6 +4,7 @@ from typing import Callable, Dict, Optional, Union, Tuple
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, has_keops, BackendValidator, Framework
 from alibi_detect.utils.warnings import deprecated_alias
 from alibi_detect.base import DriftConfigMixin
+from alibi_detect.utils._types import TorchDeviceType
 
 if has_pytorch:
     from alibi_detect.cd.pytorch.mmd import MMDDriftTorch
@@ -33,7 +34,7 @@ class MMDDrift(DriftConfigMixin):
             configure_kernel_from_x_ref: bool = True,
             n_permutations: int = 100,
             batch_size_permutations: int = 1000000,
-            device: Optional[str] = None,
+            device: TorchDeviceType = None,
             input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None
     ) -> None:
@@ -74,8 +75,9 @@ class MMDDrift(DriftConfigMixin):
             KeOps computes the n_permutations of the MMD^2 statistics in chunks of batch_size_permutations.
             Only relevant for 'keops' backend.
         device
-            Device type used. The default None tries to use the GPU and falls back on CPU if needed.
-            Can be specified by passing either 'cuda', 'gpu' or 'cpu'. Only relevant for 'pytorch' backend.
+            Device type used. The default tries to use the GPU and falls back on CPU if needed.
+            Can be specified by passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of
+            ``torch.device``. Only relevant for 'pytorch' backend.
         input_shape
             Shape of input data.
         data_type

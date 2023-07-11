@@ -39,4 +39,4 @@ supported_optimizers_all = supported_optimizers_tf + supported_optimizers_torch
 OptimizerTF: TypeAlias = Union['tf.keras.optimizers.Optimizer', 'tf.keras.optimizers.legacy.Optimizer',
                                Type['tf.keras.optimizers.Optimizer'], Type['tf.keras.optimizers.legacy.Optimizer']]
 
-TorchDeviceTypes: TypeAlias = Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']]
+TorchDeviceType: TypeAlias = Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']]

@@ -5,6 +5,7 @@ import torch
 import torch.nn as nn
 from alibi_detect.utils.pytorch.prediction import (predict_batch,
                                                    predict_batch_transformer)
+from alibi_detect.utils._types import TorchDeviceType
 
 
 class _Encoder(nn.Module):
@@ -82,7 +83,7 @@ class HiddenOutput(nn.Module):
 
 
 def preprocess_drift(x: Union[np.ndarray, list], model: Union[nn.Module, nn.Sequential],
-                     device: Optional[torch.device] = None, preprocess_batch_fn: Callable = None,
+                     device: TorchDeviceType = None, preprocess_batch_fn: Callable = None,
                      tokenizer: Optional[Callable] = None, max_len: Optional[int] = None,
                      batch_size: int = int(1e10), dtype: Union[Type[np.generic], torch.dtype] = np.float32) \
         -> Union[np.ndarray, torch.Tensor, tuple]:
@@ -96,8 +97,9 @@ def preprocess_drift(x: Union[np.ndarray, list], model: Union[nn.Module, nn.Sequ
     model
         Model used for preprocessing.
     device
-        Device type used. The default None tries to use the GPU and falls back on CPU if needed.
-        Can be specified by passing either torch.device('cuda') or torch.device('cpu').
+        Device type used. The default tries to use the GPU and falls back on CPU if needed.
+        Can be specified by passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of
+        ``torch.device``.
     preprocess_batch_fn
         Optional batch preprocessing function. For example to convert a list of objects to a batch which can be
         processed by the PyTorch model.
