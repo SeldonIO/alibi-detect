@@ -1,9 +1,9 @@
-from typing import Optional, Union, Callable
-from typing_extensions import Literal
+from typing import Optional, Callable
 
 import torch
 
 from alibi_detect.od.pytorch.base import TorchOutlierDetector
+from alibi_detect.utils._types import TorchDeviceTypes
 
 
 class PCATorch(TorchOutlierDetector):
@@ -12,7 +12,7 @@ class PCATorch(TorchOutlierDetector):
     def __init__(
             self,
             n_components: int,
-            device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
+            device: TorchDeviceTypes = None,
             ):
         """PyTorch backend for PCA detector.
 
@@ -102,7 +102,7 @@ class LinearPCATorch(PCATorch):
     def __init__(
             self,
             n_components: int,
-            device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
+            device: TorchDeviceTypes = None,
             ):
         """Linear variant of the PyTorch backend for PCA detector.
 
@@ -173,7 +173,7 @@ class KernelPCATorch(PCATorch):
             self,
             n_components: int,
             kernel: Optional[Callable],
-            device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
+            device: TorchDeviceTypes = None,
             ):
         """Kernel variant of the PyTorch backend for PCA detector.
 

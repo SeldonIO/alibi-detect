@@ -1,5 +1,4 @@
-from typing import Optional, Union, Dict, Type
-from typing_extensions import Literal
+from typing import Dict, Type
 from tqdm import tqdm
 import torch
 from torch.utils.data import DataLoader
@@ -8,6 +7,7 @@ from alibi_detect.utils.pytorch.data import TorchDataset
 from alibi_detect.od.pytorch.base import TorchOutlierDetector
 from alibi_detect.models.pytorch.gmm import GMMModel
 from alibi_detect.utils.pytorch.misc import get_optimizer
+from alibi_detect.utils._types import TorchDeviceTypes
 
 
 class GMMTorch(TorchOutlierDetector):
@@ -16,7 +16,7 @@ class GMMTorch(TorchOutlierDetector):
     def __init__(
         self,
         n_components: int,
-        device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
+        device: TorchDeviceTypes = None,
     ):
         """Pytorch backend for the Gaussian Mixture Model (GMM) outlier detector.
 

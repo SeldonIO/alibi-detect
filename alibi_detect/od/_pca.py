@@ -1,5 +1,4 @@
 from typing import Union, Optional, Callable, Dict, Any
-from typing import TYPE_CHECKING
 from typing_extensions import Literal
 
 import numpy as np
@@ -10,10 +9,7 @@ from alibi_detect.od.pytorch import KernelPCATorch, LinearPCATorch
 from alibi_detect.utils.frameworks import BackendValidator
 from alibi_detect.version import __version__
 from alibi_detect.exceptions import _catch_error as catch_error
-
-
-if TYPE_CHECKING:
-    import torch
+from alibi_detect.utils._types import TorchDeviceTypes
 
 
 backends = {
@@ -27,7 +23,7 @@ class PCA(BaseDetector, ThresholdMixin, FitMixin):
         n_components: int,
         kernel: Optional[Callable] = None,
         backend: Literal['pytorch'] = 'pytorch',
-        device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
+        device: TorchDeviceTypes = None,
     ) -> None:
         """Principal Component Analysis (PCA) outlier detector.
 

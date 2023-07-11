@@ -1,8 +1,7 @@
-from typing import Optional, Union
-from typing_extensions import Literal
 import torch
 
 from alibi_detect.od.pytorch.base import TorchOutlierDetector
+from alibi_detect.utils._types import TorchDeviceTypes
 
 
 class MahalanobisTorch(TorchOutlierDetector):
@@ -11,7 +10,7 @@ class MahalanobisTorch(TorchOutlierDetector):
     def __init__(
             self,
             min_eigenvalue: float = 1e-6,
-            device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
+            device: TorchDeviceTypes = None,
             ):
         """PyTorch backend for Mahalanobis detector.
 

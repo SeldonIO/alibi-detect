@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 
 import numpy as np
 
@@ -9,6 +9,7 @@ from alibi_detect.od.pytorch import SgdSVMTorch, BgdSVMTorch
 from alibi_detect.utils._types import Literal
 from alibi_detect.utils.frameworks import BackendValidator
 from alibi_detect.version import __version__
+from alibi_detect.utils._types import TorchDeviceTypes
 
 
 if TYPE_CHECKING:
@@ -31,7 +32,7 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
         kernel: 'torch.nn.Module' = None,
         optimization: Literal['sgd', 'bgd'] = 'sgd',
         backend: Literal['pytorch'] = 'pytorch',
-        device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
+        device: TorchDeviceTypes = None,
     ) -> None:
         """One-Class Support vector machine (OCSVM) outlier detector.
 

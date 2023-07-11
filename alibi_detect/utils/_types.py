@@ -4,7 +4,8 @@ Defining types compatible with different Python versions and defining custom typ
 import sys
 from sklearn.base import BaseEstimator  # import here (instead of later) since sklearn currently a core dep
 from alibi_detect.utils.frameworks import has_tensorflow, has_pytorch
-from typing import Union, Type
+from typing import Union, Type, Optional
+
 
 # Literal for typing
 if sys.version_info >= (3, 8):
@@ -37,3 +38,5 @@ supported_optimizers_all = supported_optimizers_tf + supported_optimizers_torch
 # type aliases, for use with mypy (must be FwdRef's if involving opt. deps.)
 OptimizerTF: TypeAlias = Union['tf.keras.optimizers.Optimizer', 'tf.keras.optimizers.legacy.Optimizer',
                                Type['tf.keras.optimizers.Optimizer'], Type['tf.keras.optimizers.legacy.Optimizer']]
+
+TorchDeviceTypes: TypeAlias = Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']]

@@ -1,5 +1,4 @@
-from typing import Union, Optional, Dict, Any
-from typing import TYPE_CHECKING
+from typing import Dict, Any
 from alibi_detect.exceptions import _catch_error as catch_error
 from typing_extensions import Literal
 
@@ -9,10 +8,7 @@ from alibi_detect.base import BaseDetector, FitMixin, ThresholdMixin, outlier_pr
 from alibi_detect.od.pytorch import MahalanobisTorch
 from alibi_detect.utils.frameworks import BackendValidator
 from alibi_detect.version import __version__
-
-
-if TYPE_CHECKING:
-    import torch
+from alibi_detect.utils._types import TorchDeviceTypes
 
 
 backends = {
@@ -25,7 +21,7 @@ class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
         self,
         min_eigenvalue: float = 1e-6,
         backend: Literal['pytorch'] = 'pytorch',
-        device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
+        device: TorchDeviceTypes = None,
     ) -> None:
         """
         The Mahalanobis outlier detection method.

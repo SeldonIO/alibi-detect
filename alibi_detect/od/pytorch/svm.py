@@ -1,16 +1,17 @@
 import warnings
-from typing import Callable, Dict, Optional, Tuple, Union
+from typing import Callable, Dict, Optional, Tuple
 
 import numpy as np
 import torch
 from sklearn.linear_model import SGDOneClassSVM
 from sklearn.utils.extmath import safe_sparse_dot
 from tqdm import tqdm
-from typing_extensions import Literal, Self
+from typing_extensions import Self
 
 from alibi_detect.od.pytorch.base import TorchOutlierDetector
 from alibi_detect.utils.pytorch.losses import hinge_loss
 from alibi_detect.utils.pytorch.kernels import GaussianRBF
+from alibi_detect.utils._types import TorchDeviceTypes
 
 
 class SVMTorch(TorchOutlierDetector):
@@ -21,7 +22,7 @@ class SVMTorch(TorchOutlierDetector):
         nu: float,
         kernel: 'torch.nn.Module' = None,
         n_components: Optional[int] = None,
-        device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
+        device: TorchDeviceTypes = None,
     ):
         """Pytorch backend for the Support Vector Machine (SVM) outlier detector.
 
@@ -82,7 +83,7 @@ class SgdSVMTorch(SVMTorch):
         nu: float,
         kernel: 'torch.nn.Module' = None,
         n_components: Optional[int] = None,
-        device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
+        device: TorchDeviceTypes = None,
     ):
         """SGD Optimization backend for the One class support vector machine (SVM) outlier detector.
 
@@ -207,7 +208,7 @@ class BgdSVMTorch(SVMTorch):
         nu: float,
         kernel: 'torch.nn.Module' = None,
         n_components: Optional[int] = None,
-        device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
+        device: TorchDeviceTypes = None,
     ):
         """Pytorch backend for the Support Vector Machine (SVM) outlier detector.
 

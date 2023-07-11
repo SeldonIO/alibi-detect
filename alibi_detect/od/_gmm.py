@@ -1,4 +1,4 @@
-from typing import Union, Optional, Dict, Any, TYPE_CHECKING
+from typing import Optional, Dict, Any
 
 import numpy as np
 
@@ -10,10 +10,7 @@ from alibi_detect.od.sklearn import GMMSklearn
 from alibi_detect.utils.frameworks import BackendValidator
 from alibi_detect.version import __version__
 from alibi_detect.exceptions import _catch_error as catch_error
-
-
-if TYPE_CHECKING:
-    import torch
+from alibi_detect.utils._types import TorchDeviceTypes
 
 
 backends = {
@@ -27,7 +24,7 @@ class GMM(BaseDetector, ThresholdMixin, FitMixin):
         self,
         n_components: int = 1,
         backend: Literal['pytorch', 'sklearn'] = 'sklearn',
-        device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
+        device: TorchDeviceTypes = None,
     ) -> None:
         """Gaussian Mixture Model (GMM) outlier detector.
 

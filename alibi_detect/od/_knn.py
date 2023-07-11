@@ -1,5 +1,4 @@
 from typing import Callable, Union, Optional, Dict, Any, List, Tuple
-from typing import TYPE_CHECKING
 from typing_extensions import Literal
 
 import numpy as np
@@ -12,10 +11,7 @@ from alibi_detect.od.pytorch import KNNTorch, Ensembler
 from alibi_detect.od.base import get_aggregator, get_normalizer, NormalizerLiterals, AggregatorLiterals
 from alibi_detect.utils.frameworks import BackendValidator
 from alibi_detect.version import __version__
-
-
-if TYPE_CHECKING:
-    import torch
+from alibi_detect.utils._types import TorchDeviceTypes
 
 
 backends = {
@@ -31,7 +27,7 @@ class KNN(BaseDetector, FitMixin, ThresholdMixin):
         normalizer: Optional[Union[TransformProtocolType, NormalizerLiterals]] = 'PValNormalizer',
         aggregator: Union[TransformProtocol, AggregatorLiterals] = 'AverageAggregator',
         backend: Literal['pytorch'] = 'pytorch',
-        device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
+        device: TorchDeviceTypes = None,
     ) -> None:
         """
         k-Nearest Neighbors (kNN) outlier detector.
