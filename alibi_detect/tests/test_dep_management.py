@@ -239,7 +239,8 @@ def test_saving_torch_dependencies(opt_dep):
         ('load_optimizer_pt', ['torch', 'keops']),
         ('prep_model_and_emb_pt', ['torch', 'keops']),
         ('save_model_config_pt', ['torch', 'keops']),
-        ('get_pt_dtype', ['torch', 'keops'])
+        ('get_pt_dtype', ['torch', 'keops']),
+        ('save_device_config_pt', ['torch', 'keops'])
     ]:
         dependency_map[dependency] = relations
     from alibi_detect.saving import _pytorch as pt_saving

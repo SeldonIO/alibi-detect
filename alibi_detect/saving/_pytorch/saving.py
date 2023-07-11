@@ -10,6 +10,7 @@ import torch.nn as nn
 from alibi_detect.cd.pytorch import UAE, HiddenOutput
 from alibi_detect.models.pytorch import TransformerEmbedding
 from alibi_detect.utils.frameworks import Framework
+from alibi_detect.utils._types import TorchDeviceType
 
 logger = logging.getLogger(__name__)
 
@@ -129,3 +130,20 @@ def save_embedding_config(embed: TransformerEmbedding,
     embed.model.save_pretrained(filepath)
 
     return cfg_embed
+
+
+def save_device_config(device: TorchDeviceType):
+    """
+
+    Parameters
+    ----------
+    device
+        Device type used. The default tries to use the GPU and falls back on CPU if needed.
+            Can be specified by passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of
+            ``torch.device``.
+
+    Returns
+    -------
+    a string with value ``'cuda'`` or ``'cpu'``.
+    """
+    return str(device)

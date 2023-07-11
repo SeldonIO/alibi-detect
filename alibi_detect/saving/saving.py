@@ -17,11 +17,12 @@ from alibi_detect.utils._types import supported_models_all, supported_models_tf,
     supported_models_sklearn
 from alibi_detect.base import Detector, ConfigurableDetector, StatefulDetectorOnline
 from alibi_detect.saving._tensorflow import save_detector_legacy, save_model_config_tf, save_optimizer_config_tf
-from alibi_detect.saving._pytorch import save_model_config_pt
+from alibi_detect.saving._pytorch import save_model_config_pt, save_device_config_pt
 from alibi_detect.saving._sklearn import save_model_config_sk
 
 if TYPE_CHECKING:
     import tensorflow as tf
+    import torch
 
 # do not extend pickle dispatch table so as not to change pickle behaviour
 dill.extend(use_dill=False)
@@ -187,6 +188,11 @@ def _save_detector_config(detector: ConfigurableDetector,
     optimizer = cfg.get('optimizer')
     if optimizer is not None:
         cfg['optimizer'] = _save_optimizer_config(optimizer)
+
+    # Serialize device
+    device = cfg.get('device')
+    if device is not None:
+        cfg['device'] = _save_device_config(device)
 
     # Serialize dataset
     dataset = cfg.get('dataset')
@@ -539,3 +545,24 @@ def _save_optimizer_config(optimizer: Union['tf.keras.optimizers.Optimizer', typ
         return {'class_name': optimizer.__name__}
     else:
         return save_optimizer_config_tf(optimizer)
+
+
+def _save_device_config(device: Union[str, 'torch.device']) -> dict:
+    """
+    Function to save device.
+
+    Parameters
+    ----------
+    device
+        The device to save.
+
+    Returns
+    -------
+    Device config dict.
+    """
+
+    # if device is not none then we're using pytorch
+    if device is not None:
+        return save_device_config_pt(device)
+    else:
+        return None
