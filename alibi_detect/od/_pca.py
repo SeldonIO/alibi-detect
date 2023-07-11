@@ -87,6 +87,11 @@ class PCA(BaseDetector, ThresholdMixin, FitMixin):
                 device=device,
             )
 
+        # set metadata
+        self.meta['detector_type'] = 'outlier'
+        self.meta['data_type'] = 'numeric'
+        self.meta['online'] = False
+
     def fit(self, x_ref: np.ndarray) -> None:
         """Fit the detector on reference data.
 
