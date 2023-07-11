@@ -1,17 +1,13 @@
 """
 Defining types compatible with different Python versions and defining custom types.
 """
-import sys
 from sklearn.base import BaseEstimator  # import here (instead of later) since sklearn currently a core dep
 from alibi_detect.utils.frameworks import has_tensorflow, has_pytorch
 from typing import Union, Type, Optional
 
 
 # Literal for typing
-if sys.version_info >= (3, 8):
-    from typing import Literal  # noqa
-else:
-    from typing_extensions import Literal  # noqa
+from typing_extensions import Literal
 from typing_extensions import TypeAlias
 
 
