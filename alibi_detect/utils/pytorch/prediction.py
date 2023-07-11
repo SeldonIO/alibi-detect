@@ -93,8 +93,9 @@ def predict_batch_transformer(x: Union[list, np.ndarray], model: Union[nn.Module
     max_len
         Max sequence length for tokens.
     device
-        Device type used. The default None tries to use the GPU and falls back on CPU if needed.
-        Can be specified by passing either torch.device('cuda') or torch.device('cpu').
+        Device type used. The default tries to use the GPU and falls back on CPU if needed.
+        Can be specified by passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of
+        ``torch.device``.
     batch_size
         Batch size used during prediction.
     dtype
