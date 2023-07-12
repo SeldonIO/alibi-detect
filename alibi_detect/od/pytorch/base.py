@@ -20,7 +20,7 @@ class TorchOutlierDetectorOutput:
     is_outlier: Optional[torch.Tensor]
     p_value: Optional[torch.Tensor]
 
-    def to_numpy(self):
+    def to_frontend_dtype(self):
         result = {}
         for f in fields(self):
             value = getattr(self, f.name)
@@ -35,7 +35,7 @@ def _raise_type_error(x):
     raise TypeError(f'x is type={type(x)} but must be one of TorchOutlierDetectorOutput or a torch Tensor')
 
 
-def to_numpy(x: Union[torch.Tensor, TorchOutlierDetectorOutput]) -> Union[np.ndarray, Dict[str, np.ndarray]]:
+def to_frontend_dtype(x: Union[torch.Tensor, TorchOutlierDetectorOutput]) -> Union[np.ndarray, Dict[str, np.ndarray]]:
     """Converts any `torch` tensors found in input to `numpy` arrays.
 
     Takes a `torch` tensor or `TorchOutlierDetectorOutput` and converts any `torch` tensors found to `numpy` arrays
@@ -51,7 +51,7 @@ def to_numpy(x: Union[torch.Tensor, TorchOutlierDetectorOutput]) -> Union[np.nda
     """
 
     return {
-        'TorchOutlierDetectorOutput': lambda x: x.to_numpy(),
+        'TorchOutlierDetectorOutput': lambda x: x.to_frontend_dtype(),
         'Tensor': lambda x: x.cpu().detach().numpy()
     }.get(
         x.__class__.__name__,
@@ -96,10 +96,15 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
             raise ThresholdNotInferredError(self.__class__.__name__)
 
     @staticmethod
-    def _to_numpy(arg: Union[torch.Tensor, TorchOutlierDetectorOutput]) -> Union[np.ndarray, Dict[str, np.ndarray]]:
-        """Converts any `torch` tensors found in input to `numpy` arrays.
+    def _to_frontend_dtype(
+                arg: Union[torch.Tensor, TorchOutlierDetectorOutput]
+            ) -> Union[np.ndarray, Dict[str, np.ndarray]]:
+        """Converts input to frontend data format.
 
-        Takes a `torch` tensor or `TorchOutlierDetectorOutput` and converts any `torch` tensors found to `numpy` arrays
+        This is an interface method that ensures that the output of the outlier detector is in a common format for
+        different backends. Mostly this means converting `torch.tensors` to `np.ndarray`. If `arg` is a
+        `TorchOutlierDetectorOutput` object, we call its `to_frontend_dtype` method. Otherwise, if `arg` is a
+        `torch.Tensor`, we convert it to a `numpy` array.
 
         Parameters
         ----------
@@ -110,10 +115,13 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
         -------
         `np.ndarray` or dictionary of containing `numpy` arrays
         """
-        return to_numpy(arg)
+        return to_frontend_dtype(arg)
 
-    def _to_tensor(self, x: Union[List, np.ndarray]) -> torch.Tensor:
-        """Converts the data to a tensor.
+    def _to_backend_dtype(self, x: Union[List, np.ndarray]) -> torch.Tensor:
+        """Converts data from the frontend to the backend format.
+
+        This is an interface method that ensures that the input of the chosen outlier detector backend is in the correct
+        format.
 
         Parameters
         ----------

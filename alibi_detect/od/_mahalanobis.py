@@ -86,7 +86,7 @@ class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
         x_ref
             Reference data used to fit the detector.
         """
-        self.backend.fit(self.backend._to_tensor(x_ref))
+        self.backend.fit(self.backend._to_backend_dtype(x_ref))
 
     @catch_error('NotFittedError')
     def score(self, x: np.ndarray) -> np.ndarray:
@@ -110,8 +110,8 @@ class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
         NotFittedError
             If called before detector has been fit.
         """
-        score = self.backend.score(self.backend._to_tensor(x))
-        return self.backend._to_numpy(score)
+        score = self.backend.score(self.backend._to_backend_dtype(x))
+        return self.backend._to_frontend_dtype(score)
 
     @catch_error('NotFittedError')
     def infer_threshold(self, x: np.ndarray, fpr: float) -> None:
@@ -136,7 +136,7 @@ class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
         NotFittedError
             If called before detector has been fit.
         """
-        self.backend.infer_threshold(self.backend._to_tensor(x), fpr)
+        self.backend.infer_threshold(self.backend._to_backend_dtype(x), fpr)
 
     @catch_error('NotFittedError')
     def predict(self, x: np.ndarray) -> Dict[str, Any]:
@@ -161,11 +161,11 @@ class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
         NotFittedError
             If called before detector has been fit.
         """
-        outputs = self.backend.predict(self.backend._to_tensor(x))
+        outputs = self.backend.predict(self.backend._to_backend_dtype(x))
         output = outlier_prediction_dict()
         output['data'] = {
             **output['data'],
-            **self.backend._to_numpy(outputs)
+            **self.backend._to_frontend_dtype(outputs)
         }
         output['meta'] = {
             **output['meta'],
