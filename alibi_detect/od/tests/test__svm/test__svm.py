@@ -109,7 +109,7 @@ def test_fitted_svm_score(optimization):
         nu=0.1
     )
     x_ref = np.random.randn(100, 2)
-    fit_logs = svm_detector.fit(x_ref)
+    svm_detector.fit(x_ref)
     x = np.array([[0, 10], [0.1, 0]])
     scores = svm_detector.score(x)
 

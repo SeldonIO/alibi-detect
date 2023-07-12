@@ -87,7 +87,7 @@ def test_gmm_integration(backend):
     gmm_detector = GMM(n_components=8, backend=backend)
     X_ref, _ = make_moons(1001, shuffle=True, noise=0.05, random_state=None)
     X_ref, x_inlier = X_ref[0:1000], X_ref[1000][None]
-    fit_logs = gmm_detector.fit(X_ref)
+    gmm_detector.fit(X_ref)
     gmm_detector.infer_threshold(X_ref, 0.1)
     result = gmm_detector.predict(x_inlier)
     result = result['data']['is_outlier'][0]

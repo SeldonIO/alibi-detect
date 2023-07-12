@@ -36,7 +36,7 @@ def _tensor_to_frontend_dtype(x: Union[torch.Tensor, np.ndarray, float]) -> Unio
         x = x.cpu().detach().numpy()
     if isinstance(x, np.ndarray) and x.ndim == 0:
         x = x.item()
-    return x
+    return x  # type: ignore[return-value]
 
 
 def _raise_type_error(x):
