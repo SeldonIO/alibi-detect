@@ -196,7 +196,7 @@ class SgdSVMTorch(SVMTorch):
         coef_ = self.svm.coef_ / (self.svm.coef_ ** 2).sum()
         x_nys = self.svm._validate_data(x_nys, accept_sparse="csr", reset=False)
         result = safe_sparse_dot(x_nys, coef_.T, dense_output=True).ravel()
-        return - self._to_tensor(result)
+        return - self._to_backend_dtype(result)
 
 
 class BgdSVMTorch(SVMTorch):
