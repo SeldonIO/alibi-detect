@@ -132,7 +132,7 @@ class GMMTorch(TorchOutlierDetector):
         self._set_fitted()
         return {
             'converged': converged,
-            'lower_bound': min_loss,
+            'lower_bound': self._to_frontend_dtype(min_loss),
             'n_epochs': epoch
         }
 

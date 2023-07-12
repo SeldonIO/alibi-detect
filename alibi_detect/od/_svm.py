@@ -143,7 +143,7 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
             Verbosity level during training. ``0`` is silent, ``1`` prints fit status. If using `bgd`, fit displays a
             progress bar. Otherwise, if using `sgd` then we output the Sklearn `SGDOneClassSVM.fit()` logs.
         """
-        self.backend.fit(
+        return self.backend.fit(
             self.backend._to_backend_dtype(x_ref),
             **self.backend.format_fit_kwargs(locals())
         )

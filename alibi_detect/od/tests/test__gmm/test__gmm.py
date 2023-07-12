@@ -87,7 +87,7 @@ def test_gmm_integration(backend):
     gmm_detector = GMM(n_components=8, backend=backend)
     X_ref, _ = make_moons(1001, shuffle=True, noise=0.05, random_state=None)
     X_ref, x_inlier = X_ref[0:1000], X_ref[1000][None]
-    gmm_detector.fit(X_ref)
+    fit_logs = gmm_detector.fit(X_ref)
     gmm_detector.infer_threshold(X_ref, 0.1)
     result = gmm_detector.predict(x_inlier)
     result = result['data']['is_outlier'][0]
@@ -117,3 +117,19 @@ def test_gmm_torchscript(tmp_path):
     ts_gmm = torch.load(tmp_path / 'gmm.pt')
     y = ts_gmm(x)
     assert torch.all(y == torch.tensor([False, True]))
+
+
+@pytest.mark.parametrize('backend', ['pytorch', 'sklearn'])
+def test_gmm_fit(backend):
+    """Test GMM detector fit method.
+
+    Tests detector checks for convergence and stops early if it does.
+    """
+    gmm = GMM(n_components=1, backend=backend)
+    mean = [8, 8]
+    cov = [[2., 0.], [0., 1.]]
+    x_ref = torch.tensor(np.random.multivariate_normal(mean, cov, 1000))
+    fit_results = gmm.fit(x_ref, tol=0.01, batch_size=32)
+    assert isinstance(fit_results['lower_bound'], float)
+    assert fit_results['converged']
+    assert fit_results['lower_bound'] < 1
