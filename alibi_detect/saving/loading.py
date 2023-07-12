@@ -506,7 +506,7 @@ def resolve_config(cfg: dict, config_dir: Optional[Path]) -> dict:
                 if Path(src).suffix == '.dill':
                     obj = dill.load(open(src, 'rb'))
                 if Path(src).suffix == '.npy':
-                    obj = np.load(src)
+                    obj = np.load(src, allow_pickle=True)
 
         # Resolve artefact dicts
         elif isinstance(src, dict):
