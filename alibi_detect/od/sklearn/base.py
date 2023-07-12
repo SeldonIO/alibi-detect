@@ -13,7 +13,7 @@ class SklearnOutlierDetectorOutput:
     """Output of the outlier detector."""
     threshold_inferred: bool
     instance_score: np.ndarray
-    threshold: Optional[np.ndarray]
+    threshold: Optional[float]
     is_outlier: Optional[np.ndarray]
     p_value: Optional[np.ndarray]
 

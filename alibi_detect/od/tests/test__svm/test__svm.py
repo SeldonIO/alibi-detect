@@ -149,6 +149,7 @@ def test_fitted_svm_predict(optimization):
     assert y['instance_score'][1] < -0.8
     assert y['threshold_inferred']
     assert y['threshold'] is not None
+    assert isinstance(y['threshold'], float)
     assert y['p_value'].all()
     assert (y['is_outlier'] == [True, False]).all()
 
