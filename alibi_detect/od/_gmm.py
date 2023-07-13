@@ -68,6 +68,11 @@ class GMM(BaseDetector, ThresholdMixin, FitMixin):
             args['device'] = device
         self.backend = backend_cls(**args)
 
+        # set metadata
+        self.meta['detector_type'] = 'outlier'
+        self.meta['data_type'] = 'numeric'
+        self.meta['online'] = False
+
     def fit(
         self,
         x_ref: np.ndarray,
