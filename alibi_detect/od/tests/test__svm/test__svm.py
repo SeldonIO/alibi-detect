@@ -207,3 +207,28 @@ def test_svm_torchscript(tmp_path):
     ts_svm = torch.load(tmp_path / 'svm.pt')
     y = ts_svm(x)
     assert torch.all(y == torch.tensor([False, True]))
+
+
+@pytest.mark.parametrize('optimization', ['sgd', 'bgd'])
+def test_svm_fit(optimization):
+    """Test SVM detector fit method.
+
+    Tests pytorch detector checks for convergence and stops early if it does.
+    """
+    kernel = GaussianRBF(torch.tensor(1.))
+    svm = SVM(
+        n_components=10,
+        kernel=kernel,
+        nu=0.01,
+        optimization=optimization,
+    )
+    mean = [8, 8]
+    cov = [[2., 0.], [0., 1.]]
+    x_ref = torch.tensor(np.random.multivariate_normal(mean, cov, 1000))
+    fit_results = svm.fit(x_ref, tol=0.01)
+    assert fit_results['converged']
+    assert fit_results['n_iter'] < 100
+    assert fit_results.get('lower_bound', 0) < 1
+    # 'sgd' optimization does not return lower bound
+    if optimization == 'bgd':
+        assert isinstance(fit_results['lower_bound'], float)

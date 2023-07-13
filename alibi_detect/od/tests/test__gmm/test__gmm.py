@@ -117,3 +117,19 @@ def test_gmm_torchscript(tmp_path):
     ts_gmm = torch.load(tmp_path / 'gmm.pt')
     y = ts_gmm(x)
     assert torch.all(y == torch.tensor([False, True]))
+
+
+@pytest.mark.parametrize('backend', ['pytorch', 'sklearn'])
+def test_gmm_fit(backend):
+    """Test GMM detector fit method.
+
+    Tests detector checks for convergence and stops early if it does.
+    """
+    gmm = GMM(n_components=1, backend=backend)
+    mean = [8, 8]
+    cov = [[2., 0.], [0., 1.]]
+    x_ref = torch.tensor(np.random.multivariate_normal(mean, cov, 1000))
+    fit_results = gmm.fit(x_ref, tol=0.01, batch_size=32)
+    assert isinstance(fit_results['lower_bound'], float)
+    assert fit_results['converged']
+    assert fit_results['lower_bound'] < 1

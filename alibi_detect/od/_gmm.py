@@ -130,8 +130,16 @@ class GMM(BaseDetector, ThresholdMixin, FitMixin):
             Defaults to ``'kmeans'``.
         verbose
             Verbosity level used to fit the detector. Used for both ``'sklearn'`` and ``'pytorch'`` backends. Defaults to ``0``.
+
+        Returns
+        -------
+        Dictionary with fit results. The dictionary contains the following keys depending on the backend used:
+            - converged: bool indicating whether EM algorithm converged.
+            - n_iter: number of EM iterations performed. Only returned if `backend` is ``'sklearn'``.
+            - n_epochs: number of gradient descent iterations performed. Only returned if `backend` is ``'pytorch'``.
+            - lower_bound: log-likelihood lower bound.
         """
-        self.backend.fit(
+        return self.backend.fit(
             self.backend._to_backend_dtype(x_ref),
             **self.backend.format_fit_kwargs(locals())
         )

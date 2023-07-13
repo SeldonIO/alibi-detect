@@ -31,6 +31,14 @@ class TorchOutlierDetectorOutput:
         return result
 
 
+def _tensor_to_frontend_dtype(x: Union[torch.Tensor, np.ndarray, float]) -> Union[np.ndarray, float]:
+    if isinstance(x, torch.Tensor):
+        x = x.cpu().detach().numpy()
+    if isinstance(x, np.ndarray) and x.ndim == 0:
+        x = x.item()
+    return x  # type: ignore[return-value]
+
+
 def _raise_type_error(x):
     raise TypeError(f'x is type={type(x)} but must be one of TorchOutlierDetectorOutput or a torch Tensor')
 
@@ -52,7 +60,7 @@ def to_frontend_dtype(x: Union[torch.Tensor, TorchOutlierDetectorOutput]) -> Uni
 
     return {
         'TorchOutlierDetectorOutput': lambda x: x.to_frontend_dtype(),
-        'Tensor': lambda x: x.cpu().detach().numpy()
+        'Tensor': _tensor_to_frontend_dtype
     }.get(
         x.__class__.__name__,
         _raise_type_error
