@@ -75,8 +75,8 @@ class GMMTorch(TorchOutlierDetector):
         Returns
         -------
         Dictionary with fit results. The dictionary contains the following keys:
-            - converged: bool indicating whether EM algorithm converged.
-            - n_iter: number of EM iterations performed.
+            - converged: bool indicating whether training converged.
+            - n_epochs: number of gradient descent iterations performed.
             - lower_bound: log-likelihood lower bound.
         """
         self.model = GMMModel(self.n_components, x_ref.shape[-1]).to(self.device)

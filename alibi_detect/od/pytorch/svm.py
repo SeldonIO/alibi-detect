@@ -272,7 +272,7 @@ class BgdSVMTorch(SVMTorch):
         Returns
         -------
         Dictionary with fit results. The dictionary contains the following keys:
-            - converged: bool indicating whether training converged.
+            - converged: `bool` indicating whether training converged.
             - n_iter: number of iterations performed.
             - lower_bound: loss lower bound.
         """

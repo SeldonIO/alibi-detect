@@ -142,6 +142,13 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
         verbose
             Verbosity level during training. ``0`` is silent, ``1`` prints fit status. If using `bgd`, fit displays a
             progress bar. Otherwise, if using `sgd` then we output the Sklearn `SGDOneClassSVM.fit()` logs.
+
+        Returns
+        -------
+        Dictionary with fit results. The dictionary contains the following keys depending on the optimization used:
+            - converged: `bool` indicating whether training converged.
+            - n_iter: number of iterations performed.
+            - lower_bound: loss lower bound. Only returned for the `bgd`.
         """
         return self.backend.fit(
             self.backend._to_backend_dtype(x_ref),
