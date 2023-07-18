@@ -1,3 +1,5 @@
+from typing import Optional
+
 import tensorflow as tf
 from tensorflow.keras.layers import Flatten
 from tensorflow.keras.losses import kld, categorical_crossentropy
@@ -7,12 +9,14 @@ from alibi_detect.models.tensorflow.gmm import gmm_params, gmm_energy
 
 def elbo(y_true: tf.Tensor,
          y_pred: tf.Tensor,
-         cov_full: tf.Tensor = None,
-         cov_diag: tf.Tensor = None,
-         sim: float = .05
+         cov_full: Optional[tf.Tensor] = None,
+         cov_diag: Optional[tf.Tensor] = None,
+         sim: Optional[float] = None
          ) -> tf.Tensor:
     """
-    Compute ELBO loss.
+    Compute ELBO loss. The covariance matrix can be specified by passing the full covariance matrix, the matrix
+    diagonal, or a scale identity multiplier. Only one of these should be specified. If none are specified, the
+    identity matrix is used.
 
     Parameters
     ----------
@@ -30,17 +34,32 @@ def elbo(y_true: tf.Tensor,
     Returns
     -------
     ELBO loss value.
-    """
-    if isinstance(cov_diag, tf.Tensor):
-        sim = None
 
+    Example
+    -------
+    >>> import tensorflow as tf
+    >>> from alibi_detect.models.tensorflow.losses import elbo
+    >>> y_true = tf.constant([[0.0, 1.0], [1.0, 0.0]])
+    >>> y_pred = tf.constant([[0.1, 0.9], [0.8, 0.2]])
+    >>> # Specifying scale identity multiplier
+    >>> elbo(y_true, y_pred, sim=1.0)
+    >>> # Specifying covariance matrix diagonal
+    >>> elbo(y_true, y_pred, cov_diag=tf.ones(2))
+    >>> # Specifying full covariance matrix
+    >>> elbo(y_true, y_pred, cov_full=tf.eye(2))
+    """
+    if len([x for x in [cov_full, cov_diag, sim] if x is not None]) > 1:
+        raise ValueError('Only one of cov_full, cov_diag or sim should be specified.')
+
+    y_pred_flat = Flatten()(y_pred)
     if isinstance(cov_full, tf.Tensor):
-        y_mn = tfp.distributions.MultivariateNormalFullCovariance(Flatten()(y_pred),
+        y_mn = tfp.distributions.MultivariateNormalFullCovariance(y_pred_flat,
                                                                   covariance_matrix=cov_full)
     else:
-        y_mn = tfp.distributions.MultivariateNormalDiag(Flatten()(y_pred),
-                                                        scale_diag=cov_diag,
-                                                        scale_identity_multiplier=sim)
+        if sim:
+            cov_diag = sim * tf.ones(y_pred_flat.shape[-1])
+        y_mn = tfp.distributions.MultivariateNormalDiag(y_pred_flat,
+                                                        scale_diag=cov_diag)
     loss = -tf.reduce_mean(y_mn.log_prob(Flatten()(y_true)))
     return loss
 

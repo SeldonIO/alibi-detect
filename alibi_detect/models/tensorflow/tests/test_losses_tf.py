@@ -1,3 +1,4 @@
+import pytest
 import numpy as np
 import tensorflow as tf
 from alibi_detect.models.tensorflow.losses import elbo, loss_adv_ae, loss_aegmm, loss_vaegmm, loss_distillation
@@ -12,8 +13,16 @@ cov_full = tf.eye(x.shape[1])
 
 def test_elbo():
     assert elbo(x, y, cov_full=cov_full) == elbo(x, y, cov_diag=cov_diag) == elbo(x, y, sim=sim)
+    assert elbo(x, y) == elbo(x, y, sim=1.)  # Passing no kwarg's should lead to an identity covariance matrix
     assert elbo(x, y, sim=.05).numpy() > 0
     assert elbo(x, x, sim=.05).numpy() < 0
+
+
+def test_elbo_error():
+    with pytest.raises(ValueError):
+        elbo(x, y, cov_full=cov_full, cov_diag=cov_diag)
+        elbo(x, y, cov_full=cov_full, sim=sim)
+        elbo(x, y, cov_diag=cov_diag, sim=sim)
 
 
 z = np.random.rand(N, D).astype(np.float32)
