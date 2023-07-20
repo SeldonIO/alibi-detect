@@ -73,6 +73,7 @@ def test_fitted_gmm_predict(backend):
     assert y['instance_score'][1] < 2
     assert y['threshold_inferred']
     assert y['threshold'] is not None
+    assert isinstance(y['threshold'], float)
     assert y['p_value'].all()
     assert (y['is_outlier'] == [True, False]).all()
 

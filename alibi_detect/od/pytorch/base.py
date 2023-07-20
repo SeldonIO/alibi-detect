@@ -25,9 +25,10 @@ class TorchOutlierDetectorOutput:
         for f in fields(self):
             value = getattr(self, f.name)
             if isinstance(value, torch.Tensor):
-                result[f.name] = value.cpu().detach().numpy()
-            else:
-                result[f.name] = value
+                value = value.cpu().detach().numpy()
+            if isinstance(value, np.ndarray) and value.ndim == 0:
+                value = value.item()
+            result[f.name] = value
         return result
 
 
