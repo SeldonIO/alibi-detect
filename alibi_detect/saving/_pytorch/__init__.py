@@ -9,9 +9,9 @@ load_kernel_config_pt, load_embedding_pt, load_model_pt, load_optimizer_pt, \
                'load_optimizer',
                'prep_model_and_emb'])
 
-save_model_config_pt, save_device_config_pt = import_optional(
+save_model_config_pt, save_device_pt = import_optional(
     'alibi_detect.saving._pytorch.saving',
-    names=['save_model_config', 'save_device_config']
+    names=['save_model_config', 'save_device']
 )
 
 get_pt_dtype = import_optional(

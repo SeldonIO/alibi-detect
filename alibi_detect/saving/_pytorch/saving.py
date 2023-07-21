@@ -132,7 +132,7 @@ def save_embedding_config(embed: TransformerEmbedding,
     return cfg_embed
 
 
-def save_device_config(device: TorchDeviceType):
+def save_device(device: TorchDeviceType):
     """
 
     Parameters
