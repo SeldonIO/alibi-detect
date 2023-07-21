@@ -1374,6 +1374,7 @@ def test_cleanup(tmp_path):
     ('pytorch', 'cuda:0'),
     ('pytorch', torch.device('cuda')),
     ('pytorch', torch.device('cuda:0')),
+    ('tensorflow', None),
 ])
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
 def test_save_detector_device(backend, device, data, tmp_path, classifier_model):  # noqa: F811
@@ -1392,6 +1393,9 @@ def test_save_detector_device(backend, device, data, tmp_path, classifier_model)
     )
     save_detector(detector, tmp_path)
     detector_config = toml.load(tmp_path / 'config.toml')
-    assert detector_config['device'] in {'cpu', 'gpu', 'cuda', 'cuda:0'}
-    detector = load_detector(tmp_path)
-    assert detector._detector.device in {torch.device('cpu'), torch.device('cuda')}
+    loaded_detector = load_detector(tmp_path)
+    if backend == 'tensorflow':
+        assert detector_config['device'] == 'None'
+    else:
+        assert detector_config['device'] in {'cpu', 'gpu', 'cuda'}
+        assert loaded_detector._detector.device in {torch.device('cpu'), torch.device('cuda')}

@@ -146,4 +146,5 @@ def save_device_config(device: TorchDeviceType):
     -------
     a string with value ``'cuda'`` or ``'cpu'``.
     """
-    return str(device)
+    device_str = str(device)
+    return device_str.split(':')[0]
