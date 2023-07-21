@@ -138,9 +138,8 @@ def save_device_config(device: TorchDeviceType):
     Parameters
     ----------
     device
-        Device type used. The default tries to use the GPU and falls back on CPU if needed.
-            Can be specified by passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of
-            ``torch.device``.
+        Torch device to be serialised. Can be specified by passing either ``'cuda'``,
+        ``'gpu'``, ``'cpu'`` or an instance of ``torch.device``.
 
     Returns
     -------
