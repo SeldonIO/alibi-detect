@@ -66,6 +66,11 @@ class GMM(BaseDetector, ThresholdMixin, FitMixin):
             args['device'] = device
         self.backend = backend_cls(**args)
 
+        # set metadata
+        self.meta['detector_type'] = 'outlier'
+        self.meta['data_type'] = 'numeric'
+        self.meta['online'] = False
+
     def fit(
         self,
         x_ref: np.ndarray,
@@ -123,9 +128,17 @@ class GMM(BaseDetector, ThresholdMixin, FitMixin):
             Defaults to ``'kmeans'``.
         verbose
             Verbosity level used to fit the detector. Used for both ``'sklearn'`` and ``'pytorch'`` backends. Defaults to ``0``.
+
+        Returns
+        -------
+        Dictionary with fit results. The dictionary contains the following keys depending on the backend used:
+            - converged: bool indicating whether EM algorithm converged.
+            - n_iter: number of EM iterations performed. Only returned if `backend` is ``'sklearn'``.
+            - n_epochs: number of gradient descent iterations performed. Only returned if `backend` is ``'pytorch'``.
+            - lower_bound: log-likelihood lower bound.
         """
-        self.backend.fit(
-            self.backend._to_tensor(x_ref),
+        return self.backend.fit(
+            self.backend._to_backend_dtype(x_ref),
             **self.backend.format_fit_kwargs(locals())
         )
 
@@ -151,8 +164,8 @@ class GMM(BaseDetector, ThresholdMixin, FitMixin):
         NotFittedError
             If called before detector has been fit.
         """
-        score = self.backend.score(self.backend._to_tensor(x))
-        return self.backend._to_numpy(score)
+        score = self.backend.score(self.backend._to_backend_dtype(x))
+        return self.backend._to_frontend_dtype(score)
 
     @catch_error('NotFittedError')
     def infer_threshold(self, x: np.ndarray, fpr: float) -> None:
@@ -177,7 +190,7 @@ class GMM(BaseDetector, ThresholdMixin, FitMixin):
         NotFittedError
             If called before detector has been fit.
         """
-        self.backend.infer_threshold(self.backend._to_tensor(x), fpr)
+        self.backend.infer_threshold(self.backend._to_backend_dtype(x), fpr)
 
     @catch_error('NotFittedError')
     def predict(self, x: np.ndarray) -> Dict[str, Any]:
@@ -202,11 +215,11 @@ class GMM(BaseDetector, ThresholdMixin, FitMixin):
         NotFittedError
             If called before detector has been fit.
         """
-        outputs = self.backend.predict(self.backend._to_tensor(x))
+        outputs = self.backend.predict(self.backend._to_backend_dtype(x))
         output = outlier_prediction_dict()
         output['data'] = {
             **output['data'],
-            **self.backend._to_numpy(outputs)
+            **self.backend._to_frontend_dtype(outputs)
         }
         output['meta'] = {
             **output['meta'],

@@ -107,6 +107,7 @@ def test_fitted_knn_predict():
     assert y['instance_score'][1] < 1
     assert y['threshold_inferred']
     assert y['threshold'] is not None
+    assert isinstance(y['threshold'], float)
     assert y['p_value'].all()
     assert (y['is_outlier'] == [True, False]).all()
 
@@ -166,6 +167,7 @@ def test_fitted_knn_ensemble_predict(aggregator, normalizer):
     y = y['data']
     assert y['threshold_inferred']
     assert y['threshold'] is not None
+    assert isinstance(y['threshold'], float)
     assert y['p_value'].all()
     assert (y['is_outlier'] == [True, False]).all()
 

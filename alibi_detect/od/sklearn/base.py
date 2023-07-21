@@ -81,10 +81,14 @@ class SklearnOutlierDetector(FitMixinSklearn, ABC):
             raise ThresholdNotInferredError(self.__class__.__name__)
 
     @staticmethod
-    def _to_numpy(arg: Union[np.ndarray, SklearnOutlierDetectorOutput]) -> Union[np.ndarray, Dict[str, np.ndarray]]:
-        """Map arg to the frontend format.
+    def _to_frontend_dtype(
+            arg: Union[np.ndarray, SklearnOutlierDetectorOutput]
+            ) -> Union[np.ndarray, Dict[str, np.ndarray]]:
+        """Converts input to frontend data format.
 
-        If `arg` is a `SklearnOutlierDetectorOutput` object, we unpack it into a `dict` and return it.
+        This is an interface method that ensures that the output of the outlier detector is in a common format for
+        different backends. If `arg` is a `SklearnOutlierDetectorOutput` object, we unpack it into a `dict` and
+        return it.
 
         Parameters
         ----------
@@ -100,11 +104,11 @@ class SklearnOutlierDetector(FitMixinSklearn, ABC):
         return arg
 
     @staticmethod
-    def _to_tensor(x: Union[List, np.ndarray]) -> np.ndarray:
-        """Converts the data to a tensor.
+    def _to_backend_dtype(x: Union[List, np.ndarray]) -> np.ndarray:
+        """Converts data from the frontend to the backend format.
 
-        This function is for interface compatibility with the other backends. As such it does nothing but
-        return the input.
+        This is an interface method that ensures that the input of the chosen outlier detector backend is in the correct
+        format. In the case of the Sklearn backend, we ensure the data is a numpy array.
 
         Parameters
         ----------

@@ -109,6 +109,11 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
         args['device'] = device
         self.backend = backend_cls(**args)
 
+        # set metadata
+        self.meta['detector_type'] = 'outlier'
+        self.meta['data_type'] = 'numeric'
+        self.meta['online'] = False
+
     def fit(
         self,
         x_ref: np.ndarray,
@@ -144,9 +149,16 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
         verbose
             Verbosity level during training. ``0`` is silent, ``1`` prints fit status. If using `bgd`, fit displays a
             progress bar. Otherwise, if using `sgd` then we output the Sklearn `SGDOneClassSVM.fit()` logs.
+
+        Returns
+        -------
+        Dictionary with fit results. The dictionary contains the following keys depending on the optimization used:
+            - converged: `bool` indicating whether training converged.
+            - n_iter: number of iterations performed.
+            - lower_bound: loss lower bound. Only returned for the `bgd`.
         """
-        self.backend.fit(
-            self.backend._to_tensor(x_ref),
+        return self.backend.fit(
+            self.backend._to_backend_dtype(x_ref),
             **self.backend.format_fit_kwargs(locals())
         )
 
@@ -171,8 +183,8 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
         NotFittedError
             If called before detector has been fit.
         """
-        score = self.backend.score(self.backend._to_tensor(x))
-        return self.backend._to_numpy(score)
+        score = self.backend.score(self.backend._to_backend_dtype(x))
+        return self.backend._to_frontend_dtype(score)
 
     @catch_error('NotFittedError')
     def infer_threshold(self, x: np.ndarray, fpr: float) -> None:
@@ -197,7 +209,7 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
         NotFittedError
             If called before detector has been fit.
         """
-        self.backend.infer_threshold(self.backend._to_tensor(x), fpr)
+        self.backend.infer_threshold(self.backend._to_backend_dtype(x), fpr)
 
     @catch_error('NotFittedError')
     def predict(self, x: np.ndarray) -> Dict[str, Any]:
@@ -222,11 +234,11 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
         NotFittedError
             If called before detector has been fit.
         """
-        outputs = self.backend.predict(self.backend._to_tensor(x))
+        outputs = self.backend.predict(self.backend._to_backend_dtype(x))
         output = outlier_prediction_dict()
         output['data'] = {
             **output['data'],
-            **self.backend._to_numpy(outputs)
+            **self.backend._to_frontend_dtype(outputs)
         }
         output['meta'] = {
             **output['meta'],
