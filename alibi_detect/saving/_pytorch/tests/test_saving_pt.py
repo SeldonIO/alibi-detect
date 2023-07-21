@@ -6,7 +6,9 @@ from alibi_detect.saving.tests.models import encoder_model
 from alibi_detect.cd.pytorch import HiddenOutput as HiddenOutput_pt
 from alibi_detect.saving.loading import _load_model_config, _load_optimizer_config
 from alibi_detect.saving.saving import _path2str, _save_model_config
+from alibi_detect.saving._pytorch.saving import save_device
 from alibi_detect.saving.schemas import ModelConfig
+import torch
 
 backend = param_fixture("backend", ['pytorch'])
 
@@ -51,3 +53,12 @@ def test_save_model_pt(data, model, layer, tmp_path):
         assert isinstance(model_load, type(model))
     else:
         assert isinstance(model_load, HiddenOutput_pt)
+
+
+@parametrize('device', ['cpu', 'gpu', 'cuda', 'cuda:0', torch.device('cuda'), torch.device('cuda:0')])
+def test_save_device_pt(device):
+    """
+    Unit test for _save_device.
+    """
+    result = save_device(device)
+    assert result in {'gpu', 'cuda', 'cpu'}

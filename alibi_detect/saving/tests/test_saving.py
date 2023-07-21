@@ -1379,7 +1379,7 @@ def test_cleanup(tmp_path):
 @parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
 def test_save_detector_device(backend, device, data, tmp_path, classifier_model):  # noqa: F811
     """
-    Test saving Detectors with different pytorch device options.
+    Test saving a Detector with different pytorch device options.
 
     Save using `save_detector` and load using `load_detector`, with assertions checking that the reinstantiated
     detector is equivalent. Also check that the detector config toml device string is correct.
