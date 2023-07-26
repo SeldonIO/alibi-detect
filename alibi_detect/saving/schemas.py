@@ -93,7 +93,7 @@ class SupportedDevice:
         backend = values['backend']
         if backend == Framework.TENSORFLOW or backend == Framework.SKLEARN:
             if device is not None:
-                raise TypeError('`device` should not be specified for TensorFlow or Sklearn models. Leave as `None`.')
+                raise TypeError('`device` should not be specified for TensorFlow or Sklearn backends. Leave as `None`.')
             else:
                 return device
         elif backend == Framework.PYTORCH or backend == Framework.KEOPS:
