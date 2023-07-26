@@ -5,6 +5,7 @@ from typing import Callable, Dict, Optional, Tuple, Union
 import numpy as np
 from alibi_detect.utils.sampling import reservoir_sampling
 from alibi_detect.utils.frameworks import Framework
+from alibi_detect.utils._types import TorchDeviceType
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +52,7 @@ def encompass_batching(
         model: Callable,
         backend: str,
         batch_size: int,
-        device: Optional[str] = None,
+        device: TorchDeviceType = None,
         preprocess_batch_fn: Optional[Callable] = None,
         tokenizer: Optional[Callable] = None,
         max_len: Optional[int] = None,

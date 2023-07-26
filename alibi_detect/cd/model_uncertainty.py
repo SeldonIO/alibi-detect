@@ -8,6 +8,7 @@ from alibi_detect.cd.preprocess import classifier_uncertainty, regressor_uncerta
 from alibi_detect.cd.utils import encompass_batching, encompass_shuffling_and_batch_filling
 from alibi_detect.utils.frameworks import BackendValidator, Framework
 from alibi_detect.base import DriftConfigMixin
+from alibi_detect.utils._types import TorchDeviceType
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +27,7 @@ class ClassifierUncertaintyDrift(DriftConfigMixin):
             margin_width: float = 0.1,
             batch_size: int = 32,
             preprocess_batch_fn: Optional[Callable] = None,
-            device: Optional[str] = None,
+            device: TorchDeviceType = None,
             tokenizer: Optional[Callable] = None,
             max_len: Optional[int] = None,
             input_shape: Optional[tuple] = None,
@@ -69,8 +70,9 @@ class ClassifierUncertaintyDrift(DriftConfigMixin):
             Optional batch preprocessing function. For example to convert a list of objects to a batch which can be
             processed by the model.
         device
-            Device type used. The default None tries to use the GPU and falls back on CPU if needed.
-            Can be specified by passing either 'cuda', 'gpu' or 'cpu'. Only relevant for 'pytorch' backend.
+            Device type used. The default tries to use the GPU and falls back on CPU if needed.
+            Can be specified by passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of
+            ``torch.device``. Only relevant for 'pytorch' backend.
         tokenizer
             Optional tokenizer for NLP models.
         max_len
@@ -179,7 +181,7 @@ class RegressorUncertaintyDrift(DriftConfigMixin):
             n_evals: int = 25,
             batch_size: int = 32,
             preprocess_batch_fn: Optional[Callable] = None,
-            device: Optional[str] = None,
+            device: TorchDeviceType = None,
             tokenizer: Optional[Callable] = None,
             max_len: Optional[int] = None,
             input_shape: Optional[tuple] = None,
@@ -222,8 +224,9 @@ class RegressorUncertaintyDrift(DriftConfigMixin):
             Optional batch preprocessing function. For example to convert a list of objects to a batch which can be
             processed by the model.
         device
-            Device type used. The default None tries to use the GPU and falls back on CPU if needed.
-            Can be specified by passing either 'cuda', 'gpu' or 'cpu'. Only relevant for 'pytorch' backend.
+            Device type used. The default tries to use the GPU and falls back on CPU if needed.
+            Can be specified by passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of
+            ``torch.device``. Only relevant for 'pytorch' backend.
         tokenizer
             Optional tokenizer for NLP models.
         max_len

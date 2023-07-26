@@ -12,6 +12,7 @@ from alibi_detect.utils.pytorch.distance import mmd2_from_kernel_matrix, batch_c
 from alibi_detect.utils.pytorch.data import TorchDataset
 from alibi_detect.utils.warnings import deprecated_alias
 from alibi_detect.utils.frameworks import Framework
+from alibi_detect.utils._types import TorchDeviceType
 
 
 class LearnedKernelDriftTorch(BaseLearnedKernelDrift):
@@ -39,7 +40,7 @@ class LearnedKernelDriftTorch(BaseLearnedKernelDrift):
             num_workers: int = 0,
             verbose: int = 0,
             train_kwargs: Optional[dict] = None,
-            device: Optional[str] = None,
+            device: TorchDeviceType = None,
             dataset: Callable = TorchDataset,
             dataloader: Callable = DataLoader,
             input_shape: Optional[tuple] = None,
@@ -108,8 +109,9 @@ class LearnedKernelDriftTorch(BaseLearnedKernelDrift):
         train_kwargs
             Optional additional kwargs when training the kernel.
         device
-            Device type used. The default None tries to use the GPU and falls back on CPU if needed.
-            Can be specified by passing either 'cuda', 'gpu' or 'cpu'. Only relevant for 'pytorch' backend.
+            Device type used. The default tries to use the GPU and falls back on CPU if needed.
+            Can be specified by passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of
+            ``torch.device``. Only relevant for 'pytorch' backend.
         dataset
             Dataset object used during training.
         dataloader

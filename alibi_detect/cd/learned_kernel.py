@@ -3,6 +3,7 @@ from typing import Callable, Dict, Optional, Union
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, has_keops, BackendValidator, Framework
 from alibi_detect.utils.warnings import deprecated_alias
 from alibi_detect.base import DriftConfigMixin
+from alibi_detect.utils._types import TorchDeviceType
 
 if has_pytorch:
     from torch.utils.data import DataLoader
@@ -44,7 +45,7 @@ class LearnedKernelDrift(DriftConfigMixin):
             num_workers: int = 0,
             verbose: int = 0,
             train_kwargs: Optional[dict] = None,
-            device: Optional[str] = None,
+            device: TorchDeviceType = None,
             dataset: Optional[Callable] = None,
             dataloader: Optional[Callable] = None,
             input_shape: Optional[tuple] = None,
@@ -117,8 +118,9 @@ class LearnedKernelDrift(DriftConfigMixin):
         train_kwargs
             Optional additional kwargs when training the kernel.
         device
-            Device type used. The default None tries to use the GPU and falls back on CPU if needed.
-            Can be specified by passing either 'cuda', 'gpu' or 'cpu'. Relevant for 'pytorch' and 'keops' backends.
+            Device type used. The default tries to use the GPU and falls back on CPU if needed.
+            Can be specified by passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of
+            ``torch.device``. Relevant for 'pytorch' and 'keops' backends.
         dataset
             Dataset object used during training.
         dataloader

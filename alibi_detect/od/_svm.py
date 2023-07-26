@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 
 import numpy as np
 
@@ -9,6 +9,7 @@ from alibi_detect.od.pytorch import SgdSVMTorch, BgdSVMTorch
 from alibi_detect.utils._types import Literal
 from alibi_detect.utils.frameworks import BackendValidator
 from alibi_detect.version import __version__
+from alibi_detect.utils._types import TorchDeviceType
 
 
 if TYPE_CHECKING:
@@ -31,7 +32,7 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
         kernel: 'torch.nn.Module' = None,
         optimization: Literal['sgd', 'bgd'] = 'sgd',
         backend: Literal['pytorch'] = 'pytorch',
-        device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
+        device: TorchDeviceType = None,
     ) -> None:
         """One-Class Support vector machine (OCSVM) outlier detector.
 
@@ -72,8 +73,9 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
         backend
             Backend used for outlier detection. Defaults to ``'pytorch'``. Options are ``'pytorch'``.
         device
-            Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
-            passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of ``torch.device``.
+            Device type used. The default tries to use the GPU and falls back on CPU if needed.
+            Can be specified by passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of
+            ``torch.device``.
 
         Raises
         ------

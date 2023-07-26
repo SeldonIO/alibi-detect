@@ -1,5 +1,4 @@
 from typing import List, Union, Optional, Dict
-from typing_extensions import Literal
 from dataclasses import dataclass, fields
 from abc import ABC, abstractmethod
 
@@ -9,6 +8,7 @@ import torch
 from alibi_detect.od.pytorch.ensemble import FitMixinTorch
 from alibi_detect.utils.pytorch.misc import get_device
 from alibi_detect.exceptions import ThresholdNotInferredError
+from alibi_detect.utils._types import TorchDeviceType
 
 
 @dataclass
@@ -73,10 +73,7 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
     threshold_inferred = False
     threshold = None
 
-    def __init__(
-            self,
-            device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
-            ):
+    def __init__(self, device: TorchDeviceType = None):
         self.device = get_device(device)
         super().__init__()
 
