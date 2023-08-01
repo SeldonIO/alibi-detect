@@ -1037,7 +1037,7 @@ def test_save_kernel(kernel, backend, tmp_path):  # noqa: F811
     kernel_loaded(X, X)
 
     # Final checks
-    assert type(kernel_loaded) == type(kernel)
+    assert type(kernel_loaded) == type(kernel)  # noqa: E721
     if backend == 'tensorflow':
         np.testing.assert_array_almost_equal(np.array(kernel_loaded.sigma), np.array(kernel.sigma), 5)
     else:
@@ -1320,7 +1320,7 @@ def test_registry_get():
     """
     for k, v in REGISTERED_OBJECTS.items():
         obj = registry.get(k)
-        assert type(obj) == type(v)
+        assert type(obj) == type(v)  # noqa: E721
 
 
 def test_set_dtypes(backend):
