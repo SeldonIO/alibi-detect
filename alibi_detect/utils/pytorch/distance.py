@@ -64,7 +64,7 @@ def batch_compute_kernel_matrix(
     """
     if device is None:
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    if type(x) != type(y):
+    if type(x) != type(y):  # noqa: E721
         raise ValueError("x and y should be of the same type")
 
     if isinstance(x, np.ndarray):

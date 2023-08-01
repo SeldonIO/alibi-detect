@@ -166,49 +166,49 @@ def test_save_load(select_detector):
         if type(det_load) in [OutlierVAE, OutlierVAEGMM]:
             assert det_load.samples == det.samples == samples
 
-        if type(det_load) == AdversarialAE or type(det_load) == ModelDistillation:
+        if isinstance(det_load, (AdversarialAE, ModelDistillation)):
             for layer in det_load.model.layers:
                 assert not layer.trainable
 
-        if type(det_load) == OutlierAEGMM:
+        if isinstance(det_load, OutlierAEGMM):
             assert isinstance(det_load.aegmm.encoder, tf.keras.Sequential)
             assert isinstance(det_load.aegmm.decoder, tf.keras.Sequential)
             assert isinstance(det_load.aegmm.gmm_density, tf.keras.Sequential)
             assert isinstance(det_load.aegmm, tf.keras.Model)
             assert det_load.aegmm.n_gmm == n_gmm
-        elif type(det_load) == OutlierVAEGMM:
+        elif isinstance(det_load, OutlierVAEGMM):
             assert isinstance(det_load.vaegmm.encoder.encoder_net, tf.keras.Sequential)
             assert isinstance(det_load.vaegmm.decoder, tf.keras.Sequential)
             assert isinstance(det_load.vaegmm.gmm_density, tf.keras.Sequential)
             assert isinstance(det_load.vaegmm, tf.keras.Model)
             assert det_load.vaegmm.latent_dim == latent_dim
             assert det_load.vaegmm.n_gmm == n_gmm
-        elif type(det_load) in [AdversarialAE, OutlierAE]:
+        elif isinstance(det_load, (AdversarialAE, OutlierAE)):
             assert isinstance(det_load.ae.encoder.encoder_net, tf.keras.Sequential)
             assert isinstance(det_load.ae.decoder.decoder_net, tf.keras.Sequential)
             assert isinstance(det_load.ae, tf.keras.Model)
-        elif type(det_load) == ModelDistillation:
+        elif isinstance(det_load, ModelDistillation):
             assert isinstance(det_load.model, tf.keras.Sequential) or isinstance(det_load.model, tf.keras.Model)
             assert (isinstance(det_load.distilled_model, tf.keras.Sequential) or
                     isinstance(det_load.distilled_model, tf.keras.Model))
-        elif type(det_load) == OutlierVAE:
+        elif isinstance(det_load, OutlierVAE):
             assert isinstance(det_load.vae.encoder.encoder_net, tf.keras.Sequential)
             assert isinstance(det_load.vae.decoder.decoder_net, tf.keras.Sequential)
             assert isinstance(det_load.vae, tf.keras.Model)
             assert det_load.vae.latent_dim == latent_dim
-        elif type(det_load) == Mahalanobis:
+        elif isinstance(det_load, Mahalanobis):
             assert det_load.clip is None
             assert det_load.mean == det_load.C == det_load.n == 0
             assert det_load.meta['detector_type'] == 'outlier'
             assert det_load.meta['online']
-        elif type(det_load) == OutlierProphet:
+        elif isinstance(det_load, OutlierProphet):
             assert det_load.model.interval_width == .7
             assert det_load.model.growth == 'logistic'
             assert det_load.meta['data_type'] == 'time-series'
-        elif type(det_load) == SpectralResidual:
+        elif isinstance(det_load, SpectralResidual):
             assert det_load.window_amp == 10
             assert det_load.window_local == 10
-        elif type(det_load) == OutlierSeq2Seq:
+        elif isinstance(det_load, OutlierSeq2Seq):
             assert isinstance(det_load.seq2seq, tf.keras.Model)
             assert isinstance(det_load.seq2seq.threshold_net, tf.keras.Sequential)
             assert isinstance(det_load.seq2seq.encoder, EncoderLSTM)
@@ -216,31 +216,31 @@ def test_save_load(select_detector):
             assert det_load.latent_dim == latent_dim
             assert det_load.threshold == threshold
             assert det_load.shape == (-1, seq_len, input_dim)
-        elif type(det_load) == KSDrift:
+        elif isinstance(det_load, KSDrift):
             assert det_load.n_features == latent_dim
             assert det_load.p_val == p_val
             assert (det_load.x_ref == X_ref).all()
             assert isinstance(det_load.preprocess_fn, Callable)
             assert det_load.preprocess_fn.func.__name__ == 'preprocess_drift'
-        elif type(det_load) in [ChiSquareDrift, TabularDrift]:
+        elif isinstance(det_load, (ChiSquareDrift, TabularDrift)):
             assert isinstance(det_load.x_ref_categories, dict)
             assert det_load.p_val == p_val
             x = X_ref_cat.copy() if isinstance(det_load, ChiSquareDrift) else X_ref_mix.copy()
             assert (det_load.x_ref == x).all()
-        elif type(det_load) == MMDDrift:
+        elif isinstance(det_load, MMDDrift):
             assert not det_load._detector.infer_sigma
             assert det_load._detector.n_permutations == n_permutations
             assert det_load._detector.p_val == p_val
             assert (det_load._detector.x_ref == X_ref).all()
             assert isinstance(det_load._detector.preprocess_fn, Callable)
             assert det_load._detector.preprocess_fn.func.__name__ == 'preprocess_drift'
-        elif type(det_load) == ClassifierDrift:
+        elif isinstance(det_load, ClassifierDrift):
             assert det_load._detector.p_val == p_val
             assert (det_load._detector.x_ref == X_ref).all()
             assert isinstance(det_load._detector.skf, StratifiedKFold)
             assert isinstance(det_load._detector.train_kwargs, dict)
             assert isinstance(det_load._detector.model, tf.keras.Model)
-        elif type(det_load) == LLR:
+        elif isinstance(det_load, LLR):
             assert isinstance(det_load.dist_s, tf.keras.Model)
             assert isinstance(det_load.dist_b, tf.keras.Model)
             assert not det_load.sequential

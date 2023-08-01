@@ -275,7 +275,7 @@ class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
         proj_x = np.matmul(X, eigvects)
         proj_x_clip = np.matmul(X_clip, eigvects)
         proj_means = np.matmul(new_means_offset, eigvects)
-        if type(self.C) == int and self.C == 0:
+        if isinstance(self.C, int) and self.C == 0:
             proj_cov = np.diag(np.zeros(n_components))
         else:
             proj_cov = np.matmul(eigvects.transpose(), np.matmul(self.C, eigvects))
