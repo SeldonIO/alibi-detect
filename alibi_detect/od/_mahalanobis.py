@@ -1,5 +1,4 @@
-from typing import Union, Optional, Dict, Any
-from typing import TYPE_CHECKING
+from typing import Dict, Any
 from alibi_detect.exceptions import _catch_error as catch_error
 from typing_extensions import Literal
 
@@ -9,10 +8,7 @@ from alibi_detect.base import BaseDetector, FitMixin, ThresholdMixin, outlier_pr
 from alibi_detect.od.pytorch import MahalanobisTorch
 from alibi_detect.utils.frameworks import BackendValidator
 from alibi_detect.version import __version__
-
-
-if TYPE_CHECKING:
-    import torch
+from alibi_detect.utils._types import TorchDeviceType
 
 
 backends = {
@@ -25,7 +21,7 @@ class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
         self,
         min_eigenvalue: float = 1e-6,
         backend: Literal['pytorch'] = 'pytorch',
-        device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
+        device: TorchDeviceType = None,
     ) -> None:
         """
         The Mahalanobis outlier detection method.
@@ -50,8 +46,9 @@ class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
         backend
             Backend used for outlier detection. Defaults to ``'pytorch'``. Options are ``'pytorch'``.
         device
-            Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
-            passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of ``torch.device``.
+            Device type used. The default tries to use the GPU and falls back on CPU if needed.
+            Can be specified by passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of
+            ``torch.device``.
 
         Raises
         ------

@@ -3,6 +3,7 @@ from typing import Callable, Dict, Optional, Union, Tuple
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, BackendValidator, Framework
 from alibi_detect.utils.warnings import deprecated_alias
 from alibi_detect.base import DriftConfigMixin
+from alibi_detect.utils._types import TorchDeviceType
 
 if has_pytorch:
     from alibi_detect.cd.pytorch.lsdd import LSDDDriftTorch
@@ -26,7 +27,7 @@ class LSDDDrift(DriftConfigMixin):
             n_permutations: int = 100,
             n_kernel_centers: Optional[int] = None,
             lambda_rd_max: float = 0.2,
-            device: Optional[str] = None,
+            device: TorchDeviceType = None,
             input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None
     ) -> None:
@@ -68,8 +69,9 @@ class LSDDDrift(DriftConfigMixin):
             The maximum relative difference between two estimates of LSDD that the regularization parameter
             lambda is allowed to cause. Defaults to 0.2 as in the paper.
         device
-            Device type used. The default None tries to use the GPU and falls back on CPU if needed.
-            Can be specified by passing either 'cuda', 'gpu' or 'cpu'. Only relevant for 'pytorch' backend.
+            Device type used. The default tries to use the GPU and falls back on CPU if needed.
+            Can be specified by passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of
+            ``torch.device``. Only relevant for 'pytorch' backend.
         input_shape
             Shape of input data.
         data_type

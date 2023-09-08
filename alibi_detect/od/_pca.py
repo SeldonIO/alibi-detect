@@ -1,5 +1,4 @@
 from typing import Union, Optional, Callable, Dict, Any
-from typing import TYPE_CHECKING
 from typing_extensions import Literal
 
 import numpy as np
@@ -10,10 +9,7 @@ from alibi_detect.od.pytorch import KernelPCATorch, LinearPCATorch
 from alibi_detect.utils.frameworks import BackendValidator
 from alibi_detect.version import __version__
 from alibi_detect.exceptions import _catch_error as catch_error
-
-
-if TYPE_CHECKING:
-    import torch
+from alibi_detect.utils._types import TorchDeviceType
 
 
 backends = {
@@ -27,7 +23,7 @@ class PCA(BaseDetector, ThresholdMixin, FitMixin):
         n_components: int,
         kernel: Optional[Callable] = None,
         backend: Literal['pytorch'] = 'pytorch',
-        device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
+        device: TorchDeviceType = None,
     ) -> None:
         """Principal Component Analysis (PCA) outlier detector.
 
@@ -54,8 +50,9 @@ class PCA(BaseDetector, ThresholdMixin, FitMixin):
         backend
             Backend used for outlier detection. Defaults to ``'pytorch'``. Options are ``'pytorch'``.
         device
-            Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
-            passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of ``torch.device``.
+            Device type used. The default tries to use the GPU and falls back on CPU if needed.
+            Can be specified by passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of
+            ``torch.device``.
 
         Raises
         ------
@@ -86,6 +83,11 @@ class PCA(BaseDetector, ThresholdMixin, FitMixin):
                 n_components=n_components,
                 device=device,
             )
+
+        # set metadata
+        self.meta['detector_type'] = 'outlier'
+        self.meta['data_type'] = 'numeric'
+        self.meta['online'] = False
 
     def fit(self, x_ref: np.ndarray) -> None:
         """Fit the detector on reference data.

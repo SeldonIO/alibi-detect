@@ -59,7 +59,7 @@ def batch_compute_kernel_matrix(
     -------
     Kernel matrix in the form of a tensorflow tensor
     """
-    if type(x) != type(y):
+    if type(x) != type(y):  # noqa: E721
         raise ValueError("x and y should be of the same type")
 
     n_x, n_y = len(x), len(y)

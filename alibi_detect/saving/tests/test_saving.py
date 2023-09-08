@@ -1037,7 +1037,7 @@ def test_save_kernel(kernel, backend, tmp_path):  # noqa: F811
     kernel_loaded(X, X)
 
     # Final checks
-    assert type(kernel_loaded) == type(kernel)
+    assert type(kernel_loaded) == type(kernel)  # noqa: E721
     if backend == 'tensorflow':
         np.testing.assert_array_almost_equal(np.array(kernel_loaded.sigma), np.array(kernel.sigma), 5)
     else:
@@ -1320,7 +1320,7 @@ def test_registry_get():
     """
     for k, v in REGISTERED_OBJECTS.items():
         obj = registry.get(k)
-        assert type(obj) == type(v)
+        assert type(obj) == type(v)  # noqa: E721
 
 
 def test_set_dtypes(backend):
@@ -1365,3 +1365,37 @@ def test_cleanup(tmp_path):
 
     # Check `filepath` is deleted
     assert not tmp_path.is_dir()
+
+
+@pytest.mark.parametrize('backend, device', [
+    ('pytorch', 'cpu'),
+    ('pytorch', 'gpu'),
+    ('pytorch', 'cuda'),
+    ('pytorch', 'cuda:0'),
+    ('pytorch', torch.device('cuda')),
+    ('pytorch', torch.device('cuda:0')),
+    ('tensorflow', None),
+])
+@parametrize_with_cases("data", cases=ContinuousData, prefix='data_')
+def test_save_detector_device(backend, device, data, tmp_path, classifier_model):  # noqa: F811
+    """
+    Test saving a Detector with different pytorch device options.
+
+    Save using `save_detector` and load using `load_detector`, with assertions checking that the reinstantiated
+    detector is equivalent. Also check that the detector config toml device string is correct.
+    """
+    X_ref, X_h0 = data
+    detector = ClassifierDrift(
+        X_ref,
+        backend=backend,
+        model=classifier_model,
+        device=device
+    )
+    save_detector(detector, tmp_path)
+    detector_config = toml.load(tmp_path / 'config.toml')
+    loaded_detector = load_detector(tmp_path)
+    if backend == 'tensorflow':
+        assert detector_config['device'] == 'None'
+    else:
+        assert detector_config['device'] in {'cpu', 'gpu', 'cuda'}
+        assert loaded_detector._detector.device in {torch.device('cpu'), torch.device('cuda')}

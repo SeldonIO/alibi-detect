@@ -37,9 +37,9 @@ jobs:
         python-version: [ '3.8', '3.9', '3.10', '3.11']
         include: # Run macos and windows tests on only one python version
           - os: windows-latest
-            python-version: '3.9'  # PyTorch doesn't yet have 3.10 support on Windows (https://pytorch.org/get-started/locally/#windows-python)
+            python-version: '3.10' # torch 1.x not available on Windows or MacOS for Python 3.11
           - os: macos-latest
-            python-version: '3.9'  # Don't test python3.10 for macos (see https://github.com/orgs/community/discussions/38364 for details)
+            python-version: '3.10'
 
     steps:
       - name: Checkout code
@@ -157,7 +157,9 @@ jobs:
 
   optional_dependencies:
     runs-on: ubuntu-latest
-
+    strategy:
+      matrix:
+        env: [ 'default', 'tensorflow', 'torch', 'prophet', 'keops', 'all' ]
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python 3.x
@@ -167,4 +169,4 @@ jobs:
       - name: Check optional dependency imports are protected
         run: |
           pip install "tox>=3.21.0,<4.0.0"
-          tox
+          tox -e ${{matrix.env}}

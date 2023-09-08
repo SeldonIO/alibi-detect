@@ -7,6 +7,7 @@ from alibi_detect.utils.pytorch import get_device
 from alibi_detect.utils.pytorch.kernels import GaussianRBF
 from alibi_detect.utils.pytorch import zero_diag, quantile
 from alibi_detect.utils.frameworks import Framework
+from alibi_detect.utils._types import TorchDeviceType
 
 
 class MMDDriftOnlineTorch(BaseMultiDriftOnline):
@@ -22,7 +23,7 @@ class MMDDriftOnlineTorch(BaseMultiDriftOnline):
             kernel: Callable = GaussianRBF,
             sigma: Optional[np.ndarray] = None,
             n_bootstraps: int = 1000,
-            device: Optional[str] = None,
+            device: TorchDeviceType = None,
             verbose: bool = True,
             input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None
@@ -58,8 +59,9 @@ class MMDDriftOnlineTorch(BaseMultiDriftOnline):
             more accurately the desired ERT will be targeted. Should ideally be at least an order of magnitude
             larger than the ERT.
         device
-            Device type used. The default None tries to use the GPU and falls back on CPU if needed.
-            Can be specified by passing either 'cuda', 'gpu' or 'cpu'. Only relevant for 'pytorch' backend.
+            Device type used. The default tries to use the GPU and falls back on CPU if needed.
+            Can be specified by passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of
+            ``torch.device``. Only relevant for 'pytorch' backend.
         verbose
             Whether or not to print progress during configuration.
         input_shape

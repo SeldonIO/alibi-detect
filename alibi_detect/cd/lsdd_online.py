@@ -3,6 +3,8 @@ import numpy as np
 from typing import Any, Callable, Dict, Optional, Union
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow, BackendValidator, Framework
 from alibi_detect.base import DriftConfigMixin
+from alibi_detect.utils._types import TorchDeviceType
+
 if has_pytorch:
     from alibi_detect.cd.pytorch.lsdd_online import LSDDDriftOnlineTorch
 
@@ -23,7 +25,7 @@ class LSDDDriftOnline(DriftConfigMixin):
             n_bootstraps: int = 1000,
             n_kernel_centers: Optional[int] = None,
             lambda_rd_max: float = 0.2,
-            device: Optional[str] = None,
+            device: TorchDeviceType = None,
             verbose: bool = True,
             input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None
@@ -68,8 +70,9 @@ class LSDDDriftOnline(DriftConfigMixin):
             The maximum relative difference between two estimates of LSDD that the regularization parameter
             lambda is allowed to cause. Defaults to 0.2 as in the paper.
         device
-            Device type used. The default None tries to use the GPU and falls back on CPU if needed.
-            Can be specified by passing either 'cuda', 'gpu' or 'cpu'. Only relevant for 'pytorch' backend.
+            Device type used. The default tries to use the GPU and falls back on CPU if needed.
+            Can be specified by passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of
+            ``torch.device``. Only relevant for 'pytorch' backend.
         verbose
             Whether or not to print progress during configuration.
         input_shape

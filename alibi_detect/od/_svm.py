@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 
 import numpy as np
 
@@ -9,6 +9,7 @@ from alibi_detect.od.pytorch import SgdSVMTorch, BgdSVMTorch
 from alibi_detect.utils._types import Literal
 from alibi_detect.utils.frameworks import BackendValidator
 from alibi_detect.version import __version__
+from alibi_detect.utils._types import TorchDeviceType
 
 
 if TYPE_CHECKING:
@@ -31,7 +32,7 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
         kernel: 'torch.nn.Module' = None,
         optimization: Literal['sgd', 'bgd'] = 'sgd',
         backend: Literal['pytorch'] = 'pytorch',
-        device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
+        device: TorchDeviceType = None,
     ) -> None:
         """One-Class Support vector machine (OCSVM) outlier detector.
 
@@ -72,8 +73,9 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
         backend
             Backend used for outlier detection. Defaults to ``'pytorch'``. Options are ``'pytorch'``.
         device
-            Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
-            passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of ``torch.device``.
+            Device type used. The default tries to use the GPU and falls back on CPU if needed.
+            Can be specified by passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of
+            ``torch.device``.
 
         Raises
         ------
@@ -106,6 +108,11 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
         }
         args['device'] = device
         self.backend = backend_cls(**args)
+
+        # set metadata
+        self.meta['detector_type'] = 'outlier'
+        self.meta['data_type'] = 'numeric'
+        self.meta['online'] = False
 
     def fit(
         self,
@@ -142,8 +149,15 @@ class SVM(BaseDetector, ThresholdMixin, FitMixin):
         verbose
             Verbosity level during training. ``0`` is silent, ``1`` prints fit status. If using `bgd`, fit displays a
             progress bar. Otherwise, if using `sgd` then we output the Sklearn `SGDOneClassSVM.fit()` logs.
+
+        Returns
+        -------
+        Dictionary with fit results. The dictionary contains the following keys depending on the optimization used:
+            - converged: `bool` indicating whether training converged.
+            - n_iter: number of iterations performed.
+            - lower_bound: loss lower bound. Only returned for the `bgd`.
         """
-        self.backend.fit(
+        return self.backend.fit(
             self.backend._to_backend_dtype(x_ref),
             **self.backend.format_fit_kwargs(locals())
         )

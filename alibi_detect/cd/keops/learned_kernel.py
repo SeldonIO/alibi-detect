@@ -11,6 +11,7 @@ from alibi_detect.cd.base import BaseLearnedKernelDrift
 from alibi_detect.utils.pytorch import get_device, predict_batch
 from alibi_detect.utils.pytorch.data import TorchDataset
 from alibi_detect.utils.frameworks import Framework
+from alibi_detect.utils._types import TorchDeviceType
 
 
 class LearnedKernelDriftKeops(BaseLearnedKernelDrift):
@@ -38,7 +39,7 @@ class LearnedKernelDriftKeops(BaseLearnedKernelDrift):
             num_workers: int = 0,
             verbose: int = 0,
             train_kwargs: Optional[dict] = None,
-            device: Optional[str] = None,
+            device: TorchDeviceType = None,
             dataset: Callable = TorchDataset,
             dataloader: Callable = DataLoader,
             input_shape: Optional[tuple] = None,
@@ -108,8 +109,9 @@ class LearnedKernelDriftKeops(BaseLearnedKernelDrift):
         train_kwargs
             Optional additional kwargs when training the kernel.
         device
-            Device type used. The default None tries to use the GPU and falls back on CPU if needed.
-            Can be specified by passing either 'cuda', 'gpu' or 'cpu'. Relevant for 'pytorch' and 'keops' backends.
+            Device type used. The default tries to use the GPU and falls back on CPU if needed.
+            Can be specified by passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of
+            ``torch.device``. Relevant for 'pytorch' and 'keops' backends.
         dataset
             Dataset object used during training.
         dataloader

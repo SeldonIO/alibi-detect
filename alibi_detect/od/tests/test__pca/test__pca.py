@@ -105,6 +105,7 @@ def test_fitted_PCA_predict(detector):
     assert y['instance_score'][0] > y['instance_score'][1]
     assert y['threshold_inferred']
     assert y['threshold'] is not None
+    assert isinstance(y['threshold'], float)
     assert y['p_value'].all()
     assert (y['is_outlier'] == [True, False]).all()
 

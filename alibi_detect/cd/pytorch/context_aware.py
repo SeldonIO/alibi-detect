@@ -8,6 +8,7 @@ from alibi_detect.utils.pytorch.kernels import GaussianRBF
 from alibi_detect.utils.warnings import deprecated_alias
 from alibi_detect.utils.frameworks import Framework
 from alibi_detect.cd._domain_clf import _SVCDomainClf
+from alibi_detect.utils._types import TorchDeviceType
 from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
@@ -32,7 +33,7 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
             prop_c_held: float = 0.25,
             n_folds: int = 5,
             batch_size: Optional[int] = 256,
-            device: Optional[str] = None,
+            device: TorchDeviceType = None,
             input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None,
             verbose: bool = False,
@@ -75,8 +76,9 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
         batch_size
             If not None, then compute batches of MMDs at a time (rather than all at once).
         device
-            Device type used. The default None tries to use the GPU and falls back on CPU if needed.
-            Can be specified by passing either 'cuda', 'gpu' or 'cpu'. Only relevant for 'pytorch' backend.
+            Device type used. The default tries to use the GPU and falls back on CPU if needed.
+            Can be specified by passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of
+            ``torch.device``. Only relevant for 'pytorch' backend.
         input_shape
             Shape of input data.
         data_type

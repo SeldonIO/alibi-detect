@@ -1,16 +1,17 @@
 import warnings
-from typing import Callable, Dict, Optional, Tuple, Union
+from typing import Callable, Dict, Optional, Tuple
 
 import numpy as np
 import torch
 from sklearn.linear_model import SGDOneClassSVM
 from sklearn.utils.extmath import safe_sparse_dot
 from tqdm import tqdm
-from typing_extensions import Literal, Self
+from typing_extensions import Self
 
 from alibi_detect.od.pytorch.base import TorchOutlierDetector
 from alibi_detect.utils.pytorch.losses import hinge_loss
 from alibi_detect.utils.pytorch.kernels import GaussianRBF
+from alibi_detect.utils._types import TorchDeviceType
 
 
 class SVMTorch(TorchOutlierDetector):
@@ -21,7 +22,7 @@ class SVMTorch(TorchOutlierDetector):
         nu: float,
         kernel: 'torch.nn.Module' = None,
         n_components: Optional[int] = None,
-        device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
+        device: TorchDeviceType = None,
     ):
         """Pytorch backend for the Support Vector Machine (SVM) outlier detector.
 
@@ -36,8 +37,9 @@ class SVMTorch(TorchOutlierDetector):
         n_components
             Number of components in the Nystroem approximation, by default uses all of them.
         device
-            Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
-            passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of ``torch.device``.
+            Device type used. The default tries to use the GPU and falls back on CPU if needed.
+            Can be specified by passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of
+            ``torch.device``.
         """
         super().__init__(device=device)
         self.n_components = n_components
@@ -82,7 +84,7 @@ class SgdSVMTorch(SVMTorch):
         nu: float,
         kernel: 'torch.nn.Module' = None,
         n_components: Optional[int] = None,
-        device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
+        device: TorchDeviceType = None,
     ):
         """SGD Optimization backend for the One class support vector machine (SVM) outlier detector.
 
@@ -97,8 +99,9 @@ class SgdSVMTorch(SVMTorch):
         n_components
             Number of components in the Nystroem approximation, by default uses all of them.
         device
-            Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
-            passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of ``torch.device``.
+            Device type used. The default tries to use the GPU and falls back on CPU if needed.
+            Can be specified by passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of
+            ``torch.device``.
         """
         if (isinstance(device, str) and device in ('gpu', 'cuda')) or \
                 (isinstance(device, torch.device) and device.type == 'cuda'):
@@ -207,7 +210,7 @@ class BgdSVMTorch(SVMTorch):
         nu: float,
         kernel: 'torch.nn.Module' = None,
         n_components: Optional[int] = None,
-        device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
+        device: TorchDeviceType = None,
     ):
         """Pytorch backend for the Support Vector Machine (SVM) outlier detector.
 
@@ -222,8 +225,9 @@ class BgdSVMTorch(SVMTorch):
         n_components
             Number of components in the Nystroem approximation, by default uses all of them.
         device
-            Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
-            passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of ``torch.device``.
+            Device type used. The default tries to use the GPU and falls back on CPU if needed.
+            Can be specified by passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of
+            ``torch.device``.
         """
 
         if (isinstance(device, str) and device == 'cpu') or \
@@ -272,7 +276,7 @@ class BgdSVMTorch(SVMTorch):
         Returns
         -------
         Dictionary with fit results. The dictionary contains the following keys:
-            - converged: bool indicating whether training converged.
+            - converged: `bool` indicating whether training converged.
             - n_iter: number of iterations performed.
             - lower_bound: loss lower bound.
         """
@@ -338,7 +342,7 @@ class BgdSVMTorch(SVMTorch):
         self._set_fitted()
         return {
             'converged': converged,
-            'lower_bound': min_loss,
+            'lower_bound': self._to_frontend_dtype(min_loss),
             'n_iter': iter
         }
 

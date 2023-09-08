@@ -8,6 +8,7 @@ from alibi_detect.utils.pytorch.distance import mmd2_from_kernel_matrix
 from alibi_detect.utils.pytorch.kernels import GaussianRBF
 from alibi_detect.utils.warnings import deprecated_alias
 from alibi_detect.utils.frameworks import Framework
+from alibi_detect.utils._types import TorchDeviceType
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +27,7 @@ class MMDDriftTorch(BaseMMDDrift):
             sigma: Optional[np.ndarray] = None,
             configure_kernel_from_x_ref: bool = True,
             n_permutations: int = 100,
-            device: Optional[str] = None,
+            device: TorchDeviceType = None,
             input_shape: Optional[tuple] = None,
             data_type: Optional[str] = None
     ) -> None:
@@ -62,8 +63,9 @@ class MMDDriftTorch(BaseMMDDrift):
         n_permutations
             Number of permutations used in the permutation test.
         device
-            Device type used. The default None tries to use the GPU and falls back on CPU if needed.
-            Can be specified by passing either 'cuda', 'gpu' or 'cpu'.
+            Device type used. The default tries to use the GPU and falls back on CPU if needed.
+            Can be specified by passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of
+            ``torch.device``.
         input_shape
             Shape of input data.
         data_type

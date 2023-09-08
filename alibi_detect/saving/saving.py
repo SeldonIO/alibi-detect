@@ -17,7 +17,7 @@ from alibi_detect.utils._types import supported_models_all, supported_models_tf,
     supported_models_sklearn
 from alibi_detect.base import Detector, ConfigurableDetector, StatefulDetectorOnline
 from alibi_detect.saving._tensorflow import save_detector_legacy, save_model_config_tf, save_optimizer_config_tf
-from alibi_detect.saving._pytorch import save_model_config_pt
+from alibi_detect.saving._pytorch import save_model_config_pt, save_device_pt
 from alibi_detect.saving._sklearn import save_model_config_sk
 
 if TYPE_CHECKING:
@@ -187,6 +187,11 @@ def _save_detector_config(detector: ConfigurableDetector,
     optimizer = cfg.get('optimizer')
     if optimizer is not None:
         cfg['optimizer'] = _save_optimizer_config(optimizer)
+
+    # Serialize device
+    device = cfg.get('device')
+    if device is not None:
+        cfg['device'] = save_device_pt(device)
 
     # Serialize dataset
     dataset = cfg.get('dataset')

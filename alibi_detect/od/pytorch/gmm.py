@@ -1,5 +1,4 @@
-from typing import Optional, Union, Dict, Type
-from typing_extensions import Literal
+from typing import Dict, Type
 from tqdm import tqdm
 import torch
 from torch.utils.data import DataLoader
@@ -8,6 +7,7 @@ from alibi_detect.utils.pytorch.data import TorchDataset
 from alibi_detect.od.pytorch.base import TorchOutlierDetector
 from alibi_detect.models.pytorch.gmm import GMMModel
 from alibi_detect.utils.pytorch.misc import get_optimizer
+from alibi_detect.utils._types import TorchDeviceType
 
 
 class GMMTorch(TorchOutlierDetector):
@@ -16,7 +16,7 @@ class GMMTorch(TorchOutlierDetector):
     def __init__(
         self,
         n_components: int,
-        device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
+        device: TorchDeviceType = None,
     ):
         """Pytorch backend for the Gaussian Mixture Model (GMM) outlier detector.
 
@@ -25,8 +25,9 @@ class GMMTorch(TorchOutlierDetector):
         n_components
             Number of components in gaussian mixture model.
         device
-            Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
-            passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of ``torch.device``.
+            Device type used. The default tries to use the GPU and falls back on CPU if needed.
+            Can be specified by passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of
+            ``torch.device``.
 
         Raises
         ------
@@ -75,8 +76,8 @@ class GMMTorch(TorchOutlierDetector):
         Returns
         -------
         Dictionary with fit results. The dictionary contains the following keys:
-            - converged: bool indicating whether EM algorithm converged.
-            - n_iter: number of EM iterations performed.
+            - converged: bool indicating whether training converged.
+            - n_epochs: number of gradient descent iterations performed.
             - lower_bound: log-likelihood lower bound.
         """
         self.model = GMMModel(self.n_components, x_ref.shape[-1]).to(self.device)
@@ -132,7 +133,7 @@ class GMMTorch(TorchOutlierDetector):
         self._set_fitted()
         return {
             'converged': converged,
-            'lower_bound': min_loss,
+            'lower_bound': self._to_frontend_dtype(min_loss),
             'n_epochs': epoch
         }
 

@@ -1,4 +1,4 @@
-from typing import Union, Optional, Dict, Any, TYPE_CHECKING
+from typing import Optional, Dict, Any
 
 import numpy as np
 
@@ -10,10 +10,7 @@ from alibi_detect.od.sklearn import GMMSklearn
 from alibi_detect.utils.frameworks import BackendValidator
 from alibi_detect.version import __version__
 from alibi_detect.exceptions import _catch_error as catch_error
-
-
-if TYPE_CHECKING:
-    import torch
+from alibi_detect.utils._types import TorchDeviceType
 
 
 backends = {
@@ -27,7 +24,7 @@ class GMM(BaseDetector, ThresholdMixin, FitMixin):
         self,
         n_components: int = 1,
         backend: Literal['pytorch', 'sklearn'] = 'sklearn',
-        device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
+        device: TorchDeviceType = None,
     ) -> None:
         """Gaussian Mixture Model (GMM) outlier detector.
 
@@ -45,9 +42,10 @@ class GMM(BaseDetector, ThresholdMixin, FitMixin):
         backend
             Backend used for outlier detection. Defaults to ``'sklearn'``. Options are ``'pytorch'`` and ``'sklearn'``.
         device
-            Device type used. The default tries to use the GPU and falls back on CPU if needed. Can be specified by
-            passing either ``'cuda'``, ``'gpu'`` or ``'cpu'``. The device is only used if the ``'pytorch'`` backend is
-            used. Defaults to ``None``.
+            Device type used. The default tries to use the GPU and falls back on CPU if needed.
+            Can be specified by passing either ``'cuda'``, ``'gpu'``, ``'cpu'`` or an instance of
+            ``torch.device``. The device is only used if the ``'pytorch'`` backend is used. Defaults
+            to ``None``.
 
         Raises
         ------
@@ -67,6 +65,11 @@ class GMM(BaseDetector, ThresholdMixin, FitMixin):
         if backend == 'pytorch':
             args['device'] = device
         self.backend = backend_cls(**args)
+
+        # set metadata
+        self.meta['detector_type'] = 'outlier'
+        self.meta['data_type'] = 'numeric'
+        self.meta['online'] = False
 
     def fit(
         self,
@@ -125,8 +128,16 @@ class GMM(BaseDetector, ThresholdMixin, FitMixin):
             Defaults to ``'kmeans'``.
         verbose
             Verbosity level used to fit the detector. Used for both ``'sklearn'`` and ``'pytorch'`` backends. Defaults to ``0``.
+
+        Returns
+        -------
+        Dictionary with fit results. The dictionary contains the following keys depending on the backend used:
+            - converged: bool indicating whether EM algorithm converged.
+            - n_iter: number of EM iterations performed. Only returned if `backend` is ``'sklearn'``.
+            - n_epochs: number of gradient descent iterations performed. Only returned if `backend` is ``'pytorch'``.
+            - lower_bound: log-likelihood lower bound.
         """
-        self.backend.fit(
+        return self.backend.fit(
             self.backend._to_backend_dtype(x_ref),
             **self.backend.format_fit_kwargs(locals())
         )

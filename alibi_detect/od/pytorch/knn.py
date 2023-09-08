@@ -1,10 +1,10 @@
 from typing import Optional, Union, List, Tuple
-from typing_extensions import Literal
 import numpy as np
 import torch
 
 from alibi_detect.od.pytorch.ensemble import Ensembler
 from alibi_detect.od.pytorch.base import TorchOutlierDetector
+from alibi_detect.utils._types import TorchDeviceType
 
 
 class KNNTorch(TorchOutlierDetector):
@@ -13,7 +13,7 @@ class KNNTorch(TorchOutlierDetector):
             k: Union[np.ndarray, List, Tuple, int],
             kernel: Optional[torch.nn.Module] = None,
             ensembler: Optional[Ensembler] = None,
-            device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
+            device: TorchDeviceType = None,
             ):
         """PyTorch backend for KNN detector.
 

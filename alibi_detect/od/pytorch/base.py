@@ -1,5 +1,4 @@
 from typing import List, Union, Optional, Dict
-from typing_extensions import Literal
 from dataclasses import dataclass, fields
 from abc import ABC, abstractmethod
 
@@ -9,6 +8,7 @@ import torch
 from alibi_detect.od.pytorch.ensemble import FitMixinTorch
 from alibi_detect.utils.pytorch.misc import get_device
 from alibi_detect.exceptions import ThresholdNotInferredError
+from alibi_detect.utils._types import TorchDeviceType
 
 
 @dataclass
@@ -25,10 +25,19 @@ class TorchOutlierDetectorOutput:
         for f in fields(self):
             value = getattr(self, f.name)
             if isinstance(value, torch.Tensor):
-                result[f.name] = value.cpu().detach().numpy()
-            else:
-                result[f.name] = value
+                value = value.cpu().detach().numpy()
+            if isinstance(value, np.ndarray) and value.ndim == 0:
+                value = value.item()
+            result[f.name] = value
         return result
+
+
+def _tensor_to_frontend_dtype(x: Union[torch.Tensor, np.ndarray, float]) -> Union[np.ndarray, float]:
+    if isinstance(x, torch.Tensor):
+        x = x.cpu().detach().numpy()
+    if isinstance(x, np.ndarray) and x.ndim == 0:
+        x = x.item()
+    return x  # type: ignore[return-value]
 
 
 def _raise_type_error(x):
@@ -52,7 +61,7 @@ def to_frontend_dtype(x: Union[torch.Tensor, TorchOutlierDetectorOutput]) -> Uni
 
     return {
         'TorchOutlierDetectorOutput': lambda x: x.to_frontend_dtype(),
-        'Tensor': lambda x: x.cpu().detach().numpy()
+        'Tensor': _tensor_to_frontend_dtype
     }.get(
         x.__class__.__name__,
         _raise_type_error
@@ -64,10 +73,7 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
     threshold_inferred = False
     threshold = None
 
-    def __init__(
-            self,
-            device: Optional[Union[Literal['cuda', 'gpu', 'cpu'], 'torch.device']] = None,
-            ):
+    def __init__(self, device: TorchDeviceType = None):
         self.device = get_device(device)
         super().__init__()
 
