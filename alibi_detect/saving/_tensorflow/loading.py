@@ -130,7 +130,7 @@ def load_kernel_config(cfg: dict) -> Callable:
     return kernel
 
 
-def load_optimizer(cfg: dict) -> Union[Type[tf.keras.optimizers.Optimizer], tf.keras.optimizers.Optimizer]:
+def load_optimizer(cfg: dict) -> Union[Type['tf.keras.optimizers.Optimizer'], 'tf.keras.optimizers.Optimizer']:
     """
     Loads a TensorFlow optimzier from a optimizer config dict.
 
