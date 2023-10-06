@@ -476,7 +476,7 @@ def impulse_noise(x: np.ndarray, amount: float, xrange: tuple = None) -> np.ndar
 
 
 # Blur
-def gaussian_blur(x: np.ndarray, sigma: float, multichannel: bool = True, xrange: tuple = None) -> np.ndarray:
+def gaussian_blur(x: np.ndarray, sigma: float, channel_axis: int = -1, xrange: tuple = None) -> np.ndarray:
     """
     Apply Gaussian blur.
 
@@ -486,8 +486,8 @@ def gaussian_blur(x: np.ndarray, sigma: float, multichannel: bool = True, xrange
         Instance to be perturbed.
     sigma
         Standard deviation determining the strength of the blur.
-    multichannel
-        Whether the image contains multiple channels (RGB) or not.
+    channel_axis
+        Denotes the axis of the colour channel. If `None` the image is assumed to be grayscale.
     xrange
         Tuple with min and max data range.
 
@@ -496,7 +496,7 @@ def gaussian_blur(x: np.ndarray, sigma: float, multichannel: bool = True, xrange
     Perturbed instance.
     """
     x, scale_back = scale_minmax(x, xrange)
-    x_gb = gaussian(x, sigma=sigma, multichannel=multichannel)
+    x_gb = gaussian(x, sigma=sigma, channel_axis=channel_axis)
     if scale_back:
         x_gb = x_gb * (xrange[1] - xrange[0]) + xrange[0]
     if isinstance(xrange, tuple):
@@ -590,14 +590,14 @@ def glass_blur(x: np.ndarray, sigma: float, max_delta: int, iterations: int, xra
     if xrange[0] != 0 or xrange[1] != 255:
         x = (x - xrange[0]) / (xrange[1] - xrange[0]) * 255
 
-    x = gaussian(x, sigma=sigma, multichannel=True).astype(np.uint8)
+    x = gaussian(x, sigma=sigma, channel_axis=-1).astype(np.uint8)  # assume [h, w, c] image layout
     for i in range(iterations):
         for h in range(nrows - max_delta, max_delta, -1):
             for w in range(ncols - max_delta, max_delta, -1):
                 dx, dy = np.random.randint(-max_delta, max_delta, size=(2,))
                 h_prime, w_prime = h + dy, w + dx
                 x[h, w], x[h_prime, w_prime] = x[h_prime, w_prime], x[h, w]
-    x_gb = gaussian(x / 255, sigma=sigma, multichannel=True)
+    x_gb = gaussian(x / 255, sigma=sigma, channel_axis=-1)
     x_gb = x_gb * (xrange[1] - xrange[0]) + xrange[0]
     if isinstance(xrange, tuple):
         return np.clip(x_gb, xrange[0], xrange[1])
