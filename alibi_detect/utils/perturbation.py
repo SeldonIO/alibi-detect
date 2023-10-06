@@ -561,8 +561,7 @@ def zoom_blur(x: np.ndarray, max_zoom: float, step_zoom: float, xrange: tuple = 
         return x_z
 
 
-def glass_blur(x: np.ndarray, sigma: float, max_delta: int, iterations: int,
-               channel_axis: int = -1, xrange: tuple = None) -> np.ndarray:
+def glass_blur(x: np.ndarray, sigma: float, max_delta: int, iterations: int, xrange: tuple = None) -> np.ndarray:
     """
     Apply glass blur.
 
@@ -576,8 +575,6 @@ def glass_blur(x: np.ndarray, sigma: float, max_delta: int, iterations: int,
         Maximum pixel range for the blurring.
     iterations
         Number of blurring iterations.
-    channel_axis
-        Denotes the axis of the colour channel. If `None` the image is assumed to be grayscale.
     xrange
         Tuple with min and max data range.
 
@@ -593,14 +590,14 @@ def glass_blur(x: np.ndarray, sigma: float, max_delta: int, iterations: int,
     if xrange[0] != 0 or xrange[1] != 255:
         x = (x - xrange[0]) / (xrange[1] - xrange[0]) * 255
 
-    x = gaussian(x, sigma=sigma, channel_axis=channel_axis).astype(np.uint8)
+    x = gaussian(x, sigma=sigma, channel_axis=-1).astype(np.uint8)  # assume [h, w, c] image layout
     for i in range(iterations):
         for h in range(nrows - max_delta, max_delta, -1):
             for w in range(ncols - max_delta, max_delta, -1):
                 dx, dy = np.random.randint(-max_delta, max_delta, size=(2,))
                 h_prime, w_prime = h + dy, w + dx
                 x[h, w], x[h_prime, w_prime] = x[h_prime, w_prime], x[h, w]
-    x_gb = gaussian(x / 255, sigma=sigma, channel_axis=channel_axis)
+    x_gb = gaussian(x / 255, sigma=sigma, channel_axis=-1)
     x_gb = x_gb * (xrange[1] - xrange[0]) + xrange[0]
     if isinstance(xrange, tuple):
         return np.clip(x_gb, xrange[0], xrange[1])
