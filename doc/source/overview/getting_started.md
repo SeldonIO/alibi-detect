@@ -234,6 +234,10 @@ To get a list of respectively the latest outlier, adversarial and drift detectio
 
 ```python
 import alibi_detect
+```
+
+```python
+# View all the Outlier Detection (od) algorithms available
 alibi_detect.od.__all__
 ```
 
@@ -251,6 +255,7 @@ alibi_detect.od.__all__
 ```
 
 ```python
+# View all the Adversarial Detection (ad) algorithms available
 alibi_detect.ad.__all__
 ```
 
@@ -260,6 +265,7 @@ alibi_detect.ad.__all__
 ```
 
 ```python
+# View all the Concept Drift (cd) detection algorithms available
 alibi_detect.cd.__all__
 ```
 
