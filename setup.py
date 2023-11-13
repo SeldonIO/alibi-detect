@@ -25,12 +25,17 @@ extras_require = {
         "pykeops>=2.0.0, <2.2.0",
         "torch>=1.7.0, <1.14.0"
     ],
+    # https://github.com/SeldonIO/alibi-detect/issues/532
+    "opencv-python": [
+        "opencv-python>=3.2.0, <5.0.0"
+    ],
     "all": [
         "prophet>=1.1.0, <2.0.0",
         "tensorflow_probability>=0.8.0, <0.23.0",
         "tensorflow>=2.2.0, !=2.6.0, !=2.6.1, <2.15.0",  # https://github.com/SeldonIO/alibi-detect/issues/375 and 387
         "pykeops>=2.0.0, <2.2.0",
         "torch>=1.7.0, <1.14.0"
+        "opencv-python>=3.2.0, <5.0.0"
     ],
 }
 
@@ -53,7 +58,7 @@ setup(
         "numpy>=1.16.2, <2.0.0",
         "pandas>=1.0.0, <3.0.0",
         "Pillow>=5.4.1, <11.0.0",
-        "opencv-python>=3.2.0, <5.0.0",
+        # "opencv-python>=3.2.0, <5.0.0", # Eradicated cv2 (opencv) requirement: https://github.com/SeldonIO/alibi-detect/issues/532
         "scipy>=1.3.0, <2.0.0",
         'scikit-image>=0.19, <0.23',
         "scikit-learn>=0.20.2, <2.0.0",

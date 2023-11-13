@@ -2,7 +2,6 @@ import random
 from io import BytesIO
 from typing import List, Tuple, Union
 
-import cv2
 import numpy as np
 import skimage as sk
 from alibi_detect.utils.data import Bunch
@@ -13,6 +12,14 @@ from PIL import Image
 from scipy.ndimage import zoom
 from scipy.ndimage.interpolation import map_coordinates
 from skimage.filters import gaussian
+
+try: 
+    import cv2
+except:
+    cv2 = None
+    from scipy.signal import convolve2d
+    from skimage.transform import AffineTransform, warp
+    from skimage import img_as_ubyte
 
 
 def apply_mask(X: np.ndarray,
@@ -632,8 +639,17 @@ def disk(radius: float, alias_blur: float = 0.1, dtype=np.float32) -> np.ndarray
     aliased_disk = np.array((X ** 2 + Y ** 2) <= radius ** 2, dtype=dtype)
     aliased_disk /= np.sum(aliased_disk)
 
-    # supersample disk to antialias
-    return cv2.GaussianBlur(aliased_disk, ksize=ksize, sigmaX=alias_blur)
+    if cv2 is not None:
+        # supersample disk to antialias
+        return cv2.GaussianBlur(aliased_disk, ksize=ksize, sigmaX=alias_blur)
+
+    else:
+        # Create Gaussian kernel
+        kernel = np.exp(-(X**2 + Y**2) / (2.0 * alias_blur**2))
+        kernel /= np.sum(kernel)
+
+        # Convolve with the aliased disk
+        return convolve2d(aliased_disk, kernel, mode='same', boundary='wrap')
 
 
 def defocus_blur(x: np.ndarray, radius: int, alias_blur: float, xrange: tuple = None) -> np.ndarray:
@@ -658,9 +674,16 @@ def defocus_blur(x: np.ndarray, radius: int, alias_blur: float, xrange: tuple = 
     x, scale_back = scale_minmax(x, xrange)
     kernel = disk(radius=radius, alias_blur=alias_blur)
     channels = []
-    for d in range(3):
-        channels.append(cv2.filter2D(x[:, :, d], -1, kernel))
-    x_db = np.array(channels).transpose((1, 2, 0))
+
+    if cv2 is not None:
+        for d in range(3):
+            channels.append(cv2.filter2D(x[:, :, d], -1, kernel))
+            x_db = np.array(channels).transpose((1, 2, 0))
+    else:
+        for d in range(3):
+            channels.append(convolve2d(x[:, :, d], kernel, mode='same', boundary='wrap'))
+            x_db = np.array(channels).transpose((1, 2, 0)).astype(np.float32)
+    
     if scale_back:
         x_db = x_db * (xrange[1] - xrange[0]) + xrange[0]
     if isinstance(xrange, tuple):
@@ -941,8 +964,19 @@ def elastic_transform(x: np.ndarray, mult_dxdy: float, sigma: float,
                        [center_square[0] + square_size, center_square[1] - square_size],
                        center_square - square_size], dtype=np.float32)
     pts2 = pts1 + np.random.uniform(-rnd_rng, rnd_rng, size=pts1.shape).astype(np.float32)
-    M = cv2.getAffineTransform(pts1, pts2)
-    image = cv2.warpAffine(x, M, shape_size[::-1], borderMode=cv2.BORDER_REFLECT_101)
+
+    if cv2 is not None:
+        M = cv2.getAffineTransform(pts1, pts2)
+        image = cv2.warpAffine(x, M, shape_size[::-1], borderMode=cv2.BORDER_REFLECT_101)
+    
+    else:
+        M = AffineTransform()
+        M.estimate(pts1, pts2)
+
+        image = warp(x, M.inverse, output_shape=shape_size[::-1], mode='reflect')
+        # image = warp(x, M, output_shape=shape_size[::-1], mode='reflect')
+        image = img_as_ubyte(image)
+    
     dx = (gaussian(np.random.uniform(-1, 1, size=shape_size),
                    sigma, mode='reflect', truncate=3) * mult_dxdy).astype(np.float32)
     dy = (gaussian(np.random.uniform(-1, 1, size=shape_size),
