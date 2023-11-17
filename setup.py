@@ -50,6 +50,8 @@ setup(
     # lower bounds based on Debian Stable versions where available
     install_requires=[
         "matplotlib>=3.0.0, <4.0.0",
+        "seaborn>=0.10.0, <1.0.0",
+        "statsmodels>=0.11.0, <1.0.0",
         "numpy>=1.16.2, <2.0.0",
         "pandas>=1.0.0, <3.0.0",
         "Pillow>=5.4.1, <11.0.0",
