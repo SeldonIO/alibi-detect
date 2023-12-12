@@ -310,5 +310,5 @@ class Ensembler(BaseTransformTorch, FitMixinTorch):
             `Torch.Tensor` of scores from ensemble of detectors.
         """
         if self.normalizer is not None:
-            self.normalizer.fit(x)  # type: ignore
+            self.normalizer.fit(x)
         return self._set_fitted()

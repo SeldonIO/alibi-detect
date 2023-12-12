@@ -88,6 +88,11 @@ pip install alibi-detect[all]
 If you wish to use the GPU version of PyTorch, or are installing on Windows, it is recommended to 
 [install and test PyTorch](https://pytorch.org/get-started/locally/) prior to installing alibi-detect.
 ```
+
+```{note}
+If using torch version 2.0.0 or 2.0.1 along with some versions of tensorflow you may experience hanging
+depending on the order you import each of these libraries. This is fixed in torch 2.1.0 onwards. 
+```
 ````
 
 ````{tab-item} PyTorch
@@ -117,6 +122,11 @@ The PyTorch installation is required to use the PyTorch backend for the followin
 ```{note}
 If you wish to use the GPU version of PyTorch, or are installing on Windows, it is recommended to 
 [install and test PyTorch](https://pytorch.org/get-started/locally/) prior to installing alibi-detect.
+```
+
+```{note}
+If using torch version 2.0.0 or 2.0.1 along with some versions of tensorflow you may experience hanging
+depending on the order you import each of these libraries. This is fixed in torch 2.1.0 onwards. 
 ```
 ````
 
