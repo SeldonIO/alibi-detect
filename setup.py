@@ -43,7 +43,7 @@ setup(
     long_description=readme(),
     long_description_content_type="text/markdown",
     url="https://github.com/SeldonIO/alibi-detect",
-    license="Apache 2.0",
+    license="Business Source License 1.1",
     packages=find_packages(),
     include_package_data=True,
     python_requires=">=3.8",
@@ -78,7 +78,7 @@ setup(
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
-        "License :: OSI Approved :: Apache Software License",
+        "License :: Other/Proprietary License",
         "Topic :: Scientific/Engineering",
     ],
 )
