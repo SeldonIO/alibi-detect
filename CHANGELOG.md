@@ -1,5 +1,41 @@
 # Change Log
 
+## [v0.11.5](https://github.com/SeldonIO/alibi-detect/tree/v0.11.5) (2024-22-01)
+[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.11.4...v0.11.5)
+
+This is a patch release fixing several bugs, updating dependencies and a change of license.
+
+### Added
+- Allow pickle when loading numpy array file ([#836](https://github.com/SeldonIO/alibi-detect/pull/836))
+- Add abbreviations in the getting_started page ([#863](https://github.com/SeldonIO/alibi-detect/pull/863))
+
+### Fixed
+- Remove scale_identity_multiplier to support tensorflow-probability 0.20 ([#828](https://github.com/SeldonIO/alibi-detect/pull/828))
+- Docs/dont load sklearn detectors in notebooks ([#842](https://github.com/SeldonIO/alibi-detect/pull/842))
+- Add notebooks tests for 3.11 ([#840](https://github.com/SeldonIO/alibi-detect/pull/840)) & ([#841](https://github.com/SeldonIO/alibi-detect/pull/841))
+- Split tox ci job into seperate jobs ([#843](https://github.com/SeldonIO/alibi-detect/pull/843))
+- Fix E721 linting errors ([#846](https://github.com/SeldonIO/alibi-detect/pull/846))
+- Change legacy tf optimizers types to forwardrefs ([#858](https://github.com/SeldonIO/alibi-detect/pull/858))
+- Remove deprecated multichannel keyword from skimage.filters.gaussian ([#857](https://github.com/SeldonIO/alibi-detect/pull/857))
+- Update Alibi_Detect_Logo_rgb image with white stroked letters ([#862](https://github.com/SeldonIO/alibi-detect/pull/862))
+- Update typechecking for mypy 1.7.0 ([#866](https://github.com/SeldonIO/alibi-detect/pull/866))
+- Remove macos from ci (link tbh)
+
+### Changed
+- Alibi-Detect License change from Apache to Business Source License 1.1 (link tbd)
+
+### Development
+- Set 3.0.0 as upper bound on pytorch version (link tbd)
+- Update myst-parser requirement upper bound from 2.0 to 3.0 ([#815](https://github.com/SeldonIO/alibi-detect/pull/815))
+- Update pillow requirement upper bound from 10.0.0 to 11.0.0 ([#822](https://github.com/SeldonIO/alibi-detect/pull/822))
+- Update xgboost requirement upper bound from 2.0.0 to 3.0.0 ([#850](https://github.com/SeldonIO/alibi-detect/pull/850))
+- Bump tensorflow and tfp ([#860](https://github.com/SeldonIO/alibi-detect/pull/860))
+- Bump sphinx-design from 0.4.1 to 0.5.0 ([#845](https://github.com/SeldonIO/alibi-detect/pull/845))
+- Update scikit-image requirement ([#855](https://github.com/SeldonIO/alibi-detect/pull/855))
+- Update sphinxcontrib-apidoc requirement ([#848](https://github.com/SeldonIO/alibi-detect/pull/848))
+- Update numba requirement ([#851](https://github.com/SeldonIO/alibi-detect/pull/851))
+
+
 ## [v0.11.4](https://github.com/SeldonIO/alibi-detect/tree/v0.11.4) (2023-07-07)
 [Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.11.3...v0.11.4)
 
