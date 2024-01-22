@@ -19,10 +19,9 @@ This is a patch release fixing several bugs, updating dependencies and a change 
 - Remove deprecated multichannel keyword from skimage.filters.gaussian ([#857](https://github.com/SeldonIO/alibi-detect/pull/857))
 - Update Alibi_Detect_Logo_rgb image with white stroked letters ([#862](https://github.com/SeldonIO/alibi-detect/pull/862))
 - Update typechecking for mypy 1.7.0 ([#866](https://github.com/SeldonIO/alibi-detect/pull/866))
-- Remove macos from ci (link tbh)
 
 ### Changed
-- Alibi-Detect License change from Apache to Business Source License 1.1 (link tbd)
+- Alibi-Detect License change from Apache to Business Source License 1.1 ([#876](https://github.com/SeldonIO/alibi-detect/pull/876))
 
 ### Development
 - Set 3.0.0 as upper bound on pytorch version (link tbd)
@@ -34,6 +33,8 @@ This is a patch release fixing several bugs, updating dependencies and a change 
 - Update scikit-image requirement ([#855](https://github.com/SeldonIO/alibi-detect/pull/855))
 - Update sphinxcontrib-apidoc requirement ([#848](https://github.com/SeldonIO/alibi-detect/pull/848))
 - Update numba requirement ([#851](https://github.com/SeldonIO/alibi-detect/pull/851))
+- Remove macos from ci ([#876](https://github.com/SeldonIO/alibi-detect/pull/876))
+- Add security scans to CI ([#876](https://github.com/SeldonIO/alibi-detect/pull/876))
 
 
 ## [v0.11.4](https://github.com/SeldonIO/alibi-detect/tree/v0.11.4) (2023-07-07)
