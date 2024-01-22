@@ -25,7 +25,7 @@
 <!--- BADGES: END --->
 ---
 
-[Alibi Detect](https://github.com/SeldonIO/alibi-detect) is an open source Python library focused on **outlier**, **adversarial** and **drift** detection. The package aims to cover both online and offline detectors for tabular data, text, images and time series. Both **TensorFlow** and **PyTorch** backends are supported for drift detection.
+[Alibi Detect](https://github.com/SeldonIO/alibi-detect) is an Python library focused on **outlier**, **adversarial** and **drift** detection. The package aims to cover both online and offline detectors for tabular data, text, images and time series. Both **TensorFlow** and **PyTorch** backends are supported for drift detection.
 *  [Documentation](https://docs.seldon.io/projects/alibi-detect/en/stable/)
 
 For more background on the importance of monitoring outliers and distributions in a production setting, check out [this talk](https://slideslive.com/38931758/monitoring-and-explainability-of-models-in-production?ref=speaker-37384-latest) from the *Challenges in Deploying and Monitoring Machine Learning Systems* ICML 2020 workshop, based on the paper [Monitoring and explainability of models in production](https://arxiv.org/abs/2007.06299) and referencing Alibi Detect.
@@ -390,7 +390,7 @@ Models and/or building blocks that can be useful outside of outlier, adversarial
 
 ## Integrations
 
-Alibi-detect is integrated in the open source machine learning model deployment platform [Seldon Core](https://docs.seldon.io/projects/seldon-core/en/stable/index.html) and model serving framework [KFServing](https://github.com/kubeflow/kfserving).
+Alibi-detect is integrated in the machine learning model deployment platform [Seldon Core](https://docs.seldon.io/projects/seldon-core/en/stable/index.html) and model serving framework [KFServing](https://github.com/kubeflow/kfserving).
 
 - **Seldon Core**: [outlier](https://docs.seldon.io/projects/seldon-core/en/stable/analytics/outlier_detection.html) and [drift](https://docs.seldon.io/projects/seldon-core/en/stable/analytics/drift_detection.html) detection worked examples.
 

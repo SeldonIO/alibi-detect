@@ -178,7 +178,7 @@ class ClassifierDriftSklearn(BaseClassifierDrift):
         if self.preds_type == 'probs':
             # calibrate the model if user specified.
             if self.use_calibration:
-                model = CalibratedClassifierCV(base_estimator=model, **self.calibration_kwargs)
+                model = CalibratedClassifierCV(estimator=model, **self.calibration_kwargs)
                 logger.warning('Using calibration to obtain the prediction probabilities.')
 
             # check if it has predict proba. Cannot be checked via `hasattr` due to the same issue in SVC (see below)

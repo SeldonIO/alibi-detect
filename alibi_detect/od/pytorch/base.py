@@ -160,12 +160,10 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
             `.infer_threshold` method.
         """
         if hasattr(self, 'ensembler') and self.ensembler is not None:
-            # `type: ignore` here because self.ensembler here causes an error with mypy when using torch.jit.script.
-            # For some reason it thinks self.ensembler is a torch.Tensor and therefore is not callable.
             if not torch.jit.is_scripting():
-                if not self.ensembler.fitted:  # type: ignore
+                if not self.ensembler.fitted:
                     self.check_threshold_inferred()
-            return self.ensembler(x)  # type: ignore
+            return self.ensembler(x)
         else:
             return x
 
@@ -221,7 +219,7 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
             raise ValueError(f'`fpr` must be greater than `1/len(x)={1/len(x)}`.')
         self.val_scores = self.score(x)
         if self.ensemble:
-            self.val_scores = self.ensembler.fit(self.val_scores).transform(self.val_scores)  # type: ignore
+            self.val_scores = self.ensembler.fit(self.val_scores).transform(self.val_scores)
         self.threshold = torch.quantile(self.val_scores, 1-fpr, interpolation='higher')
         self.threshold_inferred = True
 
