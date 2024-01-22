@@ -7,7 +7,7 @@ from alibi_detect.base import BaseDetector, concept_drift_dict, DriftConfigMixin
 from alibi_detect.cd.utils import get_input_shape, update_reference
 from alibi_detect.utils.frameworks import has_pytorch, has_tensorflow
 from alibi_detect.utils.statstest import fdr
-from scipy.stats import binom_test, ks_2samp
+from scipy.stats import binomtest, ks_2samp
 from sklearn.model_selection import StratifiedKFold
 
 if has_pytorch:
@@ -228,7 +228,7 @@ class BaseClassifierDrift(BaseDetector):
             baseline_accuracy = max(n_ref, n_cur) / (n_ref + n_cur)  # exp under null
             n_oof = y_oof.shape[0]
             n_correct = (y_oof == probs_oof.round()).sum()
-            p_val = binom_test(n_correct, n_oof, baseline_accuracy, alternative='greater')
+            p_val = binomtest(n_correct, n_oof, baseline_accuracy, alternative='greater').pvalue
             accuracy = n_correct / n_oof
             # relative error reduction, in [0,1]
             # e.g. (90% acc -> 99% acc) = 0.9, (50% acc -> 59% acc) = 0.18
