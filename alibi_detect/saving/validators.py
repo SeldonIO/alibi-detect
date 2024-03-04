@@ -2,7 +2,7 @@ import sys
 from typing import Any, Generic, Optional, Type, TypeVar, Union, List
 import numpy as np
 from numpy.lib import NumpyVersion
-from pydantic.fields import ModelField
+from alibi_detect.utils.pydantic_v1.fields import ModelField
 
 from alibi_detect.utils.frameworks import has_tensorflow, has_pytorch, has_keops, Framework
 

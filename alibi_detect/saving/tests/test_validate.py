@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from pydantic import ValidationError
+from alibi_detect.utils.pydantic_v1 import ValidationError
 
 from alibi_detect.saving import validate_config
 from alibi_detect.saving.schemas import KernelConfig
