@@ -47,6 +47,7 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     python_requires=">=3.8",
+    setup_requires=['wheel'],
     # lower bounds based on Debian Stable versions where available
     install_requires=[
         "matplotlib>=3.0.0, <4.0.0",
