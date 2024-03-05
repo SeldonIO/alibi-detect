@@ -79,6 +79,32 @@ In consideration of the right to use this License’s text and the “Business S
 4. Not to modify this License in any other way.
 
 
+annotated-types
+0.6.0
+MIT License
+The MIT License (MIT)
+
+Copyright (c) 2022 the contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
 catalogue
 2.0.10
 MIT License
@@ -106,7 +132,7 @@ SOFTWARE.
 
 
 certifi
-2023.11.17
+2024.2.2
 Mozilla Public License 2.0 (MPL 2.0)
 This package contains a modified version of ca-bundle.crt:
 
@@ -221,10 +247,10 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 dill
-0.3.7
+0.3.8
 BSD License
 Copyright (c) 2004-2016 California Institute of Technology.
-Copyright (c) 2016-2023 The Uncertainty Quantification Foundation.
+Copyright (c) 2016-2024 The Uncertainty Quantification Foundation.
 All rights reserved.
 
 This software is available subject to the conditions and terms laid
@@ -290,7 +316,7 @@ For more information, please refer to <http://unlicense.org>
 
 
 fonttools
-4.47.0
+4.49.0
 MIT License
 MIT License
 
@@ -316,7 +342,7 @@ SOFTWARE.
 
 
 fsspec
-2023.12.2
+2024.2.0
 BSD License
 BSD 3-Clause License
 
@@ -350,7 +376,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 huggingface-hub
-0.20.2
+0.21.3
 Apache Software License
                                  Apache License
                            Version 2.0, January 2004
@@ -592,7 +618,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 imageio
-2.33.1
+2.34.0
 BSD License
 Copyright (c) 2014-2022, imageio developers
 All rights reserved.
@@ -794,7 +820,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 matplotlib
-3.8.2
+3.8.3
 Python Software Foundation License
 License agreement for matplotlib versions 1.3.0 and later
 =========================================================
@@ -968,7 +994,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 numpy
-1.26.3
+1.26.4
 BSD License
 Copyright (c) 2005-2023, NumPy Developers.
 All rights reserved.
@@ -1034,11 +1060,6 @@ Name: Meson
 Files: vendored-meson/meson/*
 License: Apache 2.0
   For license text, see vendored-meson/meson/COPYING
-
-Name: meson-python
-Files: vendored-meson/meson-python/*
-License: MIT
-  For license text, see vendored-meson/meson-python/LICENSE
 
 Name: spin
 Files: .spin/cmds.py
@@ -5027,7 +5048,7 @@ under the terms of *both* these licenses.
 
 
 pandas
-2.1.4
+2.2.1
 BSD License
 BSD 3-Clause License
 
@@ -6411,11 +6432,37 @@ the FAQ for more information on the distribution of modified source versions.
 
 
 pydantic
-1.10.13
+2.6.3
 MIT License
 The MIT License (MIT)
 
-Copyright (c) 2017, 2018, 2019, 2020, 2021 Samuel Colvin and other contributors
+Copyright (c) 2017 to present Pydantic Services Inc. and individual contributors.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+pydantic_core
+2.16.3
+MIT License
+The MIT License (MIT)
+
+Copyright (c) 2022 Samuel Colvin
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -6460,7 +6507,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 python-dateutil
-2.8.2
+2.9.0.post0
 Apache Software License; BSD License
 Copyright 2017- Paul Ganssle <paul@ganssle.io>
 Copyright 2017- dateutil contributors (see AUTHORS file)
@@ -6518,7 +6565,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 The above BSD License Applies to all code, even that also covered by Apache 2.0.
 
 pytz
-2023.3.post1
+2024.1
 MIT License
 Copyright (c) 2003-2019 Stuart Bishop <stuart@stuartbishop.net>
 
@@ -6935,7 +6982,7 @@ Apache Software License
 
 
 safetensors
-0.4.1
+0.4.2
 Apache Software License
 UNKNOWN
 
@@ -7090,7 +7137,7 @@ SOFTWARE.
 
 
 scikit-learn
-1.3.2
+1.4.1.post1
 BSD License
 BSD 3-Clause License
 
@@ -7124,9 +7171,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 scipy
-1.11.4
+1.12.0
 BSD License
-Copyright (c) 2001-2002 Enthought, Inc. 2003-2023, SciPy Developers.
+Copyright (c) 2001-2002 Enthought, Inc. 2003-2024, SciPy Developers.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -8085,7 +8132,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 threadpoolctl
-3.2.0
+3.3.0
 BSD License
 Copyright (c) 2019, threadpoolctl contributors
 
@@ -8113,11 +8160,11 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 tifffile
-2023.12.9
+2024.2.12
 BSD License
 BSD 3-Clause License
 
-Copyright (c) 2008-2023, Christoph Gohlke
+Copyright (c) 2008-2024, Christoph Gohlke
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -8148,7 +8195,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 
 tokenizers
-0.15.0
+0.15.2
 Apache Software License
 UNKNOWN
 
@@ -8184,7 +8231,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
 tqdm
-4.66.1
+4.66.2
 MIT License; Mozilla Public License 2.0 (MPL 2.0)
 `tqdm` is a product of collaborative work.
 Unless otherwise stated, all authors (see commit logs) retain copyright
@@ -8195,7 +8242,7 @@ Exceptions or notable authors are listed below
 in reverse chronological order:
 
 * files: *
-  MPL-2.0 2015-2023 (c) Casper da Costa-Luis
+  MPL-2.0 2015-2024 (c) Casper da Costa-Luis
   [casperdcl](https://github.com/casperdcl).
 * files: tqdm/_tqdm.py
   MIT 2016 (c) [PR #96] on behalf of Google Inc.
@@ -8238,7 +8285,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 transformers
-4.36.2
+4.38.2
 Apache Software License
 Copyright 2018- The Hugging Face team. All rights reserved.
 
@@ -8446,7 +8493,7 @@ Copyright 2018- The Hugging Face team. All rights reserved.
 
 
 typing_extensions
-4.9.0
+4.10.0
 Python Software Foundation License
 A. HISTORY OF THE SOFTWARE
 ==========================
@@ -8730,7 +8777,7 @@ PERFORMANCE OF THIS SOFTWARE.
 
 
 tzdata
-2023.4
+2024.1
 Apache Software License
 Apache Software License 2.0
 
@@ -8750,7 +8797,7 @@ limitations under the License.
 
 
 urllib3
-2.1.0
+2.2.1
 MIT License
 MIT License
 

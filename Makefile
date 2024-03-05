@@ -1,6 +1,10 @@
+.PHONY: install-dev
+install-dev:
+	pip install -r requirements/dev.txt
+
 .PHONY: install
-install: ## Install package in editable mode with all the dependencies
-	pip install -e .
+install:
+	pip install -e .[all]
 
 .PHONY: test
 test: ## Run all tests

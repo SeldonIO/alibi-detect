@@ -47,6 +47,7 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     python_requires=">=3.8",
+    setup_requires=['wheel'],
     # lower bounds based on Debian Stable versions where available
     install_requires=[
         "matplotlib>=3.0.0, <4.0.0",
@@ -61,7 +62,7 @@ setup(
         "dill>=0.3.0, <0.4.0",
         "tqdm>=4.28.1, <5.0.0",
         "requests>=2.21.0, <3.0.0",
-        "pydantic>=1.8.0, <2.0.0",
+        "pydantic>=1.8.0, <3.0.0",
         "toml>=0.10.1, <1.0.0",  # STC, see https://discuss.python.org/t/adopting-recommending-a-toml-parser/4068
         "catalogue>=2.0.0, <3.0.0",
         "numba>=0.50.0, !=0.54.0, <0.59.0",  # Avoid 0.54 due to: https://github.com/SeldonIO/alibi/issues/466

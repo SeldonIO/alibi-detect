@@ -16,7 +16,7 @@ The `resolved` kwarg of :func:`~alibi_detect.utils.validate.validate_config` det
 from typing import Callable, Dict, List, Optional, Type, Union, Any
 
 import numpy as np
-from pydantic import BaseModel, validator
+from alibi_detect.utils.pydantic_v1 import BaseModel, validator
 
 from alibi_detect.utils.frameworks import Framework
 from alibi_detect.utils._types import (Literal, supported_models_all, supported_models_tf,
