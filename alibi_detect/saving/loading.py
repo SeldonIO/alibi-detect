@@ -206,8 +206,10 @@ def _load_kernel_config(cfg: dict, backend: str = Framework.TENSORFLOW) -> Calla
         kernel = load_kernel_config_tf(cfg)
     elif backend == Framework.PYTORCH:
         kernel = load_kernel_config_pt(cfg)
-    else:  # backend=='keops'
+    elif backend == Framework.KEOPS:
         kernel = load_kernel_config_ke(cfg)
+    else:
+        raise ValueError('`backend` not recognised.')
     return kernel
 
 
@@ -300,7 +302,8 @@ def _load_model_config(cfg: dict) -> Callable:
         model = load_model_pt(src, layer=layer)
     elif flavour == Framework.SKLEARN:
         model = load_model_sk(src)
-
+    else:
+        raise ValueError('`flavour` not recognised.')
     return model
 
 
@@ -323,7 +326,7 @@ def _load_embedding_config(cfg: dict) -> Callable:  # TODO: Could type return mo
     flavour = cfg['flavour']
     if flavour == Framework.TENSORFLOW:
         emb = load_embedding_tf(src, embedding_type=typ, layers=layers)
-    else:
+    else:  # pytorch or keops
         emb = load_embedding_pt(src, embedding_type=typ, layers=layers)
     return emb
 

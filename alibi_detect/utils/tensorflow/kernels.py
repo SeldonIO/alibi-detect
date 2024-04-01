@@ -3,7 +3,10 @@ import numpy as np
 from . import distance
 from typing import Optional, Union, Callable
 from scipy.special import logit
+from alibi_detect.utils._types import Literal
 from alibi_detect.utils.frameworks import Framework
+from copy import deepcopy
+from alibi_detect.utils.tensorflow.misc import clone_model
 
 
 def sigma_median(x: tf.Tensor, y: tf.Tensor, dist: tf.Tensor) -> tf.Tensor:
@@ -57,7 +60,7 @@ class GaussianRBF(tf.keras.Model):
         """
         super().__init__()
         init_sigma_fn = sigma_median if init_sigma_fn is None else init_sigma_fn
-        self.config = {'sigma': sigma, 'trainable': trainable, 'init_sigma_fn': init_sigma_fn}
+        self.config = deepcopy({'sigma': sigma, 'trainable': trainable, 'init_sigma_fn': init_sigma_fn})
         if sigma is None:
             self.log_sigma = tf.Variable(np.empty(1), dtype=tf.keras.backend.floatx(), trainable=trainable)
             self.init_required = True
@@ -93,7 +96,7 @@ class GaussianRBF(tf.keras.Model):
         """
         Returns a serializable config dict (excluding the input_sigma_fn, which is serialized in alibi_detect.saving).
         """
-        cfg = self.config.copy()
+        cfg = self.config
         if isinstance(cfg['sigma'], tf.Tensor):
             cfg['sigma'] = cfg['sigma'].numpy().tolist()
         cfg.update({'flavour': Framework.TENSORFLOW.value})
@@ -136,18 +139,19 @@ class DeepKernel(tf.keras.Model):
     def __init__(
         self,
         proj: tf.keras.Model,
-        kernel_a: Union[tf.keras.Model, str] = 'rbf',
-        kernel_b: Optional[Union[tf.keras.Model, str]] = 'rbf',
+        kernel_a: Union[tf.keras.Model, Literal['rbf']] = 'rbf',
+        kernel_b: Optional[Union[tf.keras.Model, Literal['rbf']]] = 'rbf',
         eps: Union[float, str] = 'trainable'
     ) -> None:
         super().__init__()
-        self.config = {'proj': proj, 'kernel_a': kernel_a, 'kernel_b': kernel_b, 'eps': eps}
+        self.config = deepcopy({'kernel_a': kernel_a, 'kernel_b': kernel_b, 'eps': eps})
+        self.config['proj'] = clone_model(proj)  # tf model's are not always deepcopy-able
         if kernel_a == 'rbf':
             kernel_a = GaussianRBF(trainable=True)
         if kernel_b == 'rbf':
             kernel_b = GaussianRBF(trainable=True)
-        self.kernel_a = kernel_a
-        self.kernel_b = kernel_b
+        self.kernel_a: Callable = kernel_a  # type: ignore[assignment]
+        self.kernel_b: Callable = kernel_b  # type: ignore[assignment]
         self.proj = proj
         if kernel_b is not None:
             self._init_eps(eps)
@@ -174,7 +178,7 @@ class DeepKernel(tf.keras.Model):
         return similarity
 
     def get_config(self) -> dict:
-        return self.config.copy()
+        return self.config
 
     @classmethod
     def from_config(cls, config):

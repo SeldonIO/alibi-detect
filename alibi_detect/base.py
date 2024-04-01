@@ -100,7 +100,9 @@ class ThresholdMixin(ABC):
 # "Large artefacts" - to save memory these are skipped in _set_config(), but added back in get_config()
 # Note: The current implementation assumes the artefact is stored as a class attribute, and as a config field under
 # the same name. Refactoring will be required if this assumption is to be broken.
-LARGE_ARTEFACTS = ['x_ref', 'c_ref', 'preprocess_fn']
+# Note: The above procedure is not followed for `model` in the `UncertaintyDrift` detectors, since these do not store
+# the attribute `self.model`.
+LARGE_ARTEFACTS = ['x_ref', 'c_ref', 'preprocess_fn', 'model']
 
 
 class DriftConfigMixin:
@@ -185,6 +187,10 @@ class DriftConfigMixin:
         for key in LARGE_ARTEFACTS:
             if key in inputs and hasattr(self._nested_detector, key):
                 inputs[key] = None
+
+        # Copy to prevent any issues if `inputs` contains refs to mutable objects
+        # (done after LARGE_ARTEFACTS removed since some i.e. `model` have problems being copied)
+        inputs = copy.deepcopy(inputs)
 
         self.config.update(inputs)
 
