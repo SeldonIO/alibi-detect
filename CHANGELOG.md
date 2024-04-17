@@ -1,6 +1,25 @@
 # Change Log
 
-## [v0.11.5](https://github.com/SeldonIO/alibi-detect/tree/v0.11.5) (2024-22-01)
+## [v0.12.0](https://github.com/SeldonIO/alibi-detect/tree/v0.12.0) (2024-04-17)
+[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.11.5...v0.12.0)
+
+This is a minor release.
+
+### Added
+
+- Support for Pydantic v2 via a Pydantic v1 shim ([#882](https://github.com/SeldonIO/alibi-detect/pull/882))
+
+### Fixed
+
+- Update README.md #877
+
+### Development
+
+- Bump tj-actions/changed-files from 1.1.2 to 41.0.0 in /.github/workflows ([#871](https://github.com/SeldonIO/alibi-detect/pull/871))
+- Update pykeops requirement from <2.2.0,>=2.0.0 to >=2.0.0,<2.3.0 ([#875](https://github.com/SeldonIO/alibi-detect/pull/875))
+- Update numba requirement ([#879](https://github.com/SeldonIO/alibi-detect/pull/879))
+
+## [v0.11.5](https://github.com/SeldonIO/alibi-detect/tree/v0.11.5) (2024-01-22)
 [Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.11.4...v0.11.5)
 
 This is a patch release fixing several bugs, updating dependencies and a change of license.
@@ -80,7 +99,7 @@ This is the last release with official support for Python 3.7.
 
 ### Development
 - Migrate `codecov` to use Github Actions and don't fail CI on coverage report upload failure due to rate limiting ([#768](https://github.com/SeldonIO/alibi-detect/pull/768), [#776](https://github.com/SeldonIO/alibi-detect/pull/776)).
- - Bump `mypy` version to `>=1.0, <2.0` ([#754](https://github.com/SeldonIO/alibi-detect/pull/754)). 
+ - Bump `mypy` version to `>=1.0, <2.0` ([#754](https://github.com/SeldonIO/alibi-detect/pull/754)).
  - Bump `sphinx` version to `6.x` ([#709](https://github.com/SeldonIO/alibi-detect/pull/709)).
  - Bump `sphinx-design` version to `0.4.1` ([#769](https://github.com/SeldonIO/alibi-detect/pull/769)).
  - Bump `nbsphinx` version to `0.9.x` ([#757](https://github.com/SeldonIO/alibi-detect/pull/757)).
@@ -139,7 +158,7 @@ This is the last release with official support for Python 3.7.
 ### Fixed
 - Fixed two bugs preventing backward compatibility when loading detectors saved with `<v0.10.0`
 ([#729](https://github.com/SeldonIO/alibi-detect/pull/729) and [#732](https://github.com/SeldonIO/alibi-detect/pull/732)). This bug also meant that detectors
-saved with `save_detector(..., legacy=True)` in `>=v0.10.0` did not properly obey the legacy file format. The `config.toml` file format used by default in `>=v0.10.0` is unaffected. 
+saved with `save_detector(..., legacy=True)` in `>=v0.10.0` did not properly obey the legacy file format. The `config.toml` file format used by default in `>=v0.10.0` is unaffected.
 
 ## v0.10.4
 ## [v0.10.4](https://github.com/SeldonIO/alibi-detect/tree/v0.10.4) (2022-10-21)
@@ -237,17 +256,17 @@ saved with `save_detector(..., legacy=True)` in `>=v0.10.0` did not properly obe
 [Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.8.0...v0.8.1)
 
 ### Added
-- **New feature** `ClassifierDrift` now supports `sklearn` models ([#414](https://github.com/SeldonIO/alibi-detect/pull/414)). See [this example](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/cd_clf_adult.html). 
+- **New feature** `ClassifierDrift` now supports `sklearn` models ([#414](https://github.com/SeldonIO/alibi-detect/pull/414)). See [this example](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/cd_clf_adult.html).
 
 ### Changed
-- Python 3.6 has been deprecated from the supported versions as it has reached end-of-life. 
+- Python 3.6 has been deprecated from the supported versions as it has reached end-of-life.
 
 ### Fixed
 - The `SpectralResidual` detector now uses padding to prevent spikes occuring at the beginning and end of scores ([#396](https://github.com/SeldonIO/alibi-detect/pull/396)).
-- The handling of url's in the dataset and model fetching methods has been modified to fix behaviour on Windows platforms.  
+- The handling of url's in the dataset and model fetching methods has been modified to fix behaviour on Windows platforms.
 
 ### Development
-- `numpy` typing has been updated to be compatible with `numpy 1.22` ([#403](https://github.com/SeldonIO/alibi-detect/pull/403)). This is a prerequisite for upgrading to `tensorflow 2.7`. 
+- `numpy` typing has been updated to be compatible with `numpy 1.22` ([#403](https://github.com/SeldonIO/alibi-detect/pull/403)). This is a prerequisite for upgrading to `tensorflow 2.7`.
 - The Alibi Detect CI tests now include Windows and MacOS platforms ([#423](https://github.com/SeldonIO/alibi-detect/pull/423)).
 - The maximum `tensorflow` version has been bumped from 2.6 to 2.7 ([#377](https://github.com/SeldonIO/alibi-detect/pull/377)).
 
@@ -260,11 +279,11 @@ saved with `save_detector(..., legacy=True)` in `>=v0.10.0` did not properly obe
 - Offline supervised drift detection [example](https://github.com/SeldonIO/alibi-detect/blob/master/examples/cd_supervised_penguins.ipynb) on the penguin classification dataset.
 
 ### Changed
- - Refactored online detectors to separate updating of state ([#371](https://github.com/SeldonIO/alibi-detect/pull/371)). 
- - Update `tensorflow` lower bound to 2.2 due to minimum requirements from `transformers`. 
+ - Refactored online detectors to separate updating of state ([#371](https://github.com/SeldonIO/alibi-detect/pull/371)).
+ - Update `tensorflow` lower bound to 2.2 due to minimum requirements from `transformers`.
 
 ### Fixed
- - Fixed incorrect kwarg name in `utils.tensorflow.distance.permed_lsdd` function ([#399](https://github.com/SeldonIO/alibi-detect/pull/399)). 
+ - Fixed incorrect kwarg name in `utils.tensorflow.distance.permed_lsdd` function ([#399](https://github.com/SeldonIO/alibi-detect/pull/399)).
 
 ### Development
  - Updated `sphinx` for documentation building to `>=4.2.0`.
@@ -276,12 +295,12 @@ saved with `save_detector(..., legacy=True)` in `>=v0.10.0` did not properly obe
 [Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.7.2...v0.7.3)
 
 ### Added
-- `DeepKernel` is allowed without the `kernel_b` component, giving a kernel consisting of only a deep kernel component (`kernel_a`). 
+- `DeepKernel` is allowed without the `kernel_b` component, giving a kernel consisting of only a deep kernel component (`kernel_a`).
 - Documentation layout refreshed, and a new "Background to drift detection" added.
 
 ### Fixed
 - Model fetching methods now correctly handle nested filepaths.
-- For backward compatibility, fetch and load methods now attept to fetch/load `dill` files, but fall back to `pickle` files. 
+- For backward compatibility, fetch and load methods now attept to fetch/load `dill` files, but fall back to `pickle` files.
 - Prevent `dill` from extending `pickle` dispatch table. This prevents undesirable behaviour if using `pickle`/`joblib` without `dill` imported later on (see #326).
 - For consistency between `save_detector` and `load_detector`, `fetch_detector` will no longer append `detector_name` to `filepath`.
 
@@ -361,7 +380,7 @@ This is a bug fix release.
 ### Fixed
 - The order of the reference and test dataset for the `TabularDrift` and `ChiSquareDrift` was reversed leading to incorrect test statistics
 - The implementation of `TabularDrift` and `ChiSquareDrift` were not accounting for the different sample sizes between reference and test datasets leading to incorrect test statistics
-- Bumped required `scipy` version to `1.3.0` as older versions were missing the `alternative` keyword argument for `ks_2samp` function 
+- Bumped required `scipy` version to `1.3.0` as older versions were missing the `alternative` keyword argument for `ks_2samp` function
 
 ## [v0.5.0](https://github.com/SeldonIO/alibi-detect/tree/v0.5.0) (2021-02-18)
 [Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.4.4...v0.5.0)
@@ -416,7 +435,7 @@ This is a bug fix release.
 ### Added
 - Adversarial autoencoder detection method (offline method, `alibi_detect.ad.adversarialae.AdversarialAE`)
 - Add pretrained adversarial and outlier detectors to Google Cloud Bucket and include fetch functionality
-- Add data/concept drift dataset (CIFAR-10-C) to Google Cloud Bucket and include fetch functionality 
+- Add data/concept drift dataset (CIFAR-10-C) to Google Cloud Bucket and include fetch functionality
 - Update VAE loss function and log var layer
 - Fix tests for Prophet outlier detector on Python 3.6
 - Add batch sizes for all detectors
@@ -446,4 +465,3 @@ This is a bug fix release.
  - Auto-Encoding Gaussian Mixture Model (AEGMM, Outlier Detection)
  - Variational Auto-Encoding Gaussian Mixture Model (VAEGMM, Outlier Detection)
  - Adversarial Variational Auto-Encoder (Adversarial Detection)
-
