@@ -73,7 +73,7 @@ jobs:
       - name: Test with pytest
         run: |
           pytest --randomly-seed=0 alibi_detect
-          # Note: The pytest-randomly seed is fixed at 0 for now. Once the legacy np.random.seed(0)'s 
+          # Note: The pytest-randomly seed is fixed at 0 for now. Once the legacy np.random.seed(0)'s
           # are removed from tests, this can be removed, allowing all tests to use random seeds.
 
       - name: Upload coverage to Codecov
