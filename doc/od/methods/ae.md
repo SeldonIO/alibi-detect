@@ -1,13 +1,3 @@
----
-jupyter:
-  kernelspec:
-    display_name: Python 3
-    language: python
-    name: python3
----
-
-[source](../../api/alibi_detect.od.ae.rst)
-
 # Auto-Encoder
 
 ## Overview
@@ -124,5 +114,5 @@ preds = od.predict(X,
 
 ### Image
 
-[Outlier detection on CIFAR10](../../examples/od_ae_cifar10.ipynb)
+[Outlier detection on CIFAR10](../../examples/od_ae_cifar10.md)
 

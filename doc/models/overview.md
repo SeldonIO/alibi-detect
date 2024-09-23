@@ -1,13 +1,3 @@
----
-jupyter:
-  kernelspec:
-    display_name: Python 3
-    language: python
-    name: python3
----
-
-[source](../api/alibi_detect.models.rst)
-
 # Overview
 
 Models and/or building blocks that can be useful outside of outlier, adversarial or drift detection can be found under `alibi_detect.models`. Main implementations:
