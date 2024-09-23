@@ -1,6 +1,0 @@
-# Bibliography
-
-```{eval-rst}
-.. bibliography::
-```
-
