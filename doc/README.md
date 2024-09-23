@@ -1,4 +1,4 @@
-![Alibi Detect Logo](_static/Alibi_Detect_Logo_rgb.png)
+![Alibi Detect Logo](images/Alibi_Detect_Logo_rgb.png)
 
 # Alibi Detect
 
