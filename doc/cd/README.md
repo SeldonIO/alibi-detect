@@ -1,10 +1,5 @@
 # Background
 
-```{contents}
-:depth: 2
-:local: true
-```
-
 ## 1. What is drift?
 
 Although powerful, modern machine learning models can be sensitive.
@@ -28,10 +23,7 @@ predictive performance monitored directly. However, in many scenarios,
 such as the binary classification example below, ground truths are not
 available and *unsupervised drift detection* methods are required.
 
-```{image} images/drift_deployment.png
-:align: center
-:alt: Drift in deployment
-```
+![Drift in deployment](../images/drift_deployment.png)
 
 To explore the different types of drift, consider the common scenario
 where we deploy a model $f: \boldsymbol{x} \mapsto y$ on input data 
