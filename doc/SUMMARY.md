@@ -1,6 +1,6 @@
 
 * [Alibi Detect](README.md)
-* [Getting Started](overview/getting-started.md)
+* [Getting Started](overview/getting_started.md)
 * [Algorithm Overview](overview/algorithms.md)
 * [Saving and Loading](overview/saving.md)
 * [Detector Configuration Files](overview/config_files.md)
