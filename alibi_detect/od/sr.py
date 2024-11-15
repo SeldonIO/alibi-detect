@@ -248,7 +248,8 @@ class SpectralResidual(BaseDetector, ThresholdMixin):
 
         fft = np.fft.fft(X)
         amp = np.abs(fft)
-        log_amp = np.log(amp)
+        # For numerical stability for division to prevent divide by zero being encountered add EPSILON
+        log_amp = np.log(amp + EPSILON)
         phase = np.angle(fft)
         # split spectrum into bias term and symmetric frequencies
         bias, sym_freq = log_amp[:1], log_amp[1:]
