@@ -6,7 +6,7 @@ types-requests>=2.25, <3.0
 types-toml>=0.10, <1.0
 # testing
 pytest>=5.3.5, <8.0.0
-pytest-cov>=2.6.1, <5.0.0
+pytest-cov>=2.6.1, <7.0.0
 pytest-xdist>=1.28.0, <4.0.0 # for distributed testing, currently unused (see setup.cfg)
 pytest_cases>=3.6.8, <4.0.0
 pytest-randomly>=3.5.0, <4.0.0
