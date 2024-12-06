@@ -10,6 +10,7 @@ from sklearn.model_selection import StratifiedKFold
 from tempfile import TemporaryDirectory
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, InputLayer
+from tensorflow.keras.activations import relu, sigmoid, softmax
 from typing import Callable
 from alibi_detect.ad import AdversarialAE, ModelDistillation
 from alibi_detect.cd import ChiSquareDrift, ClassifierDrift, KSDrift, MMDDrift, TabularDrift
@@ -38,7 +39,7 @@ n_permutations = 10
 encoder_net = tf.keras.Sequential(
     [
         InputLayer(input_shape=(input_dim,)),
-        Dense(5, activation=tf.nn.relu),
+        Dense(5, activation=relu),
         Dense(latent_dim, activation=None)
     ]
 )
@@ -46,8 +47,8 @@ encoder_net = tf.keras.Sequential(
 decoder_net = tf.keras.Sequential(
     [
         InputLayer(input_shape=(latent_dim,)),
-        Dense(5, activation=tf.nn.relu),
-        Dense(input_dim, activation=tf.nn.sigmoid)
+        Dense(5, activation=relu),
+        Dense(input_dim, activation=sigmoid)
     ]
 )
 
@@ -59,21 +60,21 @@ preprocess_fn = partial(preprocess_drift, model=UAE(encoder_net=encoder_net))
 gmm_density_net = tf.keras.Sequential(
     [
         InputLayer(input_shape=(latent_dim + 2,)),
-        Dense(10, activation=tf.nn.relu),
-        Dense(n_gmm, activation=tf.nn.softmax)
+        Dense(10, activation=relu),
+        Dense(n_gmm, activation=softmax)
     ]
 )
 
 threshold_net = tf.keras.Sequential(
     [
         InputLayer(input_shape=(seq_len, latent_dim)),
-        Dense(5, activation=tf.nn.relu)
+        Dense(5, activation=relu)
     ]
 )
 
 # define model
 inputs = tf.keras.Input(shape=(input_dim,))
-outputs = tf.keras.layers.Dense(2, activation=tf.nn.softmax)(inputs)
+outputs = tf.keras.layers.Dense(2, activation=softmax)(inputs)
 model = tf.keras.Model(inputs=inputs, outputs=outputs)
 
 detector = [
