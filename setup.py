@@ -55,7 +55,7 @@ setup(
         "pandas>=1.0.0, <3.0.0",
         "Pillow>=5.4.1, <11.0.0",
         "opencv-python>=3.2.0, <5.0.0",
-        "scipy>=1.3.0, <2.0.0",
+        "scipy>=1.5.0, <2.0.0",
         'scikit-image>=0.19, <0.23',
         "scikit-learn>=0.20.2, <2.0.0",
         "transformers>=4.0.0, <5.0.0",

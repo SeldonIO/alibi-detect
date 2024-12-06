@@ -269,7 +269,7 @@ class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
         cov_batch = (n - 1.) / (n + max(1, n_batch - 1.)) * self.C + 1. / (n + max(1, n_batch - 1.)) * B.sum(axis=0)
 
         # PCA
-        eigvals, eigvects = eigh(cov_batch, eigvals=(n_params - n_components, n_params - 1))
+        _, eigvects = eigh(cov_batch, subset_by_index=(n_params - n_components, n_params - 1))
 
         # projections
         proj_x = np.matmul(X, eigvects)
