@@ -64,10 +64,10 @@ def test_subset_matrix():
 
 n_in, n_out = 10, 5
 # sequential model
-model_seq = tf.keras.Sequential([InputLayer(n_in, ), Dense(n_out)])
+model_seq = tf.keras.Sequential([InputLayer((n_in, )), Dense(n_out)])
 
 # functional model
-inputs = Input(n_in, )
+inputs = Input((n_in, ))
 outputs = Dense(n_out)(inputs)
 model_func = tf.keras.Model(inputs=inputs, outputs=outputs)
 
