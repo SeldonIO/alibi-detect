@@ -9,6 +9,7 @@ defaults:
 on:
   # Trigger the workflow on manual dispatch and once a week
   workflow_dispatch:
+  pull_request:
   schedule:
     - cron: '0 0 * * 0'
 
