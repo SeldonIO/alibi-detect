@@ -14,6 +14,9 @@ class TFDataset(tf.keras.utils.Sequence):
         self.shuffle = shuffle
 
     def __getitem__(self, idx: int) -> Union[Tuple[Indexable, ...], Indexable]:
+        if idx >= self.__len__():
+            raise IndexError("Index out of bounds.")
+
         istart, istop = idx * self.batch_size, (idx + 1) * self.batch_size
         output = tuple(indexable[istart:istop] for indexable in self.indexables)
         return output if len(output) > 1 else output[0]
