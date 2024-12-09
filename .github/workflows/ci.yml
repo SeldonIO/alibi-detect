@@ -34,7 +34,7 @@ jobs:
     strategy:
       matrix:
         os: [ ubuntu-latest ]
-        python-version: [ '3.8', '3.9', '3.10', '3.11']
+        python-version: ['3.9', '3.10', '3.11']
         pydantic-version: [ '1.10.15', '2.7.1' ]
         include: # Run windows tests on only one python version
           - os: windows-latest
@@ -71,10 +71,7 @@ jobs:
           limit-access-to-actor: true
 
       - name: Test with pytest
-        run: |
-          pytest --randomly-seed=0 alibi_detect
-          # Note: The pytest-randomly seed is fixed at 0 for now. Once the legacy np.random.seed(0)'s
-          # are removed from tests, this can be removed, allowing all tests to use random seeds.
+        run: make test
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3

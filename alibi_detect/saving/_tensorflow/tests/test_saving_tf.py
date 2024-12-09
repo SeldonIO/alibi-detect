@@ -16,8 +16,8 @@ backend = param_fixture("backend", ['tensorflow'])
 
 
 # Note: The full save/load functionality of optimizers (inc. validation) is tested in test_save_classifierdrift.
-@pytest.mark.skipif(version.parse(tf.__version__) < version.parse('2.11.0'),
-                    reason="Skipping since tensorflow < 2.11.0")
+@pytest.mark.skipif(version.parse(tf.__version__) < version.parse('2.16.0'),
+                    reason="Skipping since tensorflow < 2.16.0")
 @parametrize('legacy', [True, False])
 def test_load_optimizer_object_tf2pt11(legacy, backend):
     """
@@ -27,14 +27,13 @@ def test_load_optimizer_object_tf2pt11(legacy, backend):
     instantiated `tf.keras.optimizers.Optimizer` object. Also test that the loaded optimizer can be saved.
     """
     class_name = 'Adam'
-    class_str = class_name if legacy else 'Custom>' + class_name  # Note: see discussion in #739 re 'Custom>'
-    learning_rate = np.float32(0.01)  # Set as float32 since this is what _save_optimizer_config returns
-    epsilon = np.float32(1e-7)
+    learning_rate = 0.01
+    epsilon = 1e-7
     amsgrad = False
 
     # Load
     cfg_opt = {
-        'class_name': class_str,
+        'class_name': class_name,
         'config': {
             'name': class_name,
             'learning_rate': learning_rate,
@@ -45,10 +44,7 @@ def test_load_optimizer_object_tf2pt11(legacy, backend):
     optimizer = _load_optimizer_config(cfg_opt, backend=backend)
     # Check optimizer
     SupportedOptimizer.validate_optimizer(optimizer, {'backend': 'tensorflow'})
-    if legacy:
-        assert isinstance(optimizer, tf.keras.optimizers.legacy.Optimizer)
-    else:
-        assert isinstance(optimizer, tf.keras.optimizers.Optimizer)
+    assert isinstance(optimizer, tf.keras.optimizers.Optimizer)
     assert type(optimizer).__name__ == class_name
     assert optimizer.learning_rate == learning_rate
     assert optimizer.epsilon == epsilon
@@ -58,21 +54,24 @@ def test_load_optimizer_object_tf2pt11(legacy, backend):
     cfg_saved = _save_optimizer_config(optimizer)
     # Compare to original config
     for key, value in cfg_opt['config'].items():
-        assert value == cfg_saved['config'][key]
+        if isinstance(value, float):
+            assert np.isclose(value, cfg_saved['config'][key])
+        else:
+            assert value == cfg_saved['config'][key]
 
 
-@pytest.mark.skipif(version.parse(tf.__version__) >= version.parse('2.11.0'),
-                    reason="Skipping since tensorflow >= 2.11.0")
+@pytest.mark.skipif(version.parse(tf.__version__) >= version.parse('2.16.0'),
+                    reason="Skipping since tensorflow >= 2.16.0")
 def test_load_optimizer_object_tf_old(backend):
     """
-    Test the _load_optimizer_config with a tensorflow optimizer config. Only run if tensorflow<2.11.
+    Test the _load_optimizer_config with a tensorflow optimizer config. Only run if tensorflow<2.16.
 
     We expect the returned optimizer to be an instantiated `tf.keras.optimizers.Optimizer` object.
     Also test that the loaded optimizer can be saved.
     """
     class_name = 'Adam'
-    learning_rate = np.float32(0.01)  # Set as float32 since this is what _save_optimizer_config returns
-    epsilon = np.float32(1e-7)
+    learning_rate = 0.01
+    epsilon = 1e-7
     amsgrad = False
 
     # Load

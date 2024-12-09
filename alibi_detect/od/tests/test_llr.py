@@ -2,7 +2,7 @@ from itertools import product
 import numpy as np
 import pytest
 import tensorflow as tf
-from tensorflow.keras.layers import Dense, Input, LSTM
+from tensorflow.keras.layers import Dense, Input, LSTM, CategoryEncoding
 from alibi_detect.od import LLR
 from alibi_detect.version import __version__
 
@@ -48,7 +48,7 @@ def test_llr(llr_params):
 
     # define model and detector
     inputs = Input(shape=(shape[-1] - 1,), dtype=tf.int32)
-    x = tf.one_hot(tf.cast(inputs, tf.int32), input_dim)
+    x = CategoryEncoding(num_tokens=input_dim, output_mode="one_hot")(inputs)
     x = LSTM(hidden_dim, return_sequences=True)(x)
     logits = Dense(input_dim, activation=None)(x)
     model = tf.keras.Model(inputs=inputs, outputs=logits)
