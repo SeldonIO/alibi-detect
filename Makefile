@@ -68,3 +68,9 @@ check_licenses:
 tox-env=default
 repl:
 	env COMMAND="python" tox -e $(tox-env)
+
+# Note: The pytest-randomly seed is fixed at 0 for now. Once the legacy np.random.seed(0)'s
+# are removed from tests, this can be removed, allowing all tests to use random seeds.
+test:
+	TF_USE_KERAS_LEGACY=1 pytest --randomly-seed=0 alibi_detect/saving/_tensorflow/tests/test_saving_tf.py
+	pytest --randomly-seed=0 alibi_detect --ignore alibi_detect/saving/_tensorflow/tests/test_saving_tf.py
