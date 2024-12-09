@@ -6,9 +6,12 @@ install-dev:
 install:
 	pip install -e .[all]
 
+# Note: The pytest-randomly seed is fixed at 0 for now. Once the legacy np.random.seed(0)'s
+# are removed from tests, this can be removed, allowing all tests to use random seeds.
 .PHONY: test
-test: ## Run all tests
-	python setup.py test
+test:
+	TF_USE_KERAS_LEGACY=1 pytest --randomly-seed=0 alibi_detect/utils/tests/test_saving_legacy.py
+	pytest --randomly-seed=0 --ignore=alibi_detect/utils/tests/test_saving_legacy.py alibi_detect
 
 .PHONY: lint
 lint: ## Check linting according to the flake8 configuration in setup.cfg
@@ -69,8 +72,3 @@ tox-env=default
 repl:
 	env COMMAND="python" tox -e $(tox-env)
 
-# Note: The pytest-randomly seed is fixed at 0 for now. Once the legacy np.random.seed(0)'s
-# are removed from tests, this can be removed, allowing all tests to use random seeds.
-test:
-	TF_USE_KERAS_LEGACY=1 pytest --randomly-seed=0 alibi_detect/saving/_tensorflow/tests/test_saving_tf.py
-	pytest --randomly-seed=0 alibi_detect --ignore alibi_detect/saving/_tensorflow/tests/test_saving_tf.py
