@@ -1,4 +1,5 @@
 import tensorflow as tf
+from tensorflow.keras.models import Sequential, Model
 
 
 def zero_diag(mat: tf.Tensor) -> tf.Tensor:
@@ -87,11 +88,17 @@ def subset_matrix(mat: tf.Tensor, inds_0: tf.Tensor, inds_1: tf.Tensor) -> tf.Te
 
 def clone_model(model: tf.keras.Model) -> tf.keras.Model:
     """ Clone a sequential, functional or subclassed tf.keras.Model. """
-    try:  # sequential or functional model
+    conditions = [
+        isinstance(model, Sequential),
+        isinstance(model, Model) and model.__class__ == Model
+    ]
+
+    if any(conditions):
         return tf.keras.models.clone_model(model)
-    except ValueError:  # subclassed model
+    else:
         try:
             config = model.get_config()
         except NotImplementedError:
             config = {}
+
         return model.__class__.from_config(config)
