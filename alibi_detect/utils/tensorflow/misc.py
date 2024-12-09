@@ -1,3 +1,4 @@
+import keras
 import tensorflow as tf
 from tensorflow.keras.models import Sequential, Model
 
@@ -86,11 +87,11 @@ def subset_matrix(mat: tf.Tensor, inds_0: tf.Tensor, inds_1: tf.Tensor) -> tf.Te
     return subbed_rows_cols
 
 
-def clone_model(model: tf.keras.Model) -> tf.keras.Model:
+def clone_model(model: Model) -> Model:
     """ Clone a sequential, functional or subclassed tf.keras.Model. """
     conditions = [
         isinstance(model, Sequential),
-        isinstance(model, Model) and model.__class__ == Model
+        isinstance(model, keras.src.models.functional.Functional)
     ]
 
     if any(conditions):
