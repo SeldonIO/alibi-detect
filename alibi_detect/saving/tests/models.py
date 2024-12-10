@@ -241,7 +241,7 @@ def nlp_embedding_and_tokenizer(model_name, max_len, uae, backend):
         except (OSError, HTTPError):
             pytest.skip(f"Problem downloading {model_name} from huggingface.co")
         if uae:
-            x_emb = embedding(tokens)
+            x_emb = embedding(tokens=tokens)
             shape = (x_emb.shape[1],)
             embedding = UAE_tf(input_layer=embedding, shape=shape, enc_dim=enc_dim)
     elif backend == 'pt':

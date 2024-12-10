@@ -2,8 +2,10 @@ from typing import Callable, Dict, Optional, Type, Union
 
 import numpy as np
 import tensorflow as tf
+
 from alibi_detect.utils.tensorflow.prediction import (
-    predict_batch, predict_batch_transformer)
+    predict_batch, predict_batch_transformer, get_named_arg
+)
 from tensorflow.keras.layers import Dense, Flatten, Input, Lambda
 from tensorflow.keras.models import Model
 
@@ -34,7 +36,11 @@ class _Encoder(tf.keras.Model):
                              'tf.keras.Sequential or tf.keras.Model `mlp`')
 
     def call(self, x: Union[np.ndarray, tf.Tensor, Dict[str, tf.Tensor]]) -> tf.Tensor:
-        x = self.input_layer(x)
+        if not isinstance(x, (np.ndarray, tf.Tensor)):
+            x = get_named_arg(self.input_layer, x)
+            x = self.input_layer(**x)
+        else:
+            x = self.input_layer(x)
         return self.mlp(x)
 
 
@@ -61,7 +67,11 @@ class UAE(tf.keras.Model):
                              ' or tf.keras.Model `encoder_net`.')
 
     def call(self, x: Union[np.ndarray, tf.Tensor, Dict[str, tf.Tensor]]) -> tf.Tensor:
-        return self.encoder(x)
+        if not isinstance(x, (np.ndarray, tf.Tensor)):
+            x = get_named_arg(self.encoder, x)
+            return self.encoder(**x)
+        else:
+            return self.encoder(x)
 
 
 class HiddenOutput(tf.keras.Model):
