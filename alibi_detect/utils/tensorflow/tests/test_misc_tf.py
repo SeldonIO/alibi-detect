@@ -62,7 +62,7 @@ def test_subset_matrix():
         subset_matrix(tf.ones((10,)), inds_0, inds_1)
 
 
-n_in, n_out = 5, 5
+n_in, n_out = 10, 5
 # sequential model
 model_seq = tf.keras.Sequential([InputLayer((n_in, )), Dense(n_out)])
 
@@ -84,7 +84,7 @@ class Model(tf.keras.Model):
     @classmethod
     def from_config(cls, config):
         return cls(**config)
-    
+
     def get_config(self):
         return {}
 
@@ -94,12 +94,10 @@ model_sub = Model()
 
 def test_clone_model():
     model_seq_clone = clone_model(model_seq)
-    assert not np.all(np.abs((model_seq_clone.weights[0] - model_seq.weights[0]).numpy()) < 1e-6)
-    
+    assert not (model_seq_clone.weights[0] == model_seq.weights[0]).numpy().any()
     model_func_clone = clone_model(model_func)
-    assert not np.all(np.abs((model_func_clone.weights[0].value - model_func.weights[0].value).numpy()) < 1e-6)
-    
+    assert not (model_func_clone.weights[0] == model_func.weights[0]).numpy().any()
     model_sub_clone = clone_model(model_sub)
     _ = model_sub(tf.zeros((1, 10)))
     _ = model_sub_clone(tf.zeros((1, 10)))
-    assert not np.all(np.abs((model_sub_clone.weights[0] - model_sub.weights[0]).numpy()) < 1e-6)
+    assert not (model_sub_clone.weights[0] == model_sub.weights[0]).numpy().any()
