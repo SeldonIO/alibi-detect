@@ -3,6 +3,7 @@ from importlib import import_module
 
 import numpy as np
 import tensorflow as tf
+from tensorflow.keras.activations import relu, softmax
 import torch
 import torch.nn as nn
 from sklearn.ensemble import RandomForestClassifier
@@ -46,7 +47,7 @@ def encoder_model(backend, current_cases):
         model = tf.keras.Sequential(
                [
                    tf.keras.layers.InputLayer(input_shape=(input_dim,)),
-                   tf.keras.layers.Dense(5, activation=tf.nn.relu),
+                   tf.keras.layers.Dense(5, activation=relu),
                    tf.keras.layers.Dense(LATENT_DIM, activation=None)
                ]
            )
@@ -73,7 +74,7 @@ def encoder_dropout_model(backend, current_cases):
         model = tf.keras.Sequential(
                [
                    tf.keras.layers.InputLayer(input_shape=(input_dim,)),
-                   tf.keras.layers.Dense(5, activation=tf.nn.relu),
+                   tf.keras.layers.Dense(5, activation=relu),
                    tf.keras.layers.Dropout(0.0),  # 0.0 to ensure determinism
                    tf.keras.layers.Dense(LATENT_DIM, activation=None)
                ]
@@ -191,7 +192,7 @@ def classifier_model(backend, current_cases):
         model = tf.keras.Sequential(
                [
                    tf.keras.layers.InputLayer(input_shape=(input_dim,)),
-                   tf.keras.layers.Dense(2, activation=tf.nn.softmax),
+                   tf.keras.layers.Dense(2, activation=softmax),
                ]
            )
     elif backend in ('pytorch', 'keops'):
