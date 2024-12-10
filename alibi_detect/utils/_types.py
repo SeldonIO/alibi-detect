@@ -20,7 +20,7 @@ if has_tensorflow:
     import tensorflow as tf
     supported_models_tf = (tf.keras.Model, )
     if hasattr(tf.keras.optimizers, 'legacy'):
-        supported_optimizers_tf = (tf.keras.optimizers.Optimizer, type)
+        supported_optimizers_tf = (tf.keras.optimizers.Optimizer, tf.keras.optimizers.legacy.Optimizer, type)
     else:
         supported_optimizers_tf = (tf.keras.optimizers.Optimizer, type)
 if has_pytorch:

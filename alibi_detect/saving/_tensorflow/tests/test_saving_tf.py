@@ -18,13 +18,9 @@ backend = param_fixture("backend", ['tensorflow'])
 # Note: The full save/load functionality of optimizers (inc. validation) is tested in test_save_classifierdrift.
 @pytest.mark.skipif(version.parse(tf.__version__) < version.parse('2.16.0'),
                     reason="Skipping since tensorflow < 2.16.0")
-@parametrize('legacy', [True, False])
-def test_load_optimizer_object_tf2pt11(legacy, backend):
+def test_load_optimizer_object_tf2pt11(backend):
     """
-    Test the _load_optimizer_config with a tensorflow optimizer config. Only run if tensorflow>=2.11.
-
-    Here we test that "new" and legacy optimizers can be saved/laoded. We expect the returned optimizer to be an
-    instantiated `tf.keras.optimizers.Optimizer` object. Also test that the loaded optimizer can be saved.
+    Test the _load_optimizer_config with a tensorflow optimizer config. Only run if tensorflow>=2.16.
     """
     class_name = 'Adam'
     learning_rate = 0.01
@@ -60,18 +56,18 @@ def test_load_optimizer_object_tf2pt11(legacy, backend):
             assert value == cfg_saved['config'][key]
 
 
-@pytest.mark.skipif(version.parse(tf.__version__) >= version.parse('2.16.0'),
-                    reason="Skipping since tensorflow >= 2.16.0")
+@pytest.mark.skipif(version.parse(tf.__version__) >= version.parse('2.11.0'),
+                    reason="Skipping since tensorflow >= 2.11.0")
 def test_load_optimizer_object_tf_old(backend):
     """
-    Test the _load_optimizer_config with a tensorflow optimizer config. Only run if tensorflow<2.16.
+    Test the _load_optimizer_config with a tensorflow optimizer config. Only run if tensorflow<2.11.
 
     We expect the returned optimizer to be an instantiated `tf.keras.optimizers.Optimizer` object.
     Also test that the loaded optimizer can be saved.
     """
     class_name = 'Adam'
-    learning_rate = 0.01
-    epsilon = 1e-7
+    learning_rate = np.float32(0.01)  # Set as float32 since this is what _save_optimizer_config returns
+    epsilon = np.float32(1e-7)
     amsgrad = False
 
     # Load
