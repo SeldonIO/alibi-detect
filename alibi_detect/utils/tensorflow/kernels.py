@@ -1,5 +1,4 @@
 import tensorflow as tf
-import numpy as np
 from . import distance
 from typing import Optional, Union, Callable
 from scipy.special import logit
