@@ -10,7 +10,7 @@ install:
 # are removed from tests, this can be removed, allowing all tests to use random seeds.
 .PHONY: test
 test:
-	TF_USE_KERAS_LEGACY=1 pytest --randomly-seed=0 alibi_detect/utils/tests/test_saving_legacy.py
+	TF_USE_LEGACY_KERAS=1 pytest --randomly-seed=0 alibi_detect/utils/tests/test_saving_legacy.py
 	pytest --randomly-seed=0 --ignore=alibi_detect/utils/tests/test_saving_legacy.py alibi_detect
 
 .PHONY: lint
