@@ -1,5 +1,4 @@
 import tensorflow as tf
-import numpy as np
 from . import distance
 from typing import Optional, Union, Callable
 from scipy.special import logit
@@ -59,11 +58,19 @@ class GaussianRBF(tf.keras.Model):
         init_sigma_fn = sigma_median if init_sigma_fn is None else init_sigma_fn
         self.config = {'sigma': sigma, 'trainable': trainable, 'init_sigma_fn': init_sigma_fn}
         if sigma is None:
-            self.log_sigma = tf.Variable(np.empty(1), dtype=tf.keras.backend.floatx(), trainable=trainable)
+            self.log_sigma = self.add_weight(
+                shape=(1,),
+                initializer='zeros',
+                trainable=trainable
+            )
             self.init_required = True
         else:
             sigma = tf.cast(tf.reshape(sigma, (-1,)), dtype=tf.keras.backend.floatx())  # [Ns,]
-            self.log_sigma = tf.Variable(tf.math.log(sigma), trainable=trainable)
+            self.log_sigma = self.add_weight(
+                shape=(sigma.shape[0],),
+                initializer=tf.keras.initializers.Constant(tf.math.log(sigma)),
+                trainable=trainable
+            )
             self.init_required = False
         self.init_sigma_fn = init_sigma_fn
         self.trainable = trainable

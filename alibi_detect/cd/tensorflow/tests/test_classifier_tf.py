@@ -2,7 +2,7 @@ from itertools import product
 import numpy as np
 import pytest
 import tensorflow as tf
-from tensorflow.keras.layers import Dense, Input
+from tensorflow.keras.layers import Dense, Input, Softmax
 from typing import Union
 from alibi_detect.cd.tensorflow.classifier import ClassifierDriftTF
 
@@ -14,7 +14,7 @@ def mymodel(shape, softmax: bool = True):
     x = Dense(20, activation=tf.nn.relu)(x_in)
     x = Dense(2)(x)
     if softmax:
-        x = tf.nn.softmax(x)
+        x = Softmax()(x)
     return tf.keras.models.Model(inputs=x_in, outputs=x)
 
 

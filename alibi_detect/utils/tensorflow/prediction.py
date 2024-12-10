@@ -1,14 +1,40 @@
+import inspect
 from functools import partial
-from typing import Callable, Type, Union
+from typing import Any, Callable, Dict, Type, Union
 
 import numpy as np
 import tensorflow as tf
 from alibi_detect.utils.prediction import tokenize_transformer
 
 
-def predict_batch(x: Union[list, np.ndarray, tf.Tensor], model: Union[Callable, tf.keras.Model],
-                  batch_size: int = int(1e10), preprocess_fn: Callable = None,
-                  dtype: Union[Type[np.generic], tf.DType] = np.float32) -> Union[np.ndarray, tf.Tensor, tuple]:
+def get_named_arg(model: tf.keras.Model, x: Any) -> Dict[str, Any]:
+    """ Extract argument names from the model call function
+    because keras3 does not accept other types of input
+    as a positional argument.
+
+    Parameters
+    ----------
+    model
+        Model to extract argument names from.
+    x
+        Input data.
+
+    Returns
+    -------
+    Dictionary with named arguments.
+    """
+    signature = inspect.signature(model.call)
+    arg_names = [param.name for param in signature.parameters.values()]
+    return {arg_names[0]: x}
+
+
+def predict_batch(
+    x: Union[list, np.ndarray, tf.Tensor],
+    model: Union[Callable, tf.keras.Model],
+    batch_size: int = int(1e10),
+    preprocess_fn: Callable = None,
+    dtype: Union[Type[np.generic], tf.DType] = np.float32
+) -> Union[np.ndarray, tf.Tensor, tuple]:
     """
     Make batch predictions on a model.
 
@@ -39,7 +65,13 @@ def predict_batch(x: Union[list, np.ndarray, tf.Tensor], model: Union[Callable, 
         x_batch = x[istart:istop]
         if isinstance(preprocess_fn, Callable):  # type: ignore
             x_batch = preprocess_fn(x_batch)
-        preds_tmp = model(x_batch)
+
+        if not isinstance(x_batch, (np.ndarray, tf.Tensor)):
+            x_batch = get_named_arg(model, x_batch)
+            preds_tmp = model(**x_batch)
+        else:
+            preds_tmp = model(x_batch)
+
         if isinstance(preds_tmp, (list, tuple)):
             if len(preds) == 0:  # init tuple with lists to store predictions
                 preds = tuple([] for _ in range(len(preds_tmp)))
