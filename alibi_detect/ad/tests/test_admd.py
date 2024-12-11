@@ -42,7 +42,7 @@ def test_adv_md(adv_md_params):
     threshold, loss_type, threshold_perc, return_instance_score = adv_md_params
 
     # define ancillary model
-    layers = [tf.keras.layers.InputLayer(input_shape=(input_dim)),
+    layers = [tf.keras.layers.InputLayer(input_shape=(input_dim, )),
               tf.keras.layers.Dense(y.shape[1], activation=tf.nn.softmax)]
     distilled_model = tf.keras.Sequential(layers)
 

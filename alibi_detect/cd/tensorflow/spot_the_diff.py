@@ -170,9 +170,23 @@ class SpotTheDiffDriftTF:
             self.config = {'kernel': kernel, 'x_ref': x_ref, 'initial_diffs': initial_diffs}
             self.kernel = kernel
             self.mean = tf.convert_to_tensor(x_ref.mean(0))
-            self.diffs = tf.Variable(initial_diffs, dtype=np.float32)
-            self.bias = tf.Variable(tf.zeros((1,)))
-            self.coeffs = tf.Variable(tf.zeros((len(initial_diffs),)))
+
+            self.diffs = self.add_weight(
+                shape=initial_diffs.shape,
+                initializer=tf.keras.initializers.Constant(initial_diffs),
+                dtype=tf.float32,
+                trainable=True
+            )
+            self.bias = self.add_weight(
+                shape=(1,),
+                initializer="zeros",
+                trainable=True,
+            )
+            self.coeffs = self.add_weight(
+                shape=(len(initial_diffs),),
+                initializer="zeros",
+                trainable=True,
+            )
 
         def call(self, x: tf.Tensor) -> tf.Tensor:
             k_xtl = self.kernel(x, self.mean + self.diffs)

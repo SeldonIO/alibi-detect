@@ -32,6 +32,7 @@ ERROR_TYPES = {
     "prophet": 'prophet',
     "tensorflow_probability": 'tensorflow',
     "tensorflow": 'tensorflow',
+    "keras": 'tensorflow',
     "torch": 'torch',
     "pytorch": 'torch',
     "keops": 'keops',

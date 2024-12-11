@@ -2,9 +2,11 @@ from typing import Callable, Dict, Optional, Type, Union
 
 import numpy as np
 import tensorflow as tf
+
 from alibi_detect.utils.tensorflow.prediction import (
-    predict_batch, predict_batch_transformer)
-from tensorflow.keras.layers import Dense, Flatten, Input, InputLayer
+    predict_batch, predict_batch_transformer, get_call_arg_mapping
+)
+from tensorflow.keras.layers import Dense, Flatten, Input, Lambda
 from tensorflow.keras.models import Model
 
 
@@ -34,7 +36,11 @@ class _Encoder(tf.keras.Model):
                              'tf.keras.Sequential or tf.keras.Model `mlp`')
 
     def call(self, x: Union[np.ndarray, tf.Tensor, Dict[str, tf.Tensor]]) -> tf.Tensor:
-        x = self.input_layer(x)
+        if not isinstance(x, (np.ndarray, tf.Tensor)):
+            x = get_call_arg_mapping(self.input_layer, x)
+            x = self.input_layer(**x)
+        else:
+            x = self.input_layer(x)
         return self.mlp(x)
 
 
@@ -52,7 +58,7 @@ class UAE(tf.keras.Model):
         if is_enc:
             self.encoder = encoder_net
         elif not is_enc and is_enc_dim:  # set default encoder
-            input_layer = InputLayer(input_shape=shape) if input_layer is None else input_layer
+            input_layer = Lambda(lambda x: x) if input_layer is None else input_layer
             input_dim = np.prod(shape)
             step_dim = int((input_dim - enc_dim) / 3)
             self.encoder = _Encoder(input_layer, enc_dim=enc_dim, step_dim=step_dim)
@@ -61,7 +67,11 @@ class UAE(tf.keras.Model):
                              ' or tf.keras.Model `encoder_net`.')
 
     def call(self, x: Union[np.ndarray, tf.Tensor, Dict[str, tf.Tensor]]) -> tf.Tensor:
-        return self.encoder(x)
+        if not isinstance(x, (np.ndarray, tf.Tensor)):
+            x = get_call_arg_mapping(self.encoder, x)
+            return self.encoder(**x)
+        else:
+            return self.encoder(x)
 
 
 class HiddenOutput(tf.keras.Model):
@@ -73,7 +83,7 @@ class HiddenOutput(tf.keras.Model):
             flatten: bool = False
     ) -> None:
         super().__init__()
-        if input_shape and not model.inputs:
+        if input_shape and not (hasattr(model, 'inputs') and model.inputs):
             inputs = Input(shape=input_shape)
             model.call(inputs)
         else:

@@ -4,13 +4,23 @@ deprecated, these tests will be removed, and more tests will be added to test_sa
 """
 from alibi_detect.utils.missing_optional_dependency import MissingDependency
 from functools import partial
-import numpy as np
+
 import pytest
-from sklearn.model_selection import StratifiedKFold
+from pytest_cases import parametrize, param_fixture
 from tempfile import TemporaryDirectory
+
+import numpy as np
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, InputLayer
+from tensorflow.keras.activations import relu, sigmoid, softmax
 from typing import Callable
+
+from sklearn.model_selection import StratifiedKFold
+
+from alibi_detect.saving.schemas import SupportedOptimizer
+from alibi_detect.saving.loading import _load_optimizer_config
+from alibi_detect.saving.saving import _save_optimizer_config
+
 from alibi_detect.ad import AdversarialAE, ModelDistillation
 from alibi_detect.cd import ChiSquareDrift, ClassifierDrift, KSDrift, MMDDrift, TabularDrift
 from alibi_detect.cd.tensorflow import UAE, preprocess_drift
@@ -38,7 +48,7 @@ n_permutations = 10
 encoder_net = tf.keras.Sequential(
     [
         InputLayer(input_shape=(input_dim,)),
-        Dense(5, activation=tf.nn.relu),
+        Dense(5, activation=relu),
         Dense(latent_dim, activation=None)
     ]
 )
@@ -46,8 +56,8 @@ encoder_net = tf.keras.Sequential(
 decoder_net = tf.keras.Sequential(
     [
         InputLayer(input_shape=(latent_dim,)),
-        Dense(5, activation=tf.nn.relu),
-        Dense(input_dim, activation=tf.nn.sigmoid)
+        Dense(5, activation=relu),
+        Dense(input_dim, activation=sigmoid)
     ]
 )
 
@@ -59,21 +69,21 @@ preprocess_fn = partial(preprocess_drift, model=UAE(encoder_net=encoder_net))
 gmm_density_net = tf.keras.Sequential(
     [
         InputLayer(input_shape=(latent_dim + 2,)),
-        Dense(10, activation=tf.nn.relu),
-        Dense(n_gmm, activation=tf.nn.softmax)
+        Dense(10, activation=relu),
+        Dense(n_gmm, activation=softmax)
     ]
 )
 
 threshold_net = tf.keras.Sequential(
     [
         InputLayer(input_shape=(seq_len, latent_dim)),
-        Dense(5, activation=tf.nn.relu)
+        Dense(5, activation=relu)
     ]
 )
 
 # define model
 inputs = tf.keras.Input(shape=(input_dim,))
-outputs = tf.keras.layers.Dense(2, activation=tf.nn.softmax)(inputs)
+outputs = tf.keras.layers.Dense(2, activation=softmax)(inputs)
 model = tf.keras.Model(inputs=inputs, outputs=outputs)
 
 detector = [
@@ -245,3 +255,50 @@ def test_save_load(select_detector):
             assert isinstance(det_load.dist_b, tf.keras.Model)
             assert not det_load.sequential
             assert not det_load.has_log_prob
+
+
+backend = param_fixture("backend", ['tensorflow'])
+
+
+# Note: The full save/load functionality of optimizers (inc. validation) is tested in test_save_classifierdrift.
+@parametrize('legacy', [True, False])
+def test_load_optimizer_object_tf2pt11(legacy, backend):
+    """
+    Test the _load_optimizer_config with a tensorflow optimizer config. Only run if tensorflow>=2.16.
+
+    Here we test that "new" and legacy optimizers can be saved/laoded. We expect the returned optimizer to be an
+    instantiated `tf.keras.optimizers.Optimizer` object. Also test that the loaded optimizer can be saved.
+    """
+    class_name = 'Adam'
+    class_str = class_name if legacy else 'Custom>' + class_name  # Note: see discussion in #739 re 'Custom>'
+    learning_rate = np.float32(0.01)  # Set as float32 since this is what _save_optimizer_config returns
+    epsilon = np.float32(1e-7)
+    amsgrad = False
+
+    # Load
+    cfg_opt = {
+        'class_name': class_str,
+        'config': {
+            'name': class_name,
+            'learning_rate': learning_rate,
+            'epsilon': epsilon,
+            'amsgrad': amsgrad
+        }
+    }
+    optimizer = _load_optimizer_config(cfg_opt, backend=backend)
+    # Check optimizer
+    SupportedOptimizer.validate_optimizer(optimizer, {'backend': 'tensorflow'})
+    if legacy:
+        assert isinstance(optimizer, tf.keras.optimizers.legacy.Optimizer)
+    else:
+        assert isinstance(optimizer, tf.keras.optimizers.Optimizer)
+    assert type(optimizer).__name__ == class_name
+    assert optimizer.learning_rate == learning_rate
+    assert optimizer.epsilon == epsilon
+    assert optimizer.amsgrad == amsgrad
+
+    # Save
+    cfg_saved = _save_optimizer_config(optimizer)
+    # Compare to original config
+    for key, value in cfg_opt['config'].items():
+        assert value == cfg_saved['config'][key]
