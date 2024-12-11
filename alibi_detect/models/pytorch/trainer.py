@@ -59,5 +59,5 @@ def trainer(
             optimizer.step()  # type: ignore
             if verbose == 1:
                 loss_ma = loss_ma + (loss.item() - loss_ma) / (step + 1)
-                dl.set_description(f'Epoch {epoch + 1}/{epochs}')
-                dl.set_postfix(dict(loss_ma=loss_ma))
+                dl.set_description(f'Epoch {epoch + 1}/{epochs}')  # type: ignore[union-attr]
+                dl.set_postfix(dict(loss_ma=loss_ma))  # type: ignore[union-attr]

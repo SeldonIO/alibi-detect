@@ -150,8 +150,8 @@ class SgdSVMTorch(SVMTorch):
             verbose=verbose,
             nu=self.nu
         )
-        x_nys = x_nys.cpu().numpy()
-        self.svm = self.svm.fit(x_nys)
+        x_nys_np = x_nys.cpu().numpy()
+        self.svm = self.svm.fit(x_nys_np)
         self._set_fitted()
         return {
             'converged': self.svm.n_iter_ < max_iter,
@@ -194,8 +194,7 @@ class SgdSVMTorch(SVMTorch):
             Raised if method called and detector has not been fit.
         """
         self.check_fitted()
-        x_nys = self.nystroem.transform(x)
-        x_nys = x_nys.cpu().numpy()
+        x_nys = self.nystroem.transform(x).cpu().numpy()
         coef_ = self.svm.coef_ / (self.svm.coef_ ** 2).sum()
         x_nys = self.svm._validate_data(x_nys, accept_sparse="csr", reset=False)
         result = safe_sparse_dot(x_nys, coef_.T, dense_output=True).ravel()

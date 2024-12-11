@@ -176,4 +176,4 @@ class LSDDDriftTorch(BaseLSDDDrift):
 
         idx_threshold = int(self.p_val * len(lsdd_permuted))
         distance_threshold = torch.sort(lsdd_permuted, descending=True).values[idx_threshold]
-        return float(p_val.cpu()), float(lsdd.cpu().numpy()), distance_threshold.cpu().numpy()
+        return p_val.cpu().item(), lsdd.cpu().numpy().item(), distance_threshold.cpu().numpy().item()

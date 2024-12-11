@@ -221,7 +221,7 @@ class LearnedKernelDriftTorch(BaseLearnedKernelDrift):
 
         idx_threshold = int(self.p_val * len(mmd2_permuted))
         distance_threshold = torch.sort(mmd2_permuted, descending=True).values[idx_threshold]
-        return p_val.numpy().item(), mmd2.numpy().item(), distance_threshold.numpy()
+        return p_val.numpy().item(), mmd2.numpy().item(), distance_threshold.numpy().item()
 
     @staticmethod
     def trainer(
@@ -256,5 +256,5 @@ class LearnedKernelDriftTorch(BaseLearnedKernelDrift):
                 optimizer.step()  # type: ignore
                 if verbose == 1:
                     loss_ma = loss_ma + (loss.item() - loss_ma) / (step + 1)
-                    dl.set_description(f'Epoch {epoch + 1}/{epochs}')
-                    dl.set_postfix(dict(loss=loss_ma))
+                    dl.set_description(f'Epoch {epoch + 1}/{epochs}')  # type: ignore[union-attr]
+                    dl.set_postfix(dict(loss=loss_ma))  # type: ignore[union-attr]

@@ -178,7 +178,7 @@ class ContextMMDDriftTorch(BaseContextMMDDrift):
         idx_threshold = int(self.p_val * len(permuted_stats))
         distance_threshold = torch.sort(permuted_stats, descending=True).values[idx_threshold]
 
-        return p_val.numpy().item(), stat.numpy().item(), distance_threshold.numpy(), coupling
+        return p_val.numpy().item(), stat.numpy().item(), distance_threshold.numpy().item(), coupling
 
     def _cmmd(self, K: torch.Tensor, L: torch.Tensor, bools: torch.Tensor, L_held: torch.Tensor = None) \
             -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:

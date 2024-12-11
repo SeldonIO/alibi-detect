@@ -895,7 +895,7 @@ def jpeg_compression(x: np.ndarray, strength: float, xrange: tuple = None) -> np
     if xrange[0] != 0 or xrange[1] != 255:
         x = (x - xrange[0]) / (xrange[1] - xrange[0]) * 255
 
-    x = Image.fromarray(x.astype('uint8'), mode='RGB')
+    x = Image.fromarray(x.astype('uint8'), mode='RGB')  # type: ignore[assignment]
     output = BytesIO()
     x.save(output, 'JPEG', quality=strength)  # type: ignore[attr-defined] # TODO: allow redefinition
     x_image = Image.open(output)
