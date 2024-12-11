@@ -25,9 +25,11 @@ def hidden_state_embedding(hidden_states: torch.Tensor, layers: List[int],
     -------
     Tensor with embeddings.
     """
-    hs = [hidden_states[layer][:, 0:1, :] if use_cls else hidden_states[layer] for layer in layers]
-    hs = torch.cat(hs, dim=1)  # type: ignore
-    y = hs.mean(dim=1) if reduce_mean else hs  # type: ignore
+    hs = torch.cat(
+        [hidden_states[layer][:, 0:1, :] if use_cls else hidden_states[layer] for layer in layers],
+        dim=1
+    )
+    y = hs.mean(dim=1) if reduce_mean else hs
     return y
 
 

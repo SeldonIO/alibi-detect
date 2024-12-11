@@ -182,4 +182,4 @@ class MMDDriftKeops(BaseMMDDrift):
         # compute distance threshold
         idx_threshold = int(self.p_val * len(mmd2_permuted))
         distance_threshold = torch.sort(mmd2_permuted, descending=True).values[idx_threshold]
-        return p_val.numpy().item(), mmd2.numpy().item(), distance_threshold.numpy()
+        return p_val.numpy().item(), mmd2.numpy().item(), distance_threshold.numpy().item()

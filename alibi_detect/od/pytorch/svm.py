@@ -143,14 +143,13 @@ class SgdSVMTorch(SVMTorch):
             - converged: `bool` indicating whether training converged.
             - n_iter: number of iterations performed.
         """
-        x_nys = self.nystroem.fit(x_ref).transform(x_ref)
+        x_nys = self.nystroem.fit(x_ref).transform(x_ref).cpu().numpy()
         self.svm = SGDOneClassSVM(
             tol=tol,
             max_iter=max_iter,
             verbose=verbose,
             nu=self.nu
         )
-        x_nys = x_nys.cpu().numpy()
         self.svm = self.svm.fit(x_nys)
         self._set_fitted()
         return {
@@ -194,8 +193,7 @@ class SgdSVMTorch(SVMTorch):
             Raised if method called and detector has not been fit.
         """
         self.check_fitted()
-        x_nys = self.nystroem.transform(x)
-        x_nys = x_nys.cpu().numpy()
+        x_nys = self.nystroem.transform(x).cpu().numpy()
         coef_ = self.svm.coef_ / (self.svm.coef_ ** 2).sum()
         x_nys = self.svm._validate_data(x_nys, accept_sparse="csr", reset=False)
         result = safe_sparse_dot(x_nys, coef_.T, dense_output=True).ravel()
