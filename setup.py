@@ -47,7 +47,7 @@ setup(
     license="Business Source License 1.1",
     packages=find_packages(),
     include_package_data=True,
-    python_requires=">=3.8",
+    python_requires=">=3.9",
     setup_requires=['wheel'],
     # lower bounds based on Debian Stable versions where available
     install_requires=[
@@ -76,7 +76,6 @@ setup(
         "Intended Audience :: Science/Research",
         "Operating System :: OS Independent",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
