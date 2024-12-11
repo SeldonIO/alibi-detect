@@ -143,15 +143,14 @@ class SgdSVMTorch(SVMTorch):
             - converged: `bool` indicating whether training converged.
             - n_iter: number of iterations performed.
         """
-        x_nys = self.nystroem.fit(x_ref).transform(x_ref)
+        x_nys = self.nystroem.fit(x_ref).transform(x_ref).cpu().numpy()
         self.svm = SGDOneClassSVM(
             tol=tol,
             max_iter=max_iter,
             verbose=verbose,
             nu=self.nu
         )
-        x_nys_np = x_nys.cpu().numpy()
-        self.svm = self.svm.fit(x_nys_np)
+        self.svm = self.svm.fit(x_nys)
         self._set_fitted()
         return {
             'converged': self.svm.n_iter_ < max_iter,
