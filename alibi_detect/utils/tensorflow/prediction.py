@@ -7,10 +7,14 @@ import tensorflow as tf
 from alibi_detect.utils.prediction import tokenize_transformer
 
 
-def get_named_arg(model: tf.keras.Model, x: Any) -> Dict[str, Any]:
-    """ Extract argument names from the model call function
-    because keras3 does not accept other types of input
-    as a positional argument.
+def get_call_arg_mapping(model: tf.keras.Model, x: Any) -> Dict[str, Any]:
+    """ Generates a dictionary mapping the first argument name of the
+    `call` method of a Keras model to the provided input value.
+
+    This function is particularly useful when working with Keras 3,
+    which enforces stricter input handling and requires named arguments
+    for certain operations. It extracts the argument names from the
+    `call` method of the provided model and maps the first argument to `x`.
 
     Parameters
     ----------
@@ -67,7 +71,7 @@ def predict_batch(
             x_batch = preprocess_fn(x_batch)
 
         if not isinstance(x_batch, (np.ndarray, tf.Tensor)):
-            x_batch = get_named_arg(model, x_batch)
+            x_batch = get_call_arg_mapping(model, x_batch)
             preds_tmp = model(**x_batch)
         else:
             preds_tmp = model(x_batch)

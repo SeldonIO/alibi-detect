@@ -4,7 +4,7 @@ import numpy as np
 import tensorflow as tf
 
 from alibi_detect.utils.tensorflow.prediction import (
-    predict_batch, predict_batch_transformer, get_named_arg
+    predict_batch, predict_batch_transformer, get_call_arg_mapping
 )
 from tensorflow.keras.layers import Dense, Flatten, Input, Lambda
 from tensorflow.keras.models import Model
@@ -37,7 +37,7 @@ class _Encoder(tf.keras.Model):
 
     def call(self, x: Union[np.ndarray, tf.Tensor, Dict[str, tf.Tensor]]) -> tf.Tensor:
         if not isinstance(x, (np.ndarray, tf.Tensor)):
-            x = get_named_arg(self.input_layer, x)
+            x = get_call_arg_mapping(self.input_layer, x)
             x = self.input_layer(**x)
         else:
             x = self.input_layer(x)
@@ -68,7 +68,7 @@ class UAE(tf.keras.Model):
 
     def call(self, x: Union[np.ndarray, tf.Tensor, Dict[str, tf.Tensor]]) -> tf.Tensor:
         if not isinstance(x, (np.ndarray, tf.Tensor)):
-            x = get_named_arg(self.encoder, x)
+            x = get_call_arg_mapping(self.encoder, x)
             return self.encoder(**x)
         else:
             return self.encoder(x)

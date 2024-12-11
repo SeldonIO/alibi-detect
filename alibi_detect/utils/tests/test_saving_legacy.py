@@ -262,8 +262,6 @@ backend = param_fixture("backend", ['tensorflow'])
 
 
 # Note: The full save/load functionality of optimizers (inc. validation) is tested in test_save_classifierdrift.
-@pytest.mark.skipif(version.parse(tf.__version__) < version.parse('2.16.0'),
-                    reason="Skipping since tensorflow < 2.16.0")
 @parametrize('legacy', [True, False])
 def test_load_optimizer_object_tf2pt11(legacy, backend):
     """
