@@ -7,28 +7,25 @@ jupyter:
     name: python3
 ---
 
+# Model uncertainty based drift detection on CIFAR-10 and Wine-Quality datasets
 
-### Method
+#### Method
 
-Model-uncertainty drift detectors aim to directly detect drift that's likely to effect the performance of a model of interest. The approach is to test for change in the number of instances falling into regions of the input space on which the model is uncertain in its predictions. For each instance in the reference set the detector obtains the model's prediction and some associated notion of uncertainty. For example for a classifier this may be the entropy of the predicted label probabilities or for a regressor with dropout layers [dropout Monte Carlo](http://proceedings.mlr.press/v48/gal16.pdf) can be used to provide a notion of uncertainty. The same is done for the test set and if significant differences in uncertainty are detected (via a Kolmogorov-Smirnoff test) then drift is flagged. 
+Model-uncertainty drift detectors aim to directly detect drift that's likely to effect the performance of a model of interest. The approach is to test for change in the number of instances falling into regions of the input space on which the model is uncertain in its predictions. For each instance in the reference set the detector obtains the model's prediction and some associated notion of uncertainty. For example for a classifier this may be the entropy of the predicted label probabilities or for a regressor with dropout layers [dropout Monte Carlo](http://proceedings.mlr.press/v48/gal16.pdf) can be used to provide a notion of uncertainty. The same is done for the test set and if significant differences in uncertainty are detected (via a Kolmogorov-Smirnoff test) then drift is flagged.
 
 It is important that the detector uses a reference set that is disjoint from the model's training set (on which the model's confidence may be higher).
 
+#### Backend
 
-### Backend
+For models that require batch evaluation both **PyTorch** and **TensorFlow** frameworks are supported. Alibi Detect does however not install PyTorch for you. Check the [PyTorch docs](https://pytorch.org/) how to do this.
 
-For models that require batch evaluation both **PyTorch** and **TensorFlow** frameworks are supported. Alibi Detect does however not install PyTorch for you. 
-Check the [PyTorch docs](https://pytorch.org/) how to do this.
-
-
-### Classifier uncertainty based drift detection
+#### Classifier uncertainty based drift detection
 
 We start by demonstrating how to leverage model uncertainty to detect malicious drift when the model of interest is a classifer.
 
-#### Dataset
+**Dataset**
 
-[CIFAR10](https://www.cs.toronto.edu/~kriz/cifar.html) consists of 60,000 32 by 32 RGB images equally distributed over 10 classes. We evaluate the drift detector on the CIFAR-10-C dataset ([Hendrycks & Dietterich, 2019](https://arxiv.org/abs/1903.12261)). The instances in
-CIFAR-10-C have been corrupted and perturbed by various types of noise, blur, brightness etc. at different levels of severity, leading to a gradual decline in the classification model performance. We also check for drift against the original test set with class imbalances. 
+[CIFAR10](https://www.cs.toronto.edu/~kriz/cifar.html) consists of 60,000 32 by 32 RGB images equally distributed over 10 classes. We evaluate the drift detector on the CIFAR-10-C dataset ([Hendrycks & Dietterich, 2019](https://arxiv.org/abs/1903.12261)). The instances in CIFAR-10-C have been corrupted and perturbed by various types of noise, blur, brightness etc. at different levels of severity, leading to a gradual decline in the classification model performance. We also check for drift against the original test set with class imbalances.
 
 ```{python}
 import matplotlib.pyplot as plt
@@ -73,7 +70,7 @@ X_corr, y_corr = fetch_cifar10c(corruption=corruption, severity=5, return_X_y=Tr
 X_corr = X_corr.astype('float32') / 255
 ```
 
-We split the original test set in a reference dataset and a dataset which should not be rejected under the no-change null *H<sub>0</sub>*. We also split the corrupted data by corruption type:
+We split the original test set in a reference dataset and a dataset which should not be rejected under the no-change null _H0_. We also split the corrupted data by corruption type:
 
 ```{python}
 np.random.seed(0)
@@ -136,11 +133,11 @@ for _ in range(len(corruption)):
 
 Given the drop in performance, it is important that we detect the harmful data drift!
 
-#### Detect drift
+**Detect drift**
 
-Unlike many other approaches we needn't specify a dimension-reducing preprocessing step as the detector operates directly on the data as it is input to the model of interest. In fact, the two-stage projection  input -> prediction -> uncertainty can be thought of as the projection from the input space onto the real line, ready to perform the test.
+Unlike many other approaches we needn't specify a dimension-reducing preprocessing step as the detector operates directly on the data as it is input to the model of interest. In fact, the two-stage projection input -> prediction -> uncertainty can be thought of as the projection from the input space onto the real line, ready to perform the test.
 
-We simply pass the model to the detector and inform it that the predictions should be interpreted as 'probs' rather than 'logits' (i.e. a softmax has already been applied). By default `uncertainty_type='entropy'` is used as the notion of uncertainty for classifier predictions, however `uncertainty_type='margin'` can be specified to deem the classifier's prediction uncertain if they fall within a margin (e.g. in \[0.45,0.55\] for binary classifier probabilities) (similar to [Sethi and Kantardzic (2017)](https://arxiv.org/abs/1704.00023)).
+We simply pass the model to the detector and inform it that the predictions should be interpreted as 'probs' rather than 'logits' (i.e. a softmax has already been applied). By default `uncertainty_type='entropy'` is used as the notion of uncertainty for classifier predictions, however `uncertainty_type='margin'` can be specified to deem the classifier's prediction uncertain if they fall within a margin (e.g. in \[0.45,0.55] for binary classifier probabilities) (similar to [Sethi and Kantardzic (2017)](https://arxiv.org/abs/1704.00023)).
 
 ```{python}
 #| scrolled: false
@@ -185,11 +182,11 @@ make_predictions(cd, X_h0, X_c, corruption)
 
 Note here how drift is only detected for the corrupted datasets on which the model's performance is significantly degraded. For the 'brightness' corruption, for which the model maintains 89% classification accuracy, the change in model uncertainty is not deemed significant (p-value 0.11, above the 0.05 threshold). For the other corruptions which signficiantly hamper model performance, the malicious drift is detected.
 
-### Regressor uncertainty based drift detection
+#### Regressor uncertainty based drift detection
 
 We now demonstrate how to leverage model uncertainty to detect malicious drift when the model of interest is a regressor. This is a less general approach as regressors often make point-predictions with no associated notion of uncertainty. However, if the model makes its predictions by ensembling the predicitons of sub-models then we can consider the variation in the sub-model predictions as a notion of uncertainty. `RegressorUncertaintyDetector` facilitates models that output a vector of such sub-model predictions (`uncertainty_type='ensemble'`) or deep learning models that include dropout layers and can therefore (as noted by [Gal and Ghahramani 2016](https://arxiv.org/abs/1506.02142)) be considered as an ensemble (`uncertainty_type='mc_dropout'`, the default option).
 
-#### Dataset
+**Dataset**
 
 The [Wine Quality Data Set](https://archive.ics.uci.edu/ml/datasets/wine+quality) consists of 1599 and 4898 samples of red and white wine respectively. Each sample has an associated quality (as determined by experts) and 11 numeric features indicating its acidity, density, pH etc. We consider the regression problem of tring to predict the quality of red wine sample given these features. We will then consider whether the model remains suitable for predicting the quality of white wine samples or whether the associated change in the underlying distribution should be considered as malicious drift.
 
@@ -211,7 +208,7 @@ We can see that the data for both red and white wine samples take the same forma
 white.describe()
 ```
 
-We shuffle and normalise the data such that each feature takes a value in \[0,1\], as does the quality we seek to predict.
+We shuffle and normalise the data such that each feature takes a value in \[0,1], as does the quality we seek to predict.
 
 ```{python}
 red, white = np.asarray(red, np.float32), np.asarray(white, np.float32)
@@ -235,7 +232,7 @@ X_train_ds = torch.utils.data.TensorDataset(torch.tensor(X_train), torch.tensor(
 X_train_dl = torch.utils.data.DataLoader(X_train_ds, batch_size=32, shuffle=True, drop_last=True)
 ```
 
-#### Regression model
+**Regression model**
 
 We now define the regression model that we'll train to predict the quality from the features. The exact details aren't important other than the presence of at least one dropout layer. We then train the model for 20 epochs to optimise the mean square error on the training data.
 
@@ -270,7 +267,7 @@ print(f'MSE when predicting the quality of unseen red wine samples: {ref_mse}')
 print(f'MSE when predicting the quality of unseen white wine samples: {corr_mse}')
 ```
 
-#### Detect drift
+**Detect drift**
 
 We now look at whether a regressor-uncertainty detector would have picked up on this malicious drift. We instantiate the detector and obtain drift predictions on both the held-out red-wine samples and the white-wine samples. We specify `uncertainty_type='mc_dropout'` in this case, but alternatively we could have trained an ensemble model that for each instance outputs a vector of multiple independent predictions and specified `uncertainty_type='ensemble'`.
 
@@ -287,4 +284,3 @@ print(f"Drift detected on white wine samples? {'yes' if preds_h1['data']['is_dri
 print(f"p-value on unseen red wine samples? {preds_h0['data']['p_val']}")
 print(f"p-value on white wine samples? {preds_h1['data']['p_val']}")
 ```
-

@@ -7,36 +7,31 @@ jupyter:
     name: python3
 ---
 
+# Text drift detection on IMDB movie reviews
 
-## Method
+### Method
 
 We detect drift on text data using both the [Maximum Mean Discrepancy](https://docs.seldon.io/projects/alibi-detect/en/stable/cd/methods/mmddrift.html) and [Kolmogorov-Smirnov (K-S)](https://docs.seldon.io/projects/alibi-detect/en/stable/cd/methods/ksdrift.html) detectors. In this example notebook we will focus on detecting covariate shift $\Delta p(x)$ as detecting predicted label distribution drift does not differ from other modalities (check [K-S](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/cd_ks_cifar10.html#BBSDs) and [MMD](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/cd_mmd_cifar10.html#BBSDs) drift on CIFAR-10).
 
-It becomes however a little bit more involved when we want to pick up input data drift $\Delta p(x)$. When we deal with tabular or image data, we can either directly apply the two sample hypothesis test on the input or do the test after a preprocessing step with for instance a randomly initialized encoder as proposed in [Failing Loudly: An Empirical Study of Methods for Detecting Dataset Shift](https://arxiv.org/abs/1810.11953) (they call it an Untrained AutoEncoder or *UAE*). It is not as straightforward when dealing with text, both in string or tokenized format as they don't directly represent the semantics of the input.
+It becomes however a little bit more involved when we want to pick up input data drift $\Delta p(x)$. When we deal with tabular or image data, we can either directly apply the two sample hypothesis test on the input or do the test after a preprocessing step with for instance a randomly initialized encoder as proposed in [Failing Loudly: An Empirical Study of Methods for Detecting Dataset Shift](https://arxiv.org/abs/1810.11953) (they call it an Untrained AutoEncoder or _UAE_). It is not as straightforward when dealing with text, both in string or tokenized format as they don't directly represent the semantics of the input.
 
 As a result, we extract (contextual) embeddings for the text and detect drift on those. This procedure has a significant impact on the type of drift we detect. Strictly speaking we are not detecting $\Delta p(x)$ anymore since the whole training procedure (objective function, training data etc) for the (pre)trained embeddings has an impact on the embeddings we extract.
 
 The library contains functionality to leverage pre-trained embeddings from [HuggingFace's transformer package](https://github.com/huggingface/transformers) but also allows you to easily use your own embeddings of choice. Both options are illustrated with examples in this notebook.
 
-
-<div class="alert alert-info">
 Note
 
 As is done in this example, it is recommended to pass text data to detectors as a list of strings (`List[str]`). This allows for seamless integration with HuggingFace's transformers library.
 
-One exception to the above is when custom embeddings are used. Here, it is important to ensure that the data is passed to the custom embedding model in a compatible format. In [the final example](#Train-embeddings-from-scratch), a `preprocess_batch_fn` is defined in order to convert `list`'s to the `np.ndarray`'s expected by the custom TensorFlow embedding.
-    
-</div>
+One exception to the above is when custom embeddings are used. Here, it is important to ensure that the data is passed to the custom embedding model in a compatible format. In [the final example](cd_text_imdb.md#Train-embeddings-from-scratch), a `preprocess_batch_fn` is defined in order to convert `list`'s to the `np.ndarray`'s expected by the custom TensorFlow embedding.
 
-## Backend
+### Backend
 
-The method works with both the **PyTorch** and **TensorFlow** frameworks for the statistical tests and preprocessing steps. Alibi Detect does however not install PyTorch for you. 
-Check the [PyTorch docs](https://pytorch.org/) how to do this.
+The method works with both the **PyTorch** and **TensorFlow** frameworks for the statistical tests and preprocessing steps. Alibi Detect does however not install PyTorch for you. Check the [PyTorch docs](https://pytorch.org/) how to do this.
 
-## Dataset
+### Dataset
 
 Binary sentiment classification [dataset](https://ai.stanford.edu/~amaas/data/sentiment/) containing $25,000$ movie reviews for training and $25,000$ for testing. Install the `nlp` library to fetch the dataset:
-
 
 ```{python}
 !pip install nlp
@@ -52,7 +47,7 @@ from alibi_detect.cd import KSDrift, MMDDrift
 from alibi_detect.saving import save_detector, load_detector
 ```
 
-### Load tokenizer
+#### Load tokenizer
 
 ```{python}
 #| scrolled: true
@@ -60,7 +55,7 @@ model_name = 'bert-base-cased'
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 ```
 
-### Load data
+#### Load data
 
 ```{python}
 def load_dataset(dataset: str, split: str = 'test'):
@@ -96,7 +91,7 @@ print(labels[y[2]])
 print(X[2])
 ```
 
-We split the original test set in a reference dataset and a dataset which should not be rejected under the *H0* of the statistical test. We also create imbalanced datasets and inject selected words in the reference set.
+We split the original test set in a reference dataset and a dataset which should not be rejected under the _H0_ of the statistical test. We also create imbalanced datasets and inject selected words in the reference set.
 
 ```{python}
 def random_sample(X: np.ndarray, y: np.ndarray, proba_zero: float, n: int):
@@ -148,7 +143,7 @@ def inject_word(token: int, X: np.ndarray, perc_chg: float, padding: str = 'last
     return X_cp.tolist()
 ```
 
-Reference, *H0* and imbalanced data:
+Reference, _H0_ and imbalanced data:
 
 ```{python}
 # proba_zero = fraction with label 0 (=negative sentiment)
@@ -184,19 +179,16 @@ for i, w in enumerate(words_tf):
 tokens['input_ids']
 ```
 
-## Preprocessing
+### Preprocessing
 
 First we need to specify the type of embedding we want to extract from the BERT model. We can extract embeddings from the ...
 
-- **pooler_output**: Last layer hidden-state of the first token of the sequence (classification token; CLS) further processed by a Linear layer and a Tanh activation function. The Linear layer weights are trained from the next sentence prediction (classification) objective during pre-training. **Note**: this output is usually not a good summary of the semantic content of the input, you’re often better with averaging or pooling the sequence of hidden-states for the whole input sequence.
+* **pooler\_output**: Last layer hidden-state of the first token of the sequence (classification token; CLS) further processed by a Linear layer and a Tanh activation function. The Linear layer weights are trained from the next sentence prediction (classification) objective during pre-training. **Note**: this output is usually not a good summary of the semantic content of the input, you’re often better with averaging or pooling the sequence of hidden-states for the whole input sequence.
+* **last\_hidden\_state**: Sequence of hidden states at the output of the last layer of the model, averaged over the tokens.
+* **hidden\_state**: Hidden states of the model at the output of each layer, averaged over the tokens.
+* **hidden\_state\_cls**: See _hidden\_state_ but use the CLS token output.
 
-- **last_hidden_state**: Sequence of hidden states at the output of the last layer of the model, averaged over the tokens.
-
-- **hidden_state**: Hidden states of the model at the output of each layer, averaged over the tokens.
-
-- **hidden_state_cls**: See *hidden_state* but use the CLS token output.
-
-If *hidden_state* or *hidden_state_cls* is used as embedding type, you also need to pass the layer numbers used to extract the embedding from. As an example we extract embeddings from the last 8 hidden states.
+If _hidden\_state_ or _hidden\_state\_cls_ is used as embedding type, you also need to pass the layer numbers used to extract the embedding from. As an example we extract embeddings from the last 8 hidden states.
 
 ```{python}
 #| scrolled: true
@@ -219,7 +211,7 @@ x_emb = embedding(tokens)
 print(x_emb.shape)
 ```
 
-So the BERT model's embedding space used by the drift detector consists of a $768$-dimensional vector for each instance. We will therefore first apply a dimensionality reduction step with an Untrained AutoEncoder (*UAE*) before conducting the statistical hypothesis test. We use the embedding model as the input for the UAE which then projects the embedding on a lower dimensional space.
+So the BERT model's embedding space used by the drift detector consists of a $768$-dimensional vector for each instance. We will therefore first apply a dimensionality reduction step with an Untrained AutoEncoder (_UAE_) before conducting the statistical hypothesis test. We use the embedding model as the input for the UAE which then projects the embedding on a lower dimensional space.
 
 ```{python}
 tf.random.set_seed(0)
@@ -242,9 +234,9 @@ emb_uae = uae(tokens)
 print(emb_uae.shape)
 ```
 
-## K-S detector
+### K-S detector
 
-### Initialize
+#### Initialize
 
 We proceed to initialize the drift detector. From here on the detector works the same as for other modalities such as images. Please check the [images](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/cd_ks_cifar10.html) example or the [K-S detector documentation](https://docs.seldon.io/projects/alibi-detect/en/stable/cd/methods/ksdrift.html) for more information about each of the possible parameters.
 
@@ -266,7 +258,7 @@ save_detector(cd, filepath)
 cd = load_detector(filepath)
 ```
 
-### Detect drift
+#### Detect drift
 
 Let’s first check if drift occurs on a similar sample from the training set as the reference data.
 
@@ -302,9 +294,9 @@ for w, probas in X_word.items():
         print('')
 ```
 
-## MMD TensorFlow detector
+### MMD TensorFlow detector
 
-### Initialize
+#### Initialize
 
 Again check the [images](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/cd_mmd_cifar10.html) example or the [MMD detector documentation](https://docs.seldon.io/projects/alibi-detect/en/stable/cd/methods/mmddrift.html) for more information about each of the possible parameters.
 
@@ -313,9 +305,9 @@ cd = MMDDrift(X_ref, p_val=.05, preprocess_fn=preprocess_fn,
               n_permutations=100, input_shape=(max_len,))
 ```
 
-### Detect drift
+#### Detect drift
 
-*H0*:
+_H0_:
 
 ```{python}
 #| colab: {base_uri: 'https://localhost:8080/'}
@@ -351,11 +343,11 @@ for w, probas in X_word.items():
         print('')
 ```
 
-## MMD PyTorch detector
+### MMD PyTorch detector
 
-### Initialize
+#### Initialize
 
-We can run the same detector with *PyTorch* backend for both the preprocessing step and MMD implementation:
+We can run the same detector with _PyTorch_ backend for both the preprocessing step and MMD implementation:
 
 ```{python}
 #| colab: {base_uri: 'https://localhost:8080/'}
@@ -393,9 +385,9 @@ cd = MMDDrift(X_ref, backend='pytorch', p_val=.05, preprocess_fn=preprocess_fn,
               n_permutations=100, input_shape=(max_len,))
 ```
 
-### Detect drift
+#### Detect drift
 
-*H0*:
+_H0_:
 
 ```{python}
 #| colab: {base_uri: 'https://localhost:8080/'}
@@ -430,11 +422,11 @@ for w, probas in X_word.items():
         print('')
 ```
 
-## Train embeddings from scratch
+### Train embeddings from scratch
 
-So far we used pre-trained embeddings from a BERT model. We can however also use embeddings from a model trained from scratch. First we define and train a simple classification model consisting of an embedding and LSTM layer in *TensorFlow*.
+So far we used pre-trained embeddings from a BERT model. We can however also use embeddings from a model trained from scratch. First we define and train a simple classification model consisting of an embedding and LSTM layer in _TensorFlow_.
 
-### Load data and train model
+#### Load data and train model
 
 ```{python}
 from tensorflow.keras.datasets import imdb, reuters
@@ -538,7 +530,7 @@ shape = tuple(x_emb.shape[1:])
 uae = UAE(input_layer=embedding, shape=shape, enc_dim=enc_dim)
 ```
 
-Again, create reference, *H0* and perturbed datasets. Also test against the *Reuters* news topic classification dataset.
+Again, create reference, _H0_ and perturbed datasets. Also test against the _Reuters_ news topic classification dataset.
 
 ```{python}
 X_ref, y_ref = random_sample(X_test, y_test, proba_zero=.5, n=n_sample)
@@ -562,7 +554,7 @@ idx = np.random.choice(X_reut.shape[0], n_sample, replace=False)
 X_ood = X_reut[idx]
 ```
 
-### Initialize detector and detect drift
+#### Initialize detector and detect drift
 
 ```{python}
 #| colab: {base_uri: 'https://localhost:8080/'}
@@ -579,7 +571,7 @@ preprocess_fn = partial(preprocess_drift, model=uae, batch_size=128, preprocess_
 cd = KSDrift(X_ref, p_val=.05, preprocess_fn=preprocess_fn)
 ```
 
-*H0*:
+_H0_:
 
 ```{python}
 #| colab: {base_uri: 'https://localhost:8080/'}
@@ -614,4 +606,3 @@ labels = ['No!', 'Yes!']
 print('Drift? {}'.format(labels[preds_ood['data']['is_drift']]))
 print('p-value: {}'.format(preds_ood['data']['p_val']))
 ```
-

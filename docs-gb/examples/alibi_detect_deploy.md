@@ -1,5 +1,5 @@
 ---
-title: 'Outlier, adversarial and drift detection on CIFAR10'
+title: Outlier, adversarial and drift detection on CIFAR10
 jupyter:
   kernelspec:
     display_name: Python 3
@@ -7,17 +7,14 @@ jupyter:
     name: python3
 ---
 
+# Deployment
 
-* [1. Dataset](#1.-Dataset)
+* [1. Dataset](alibi_detect_deploy.md#1.-Dataset)
+* [2. Outlier detection with a variational autoencoder (VAE)](alibi_detect_deploy.md#2.-Outlier-detection-with-a-variational-autoencoder-\(VAE\))
+* [3. Adversarial detection by matching prediction probabilities](alibi_detect_deploy.md#3.-Adversarial-detection-by-matching-prediction-probabilities)
+* [4. Drift detection with Kolmogorov-Smirnov](alibi_detect_deploy.md#4.-Drift-detection-with-Kolmogorov-Smirnov)
 
-* [2. Outlier detection with a variational autoencoder (VAE)](#2.-Outlier-detection-with-a-variational-autoencoder-(VAE))
-
-* [3. Adversarial detection by matching prediction probabilities](#3.-Adversarial-detection-by-matching-prediction-probabilities)
-
-* [4. Drift detection with Kolmogorov-Smirnov](#4.-Drift-detection-with-Kolmogorov-Smirnov)
-
-
-## 1. Dataset
+### 1. Dataset
 
 [CIFAR10](https://www.cs.toronto.edu/~kriz/cifar.html) consists of 60,000 32 by 32 RGB images equally distributed over 10 classes: airplane, automobile, bird, cat, deer, dog, frog, horse, ship and truck.
 
@@ -45,20 +42,20 @@ for i in range(n ** 2):
 plt.show();
 ```
 
-## 2. Outlier detection with a variational autoencoder (VAE)
+### 2. Outlier detection with a variational autoencoder (VAE)
 
-### Method
+#### Method
 
 In a nutshell:
 
-- Train a VAE on *normal* data so it can reconstruct *inliers* well
-- If the VAE cannot reconstruct the incoming requests well? Outlier!
+* Train a VAE on _normal_ data so it can reconstruct _inliers_ well
+* If the VAE cannot reconstruct the incoming requests well? Outlier!
 
 More resources on VAE: [paper](https://arxiv.org/abs/1312.6114), [excellent blog post](https://lilianweng.github.io/lil-log/2018/08/12/from-autoencoder-to-beta-vae.html#vae-variational-autoencoder)
 
 ![vae-lillog.png](attachment:vae_lillog.png)
 
-*Image source: https://lilianweng.github.io/lil-log/2018/08/12/from-autoencoder-to-beta-vae.html*
+_Image source: https://lilianweng.github.io/lil-log/2018/08/12/from-autoencoder-to-beta-vae.html_
 
 ```{python}
 #| code_folding: [0]
@@ -81,9 +78,9 @@ logger = tf.get_logger()
 logger.setLevel(logging.ERROR)
 ```
 
-### Load detector or train from scratch
+#### Load detector or train from scratch
 
-The pretrained outlier and adversarial detectors used in the notebook can be found [here](https://console.cloud.google.com/storage/browser/seldon-models/alibi-detect). You can use the built-in ```fetch_detector``` function which saves the pre-trained models in a local directory ```filepath``` and loads the detector. Alternatively, you can train a detector from scratch:
+The pretrained outlier and adversarial detectors used in the notebook can be found [here](https://console.cloud.google.com/storage/browser/seldon-models/alibi-detect). You can use the built-in `fetch_detector` function which saves the pre-trained models in a local directory `filepath` and loads the detector. Alternatively, you can train a detector from scratch:
 
 ```{python}
 load_pretrained = True
@@ -149,7 +146,7 @@ plt.imshow(X.reshape(32, 32, 3)); plt.axis('off'); plt.show()
 plt.imshow(X_recon.numpy().reshape(32, 32, 3)); plt.axis('off'); plt.show()
 ```
 
-### Setting the threshold
+#### Setting the threshold
 
 Finding good threshold values can be tricky since they are typically not easy to interpret. The `infer_threshold` method helps finding a sensible value. We need to pass a batch of instances `X` and specify what percentage of those we consider to be normal via `threshold_perc`.
 
@@ -159,7 +156,7 @@ od.infer_threshold(X_train, threshold_perc=99, batch_size=128)  # assume 1% of t
 print('New threshold: {}'.format(od.threshold))
 ```
 
-### Create and detect outliers
+#### Create and detect outliers
 
 We can create some outliers by applying a random noise mask to the original instances:
 
@@ -195,10 +192,9 @@ print(f"Is perturbed outlier? {labels[preds['data']['is_outlier'][0]]}")
 plot_feature_outlier_image(preds, sample, x_recon, max_instances=1)
 ```
 
-### Deploy the detector
+#### Deploy the detector
 
-For this example we use the open source deployment platform [Seldon Core](https://docs.seldon.io/projects/seldon-core/en/v1.1.0/) and eventing based project [Knative](https://github.com/knative) which allows serverless components
-to be connected to event streams. The Seldon Core payload logger sends events containing model requests to the Knative broker which can farm these out to serverless components such as the outlier, drift or adversarial detection modules. Further eventing components can be added to feed off events produced by these components to send onwards to, for example, alerting or storage modules. This happens asynchronously.
+For this example we use the open source deployment platform [Seldon Core](https://docs.seldon.io/projects/seldon-core/en/v1.1.0/) and eventing based project [Knative](https://github.com/knative) which allows serverless components to be connected to event streams. The Seldon Core payload logger sends events containing model requests to the Knative broker which can farm these out to serverless components such as the outlier, drift or adversarial detection modules. Further eventing components can be added to feed off events produced by these components to send onwards to, for example, alerting or storage modules. This happens asynchronously.
 
 ![deploy-diagram.png](attachment:deploy_diagram.png)
 
@@ -317,18 +313,16 @@ preds = outlier(x_mask)
 plot_feature_outlier_image(preds, x_mask, X_recon=None)
 ```
 
-## 3. Adversarial detection by matching prediction probabilities
+### 3. Adversarial detection by matching prediction probabilities
 
-### Method
+#### Method
 
-The adversarial detector is based on [Adversarial Detection and Correction by Matching Prediction Distributions](https://arxiv.org/abs/2002.09364). Usually, autoencoders are trained to find a transformation $T$ that reconstructs the input instance $x$ as accurately as possible with loss functions that are suited to capture the similarities between x and $x'$ such as the mean squared reconstruction error. The novelty of the adversarial autoencoder (AE) detector relies on the use of a classification model-dependent loss function based on a distance metric in the output space of the model to train the autoencoder network. Given a classification model $M$ we optimise the weights of the autoencoder such that the [KL-divergence](https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence) between the model predictions on $x$ and on $x'$ is minimised. Without the presence of a reconstruction loss term $x'$ simply tries to make sure that the prediction probabilities $M(x')$ and $M(x)$ match without caring about the proximity of $x'$ to $x$. As a result, $x'$ is allowed to live in different areas of the input feature space than $x$ with different decision boundary shapes with respect to the model $M$. The carefully crafted adversarial perturbation which is effective around x does not transfer to the new location of $x'$ in the feature space, and the attack is therefore neutralised. Training of the autoencoder is unsupervised since we only need access to the model prediction probabilities and the normal training instances. We do not require any knowledge about the underlying adversarial attack and the classifier weights are frozen during training. 
+The adversarial detector is based on [Adversarial Detection and Correction by Matching Prediction Distributions](https://arxiv.org/abs/2002.09364). Usually, autoencoders are trained to find a transformation $T$ that reconstructs the input instance $x$ as accurately as possible with loss functions that are suited to capture the similarities between x and $x'$ such as the mean squared reconstruction error. The novelty of the adversarial autoencoder (AE) detector relies on the use of a classification model-dependent loss function based on a distance metric in the output space of the model to train the autoencoder network. Given a classification model $M$ we optimise the weights of the autoencoder such that the [KL-divergence](https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence) between the model predictions on $x$ and on $x'$ is minimised. Without the presence of a reconstruction loss term $x'$ simply tries to make sure that the prediction probabilities $M(x')$ and $M(x)$ match without caring about the proximity of $x'$ to $x$. As a result, $x'$ is allowed to live in different areas of the input feature space than $x$ with different decision boundary shapes with respect to the model $M$. The carefully crafted adversarial perturbation which is effective around x does not transfer to the new location of $x'$ in the feature space, and the attack is therefore neutralised. Training of the autoencoder is unsupervised since we only need access to the model prediction probabilities and the normal training instances. We do not require any knowledge about the underlying adversarial attack and the classifier weights are frozen during training.
 
 The detector can be used as follows:
 
 * An adversarial score $S$ is computed. $S$ equals the K-L divergence between the model predictions on $x$ and $x'$.
-
 * If $S$ is above a threshold (explicitly defined or inferred from training data), the instance is flagged as adversarial.
-
 * For adversarial instances, the model $M$ uses the reconstructed instance $x'$ to make a prediction. If the adversarial score is below the threshold, the model makes a prediction on the original instance $x$.
 
 This procedure is illustrated in the diagram below:
@@ -347,7 +341,7 @@ from alibi_detect.utils.fetching import fetch_tf_model
 from alibi_detect.utils.tensorflow import predict_batch
 ```
 
-### Utility functions <a name="ad_utils"></a>
+#### Utility functions <a href="#ad_utils" id="ad_utils"></a>
 
 ```{python}
 #| code_folding: [0]
@@ -476,7 +470,7 @@ def plot_roc(roc_data: dict, figsize: tuple = (10,5)):
     plt.show()
 ```
 
-### Rescale data
+#### Rescale data
 
 The ResNet classification model is trained on data standardized by instance:
 
@@ -488,7 +482,7 @@ X_test, mean_test, std_test = scale_by_instance(X_test * 255.)
 scale = (mean_train, std_train), (mean_test, std_test)
 ```
 
-### Load pre-trained classifier
+#### Load pre-trained classifier
 
 ```{python}
 dataset = 'cifar10'
@@ -504,9 +498,9 @@ acc_y_pred = accuracy(y_test, y_pred)
 print('Accuracy: {:.4f}'.format(acc_y_pred))
 ```
 
-### Adversarial attack
+#### Adversarial attack
 
-We investigate both [Carlini-Wagner (C&W)](https://arxiv.org/abs/1608.04644) and [SLIDE](https://arxiv.org/abs/1904.13000) attacks. You can simply load previously found adversarial instances on the pretrained ResNet-56 model. The attacks are generated by using [Foolbox](https://github.com/bethgelab/foolbox):
+We investigate both [Carlini-Wagner (C\&W)](https://arxiv.org/abs/1608.04644) and [SLIDE](https://arxiv.org/abs/1904.13000) attacks. You can simply load previously found adversarial instances on the pretrained ResNet-56 model. The attacks are generated by using [Foolbox](https://github.com/bethgelab/foolbox):
 
 ```{python}
 #| code_folding: []
@@ -544,7 +538,7 @@ plot_adversarial(idx, X_test, y_pred, X_test_slide, y_pred_slide,
                  mean_test, std_test, figsize=(10, 10))
 ```
 
-### Load or train and evaluate the adversarial detector
+#### Load or train and evaluate the adversarial detector
 
 We can again either fetch the pretrained detector from a [Google Cloud Bucket](https://console.cloud.google.com/storage/browser/seldon-models/alibi-detect/ad/cifar10/resnet56) or train one from scratch:
 
@@ -662,14 +656,14 @@ roc_data = {
 plot_roc(roc_data)
 ```
 
-The threshold for the adversarial score can be set via ```infer_threshold```. We need to pass a batch of instances $X$ and specify what percentage of those we consider to be normal via `threshold_perc`. Assume we have only normal instances some of which the model has misclassified leading to a higher score if the reconstruction picked up features from the correct class or some might look adversarial in the first place. As a result, we set our threshold at $95$%:
+The threshold for the adversarial score can be set via `infer_threshold`. We need to pass a batch of instances $X$ and specify what percentage of those we consider to be normal via `threshold_perc`. Assume we have only normal instances some of which the model has misclassified leading to a higher score if the reconstruction picked up features from the correct class or some might look adversarial in the first place. As a result, we set our threshold at $95$%:
 
 ```{python}
 ad.infer_threshold(X_test, threshold_perc=95, margin=0., batch_size=32)
 print('Adversarial threshold: {:.4f}'.format(ad.threshold))
 ```
 
-The `correct` method of the detector executes the diagram in Figure 1. First the adversarial scores is computed. For instances where the score is above the threshold, the classifier prediction on the reconstructed instance is returned. Otherwise the original prediction is kept. The method returns a dictionary containing the metadata of the detector, whether the instances in the batch are adversarial (above the threshold) or not, the classifier predictions using the correction mechanism and both the original and reconstructed predictions. Let's illustrate this on a batch containing some adversarial (C&W) and original test set instances:
+The `correct` method of the detector executes the diagram in Figure 1. First the adversarial scores is computed. For instances where the score is above the threshold, the classifier prediction on the reconstructed instance is returned. Otherwise the original prediction is kept. The method returns a dictionary containing the metadata of the detector, whether the instances in the batch are adversarial (above the threshold) or not, the classifier predictions using the correction mechanism and both the original and reconstructed predictions. Let's illustrate this on a batch containing some adversarial (C\&W) and original test set instances:
 
 ```{python}
 n_test = X_test.shape[0]
@@ -700,21 +694,19 @@ print('Accuracy {:.4f}'.format(acc_y_corr_mix))
 
 There are a few other tricks highlighted in the [paper](https://arxiv.org/abs/2002.09364) (**temperature scaling** and **hidden layer K-L divergence**) and implemented in Alibi Detect which can further boost the adversarial detector's performance. Check [this example notebook](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/ad_ae_cifar10.html) for more details.
 
-## 4. Drift detection with Kolmogorov-Smirnov
+### 4. Drift detection with Kolmogorov-Smirnov
 
-### Method
+#### Method
 
 The drift detector applies feature-wise two-sample [Kolmogorov-Smirnov](https://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test) (K-S) tests. For multivariate data, the obtained p-values for each feature are aggregated either via the [Bonferroni](https://mathworld.wolfram.com/BonferroniCorrection.html) or the [False Discovery Rate](http://www.math.tau.ac.il/~ybenja/MyPapers/benjamini_hochberg1995.pdf) (FDR) correction. The Bonferroni correction is more conservative and controls for the probability of at least one false positive. The FDR correction on the other hand allows for an expected fraction of false positives to occur.
 
 For high-dimensional data, we typically want to reduce the dimensionality before computing the feature-wise univariate K-S tests and aggregating those via the chosen correction method. Following suggestions in [Failing Loudly: An Empirical Study of Methods for Detecting Dataset Shift](https://arxiv.org/abs/1810.11953), we incorporate Untrained AutoEncoders (UAE), black-box shift detection using the classifier's softmax outputs ([BBSDs](https://arxiv.org/abs/1802.03916)) and [PCA](https://en.wikipedia.org/wiki/Principal_component_analysis) as out-of-the box preprocessing methods. Preprocessing methods which do not rely on the classifier will usually pick up drift in the input data, while BBSDs focuses on label shift. The [adversarial detector](https://arxiv.org/abs/2002.09364) which is part of the library can also be transformed into a drift detector picking up drift that reduces the performance of the classification model. We can therefore combine different preprocessing techniques to figure out if there is drift which hurts the model performance, and whether this drift can be classified as input drift or label shift.
 
-Note that the library also has a drift detector based on the [Maximum Mean Discrepancy](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/cd_mmd_cifar10.html#) and contains [drift on text functionality](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/cd_text_imdb.html) as well.
+Note that the library also has a drift detector based on the [Maximum Mean Discrepancy](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/cd_mmd_cifar10.html) and contains [drift on text functionality](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/cd_text_imdb.html) as well.
 
+#### Dataset
 
-### Dataset
-
-We will use the CIFAR-10-C dataset ([Hendrycks & Dietterich, 2019](https://arxiv.org/abs/1903.12261)) to evaluate the drift detector. The instances in
-CIFAR-10-C come from the test set in CIFAR-10 but have been corrupted and perturbed by various types of noise, blur, brightness etc. at different levels of severity, leading to a gradual decline in the classification model performance. We also check for drift against the original test set with class imbalances.
+We will use the CIFAR-10-C dataset ([Hendrycks & Dietterich, 2019](https://arxiv.org/abs/1903.12261)) to evaluate the drift detector. The instances in CIFAR-10-C come from the test set in CIFAR-10 but have been corrupted and perturbed by various types of noise, blur, brightness etc. at different levels of severity, leading to a gradual decline in the classification model performance. We also check for drift against the original test set with class imbalances.
 
 ```{python}
 #| code_folding: [0]
@@ -739,7 +731,7 @@ X_corr, y_corr = fetch_cifar10c(corruption=corruption, severity=5, return_X_y=Tr
 X_corr = X_corr.astype('float32') / 255
 ```
 
-We split the original test set in a reference dataset and a dataset which should not be rejected under the *H<sub>0</sub>* of the K-S test. We also split the corrupted data by corruption type:
+We split the original test set in a reference dataset and a dataset which should not be rejected under the _H0_ of the K-S test. We also split the corrupted data by corruption type:
 
 ```{python}
 np.random.seed(0)
@@ -793,11 +785,11 @@ for _ in range(len(corruption)):
 
 Given the drop in performance, it is important that we detect the harmful data drift!
 
-### Detect drift
+#### Detect drift
 
-We are trying to detect data drift on high-dimensional (*32x32x3*) data using an aggregation of univariate K-S tests. It therefore makes sense to apply dimensionality reduction first. Some dimensionality reduction methods also used in [Failing Loudly: An Empirical Study of Methods for Detecting Dataset Shift](https://arxiv.org/pdf/1810.11953.pdf) are readily available: **UAE** (Untrained AutoEncoder), **BBSDs** (black-box shift detection using the classifier's softmax outputs) and **PCA** (using `scikit-learn`). 
+We are trying to detect data drift on high-dimensional (_32x32x3_) data using an aggregation of univariate K-S tests. It therefore makes sense to apply dimensionality reduction first. Some dimensionality reduction methods also used in [Failing Loudly: An Empirical Study of Methods for Detecting Dataset Shift](https://arxiv.org/pdf/1810.11953.pdf) are readily available: **UAE** (Untrained AutoEncoder), **BBSDs** (black-box shift detection using the classifier's softmax outputs) and **PCA** (using `scikit-learn`).
 
-#### Untrained AutoEncoder
+**Untrained AutoEncoder**
 
 First we try UAE:
 
@@ -861,11 +853,11 @@ for x, c in zip(X_c, corruption):
     print('')
 ```
 
-#### BBSDs
+**BBSDs**
 
 For **BBSDs**, we use the classifier's softmax outputs for black-box shift detection. This method is based on [Detecting and Correcting for Label Shift with Black Box Predictors](https://arxiv.org/abs/1802.03916).
 
-Here we use the output of the softmax layer to detect the drift, but other hidden layers can be extracted as well by setting *'layer'* to the index of the desired hidden layer in the model:
+Here we use the output of the softmax layer to detect the drift, but other hidden layers can be extracted as well by setting _'layer'_ to the index of the desired hidden layer in the model:
 
 ```{python}
 # use output softmax layer
@@ -903,9 +895,9 @@ for x, c in zip(X_c, corruption):
 
 For more functionality and examples, such as updating the reference data with reservoir sampling or picking another multivariate correction mechanism, check out [this example notebook](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/cd_ks_cifar10.html).
 
-### Leveraging the adversarial detector for malicious drift detection
+#### Leveraging the adversarial detector for malicious drift detection
 
-While monitoring covariate and predicted label shift is all very interesting and exciting, at the end of the day we are mainly interested in whether the drift actually hurt the model performance significantly. To this end, we can leverage the adversarial detector and measure univiariate drift on the adversarial scores! 
+While monitoring covariate and predicted label shift is all very interesting and exciting, at the end of the day we are mainly interested in whether the drift actually hurt the model performance significantly. To this end, we can leverage the adversarial detector and measure univiariate drift on the adversarial scores!
 
 ```{python}
 np.random.seed(0)
@@ -937,13 +929,13 @@ for x, c in zip(X_c, corruption):
 
 We can therefore **use the scores of the detector itself to quantify the harmfulness of the drift**! We can generalise this to all the corruptions at each severity level in CIFAR-10-C.
 
-On the plot below we show the mean values and standard deviations of the adversarial scores per severity level. The plot shows the mean adversarial scores (lhs) and ResNet-32 accuracies (rhs) for increasing data corruption severity levels. Level 0 corresponds to the original test set. Harmful scores  are scores from instances which have been flipped from the correct to an incorrect prediction because of the corruption. Not harmful means that the prediction was unchanged after the corruption. The chart can be reproduced in [this notebook](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/cd_ks_cifar10.html).
+On the plot below we show the mean values and standard deviations of the adversarial scores per severity level. The plot shows the mean adversarial scores (lhs) and ResNet-32 accuracies (rhs) for increasing data corruption severity levels. Level 0 corresponds to the original test set. Harmful scores are scores from instances which have been flipped from the correct to an incorrect prediction because of the corruption. Not harmful means that the prediction was unchanged after the corruption. The chart can be reproduced in [this notebook](https://docs.seldon.io/projects/alibi-detect/en/stable/examples/cd_ks_cifar10.html).
 
 ![adversarialscores.png](attachment:adversarialscores.png)
 
-### Deploy
+#### Deploy
 
-We can deploy the drift detector in a similar fashion as the [outlier detector](#od_deploy). For a more detailed step-by-step overview of the deployment process, check [this notebook](https://docs.seldon.io/projects/seldon-core/en/stable/examples/drift_cifar10.html).
+We can deploy the drift detector in a similar fashion as the [outlier detector](alibi_detect_deploy.md#od_deploy). For a more detailed step-by-step overview of the deployment process, check [this notebook](https://docs.seldon.io/projects/seldon-core/en/stable/examples/drift_cifar10.html).
 
 ```{python}
 SERVICE_HOSTNAMES=!(kubectl get ksvc drift-detector -o jsonpath='{.status.url}' | cut -d "/" -f 3)
@@ -951,7 +943,7 @@ SERVICE_HOSTNAME_CD=SERVICE_HOSTNAMES[0]
 print(SERVICE_HOSTNAME_CD)
 ```
 
-The deployed drift detector accumulates requests until a predefined `drift_batch_size` is reached, in our case $5000$ which is defined in the [*yaml* for the deployment](https://github.com/SeldonIO/seldon-core/blob/master/components/drift-detection/cifar10/cifar10.yaml) and set in the [drift detector wrapper](https://github.com/SeldonIO/seldon-core/blob/master/components/alibi-detect-server/adserver/cd_model.py). After $5000$ instances, the batch is cleared and fills up again.
+The deployed drift detector accumulates requests until a predefined `drift_batch_size` is reached, in our case $5000$ which is defined in the [_yaml_ for the deployment](https://github.com/SeldonIO/seldon-core/blob/master/components/drift-detection/cifar10/cifar10.yaml) and set in the [drift detector wrapper](https://github.com/SeldonIO/seldon-core/blob/master/components/alibi-detect-server/adserver/cd_model.py). After $5000$ instances, the batch is cleared and fills up again.
 
 ```{python}
 from tqdm.notebook import tqdm
@@ -994,4 +986,3 @@ for i in range(0,len(res)):
 j = json.loads(json.loads(data[1]))
 print("Drift?", labels[j["data"]["is_drift"]==1])
 ```
-

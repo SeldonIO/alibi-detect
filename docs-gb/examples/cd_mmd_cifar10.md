@@ -7,26 +7,25 @@ jupyter:
     name: python3
 ---
 
+# Maximum Mean Discrepancy drift detector on CIFAR-10
 
-### Method
+#### Method
 
-The [Maximum Mean Discrepancy (MMD)](http://jmlr.csail.mit.edu/papers/v13/gretton12a.html) detector is a kernel-based method for multivariate 2 sample testing. The MMD is a distance-based measure between 2 distributions *p* and *q* based on the mean embeddings $\mu_{p}$ and $\mu_{q}$ in a reproducing kernel Hilbert space $F$:
+The [Maximum Mean Discrepancy (MMD)](http://jmlr.csail.mit.edu/papers/v13/gretton12a.html) detector is a kernel-based method for multivariate 2 sample testing. The MMD is a distance-based measure between 2 distributions _p_ and _q_ based on the mean embeddings $\mu\_{p}$ and $\mu\_{q}$ in a reproducing kernel Hilbert space $F$:
 
 $$
 MMD(F, p, q) = || \mu_{p} - \mu_{q} ||^2_{F}
 $$
 
-We can compute unbiased estimates of $MMD^2$ from the samples of the 2 distributions after applying the kernel trick. We use by default a [radial basis function kernel](https://en.wikipedia.org/wiki/Radial_basis_function_kernel), but users are free to pass their own kernel of preference to the detector. We obtain a $p$-value via a [permutation test](https://en.wikipedia.org/wiki/Resampling_(statistics)) on the values of $MMD^2$. This method is also described in [Failing Loudly: An Empirical Study of Methods for Detecting Dataset Shift](https://arxiv.org/abs/1810.11953).
+We can compute unbiased estimates of $MMD^2$ from the samples of the 2 distributions after applying the kernel trick. We use by default a [radial basis function kernel](https://en.wikipedia.org/wiki/Radial_basis_function_kernel), but users are free to pass their own kernel of preference to the detector. We obtain a $p$-value via a [permutation test](https://en.wikipedia.org/wiki/Resampling_\(statistics\)) on the values of $MMD^2$. This method is also described in [Failing Loudly: An Empirical Study of Methods for Detecting Dataset Shift](https://arxiv.org/abs/1810.11953).
 
-### Backend
+#### Backend
 
-The method is implemented in both the *PyTorch* and *TensorFlow* frameworks with support for CPU and GPU. Various preprocessing steps are also supported out-of-the box in Alibi Detect for both frameworks and illustrated throughout the notebook. Alibi Detect does however not install PyTorch for you. Check the [PyTorch docs](https://pytorch.org/) how to do this. 
+The method is implemented in both the _PyTorch_ and _TensorFlow_ frameworks with support for CPU and GPU. Various preprocessing steps are also supported out-of-the box in Alibi Detect for both frameworks and illustrated throughout the notebook. Alibi Detect does however not install PyTorch for you. Check the [PyTorch docs](https://pytorch.org/) how to do this.
 
-### Dataset
+#### Dataset
 
-[CIFAR10](https://www.cs.toronto.edu/~kriz/cifar.html) consists of 60,000 32 by 32 RGB images equally distributed over 10 classes. We evaluate the drift detector on the CIFAR-10-C dataset ([Hendrycks & Dietterich, 2019](https://arxiv.org/abs/1903.12261)). The instances in
-CIFAR-10-C have been corrupted and perturbed by various types of noise, blur, brightness etc. at different levels of severity, leading to a gradual decline in the classification model performance. We also check for drift against the original test set with class imbalances. 
-
+[CIFAR10](https://www.cs.toronto.edu/~kriz/cifar.html) consists of 60,000 32 by 32 RGB images equally distributed over 10 classes. We evaluate the drift detector on the CIFAR-10-C dataset ([Hendrycks & Dietterich, 2019](https://arxiv.org/abs/1903.12261)). The instances in CIFAR-10-C have been corrupted and perturbed by various types of noise, blur, brightness etc. at different levels of severity, leading to a gradual decline in the classification model performance. We also check for drift against the original test set with class imbalances.
 
 ```{python}
 from functools import partial
@@ -41,7 +40,7 @@ from alibi_detect.saving import save_detector, load_detector
 from alibi_detect.datasets import fetch_cifar10c, corruption_types_cifar10c
 ```
 
-### Load data
+#### Load data
 
 Original CIFAR-10 data:
 
@@ -68,7 +67,7 @@ X_corr, y_corr = fetch_cifar10c(corruption=corruption, severity=5, return_X_y=Tr
 X_corr = X_corr.astype('float32') / 255
 ```
 
-We split the original test set in a reference dataset and a dataset which should not be rejected under the *H<sub>0</sub>* of the MMD test. We also split the corrupted data by corruption type:
+We split the original test set in a reference dataset and a dataset which should not be rejected under the _H0_ of the MMD test. We also split the corrupted data by corruption type:
 
 ```{python}
 np.random.seed(0)
@@ -131,13 +130,13 @@ for _ in range(len(corruption)):
 
 Given the drop in performance, it is important that we detect the harmful data drift!
 
-### Detect drift with TensorFlow backend
+#### Detect drift with TensorFlow backend
 
-First we try a drift detector using the *TensorFlow* framework for both the preprocessing and the *MMD* computation steps.
+First we try a drift detector using the _TensorFlow_ framework for both the preprocessing and the _MMD_ computation steps.
 
-We are trying to detect data drift on high-dimensional (*32x32x3*) data using a multivariate MMD permutation test. It therefore makes sense to apply dimensionality reduction first. Some dimensionality reduction methods also used in [Failing Loudly: An Empirical Study of Methods for Detecting Dataset Shift](https://arxiv.org/pdf/1810.11953.pdf) are readily available: a randomly initialized encoder (**UAE** or Untrained AutoEncoder in the paper), **BBSDs** (black-box shift detection using the classifier's softmax outputs) and **PCA** (using `scikit-learn`).
+We are trying to detect data drift on high-dimensional (_32x32x3_) data using a multivariate MMD permutation test. It therefore makes sense to apply dimensionality reduction first. Some dimensionality reduction methods also used in [Failing Loudly: An Empirical Study of Methods for Detecting Dataset Shift](https://arxiv.org/pdf/1810.11953.pdf) are readily available: a randomly initialized encoder (**UAE** or Untrained AutoEncoder in the paper), **BBSDs** (black-box shift detection using the classifier's softmax outputs) and **PCA** (using `scikit-learn`).
 
-#### Random encoder
+**Random encoder**
 
 First we try the randomly initialized encoder:
 
@@ -209,7 +208,7 @@ make_predictions(cd, X_h0, X_c, corruption)
 
 As expected, drift was only detected on the corrupted datasets.
 
-#### BBSDs
+**BBSDs**
 
 For **BBSDs**, we use the classifier's softmax outputs for black-box shift detection. This method is based on [Detecting and Correcting for Label Shift with Black Box Predictors](https://arxiv.org/abs/1802.03916). The ResNet classifier is trained on data standardised by instance so we need to rescale the data.
 
@@ -219,7 +218,7 @@ X_h0_bbsds = scale_by_instance(X_h0)
 X_c_bbsds = [scale_by_instance(X_c[i]) for i in range(n_corr)]
 ```
 
-Initialisation of the drift detector. Here we use the output of the softmax layer to detect the drift, but other hidden layers can be extracted as well by setting *'layer'* to the index of the desired hidden layer in the model:
+Initialisation of the drift detector. Here we use the output of the softmax layer to detect the drift, but other hidden layers can be extracted as well by setting _'layer'_ to the index of the desired hidden layer in the model:
 
 ```{python}
 from alibi_detect.cd.tensorflow import HiddenOutput
@@ -238,9 +237,9 @@ make_predictions(cd, X_h0_bbsds, X_c_bbsds, corruption)
 
 Again drift is only flagged on the perturbed data.
 
-### Detect drift with PyTorch backend
+#### Detect drift with PyTorch backend
 
-We can do the same thing using the *PyTorch* backend. We illustrate this using the randomly initialized encoder as preprocessing step:
+We can do the same thing using the _PyTorch_ backend. We illustrate this using the randomly initialized encoder as preprocessing step:
 
 ```{python}
 import torch
@@ -255,7 +254,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(device)
 ```
 
-Since our *PyTorch* encoder expects the images in a *(batch size, channels, height, width)* format, we transpose the data:
+Since our _PyTorch_ encoder expects the images in a _(batch size, channels, height, width)_ format, we transpose the data:
 
 ```{python}
 def permute_c(x):
@@ -315,9 +314,8 @@ make_predictions(cd, X_h0_pt, X_c_pt, corruption)
 
 Notice the over **30x acceleration** provided by the GPU.
 
-Similar to the *TensorFlow* implementation, *PyTorch* can also use the hidden layer output from a pretrained model for the preprocessing step via:
+Similar to the _TensorFlow_ implementation, _PyTorch_ can also use the hidden layer output from a pretrained model for the preprocessing step via:
 
 ```python
 from alibi_detect.cd.pytorch import HiddenOutput
 ```
-

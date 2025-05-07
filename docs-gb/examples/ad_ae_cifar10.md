@@ -7,28 +7,25 @@ jupyter:
     name: python3
 ---
 
+# Adversarial AE detection and correction on CIFAR-10
 
-### Method
+#### Method
 
-
-The adversarial detector is based on [Adversarial Detection and Correction by Matching Prediction Distributions](https://arxiv.org/abs/2002.09364). Usually, autoencoders are trained to find a transformation $T$ that reconstructs the input instance $x$ as accurately as possible with loss functions that are suited to capture the similarities between x and $x'$ such as the mean squared reconstruction error. The novelty of the adversarial autoencoder (AE) detector relies on the use of a classification model-dependent loss function based on a distance metric in the output space of the model to train the autoencoder network. Given a classification model $M$ we optimise the weights of the autoencoder such that the [KL-divergence](https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence) between the model predictions on $x$ and on $x'$ is minimised. Without the presence of a reconstruction loss term $x'$ simply tries to make sure that the prediction probabilities $M(x')$ and $M(x)$ match without caring about the proximity of $x'$ to $x$. As a result, $x'$ is allowed to live in different areas of the input feature space than $x$ with different decision boundary shapes with respect to the model $M$. The carefully crafted adversarial perturbation which is effective around x does not transfer to the new location of $x'$ in the feature space, and the attack is therefore neutralised. Training of the autoencoder is unsupervised since we only need access to the model prediction probabilities and the normal training instances. We do not require any knowledge about the underlying adversarial attack and the classifier weights are frozen during training. 
+The adversarial detector is based on [Adversarial Detection and Correction by Matching Prediction Distributions](https://arxiv.org/abs/2002.09364). Usually, autoencoders are trained to find a transformation $T$ that reconstructs the input instance $x$ as accurately as possible with loss functions that are suited to capture the similarities between x and $x'$ such as the mean squared reconstruction error. The novelty of the adversarial autoencoder (AE) detector relies on the use of a classification model-dependent loss function based on a distance metric in the output space of the model to train the autoencoder network. Given a classification model $M$ we optimise the weights of the autoencoder such that the [KL-divergence](https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence) between the model predictions on $x$ and on $x'$ is minimised. Without the presence of a reconstruction loss term $x'$ simply tries to make sure that the prediction probabilities $M(x')$ and $M(x)$ match without caring about the proximity of $x'$ to $x$. As a result, $x'$ is allowed to live in different areas of the input feature space than $x$ with different decision boundary shapes with respect to the model $M$. The carefully crafted adversarial perturbation which is effective around x does not transfer to the new location of $x'$ in the feature space, and the attack is therefore neutralised. Training of the autoencoder is unsupervised since we only need access to the model prediction probabilities and the normal training instances. We do not require any knowledge about the underlying adversarial attack and the classifier weights are frozen during training.
 
 The detector can be used as follows:
 
 * An adversarial score $S$ is computed. $S$ equals the K-L divergence between the model predictions on $x$ and $x'$.
-
 * If $S$ is above a threshold (explicitly defined or inferred from training data), the instance is flagged as adversarial.
-
 * For adversarial instances, the model $M$ uses the reconstructed instance $x'$ to make a prediction. If the adversarial score is below the threshold, the model makes a prediction on the original instance $x$.
 
 This procedure is illustrated in the diagram below:
-
 
 ![adversarialae.png](attachment:adversarialae.png)
 
 The method is very flexible and can also be used to detect common data corruptions and perturbations which negatively impact the model performance.
 
-## Dataset
+### Dataset
 
 [CIFAR10](https://www.cs.toronto.edu/~kriz/cifar.html) consists of 60,000 32 by 32 RGB images equally distributed over 10 classes.
 
@@ -51,7 +48,7 @@ from alibi_detect.saving import save_detector, load_detector
 from alibi_detect.datasets import fetch_attack, fetch_cifar10c, corruption_types_cifar10c
 ```
 
-### Utility functions
+#### Utility functions
 
 ```{python}
 def scale_by_instance(X: np.ndarray) -> np.ndarray:
@@ -178,7 +175,7 @@ def plot_roc(roc_data: dict, figsize: tuple = (10,5)):
     plt.show()
 ```
 
-### Load data
+#### Load data
 
 ```{python}
 (X_train, y_train), (X_test, y_test) = tf.keras.datasets.cifar10.load_data()
@@ -196,7 +193,7 @@ X_test, mean_test, std_test = scale_by_instance(X_test)
 scale = (mean_train, std_train), (mean_test, std_test)
 ```
 
-### Load classifier
+#### Load classifier
 
 ```{python}
 dataset = 'cifar10'
@@ -213,9 +210,9 @@ acc_y_pred = accuracy(y_test, y_pred)
 print('Accuracy: {:.4f}'.format(acc_y_pred))
 ```
 
-### Adversarial Attack
+#### Adversarial Attack
 
-We investigate both [Carlini-Wagner (C&W)](https://arxiv.org/abs/1608.04644) and [SLIDE](https://arxiv.org/abs/1904.13000) attacks. You can simply load previously found adversarial instances on the pretrained ResNet-56 model. The attacks are generated by using [Foolbox](https://github.com/bethgelab/foolbox):
+We investigate both [Carlini-Wagner (C\&W)](https://arxiv.org/abs/1608.04644) and [SLIDE](https://arxiv.org/abs/1904.13000) attacks. You can simply load previously found adversarial instances on the pretrained ResNet-56 model. The attacks are generated by using [Foolbox](https://github.com/bethgelab/foolbox):
 
 ```{python}
 # C&W attack
@@ -257,7 +254,7 @@ plot_adversarial(idx, X_test, y_pred, X_test_slide, y_pred_slide,
                  mean_test, std_test, figsize=(10, 10))
 ```
 
-### Load or train and evaluate the adversarial detectors
+#### Load or train and evaluate the adversarial detectors
 
 We can again either fetch the pretrained detector from a [Google Cloud Bucket](https://console.cloud.google.com/storage/browser/seldon-models/alibi-detect/ad/cifar10/resnet56) or train one from scratch:
 
@@ -370,7 +367,7 @@ roc_data = {
 plot_roc(roc_data)
 ```
 
-The threshold for the adversarial score can be set via ```infer_threshold```. We need to pass a batch of instances $X$ and specify what percentage of those we consider to be normal via `threshold_perc`. Assume we have only normal instances some of which the model has misclassified leading to a higher score if the reconstruction picked up features from the correct class or some might look adversarial in the first place. As a result, we set our threshold at $95$%:
+The threshold for the adversarial score can be set via `infer_threshold`. We need to pass a batch of instances $X$ and specify what percentage of those we consider to be normal via `threshold_perc`. Assume we have only normal instances some of which the model has misclassified leading to a higher score if the reconstruction picked up features from the correct class or some might look adversarial in the first place. As a result, we set our threshold at $95$%:
 
 ```{python}
 ad.infer_threshold(X_test, threshold_perc=95, margin=0., batch_size=32)
@@ -389,7 +386,7 @@ We can also load it easily as follows:
 ad = load_detector(filepath)
 ```
 
-The `correct` method of the detector executes the diagram in Figure 1. First the adversarial scores is computed. For instances where the score is above the threshold, the classifier prediction on the reconstructed instance is returned. Otherwise the original prediction is kept. The method returns a dictionary containing the metadata of the detector, whether the instances in the batch are adversarial (above the threshold) or not, the classifier predictions using the correction mechanism and both the original and reconstructed predictions. Let's illustrate this on a batch containing some adversarial (C&W) and original test set instances:
+The `correct` method of the detector executes the diagram in Figure 1. First the adversarial scores is computed. For instances where the score is above the threshold, the classifier prediction on the reconstructed instance is returned. Otherwise the original prediction is kept. The method returns a dictionary containing the metadata of the detector, whether the instances in the batch are adversarial (above the threshold) or not, the classifier predictions using the correction mechanism and both the original and reconstructed predictions. Let's illustrate this on a batch containing some adversarial (C\&W) and original test set instances:
 
 ```{python}
 n_test = X_test.shape[0]
@@ -418,7 +415,7 @@ acc_y_corr_mix = accuracy(y_mix, preds['data']['corrected'])
 print('Accuracy {:.4f}'.format(acc_y_corr_mix))
 ```
 
-### Temperature Scaling
+#### Temperature Scaling
 
 We can further improve the correction performance by applying temperature scaling on the original model predictions $M(x)$ during both training and inference when computing the adversarial scores. We can again load a pretrained detector or train one from scratch:
 
@@ -506,7 +503,7 @@ roc_data['SLIDE T=0.5'] = {'scores': score_slide_t, 'predictions': y_pred_slide,
 plot_roc(roc_data)
 ```
 
-### Hidden Layer K-L Divergence
+#### Hidden Layer K-L Divergence
 
 The performance of the correction mechanism can also be improved by extending the training methodology to one of the hidden layers of the classification model. We extract a flattened feature map from the hidden layer, feed it into a linear layer and apply the softmax function. The K-L divergence between predictions on the hidden layer for $x$ and $x'$ is optimised and included in the adversarial score during inference:
 
@@ -579,10 +576,9 @@ print('Accuracy after SLIDE attack {:.4f} -- reconstruction {:.4f}'.format(acc_y
                                                                            acc_y_recon_slide_hl))
 ```
 
-### Malicious Data Drift
+#### Malicious Data Drift
 
-The adversarial detector proves to be very flexible and can be used to measure the harmfulness of the data drift on the classifier. We evaluate the detector on the CIFAR-10-C dataset ([Hendrycks & Dietterich, 2019](https://arxiv.org/abs/1903.12261)). The instances in
-CIFAR-10-C have been corrupted and perturbed by various types of noise, blur, brightness etc. at different levels of severity, leading to a gradual decline in model performance.
+The adversarial detector proves to be very flexible and can be used to measure the harmfulness of the data drift on the classifier. We evaluate the detector on the CIFAR-10-C dataset ([Hendrycks & Dietterich, 2019](https://arxiv.org/abs/1903.12261)). The instances in CIFAR-10-C have been corrupted and perturbed by various types of noise, blur, brightness etc. at different levels of severity, leading to a gradual decline in model performance.
 
 We can select from the following corruption types:
 
@@ -686,4 +682,3 @@ ax2.tick_params(axis='y', labelcolor=color)
 
 plt.show()
 ```
-

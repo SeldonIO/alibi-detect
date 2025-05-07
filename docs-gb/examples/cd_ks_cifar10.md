@@ -7,24 +7,21 @@ jupyter:
     name: python3
 ---
 
+# Kolmogorov-Smirnov data drift detector on CIFAR-10
 
-### Method
+#### Method
 
 The drift detector applies feature-wise two-sample [Kolmogorov-Smirnov](https://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test) (K-S) tests. For multivariate data, the obtained p-values for each feature are aggregated either via the [Bonferroni](https://mathworld.wolfram.com/BonferroniCorrection.html) or the [False Discovery Rate](http://www.math.tau.ac.il/~ybenja/MyPapers/benjamini_hochberg1995.pdf) (FDR) correction. The Bonferroni correction is more conservative and controls for the probability of at least one false positive. The FDR correction on the other hand allows for an expected fraction of false positives to occur.
 
 For high-dimensional data, we typically want to reduce the dimensionality before computing the feature-wise univariate K-S tests and aggregating those via the chosen correction method. Following suggestions in [Failing Loudly: An Empirical Study of Methods for Detecting Dataset Shift](https://arxiv.org/abs/1810.11953), we incorporate Untrained AutoEncoders (UAE) and black-box shift detection using the classifier's softmax outputs ([BBSDs](https://arxiv.org/abs/1802.03916)) as out-of-the box preprocessing methods and note that [PCA](https://en.wikipedia.org/wiki/Principal_component_analysis) can also be easily implemented using `scikit-learn`. Preprocessing methods which do not rely on the classifier will usually pick up drift in the input data, while BBSDs focuses on label shift. The [adversarial detector](https://arxiv.org/abs/2002.09364) which is part of the library can also be transformed into a drift detector picking up drift that reduces the performance of the classification model. We can therefore combine different preprocessing techniques to figure out if there is drift which hurts the model performance, and whether this drift can be classified as input drift or label shift.
 
-### Backend
+#### Backend
 
-The method works with both the **PyTorch** and **TensorFlow** frameworks for the optional preprocessing step. Alibi Detect does however not install PyTorch for you. 
-Check the [PyTorch docs](https://pytorch.org/) how to do this.
+The method works with both the **PyTorch** and **TensorFlow** frameworks for the optional preprocessing step. Alibi Detect does however not install PyTorch for you. Check the [PyTorch docs](https://pytorch.org/) how to do this.
 
+#### Dataset
 
-### Dataset
-
-[CIFAR10](https://www.cs.toronto.edu/~kriz/cifar.html) consists of 60,000 32 by 32 RGB images equally distributed over 10 classes. We evaluate the drift detector on the CIFAR-10-C dataset ([Hendrycks & Dietterich, 2019](https://arxiv.org/abs/1903.12261)). The instances in
-CIFAR-10-C have been corrupted and perturbed by various types of noise, blur, brightness etc. at different levels of severity, leading to a gradual decline in the classification model performance. We also check for drift against the original test set with class imbalances. 
-
+[CIFAR10](https://www.cs.toronto.edu/~kriz/cifar.html) consists of 60,000 32 by 32 RGB images equally distributed over 10 classes. We evaluate the drift detector on the CIFAR-10-C dataset ([Hendrycks & Dietterich, 2019](https://arxiv.org/abs/1903.12261)). The instances in CIFAR-10-C have been corrupted and perturbed by various types of noise, blur, brightness etc. at different levels of severity, leading to a gradual decline in the classification model performance. We also check for drift against the original test set with class imbalances.
 
 ```{python}
 import matplotlib.pyplot as plt
@@ -39,7 +36,7 @@ from alibi_detect.saving import save_detector, load_detector
 from alibi_detect.datasets import fetch_cifar10c, corruption_types_cifar10c
 ```
 
-### Load data
+#### Load data
 
 Original CIFAR-10 data:
 
@@ -66,7 +63,7 @@ X_corr, y_corr = fetch_cifar10c(corruption=corruption, severity=5, return_X_y=Tr
 X_corr = X_corr.astype('float32') / 255
 ```
 
-We split the original test set in a reference dataset and a dataset which should not be rejected under the *H<sub>0</sub>* of the K-S test. We also split the corrupted data by corruption type:
+We split the original test set in a reference dataset and a dataset which should not be rejected under the _H0_ of the K-S test. We also split the corrupted data by corruption type:
 
 ```{python}
 np.random.seed(0)
@@ -129,11 +126,11 @@ for _ in range(len(corruption)):
 
 Given the drop in performance, it is important that we detect the harmful data drift!
 
-### Detect drift
+#### Detect drift
 
-First we try a drift detector using the **TensorFlow** framework for the preprocessing step. We are trying to detect data drift on high-dimensional (*32x32x3*) data using feature-wise univariate tests. It therefore makes sense to apply dimensionality reduction first. Some dimensionality reduction methods also used in [Failing Loudly: An Empirical Study of Methods for Detecting Dataset Shift](https://arxiv.org/pdf/1810.11953.pdf) are readily available: a randomly initialized encoder (**UAE** or Untrained AutoEncoder in the paper), **BBSDs** (black-box shift detection using the classifier's softmax outputs) and **PCA**.
+First we try a drift detector using the **TensorFlow** framework for the preprocessing step. We are trying to detect data drift on high-dimensional (_32x32x3_) data using feature-wise univariate tests. It therefore makes sense to apply dimensionality reduction first. Some dimensionality reduction methods also used in [Failing Loudly: An Empirical Study of Methods for Detecting Dataset Shift](https://arxiv.org/pdf/1810.11953.pdf) are readily available: a randomly initialized encoder (**UAE** or Untrained AutoEncoder in the paper), **BBSDs** (black-box shift detection using the classifier's softmax outputs) and **PCA**.
 
-#### Random encoder
+**Random encoder**
 
 First we try the randomly initialized encoder:
 
@@ -171,7 +168,7 @@ save_detector(cd, filepath)
 cd = load_detector(filepath)
 ```
 
-The p-value used by the detector for the multivariate data with *encoding_dim* features is equal to *p_val / encoding_dim* because of the [Bonferroni correction](https://mathworld.wolfram.com/BonferroniCorrection.html).
+The p-value used by the detector for the multivariate data with _encoding\_dim_ features is equal to _p\_val / encoding\_dim_ because of the [Bonferroni correction](https://mathworld.wolfram.com/BonferroniCorrection.html).
 
 ```{python}
 assert cd.p_val / cd.n_features == p_val / encoding_dim
@@ -211,9 +208,9 @@ def make_predictions(cd, x_h0, x_corr, corruption):
 make_predictions(cd, X_h0, X_c, corruption)
 ```
 
-As expected, drift was only detected on the corrupted datasets. The feature-wise p-values for each univariate K-S test per (encoded) feature before multivariate correction show that most of them are well above the $0.05$ threshold for *H0* and below for the corrupted datasets.
+As expected, drift was only detected on the corrupted datasets. The feature-wise p-values for each univariate K-S test per (encoded) feature before multivariate correction show that most of them are well above the $0.05$ threshold for _H0_ and below for the corrupted datasets.
 
-#### BBSDs
+**BBSDs**
 
 For **BBSDs**, we use the classifier's softmax outputs for black-box shift detection. This method is based on [Detecting and Correcting for Label Shift with Black Box Predictors](https://arxiv.org/abs/1802.03916). The ResNet classifier is trained on data standardised by instance so we need to rescale the data.
 
@@ -225,7 +222,7 @@ X_h0 = scale_by_instance(X_h0)
 X_c = [scale_by_instance(X_c[i]) for i in range(n_corr)]
 ```
 
-Now we initialize the detector. Here we use the output of the softmax layer to detect the drift, but other hidden layers can be extracted as well by setting *'layer'* to the index of the desired hidden layer in the model:
+Now we initialize the detector. Here we use the output of the softmax layer to detect the drift, but other hidden layers can be extracted as well by setting _'layer'_ to the index of the desired hidden layer in the model:
 
 ```{python}
 from alibi_detect.cd.tensorflow import HiddenOutput
@@ -236,7 +233,7 @@ preprocess_fn = partial(preprocess_drift, model=HiddenOutput(clf, layer=-1), bat
 cd = KSDrift(X_ref, p_val=p_val, preprocess_fn=preprocess_fn)
 ```
 
-Again we can see that the p-value used by the detector for the multivariate data with 10 features (number of CIFAR-10 classes) is equal to *p_val / 10* because of the [Bonferroni correction](https://mathworld.wolfram.com/BonferroniCorrection.html).
+Again we can see that the p-value used by the detector for the multivariate data with 10 features (number of CIFAR-10 classes) is equal to _p\_val / 10_ because of the [Bonferroni correction](https://mathworld.wolfram.com/BonferroniCorrection.html).
 
 ```{python}
 assert cd.p_val / cd.n_features == p_val / 10
@@ -248,9 +245,9 @@ There is no drift on the original held out test set:
 make_predictions(cd, X_h0, X_c, corruption)
 ```
 
-### Label drift
+#### Label drift
 
-We can also check what happens when we introduce class imbalances between the reference data *X_ref* and the tested data *X_imb*. The reference data will use $75$% of the instances of the first 5 classes and only $25$% of the last 5. The data used for drift testing then uses respectively $25$% and $75$% of the test instances for the first and last 5 classes.
+We can also check what happens when we introduce class imbalances between the reference data _X\_ref_ and the tested data _X\_imb_. The reference data will use $75$% of the instances of the first 5 classes and only $25$% of the last 5. The data used for drift testing then uses respectively $25$% and $75$% of the test instances for the first and last 5 classes.
 
 ```{python}
 np.random.seed(0)
@@ -290,23 +287,23 @@ print('Drift? {}'.format(labels[preds_imb['data']['is_drift']]))
 print(preds_imb['data']['p_val'])
 ```
 
-### Update reference data
+#### Update reference data
 
-So far we have kept the reference data the same throughout the experiments. It is possible however that we want to test a new batch against the last *N* instances or against a batch of instances of fixed size where we give each instance we have seen up until now the same chance of being in the reference batch ([reservoir sampling](https://en.wikipedia.org/wiki/Reservoir_sampling)). The `update_x_ref` argument allows you to change the reference data update rule. It is a Dict which takes as key the update rule (*'last'* for last *N* instances or *'reservoir_sampling'*) and as value the batch size *N* of the reference data. You can also save the detector after the prediction calls to save the updated reference data.
+So far we have kept the reference data the same throughout the experiments. It is possible however that we want to test a new batch against the last _N_ instances or against a batch of instances of fixed size where we give each instance we have seen up until now the same chance of being in the reference batch ([reservoir sampling](https://en.wikipedia.org/wiki/Reservoir_sampling)). The `update_x_ref` argument allows you to change the reference data update rule. It is a Dict which takes as key the update rule (_'last'_ for last _N_ instances or _'reservoir\_sampling'_) and as value the batch size _N_ of the reference data. You can also save the detector after the prediction calls to save the updated reference data.
 
 ```{python}
 N = 7500
 cd = KSDrift(X_ref, p_val=.05, preprocess_fn=preprocess_fn, update_x_ref={'reservoir_sampling': N})
 ```
 
-The reference data is now updated with each `predict` call. Say we start with our imbalanced reference set and make a prediction on the remaining test set data *X_imb*, then the drift detector will figure out data drift has occurred.
+The reference data is now updated with each `predict` call. Say we start with our imbalanced reference set and make a prediction on the remaining test set data _X\_imb_, then the drift detector will figure out data drift has occurred.
 
 ```{python}
 preds_imb = cd.predict(X_imb)
 print('Drift? {}'.format(labels[preds_imb['data']['is_drift']]))
 ```
 
-We can now see that the reference data consists of *N* instances, obtained through reservoir sampling.
+We can now see that the reference data consists of _N_ instances, obtained through reservoir sampling.
 
 ```{python}
 assert cd.x_ref.shape[0] == N
@@ -326,7 +323,7 @@ preds_train = cd.predict(X_train[idx_train])
 print('Drift? {}'.format(labels[preds_train['data']['is_drift']]))
 ```
 
-When we draw a new sample from the training set, it highlights that it is not drifting anymore against the reservoir in *X_ref*.
+When we draw a new sample from the training set, it highlights that it is not drifting anymore against the reservoir in _X\_ref_.
 
 ```{python}
 np.random.seed(1)
@@ -336,7 +333,7 @@ preds_train = cd.predict(X_train[idx_train])
 print('Drift? {}'.format(labels[preds_train['data']['is_drift']]))
 ```
 
-### Multivariate correction mechanism
+#### Multivariate correction mechanism
 
 Instead of the Bonferroni correction for multivariate data, we can also use the less conservative [False Discovery Rate](http://www.math.tau.ac.il/~ybenja/MyPapers/benjamini_hochberg1995.pdf) (FDR) correction. See [here](https://riffyn.com/riffyn-blog/2017/10/29/false-discovery-rate) or [here](https://matthew-brett.github.io/teaching/fdr.html) for nice explanations. While the Bonferroni correction controls the probability of at least one false positive, the FDR correction controls for an expected amount of false positives. The `p_val` argument at initialisation time can be interpreted as the acceptable q-value when the FDR correction is applied.
 
@@ -347,9 +344,9 @@ preds_imb = cd.predict(X_imb)
 print('Drift? {}'.format(labels[preds_imb['data']['is_drift']]))
 ```
 
-### Adversarial autoencoder as a malicious drift detector
+#### Adversarial autoencoder as a malicious drift detector
 
-We can leverage the adversarial scores obtained from an [adversarial autoencoder](https://arxiv.org/abs/2002.09364)  trained on normal data and transform it into a data drift detector. The score function of the adversarial autoencoder becomes the preprocessing function for the drift detector. The K-S test is then a simple univariate test on the adversarial scores. Importantly, an adversarial drift detector flags **malicious data drift**. We can fetch the pretrained adversarial detector from a [Google Cloud Bucket](https://console.cloud.google.com/storage/browser/seldon-models/alibi-detect/ad/cifar10/resnet32) or train one from scratch:
+We can leverage the adversarial scores obtained from an [adversarial autoencoder](https://arxiv.org/abs/2002.09364) trained on normal data and transform it into a data drift detector. The score function of the adversarial autoencoder becomes the preprocessing function for the drift detector. The K-S test is then a simple univariate test on the adversarial scores. Importantly, an adversarial drift detector flags **malicious data drift**. We can fetch the pretrained adversarial detector from a [Google Cloud Bucket](https://console.cloud.google.com/storage/browser/seldon-models/alibi-detect/ad/cifar10/resnet32) or train one from scratch:
 
 ```{python}
 load_pretrained = True
@@ -436,7 +433,7 @@ for x, c in zip(X_c, corruption):
         c, clf_accuracy[c],labels[preds['data']['is_drift']]))
 ```
 
-While *X_imb* clearly exhibits input data drift due to the introduced class imbalances, it is not flagged by the adversarial drift detector since the performance of the classifier is not affected and the drift is not malicious. We can visualise this by plotting the adversarial scores together with the harmfulness of the data corruption as reflected by the drop in classifier accuracy:
+While _X\_imb_ clearly exhibits input data drift due to the introduced class imbalances, it is not flagged by the adversarial drift detector since the performance of the classifier is not affected and the drift is not malicious. We can visualise this by plotting the adversarial scores together with the harmfulness of the data corruption as reflected by the drop in classifier accuracy:
 
 ```{python}
 adv_scores = {}
@@ -543,7 +540,7 @@ for s in severities:
     score_drift[s]['acc'] = accuracy(y_corr, y_pred_corr)
 ```
 
-We now compute mean scores and standard deviations per severity level and plot the results. The plot shows the mean adversarial scores (lhs) and ResNet-32 accuracies (rhs) for increasing data corruption severity levels. Level 0 corresponds to the original test set. Harmful scores  are scores from instances which have been flipped from the correct to an incorrect prediction because of the corruption. Not harmful means that the prediction was unchanged after the corruption.
+We now compute mean scores and standard deviations per severity level and plot the results. The plot shows the mean adversarial scores (lhs) and ResNet-32 accuracies (rhs) for increasing data corruption severity levels. Level 0 corresponds to the original test set. Harmful scores are scores from instances which have been flipped from the correct to an incorrect prediction because of the corruption. Not harmful means that the prediction was unchanged after the corruption.
 
 ```{python}
 mu_noharm, std_noharm = [], []
@@ -586,4 +583,3 @@ ax2.tick_params(axis='y', labelcolor=color)
 
 plt.show()
 ```
-

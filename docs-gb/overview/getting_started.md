@@ -2,8 +2,6 @@
 
 ### Installation
 
-
-
 Alibi Detect can be installed from [PyPI](https://pypi.org/project/alibi-detect/) or [conda-forge](https://conda-forge.org/) by following the instructions below.
 
 #### PyPI
@@ -156,7 +154,7 @@ Provides support for the [OutlierProphet](https://docs.seldon.io/projects/alibi-
 
 #### conda-forge
 
-To install the conda-forge version it is recommended to use [mamba](https://mamba.readthedocs.io/en/stable/), which can be installed to the _base_conda enviroment with:
+To install the conda-forge version it is recommended to use [mamba](https://mamba.readthedocs.io/en/stable/), which can be installed to the _bas&#x65;_&#x63;onda enviroment with:
 
 ```
 conda install mamba -n base -c conda-forge
@@ -170,7 +168,7 @@ mamba install -c conda-forge alibi-detect
 
 ## Features
 
-[Alibi Detect](https://github.com/SeldonIO/alibi-detect) is an open source Python library focused on **outlier**, **adversarial** and **drift** detection. The package aims to cover both online and offline detectors for tabular data, text, images and time series. **TensorFlow**, **PyTorch** and (where applicable) [KeOps](https://www.kernel-operations.io/keops/index.html) backends are supported for drift detection. Alibi-Detect does not install these as default. See [installation options](getting\_started.md#installation) for more details.
+[Alibi Detect](https://github.com/SeldonIO/alibi-detect) is an open source Python library focused on **outlier**, **adversarial** and **drift** detection. The package aims to cover both online and offline detectors for tabular data, text, images and time series. **TensorFlow**, **PyTorch** and (where applicable) [KeOps](https://www.kernel-operations.io/keops/index.html) backends are supported for drift detection. Alibi-Detect does not install these as default. See [installation options](getting_started.md#installation) for more details.
 
 To get a list of respectively the latest outlier, adversarial and drift detection algorithms, you can type:
 

@@ -7,28 +7,24 @@ jupyter:
     name: python3
 ---
 
+# Model Distillation drift detector on CIFAR-10
 
-### Method
+#### Method
 
-[Model distillation](https://arxiv.org/abs/1503.02531) is a technique that is used to transfer knowledge from a large network to a smaller network. Typically, it consists of training a second model with a simplified architecture on soft targets (the output distributions or the logits) obtained from the original model. 
+[Model distillation](https://arxiv.org/abs/1503.02531) is a technique that is used to transfer knowledge from a large network to a smaller network. Typically, it consists of training a second model with a simplified architecture on soft targets (the output distributions or the logits) obtained from the original model.
 
-Here, we apply model distillation to obtain harmfulness scores, by comparing the output distributions of the original model with the output distributions 
-of the distilled model, in order to detect adversarial data, malicious data drift or data corruption.
-We use the following definition of harmful and harmless data points:
+Here, we apply model distillation to obtain harmfulness scores, by comparing the output distributions of the original model with the output distributions of the distilled model, in order to detect adversarial data, malicious data drift or data corruption. We use the following definition of harmful and harmless data points:
 
 * Harmful data points are defined as inputs for which the model's predictions on the uncorrupted data are correct while the model's predictions on the corrupted data are wrong.
-
 * Harmless data points are defined as inputs for which the model's predictions on the uncorrupted data are correct and the model's predictions on the corrupted data remain correct.
 
-Analogously to the [adversarial AE detector](https://arxiv.org/abs/2002.09364), which is also part of the library, the model distillation detector picks up drift that reduces the performance of the classification model. 
+Analogously to the [adversarial AE detector](https://arxiv.org/abs/2002.09364), which is also part of the library, the model distillation detector picks up drift that reduces the performance of the classification model.
 
-Moreover, in this example a drift detector that applies two-sample [Kolmogorov-Smirnov](https://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test) (K-S) tests to the scores is employed. The p-values obtained are used to assess the harmfulness of the data. 
+Moreover, in this example a drift detector that applies two-sample [Kolmogorov-Smirnov](https://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test) (K-S) tests to the scores is employed. The p-values obtained are used to assess the harmfulness of the data.
 
-### Dataset
+#### Dataset
 
-[CIFAR10](https://www.cs.toronto.edu/~kriz/cifar.html) consists of 60,000 32 by 32 RGB images equally distributed over 10 classes. We evaluate the drift detector on the CIFAR-10-C dataset ([Hendrycks & Dietterich, 2019](https://arxiv.org/abs/1903.12261)). The instances in
-CIFAR-10-C have been corrupted and perturbed by various types of noise, blur, brightness etc. at different levels of severity, leading to a gradual decline in the classification model performance.
-
+[CIFAR10](https://www.cs.toronto.edu/~kriz/cifar.html) consists of 60,000 32 by 32 RGB images equally distributed over 10 classes. We evaluate the drift detector on the CIFAR-10-C dataset ([Hendrycks & Dietterich, 2019](https://arxiv.org/abs/1903.12261)). The instances in CIFAR-10-C have been corrupted and perturbed by various types of noise, blur, brightness etc. at different levels of severity, leading to a gradual decline in the classification model performance.
 
 ```{python}
 import matplotlib.pyplot as plt
@@ -46,7 +42,7 @@ from alibi_detect.saving import save_detector
 from alibi_detect.datasets import fetch_cifar10c, corruption_types_cifar10c
 ```
 
-### Load data
+#### Load data
 
 Original CIFAR-10 data:
 
@@ -118,7 +114,7 @@ for _ in range(len(corruption)):
     print('{} {:.4f}'.format(corruption[_], acc))
 ```
 
-### Model distillation as a malicious drift detector
+#### Model distillation as a malicious drift detector
 
 Analogously to the [adversarial AE detector](https://arxiv.org/abs/2002.09364), which uses an autoencoder to reproduce the output distribution of a classifier and produce adversarial scores, the model distillation detector achieves the same goal by using a simple classifier in place of the autoencoder. This approach is more flexible since it bypasses the instance's generation step, and it can be applied in a straightforward way to a variety of data sets such as text or time series.
 
@@ -175,7 +171,7 @@ else:
     save_detector(ad, filepath)
 ```
 
-#### Scores and p-values calculation
+**Scores and p-values calculation**
 
 Here we initialize the K-S drift detector using the harmfulness scores as a preprocessing function. The KS test is performed on these scores.
 
@@ -309,9 +305,9 @@ for s in severities:
     dfs[s] = df
 ```
 
-#### Plot scores
+**Plot scores**
 
-We now plot the mean scores and standard deviations per severity level. The plot shows the mean harmfulness scores (lhs) and ResNet-32 accuracies (rhs) for increasing data corruption severity levels. Level 0 corresponds to the original test set. Harmful scores  are scores from instances which have been flipped from the correct to an incorrect prediction because of the corruption. Not harmful means that a correct prediction was unchanged after the corruption.
+We now plot the mean scores and standard deviations per severity level. The plot shows the mean harmfulness scores (lhs) and ResNet-32 accuracies (rhs) for increasing data corruption severity levels. Level 0 corresponds to the original test set. Harmful scores are scores from instances which have been flipped from the correct to an incorrect prediction because of the corruption. Not harmful means that a correct prediction was unchanged after the corruption.
 
 ```{python}
 mu_noharm, std_noharm = [], []
@@ -355,19 +351,16 @@ ax2.tick_params(axis='y', labelcolor=color)
 plt.show()
 ```
 
-#### Plot p-values for contaminated batches
+**Plot p-values for contaminated batches**
 
 In order to simulate a realistic scenario, we perform a K-S test on batches of instance which are increasingly contaminated with corrupted data. The following steps are implemented:
 
-* We randomly pick `n_ref=1000` samples from the non-currupted test set to be used as a reference set in the initialization of the K-S drift detector.  
-
-* We sample batches of data of size `batch_size=100` contaminated with an increasing number of harmful corrupted data and harmless corrupted data. 
-
+* We randomly pick `n_ref=1000` samples from the non-currupted test set to be used as a reference set in the initialization of the K-S drift detector.
+* We sample batches of data of size `batch_size=100` contaminated with an increasing number of harmful corrupted data and harmless corrupted data.
 * The K-S detector predicts whether drift occurs between the contaminated batches and the reference data and returns the p-values of the test.
-
 * We observe that contamination of the batches with harmful data reduces the p-values much faster than contamination with harmless data. In the latter case, the p-values remain above the detection threshold even when the batch is heavily contaminated
 
-We repeat the test for 100 randomly sampled batches and we plot the mean and the maximum p-values for each level of severity and contamination below. We can see from the plot that the detector is able to clearly detect a batch contaminated with harmful data compared to a batch contaminated with harmless data when the percentage of currupted data reaches 20%-30%.  
+We repeat the test for 100 randomly sampled batches and we plot the mean and the maximum p-values for each level of severity and contamination below. We can see from the plot that the detector is able to clearly detect a batch contaminated with harmful data compared to a batch contaminated with harmless data when the percentage of currupted data reaches 20%-30%.
 
 ```{python}
 #| scrolled: false
@@ -388,4 +381,3 @@ for s in severities:
         a.set_xlabel('Percentage of corrupted data')
         a.set_ylabel('p-value')
 ```
-

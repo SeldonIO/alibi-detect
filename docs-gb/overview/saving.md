@@ -29,12 +29,12 @@ od = load_detector(filepath)
 
 Detectors can be saved using two formats:
 
-* **Config format**: For drift detectors, by default `save_detector` serializes the detector via a config file named `config.toml`, stored in `filepath`. The [TOML](https://toml.io/en/) format is human-readable, which makes the config files useful for record keeping, and allows a detector to be edited before it is reloaded. For more details, see [Detector Configuration Files](config\_files.md).
+* **Config format**: For drift detectors, by default `save_detector` serializes the detector via a config file named `config.toml`, stored in `filepath`. The [TOML](https://toml.io/en/) format is human-readable, which makes the config files useful for record keeping, and allows a detector to be edited before it is reloaded. For more details, see [Detector Configuration Files](config_files.md).
 * **Legacy format**: Outlier and adversarial detectors are saved to [dill](https://dill.readthedocs.io/en/latest/dill.html) files stored within `filepath`. Drift detectors can also be saved in this legacy format by running `save_detector` with `legacy=True`. Loading is performed in the same way, by simply running `load_detector(filepath)`.
 
 ## Supported detectors
 
-The following tables list the current state of save/load support for each detector. Adding full support for the remaining detectors is in the [Roadmap](roadmap.md).
+The following tables list the current state of save/load support for each detector. Adding full support for the remaining detectors is in the [Roadmap](broken-reference).
 
 ````{tab-set}
 
@@ -116,19 +116,19 @@ Additionally, some detectors are built upon models directly, for example the [Cl
 cd = ClassifierDrift(x_ref, model, backend='sklearn', p_val=.05, preds_type='probs')
 ```
 
-In order for a detector to be saveable and loadable, any models contained within it (or referenced within a [detector configuration file](config\_files.md#specifying-artefacts)) must fall within the family of supported models:
+In order for a detector to be saveable and loadable, any models contained within it (or referenced within a [detector configuration file](config_files.md#specifying-artefacts)) must fall within the family of supported models:
 
 {% tabs %}
 {% tab title="TensorFlow" %}
-Alibi Detect supports serialization of any TensorFlow model that can be serialized to the [HDF5](https://www.tensorflow.org/guide/keras/save\_and\_serialize#keras\_h5\_format) format. Custom objects should be pre-registered with [register\_keras\_serializable](https://www.tensorflow.org/api\_docs/python/tf/keras/utils/register\_keras\_serializable).
+Alibi Detect supports serialization of any TensorFlow model that can be serialized to the [HDF5](https://www.tensorflow.org/guide/keras/save_and_serialize#keras_h5_format) format. Custom objects should be pre-registered with [register\_keras\_serializable](https://www.tensorflow.org/api_docs/python/tf/keras/utils/register_keras_serializable).
 {% endtab %}
 
 {% tab title="PyTorch" %}
-PyTorch models are serialized by saving the [entire model](https://pytorch.org/tutorials/beginner/saving\_loading\_models.html#save-load-entire-model) using the [dill](https://dill.readthedocs.io/en/latest/index.html) module. Therefore, Alibi Detect should support any PyTorch model that can be saved and loaded with `torch.save(..., pickle_module=dill)` and `torch.load(..., pickle_module=dill)`.
+PyTorch models are serialized by saving the [entire model](https://pytorch.org/tutorials/beginner/saving_loading_models.html#save-load-entire-model) using the [dill](https://dill.readthedocs.io/en/latest/index.html) module. Therefore, Alibi Detect should support any PyTorch model that can be saved and loaded with `torch.save(..., pickle_module=dill)` and `torch.load(..., pickle_module=dill)`.
 {% endtab %}
 
 {% tab title="Scikit-learn" %}
-Scikit-learn models are serialized using [joblib](https://joblib.readthedocs.io/en/latest/persistence.html). Any scikit-learn model that is a subclass of [`sklearn.base.BaseEstimator`](https://scikit-learn.org/stable/modules/generated/sklearn.base.BaseEstimator.html#sklearn.base.BaseEstimator) is supported, including [xgboost](https://xgboost.readthedocs.io/en/latest/python/python\_api.html#module-xgboost.sklearn) models following the scikit-learn API.
+Scikit-learn models are serialized using [joblib](https://joblib.readthedocs.io/en/latest/persistence.html). Any scikit-learn model that is a subclass of [`sklearn.base.BaseEstimator`](https://scikit-learn.org/stable/modules/generated/sklearn.base.BaseEstimator.html#sklearn.base.BaseEstimator) is supported, including [xgboost](https://xgboost.readthedocs.io/en/latest/python/python_api.html#module-xgboost.sklearn) models following the scikit-learn API.
 {% endtab %}
 {% endtabs %}
 
