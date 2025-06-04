@@ -36,67 +36,48 @@ Detectors can be saved using two formats:
 
 The following tables list the current state of save/load support for each detector. Adding full support for the remaining detectors is in the [Roadmap](broken-reference).
 
-````{tab-set}
-
-```{tab-item} Drift detectors
-| Detector                                                                       | Legacy save/load | Config save/load |
-|:-------------------------------------------------------------------------------|:----------------:|:----------------:|
-| [Kolmogorov-Smirnov](../cd/methods/ksdrift.ipynb)                              |        ✅         |        ✅         |
-| [Cramér-von Mises](../cd/methods/cvmdrift.ipynb)                               |        ❌         |        ✅         |
-| [Fisher's Exact Test](../cd/methods/fetdrift.ipynb)                            |        ❌         |        ✅         |
-| [Least-Squares Density Difference](../cd/methods/lsdddrift.ipynb)              |        ❌         |        ✅         |
-| [Maximum Mean Discrepancy](../cd/methods/mmddrift.ipynb)                       |        ✅         |        ✅         |
-| [Learned Kernel MMD](../cd/methods/learnedkerneldrift.ipynb)                   |        ❌         |        ✅         |
-| [Chi-Squared](../cd/methods/chisquaredrift.ipynb)                              |        ✅         |        ✅         |
-| [Mixed-type tabular](../cd/methods/tabulardrift.ipynb)                         |        ✅         |        ✅         |
-| [Classifier](../cd/methods/classifierdrift.ipynb)                              |        ✅         |        ✅         |
-| [Spot-the-diff](../cd/methods/spotthediffdrift.ipynb)                          |        ❌         |        ✅         |
-| [Classifier Uncertainty](../cd/methods/modeluncdrift.ipynb)                    |        ❌         |        ✅         |
-| [Regressor Uncertainty](../cd/methods/modeluncdrift.ipynb)                     |        ❌         |        ✅         |
-| [Online Cramér-von Mises](../cd/methods/onlinecvmdrift.ipynb)                  |        ❌         |        ✅         |
-| [Online Fisher's Exact Test](../cd/methods/onlinefetdrift.ipynb)               |        ❌         |        ✅         |
-| [Online Least-Squares Density Difference](../cd/methods/onlinelsdddrift.ipynb) |        ❌         |        ✅         |
-| [Online Maximum Mean Discrepancy](../cd/methods/onlinemmddrift.ipynb)          |        ❌         |        ✅         |
-```
-
-```{tab-item} Outlier detectors
-| Detector                                                | Legacy save/load | Config save/load |
-|:--------------------------------------------------------|:----------------:|:----------------:|
-| [Isolation Forest](../od/methods/iforest.ipynb)         |         ✅       |       ❌          |         
-| [Mahalanobis Distance](../od/methods/mahalanobis.ipynb) |         ✅       |       ❌          |
-| [AE](../od/methods/ae.ipynb)                            |         ✅       |       ❌          |
-| [VAE](../od/methods/vae.ipynb)                          |         ✅       |       ❌          |
-| [AEGMM](../od/methods/aegmm.ipynb)                      |         ✅       |       ❌          |
-| [VAEGMM](../od/methods/vaegmm.ipynb)                    |         ✅       |       ❌          |
-| [Likelihood Ratios](../od/methods/llr.ipynb)            |         ✅       |       ❌          |
-| [Prophet](../od/methods/prophet.ipynb)                  |         ✅       |       ❌          |
-| [Spectral Residual](../od/methods/sr.ipynb)             |         ✅       |       ❌          |
-| [Seq2Seq](../od/methods/seq2seq.ipynb)                  |         ✅       |       ❌          |
-
-```
-
-```{tab-item} Adversarial detectors
-| Detector                                                    | Legacy save/load | Config save/load |
-|:------------------------------------------------------------|:----------------:|:----------------:|
-| [Adversarial AE](../ad/methods/adversarialae.ipynb)         |        ✅        |        ❌         |
-| [Model distillation](../ad/methods/modeldistillation.ipynb) |        ✅        |        ❌         |
-```
-````
-
 {% tabs %}
 {% tab title="Drift detectors" %}
-
+| Detector                                | Legacy save/load | Config save/load |
+| --------------------------------------- | :--------------: | :--------------: |
+| Kolmogorov-Smirnov                      |         ✅        |         ✅        |
+| Cramér-von Mises                        |         ❌        |         ✅        |
+| Fisher's Exact Test                     |         ❌        |         ✅        |
+| Least-Squares Density Difference        |         ❌        |         ✅        |
+| Maximum Mean Discrepancy                |         ✅        |         ✅        |
+| Learned Kernel MMD                      |         ❌        |         ✅        |
+| Chi-Squared                             |         ✅        |         ✅        |
+| Mixed-type tabular                      |         ✅        |         ✅        |
+| Classifier                              |         ✅        |         ✅        |
+| Spot-the-diff                           |         ❌        |         ✅        |
+| Classifier Uncertainty                  |         ❌        |         ✅        |
+| Regressor Uncertainty                   |         ❌        |         ✅        |
+| Online Cramér-von Mises                 |         ❌        |         ✅        |
+| Online Fisher's Exact Test              |         ❌        |         ✅        |
+| Online Least-Squares Density Difference |         ❌        |         ✅        |
+| Online Maximum Mean Discrepancy         |         ❌        |         ✅        |
 {% endtab %}
 
 {% tab title="Outlier detectors" %}
-
+| Detector             | Legacy save/load | Config save/load |
+| -------------------- | :--------------: | :--------------: |
+| Isolation Forest     |         ✅        |         ❌        |
+| Mahalanobis Distance |         ✅        |         ❌        |
+| AE                   |         ✅        |         ❌        |
+| VAE                  |         ✅        |         ❌        |
+| AEGMM                |         ✅        |         ❌        |
+| VAEGMM               |         ✅        |         ❌        |
+| Likelihood Ratios    |         ✅        |         ❌        |
+| Prophet              |         ✅        |         ❌        |
+| Spectral Residual    |         ✅        |         ❌        |
+| Seq2Seq              |         ✅        |         ❌        |
 {% endtab %}
 
-{% tab title="Adversarial detectors       " %}
-| Detector           | Legacy save/load  | Config save/load |
-| ------------------ | ----------------- | ---------------- |
-| Adversarial AE     | ✅                 | ❌                |
-| Model distillation | ✅                 | ❌                |
+{% tab title="Adversarial detectors" %}
+| Detector           | Legacy save/load | Config save/load |
+| ------------------ | :--------------: | :--------------: |
+| Adversarial AE     |         ✅        |         ❌        |
+| Model distillation |         ✅        |         ❌        |
 {% endtab %}
 {% endtabs %}
 
