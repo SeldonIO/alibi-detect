@@ -21,6 +21,7 @@ overview/roadmap
 :caption: Outlier Detection
 :maxdepth: 2
 
+od/background
 od/methods
 od/examples
 ```
