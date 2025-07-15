@@ -783,7 +783,7 @@ class BaseSpectralDrift(BaseDetector):
         pass
 
     def predict(self, x: Union[np.ndarray, list], return_p_val: bool = True, return_distance: bool = True) \
-            -> Dict[Dict[str, str], Dict[str, Union[int, float]]]:
+            -> Dict[str, Any]:
         """
         Predict whether a batch of data has drifted from the reference data.
 

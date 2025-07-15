@@ -1,6 +1,6 @@
 import logging
 import numpy as np
-from typing import Callable, Dict, Optional, Union
+from typing import Callable, Dict, List, Optional, Union
 from alibi_detect.utils.warnings import deprecated_alias
 from alibi_detect.base import DriftConfigMixin
 from alibi_detect.utils._types import TorchDeviceType
@@ -150,7 +150,7 @@ class SpectralDrift(DriftConfigMixin):
         logger.info(f"Computing threshold with {self.n_bootstraps} bootstraps...")
 
         n_samples = len(self.x_ref_processed)
-        ratios = []
+        ratios: List[float] = []
 
         for i in range(self.n_bootstraps):
             # Bootstrap sample
@@ -172,9 +172,9 @@ class SpectralDrift(DriftConfigMixin):
             return 0.2
 
         # Use 2-sigma rule
-        ratios = np.array(ratios)
-        threshold = max(2 * np.std(ratios), 0.1)
-
+        ratios = np.array(ratios)  # type: ignore[assignment]
+        std_value = np.std(ratios)
+        threshold = np.maximum(2 * std_value, 0.1)  # numpy.maximum returns numpy scalar        
         logger.info(f"Computed threshold: {threshold:.3f}")
         return threshold
 
@@ -231,7 +231,7 @@ class SpectralDrift(DriftConfigMixin):
         }
 
         if return_p_val:
-            result['data']['p_val'] = p_val
+            result['data']['p_val'] = p_val  # type: ignore[index]
 
         return result
 
