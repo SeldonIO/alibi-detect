@@ -14,6 +14,7 @@ from .cvm_online import CVMDriftOnline
 from .fet import FETDrift
 from .fet_online import FETDriftOnline
 from .context_aware import ContextMMDDrift
+from .spectral import SpectralDrift
 
 __all__ = [
     "ChiSquareDrift",
@@ -32,5 +33,6 @@ __all__ = [
     "CVMDriftOnline",
     "FETDrift",
     "FETDriftOnline",
-    "ContextMMDDrift"
+    "ContextMMDDrift",
+    "SpectralDrift"
 ]

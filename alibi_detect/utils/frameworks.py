@@ -30,6 +30,8 @@ try:
 except ImportError:
     has_keops = False
 
+has_tensorflow = False  # Fixit, currently spectral methods are not implemented for tensorflow.
+
 # Map from backend name to boolean value indicating its presence
 HAS_BACKEND = {
     'tensorflow': has_tensorflow,
