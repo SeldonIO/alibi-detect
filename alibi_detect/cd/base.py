@@ -664,6 +664,7 @@ class BaseMMDDrift(BaseDetector):
             cd['data']['distance_threshold'] = distance_threshold
         return cd
 
+
 class BaseSpectralDrift(BaseDetector):
     def __init__(
             self,
@@ -824,6 +825,8 @@ class BaseSpectralDrift(BaseDetector):
             cd['data']['distance_threshold'] = distance_threshold
             cd['data']['spectral_ratio'] = spectral_ratio
         return cd
+
+
 class BaseLSDDDrift(BaseDetector):
     # TODO: TBD: this is only created when _configure_normalization is called from backend-specific classes,
     # is declaring it here the right thing to do?

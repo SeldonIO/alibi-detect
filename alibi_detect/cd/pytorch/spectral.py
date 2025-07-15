@@ -9,7 +9,7 @@ try:
 except ImportError:
     # Fallback if BaseSpectralDrift doesn't exist yet
     from alibi_detect.base import BaseDetector
-    
+
     class BaseSpectralDrift(BaseDetector):
         def __init__(self, x_ref, p_val=0.05, preprocess_fn=None, threshold=None, n_bootstraps=1000, **kwargs):
             super().__init__()
@@ -18,16 +18,16 @@ except ImportError:
             self.preprocess_fn = preprocess_fn
             self.threshold = threshold
             self.n_bootstraps = n_bootstraps
-            
+
             # Validate input dimensions for spectral analysis
             if hasattr(x_ref, 'shape') and x_ref.shape[1] < 2:
                 raise ValueError(f"Spectral analysis requires at least 2 features, got {x_ref.shape[1]}")
-            
+
             # Set metadata
             self.meta = {}
             self.meta['detector_type'] = 'drift'
             self.meta['online'] = False
-        
+
         def preprocess(self, x):
             if self.preprocess_fn is not None:
                 x = self.preprocess_fn(x)
@@ -70,17 +70,17 @@ class SpectralDriftTorch(BaseSpectralDrift):
             threshold=threshold,
             n_bootstraps=n_bootstraps
         )
-        
+
         # Store additional parameters
         self.x_ref_preprocessed = x_ref_preprocessed
         self.preprocess_at_init = preprocess_at_init
         self.update_x_ref = update_x_ref
         self.input_shape = input_shape
         self.data_type = data_type
-        
+
         # Add reference update support
         self.n = len(x_ref)
-        
+
         # Set backend metadata
         if hasattr(self, 'meta'):
             self.meta.update({'backend': Framework.PYTORCH.value})
@@ -104,19 +104,19 @@ class SpectralDriftTorch(BaseSpectralDrift):
         """Compute baseline covariance matrix and eigenvalue spectrum using PyTorch."""
         # Center the data
         x_centered = x_ref - torch.mean(x_ref, dim=0, keepdim=True)
-        
+
         # Compute covariance matrix
         n_samples = x_ref.shape[0]
         self.baseline_cov = torch.mm(x_centered.t(), x_centered) / (n_samples - 1)
-        
+
         # Compute eigenvalues using PyTorch
         eigenvals = torch.linalg.eigvals(self.baseline_cov)
         eigenvals = torch.real(eigenvals)  # Take real part
         eigenvals = torch.sort(eigenvals, descending=True)[0]  # Sort descending
-        
+
         self.baseline_eigenvalues = eigenvals
         self.baseline_eigenvalue = eigenvals[0]  # Largest eigenvalue
-        
+
         # Store additional baseline statistics
         self.baseline_trace = torch.sum(eigenvals)
         self.baseline_det = torch.prod(eigenvals[eigenvals > 1e-10])
@@ -126,40 +126,40 @@ class SpectralDriftTorch(BaseSpectralDrift):
         """Compute test data eigenvalue spectrum and spectral ratio using PyTorch."""
         # Center the test data
         x_centered = x_test - torch.mean(x_test, dim=0, keepdim=True)
-        
+
         # Compute test covariance matrix
         n_samples = x_test.shape[0]
         test_cov = torch.mm(x_centered.t(), x_centered) / (n_samples - 1)
-        
+
         # Compute eigenvalues
         eigenvals = torch.linalg.eigvals(test_cov)
         eigenvals = torch.real(eigenvals)
         eigenvals = torch.sort(eigenvals, descending=True)[0]
-        
+
         test_eigenvalue = eigenvals[0]
         spectral_ratio = test_eigenvalue / self.baseline_eigenvalue
-        
+
         return spectral_ratio, test_eigenvalue, eigenvals
 
     def _infer_threshold(self, x_ref: torch.Tensor) -> float:
         """Infer threshold using bootstrap method with PyTorch tensors."""
         logger.info(f"Inferring threshold using {self.n_bootstraps} bootstrap samples...")
-        
+
         n_samples = x_ref.shape[0]
         bootstrap_ratios = []
-        
+
         for _ in range(self.n_bootstraps):
             # Bootstrap sample from reference distribution
             indices = torch.randint(0, n_samples, (max(n_samples // 2, 50),), device=self.device)
             x_bootstrap = x_ref[indices]
-            
+
             # Compute spectral ratio
             ratio, _, _ = self._compute_test_spectrum(x_bootstrap)
             bootstrap_ratios.append(ratio.cpu().item())
-        
+
         # Set threshold at (1-p_val) quantile
         threshold = float(np.quantile(bootstrap_ratios, 1 - self.p_val))
-        
+
         logger.info(f"Inferred threshold: {threshold:.4f}")
         return threshold
 
@@ -175,17 +175,17 @@ class SpectralDriftTorch(BaseSpectralDrift):
 
         # Compute spectral ratio
         spectral_ratio, test_eigenvalue, _ = self._compute_test_spectrum(x)
-        
+
         # Simple p-value computation
         if spectral_ratio > self.threshold:
             p_val = 0.01
         else:
             p_val = 0.5
-        
+
         # Convert tensors to numpy for return
         if self.device.type == 'cuda':
             spectral_ratio = spectral_ratio.cpu()
-        
+
         return p_val, spectral_ratio.numpy().item(), self.threshold
 
     def predict(self, x: Union[np.ndarray, list], return_p_val: bool = True) -> Dict:
@@ -193,7 +193,7 @@ class SpectralDriftTorch(BaseSpectralDrift):
         # Compute drift scores
         p_val, spectral_ratio, distance_threshold = self.score(x)
         drift_pred = int(p_val < self.p_val)
-        
+
         # Handle reference data updates (simplified version)
         if isinstance(self.update_x_ref, dict):
             # For testing purposes, update self.n
@@ -207,7 +207,7 @@ class SpectralDriftTorch(BaseSpectralDrift):
             'distance_threshold': distance_threshold,
             'spectral_ratio': spectral_ratio
         }
-        
+
         if return_p_val:
             data['p_val'] = p_val
 
@@ -226,12 +226,12 @@ class SpectralDriftTorch(BaseSpectralDrift):
         x_ref, x = self.preprocess(x)
         x_ref = torch.from_numpy(x_ref).to(self.device).float()
         x = torch.from_numpy(x).to(self.device).float()
-        
+
         spectral_ratio, _, _ = self._compute_test_spectrum(x)
-        
+
         if self.device.type == 'cuda':
             spectral_ratio = spectral_ratio.cpu()
-            
+
         return spectral_ratio.numpy().item()
 
     def get_spectral_stats(self, x: Union[np.ndarray, list]) -> Dict[str, float]:
@@ -239,18 +239,19 @@ class SpectralDriftTorch(BaseSpectralDrift):
         x_ref, x = self.preprocess(x)
         x_ref = torch.from_numpy(x_ref).to(self.device).float()
         x = torch.from_numpy(x).to(self.device).float()
-        
+
         spectral_ratio, test_eigenvalue, test_eigenvalues = self._compute_test_spectrum(x)
-        
+
         # Additional spectral statistics
         test_trace = torch.sum(test_eigenvalues)
-        test_condition_number = test_eigenvalues[0] / test_eigenvalues[-1] if test_eigenvalues[-1] > 1e-10 else float('inf')
-        
+        test_condition_number = test_eigenvalues[0] / \
+            test_eigenvalues[-1] if test_eigenvalues[-1] > 1e-10 else float('inf')
+
         # Ratios and changes
         trace_ratio = test_trace / self.baseline_trace
         eigenvalue_change = test_eigenvalue - self.baseline_eigenvalue
         eigenvalue_change_pct = (eigenvalue_change / self.baseline_eigenvalue) * 100
-        
+
         # Convert to CPU if needed
         if self.device.type == 'cuda':
             spectral_ratio = spectral_ratio.cpu()
@@ -261,13 +262,15 @@ class SpectralDriftTorch(BaseSpectralDrift):
             trace_ratio = trace_ratio.cpu()
             eigenvalue_change = eigenvalue_change.cpu()
             eigenvalue_change_pct = eigenvalue_change_pct.cpu()
-            test_condition_number = test_condition_number.cpu() if isinstance(test_condition_number, torch.Tensor) else test_condition_number
-            baseline_condition_number = self.baseline_condition_number.cpu() if isinstance(self.baseline_condition_number, torch.Tensor) else self.baseline_condition_number
+            test_condition_number = test_condition_number.cpu() if isinstance(
+                test_condition_number, torch.Tensor) else test_condition_number
+            baseline_condition_number = self.baseline_condition_number.cpu() if isinstance(
+                self.baseline_condition_number, torch.Tensor) else self.baseline_condition_number
         else:
             baseline_eigenvalue = self.baseline_eigenvalue
             baseline_trace = self.baseline_trace
             baseline_condition_number = self.baseline_condition_number
-        
+
         return {
             'spectral_ratio': spectral_ratio.numpy().item(),
             'test_eigenvalue': test_eigenvalue.numpy().item(),
@@ -277,8 +280,16 @@ class SpectralDriftTorch(BaseSpectralDrift):
             'test_trace': test_trace.numpy().item(),
             'baseline_trace': baseline_trace.numpy().item(),
             'trace_ratio': trace_ratio.numpy().item(),
-            'test_condition_number': test_condition_number.numpy().item() if isinstance(test_condition_number, torch.Tensor) else test_condition_number,
-            'baseline_condition_number': baseline_condition_number.numpy().item() if isinstance(baseline_condition_number, torch.Tensor) else baseline_condition_number,
+            'test_condition_number': (
+                test_condition_number.numpy().item()
+                if isinstance(test_condition_number, torch.Tensor)
+                else test_condition_number
+            ),
+            'baseline_condition_number': (
+                baseline_condition_number.numpy().item()
+                if isinstance(baseline_condition_number, torch.Tensor)
+                else baseline_condition_number
+            ),
             'test_samples': x.shape[0],
             'reference_samples': x_ref.shape[0]
         }

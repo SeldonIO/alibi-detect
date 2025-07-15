@@ -3,8 +3,6 @@ import logging
 from io import BytesIO
 from typing import List, Tuple, Type, Union, Optional, Dict
 from xml.etree import ElementTree
-import json
-from datetime import datetime, timedelta
 
 import dill
 import numpy as np
@@ -531,7 +529,7 @@ def fetch_genome(return_X_y: bool = False, return_labels: bool = False) -> Union
 def get_financial_crisis_presets() -> Dict[str, Dict]:
     """
     Get predefined financial crisis configurations for drift detection studies.
-    
+
     Returns
     -------
     Dict
@@ -542,10 +540,11 @@ def get_financial_crisis_presets() -> Dict[str, Dict]:
             'description': '2008 Global Financial Crisis (Subprime mortgage crisis)',
             'pre_crisis_start': '2007-01-01',
             'pre_crisis_end': '2008-07-31',
-            'crisis_start': '2008-09-01', 
+            'crisis_start': '2008-09-01',
             'crisis_end': '2009-04-30',
             'typical_tickers': ['SPY', 'XLF', 'XLK', 'XLE', 'XLV', 'XLI', 'QQQ', 'IWM'],
-            'description_long': 'Period covering the subprime mortgage crisis, Lehman Brothers collapse, and subsequent market turmoil'
+            'description_long': ('Period covering the subprime mortgage crisis, '
+                                 'Lehman Brothers collapse, and subsequent market turmoil')
         },
         '2020_covid_crisis': {
             'description': '2020 COVID-19 Market Crash',
@@ -578,24 +577,24 @@ def get_financial_crisis_presets() -> Dict[str, Dict]:
 
 
 def fetch_financial_crisis(crisis: str = '2008_financial_crisis',
-                          tickers: Optional[List[str]] = None,
-                          data_source: str = 'yfinance',
-                          fred_api_key: Optional[str] = None,
-                          include_macro: bool = False,
-                          return_X_y: bool = False,
-                          return_raw: bool = False,
-                          min_history: int = 100) -> Union[Bunch, Tuple[pd.DataFrame, pd.DataFrame]]:
+                           tickers: Optional[List[str]] = None,
+                           data_source: str = 'yfinance',
+                           fred_api_key: Optional[str] = None,
+                           include_macro: bool = False,
+                           return_X_y: bool = False,
+                           return_raw: bool = False,
+                           min_history: int = 100) -> Union[Bunch, Tuple[pd.DataFrame, pd.DataFrame]]:
     """
     Fetch financial crisis data for drift detection analysis.
-    
+
     This function downloads historical financial data for pre-crisis and crisis periods,
-    providing clean datasets suitable for distribution drift analysis, particularly 
+    providing clean datasets suitable for distribution drift analysis, particularly
     correlation structure changes during market stress.
-    
+
     Parameters
     ----------
     crisis
-        Crisis identifier. Options: '2008_financial_crisis', '2020_covid_crisis', 
+        Crisis identifier. Options: '2008_financial_crisis', '2020_covid_crisis',
         '2000_dotcom_crash', '2011_european_debt', or custom dates as dict.
     tickers
         List of ticker symbols to download. If None, uses typical tickers for the crisis.
@@ -611,20 +610,20 @@ def fetch_financial_crisis(crisis: str = '2008_financial_crisis',
         If True, return raw price data instead of returns.
     min_history
         Minimum number of trading days required for each ticker.
-    
+
     Returns
     -------
     Bunch
         Financial crisis dataset with pre-crisis and crisis period data.
         - data_pre: Pre-crisis period returns/prices
-        - data_crisis: Crisis period returns/prices  
+        - data_crisis: Crisis period returns/prices
         - tickers: List of successful ticker symbols
         - dates_pre: Date range for pre-crisis period
         - dates_crisis: Date range for crisis period
         - crisis_info: Metadata about the crisis
     (pre_crisis_data, crisis_data)
         Tuple if return_X_y=True.
-    
+
     Examples
     --------
     >>> # Load 2008 financial crisis data
@@ -633,23 +632,23 @@ def fetch_financial_crisis(crisis: str = '2008_financial_crisis',
     >>> crisis_returns = data.data_crisis
     >>> print(f"Pre-crisis shape: {pre_returns.shape}")
     >>> print(f"Crisis shape: {crisis_returns.shape}")
-    
+
     >>> # Load with custom tickers
     >>> custom_tickers = ['AAPL', 'MSFT', 'GOOGL', 'AMZN']
     >>> data = fetch_financial_crisis('2020_covid_crisis', tickers=custom_tickers)
-    
+
     >>> # Get raw price data instead of returns
     >>> prices = fetch_financial_crisis('2008_financial_crisis', return_raw=True)
-    
+
     >>> # Include macroeconomic data (requires FRED API key)
-    >>> data = fetch_financial_crisis('2008_financial_crisis', 
-    ...                              include_macro=True, 
+    >>> data = fetch_financial_crisis('2008_financial_crisis',
+    ...                              include_macro=True,
     ...                              fred_api_key='your_api_key')
     """
-    
+
     # Get crisis configuration
     crisis_presets = get_financial_crisis_presets()
-    
+
     if isinstance(crisis, str):
         if crisis not in crisis_presets:
             available = ', '.join(crisis_presets.keys())
@@ -662,17 +661,17 @@ def fetch_financial_crisis(crisis: str = '2008_financial_crisis',
         crisis_config = crisis
     else:
         raise ValueError("Crisis must be string identifier or dict with date ranges")
-    
+
     # Set default tickers if none provided
     if tickers is None:
-        tickers = crisis_config.get('typical_tickers', 
-                                   ['SPY', 'XLF', 'XLK', 'XLE', 'XLV', 'XLI', 'QQQ', 'IWM'])
-    
+        tickers = crisis_config.get('typical_tickers',
+                                    ['SPY', 'XLF', 'XLK', 'XLE', 'XLV', 'XLI', 'QQQ', 'IWM'])
+
     logger.info(f"Fetching financial crisis data: {crisis_config.get('description', crisis)}")
     logger.info(f"Tickers: {tickers}")
     logger.info(f"Pre-crisis: {crisis_config['pre_crisis_start']} to {crisis_config['pre_crisis_end']}")
     logger.info(f"Crisis: {crisis_config['crisis_start']} to {crisis_config['crisis_end']}")
-    
+
     # Download financial data
     if data_source == 'yfinance':
         pre_data, crisis_data, successful_tickers = _fetch_yfinance_data(
@@ -688,23 +687,23 @@ def fetch_financial_crisis(crisis: str = '2008_financial_crisis',
         )
     else:
         raise ValueError(f"Unknown data_source: {data_source}")
-    
+
     # Add macroeconomic indicators if requested
     if include_macro:
         if not HAS_FRED:
             raise ImportError("fredapi package required for macro data. Install with: pip install fredapi")
         if fred_api_key is None:
             raise ValueError("fred_api_key required for macroeconomic data")
-        
+
         macro_pre, macro_crisis = _fetch_macro_indicators(
             crisis_config, fred_api_key, pre_data.index, crisis_data.index
         )
-        
+
         # Combine financial and macro data
         pre_data = pd.concat([pre_data, macro_pre], axis=1)
         crisis_data = pd.concat([crisis_data, macro_crisis], axis=1)
         successful_tickers.extend(macro_pre.columns.tolist())
-    
+
     # Convert to returns if not returning raw data
     if not return_raw:
         pre_returns = pre_data.pct_change().dropna()
@@ -712,17 +711,17 @@ def fetch_financial_crisis(crisis: str = '2008_financial_crisis',
     else:
         pre_returns = pre_data
         crisis_returns = crisis_data
-    
+
     # Validate data quality
     if len(pre_returns) < min_history or len(crisis_returns) < min_history // 2:
         logger.warning(f"Limited data available: pre={len(pre_returns)}, crisis={len(crisis_returns)}")
-    
+
     logger.info(f"Successfully loaded data for {len(successful_tickers)} assets")
     logger.info(f"Pre-crisis: {pre_returns.shape}, Crisis: {crisis_returns.shape}")
-    
+
     if return_X_y:
         return pre_returns, crisis_returns
-    
+
     return Bunch(
         data_pre=pre_returns,
         data_crisis=crisis_returns,
@@ -736,35 +735,35 @@ def fetch_financial_crisis(crisis: str = '2008_financial_crisis',
     )
 
 
-def _fetch_yfinance_data(tickers: List[str], 
-                        crisis_config: Dict, 
-                        min_history: int) -> Tuple[pd.DataFrame, pd.DataFrame, List[str]]:
+def _fetch_yfinance_data(tickers: List[str],
+                         crisis_config: Dict,
+                         min_history: int) -> Tuple[pd.DataFrame, pd.DataFrame, List[str]]:
     """
     Fetch data using yfinance.
     """
     if not HAS_YFINANCE:
         raise ImportError("yfinance package required. Install with: pip install yfinance")
-    
+
     pre_data = {}
     crisis_data = {}
     successful_tickers = []
-    
+
     for ticker in tickers:
         try:
             stock = yf.Ticker(ticker)
-            
+
             # Download pre-crisis data
             pre_hist = stock.history(
                 start=crisis_config['pre_crisis_start'],
                 end=crisis_config['pre_crisis_end']
             )
-            
+
             # Download crisis data
             crisis_hist = stock.history(
                 start=crisis_config['crisis_start'],
                 end=crisis_config['crisis_end']
             )
-            
+
             # Validate data quality
             if len(pre_hist) >= min_history and len(crisis_hist) >= min_history // 2:
                 pre_data[ticker] = pre_hist['Close']
@@ -773,34 +772,34 @@ def _fetch_yfinance_data(tickers: List[str],
                 logger.debug(f"✅ {ticker}: {len(pre_hist)} + {len(crisis_hist)} days")
             else:
                 logger.warning(f"❌ {ticker}: Insufficient data ({len(pre_hist)} + {len(crisis_hist)} days)")
-                
+
         except Exception as e:
             logger.warning(f"❌ {ticker}: Download failed - {e}")
             continue
-    
+
     if len(successful_tickers) == 0:
         raise ValueError("No valid tickers could be downloaded")
-    
+
     # Create DataFrames and align dates
     pre_df = pd.DataFrame(pre_data).dropna()
     crisis_df = pd.DataFrame(crisis_data).dropna()
-    
+
     return pre_df, crisis_df, successful_tickers
 
 
-def _fetch_fred_data(tickers: List[str], 
-                    crisis_config: Dict, 
-                    fred_api_key: str,
-                    min_history: int) -> Tuple[pd.DataFrame, pd.DataFrame, List[str]]:
+def _fetch_fred_data(tickers: List[str],
+                     crisis_config: Dict,
+                     fred_api_key: str,
+                     min_history: int) -> Tuple[pd.DataFrame, pd.DataFrame, List[str]]:
     """
     Fetch economic data using FRED API.
     """
     fred = fredapi.Fred(api_key=fred_api_key)
-    
+
     pre_data = {}
     crisis_data = {}
     successful_tickers = []
-    
+
     for series_id in tickers:
         try:
             # Download full series
@@ -809,14 +808,14 @@ def _fetch_fred_data(tickers: List[str],
                 start=crisis_config['pre_crisis_start'],
                 end=crisis_config['crisis_end']
             )
-            
+
             # Split into pre-crisis and crisis periods
             pre_end = pd.to_datetime(crisis_config['pre_crisis_end'])
             crisis_start = pd.to_datetime(crisis_config['crisis_start'])
-            
+
             pre_series = data[data.index <= pre_end]
             crisis_series = data[data.index >= crisis_start]
-            
+
             # Validate data quality
             if len(pre_series) >= min_history // 10 and len(crisis_series) >= min_history // 20:
                 pre_data[series_id] = pre_series
@@ -825,30 +824,30 @@ def _fetch_fred_data(tickers: List[str],
                 logger.debug(f"✅ {series_id}: {len(pre_series)} + {len(crisis_series)} observations")
             else:
                 logger.warning(f"❌ {series_id}: Insufficient data")
-                
+
         except Exception as e:
             logger.warning(f"❌ {series_id}: Download failed - {e}")
             continue
-    
+
     if len(successful_tickers) == 0:
         raise ValueError("No valid FRED series could be downloaded")
-    
+
     # Create DataFrames
     pre_df = pd.DataFrame(pre_data).dropna()
     crisis_df = pd.DataFrame(crisis_data).dropna()
-    
+
     return pre_df, crisis_df, successful_tickers
 
 
 def _fetch_macro_indicators(crisis_config: Dict,
-                           fred_api_key: str,
-                           pre_dates: pd.DatetimeIndex,
-                           crisis_dates: pd.DatetimeIndex) -> Tuple[pd.DataFrame, pd.DataFrame]:
+                            fred_api_key: str,
+                            pre_dates: pd.DatetimeIndex,
+                            crisis_dates: pd.DatetimeIndex) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
     Fetch macroeconomic indicators from FRED.
     """
     fred = fredapi.Fred(api_key=fred_api_key)
-    
+
     # Common macroeconomic indicators
     macro_series = {
         'FEDFUNDS': 'Federal Funds Rate',
@@ -859,9 +858,9 @@ def _fetch_macro_indicators(crisis_config: Dict,
         'DGS10': '10-Year Treasury Rate',
         'VIXCLS': 'VIX Volatility Index'
     }
-    
+
     macro_data = {}
-    
+
     for series_id, description in macro_series.items():
         try:
             data = fred.get_series(
@@ -869,53 +868,53 @@ def _fetch_macro_indicators(crisis_config: Dict,
                 start=crisis_config['pre_crisis_start'],
                 end=crisis_config['crisis_end']
             )
-            
+
             if len(data) > 10:  # Minimum data points
                 macro_data[series_id] = data
                 logger.debug(f"✅ Macro {series_id}: {len(data)} observations")
             else:
                 logger.debug(f"❌ Macro {series_id}: Insufficient data")
-                
+
         except Exception as e:
             logger.debug(f"❌ Macro {series_id}: {e}")
             continue
-    
+
     if not macro_data:
         logger.warning("No macroeconomic indicators could be loaded")
         return pd.DataFrame(), pd.DataFrame()
-    
+
     # Create DataFrame and forward-fill missing values
     macro_df = pd.DataFrame(macro_data).fillna(method='ffill')
-    
+
     # Align with financial data dates
     pre_macro = macro_df.reindex(pre_dates, method='ffill')
     crisis_macro = macro_df.reindex(crisis_dates, method='ffill')
-    
+
     return pre_macro.dropna(), crisis_macro.dropna()
 
 
 def create_synthetic_crisis_data(n_assets: int = 8,
-                                n_pre: int = 400,
-                                n_crisis: int = 150,
-                                pre_correlation: float = 0.3,
-                                crisis_correlation: float = 0.6,
-                                volatility_increase: float = 1.5,
-                                random_seed: int = 42,
-                                return_X_y: bool = False) -> Union[Bunch, Tuple[pd.DataFrame, pd.DataFrame]]:
+                                 n_pre: int = 400,
+                                 n_crisis: int = 150,
+                                 pre_correlation: float = 0.3,
+                                 crisis_correlation: float = 0.6,
+                                 volatility_increase: float = 1.5,
+                                 random_seed: int = 42,
+                                 return_X_y: bool = False) -> Union[Bunch, Tuple[pd.DataFrame, pd.DataFrame]]:
     """
     Create synthetic financial crisis data with controlled correlation changes.
-    
+
     This function generates realistic financial returns data that exhibits
     the correlation structure changes typical of financial crises, useful
     for testing drift detection methods.
-    
+
     Parameters
     ----------
     n_assets
         Number of financial assets to simulate.
     n_pre
         Number of pre-crisis observations.
-    n_crisis  
+    n_crisis
         Number of crisis observations.
     pre_correlation
         Average correlation during pre-crisis period.
@@ -927,97 +926,97 @@ def create_synthetic_crisis_data(n_assets: int = 8,
         Random seed for reproducibility.
     return_X_y
         If True, return (pre_crisis_data, crisis_data) tuple.
-    
+
     Returns
     -------
     Bunch
         Synthetic crisis dataset with controlled correlation structure.
     (pre_crisis_data, crisis_data)
         Tuple if return_X_y=True.
-    
+
     Examples
     --------
     >>> # Create synthetic crisis with moderate correlation increase
-    >>> data = create_synthetic_crisis_data(n_assets=10, 
+    >>> data = create_synthetic_crisis_data(n_assets=10,
     ...                                    pre_correlation=0.25,
     ...                                    crisis_correlation=0.55)
-    >>> 
+    >>>
     >>> # Test spectral drift detection
     >>> from alibi_detect.cd.spectral import SpectralDrift
     >>> detector = SpectralDrift(data.data_pre.values)
     >>> result = detector.predict(data.data_crisis.values)
     >>> print(f"Spectral ratio: {result['data']['spectral_ratio']:.3f}")
     """
-    
+
     np.random.seed(random_seed)
-    
+
     # Asset names
     asset_names = [f"Asset_{i+1}" for i in range(n_assets)]
-    
+
     # Create correlation matrices
     def create_correlation_matrix(base_corr: float, n: int) -> np.ndarray:
         """Create a realistic correlation matrix."""
         # Start with random correlations around base_corr
         corr = np.random.uniform(base_corr - 0.1, base_corr + 0.1, (n, n))
-        
+
         # Make symmetric
         corr = (corr + corr.T) / 2
-        
+
         # Set diagonal to 1
         np.fill_diagonal(corr, 1.0)
-        
+
         # Ensure positive definite
         eigenvals, eigenvecs = np.linalg.eigh(corr)
         eigenvals = np.maximum(eigenvals, 0.1)  # Minimum eigenvalue
         corr = eigenvecs @ np.diag(eigenvals) @ eigenvecs.T
-        
+
         # Normalize to correlation matrix
         d = np.sqrt(np.diag(corr))
         corr = corr / np.outer(d, d)
-        
+
         return corr
-    
+
     pre_corr = create_correlation_matrix(pre_correlation, n_assets)
     crisis_corr = create_correlation_matrix(crisis_correlation, n_assets)
-    
+
     # Base volatility
     base_vol = 0.015  # 1.5% daily volatility
-    
+
     # Generate returns
     pre_returns = np.random.multivariate_normal(
         mean=np.zeros(n_assets),
         cov=pre_corr * (base_vol ** 2),
         size=n_pre
     )
-    
+
     crisis_returns = np.random.multivariate_normal(
         mean=-np.ones(n_assets) * 0.0005,  # Slight negative drift
         cov=crisis_corr * ((base_vol * volatility_increase) ** 2),
         size=n_crisis
     )
-    
+
     # Create DataFrames with realistic dates
     pre_dates = pd.date_range(start='2007-01-01', periods=n_pre, freq='B')
     crisis_dates = pd.date_range(start='2008-09-01', periods=n_crisis, freq='B')
-    
+
     pre_df = pd.DataFrame(pre_returns, index=pre_dates, columns=asset_names)
     crisis_df = pd.DataFrame(crisis_returns, index=crisis_dates, columns=asset_names)
-    
+
     # Calculate spectral ratio for reference
     pre_eigenvals = np.linalg.eigvals(pre_corr)
     crisis_eigenvals = np.linalg.eigvals(crisis_corr)
     spectral_ratio = np.max(crisis_eigenvals) / np.max(pre_eigenvals)
-    
-    logger.info(f"Synthetic crisis data created:")
+
+    logger.info("Synthetic crisis data created:")
     logger.info(f"  Assets: {n_assets}")
     logger.info(f"  Pre-crisis: {n_pre} observations")
     logger.info(f"  Crisis: {n_crisis} observations")
     logger.info(f"  Correlation change: {pre_correlation:.3f} → {crisis_correlation:.3f}")
     logger.info(f"  Spectral ratio: {spectral_ratio:.3f}")
-    
+
     if return_X_y:
         return pre_df, crisis_df
-    
+
     return Bunch(
         data_pre=pre_df,
         data_crisis=crisis_df,
@@ -1036,7 +1035,7 @@ def create_synthetic_crisis_data(n_assets: int = 8,
 def get_financial_benchmarks() -> Dict[str, Dict]:
     """
     Get predefined financial benchmark datasets for drift detection evaluation.
-    
+
     Returns
     -------
     Dict
@@ -1086,12 +1085,12 @@ def get_financial_benchmarks() -> Dict[str, Dict]:
     }
 
 
-def fetch_financial_benchmark(benchmark: str, 
-                             random_seed: int = 42,
-                             return_X_y: bool = False) -> Union[Bunch, Tuple[pd.DataFrame, pd.DataFrame]]:
+def fetch_financial_benchmark(benchmark: str,
+                              random_seed: int = 42,
+                              return_X_y: bool = False) -> Union[Bunch, Tuple[pd.DataFrame, pd.DataFrame]]:
     """
     Fetch a predefined financial benchmark dataset.
-    
+
     Parameters
     ----------
     benchmark
@@ -1100,18 +1099,18 @@ def fetch_financial_benchmark(benchmark: str,
         Random seed for reproducibility.
     return_X_y
         If True, return (pre_crisis_data, crisis_data) tuple.
-    
+
     Returns
     -------
     Bunch or tuple
         Benchmark dataset with known characteristics.
-    
+
     Examples
     --------
     >>> # Load moderate correlation change benchmark
     >>> data = fetch_financial_benchmark('correlation_change_moderate')
     >>> print(f"Expected spectral ratio: {data.expected_spectral_ratio}")
-    
+
     >>> # Test with spectral drift detector
     >>> from alibi_detect.cd.spectral import SpectralDrift
     >>> detector = SpectralDrift(data.data_pre.values)
@@ -1121,13 +1120,13 @@ def fetch_financial_benchmark(benchmark: str,
     >>> print(f"Actual ratio: {actual_ratio:.3f}, Expected: {expected_ratio:.3f}")
     """
     benchmarks = get_financial_benchmarks()
-    
+
     if benchmark not in benchmarks:
         available = ', '.join(benchmarks.keys())
         raise ValueError(f"Unknown benchmark '{benchmark}'. Available: {available}")
-    
+
     config = benchmarks[benchmark]
-    
+
     # Create synthetic data with benchmark parameters
     data = create_synthetic_crisis_data(
         n_assets=config['n_assets'],
@@ -1139,24 +1138,24 @@ def fetch_financial_benchmark(benchmark: str,
         random_seed=random_seed,
         return_X_y=return_X_y
     )
-    
+
     if return_X_y:
         return data
-    
+
     # Add benchmark-specific metadata
     data.benchmark_name = benchmark
     data.expected_spectral_ratio = config['expected_spectral_ratio']
     data.description = f"Financial benchmark: {config['description']}"
-    
+
     return data
 
 
-def analyze_financial_data(pre_data: pd.DataFrame, 
-                          crisis_data: pd.DataFrame,
-                          return_full_analysis: bool = False) -> Union[Dict, Bunch]:
+def analyze_financial_data(pre_data: pd.DataFrame,
+                           crisis_data: pd.DataFrame,
+                           return_full_analysis: bool = False) -> Union[Dict, Bunch]:
     """
     Analyze financial data for distribution drift characteristics.
-    
+
     Parameters
     ----------
     pre_data
@@ -1165,13 +1164,13 @@ def analyze_financial_data(pre_data: pd.DataFrame,
         Crisis period financial data (returns or prices).
     return_full_analysis
         If True, return comprehensive analysis including correlations and tests.
-    
+
     Returns
     -------
     Dict or Bunch
         Analysis results including correlation changes, volatility changes,
         and basic statistical tests.
-    
+
     Examples
     --------
     >>> data = fetch_financial_crisis('2008_financial_crisis')
@@ -1179,26 +1178,26 @@ def analyze_financial_data(pre_data: pd.DataFrame,
     >>> print(f"Spectral ratio: {analysis['spectral_ratio']:.3f}")
     >>> print(f"Correlation change: {analysis['correlation_change']:.3f}")
     """
-    
+
     # Basic statistics
     pre_corr = pre_data.corr().values
     crisis_corr = crisis_data.corr().values
-    
+
     # Spectral analysis
     pre_eigenvals = np.linalg.eigvals(pre_corr)
     crisis_eigenvals = np.linalg.eigvals(crisis_corr)
     spectral_ratio = np.max(np.real(crisis_eigenvals)) / np.max(np.real(pre_eigenvals))
-    
+
     # Correlation changes
     corr_diff = crisis_corr - pre_corr
     correlation_change = np.mean(np.abs(corr_diff[np.triu_indices_from(corr_diff, k=1)]))
     max_correlation_change = np.max(np.abs(corr_diff))
-    
+
     # Volatility changes
     pre_vol = pre_data.std()
     crisis_vol = crisis_data.std()
     volatility_ratio = np.mean(crisis_vol / pre_vol)
-    
+
     # Basic analysis results
     analysis = {
         'spectral_ratio': spectral_ratio,
@@ -1209,29 +1208,29 @@ def analyze_financial_data(pre_data: pd.DataFrame,
         'crisis_shape': crisis_data.shape,
         'n_assets': len(pre_data.columns)
     }
-    
+
     if return_full_analysis:
         # Extended analysis
         from scipy import stats
-        
+
         # Statistical tests on means
         mean_tests = {}
         for col in pre_data.columns:
             t_stat, p_val = stats.ttest_ind(pre_data[col], crisis_data[col])
             mean_tests[col] = {'t_statistic': t_stat, 'p_value': p_val}
-        
+
         # Variance tests
         var_tests = {}
         for col in pre_data.columns:
             f_stat, p_val = stats.levene(pre_data[col], crisis_data[col])
             var_tests[col] = {'f_statistic': f_stat, 'p_value': p_val}
-        
+
         # Distribution tests (KS test)
         ks_tests = {}
         for col in pre_data.columns:
             ks_stat, p_val = stats.ks_2samp(pre_data[col], crisis_data[col])
             ks_tests[col] = {'ks_statistic': ks_stat, 'p_value': p_val}
-        
+
         # Return comprehensive Bunch object
         return Bunch(
             **analysis,
@@ -1246,7 +1245,7 @@ def analyze_financial_data(pre_data: pd.DataFrame,
             variance_tests=var_tests,
             ks_tests=ks_tests
         )
-    
+
     return analysis
 
 
