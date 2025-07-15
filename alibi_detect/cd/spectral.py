@@ -174,7 +174,7 @@ class SpectralDrift(DriftConfigMixin):
         # Use 2-sigma rule
         ratios = np.array(ratios)  # type: ignore[assignment]
         std_value = np.std(ratios)
-        threshold = np.maximum(2 * std_value, 0.1)  # numpy.maximum returns numpy scalar        
+        threshold = np.maximum(2 * std_value, 0.1)  # numpy.maximum returns numpy scalar
         logger.info(f"Computed threshold: {threshold:.3f}")
         return threshold
 

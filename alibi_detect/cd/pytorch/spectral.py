@@ -63,7 +63,7 @@ class SpectralDriftTorch(BaseSpectralDrift):
         # Validate and convert reference data
         self._validate_input(self.x_ref)
         x_ref_tensor = self._to_tensor(self.x_ref)
-        
+
         # Compute baseline spectral properties
         self._compute_baseline_spectrum(x_ref_tensor)
 
@@ -75,13 +75,13 @@ class SpectralDriftTorch(BaseSpectralDrift):
         """Validate input data dimensions and type."""
         if isinstance(x, list):
             x = np.array(x)
-        
+
         if x.ndim != 2:
             raise ValueError(f"Input must be 2D, got shape {x.shape}")
-        
+
         if x.shape[0] < 2:
             raise ValueError(f"Need at least 2 samples, got {x.shape[0]}")
-        
+
         if x.shape[1] < 2:
             raise ValueError(f"Need at least 2 features for spectral analysis, got {x.shape[1]}")
 
@@ -164,7 +164,7 @@ class SpectralDriftTorch(BaseSpectralDrift):
 
         # Store bootstrap ratios for p-value computation
         self.bootstrap_ratios = bootstrap_ratios
-        
+
         # Set threshold at (1-p_val) quantile
         threshold = float(np.quantile(bootstrap_ratios, 1 - self.p_val))
 
@@ -182,7 +182,7 @@ class SpectralDriftTorch(BaseSpectralDrift):
     def score(self, x: Union[np.ndarray, List[Any]]) -> Tuple[float, float, float]:
         """Compute the spectral drift score."""
         self._validate_input(x)
-        
+
         x_ref, x = self.preprocess(x)
         x_ref_tensor = self._to_tensor(x_ref)
         x_tensor = self._to_tensor(x)
@@ -199,8 +199,8 @@ class SpectralDriftTorch(BaseSpectralDrift):
 
         return p_val, spectral_ratio.cpu().item(), self.threshold
 
-    def predict(self, x: Union[np.ndarray, List[Any]], return_p_val: bool = True, 
-               return_distance: bool = True) -> Dict[str, Any]:
+    def predict(self, x: Union[np.ndarray, List[Any]], return_p_val: bool = True,
+                return_distance: bool = True) -> Dict[str, Any]:
         """Predict whether a batch of data has drifted from the reference data."""
         # Compute drift scores
         p_val, spectral_ratio, distance_threshold = self.score(x)
@@ -237,9 +237,8 @@ class SpectralDriftTorch(BaseSpectralDrift):
     def spectral_ratio(self, x: Union[np.ndarray, List[Any]]) -> float:
         """Compute the spectral ratio between test data and reference data."""
         self._validate_input(x)
-        
-        x_ref, x = self.preprocess(x)
-        x_ref_tensor = self._to_tensor(x_ref)
+
+        _, x = self.preprocess(x)
         x_tensor = self._to_tensor(x)
 
         spectral_ratio, _, _ = self._compute_test_spectrum(x_tensor)
@@ -249,7 +248,7 @@ class SpectralDriftTorch(BaseSpectralDrift):
     def get_spectral_stats(self, x: Union[np.ndarray, List[Any]]) -> Dict[str, float]:
         """Get detailed spectral statistics for analysis."""
         self._validate_input(x)
-        
+
         x_ref, x = self.preprocess(x)
         x_ref_tensor = self._to_tensor(x_ref)
         x_tensor = self._to_tensor(x)
@@ -258,7 +257,8 @@ class SpectralDriftTorch(BaseSpectralDrift):
 
         # Additional spectral statistics
         test_trace = torch.sum(test_eigenvalues)
-        test_condition_number = test_eigenvalues[0] / test_eigenvalues[-1] if test_eigenvalues[-1] > 1e-10 else float('inf')
+        test_condition_number = test_eigenvalues[0] / \
+            test_eigenvalues[-1] if test_eigenvalues[-1] > 1e-10 else float('inf')
 
         # Ratios and changes
         trace_ratio = test_trace / self.baseline_trace

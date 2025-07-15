@@ -1141,11 +1141,11 @@ def fetch_financial_benchmark(benchmark: str,
 
     if return_X_y:
         return data
-    
+
     # At this point, data must be a Bunch, but mypy doesn't know
     # Add type assertion to help mypy
     assert not isinstance(data, tuple), "Expected Bunch when return_X_y=False"
-    
+
     # Add benchmark-specific metadata
     data.benchmark_name = benchmark
     data.expected_spectral_ratio = config['expected_spectral_ratio']
