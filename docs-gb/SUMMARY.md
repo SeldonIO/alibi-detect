@@ -1,6 +1,6 @@
 # Table of contents
 
-* [Alibi Detect](README.md)
+* [Overview](README.md)
 * [Getting Started](overview/getting_started.md)
 * [Algorithm Overview](overview/algorithms.md)
 * [Saving and Loading](overview/saving.md)
