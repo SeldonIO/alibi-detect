@@ -159,17 +159,9 @@ Each artefact dictionary has an associated pydantic model which is used for [val
 
 Custom artefacts defined in Python code may be specified in the config file without the need to serialise them, by first adding them to the Alibi Detect artefact registry using the {mod}`alibi_detect.saving.registry` submodule. This submodule harnesses the [catalogue](https://github.com/explosion/catalogue) library to allow functions to be registered with a decorator syntax:
 
-`````{grid}
+{% tabs %}
 
-````{grid-item-card}
-:shadow: md
-:margin: 1
-:padding: 1
-:columns: auto
-
-**Registering a function**
-^^^
-
+{% tab title="Registering a function" %}
 ```python
 import numpy as np
 from alibi_detect.saving import registry, load_detector
@@ -182,27 +174,20 @@ def my_function(x: np.ndarray) -> np.ndarray:
 
 # Load detector with config.toml file referencing "@my_function.v1"    
 detector = load_detector(filepath)
-```
-````
+``` 
+{% endtab %}
 
-````{grid-item-card}
-:shadow: md
-:margin: 1
-:padding: 1
-:columns: auto
-
-**Specifying in a config.toml**
-^^^
-
-<p class="codeblock-label">config.toml</p>
-
+{% tab title="Specifying in a config.toml" %}
 ```toml
 name = "MMDDrift"
 x_ref = "x_ref.npy"
 preprocess_fn = "@my_function.v1"
-```
-````
-`````
+``` 
+{% endtab %}
+
+
+{% endtabs %}
+
 
 Once the custom function has been registered, it can be specified in `config.toml` files via its reference string (with `@` prepended), for example `"@my_function.v1"` in this case. Other objects, such as custom tensorflow or pytorch models, can also be registered by using the `register` function directly. For example, to register a tensorflow encoder model:
 
@@ -249,19 +234,10 @@ These can be used in `config.toml` files. Of particular importance are the `prep
 
 ## Example config files
 
-% To demonstrate the config-driven functionality, example detector configurations are presented in this section.
-
-% To download a config file and its related artefacts, click on the _Run Me_ tabs, copy the Python code, and run it % in your local Python shell.
-
-(imdb\_example)=
 
 ### Drift detection on text data
 
-This example presents a configuration for the {class}`~alibi_detect.cd.MMDDrift` detector used in [Text drift detection on IMDB movie reviews](../examples/cd_text_imdb.ipynb). The detector will pass the input text data through a `preprocess_fn` step consisting of a `tokenizer`, `embedding` and `model`. An [Untrained AutoEncoder (UAE)](https://docs.seldon.io/projects/alibi-detect/en/stable/api/alibi_detect.cd.tensorflow.html?highlight=uae#alibi_detect.cd.tensorflow.UAE) model is included in order to reduce the dimensionality of the embedding space, which consists of a 768-dimensional vector for each instance.
-
-%\`\`\`\`{tabbed} Config file %:new-group:
-
-config.toml
+This example presents a configuration for the {class}`~alibi_detect.cd.MMDDrift` detector used in [Text drift detection on IMDB movie reviews](../examples/cd_text_imdb.ipynb). The detector will pass the input text data through a `preprocess_fn` step consisting of a `tokenizer`, `embedding` and `model`. An [Untrained AutoEncoder (UAE)](https://docs.seldon.io/projects/alibi-detect/en/stable/api/alibi_detect.cd.tensorflow.html?highlight=uae#alibi_detect.cd.tensorflow.UAE) model is included in order to reduce the dimensionality of the embedding space, which consists of a 768-dimensional vector for each instance. The `config.toml` is:
 
 ```toml
 x_ref = "x_ref.npy"
@@ -281,14 +257,6 @@ src = "embedding/"
 type = "hidden_state"
 layers = [-1, -2, -3, -4, -5, -6, -7, -8]
 ```
-
-% `% %`{tabbed} Run Me % %`python %from alibi_detect.utils.fetching import fetch_config %from alibi_detect.saving import load_detector %filepath = 'IMDB_example_MMD/' %fetch_config('imdb_mmd', filepath) %detector = load_detector(filepath) %` %\`\`\`\`
-
-% TODO: Add a second example demo-ing loading of state (once implemented). e.g. for online or learned kernel.
-
-%## Advanced usage
-
-(validation)=
 
 ## Validating config files
 
@@ -343,4 +311,3 @@ validate_config(cfg, resolved=True)
 
 Note that since `resolved=True`, {func}`~alibi_detect.saving.validate_config` is now expecting `x_ref` to be a Numpy ndarray instead of a string. This second level of validation can be useful as it helps detect problems with loaded artefacts before attempting the sometimes time-consuming operation of instantiating the detector.
 
-%### Detector specification schemas % %Validation of detector config files is performed with [pydantic](https://pydantic-docs.helpmanual.io/). Each %detector's _unresolved_ configuration is represented by a pydantic model, stored in `DETECTOR_CONFIGS`. Information on %a detector config's permitted fields and their types can be obtained via the config model's `schema` method %(or `schema_json` if a json formatted string is preferred). For example, for the `KSDrift` detector: % %`python %from alibi_detect.saving.schemas import DETECTOR_CONFIGS %schema = DETECTOR_CONFIGS['KSDrift'].schema() % %` % %returns a dictionary with the keys `['title', 'type', 'properties', 'required', 'additionalProperties', 'definitions']`. %The `'properties'` item is a dictionary containing all the possible fields for the detector: % %`python %{'name': {'title': 'Name', 'type': 'string'}, % 'version': {'title': 'Version', 'default': '0.8.1dev', 'type': 'string'}, % 'backend': {'title': 'Backend', % 'default': 'tensorflow', % 'enum': ['tensorflow', 'pytorch'], % 'type': 'string'}, % 'x_ref': {'title': 'X Ref', 'default': 'x_ref.npy', 'type': 'string'}, % 'p_val': {'title': 'P Val', 'default': 0.05, 'type': 'number'}, % 'x_ref_preprocessed': {'title': 'X Ref Preprocessed', % 'default': False, % 'type': 'boolean'}, % ... % } %` % %Compulsory fields are listed in `'required'`, whilst additional pydantic model definitions such as %`ModelConfig` are stored in `'definitions'`. These additional models define the schemas for the %[artefact dictionaries](complex_fields/). % %Similarly, _resolved_ detector configurations are represented by pydantic models stored in %`DETECTOR_CONFIGS_RESOLVED`. The difference being that for these models, artefacts are expected to have their %resolved types, for example `x_ref` should be a NumPy ndarray. The `schema` and `schema_json` methods can be applied %to these models in the same way.
