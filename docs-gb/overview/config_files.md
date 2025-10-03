@@ -2,17 +2,9 @@
 
 For advanced use cases, Alibi Detect features powerful configuration file based functionality. As shown below, **Drift detectors** can be specified with a configuration file named `config.toml` (adversarial and outlier detectors coming soon!), which can then be passed to {func}`~alibi_detect.saving.load_detector`:
 
-`````{grid}
+{% tabs %}
 
-````{grid-item-card}
-:shadow: md
-:margin: 1
-:padding: 1
-:columns: auto
-
-
-**Standard instantiation**
-^^^
+{% tab title="Standard instantiation" %}
 
 ```python
 import numpy as np
@@ -22,19 +14,11 @@ x_ref = np.load('detector_directory/x_ref.npy')
 detector = MMDDrift(x_ref, p_val=0.05)
 ```
 ````
+ {% endtab %}
 
-````{grid-item-card}
-:shadow: md
-:margin: 1
-:padding: 1
-:columns: auto
+{% tab title="Config-driven instantiation" %} 
 
-**Config-driven instantiation**
-^^^
-
-<p class="codeblock-label">config.toml</p>
-
-```{code-block} toml
+```toml
 
 name = "MMDDrift"
 x_ref = "x_ref.npy"
@@ -46,8 +30,12 @@ from alibi_detect.saving import load_detector
 filepath = 'detector_directory/'
 detector = load_detector(filepath)
 ```
-````
-`````
+{% endtab %}
+
+
+
+{% endtabs %}
+
 
 Compared to _standard instantiation_, config-driven instantiation has a number of advantages:
 
@@ -61,11 +49,9 @@ To get a general idea of the expected layout of a config file, see the [Example 
 
 All detector configuration files follow a consistent layout, simplifying the process of writing simple config files by hand. For example, a {class}`~alibi_detect.cd.KSDrift` detector with a [dill](https://github.com/uqfoundation/dill) serialized function to preprocess reference and test data can be specified as:
 
-`````{tab-set}
-````{tab-item} Config-driven instantiation
+{% tabs %}
 
-<p class="codeblock-label">config.toml</p>
-
+{% tab title="Config-driven instantiation" %}
 ```toml
 name = "KSDrift"
 x_ref = "x_ref.npy"
@@ -77,10 +63,9 @@ preprocess_fn = "function.dill"
 from alibi_detect.saving import load_detector
 detector = load_detector('detector_directory/')
 ```
-````
+{% endtab %}
 
-````{tab-item} Standard instantiation
-
+{% tab title="Standard instantiation" %}
 ```python
 import numpy as np
 from alibi_detect.cd import KSDrift
@@ -88,26 +73,28 @@ from alibi_detect.cd import KSDrift
 x_ref = np.load('detector_directory/x_ref.npy')
 preprocess_fn = dill.load('detector_directory/function.dill')
 detector = MMDDrift(x_ref, p_val=0.05, preprocess_fn=preprocess_fn)
-```
-````
-`````
+{% endtab %}
+
+
+{% endtabs %}
+
 
 The `name` field should always be the name of the detector, for example `KSDrift` or `SpotTheDiffDrift`. The remaining fields are the args/kwargs to pass to the detector (see the {mod}`alibi_detect.cd` docs for a full list of permissible args/kwargs for each detector). All config fields follow this convention, however as discussed in [Specifying artefacts](complex_fields/), some fields can be more complex than others.
 
-```{note}
-In the  above example `config.toml`, `x_ref` and `preprocess_fn` are stored in `detector_directory/`, but this directory
+{% hint style="info" %}
+**Note**:In the  above example `config.toml`, `x_ref` and `preprocess_fn` are stored in `detector_directory/`, but this directory
 isn't included in the config file. This is because in the config file, **relative directories are relative to the 
 location of the config.toml file**. Filepaths may be absolute, or include nested directories, but **must be POSIX 
 paths** i.e. use `/` path separators instead of `\`.
-```
+{% endhint %}
 
-```{note}
-Sometimes, fields representing kwargs need to be set to `None`. However, unspecified fields are set to a detector's 
+{% hint style="info" %}
+**Note**:In the  above example `config.toml`, `x_ref` and `preprocess_fn` are stored in `detector_directory/`, but this directory
+isn't incSometimes, fields representing kwargs need to be set to `None`. However, unspecified fields are set to a detector's 
 default kwargs (or for [Artefact dictionaries](dictionaries), the defaults shown in the tables). To set 
 fields as `None`, specify them as the string `"None"`. 
-```
+{% endhint %}
 
-(complex\_fields)=
 
 ## Specifying artefacts
 
@@ -119,27 +106,25 @@ When specifying a detector via a `config.toml` file, the locally stored referenc
 
 The following table shows the allowable formats for all possible config file artefacts.
 
-```{table}
-:name: all-artefacts-table
+#### All Artefacts Table
 
-|Field                     |.npy file  |.dill file  |[Registry](registering_artefacts)|[Artefact Dictionary](dictionaries)                                                                         | 
-|:-------------------------|:---------:|:----------:|:-------------------------------:|:----------------------------------------------------------------------------------------------------------:|
-|`x_ref`                   |✔          |            |                                 |                                                                                                            |
-|`c_ref`                   |✔          |            |                                 |                                                                                                            |
-|`reg_loss_fn`             |           |✔           |✔                                |                                                                                                            |
-|`dataset`                 |           |✔           |✔                                |                                                                                                            |
-|`initial_diffs`           |✔          |            |                                 |                                                                                                            |
-|`model`/`proj`            |           |            |✔                                |{class}`~alibi_detect.saving.schemas.ModelConfig`                                                           |
-|`preprocess_fn`           |           |✔           |✔                                |{class}`~alibi_detect.saving.schemas.PreprocessConfig`                                                      |
-|`preprocess_batch_fn`     |           |✔           |✔                                |                                                                                                            |
-|`embedding`               |           |            |✔                                |{class}`~alibi_detect.saving.schemas.EmbeddingConfig`                                                       |
-|`tokenizer`               |           |            |✔                                |{class}`~alibi_detect.saving.schemas.TokenizerConfig`                                                       |
-|`kernel`                  |           |            |✔                                |{class}`~alibi_detect.saving.schemas.KernelConfig` or {class}`~alibi_detect.saving.schemas.DeepKernelConfig`|
-|`kernel_a`/`kernel_b`     |           |            |✔                                |{class}`~alibi_detect.saving.schemas.KernelConfig`                                                          |
-|`optimizer`               |           |✔           |✔                                | {class}`~alibi_detect.saving.schemas.OptimizerConfig`                                                      |
-```
+| Field                 | .npy file | .dill file | [Registry](registering_artefacts) | [Artefact Dictionary](dictionaries) |
+|------------------------|:---------:|:----------:|:---------------------------------:|:-----------------------------------:|
+| `x_ref`               | ✔         |            |                                   |                                     |
+| `c_ref`               | ✔         |            |                                   |                                     |
+| `reg_loss_fn`         |           | ✔          | ✔                                 |                                     |
+| `dataset`             |           | ✔          | ✔                                 |                                     |
+| `initial_diffs`       | ✔         |            |                                   |                                     |
+| `model` / `proj`      |           |            | ✔                                 | `alibi_detect.saving.schemas.ModelConfig` |
+| `preprocess_fn`       |           | ✔          | ✔                                 | `alibi_detect.saving.schemas.PreprocessConfig` |
+| `preprocess_batch_fn` |           | ✔          | ✔                                 |                                     |
+| `embedding`           |           |            | ✔                                 | `alibi_detect.saving.schemas.EmbeddingConfig` |
+| `tokenizer`           |           |            | ✔                                 | `alibi_detect.saving.schemas.TokenizerConfig` |
+| `kernel`              |           |            | ✔                                 | `alibi_detect.saving.schemas.KernelConfig` or `alibi_detect.saving.schemas.DeepKernelConfig` |
+| `kernel_a` / `kernel_b` |         |            | ✔                                 | `alibi_detect.saving.schemas.KernelConfig` |
+| `optimizer`           |           | ✔          | ✔                                 | `alibi_detect.saving.schemas.OptimizerConfig` |
 
-(dictionaries)=
+
 
 ### Artefact dictionaries
 
@@ -170,7 +155,6 @@ src = "model/"
 
 Each artefact dictionary has an associated pydantic model which is used for [validation of config files](validation/). The [documentation](../api/alibi_detect.saving.schemas.rst) for these pydantic models provides a description of the permissible fields for each artefact dictionary. For examples of how the artefact dictionaries can be used in practice, see {ref}`examples`.
 
-(registering\_artefacts)=
 
 ### Registering artefacts
 
