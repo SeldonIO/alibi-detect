@@ -13,8 +13,7 @@ from alibi_detect.cd import MMDDrift
 x_ref = np.load('detector_directory/x_ref.npy')
 detector = MMDDrift(x_ref, p_val=0.05)
 ```
-````
- {% endtab %}
+{% endtab %}
 
 {% tab title="Config-driven instantiation" %} 
 
@@ -31,7 +30,6 @@ filepath = 'detector_directory/'
 detector = load_detector(filepath)
 ```
 {% endtab %}
-
 
 
 {% endtabs %}
@@ -73,6 +71,7 @@ from alibi_detect.cd import KSDrift
 x_ref = np.load('detector_directory/x_ref.npy')
 preprocess_fn = dill.load('detector_directory/function.dill')
 detector = MMDDrift(x_ref, p_val=0.05, preprocess_fn=preprocess_fn)
+```
 {% endtab %}
 
 
