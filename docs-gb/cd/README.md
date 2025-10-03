@@ -6,7 +6,7 @@ Although powerful, modern machine learning models can be sensitive. Seemingly su
 
 _Drift_ is said to occur when the process underlying $\mathbf{X}$ and $\mathbf{Y}$ at test time differs from the process that generated the training data. In this case, we can no longer expect the model’s performance on test data to match that observed on held out training data. At test time we always observe features $\mathbf{X}$, and the _ground truth_ then refers to a corresponding label $\mathbf{Y}$. If ground truths are available at test time, _supervised drift detection_ can be performed, with the model’s predictive performance monitored directly. However, in many scenarios, such as the binary classification example below, ground truths are not available and _unsupervised drift detection_ methods are required.
 
-![Drift in deployment](../images/drift_deployment.png)
+![Drift in deployment](<../.gitbook/assets/drift_deployment (1).png>)
 
 To explore the different types of drift, consider the common scenario where we deploy a model $f: \boldsymbol{x} \mapsto y$ on input data $\mathbf{X}$ and output data $\mathbf{Y}$, jointly distributed according to $P(\mathbf{X},\mathbf{Y})$. The model is trained on training data drawn from a distribution $P\_{ref}(\mathbf{X},\mathbf{Y})$. _Drift_ is said to have occurred when $P(\mathbf{X},\mathbf{Y}) \ne P\_{ref}(\mathbf{X},\mathbf{Y})$. Writing the joint distribution as
 
@@ -35,7 +35,7 @@ It is relatively easy to spot drift by eyeballing these figures here. However, t
 
 ## 2. Detecting drift
 
-[Alibi Detect](https://github.com/SeldonIO/alibi-detect) offers a wide array of methods for detecting drift (see [here](../overview/algorithms.md)), some of which are examined in the NeurIPS 2019 paper [Failing Loudly: An Empirical Study of Methods for Detecting Dataset Shift](https://arxiv.org/abs/1810.11953). Generally, these aim to determine whether the distribution $P(\mathbf{z})$ has drifted from a reference distribution $P\_{ref}(\mathbf{z})$, where $\mathbf{z}$ may represent input data $\mathbf{X}$, true output data $\mathbf{Y}$, or some form of model output, depending on what type of drift we wish to detect.
+[Alibi Detect](https://github.com/SeldonIO/alibi-detect) offers a wide array of methods for detecting drift (see [here](../algorithms.md)), some of which are examined in the NeurIPS 2019 paper [Failing Loudly: An Empirical Study of Methods for Detecting Dataset Shift](https://arxiv.org/abs/1810.11953). Generally, these aim to determine whether the distribution $P(\mathbf{z})$ has drifted from a reference distribution $P\_{ref}(\mathbf{z})$, where $\mathbf{z}$ may represent input data $\mathbf{X}$, true output data $\mathbf{Y}$, or some form of model output, depending on what type of drift we wish to detect.
 
 Due to natural randomness in the process being modelled, we don’t necessarily expect observations $\mathbf{z}_1,\dots,\mathbf{z}N$ drawn from $P(\mathbf{z})$ to be identical to $\mathbf{z}^{ref}1,\dots,\mathbf{z}^{ref}M$ drawn from $P{ref}(\mathbf{z})$. To decide whether differences between $P(\mathbf{z})$ and $P{ref}(\mathbf{z})$ are due to drift or just natural randomness in the data, statistical two-sample hypothesis testing is used, with the null hypothesis $P(\mathbf{z})=P{ref}(\mathbf{z})$. If the $p$-value obtained is below a given threshold, the null is rejected and the alternative hypothesis $P(\mathbf{z}) \ne P_{ref}(\mathbf{z})$ is accepted, suggesting drift is occurring.
 

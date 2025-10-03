@@ -1,6 +1,6 @@
-# Alibi Detect
+# Overview
 
-![Alibi Detect Logo](images/Alibi_Detect_Logo_rgb.png)
+![Alibi Detect Logo](<.gitbook/assets/Alibi_Detect_Logo_rgb (1).png>)
 
 ## Alibi Detect
 
