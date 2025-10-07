@@ -63,7 +63,7 @@ Correct adversarial instances if the adversarial score is above the threshold.
 #### `fit`
 
 ```python
-fit(X: numpy.ndarray, loss_fn: .tensorflow.keras.losses = <function loss_adv_ae at 0x290c4b3a0>, w_model: float = 1.0, w_recon: float = 0.0, optimizer: Union[ForwardRef('tf.keras.optimizers.Optimizer'), ForwardRef('tf.keras.optimizers.legacy.Optimizer'), type[ForwardRef('tf.keras.optimizers.Optimizer')], type[ForwardRef('tf.keras.optimizers.legacy.Optimizer')]] = <class 'keras.src.optimizers.adam.Adam'>, epochs: int = 20, batch_size: int = 128, verbose: bool = True, log_metric: Tuple[str, ForwardRef('tf.keras.metrics')] = None, callbacks: .tensorflow.keras.callbacks = None, preprocess_fn: Callable = None) -> None
+fit(X: numpy.ndarray, loss_fn: .tensorflow.keras.losses = <function loss_adv_ae at 0x28ee8c430>, w_model: float = 1.0, w_recon: float = 0.0, optimizer: Union[ForwardRef('tf.keras.optimizers.Optimizer'), ForwardRef('tf.keras.optimizers.legacy.Optimizer'), type[ForwardRef('tf.keras.optimizers.Optimizer')], type[ForwardRef('tf.keras.optimizers.legacy.Optimizer')]] = <class 'keras.src.optimizers.adam.Adam'>, epochs: int = 20, batch_size: int = 128, verbose: bool = True, log_metric: Tuple[str, ForwardRef('tf.keras.metrics')] = None, callbacks: .tensorflow.keras.callbacks = None, preprocess_fn: Callable = None) -> None
 ```
 
 Train Adversarial AE model.
@@ -71,7 +71,7 @@ Train Adversarial AE model.
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
 | `X` | `numpy.ndarray` |  | Training batch. |
-| `loss_fn` | `.tensorflow.keras.losses` | `<function loss_adv_ae at 0x290c4b3a0>` | Loss function used for training. |
+| `loss_fn` | `.tensorflow.keras.losses` | `<function loss_adv_ae at 0x28ee8c430>` | Loss function used for training. |
 | `w_model` | `float` | `1.0` | Weight on model prediction loss term. |
 | `w_recon` | `float` | `0.0` | Weight on MSE reconstruction error loss term. |
 | `optimizer` | `Union[ForwardRef('tf.keras.optimizers.Optimizer'), ForwardRef('tf.keras.optimizers.legacy.Optimizer'), type[ForwardRef('tf.keras.optimizers.Optimizer')], type[ForwardRef('tf.keras.optimizers.legacy.Optimizer')]]` | `<class 'keras.src.optimizers.adam.Adam'>` | Optimizer used for training. |

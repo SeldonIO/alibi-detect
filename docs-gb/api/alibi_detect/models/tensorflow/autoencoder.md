@@ -37,7 +37,7 @@ _Inherits from:_ `Model`, `TensorFlowTrainer`, `Trainer`, `Layer`, `TFLayer`, `K
 ### Constructor
 
 ```python
-AEGMM(self, encoder_net: keras.src.models.model.Model, decoder_net: keras.src.models.model.Model, gmm_density_net: keras.src.models.model.Model, n_gmm: int, recon_features: Callable = <function eucl_cosim_features at 0x282ff4430>, name: str = 'aegmm') -> None
+AEGMM(self, encoder_net: keras.src.models.model.Model, decoder_net: keras.src.models.model.Model, gmm_density_net: keras.src.models.model.Model, n_gmm: int, recon_features: Callable = <function eucl_cosim_features at 0x280c66430>, name: str = 'aegmm') -> None
 ```
 
 | Name | Type | Default | Description |
@@ -46,7 +46,7 @@ AEGMM(self, encoder_net: keras.src.models.model.Model, decoder_net: keras.src.mo
 | `decoder_net` | `keras.src.models.model.Model` |  | Layers for the decoder wrapped in a tf.keras.Sequential class. |
 | `gmm_density_net` | `keras.src.models.model.Model` |  | Layers for the GMM network wrapped in a tf.keras.Sequential class. |
 | `n_gmm` | `int` |  | Number of components in GMM. |
-| `recon_features` | `Callable` | `<function eucl_cosim_features at 0x282ff4430>` | Function to extract features from the reconstructed instance by the decoder. |
+| `recon_features` | `Callable` | `<function eucl_cosim_features at 0x280c66430>` | Function to extract features from the reconstructed instance by the decoder. |
 | `name` | `str` | `'aegmm'` | Name of the AEGMM model. |
 
 ### Methods
@@ -248,7 +248,7 @@ _Inherits from:_ `Model`, `TensorFlowTrainer`, `Trainer`, `Layer`, `TFLayer`, `K
 ### Constructor
 
 ```python
-Seq2Seq(self, encoder_net: alibi_detect.models.tensorflow.autoencoder.EncoderLSTM, decoder_net: alibi_detect.models.tensorflow.autoencoder.DecoderLSTM, threshold_net: keras.src.models.model.Model, n_features: int, score_fn: Callable = <function squared_difference at 0x1237440d0>, beta: float = 1.0, name: str = 'seq2seq') -> None
+Seq2Seq(self, encoder_net: alibi_detect.models.tensorflow.autoencoder.EncoderLSTM, decoder_net: alibi_detect.models.tensorflow.autoencoder.DecoderLSTM, threshold_net: keras.src.models.model.Model, n_features: int, score_fn: Callable = <function squared_difference at 0x117cb00d0>, beta: float = 1.0, name: str = 'seq2seq') -> None
 ```
 
 | Name | Type | Default | Description |
@@ -257,7 +257,7 @@ Seq2Seq(self, encoder_net: alibi_detect.models.tensorflow.autoencoder.EncoderLST
 | `decoder_net` | `alibi_detect.models.tensorflow.autoencoder.DecoderLSTM` |  | Decoder network. |
 | `threshold_net` | `keras.src.models.model.Model` |  | Regression network used to estimate threshold. |
 | `n_features` | `int` |  | Number of features. |
-| `score_fn` | `Callable` | `<function squared_difference at 0x1237440d0>` | Function used for outlier score. |
+| `score_fn` | `Callable` | `<function squared_difference at 0x117cb00d0>` | Function used for outlier score. |
 | `beta` | `float` | `1.0` | Weight on the threshold estimation loss term. |
 | `name` | `str` | `'seq2seq'` | Name of the seq2seq model. |
 
@@ -333,7 +333,7 @@ _Inherits from:_ `Model`, `TensorFlowTrainer`, `Trainer`, `Layer`, `TFLayer`, `K
 ### Constructor
 
 ```python
-VAEGMM(self, encoder_net: keras.src.models.model.Model, decoder_net: keras.src.models.model.Model, gmm_density_net: keras.src.models.model.Model, n_gmm: int, latent_dim: int, recon_features: Callable = <function eucl_cosim_features at 0x282ff4430>, beta: float = 1.0, name: str = 'vaegmm') -> None
+VAEGMM(self, encoder_net: keras.src.models.model.Model, decoder_net: keras.src.models.model.Model, gmm_density_net: keras.src.models.model.Model, n_gmm: int, latent_dim: int, recon_features: Callable = <function eucl_cosim_features at 0x280c66430>, beta: float = 1.0, name: str = 'vaegmm') -> None
 ```
 
 | Name | Type | Default | Description |
@@ -343,7 +343,7 @@ VAEGMM(self, encoder_net: keras.src.models.model.Model, decoder_net: keras.src.m
 | `gmm_density_net` | `keras.src.models.model.Model` |  | Layers for the GMM network wrapped in a tf.keras.Sequential class. |
 | `n_gmm` | `int` |  | Number of components in GMM. |
 | `latent_dim` | `int` |  | Dimensionality of the latent space. |
-| `recon_features` | `Callable` | `<function eucl_cosim_features at 0x282ff4430>` | Function to extract features from the reconstructed instance by the decoder. |
+| `recon_features` | `Callable` | `<function eucl_cosim_features at 0x280c66430>` | Function to extract features from the reconstructed instance by the decoder. |
 | `beta` | `float` | `1.0` | Beta parameter for KL-divergence loss term. |
 | `name` | `str` | `'vaegmm'` | Name of the VAEGMM model. |
 

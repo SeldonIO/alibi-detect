@@ -41,7 +41,7 @@ ModelDistillation(self, threshold: float = None, distilled_model: keras.src.mode
 #### `fit`
 
 ```python
-fit(X: numpy.ndarray, loss_fn: .tensorflow.keras.losses = <function loss_distillation at 0x290c4b430>, optimizer: Union[ForwardRef('tf.keras.optimizers.Optimizer'), ForwardRef('tf.keras.optimizers.legacy.Optimizer'), type[ForwardRef('tf.keras.optimizers.Optimizer')], type[ForwardRef('tf.keras.optimizers.legacy.Optimizer')]] = <class 'keras.src.optimizers.adam.Adam'>, epochs: int = 20, batch_size: int = 128, verbose: bool = True, log_metric: Tuple[str, ForwardRef('tf.keras.metrics')] = None, callbacks: .tensorflow.keras.callbacks = None, preprocess_fn: Callable = None) -> None
+fit(X: numpy.ndarray, loss_fn: .tensorflow.keras.losses = <function loss_distillation at 0x28ee8c4c0>, optimizer: Union[ForwardRef('tf.keras.optimizers.Optimizer'), ForwardRef('tf.keras.optimizers.legacy.Optimizer'), type[ForwardRef('tf.keras.optimizers.Optimizer')], type[ForwardRef('tf.keras.optimizers.legacy.Optimizer')]] = <class 'keras.src.optimizers.adam.Adam'>, epochs: int = 20, batch_size: int = 128, verbose: bool = True, log_metric: Tuple[str, ForwardRef('tf.keras.metrics')] = None, callbacks: .tensorflow.keras.callbacks = None, preprocess_fn: Callable = None) -> None
 ```
 
 Train ModelDistillation detector.
@@ -49,7 +49,7 @@ Train ModelDistillation detector.
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
 | `X` | `numpy.ndarray` |  | Training batch. |
-| `loss_fn` | `.tensorflow.keras.losses` | `<function loss_distillation at 0x290c4b430>` | Loss function used for training. |
+| `loss_fn` | `.tensorflow.keras.losses` | `<function loss_distillation at 0x28ee8c4c0>` | Loss function used for training. |
 | `optimizer` | `Union[ForwardRef('tf.keras.optimizers.Optimizer'), ForwardRef('tf.keras.optimizers.legacy.Optimizer'), type[ForwardRef('tf.keras.optimizers.Optimizer')], type[ForwardRef('tf.keras.optimizers.legacy.Optimizer')]]` | `<class 'keras.src.optimizers.adam.Adam'>` | Optimizer used for training. |
 | `epochs` | `int` | `20` | Number of training epochs. |
 | `batch_size` | `int` | `128` | Batch size used for training. |

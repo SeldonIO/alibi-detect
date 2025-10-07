@@ -24,7 +24,7 @@ _Inherits from:_ `BaseDetector`, `FitMixin`, `ThresholdMixin`, `ABC`
 ### Constructor
 
 ```python
-OutlierAEGMM(self, threshold: float = None, aegmm: keras.src.models.model.Model = None, encoder_net: keras.src.models.model.Model = None, decoder_net: keras.src.models.model.Model = None, gmm_density_net: keras.src.models.model.Model = None, n_gmm: int = None, recon_features: Callable = <function eucl_cosim_features at 0x282ff4430>, data_type: str = None) -> None
+OutlierAEGMM(self, threshold: float = None, aegmm: keras.src.models.model.Model = None, encoder_net: keras.src.models.model.Model = None, decoder_net: keras.src.models.model.Model = None, gmm_density_net: keras.src.models.model.Model = None, n_gmm: int = None, recon_features: Callable = <function eucl_cosim_features at 0x280c66430>, data_type: str = None) -> None
 ```
 
 | Name | Type | Default | Description |
@@ -35,7 +35,7 @@ OutlierAEGMM(self, threshold: float = None, aegmm: keras.src.models.model.Model 
 | `decoder_net` | `Optional[keras.src.models.model.Model]` | `None` | Layers for the decoder wrapped in a tf.keras.Sequential class if no 'aegmm' is specified. |
 | `gmm_density_net` | `Optional[keras.src.models.model.Model]` | `None` | Layers for the GMM network wrapped in a tf.keras.Sequential class. |
 | `n_gmm` | `Optional[int]` | `None` | Number of components in GMM. |
-| `recon_features` | `Callable` | `<function eucl_cosim_features at 0x282ff4430>` | Function to extract features from the reconstructed instance by the decoder. |
+| `recon_features` | `Callable` | `<function eucl_cosim_features at 0x280c66430>` | Function to extract features from the reconstructed instance by the decoder. |
 | `data_type` | `Optional[str]` | `None` | Optionally specifiy the data type (tabular, image or time-series). Added to metadata. |
 
 ### Methods
@@ -43,7 +43,7 @@ OutlierAEGMM(self, threshold: float = None, aegmm: keras.src.models.model.Model 
 #### `fit`
 
 ```python
-fit(X: numpy.ndarray, loss_fn: .tensorflow.keras.losses = <function loss_aegmm at 0x290c4b280>, w_energy: float = 0.1, w_cov_diag: float = 0.005, optimizer: Union[ForwardRef('tf.keras.optimizers.Optimizer'), ForwardRef('tf.keras.optimizers.legacy.Optimizer'), type[ForwardRef('tf.keras.optimizers.Optimizer')], type[ForwardRef('tf.keras.optimizers.legacy.Optimizer')]] = <class 'keras.src.optimizers.adam.Adam'>, epochs: int = 20, batch_size: int = 64, verbose: bool = True, log_metric: Tuple[str, ForwardRef('tf.keras.metrics')] = None, callbacks: .tensorflow.keras.callbacks = None) -> None
+fit(X: numpy.ndarray, loss_fn: .tensorflow.keras.losses = <function loss_aegmm at 0x28ee8c310>, w_energy: float = 0.1, w_cov_diag: float = 0.005, optimizer: Union[ForwardRef('tf.keras.optimizers.Optimizer'), ForwardRef('tf.keras.optimizers.legacy.Optimizer'), type[ForwardRef('tf.keras.optimizers.Optimizer')], type[ForwardRef('tf.keras.optimizers.legacy.Optimizer')]] = <class 'keras.src.optimizers.adam.Adam'>, epochs: int = 20, batch_size: int = 64, verbose: bool = True, log_metric: Tuple[str, ForwardRef('tf.keras.metrics')] = None, callbacks: .tensorflow.keras.callbacks = None) -> None
 ```
 
 Train AEGMM model.
@@ -51,7 +51,7 @@ Train AEGMM model.
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
 | `X` | `numpy.ndarray` |  | Training batch. |
-| `loss_fn` | `.tensorflow.keras.losses` | `<function loss_aegmm at 0x290c4b280>` | Loss function used for training. |
+| `loss_fn` | `.tensorflow.keras.losses` | `<function loss_aegmm at 0x28ee8c310>` | Loss function used for training. |
 | `w_energy` | `float` | `0.1` | Weight on sample energy loss term if default `loss_aegmm` loss fn is used. |
 | `w_cov_diag` | `float` | `0.005` | Weight on covariance regularizing loss term if default `loss_aegmm` loss fn is used. |
 | `optimizer` | `Union[ForwardRef('tf.keras.optimizers.Optimizer'), ForwardRef('tf.keras.optimizers.legacy.Optimizer'), type[ForwardRef('tf.keras.optimizers.Optimizer')], type[ForwardRef('tf.keras.optimizers.legacy.Optimizer')]]` | `<class 'keras.src.optimizers.adam.Adam'>` | Optimizer used for training. |

@@ -24,7 +24,7 @@ _Inherits from:_ `BaseDetector`, `FitMixin`, `ThresholdMixin`, `ABC`
 ### Constructor
 
 ```python
-OutlierVAEGMM(self, threshold: float = None, vaegmm: keras.src.models.model.Model = None, encoder_net: keras.src.models.model.Model = None, decoder_net: keras.src.models.model.Model = None, gmm_density_net: keras.src.models.model.Model = None, n_gmm: int = None, latent_dim: int = None, samples: int = 10, beta: float = 1.0, recon_features: Callable = <function eucl_cosim_features at 0x282ff4430>, data_type: str = None) -> None
+OutlierVAEGMM(self, threshold: float = None, vaegmm: keras.src.models.model.Model = None, encoder_net: keras.src.models.model.Model = None, decoder_net: keras.src.models.model.Model = None, gmm_density_net: keras.src.models.model.Model = None, n_gmm: int = None, latent_dim: int = None, samples: int = 10, beta: float = 1.0, recon_features: Callable = <function eucl_cosim_features at 0x280c66430>, data_type: str = None) -> None
 ```
 
 | Name | Type | Default | Description |
@@ -38,7 +38,7 @@ OutlierVAEGMM(self, threshold: float = None, vaegmm: keras.src.models.model.Mode
 | `latent_dim` | `Optional[int]` | `None` | Dimensionality of the latent space. |
 | `samples` | `int` | `10` | Number of samples sampled to evaluate each instance. |
 | `beta` | `float` | `1.0` | Beta parameter for KL-divergence loss term. |
-| `recon_features` | `Callable` | `<function eucl_cosim_features at 0x282ff4430>` | Function to extract features from the reconstructed instance by the decoder. |
+| `recon_features` | `Callable` | `<function eucl_cosim_features at 0x280c66430>` | Function to extract features from the reconstructed instance by the decoder. |
 | `data_type` | `Optional[str]` | `None` | Optionally specifiy the data type (tabular, image or time-series). Added to metadata. |
 
 ### Methods
@@ -46,7 +46,7 @@ OutlierVAEGMM(self, threshold: float = None, vaegmm: keras.src.models.model.Mode
 #### `fit`
 
 ```python
-fit(X: numpy.ndarray, loss_fn: .tensorflow.keras.losses = <function loss_vaegmm at 0x290c4b310>, w_recon: float = 1e-07, w_energy: float = 0.1, w_cov_diag: float = 0.005, optimizer: Union[ForwardRef('tf.keras.optimizers.Optimizer'), ForwardRef('tf.keras.optimizers.legacy.Optimizer'), type[ForwardRef('tf.keras.optimizers.Optimizer')], type[ForwardRef('tf.keras.optimizers.legacy.Optimizer')]] = <class 'keras.src.optimizers.adam.Adam'>, cov_elbo: dict = {'sim': 0.05}, epochs: int = 20, batch_size: int = 64, verbose: bool = True, log_metric: Tuple[str, ForwardRef('tf.keras.metrics')] = None, callbacks: .tensorflow.keras.callbacks = None) -> None
+fit(X: numpy.ndarray, loss_fn: .tensorflow.keras.losses = <function loss_vaegmm at 0x28ee8c3a0>, w_recon: float = 1e-07, w_energy: float = 0.1, w_cov_diag: float = 0.005, optimizer: Union[ForwardRef('tf.keras.optimizers.Optimizer'), ForwardRef('tf.keras.optimizers.legacy.Optimizer'), type[ForwardRef('tf.keras.optimizers.Optimizer')], type[ForwardRef('tf.keras.optimizers.legacy.Optimizer')]] = <class 'keras.src.optimizers.adam.Adam'>, cov_elbo: dict = {'sim': 0.05}, epochs: int = 20, batch_size: int = 64, verbose: bool = True, log_metric: Tuple[str, ForwardRef('tf.keras.metrics')] = None, callbacks: .tensorflow.keras.callbacks = None) -> None
 ```
 
 Train VAEGMM model.
@@ -54,7 +54,7 @@ Train VAEGMM model.
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
 | `X` | `numpy.ndarray` |  | Training batch. |
-| `loss_fn` | `.tensorflow.keras.losses` | `<function loss_vaegmm at 0x290c4b310>` | Loss function used for training. |
+| `loss_fn` | `.tensorflow.keras.losses` | `<function loss_vaegmm at 0x28ee8c3a0>` | Loss function used for training. |
 | `w_recon` | `float` | `1e-07` | Weight on elbo loss term if default `loss_vaegmm`. |
 | `w_energy` | `float` | `0.1` | Weight on sample energy loss term if default `loss_vaegmm` loss fn is used. |
 | `w_cov_diag` | `float` | `0.005` | Weight on covariance regularizing loss term if default `loss_vaegmm` loss fn is used. |

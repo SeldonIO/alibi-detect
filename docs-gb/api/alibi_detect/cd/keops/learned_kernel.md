@@ -6,7 +6,7 @@ _Inherits from:_ `BaseLearnedKernelDrift`, `BaseDetector`, `ABC`
 ### Constructor
 
 ```python
-LearnedKernelDriftKeops(self, x_ref: Union[numpy.ndarray, list], kernel: Union[torch.nn.modules.module.Module, torch.nn.modules.container.Sequential], p_val: float = 0.05, x_ref_preprocessed: bool = False, preprocess_at_init: bool = True, update_x_ref: Optional[Dict[str, int]] = None, preprocess_fn: Optional[Callable] = None, n_permutations: int = 100, batch_size_permutations: int = 1000000, var_reg: float = 1e-05, reg_loss_fn: Callable = <function LearnedKernelDriftKeops.<lambda> at 0x2922f7550>, train_size: Optional[float] = 0.75, retrain_from_scratch: bool = True, optimizer: torch.optim.optimizer.Optimizer = <class 'torch.optim.adam.Adam'>, learning_rate: float = 0.001, batch_size: int = 32, batch_size_predict: int = 1000000, preprocess_batch_fn: Optional[Callable] = None, epochs: int = 3, num_workers: int = 0, verbose: int = 0, train_kwargs: Optional[dict] = None, device: Union[typing_extensions.Literal['cuda', 'gpu', 'cpu'], ForwardRef('torch.device'), NoneType] = None, dataset: Callable = <class 'alibi_detect.utils.pytorch.data.TorchDataset'>, dataloader: Callable = <class 'torch.utils.data.dataloader.DataLoader'>, input_shape: Optional[tuple] = None, data_type: Optional[str] = None) -> None
+LearnedKernelDriftKeops(self, x_ref: Union[numpy.ndarray, list], kernel: Union[torch.nn.modules.module.Module, torch.nn.modules.container.Sequential], p_val: float = 0.05, x_ref_preprocessed: bool = False, preprocess_at_init: bool = True, update_x_ref: Optional[Dict[str, int]] = None, preprocess_fn: Optional[Callable] = None, n_permutations: int = 100, batch_size_permutations: int = 1000000, var_reg: float = 1e-05, reg_loss_fn: Callable = <function LearnedKernelDriftKeops.<lambda> at 0x28fe7e5e0>, train_size: Optional[float] = 0.75, retrain_from_scratch: bool = True, optimizer: torch.optim.optimizer.Optimizer = <class 'torch.optim.adam.Adam'>, learning_rate: float = 0.001, batch_size: int = 32, batch_size_predict: int = 1000000, preprocess_batch_fn: Optional[Callable] = None, epochs: int = 3, num_workers: int = 0, verbose: int = 0, train_kwargs: Optional[dict] = None, device: Union[typing_extensions.Literal['cuda', 'gpu', 'cpu'], ForwardRef('torch.device'), NoneType] = None, dataset: Callable = <class 'alibi_detect.utils.pytorch.data.TorchDataset'>, dataloader: Callable = <class 'torch.utils.data.dataloader.DataLoader'>, input_shape: Optional[tuple] = None, data_type: Optional[str] = None) -> None
 ```
 
 | Name | Type | Default | Description |
@@ -21,7 +21,7 @@ LearnedKernelDriftKeops(self, x_ref: Union[numpy.ndarray, list], kernel: Union[t
 | `n_permutations` | `int` | `100` | The number of permutations to use in the permutation test once the MMD has been computed. |
 | `batch_size_permutations` | `int` | `1000000` | KeOps computes the n_permutations of the MMD^2 statistics in chunks of batch_size_permutations. |
 | `var_reg` | `float` | `1e-05` | Constant added to the estimated variance of the MMD for stability. |
-| `reg_loss_fn` | `Callable` | `<function LearnedKernelDriftKeops.<lambda> at 0x2922f7550>` | The regularisation term reg_loss_fn(kernel) is added to the loss function being optimized. |
+| `reg_loss_fn` | `Callable` | `<function LearnedKernelDriftKeops.<lambda> at 0x28fe7e5e0>` | The regularisation term reg_loss_fn(kernel) is added to the loss function being optimized. |
 | `train_size` | `Optional[float]` | `0.75` | Optional fraction (float between 0 and 1) of the dataset used to train the kernel. The drift is detected on `1 - train_size`. |
 | `retrain_from_scratch` | `bool` | `True` | Whether the kernel should be retrained from scratch for each set of test data or whether it should instead continue training from where it left off on the previous set. |
 | `optimizer` | `torch.optim.optimizer.Optimizer` | `<class 'torch.optim.adam.Adam'>` | Optimizer used during training of the kernel. |
@@ -62,7 +62,7 @@ used within the MMD is first trained to maximise an estimate of the resulting te
 #### `trainer`
 
 ```python
-trainer(j_hat: alibi_detect.cd.keops.learned_kernel.LearnedKernelDriftKeops.JHat, dataloaders: Tuple[torch.utils.data.dataloader.DataLoader, torch.utils.data.dataloader.DataLoader], device: torch.device, optimizer: Callable = <class 'torch.optim.adam.Adam'>, learning_rate: float = 0.001, preprocess_fn: Optional[Callable] = None, epochs: int = 20, reg_loss_fn: Callable = <function LearnedKernelDriftKeops.<lambda> at 0x2922f78b0>, verbose: int = 1) -> None
+trainer(j_hat: alibi_detect.cd.keops.learned_kernel.LearnedKernelDriftKeops.JHat, dataloaders: Tuple[torch.utils.data.dataloader.DataLoader, torch.utils.data.dataloader.DataLoader], device: torch.device, optimizer: Callable = <class 'torch.optim.adam.Adam'>, learning_rate: float = 0.001, preprocess_fn: Optional[Callable] = None, epochs: int = 20, reg_loss_fn: Callable = <function LearnedKernelDriftKeops.<lambda> at 0x28fe7e940>, verbose: int = 1) -> None
 ```
 
 Train the kernel to maximise an estimate of test power using minibatch gradient descent.
@@ -76,7 +76,7 @@ Train the kernel to maximise an estimate of test power using minibatch gradient 
 | `learning_rate` | `float` | `0.001` |  |
 | `preprocess_fn` | `Optional[Callable]` | `None` |  |
 | `epochs` | `int` | `20` |  |
-| `reg_loss_fn` | `Callable` | `<function LearnedKernelDriftKeops.<lambda> at 0x2922f78b0>` |  |
+| `reg_loss_fn` | `Callable` | `<function LearnedKernelDriftKeops.<lambda> at 0x28fe7e940>` |  |
 | `verbose` | `int` | `1` |  |
 
 **Returns**

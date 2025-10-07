@@ -60,7 +60,7 @@ Compute feature level outlier scores.
 #### `fit`
 
 ```python
-fit(X: numpy.ndarray, loss_fn: .tensorflow.keras.losses = <function mean_squared_error at 0x17511fca0>, optimizer: Union[ForwardRef('tf.keras.optimizers.Optimizer'), ForwardRef('tf.keras.optimizers.legacy.Optimizer'), type[ForwardRef('tf.keras.optimizers.Optimizer')], type[ForwardRef('tf.keras.optimizers.legacy.Optimizer')]] = <class 'keras.src.optimizers.adam.Adam'>, epochs: int = 20, batch_size: int = 64, verbose: bool = True, log_metric: Tuple[str, ForwardRef('tf.keras.metrics')] = None, callbacks: .tensorflow.keras.callbacks = None) -> None
+fit(X: numpy.ndarray, loss_fn: .tensorflow.keras.losses = <function mean_squared_error at 0x169a64ca0>, optimizer: Union[ForwardRef('tf.keras.optimizers.Optimizer'), ForwardRef('tf.keras.optimizers.legacy.Optimizer'), type[ForwardRef('tf.keras.optimizers.Optimizer')], type[ForwardRef('tf.keras.optimizers.legacy.Optimizer')]] = <class 'keras.src.optimizers.adam.Adam'>, epochs: int = 20, batch_size: int = 64, verbose: bool = True, log_metric: Tuple[str, ForwardRef('tf.keras.metrics')] = None, callbacks: .tensorflow.keras.callbacks = None) -> None
 ```
 
 Train Seq2Seq model.
@@ -68,7 +68,7 @@ Train Seq2Seq model.
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
 | `X` | `numpy.ndarray` |  | Univariate or multivariate time series. Shape equals (batch, features) or (batch, sequence length, features). |
-| `loss_fn` | `.tensorflow.keras.losses` | `<function mean_squared_error at 0x17511fca0>` | Loss function used for training. |
+| `loss_fn` | `.tensorflow.keras.losses` | `<function mean_squared_error at 0x169a64ca0>` | Loss function used for training. |
 | `optimizer` | `Union[ForwardRef('tf.keras.optimizers.Optimizer'), ForwardRef('tf.keras.optimizers.legacy.Optimizer'), type[ForwardRef('tf.keras.optimizers.Optimizer')], type[ForwardRef('tf.keras.optimizers.legacy.Optimizer')]]` | `<class 'keras.src.optimizers.adam.Adam'>` | Optimizer used for training. |
 | `epochs` | `int` | `20` | Number of training epochs. |
 | `batch_size` | `int` | `64` | Batch size used for training. |

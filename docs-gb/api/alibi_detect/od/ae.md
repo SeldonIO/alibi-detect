@@ -56,7 +56,7 @@ Compute feature level outlier scores.
 #### `fit`
 
 ```python
-fit(X: numpy.ndarray, loss_fn: .tensorflow.keras.losses = <LossFunctionWrapper(<function mean_squared_error at 0x17511fca0>, kwargs={})>, optimizer: Union[ForwardRef('tf.keras.optimizers.Optimizer'), ForwardRef('tf.keras.optimizers.legacy.Optimizer'), type[ForwardRef('tf.keras.optimizers.Optimizer')], type[ForwardRef('tf.keras.optimizers.legacy.Optimizer')]] = <class 'keras.src.optimizers.adam.Adam'>, epochs: int = 20, batch_size: int = 64, verbose: bool = True, log_metric: Tuple[str, ForwardRef('tf.keras.metrics')] = None, callbacks: .tensorflow.keras.callbacks = None) -> None
+fit(X: numpy.ndarray, loss_fn: .tensorflow.keras.losses = <LossFunctionWrapper(<function mean_squared_error at 0x169a64ca0>, kwargs={})>, optimizer: Union[ForwardRef('tf.keras.optimizers.Optimizer'), ForwardRef('tf.keras.optimizers.legacy.Optimizer'), type[ForwardRef('tf.keras.optimizers.Optimizer')], type[ForwardRef('tf.keras.optimizers.legacy.Optimizer')]] = <class 'keras.src.optimizers.adam.Adam'>, epochs: int = 20, batch_size: int = 64, verbose: bool = True, log_metric: Tuple[str, ForwardRef('tf.keras.metrics')] = None, callbacks: .tensorflow.keras.callbacks = None) -> None
 ```
 
 Train AE model.
@@ -64,7 +64,7 @@ Train AE model.
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
 | `X` | `numpy.ndarray` |  | Training batch. |
-| `loss_fn` | `.tensorflow.keras.losses` | `<LossFunctionWrapper(<function mean_squared_error at 0x17511fca0>, kwargs={})>` | Loss function used for training. |
+| `loss_fn` | `.tensorflow.keras.losses` | `<LossFunctionWrapper(<function mean_squared_error at 0x169a64ca0>, kwargs={})>` | Loss function used for training. |
 | `optimizer` | `Union[ForwardRef('tf.keras.optimizers.Optimizer'), ForwardRef('tf.keras.optimizers.legacy.Optimizer'), type[ForwardRef('tf.keras.optimizers.Optimizer')], type[ForwardRef('tf.keras.optimizers.legacy.Optimizer')]]` | `<class 'keras.src.optimizers.adam.Adam'>` | Optimizer used for training. |
 | `epochs` | `int` | `20` | Number of training epochs. |
 | `batch_size` | `int` | `64` | Batch size used for training. |

@@ -57,7 +57,7 @@ Feature-level negative likelihood ratios.
 #### `fit`
 
 ```python
-fit(X: numpy.ndarray, mutate_fn: Callable = <function mutate_categorical at 0x16b9a9a60>, mutate_fn_kwargs: dict = {'rate': 0.2, 'seed': 0, 'feature_range': (0, 255)}, mutate_batch_size: int = 10000000000, loss_fn: .tensorflow.keras.losses = None, loss_fn_kwargs: dict = None, optimizer: Union[ForwardRef('tf.keras.optimizers.Optimizer'), ForwardRef('tf.keras.optimizers.legacy.Optimizer'), type[ForwardRef('tf.keras.optimizers.Optimizer')], type[ForwardRef('tf.keras.optimizers.legacy.Optimizer')]] = <class 'keras.src.optimizers.adam.Adam'>, epochs: int = 20, batch_size: int = 64, verbose: bool = True, log_metric: Tuple[str, ForwardRef('tf.keras.metrics')] = None, callbacks: .tensorflow.keras.callbacks = None) -> None
+fit(X: numpy.ndarray, mutate_fn: Callable = <function mutate_categorical at 0x16ddcdaf0>, mutate_fn_kwargs: dict = {'rate': 0.2, 'seed': 0, 'feature_range': (0, 255)}, mutate_batch_size: int = 10000000000, loss_fn: .tensorflow.keras.losses = None, loss_fn_kwargs: dict = None, optimizer: Union[ForwardRef('tf.keras.optimizers.Optimizer'), ForwardRef('tf.keras.optimizers.legacy.Optimizer'), type[ForwardRef('tf.keras.optimizers.Optimizer')], type[ForwardRef('tf.keras.optimizers.legacy.Optimizer')]] = <class 'keras.src.optimizers.adam.Adam'>, epochs: int = 20, batch_size: int = 64, verbose: bool = True, log_metric: Tuple[str, ForwardRef('tf.keras.metrics')] = None, callbacks: .tensorflow.keras.callbacks = None) -> None
 ```
 
 Train semantic and background generative models.
@@ -65,7 +65,7 @@ Train semantic and background generative models.
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
 | `X` | `numpy.ndarray` |  | Training batch. |
-| `mutate_fn` | `Callable` | `<function mutate_categorical at 0x16b9a9a60>` | Mutation function used to generate the background dataset. |
+| `mutate_fn` | `Callable` | `<function mutate_categorical at 0x16ddcdaf0>` | Mutation function used to generate the background dataset. |
 | `mutate_fn_kwargs` | `dict` | `{'rate': 0.2, 'seed': 0, 'feature_range': (0, 255)}` | Kwargs for the mutation function used to generate the background dataset. Default values set for an image dataset. |
 | `mutate_batch_size` | `int` | `10000000000` | Batch size used to generate the mutations for the background dataset. |
 | `loss_fn` | `.tensorflow.keras.losses` | `None` | Loss function used for training. |
