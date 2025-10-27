@@ -1,3 +1,7 @@
+---
+description: Learn about the features of Alibi Detect
+---
+
 # Overview
 
 ![Alibi Detect Logo](.gitbook/assets/Alibi_Detect_Logo_RGB_Colour_Blue.png)
