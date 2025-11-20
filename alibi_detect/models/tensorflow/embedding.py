@@ -71,7 +71,11 @@ class TransformerEmbedding(tf.keras.Model):
         """
         super(TransformerEmbedding, self).__init__()
         self.config = AutoConfig.from_pretrained(model_name_or_path, output_hidden_states=True)
-        self.model = TFAutoModel.from_pretrained(model_name_or_path, config=self.config)
+        self.model = TFAutoModel.from_pretrained(
+            model_name_or_path,
+            config=self.config,
+            use_safetensors=False
+        )
         self.emb_type = embedding_type
         self.hs_emb = partial(hidden_state_embedding, layers=layers, use_cls=embedding_type.endswith('cls'))
 
