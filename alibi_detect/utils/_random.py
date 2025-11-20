@@ -28,7 +28,10 @@ def set_seed(seed: int):
         Value of the random seed to set.
     """
     global _ALIBI_SEED
-    seed = max(seed, 0)  # TODO: This is a fix to allow --randomly-seed=0 in setup.cfg. To be removed in future
+    # TODO: This is a fix to allow --randomly-seed=0 in setup.cfg. To be removed in future
+    # Numpy requires seed to be between 0 and 2**32
+    seed = min(max(seed, 0), 2**32 - 1)
+    print('Setting random seed to {}'.format(seed))
     _ALIBI_SEED = seed
     os.environ['PYTHONHASHSEED'] = str(seed)
     random.seed(seed)
