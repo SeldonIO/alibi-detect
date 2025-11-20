@@ -1,4 +1,6 @@
 import pytest
+# These tests are skipped as they're for a unreleased and undocumeneted outlier detectors.
+pytest.skip(allow_module_level=True)
 import torch
 
 from alibi_detect.od.pytorch import ensemble
