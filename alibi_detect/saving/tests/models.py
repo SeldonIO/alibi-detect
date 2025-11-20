@@ -226,8 +226,12 @@ def nlp_embedding_and_tokenizer(model_name, max_len, uae, backend):
     except (OSError, HTTPError):
         pytest.skip(f"Problem downloading {model_name} from huggingface.co")
     X = 'A dummy string'  # this will be padded to max_len
-    tokens = tokenizer(list(X[:5]), pad_to_max_length=True,
-                       max_length=max_len, return_tensors=backend)
+    tokens = tokenizer(
+        list(X[:5]),
+        padding = 'max_length',
+        max_length=max_len,
+        return_tensors=backend
+    )
 
     # Load embedding model
     emb_type = 'hidden_state'
