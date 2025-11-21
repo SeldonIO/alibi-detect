@@ -228,7 +228,7 @@ def nlp_embedding_and_tokenizer(model_name, max_len, uae, backend):
     X = 'A dummy string'  # this will be padded to max_len
     tokens = tokenizer(
         list(X[:5]),
-        padding = 'max_length',
+        padding='max_length',
         max_length=max_len,
         return_tensors=backend
     )
