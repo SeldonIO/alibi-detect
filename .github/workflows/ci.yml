@@ -165,7 +165,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        env: [ 'default', 'tensorflow', 'torch', 'prophet', 'keops', 'all' ]
+        env: [ 'default', 'tensorflow', 'torch', 'prophet', 'keops' ]
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python 3.x
