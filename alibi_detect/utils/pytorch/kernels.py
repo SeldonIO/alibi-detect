@@ -2,7 +2,7 @@ import numpy as np
 import torch
 from torch import nn
 from . import distance
-from typing import Optional, Union, Callable
+from typing import Optional, Union, Callable, Any, Dict
 from alibi_detect.utils.frameworks import Framework
 
 
@@ -57,7 +57,7 @@ class GaussianRBF(nn.Module):
         """
         super().__init__()
         init_sigma_fn = sigma_median if init_sigma_fn is None else init_sigma_fn
-        self.config = {'sigma': sigma, 'trainable': trainable, 'init_sigma_fn': init_sigma_fn}
+        self.config: Dict[str, Any] = {'sigma': sigma, 'trainable': trainable, 'init_sigma_fn': init_sigma_fn}
         if sigma is None:
             self.log_sigma = nn.Parameter(torch.empty(1), requires_grad=trainable)
             self.init_required = True
@@ -143,7 +143,7 @@ class DeepKernel(nn.Module):
         eps: Union[float, str] = 'trainable'
     ) -> None:
         super().__init__()
-        self.config = {'proj': proj, 'kernel_a': kernel_a, 'kernel_b': kernel_b, 'eps': eps}
+        self.config: Dict[str, Any] = {'proj': proj, 'kernel_a': kernel_a, 'kernel_b': kernel_b, 'eps': eps}
         if kernel_a == 'rbf':
             kernel_a = GaussianRBF(trainable=True)
         if kernel_b == 'rbf':

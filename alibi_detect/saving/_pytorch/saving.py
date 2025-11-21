@@ -15,7 +15,7 @@ from alibi_detect.utils._types import TorchDeviceType
 logger = logging.getLogger(__name__)
 
 
-def save_model_config(model: Callable,
+def save_model_config(model: nn.Module,
                       base_path: Path,
                       local_path: Path = Path('.')) -> Tuple[dict, Optional[dict]]:
     """
@@ -37,6 +37,8 @@ def save_model_config(model: Callable,
     """
     cfg_model: Optional[Dict[str, Any]] = None
     cfg_embed: Optional[Dict[str, Any]] = None
+    nn_model: Optional[nn.Module] = None
+
     if isinstance(model, UAE):
         layers = list(model.encoder.children())
         if isinstance(layers[0], TransformerEmbedding):  # if UAE contains embedding and encoder
@@ -44,22 +46,22 @@ def save_model_config(model: Callable,
             embed = layers[0]
             cfg_embed = save_embedding_config(embed, base_path, local_path.joinpath('embedding'))
             # preprocessing encoder
-            model = layers[1]
+            nn_model = layers[1]
         else:  # If UAE is simply an encoder
-            model = model.encoder
+            nn_model = model.encoder
     elif isinstance(model, TransformerEmbedding):
         cfg_embed = save_embedding_config(model, base_path, local_path.joinpath('embedding'))
-        model = None
+        nn_model = None
     elif isinstance(model, HiddenOutput):
-        model = model.model
+        nn_model = model.model
     elif isinstance(model, nn.Module):  # Last as TransformerEmbedding and UAE are nn.Module's
-        model = model
+        nn_model = model
     else:
         raise ValueError('Model not recognised, cannot save.')
 
-    if model is not None:
+    if nn_model is not None:
         filepath = base_path.joinpath(local_path)
-        save_model(model, filepath=filepath)
+        save_model(nn_model, filepath=filepath)
         cfg_model = {
             'flavour': Framework.PYTORCH.value,
             'src': local_path.joinpath('model')
