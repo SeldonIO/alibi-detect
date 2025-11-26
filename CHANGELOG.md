@@ -1,6 +1,25 @@
 # Change Log
 
 ## [v0.12.0](https://github.com/SeldonIO/alibi-detect/tree/v0.12.0) (2024-04-17)
+[Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.13.0...v0.12.0)
+
+This is a minor release. The main feature is adding support for python3.12.
+
+### Added
+
+- Added support for python3.12 ([#917](https://github.com/SeldonIO/alibi-detect/pull/917))
+
+### Fixed
+
+- Numerical stability fix for spectral residual outlier detector ([#907](http://github.com/SeldonIO/alibi-detect/pull/907))
+- Fixes Mahalanobis detector incompatibility with `scipy>1.13` ([#913](https://github.com/SeldonIO/alibi-detect/pull/913))
+- Fixed image rendering in notebooks ([#918](https://github.com/SeldonIO/alibi-detect/pull/918))
+
+### Changed
+
+- Migrated docs to gitbook ([#904](https://github.com/SeldonIO/alibi-detect/pull/904), [#937](https://github.com/SeldonIO/alibi-detect/pull/937), [#923](https://github.com/SeldonIO/alibi-detect/pull/923))
+
+## [v0.12.0](https://github.com/SeldonIO/alibi-detect/tree/v0.12.0) (2024-04-17)
 [Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.11.5...v0.12.0)
 
 This is a minor release.
