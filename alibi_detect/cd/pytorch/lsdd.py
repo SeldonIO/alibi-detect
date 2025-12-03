@@ -154,8 +154,8 @@ class LSDDDriftTorch(BaseLSDDDrift):
         if self.preprocess_fn is not None and self.preprocess_at_init is False and not self.x_ref_preprocessed:
             self._configure_normalization(x_ref)  # type: ignore[arg-type]
             x_ref = self._normalize(x_ref)
-            self._initialize_kernel(x_ref)  # type: ignore[arg-type]
-            self._configure_kernel_centers(x_ref)  # type: ignore[arg-type]
+            self._initialize_kernel(x_ref)
+            self._configure_kernel_centers(x_ref)
             self.H = GaussianRBF(np.sqrt(2.) * self.kernel.sigma)(self.kernel_centers, self.kernel_centers)
 
         x = self._normalize(x)

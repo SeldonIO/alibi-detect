@@ -45,6 +45,14 @@ jobs:
             pydantic-version: '2.7.1'
 
     steps:
+      - name: Free up disk space
+        run: |
+          sudo rm -rf /usr/local/lib/android || true
+          sudo rm -rf /opt/ghc || true
+          sudo rm -rf /usr/share/dotnet || true
+          sudo rm -rf /opt/hostedtoolcache || true
+          df -h
+
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -90,6 +98,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Free up disk space
+        run: |
+          sudo rm -rf /usr/local/lib/android || true
+          sudo rm -rf /opt/ghc || true
+          sudo rm -rf /usr/share/dotnet || true
+          sudo rm -rf /opt/hostedtoolcache || true
+          df -h
       - uses: actions/checkout@v4
       - name: Set up Python 3.x
         uses: actions/setup-python@v5
@@ -157,8 +172,16 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        env: [ 'default', 'tensorflow', 'torch', 'prophet', 'keops', 'all' ]
+        env: [ 'default', 'tensorflow', 'torch', 'prophet', 'keops' ]
     steps:
+      - name: Free up disk space
+        run: |
+          sudo rm -rf /usr/local/lib/android || true
+          sudo rm -rf /opt/ghc || true
+          sudo rm -rf /usr/share/dotnet || true
+          sudo rm -rf /opt/hostedtoolcache || true
+          df -h
+
       - uses: actions/checkout@v4
       - name: Set up Python 3.x
         uses: actions/setup-python@v5

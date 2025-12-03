@@ -108,4 +108,10 @@ def trainer(
                 if log_metric is not None:
                     log_metric[1](y, y_hat)
                     pbar_values.append((log_metric[0], log_metric[1].result().numpy()))
+                # Average any arrays that may be in pbar_values. tf.keras.utils.Progbar used to do this
+                # but no longer appears to, causing an error when passing in arrays.
+                # see https://github.com/keras-team/keras/issues/21821 for more details.
+                for i, (name, value) in enumerate(pbar_values):
+                    if isinstance(value, np.ndarray):
+                        pbar_values[i] = (name, value.mean())
                 pbar.add(1, values=pbar_values)

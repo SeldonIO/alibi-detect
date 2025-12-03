@@ -218,7 +218,7 @@ def permed_lsdds(
         lam_index = less_than_rd_inds[0]
         lam = candidate_lambdas[lam_index]
         logger.info(f"Using lambda value of {lam:.2g} with RD of {float(rds[lam_index]):.2g}")
-        H_plus_lam_inv = H_plus_lam_invs[:, :, lam_index.item()]
+        H_plus_lam_inv = H_plus_lam_invs[:, :, int(lam_index.item())]
         H_lam_inv = 2*H_plus_lam_inv - (H_plus_lam_inv.transpose(0, 1) @ H @ H_plus_lam_inv)  # (below Eqn 11)
 
     # Now to compute an LSDD estimate for each permutation

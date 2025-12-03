@@ -33,4 +33,4 @@ def load_state_dict(filepath: Path) -> dict:
     -------
     The loaded state dictionary.
     """
-    return torch.load(filepath)
+    return torch.load(filepath, weights_only=False)

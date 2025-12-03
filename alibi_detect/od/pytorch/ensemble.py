@@ -1,3 +1,7 @@
+# This file contains code for unreleased and undocumented outlier detectors. The following line disables
+# mypy type checking for this file. This should be removed if/when the detectors are released and documented.
+# mypy: ignore-errors
+
 from abc import ABC, abstractmethod
 from typing import Optional
 from typing_extensions import Self

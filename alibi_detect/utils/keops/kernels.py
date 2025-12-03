@@ -1,7 +1,7 @@
 from pykeops.torch import LazyTensor
 import torch
 import torch.nn as nn
-from typing import Callable, Optional, Union
+from typing import Callable, Optional, Union, Any, Dict
 from alibi_detect.utils.frameworks import Framework
 from alibi_detect.utils._types import Literal
 from copy import deepcopy
@@ -85,7 +85,7 @@ class GaussianRBF(nn.Module):
         """
         super().__init__()
         init_sigma_fn = sigma_mean if init_sigma_fn is None else init_sigma_fn
-        self.config = {'sigma': sigma, 'trainable': trainable, 'init_sigma_fn': init_sigma_fn}
+        self.config: Dict[str, Any] = {'sigma': sigma, 'trainable': trainable, 'init_sigma_fn': init_sigma_fn}
         if sigma is None:
             self.log_sigma = nn.Parameter(torch.empty(1), requires_grad=trainable)
             self.init_required = True
