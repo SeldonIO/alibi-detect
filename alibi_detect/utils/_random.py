@@ -25,7 +25,7 @@ def set_seed(seed: int):
     Parameters
     ----------
     seed
-        Value of the random seed to set.
+        Value of the random seed to set. Must be between 0 and 2**32 - 1 and will be clipped to this range if not.
     """
     global _ALIBI_SEED
     # TODO: This is a fix to allow --randomly-seed=0 in setup.cfg. To be removed in future
