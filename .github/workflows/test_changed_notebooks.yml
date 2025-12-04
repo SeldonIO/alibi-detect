@@ -40,7 +40,7 @@ jobs:
 
       - name: Check for new or changed .ipynb files
         id: changed-ipynb
-        uses: tj-actions/changed-files@v41.0.0
+        uses: tj-actions/changed-files@v45.0.8
         with:
           files: |
             doc/source/examples/*.ipynb
