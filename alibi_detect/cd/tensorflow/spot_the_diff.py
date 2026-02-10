@@ -39,7 +39,7 @@ class SpotTheDiffDriftTF:
     ) -> None:
         """
         Classifier-based drift detector with a classifier of form y = a + b_1*k(x,w_1) + ... + b_J*k(x,w_J),
-        where k is a kernel and w_1,...,w_J are learnable test locations. If drift has occured the test locations
+        where k is a kernel and w_1,...,w_J are learnable test locations. If drift has occurred the test locations
         learn to be more/less (given by sign of b_i) similar to test instances than reference instances.
         The test locations are regularised to be close to the average reference instance such that the **difference**
         is then interpretable as the transformation required for each feature to make the average instance more/less

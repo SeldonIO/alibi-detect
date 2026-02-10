@@ -40,7 +40,7 @@ HAS_BACKEND = {
 
 
 def _iter_to_str(iterable: Iterable[str]) -> str:
-    """ Correctly format iterable of items to comma seperated sentence string."""
+    """ Correctly format iterable of items to comma separated sentence string."""
     items = [f'`{option}`' for option in iterable]
     last_item_str = f'{items[-1]}' if not items[:-1] else f' and {items[-1]}'
     return ', '.join(items[:-1]) + last_item_str
