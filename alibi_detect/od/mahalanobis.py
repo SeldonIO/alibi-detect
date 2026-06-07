@@ -126,7 +126,6 @@ class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
             logger.warning('No categorical variables specified. Skipping fit as it is only '
                            'required when categorical variables are present.')
             return
-        
 
         if d_type not in ['abdm', 'mvdm', 'abdm-mvdm']:
             raise ValueError('d_type needs to be "abdm", "mvdm" or "abdm-mvdm". '
