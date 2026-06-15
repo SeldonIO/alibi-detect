@@ -49,3 +49,18 @@ def test_mahalanobis(mahalanobis_params):
                                                         > mh.threshold).astype(int).sum()
     else:
         assert od_preds['data']['instance_score'] is None
+
+
+def test_mahalanobis_fit_no_cat_vars_warns_and_returns():
+    """fit() should log a warning and return early when cat_vars is None,
+    leaving d_abs empty rather than raising a TypeError (issue #905)."""
+    import warnings
+    X, _ = load_iris(return_X_y=True)
+    mh = Mahalanobis()  # cat_vars defaults to None
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        mh.fit(X)
+        assert len(w) == 1
+        assert "No categorical variables specified" in str(w[0].message)
+    # d_abs should remain empty since fit returned early
+    assert mh.d_abs == {}

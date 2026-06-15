@@ -123,7 +123,9 @@ class Mahalanobis(BaseDetector, FitMixin, ThresholdMixin):
             feature range, but the upper bound will be below the max feature range.
         """
         if self.cat_vars is None:
-            raise TypeError('No categorical variables specified in the "cat_vars" argument.')
+            logger.warning('No categorical variables specified. Skipping fit as it is only '
+                           'required when categorical variables are present.')
+            return
 
         if d_type not in ['abdm', 'mvdm', 'abdm-mvdm']:
             raise ValueError('d_type needs to be "abdm", "mvdm" or "abdm-mvdm". '
