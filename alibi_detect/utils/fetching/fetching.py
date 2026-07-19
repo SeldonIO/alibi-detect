@@ -94,7 +94,12 @@ def fetch_tf_model(dataset: str, model: str) -> tf.keras.Model:
     """
     url = 'https://storage.googleapis.com/seldon-models/alibi-detect/classifier/'
     path_model = _join_url(url, [dataset, model, 'model.h5'])
-    save_path = tf.keras.utils.get_file(Path(model + '.h5').resolve(), path_model)
+    save_path = tf.keras.utils.get_file(
+        fname=model + ".h5",
+        origin=path_model,
+        cache_dir=Path.cwd(),
+        cache_subdir="",
+    )
     if dataset == 'cifar10' and model == 'resnet56':
         custom_objects = {'backend': backend}
     else:
