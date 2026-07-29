@@ -1,6 +1,5 @@
 """This module defines the Alibi Detect exception hierarchy and common exceptions used across the library."""
-from typing_extensions import Literal
-from typing import Callable
+from typing import Callable, Literal
 from abc import ABC
 from functools import wraps
 

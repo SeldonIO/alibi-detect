@@ -3,8 +3,7 @@ import os
 import copy
 import json
 import numpy as np
-from typing import Dict, Any, Optional, Union
-from typing_extensions import Protocol, runtime_checkable
+from typing import Dict, Any, Optional, Protocol, Union, runtime_checkable
 from alibi_detect.version import __version__
 
 

@@ -1,6 +1,5 @@
-from typing import Dict, Any
+from typing import Dict, Any, Literal
 from alibi_detect.exceptions import _catch_error as catch_error
-from typing_extensions import Literal
 
 import numpy as np
 
