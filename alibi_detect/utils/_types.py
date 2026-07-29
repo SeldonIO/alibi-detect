@@ -3,11 +3,10 @@ Defining types compatible with different Python versions and defining custom typ
 """
 from sklearn.base import BaseEstimator  # import here (instead of later) since sklearn currently a core dep
 from alibi_detect.utils.frameworks import has_tensorflow, has_pytorch
-from typing import Union, Type, Optional
+from typing import Union, Type, Optional, Literal
 
 
-# Literal for typing
-from typing_extensions import Literal
+# TypeAlias is only available in typing from Python 3.10, so import from typing_extensions for now
 from typing_extensions import TypeAlias
 
 

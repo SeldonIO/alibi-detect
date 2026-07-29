@@ -1,7 +1,6 @@
 from alibi_detect.utils.missing_optional_dependency import import_optional
 
-from typing import Union
-from typing_extensions import Literal, Protocol, runtime_checkable
+from typing import Literal, Protocol, Union, runtime_checkable
 
 
 # Use Protocols instead of base classes for the backend associated objects. This is a bit more flexible and allows us to
