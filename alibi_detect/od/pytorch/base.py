@@ -196,7 +196,7 @@ class TorchOutlierDetector(torch.nn.Module, FitMixinTorch, ABC):
         -------
         `torch.Tensor` or ``None``
         """
-        return (1 + (scores[:, None] < self.val_scores).sum(-1))/len(self.val_scores) \
+        return (1 + (scores[:, None] <= self.val_scores).sum(-1))/(len(self.val_scores) + 1) \
             if self.threshold_inferred else None
 
     def infer_threshold(self, x: torch.Tensor, fpr: float):
