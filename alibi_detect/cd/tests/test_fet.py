@@ -54,3 +54,24 @@ def test_fetdrift(fetdrift_params):
     for f in range(n_feat):
         np.testing.assert_allclose(preds['data']['distance'][f],
                                    odds_ratio[f], rtol=1e-05)
+
+
+@pytest.mark.parametrize('bad_value', [0.5, 1.5, 2, -1, np.nan])
+def test_fetdrift_rejects_non_binary(bad_value):
+    # Non-binary batches must raise even when the values would truncate to 0/1
+    # under an int cast (see https://github.com/SeldonIO/alibi-detect/issues/962).
+    x_ref = np.random.choice([0, 1], (n, 2))
+    cd = FETDrift(x_ref=x_ref, p_val=0.05)
+    x_bad = np.full((n_test, 2), bad_value)
+    with pytest.raises(ValueError, match="must consist of only"):
+        cd.predict(x_bad)
+
+
+@pytest.mark.parametrize('good_dtype', [np.int64, bool, np.float64])
+def test_fetdrift_accepts_binary_dtypes(good_dtype):
+    # Binary data in any reasonable dtype must keep working.
+    x_ref = np.random.choice([0, 1], (n, 2))
+    cd = FETDrift(x_ref=x_ref, p_val=0.05)
+    x_good = np.random.choice([0, 1], (n_test, 2)).astype(good_dtype)
+    preds = cd.predict(x_good)
+    assert preds['data']['is_drift'] in (0, 1)

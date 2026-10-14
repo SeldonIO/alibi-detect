@@ -98,13 +98,18 @@ class FETDrift(BaseUnivariateDrift):
         -------
         Feature level p-values and odds ratios.
         """
-        x = x.reshape(x.shape[0], -1).astype(dtype=np.int64)
-        x_ref = x_ref.reshape(x_ref.shape[0], -1).astype(dtype=np.int64)
+        x = x.reshape(x.shape[0], -1)
+        x_ref = x_ref.reshape(x_ref.shape[0], -1)
 
-        # Check data is only [False, True] or [0, 1]
+        # Check data is only [False, True] or [0, 1] before casting to int:
+        # casting first would silently truncate non-binary values (e.g. 0.5 -> 0)
+        # and let them slip through the check below.
         values = set(np.unique(x))
         if not set(values).issubset(['0', '1', True, False]):
             raise ValueError("The `x` data must consist of only [0,1]'s or [False,True]'s for the FETDrift detector.")
+
+        x = x.astype(dtype=np.int64)
+        x_ref = x_ref.astype(dtype=np.int64)
 
         # Perform FET for each feature
         n_ref = x_ref.shape[0]
