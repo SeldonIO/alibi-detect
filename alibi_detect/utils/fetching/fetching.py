@@ -57,6 +57,35 @@ Data = Union[
 TIMEOUT = 10
 
 
+def _get_file(filepath: Union[str, os.PathLike], url: str) -> str:
+    """
+    Download a file from a url, saving it to filepath.
+
+    Thin wrapper around tf.keras.utils.get_file. Keras 3 no longer accepts paths as the
+    `fname` argument, so only the file's basename is passed as `fname` and the parent
+    directory via `cache_dir`. `cache_subdir` is set to '' so the file is saved directly
+    in `cache_dir`, keeping the download location the same for Keras 2 and Keras 3.
+
+    Parameters
+    ----------
+    filepath
+        Local path to save the file to.
+    url
+        Url to download the file from.
+
+    Returns
+    -------
+    Path to the downloaded file.
+    """
+    filepath = Path(filepath).resolve()
+    return tf.keras.utils.get_file(
+        fname=filepath.name,
+        origin=url,
+        cache_dir=filepath.parent,
+        cache_subdir=''
+    )
+
+
 def get_pixelcnn_default_kwargs():
     dist = PixelCNN(
         image_shape=(28, 28, 1),
@@ -94,7 +123,7 @@ def fetch_tf_model(dataset: str, model: str) -> tf.keras.Model:
     """
     url = 'https://storage.googleapis.com/seldon-models/alibi-detect/classifier/'
     path_model = _join_url(url, [dataset, model, 'model.h5'])
-    save_path = tf.keras.utils.get_file(Path(model + '.h5').resolve(), path_model)
+    save_path = _get_file(Path(model + '.h5').resolve(), path_model)
     if dataset == 'cifar10' and model == 'resnet56':
         custom_objects = {'backend': backend}
     else:
@@ -119,11 +148,11 @@ def fetch_enc_dec(url: str, filepath: Union[str, os.PathLike]) -> None:
     if not model_path.is_dir():
         model_path.mkdir(parents=True, exist_ok=True)
     # encoder and decoder
-    tf.keras.utils.get_file(
+    _get_file(
         model_path.joinpath('encoder_net.h5'),
         _join_url(url_models, 'encoder_net.h5')
     )
-    tf.keras.utils.get_file(
+    _get_file(
         model_path.joinpath('decoder_net.h5'),
         _join_url(url_models, 'decoder_net.h5')
     )
@@ -144,15 +173,15 @@ def fetch_ae(url: str, filepath: Union[str, os.PathLike]) -> None:
     url_models = _join_url(url, 'model')
     model_path = Path(filepath).joinpath('model').resolve()
     # encoder and decoder
-    tf.keras.utils.get_file(
+    _get_file(
         model_path.joinpath('checkpoint'),
         _join_url(url_models, 'checkpoint')
     )
-    tf.keras.utils.get_file(
+    _get_file(
         model_path.joinpath('ae.ckpt.index'),
         _join_url(url_models, 'ae.ckpt.index')
     )
-    tf.keras.utils.get_file(
+    _get_file(
         model_path.joinpath('ae.ckpt.data-00000-of-00001'),
         _join_url(url_models, 'ae.ckpt.data-00000-of-00001')
     )
@@ -174,23 +203,23 @@ def fetch_ad_ae(url: str, filepath: Union[str, os.PathLike], state_dict: dict) -
     fetch_enc_dec(url, filepath)
     url_models = _join_url(url, 'model')
     model_path = Path(filepath).joinpath('model').resolve()
-    tf.keras.utils.get_file(
+    _get_file(
         model_path.joinpath('model.h5'),
         _join_url(url_models, 'model.h5')
     )
-    tf.keras.utils.get_file(
+    _get_file(
         model_path.joinpath('checkpoint'),
         _join_url(url_models, 'checkpoint')
     )
-    tf.keras.utils.get_file(
+    _get_file(
         model_path.joinpath('ae.ckpt.index'),
         _join_url(url_models, 'ae.ckpt.index')
     )
-    tf.keras.utils.get_file(
+    _get_file(
         model_path.joinpath('ae.ckpt.data-00000-of-00002'),
         _join_url(url_models, 'ae.ckpt.data-00000-of-00002')
     )
-    tf.keras.utils.get_file(
+    _get_file(
         model_path.joinpath('ae.ckpt.data-00001-of-00002'),
         _join_url(url_models, 'ae.ckpt.data-00001-of-00002')
     )
@@ -198,15 +227,15 @@ def fetch_ad_ae(url: str, filepath: Union[str, os.PathLike], state_dict: dict) -
     if hidden_layer_kld:
         for i, (_, _) in enumerate(hidden_layer_kld.items()):
             hl = 'model_hl_' + str(i)
-            tf.keras.utils.get_file(
+            _get_file(
                 model_path.joinpath(hl + '.ckpt.index'),
                 _join_url(url_models, hl + '.ckpt.index')
             )
-            tf.keras.utils.get_file(
+            _get_file(
                 model_path.joinpath(hl + '.ckpt.data-00000-of-00002'),
                 _join_url(url_models, hl + '.ckpt.data-00000-of-00002')
             )
-            tf.keras.utils.get_file(
+            _get_file(
                 model_path.joinpath(hl + '.ckpt.data-00001-of-00002'),
                 _join_url(url_models, hl + '.ckpt.data-00001-of-00002')
             )
@@ -228,11 +257,11 @@ def fetch_ad_md(url: str, filepath: Union[str, os.PathLike]) -> None:
     if not model_path.is_dir():
         model_path.mkdir(parents=True, exist_ok=True)
     # encoder and decoder
-    tf.keras.utils.get_file(
+    _get_file(
         model_path.joinpath('model.h5'),
         _join_url(url_models, 'model.h5')
     )
-    tf.keras.utils.get_file(
+    _get_file(
         model_path.joinpath('distilled_model.h5'),
         _join_url(url_models, 'distilled_model.h5')
     )
@@ -254,19 +283,19 @@ def fetch_aegmm(url: str, filepath: Union[str, os.PathLike]) -> None:
     # save GMM network
     url_models = _join_url(url, 'model')
     model_path = Path(filepath).joinpath('model').resolve()
-    tf.keras.utils.get_file(
+    _get_file(
         model_path.joinpath('gmm_density_net.h5'),
         _join_url(url_models, 'gmm_density_net.h5')
     )
-    tf.keras.utils.get_file(
+    _get_file(
         model_path.joinpath('checkpoint'),
         _join_url(url_models, 'checkpoint')
     )
-    tf.keras.utils.get_file(
+    _get_file(
         model_path.joinpath('aegmm.ckpt.index'),
         _join_url(url_models, 'aegmm.ckpt.index')
     )
-    tf.keras.utils.get_file(
+    _get_file(
         model_path.joinpath('aegmm.ckpt.data-00000-of-00001'),
         _join_url(url_models, 'aegmm.ckpt.data-00000-of-00001')
     )
@@ -287,15 +316,15 @@ def fetch_vae(url: str, filepath: Union[str, os.PathLike]) -> None:
     # save VAE weights
     url_models = _join_url(url, 'model')
     model_path = Path(filepath).joinpath('model').resolve()
-    tf.keras.utils.get_file(
+    _get_file(
         model_path.joinpath('checkpoint'),
         _join_url(url_models, 'checkpoint')
     )
-    tf.keras.utils.get_file(
+    _get_file(
         model_path.joinpath('vae.ckpt.index'),
         _join_url(url_models, 'vae.ckpt.index')
     )
-    tf.keras.utils.get_file(
+    _get_file(
         model_path.joinpath('vae.ckpt.data-00000-of-00001'),
         _join_url(url_models, 'vae.ckpt.data-00000-of-00001')
     )
@@ -317,19 +346,19 @@ def fetch_vaegmm(url: str, filepath: Union[str, os.PathLike]) -> None:
     # save GMM network
     url_models = _join_url(url, 'model')
     model_path = Path(filepath).joinpath('model').resolve()
-    tf.keras.utils.get_file(
+    _get_file(
         model_path.joinpath('gmm_density_net.h5'),
         _join_url(url_models, 'gmm_density_net.h5')
     )
-    tf.keras.utils.get_file(
+    _get_file(
         model_path.joinpath('checkpoint'),
         _join_url(url_models, 'checkpoint')
     )
-    tf.keras.utils.get_file(
+    _get_file(
         model_path.joinpath('vaegmm.ckpt.index'),
         _join_url(url_models, 'vaegmm.ckpt.index')
     )
-    tf.keras.utils.get_file(
+    _get_file(
         model_path.joinpath('vaegmm.ckpt.data-00000-of-00001'),
         _join_url(url_models, 'vaegmm.ckpt.data-00000-of-00001')
     )
@@ -351,20 +380,20 @@ def fetch_seq2seq(url: str, filepath: Union[str, os.PathLike]) -> None:
     if not model_path.is_dir():
         model_path.mkdir(parents=True, exist_ok=True)
     # save seq2seq
-    tf.keras.utils.get_file(
+    _get_file(
         model_path.joinpath('checkpoint'),
         _join_url(url_models, 'checkpoint')
     )
-    tf.keras.utils.get_file(
+    _get_file(
         model_path.joinpath('seq2seq.ckpt.index'),
         _join_url(url_models, 'seq2seq.ckpt.index')
     )
-    tf.keras.utils.get_file(
+    _get_file(
         model_path.joinpath('seq2seq.ckpt.data-00000-of-00001'),
         _join_url(url_models, 'seq2seq.ckpt.data-00000-of-00001')
     )
     # save threshold network
-    tf.keras.utils.get_file(
+    _get_file(
         model_path.joinpath('threshold_net.h5'),
         _join_url(url_models, 'threshold_net.h5')
     )
@@ -386,22 +415,22 @@ def fetch_llr(url: str, filepath: Union[str, os.PathLike]) -> str:
     if not model_path.is_dir():
         model_path.mkdir(parents=True, exist_ok=True)
     try:
-        tf.keras.utils.get_file(
+        _get_file(
             model_path.joinpath('model_s.h5'),
             _join_url(url_models, 'model_s.h5')
         )
-        tf.keras.utils.get_file(
+        _get_file(
             model_path.joinpath('model_b.h5'),
             _join_url(url_models, 'model_b.h5')
         )
         model_type = 'weights'
         return model_type
     except Exception:
-        tf.keras.utils.get_file(
+        _get_file(
             model_path.joinpath('model.h5'),
             _join_url(url_models, 'model.h5')
         )
-        tf.keras.utils.get_file(
+        _get_file(
             model_path.joinpath('model_background.h5'),
             _join_url(url_models, 'model_background.h5')
         )
